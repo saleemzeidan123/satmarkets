@@ -1,9 +1,12 @@
-export type AssetType = "office" | "retail" | "warehouse" | "land";
+export type AssetType =
+  | "office" | "retail" | "medical" | "showroom"
+  | "warehouse" | "serviced" | "education" | "land";
 export type DealType = "lease" | "sale";
 
 export interface Listing {
   id: string;
   reference_code: string;
+  account_id: string;
   asset_type: AssetType;
   deal_type: DealType;
   title_en: string | null;
@@ -16,6 +19,7 @@ export interface Listing {
   sale_price: number | null;
   status: string;
   is_sat_listed: boolean;
+  created_at?: string;
 }
 
 export interface RentIndexCell {

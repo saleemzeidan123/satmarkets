@@ -18,7 +18,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
         </nav>
         <div className="flex items-center gap-3">
           <LanguageSwitch locale={locale} />
-          <Link href={`/${locale}/list`} className="rounded bg-gold px-3 py-1.5 text-sm text-white">
+          <Link href={`/${locale}/dashboard`} className="rounded bg-gold px-3 py-1.5 text-sm text-white">
             {dict.nav.listSpace}
           </Link>
         </div>
