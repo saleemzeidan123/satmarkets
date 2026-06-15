@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "listings": "Listings",
+    "requirements": "Requirements",
+    "rentIndex": "Rent Index",
+    "about": "About",
+    "listSpace": "List your space"
+  },
+  "hero": {
+    "eyebrow": "REGA-native commercial exchange",
+    "title": "Riyadh's verified home for commercial space",
+    "subtitle": "Find, compare, and lease Grade A offices, retail, and warehouses. Verified listings and decision-grade pricing, in one neutral exchange.",
+    "searchPlaceholder": "Office, Al Olaya, up to 1,000 sqm",
+    "browse": "Browse listings"
+  },
+  "listing": {
+    "verified": "Verified",
+    "rentBand": "Verified rent band",
+    "medianAsking": "Median asking",
+    "medianAchieved": "Median achieved",
+    "contactDirectly": "Contact directly",
+    "bookRepresentation": "Book with representation",
+    "contactNote": "Reach the lister. No mandate, no fee.",
+    "repNote": "Written mandate. SAT acts for you, within statutory limits."
+  },
+  "common": {
+    "poweredBy": "SAT Markets | Powered by SAT Real Estate",
+    "sqm": "sqm",
+    "perSqm": "SAR / sqm"
+  }
+}
