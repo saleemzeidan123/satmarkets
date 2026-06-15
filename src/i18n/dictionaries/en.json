@@ -62,5 +62,51 @@
     "reject": "Reject",
     "filterAll": "All",
     "filterPending": "Pending"
+  },
+  "ui": {
+    "area": "Area",
+    "grade": "Grade",
+    "fitout": "Fit-out",
+    "asking": "Asking SAR/sqm",
+    "price": "Price (SAR)",
+    "perSqmYear": "SAR / sqm / year",
+    "sar": "SAR",
+    "onRequest": "On request",
+    "verifiedListing": "Verified listing",
+    "view": "View",
+    "allListings": "All listings",
+    "results": "verified results",
+    "noMatch": "No listings match these filters.",
+    "notEnough": "not enough verified data yet",
+    "browse": "Browse",
+    "searching": "Searching..."
+  },
+  "why": {
+    "title": "Why SAT Markets",
+    "sub": "The four things no Saudi portal combines, and that LoopNet cannot localise.",
+    "p1t": "Verified supply",
+    "p1d": "Owner-direct listings, permit-backed, verified before they publish. Not a classifieds dump.",
+    "p2t": "Decision-grade data",
+    "p2d": "The SAT rent index: median achieved rents by district and asset, from real transactions.",
+    "p3t": "AI search, grounded",
+    "p3d": "Describe what you need in plain language. Answers come from verified data, never a model.",
+    "p4t": "Representation built in",
+    "p4d": "Contact directly, or sign a SAT mandate and book viewings, all within statutory limits."
+  },
+  "statBand": {
+    "listings": "Verified listings",
+    "assets": "Asset classes",
+    "cities": "Cities, Kingdom-wide",
+    "tx": "Transactions advised"
+  },
+  "rentTeaser": {
+    "title": "Decision-grade rent bands. Verified, never modelled.",
+    "body": "Median achieved rents by district and asset class, published only where the data is real. The moat that makes this an authority, not a board.",
+    "cta": "Open the rent index"
+  },
+  "featured": {
+    "eyebrow": "Featured",
+    "title": "Verified commercial space",
+    "viewAll": "View all"
   }
 }

@@ -5,13 +5,15 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import RentBand from "@/components/RentBand";
 import LeadForm from "@/components/LeadForm";
-import AssetIcon from "@/components/AssetIcon";
+import { galleryFor } from "@/lib/photos";
+import { assetLabel, gradeLabel, fitoutLabel, cityLabel } from "@/lib/labels";
 import type { Listing, RentIndexCell } from "@/lib/types";
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const dict = getDictionary(locale);
+  const ui = dict.ui;
   const sb = getSupabaseServer();
   let listing: Listing | null = null;
   let cell: RentIndexCell | null = null;
@@ -22,42 +24,43 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     if (listing?.district_id) {
       const { data: cells } = await sb.from("rent_index_cells").select("*").eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("deal_type", listing.deal_type).limit(1);
       cell = ((cells as RentIndexCell[]) ?? [])[0] ?? null;
-      const { count: bc } = await sb.from("tenant_briefs").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type);
-      briefCount = bc ?? 0;
-      const { count: ac } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("status","published");
-      availCount = ac ?? 0;
+      const { count: bc } = await sb.from("tenant_briefs").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type); briefCount = bc ?? 0;
+      const { count: ac } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("status","published"); availCount = ac ?? 0;
     }
   }
-  if (!listing) return <p className="text-charcoal/50">Listing not found.</p>;
+  if (!listing) return <p className="text-charcoal/50">{ui.noMatch}</p>;
   const title = (locale === "ar" ? listing.title_ar : listing.title_en) || listing.reference_code;
   const d = listing.districts;
-  const place = d ? `${locale === "ar" ? d.name_ar : d.name_en}${d.city ? ", " + d.city : ""}` : "";
+  const dn = d ? (locale==="ar"?d.name_ar:d.name_en) : "";
+  const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
   const lease = listing.deal_type === "lease";
+  const pics = galleryFor(listing.asset_type, listing.id);
 
   return (
     <div>
-      <Link href={`/${locale}/listings`} className="text-sm text-charcoal/50 hover:text-charcoal">← All listings</Link>
+      <Link href={`/${locale}/listings`} className="text-sm text-charcoal/50 hover:text-charcoal">← {ui.allListings}</Link>
       <div className="mt-3 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <div className="asset-photo flex h-64 items-center justify-center">
-            <AssetIcon type={listing.asset_type} className="h-16 w-16 text-gold/60" />
-            <span className="badge badge-verified absolute left-4 top-4 bg-white/85 backdrop-blur">{dict.listing.verified}</span>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="col-span-4 overflow-hidden rounded-2xl"><img src={pics[0]} alt={title} className="h-72 w-full object-cover" /></div>
+            <div className="col-span-2 overflow-hidden rounded-xl"><img src={pics[1]} alt="" className="h-28 w-full object-cover" /></div>
+            <div className="col-span-2 overflow-hidden rounded-xl"><img src={pics[2]} alt="" className="h-28 w-full object-cover" /></div>
           </div>
           <div>
-            <div className="eyebrow">{listing.asset_type} · {place}</div>
+            <div className="eyebrow">{assetLabel(listing.asset_type, locale)} · {place}</div>
             <h1 className="mt-1 font-display text-3xl text-charcoal">{title}</h1>
           </div>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
-            <Spec label="Area" value={`${listing.area_sqm} ${dict.common.sqm}`} />
-            <Spec label="Grade" value={listing.building_grade.replace("_"," ")} />
-            <Spec label="Fit-out" value={listing.fitout_condition.replace(/_/g," ")} />
-            <Spec label={lease ? "Asking SAR/sqm" : "Price SAR"} value={Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()} />
+            <Spec label={ui.area} value={`${listing.area_sqm} ${dict.common.sqm}`} />
+            <Spec label={ui.grade} value={gradeLabel(listing.building_grade, locale)} />
+            <Spec label={ui.fitout} value={fitoutLabel(listing.fitout_condition, locale)} />
+            <Spec label={lease ? ui.asking : ui.price} value={Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()} />
           </div>
-          {listing.description_en && <p className="text-[15px] leading-relaxed text-charcoal/70">{(locale==="ar"&&listing.description_ar)?listing.description_ar:listing.description_en}</p>}
+          {(locale==="ar"?listing.description_ar:listing.description_en) && <p className="text-[15px] leading-relaxed text-charcoal/70">{locale==="ar"?listing.description_ar:listing.description_en}</p>}
           <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
             <div className="eyebrow">{dict.areaIntel.title}</div>
             <div className="mt-4 space-y-4">
-              <RentBand cell={cell} labels={{ rentBand: dict.areaIntel.band, medianAsking: dict.listing.medianAsking, medianAchieved: dict.listing.medianAchieved }} />
+              <RentBand cell={cell} locale={locale} labels={{ rentBand: dict.areaIntel.band, medianAchieved: dict.listing.medianAchieved, notEnough: ui.notEnough }} />
               <div className="grid grid-cols-2 gap-4">
                 <Metric n={briefCount} l={dict.areaIntel.briefs} />
                 <Metric n={availCount} l={dict.areaIntel.available} />
@@ -66,9 +69,9 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             </div>
           </div>
         </div>
-        <aside className="lg:sticky lg:top-24 h-fit rounded-2xl border border-line bg-white p-5 shadow-card">
+        <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card lg:sticky lg:top-24">
           <div className="font-display text-2xl text-gold">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
-          <div className="text-xs text-charcoal/45">{lease ? "SAR / sqm / year" : "SAR"}</div>
+          <div className="text-xs text-charcoal/45">{lease ? ui.perSqmYear : ui.sar}</div>
           <div className="mt-4 hairline" />
           <div className="mt-4"><LeadForm listingId={listing.id} labels={{ contactDirectly: dict.listing.contactDirectly, bookRepresentation: dict.listing.bookRepresentation, contactNote: dict.listing.contactNote, repNote: dict.listing.repNote }} /></div>
         </aside>

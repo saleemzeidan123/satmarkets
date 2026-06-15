@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import ListingCard from "@/components/ListingCard";
+import { assetLabel, cityLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 
 const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"];
@@ -30,16 +31,16 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   };
   return (
     <section>
-      <div className="eyebrow">Browse</div>
+      <div className="eyebrow">{dict.ui.browse}</div>
       <h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1>
-      <div className="mt-5 flex flex-wrap gap-2">{ASSETS.map((a)=>chip(a,"asset",a))}</div>
-      <div className="mt-2.5 flex flex-wrap gap-2">{CITIES.map((c)=>chip(c,"city",c))}</div>
-      <div className="mt-3 text-sm text-charcoal/50">{listings.length} verified results</div>
+      <div className="mt-5 flex flex-wrap gap-2">{ASSETS.map((a)=>chip(assetLabel(a, locale),"asset",a))}</div>
+      <div className="mt-2.5 flex flex-wrap gap-2">{CITIES.map((c)=>chip(cityLabel(c, locale),"city",c))}</div>
+      <div className="mt-3 text-sm text-charcoal/50">{listings.length} {dict.ui.results}</div>
       {listings.length === 0 ? (
-        <p className="mt-8 text-charcoal/50">No listings match these filters.</p>
+        <p className="mt-8 text-charcoal/50">{dict.ui.noMatch}</p>
       ) : (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} sqmLabel={dict.common.sqm} verifiedLabel={dict.listing.verified} />))}
+          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />))}
         </div>
       )}
     </section>
