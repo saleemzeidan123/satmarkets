@@ -12,15 +12,14 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm text-charcoal/80">
           <Link href={`/${locale}/listings`}>{dict.nav.listings}</Link>
-          <Link href={`/${locale}/requirements`}>{dict.nav.requirements}</Link>
+          <Link href={`/${locale}/search`}>{dict.search.title}</Link>
           <Link href={`/${locale}/rent-index`}>{dict.nav.rentIndex}</Link>
           <Link href={`/${locale}/about`}>{dict.nav.about}</Link>
         </nav>
         <div className="flex items-center gap-3">
           <LanguageSwitch locale={locale} />
-          <Link href={`/${locale}/dashboard`} className="rounded bg-gold px-3 py-1.5 text-sm text-white">
-            {dict.nav.listSpace}
-          </Link>
+          <Link href={`/${locale}/login`} className="text-sm text-charcoal/70">Sign in</Link>
+          <Link href={`/${locale}/dashboard`} className="rounded bg-gold px-3 py-1.5 text-sm text-white">{dict.nav.listSpace}</Link>
         </div>
       </div>
     </header>

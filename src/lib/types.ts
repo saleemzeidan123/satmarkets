@@ -3,6 +3,8 @@ export type AssetType =
   | "warehouse" | "serviced" | "education" | "land";
 export type DealType = "lease" | "sale";
 
+export interface DistrictRef { name_en: string | null; name_ar: string | null; city: string | null; }
+
 export interface Listing {
   id: string;
   reference_code: string;
@@ -11,6 +13,8 @@ export interface Listing {
   deal_type: DealType;
   title_en: string | null;
   title_ar: string | null;
+  description_en?: string | null;
+  description_ar?: string | null;
   district_id: string | null;
   area_sqm: number;
   building_grade: string;
@@ -20,6 +24,7 @@ export interface Listing {
   status: string;
   is_sat_listed: boolean;
   created_at?: string;
+  districts?: DistrictRef | null;
 }
 
 export interface RentIndexCell {

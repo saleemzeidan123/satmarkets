@@ -12,12 +12,13 @@ export default async function NewListingPage({ params }: { params: { locale: str
   if (!auth.user) redirect(`/${locale}/login`);
   const { data: me } = await sb.from("users").select("account_id").eq("auth_user_id", auth.user.id).single();
   if (!me?.account_id) redirect(`/${locale}/dashboard`);
+  const { data: districts } = await sb.from("districts").select("id, name_en, city").order("city");
 
   return (
     <section className="py-6">
       <h1 className="font-serif text-2xl">New listing</h1>
       <div className="mt-6">
-        <NewListingForm accountId={me.account_id as string} locale={locale} />
+        <NewListingForm accountId={me.account_id as string} locale={locale} districts={(districts as any) ?? []} />
       </div>
     </section>
   );

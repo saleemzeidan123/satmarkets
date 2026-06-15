@@ -27,5 +27,40 @@
     "poweredBy": "SAT Markets | Powered by SAT Real Estate",
     "sqm": "sqm",
     "perSqm": "SAR / sqm"
+  },
+  "search": {
+    "title": "AI search",
+    "placeholder": "Try: 3,000 sqm Grade A office near KAFD under SAR 2,800",
+    "interpreted": "Interpreted as",
+    "go": "Search",
+    "none": "No matches yet. Try a different brief.",
+    "grounded": "Results come from verified listings. The assistant explains and filters, it never invents a rent figure."
+  },
+  "filters": {
+    "all": "All",
+    "asset": "Asset",
+    "city": "City"
+  },
+  "areaIntel": {
+    "title": "Area intelligence",
+    "band": "Verified rent band",
+    "briefs": "Active tenant briefs in this district",
+    "available": "Available listings in this district",
+    "note": "Every figure is computed from verified data. No model-generated numbers."
+  },
+  "dash": {
+    "verifyPending": "Your account is not verified yet. Listings stay in draft until SAT verifies ownership.",
+    "verified": "Verified owner",
+    "district": "District",
+    "description": "Description"
+  },
+  "admin": {
+    "queue": "Approval queue",
+    "account": "Account",
+    "verifyOwner": "Verify owner",
+    "publish": "Publish",
+    "reject": "Reject",
+    "filterAll": "All",
+    "filterPending": "Pending"
   }
 }
