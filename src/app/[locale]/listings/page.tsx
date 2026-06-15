@@ -9,49 +9,37 @@ import type { Listing } from "@/lib/types";
 const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"];
 const CITIES = ["Riyadh","Jeddah","Dammam","Khobar"];
 
-export default async function ListingsPage({ params, searchParams }: {
-  params: { locale: string };
-  searchParams: { asset?: string; city?: string };
-}) {
+export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; city?: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const dict = getDictionary(locale);
   const supabase = getSupabaseServer();
-
   let listings: Listing[] = [];
   if (supabase) {
-    let query = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").limit(48);
+    let query = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status","published").order("created_at",{ascending:false}).limit(60);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
     const { data } = await query;
     listings = (data as Listing[]) ?? [];
-    if (searchParams.city) listings = listings.filter((l) => l.districts?.city === searchParams.city);
+    if (searchParams.city) listings = listings.filter((l)=>l.districts?.city === searchParams.city);
   }
-
   const chip = (label: string, key: "asset"|"city", val: string) => {
     const active = searchParams[key] === val;
     const sp = new URLSearchParams(searchParams as any);
     if (active) sp.delete(key); else sp.set(key, val);
-    return (
-      <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3 py-1 text-xs ${active ? "border-gold bg-gold text-white" : "border-charcoal/20 text-charcoal/70"}`}>{label}</Link>
-    );
+    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-gold bg-gold text-white" : "border-line text-charcoal/65 hover:border-gold/50 hover:text-charcoal"}`}>{label}</Link>;
   };
-
   return (
     <section>
-      <h1 className="font-serif text-2xl">{dict.nav.listings}</h1>
-      <div className="mt-4 flex flex-wrap gap-2">
-        {ASSETS.map((a)=>chip(a, "asset", a))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {CITIES.map((c)=>chip(c, "city", c))}
-      </div>
+      <div className="eyebrow">Browse</div>
+      <h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1>
+      <div className="mt-5 flex flex-wrap gap-2">{ASSETS.map((a)=>chip(a,"asset",a))}</div>
+      <div className="mt-2.5 flex flex-wrap gap-2">{CITIES.map((c)=>chip(c,"city",c))}</div>
+      <div className="mt-3 text-sm text-charcoal/50">{listings.length} verified results</div>
       {listings.length === 0 ? (
-        <p className="mt-6 text-charcoal/50">No listings match.</p>
+        <p className="mt-8 text-charcoal/50">No listings match these filters.</p>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((l) => (
-            <ListingCard key={l.id} listing={l} locale={locale} sqmLabel={dict.common.sqm} verifiedLabel={dict.listing.verified} />
-          ))}
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} sqmLabel={dict.common.sqm} verifiedLabel={dict.listing.verified} />))}
         </div>
       )}
     </section>
