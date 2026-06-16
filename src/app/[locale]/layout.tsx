@@ -23,7 +23,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
               <div className="flex items-center gap-2">
-                <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-charcoal">Markets</span></div>
+                <span className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{background:"#14181B"}}><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="1.6"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="1.6"/><circle cx="16" cy="16" r="3.4" fill="#2FB8A6"/></svg></span><div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-charcoal">Markets</span></div>
                 <span className="live-dot" />
               </div>
               <p className="mt-2 font-display text-[15px] italic text-charcoal/90">{couplet}</p>
