@@ -110,3 +110,15 @@ html, body { overflow-x: hidden; }
 .lang-seg.on { background:#0E7C6F; color:#fff; }
 .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; color: rgba(28,33,38,0.6); transition: background .18s ease, color .18s ease; }
 .icon-btn:hover { background: rgba(28,33,38,0.05); color:#1C1A15; }
+
+/* ===== Brand identity: texture + micro-motion ===== */
+.brand-grid { background-image: linear-gradient(rgba(20,24,27,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(20,24,27,0.04) 1px, transparent 1px); background-size: 46px 46px; }
+.brand-rings { position: relative; }
+.brand-rings::after { content:""; position:absolute; top:-14%; inset-inline-end:-8%; width:480px; height:480px; pointer-events:none; opacity:.4; background: radial-gradient(circle, transparent 0 47%, rgba(47,184,166,0.5) 47% 48%, transparent 48%), radial-gradient(circle, transparent 0 31%, rgba(255,255,255,0.16) 31% 32%, transparent 32%), radial-gradient(circle, transparent 0 16%, rgba(255,255,255,0.12) 16% 17%, transparent 17%); background-repeat:no-repeat; background-position:center; }
+.hairline { height:1px; background:linear-gradient(90deg, transparent, rgba(20,24,27,0.12), transparent); }
+@media (prefers-reduced-motion: no-preference){
+  @keyframes apertureRise { from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;} }
+  .anim-rise { animation: apertureRise .9s cubic-bezier(.2,.7,.2,1) both; }
+  .intel-card { transition: transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease; }
+  .intel-card:hover { transform: translateY(-3px); }
+}

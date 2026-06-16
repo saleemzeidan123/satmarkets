@@ -36,13 +36,13 @@ export default async function HomePage({ params }: { params: { locale: string } 
     : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
   return (
     <div className="space-y-20">
-      <section className="relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
+      <section className="brand-rings relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
         <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2200&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0" style={{ background: gradMain }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,20,22,0.55) 0%, rgba(15,20,22,0) 24%)" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,19,0.62) 0%, rgba(12,17,19,0) 44%)" }} />
         <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(47,184,166,0.16), transparent 70%)" }} />
-        <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
+        <div className="anim-rise relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
             <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
             <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>

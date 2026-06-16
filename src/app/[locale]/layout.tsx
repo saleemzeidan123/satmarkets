@@ -18,7 +18,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       <HtmlLangDir locale={locale} />
       <Header locale={locale} dict={dict} />
       <main className="mx-auto min-h-[70vh] max-w-6xl px-5 py-8 sm:px-6 sm:py-10">{children}</main>
-      <footer className="mt-10 border-t border-line bg-ivory-2/60">
+      <footer className="mt-10 border-t border-line bg-ivory-2/60 brand-grid">
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
