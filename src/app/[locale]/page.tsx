@@ -44,7 +44,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
         <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(183,154,94,0.20), transparent 70%)" }} />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
-            <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-soft">{dict.hero.eyebrow}</div>
+            <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
             <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
             <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
