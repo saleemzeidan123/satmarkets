@@ -38,7 +38,7 @@ export default function AuthCallback() {
   }, []);
   return (
     <section className="mx-auto flex max-w-md flex-col items-center py-20 text-center">
-      <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold/30 border-t-gold" />
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-signal/30 border-t-gold" />
       <p className="mt-5 text-charcoal/65">{msg}</p>
       {failed && <a href="/en/login" className="btn-gold mt-5 px-5 py-2.5 text-sm">Back to sign in</a>}
     </section>

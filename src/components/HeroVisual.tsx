@@ -16,7 +16,7 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en" | "ar" }) 
   return (
     <div className="relative hidden lg:block">
       {/* soft depth, behind the cards */}
-      <div className="pointer-events-none absolute -end-12 top-4 -z-0 h-72 w-72 rounded-full bg-gold/10 blur-3xl" />
+      <div className="pointer-events-none absolute -end-12 top-4 -z-0 h-72 w-72 rounded-full bg-signal/10 blur-3xl" />
 
       {/* clean vertical stack — flow layout, cannot overlap */}
       <div className="relative z-10 ms-auto w-[340px] space-y-4">
@@ -55,11 +55,11 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en" | "ar" }) 
           <div className="mt-1 text-[12px] text-charcoal/50">{t.idxMeta}</div>
           <div className="mt-1.5 flex items-end justify-between">
             <div className="flex items-end gap-2">
-              <div className="font-display text-[32px] leading-none text-gold tnum">3,505</div>
+              <div className="font-display text-[32px] leading-none text-charcoal tnum">3,505</div>
               <div className="pb-1 text-[10px] text-charcoal/45">{t.unit}</div>
             </div>
             <div className="flex h-9 items-end gap-1">
-              {bars.map((h, i) => <div key={i} className="w-2 rounded-t-sm" style={{ height: `${h}%`, background: "#8A7342", opacity: 0.4 + i * 0.08 }} />)}
+              {bars.map((h, i) => <div key={i} className="w-2 rounded-t-sm" style={{ height: `${h}%`, background: "#0E7C6F", opacity: 0.4 + i * 0.08 }} />)}
             </div>
           </div>
         </div>

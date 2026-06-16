@@ -1,7 +1,7 @@
 export default function Skyline({ className = "" }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 1200 180" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-      <g stroke="#8A7342" strokeOpacity="0.30" strokeWidth="1.2" fill="none">
+      <g stroke="#2FA39A" strokeOpacity="0.30" strokeWidth="1.2" fill="none">
         <path d="M0 175 H1200" />
         <path d="M70 175 V120 H110 V175" />
         <path d="M130 175 V95 H150 L160 80 L170 95 V175" />

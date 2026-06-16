@@ -139,9 +139,9 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
       {/* filter chips */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1.5 p-3">
-        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-gold bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>{t.all}</button>
+        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-signal bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
         {assetOrder.map((a) => (
-          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-gold bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>
+          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-signal bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#8A7342" }} />{assetLabels[a] || a}
           </button>
         ))}
@@ -172,7 +172,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
                 <div className="mt-3 rounded-xl border border-line bg-ivory-2/50 p-3">
                   <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{t.rentBand}</div>
                   <div className="mt-0.5 flex items-baseline gap-2">
-                    <span className="font-display text-2xl text-gold">{Math.round(sel.band).toLocaleString()}</span>
+                    <span className="font-display text-2xl text-charcoal">{Math.round(sel.band).toLocaleString()}</span>
                     <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + "–" + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
                   </div>
                 </div>

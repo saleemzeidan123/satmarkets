@@ -174,7 +174,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
 }
 
 function SectionLabel({ n, title, sub }: { n: string; title: string; sub: string }) {
-  return (<div className="mt-8 flex items-baseline gap-3 border-b border-line pb-2"><span className="fig text-[12px] text-gold">{n}</span><h2 className="font-display text-xl text-charcoal">{title}</h2>{sub ? <span className="text-[11px] uppercase tracking-wide text-charcoal/40">{sub}</span> : null}</div>);
+  return (<div className="mt-8 flex items-baseline gap-3 border-b border-line pb-2"><span className="fig text-[12px] text-charcoal">{n}</span><h2 className="font-display text-xl text-charcoal">{title}</h2>{sub ? <span className="text-[11px] uppercase tracking-wide text-charcoal/40">{sub}</span> : null}</div>);
 }
 function Kpi({ label, value, tone }: { label: string; value: string; tone: "live" | "verified" }) {
   const c = tone === "live" ? TEAL : GOLD;

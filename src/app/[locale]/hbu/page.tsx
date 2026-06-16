@@ -74,7 +74,7 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
       {uses.length === 0 ? <p className="mt-4 intel-muted">{t.none}</p> : (
         <div className="mt-4 space-y-3">
           {uses.map((u, i) => (
-            <div key={u.asset} className={`intel-card p-5 ${i===0?"!border-gold/60":""}`} style={i===0?{boxShadow:"0 0 0 1px rgba(217,184,91,0.25), 0 8px 30px rgba(217,184,91,0.08)"}:{}}>
+            <div key={u.asset} className={`intel-card p-5 ${i===0?"!border-signal/60":""}`} style={i===0?{boxShadow:"0 0 0 1px rgba(217,184,91,0.25), 0 8px 30px rgba(217,184,91,0.08)"}:{}}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="font-display text-lg text-charcoal">{assetLabel(u.asset, locale)}</span>

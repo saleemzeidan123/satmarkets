@@ -40,7 +40,7 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
 
   return (
     <section className="py-6">
-      {open && <div className="mb-5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-sm text-charcoal/70">Open preview — sign-in disabled while testing. Approve/verify actions need sign-in re-enabled.</div>}
+      {open && <div className="mb-5 rounded-xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-charcoal/70">Open preview — sign-in disabled while testing. Approve/verify actions need sign-in re-enabled.</div>}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-charcoal">Admin: approval queue</h1>
         <div className="flex gap-2 text-xs">
@@ -58,7 +58,7 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
               <div className="mt-0.5 text-xs text-charcoal/50">
                 {l.lister_type === "broker_authorized" ? "broker (authorized)" : l.lister_type === "sat" ? "SAT-listed" : "owner-direct"}
                 {l.lister_type === "broker_authorized" && (l.authorization_verified ? " · authorization verified" : " · authorization PENDING")}
-                {l.authorization_doc_url && (<a href={l.authorization_doc_url} target="_blank" rel="noopener noreferrer" className="ms-2 text-gold underline">authorization doc</a>)}
+                {l.authorization_doc_url && (<a href={l.authorization_doc_url} target="_blank" rel="noopener noreferrer" className="ms-2 text-charcoal underline">authorization doc</a>)}
               </div>
             </div>
             <div className="flex gap-2">
@@ -73,7 +73,7 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
                 </form>
               )}
               <form action={async () => { "use server"; await setStatus(l.id, "published", locale); }}>
-                <button className="rounded bg-gold px-3 py-1.5 text-xs text-white">Publish</button>
+                <button className="rounded bg-signal px-3 py-1.5 text-xs text-white">Publish</button>
               </form>
               <form action={async () => { "use server"; await setStatus(l.id, "rejected", locale); }}>
                 <button className="rounded border border-charcoal/20 px-3 py-1.5 text-xs">Reject</button>

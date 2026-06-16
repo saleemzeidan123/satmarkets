@@ -51,7 +51,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="eyebrow">{T.title}</div>
-          <h1 className="mt-1 font-display text-3xl text-charcoal">{T.title} {!loading && listings.length > 0 ? <span className="fig text-gold">· {listings.length}</span> : null}</h1>
+          <h1 className="mt-1 font-display text-3xl text-charcoal">{T.title} {!loading && listings.length > 0 ? <span className="fig text-charcoal">· {listings.length}</span> : null}</h1>
           <p className="mt-1 text-charcoal/60">{T.sub}</p>
         </div>
         {listings.length > 0 ? <button onClick={clearAll} className="btn-ghost px-3.5 py-2 text-[13px] text-charcoal/70">{T.clear}</button> : null}
@@ -61,7 +61,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
         <p className="mt-10 text-charcoal/50">{T.loading}</p>
       ) : listings.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-line bg-white/60 p-10 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gold/10 text-gold">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10 text-signal">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
           </div>
           <p className="text-charcoal/60">{T.empty}</p>
@@ -85,7 +85,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 <tbody className="text-charcoal/75">
                   <Row label={T.deal}>{listings.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{listings.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
-                  <Row label={T.price}>{listings.map((l) => <Cell key={l.id}><span className="fig text-gold">{priceOf(l)}</span></Cell>)}</Row>
+                  <Row label={T.price}>{listings.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span></Cell>)}</Row>
                   <Row label={T.size}>{listings.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "—"}</span> {dict.common.sqm}</Cell>)}</Row>
                   <Row label={T.grade}>{listings.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "—"}</Cell>)}</Row>
                   <Row label={T.district}>{listings.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>

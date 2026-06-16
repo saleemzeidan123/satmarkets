@@ -30,7 +30,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const smartChips = ar
     ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
     : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
-  const dots = [{c:"#8A7342",x:54,y:60},{c:"#B5482E",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#C08A3E",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#7A5CA8",x:156,y:124},{c:"#4A7A4A",x:60,y:128},{c:"#8A7342",x:250,y:110}];
+  const dots = [{c:"#2FA39A",x:54,y:60},{c:"#0E7C6F",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#2FB8A6",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#5b6470",x:156,y:124},{c:"#3E6E66",x:60,y:128},{c:"#2FA39A",x:250,y:110}];
   const gradMain = ar
     ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
     : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
@@ -39,9 +39,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
       <section className="relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
         <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2200&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
         <div className="absolute inset-0" style={{ background: gradMain }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(24,17,8,0.55) 0%, rgba(24,17,8,0) 24%)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,14,7,0.62) 0%, rgba(20,14,7,0) 44%)" }} />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(183,154,94,0.20), transparent 70%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,20,22,0.55) 0%, rgba(15,20,22,0) 24%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,19,0.62) 0%, rgba(12,17,19,0) 44%)" }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(47,184,166,0.16), transparent 70%)" }} />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
             <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
@@ -49,7 +49,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
             <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
             <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
-              {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-gold-soft" />{c}</span>))}
+              {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-soft" />{c}</span>))}
             </div>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
               {[{a:"office",v:3700},{a:"retail",v:3200},{a:"medical",v:2000},{a:"warehouse",v:230}].map((m,i)=>(
                 <div key={i} className="rounded-xl border border-line bg-ivory-2/40 p-4">
                   <div className="text-[11px] text-charcoal/50">{assetLabel(m.a, locale)}</div>
-                  <div className="mt-1 fig text-[22px] text-gold tracking-tight">{m.v.toLocaleString()}</div>
+                  <div className="mt-1 fig text-[22px] text-charcoal tracking-tight">{m.v.toLocaleString()}</div>
                   <div className="text-[10px] text-charcoal/45">{dict.home.teaserPlaces[i]} · {locale==="ar"?"ريال/م²/سنة":"SAR/sqm/yr"}</div>
                 </div>
               ))}
@@ -164,5 +164,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
   );
 }
 function Stat({ n, l }: { n: string; l: string }) {
-  return <div><div className="fig text-[26px] text-gold tracking-tight">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
+  return <div><div className="fig text-[26px] text-charcoal tracking-tight">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
 }

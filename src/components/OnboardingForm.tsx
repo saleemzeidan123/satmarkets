@@ -38,7 +38,7 @@ export default function OnboardingForm() {
           placeholder="Company legal name"
           className="flex-1 rounded border border-charcoal/20 px-3 py-2"
         />
-        <button disabled={busy} className="rounded bg-gold px-4 py-2 text-white">
+        <button disabled={busy} className="rounded bg-signal px-4 py-2 text-white">
           {busy ? "..." : "Register"}
         </button>
       </form>

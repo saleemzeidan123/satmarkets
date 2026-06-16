@@ -30,7 +30,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const active = searchParams[key] === val;
     const sp = new URLSearchParams(searchParams as any);
     if (active) sp.delete(key); else sp.set(key, val);
-    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-gold bg-signal text-white" : "border-line text-charcoal/65 hover:border-gold/50 hover:text-charcoal"}`}>{label}</Link>;
+    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-signal bg-signal text-white" : "border-line text-charcoal/65 hover:border-signal/50 hover:text-charcoal"}`}>{label}</Link>;
   };
   return (
     <section>

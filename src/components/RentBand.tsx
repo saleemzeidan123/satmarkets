@@ -18,7 +18,7 @@ export default function RentBand({ row, labels, locale }: {
         {row.segment && <span className="badge badge-gold">{segmentLabel(row.segment, locale)}</span>}
       </div>
       <div className="mt-2 flex items-baseline gap-3">
-        <div className="font-display text-3xl text-gold">{Math.round(row.median).toLocaleString()}</div>
+        <div className="font-display text-3xl text-charcoal">{Math.round(row.median).toLocaleString()}</div>
         <div className="text-xs text-charcoal/55">
           {row.band_low != null ? `${row.band_low.toLocaleString()}–${row.band_high!.toLocaleString()} · ` : ""}{unitLabel(row.unit, locale)}
         </div>

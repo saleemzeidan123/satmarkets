@@ -21,7 +21,7 @@ export default function SaveHeart({ id, label }: { id: string; label?: string })
   return (
     <button type="button" onClick={toggle} aria-label={label || "Save"} aria-pressed={saved}
       className="absolute end-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-charcoal shadow-sm backdrop-blur transition hover:scale-105 hover:bg-white">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill={saved ? "#8A7342" : "none"} stroke={saved ? "#8A7342" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill={saved ? "#0E7C6F" : "none"} stroke={saved ? "#0E7C6F" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>
       </svg>
     </button>

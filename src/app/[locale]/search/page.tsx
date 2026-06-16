@@ -70,20 +70,20 @@ export default function SearchPage({ params }: { params: { locale: string } }) {
             <div>
               <div className="text-[11px] uppercase tracking-wide text-charcoal/40">{T.pickType}</div>
               <div className="mt-1.5 flex flex-wrap gap-2">
-                {ASSETS.map((a)=>(<button key={a} onClick={()=>pick(a)} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-gold/50 hover:text-charcoal">{assetLabel(a, locale)}</button>))}
+                {ASSETS.map((a)=>(<button key={a} onClick={()=>pick(a)} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-signal/50 hover:text-charcoal">{assetLabel(a, locale)}</button>))}
               </div>
             </div>
             <div>
               <div className="text-[11px] uppercase tracking-wide text-charcoal/40">{T.pickCity}</div>
               <div className="mt-1.5 flex flex-wrap gap-2">
-                {CITIES.map((c)=>(<button key={c} onClick={()=>pick(c)} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-gold/50 hover:text-charcoal">{cityLabel(c, locale)}</button>))}
+                {CITIES.map((c)=>(<button key={c} onClick={()=>pick(c)} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-signal/50 hover:text-charcoal">{cityLabel(c, locale)}</button>))}
               </div>
             </div>
             <div>
               <div className="text-[11px] uppercase tracking-wide text-charcoal/40">{T.pickDeal}</div>
               <div className="mt-1.5 flex flex-wrap gap-2">
-                <button onClick={()=>pick("lease")} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-gold/50 hover:text-charcoal">{dealLabel("lease", locale)}</button>
-                <button onClick={()=>pick("buy")} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-gold/50 hover:text-charcoal">{dealLabel("sale", locale)}</button>
+                <button onClick={()=>pick("lease")} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-signal/50 hover:text-charcoal">{dealLabel("lease", locale)}</button>
+                <button onClick={()=>pick("buy")} className="rounded-full border border-line bg-white px-3 py-1 text-[12.5px] text-charcoal/70 hover:border-signal/50 hover:text-charcoal">{dealLabel("sale", locale)}</button>
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function SearchPage({ params }: { params: { locale: string } }) {
             </div>
             <h3 className="mt-2 font-display text-lg text-charcoal">{title}</h3>
             <div className="mt-1 text-[13px] text-charcoal/55">{dn}{l.districts?.city ? "، "+cityLabel(l.districts.city, locale) : ""} · {l.area_sqm} {dict.common.sqm}</div>
-            <div className="mt-2 fig text-xl text-gold">{(l.asking_rent_sqm ?? l.sale_price ?? 0).toLocaleString()}</div>
+            <div className="mt-2 fig text-xl text-charcoal">{(l.asking_rent_sqm ?? l.sale_price ?? 0).toLocaleString()}</div>
           </Link>
         );})}
       </div>

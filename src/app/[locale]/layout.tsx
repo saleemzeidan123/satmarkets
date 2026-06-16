@@ -23,10 +23,10 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
               <div className="flex items-center gap-2">
-                <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></div>
+                <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-charcoal">Markets</span></div>
                 <span className="live-dot" />
               </div>
-              <p className="mt-2 font-display text-[15px] italic text-gold/90">{couplet}</p>
+              <p className="mt-2 font-display text-[15px] italic text-charcoal/90">{couplet}</p>
               <p className="mt-1.5 max-w-sm text-sm text-charcoal/55">{f.tagline}</p>
               <p className="mt-3 text-[10.5px] uppercase tracking-[0.18em] text-charcoal/40">{family}</p>
             </div>

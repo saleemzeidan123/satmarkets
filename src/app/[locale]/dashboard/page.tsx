@@ -53,14 +53,14 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   return (
     <section className="py-6">
       {!user && (
-        <div className="mb-5 rounded-xl border border-gold/30 bg-gold/5 px-4 py-3 text-sm text-charcoal/70">
+        <div className="mb-5 rounded-xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-charcoal/70">
           Open preview — sign-in is disabled while we test. You can browse the dashboard and admin; saving a listing will need sign-in re-enabled.
         </div>
       )}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-charcoal">Dashboard</h1>
         <div className="flex gap-2.5">
-          {isSat && <Link href={`/${locale}/admin`} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:border-gold/40">Admin</Link>}
+          {isSat && <Link href={`/${locale}/admin`} className="rounded-lg border border-line px-3 py-1.5 text-sm hover:border-signal/40">Admin</Link>}
           <Link href={`/${locale}/dashboard/new`} className="btn-gold px-3.5 py-1.5 text-sm font-medium">New listing</Link>
         </div>
       </div>

@@ -22,7 +22,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
         <div className="absolute start-3 top-3 flex items-center gap-1.5">
           <span className="rounded-md bg-white/90 px-2 py-1 text-[10px] font-medium text-charcoal backdrop-blur">{assetLabel(listing.asset_type, locale)}</span>
-          <span className="rounded-md bg-gold/90 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md px-2 py-1 text-[10px] font-medium text-white backdrop-blur" style={{ background: "rgba(14,124,111,0.92)" }}>{locale === "ar" ? "ذكاء" : "Intel"}</span>
+          <span className="rounded-md bg-signal/90 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md px-2 py-1 text-[10px] font-medium text-white backdrop-blur" style={{ background: "rgba(14,124,111,0.92)" }}>{locale === "ar" ? "ذكاء" : "Intel"}</span>
         </div>
         <SaveHeart id={listing.id} label={ui.save || "Save"} />
         <div className="absolute bottom-3 start-3 text-white">
@@ -38,7 +38,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6E6E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             {ui.verifiedListing}
           </span>
-          <span className="text-[12px] text-charcoal/40 transition group-hover:text-gold">{ui.view} →</span>
+          <span className="text-[12px] text-charcoal/40 transition group-hover:text-signal">{ui.view} →</span>
         </div>
       </div>
     </Link>

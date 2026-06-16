@@ -13,7 +13,7 @@ export default function ValuePillars({ why }: { why: any }) {
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((it, i) => (
         <div key={i} className="card p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gold/10 text-gold">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-signal/10 text-signal">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{paths[i]}</svg>
           </div>
           <h3 className="mt-3 font-display text-lg text-charcoal">{it.t}</h3>

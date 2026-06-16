@@ -90,7 +90,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
         <div className="text-[11px] uppercase tracking-wide intel-faint">{t.area}</div>
         <div className="mt-2 flex flex-wrap gap-2">
           {DISTRICTS.map((d) => (
-            <Link key={d.id} href={`/${locale}/area?district=${d.id}`} className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition ${d.id===sel.id?"intel-chip-active":"intel-chip hover:border-gold/50"}`}>{ar ? d.ar : d.en}</Link>
+            <Link key={d.id} href={`/${locale}/area?district=${d.id}`} className={`rounded-full px-3.5 py-1.5 text-[12.5px] transition ${d.id===sel.id?"intel-chip-active":"intel-chip hover:border-signal/50"}`}>{ar ? d.ar : d.en}</Link>
           ))}
         </div>
       </div>
@@ -164,7 +164,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
                 <tbody>
                   {real.map((r)=>(
                     <tr key={r.asset} className="border-t border-line">
-                      <td className="py-2.5"><Link href={`/${locale}/listings?asset=${r.asset}`} className="text-charcoal hover:text-gold">{assetLabel(r.asset, locale)}</Link></td>
+                      <td className="py-2.5"><Link href={`/${locale}/listings?asset=${r.asset}`} className="text-charcoal hover:text-charcoal">{assetLabel(r.asset, locale)}</Link></td>
                       <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:GOLD}}/></div><span className="fig" style={{color:GOLD}}>{r.rent?Math.round(r.rent).toLocaleString():"—"}</span></div></td>
                       <td className="py-2.5 intel-muted fig">{r.supply}</td><td className="py-2.5 intel-muted fig">{r.avail}</td><td className="py-2.5 intel-muted fig">{r.demand}</td>
                     </tr>
@@ -185,7 +185,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
 function SectionLabel({ n, title, sub }: { n: string; title: string; sub: string }) {
   return (
     <div className="mt-8 flex items-baseline gap-3 border-b border-line pb-2">
-      <span className="fig text-[12px] text-gold">{n}</span>
+      <span className="fig text-[12px] text-charcoal">{n}</span>
       <h2 className="font-display text-xl text-charcoal">{title}</h2>
       {sub ? <span className="text-[11px] uppercase tracking-wide intel-faint">{sub}</span> : null}
     </div>

@@ -33,7 +33,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = locale === "ar" ? "تسجيل الدخول" : "Sign in";
-  const descriptor = locale === "ar" ? "ذكاء · تداول" : "intelligence · exchange";
+  const descriptor = locale === "ar" ? "ذكاء · تداول" : "real-estate intelligence";
   const savedItem = { href: `/${locale}/saved`, label: locale === "ar" ? "المحفوظة" : "Saved" };
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
@@ -57,7 +57,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
         <div className="flex items-center gap-2 sm:gap-2.5">
           <Link href={`/${locale}/saved`} aria-label="Saved" className="icon-btn relative hidden sm:inline-flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-            {saved > 0 ? <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
+            {saved > 0 ? <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
           </Link>
           <Link href={`/${locale}/search`} aria-label="Search" className="icon-btn hidden sm:inline-flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>

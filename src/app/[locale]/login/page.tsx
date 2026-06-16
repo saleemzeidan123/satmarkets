@@ -45,7 +45,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
             placeholder="you@company.com"
             className="w-full rounded border border-charcoal/20 px-3 py-2"
           />
-          <button type="submit" className="w-full rounded bg-gold px-4 py-2 text-white">
+          <button type="submit" className="w-full rounded bg-signal px-4 py-2 text-white">
             Send sign-in link
           </button>
           {error && <p className="text-sm text-red-600">{error}</p>}

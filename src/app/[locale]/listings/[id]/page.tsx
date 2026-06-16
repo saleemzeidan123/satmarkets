@@ -105,7 +105,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               <div className="eyebrow">{L.documents}</div>
               <div className="mt-2 flex flex-col gap-2">
                 {docs.map((doc, i) => (
-                  <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-[13.5px] text-charcoal/75 shadow-card hover:border-gold/50">
+                  <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-[13.5px] text-charcoal/75 shadow-card hover:border-signal/50">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     {locale==="ar" ? (doc.label_ar || doc.label_en) : (doc.label_en || doc.label_ar)}
                   </a>
@@ -139,7 +139,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
         </div>
 
         <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card lg:sticky lg:top-24">
-          <div className="fig text-2xl text-gold">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
+          <div className="fig text-2xl text-charcoal">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
           <div className="text-xs text-charcoal/45">{lease ? ui.perSqmYear : ui.sar}</div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <span className="badge badge-gold">{repLabel}</span>
@@ -170,5 +170,5 @@ function Spec({ label, value }: { label: string; value: string }) {
   return <div className="bg-white px-4 py-3"><div className="text-[10px] uppercase tracking-wide text-charcoal/40">{label}</div><div className="mt-0.5 fig text-lg text-charcoal">{value}</div></div>;
 }
 function Metric({ n, l }: { n: number; l: string }) {
-  return <div className="rounded-xl border border-line bg-ivory-2/40 p-3"><div className="fig text-2xl text-gold">{n}</div><div className="text-[11px] text-charcoal/55">{l}</div></div>;
+  return <div className="rounded-xl border border-line bg-ivory-2/40 p-3"><div className="fig text-2xl text-charcoal">{n}</div><div className="text-[11px] text-charcoal/55">{l}</div></div>;
 }

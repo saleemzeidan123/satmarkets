@@ -69,7 +69,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
       </div>
 
-      <button disabled={busy} className="rounded bg-gold px-4 py-2 text-white">{busy ? "Saving..." : "Save as draft"}</button>
+      <button disabled={busy} className="rounded bg-signal px-4 py-2 text-white">{busy ? "Saving..." : "Save as draft"}</button>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <p className="text-xs text-charcoal/50">Saved as draft. SAT reviews and verifies before it publishes.</p>
     </form>
