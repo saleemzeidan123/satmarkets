@@ -25,7 +25,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         </div>
         <SaveHeart id={listing.id} label={ui.save || "Save"} />
         <div className="absolute bottom-3 start-3 text-white">
-          <div className="font-display text-xl leading-none drop-shadow">{price != null ? Number(price).toLocaleString() : ui.onRequest}</div>
+          <div className="fig text-[22px] leading-none drop-shadow tracking-tight">{price != null ? Number(price).toLocaleString() : ui.onRequest}</div>
           <div className="mt-1 text-[10px] opacity-90">{lease ? ui.perSqmYear : ui.sar}</div>
         </div>
       </div>

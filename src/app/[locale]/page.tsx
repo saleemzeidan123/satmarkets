@@ -142,7 +142,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
               {[{a:"office",v:3700},{a:"retail",v:3200},{a:"medical",v:2000},{a:"warehouse",v:230}].map((m,i)=>(
                 <div key={i} className="rounded-xl border border-line bg-ivory-2/40 p-4">
                   <div className="text-[11px] text-charcoal/50">{assetLabel(m.a, locale)}</div>
-                  <div className="mt-1 font-display text-2xl text-gold">{m.v.toLocaleString()}</div>
+                  <div className="mt-1 fig text-[22px] text-gold tracking-tight">{m.v.toLocaleString()}</div>
                   <div className="text-[10px] text-charcoal/45">{dict.home.teaserPlaces[i]} · {locale==="ar"?"ريال/م²/سنة":"SAR/sqm/yr"}</div>
                 </div>
               ))}
@@ -154,5 +154,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
   );
 }
 function Stat({ n, l }: { n: string; l: string }) {
-  return <div><div className="font-display text-3xl text-gold">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
+  return <div><div className="fig text-[26px] text-gold tracking-tight">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
 }
