@@ -89,3 +89,6 @@ a { transition: color .18s ease; }
 .intel-divider { height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); }
 .tag-verified { background: rgba(73,122,74,0.18); color:#7FC587; border:1px solid rgba(127,197,135,0.3); }
 .tag-sample { background: rgba(200,168,75,0.14); color:#D9B85B; border:1px solid rgba(217,184,91,0.3); }
+
+/* mobile: never allow horizontal scroll from full-bleed sections */
+html, body { overflow-x: hidden; }

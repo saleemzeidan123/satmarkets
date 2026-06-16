@@ -33,7 +33,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
     : ["Verified, owner-direct","REGA-native","Lease & sale","English / Arabic"];
   return (
     <div className="space-y-20">
-      <section className="mesh relative -mx-6 -mt-10 overflow-hidden px-6 pt-16">
+      <section className="mesh relative -mx-5 -mt-8 overflow-hidden px-5 pt-12 sm:-mx-6 sm:-mt-10 sm:px-6 sm:pt-16">
         <div className="grid-faint pointer-events-none absolute inset-0 opacity-60" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-10 pb-24 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
