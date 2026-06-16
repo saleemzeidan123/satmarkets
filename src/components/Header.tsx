@@ -10,6 +10,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     { href: `/${locale}/listings`, label: dict.nav.listings },
     { href: `/${locale}/search`, label: dict.search.title },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
+    { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Area intel" },
     { href: `/${locale}/hbu`, label: (dict.nav as any).develop ?? "Develop" },
     { href: `/${locale}/about`, label: dict.nav.about }
   ];
