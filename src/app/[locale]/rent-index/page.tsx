@@ -4,7 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { segmentLabel, unitLabel } from "@/lib/labels";
 import Link from "next/link";
 
-interface Row { id: string; district_id: string | null; district_label: string; district_label_ar: string | null; asset_type: string; segment: string | null; unit: string; band_low: number | null; band_high: number | null; median: number | null; sufficient: boolean; note: string | null; sort_order: number; }
+interface Row { id: string; district_id: string | null; district_label: string; district_label_ar: string | null; asset_type: string; segment: string | null; unit: string; band_low: number | null; band_high: number | null; median: number | null; sufficient: boolean; note: string | null; note_ar: string | null; sort_order: number; }
 
 const TYPES: { k: string; en: string; ar: string }[] = [
   { k: "office", en: "Office", ar: "مكاتب" }, { k: "retail", en: "Retail & F&B", ar: "تجزئة ومطاعم" },
@@ -64,7 +64,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                               <td className="px-5 py-3.5 fig text-lg intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</td>
                               <td className="px-5 py-3.5 text-[12px] intel-faint">{unitLabel(r.unit, locale)}</td>
                             </>) : (
-                              <td className="px-5 py-3.5 text-[12.5px] italic intel-faint" colSpan={3}>◌ {r.note || t.insufficient}</td>
+                              <td className="px-5 py-3.5 text-[12.5px] italic intel-faint" colSpan={3}>◌ {(ar ? (r.note_ar ?? r.note) : r.note) || t.insufficient}</td>
                             )}
                           </tr>
                         );
