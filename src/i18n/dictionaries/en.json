@@ -118,5 +118,22 @@
     "rentIndex": "Rent index",
     "listSpace": "List your space",
     "legal": "SAT Markets | Powered by SAT Real Estate. FAL licensed, Real Estate General Authority, KSA."
+  },
+  "home": {
+    "lens": "Explore by asset class",
+    "mapTitle": "Every building, on one map",
+    "mapBody": "Explore Riyadh's commercial buildings as clickable objects with verified rent bands, available space, and area intelligence. The intelligence platform, with the transaction built in.",
+    "mapCta": "Open the map",
+    "forTitle": "Built for every decision",
+    "forSub": "One platform, three journeys. Each sees the intelligence relevant to it.",
+    "occT": "Occupiers & brokers",
+    "occB": "Find and lease verified space with full context: rent bands, accessibility, and asset-relevant signals before you commit.",
+    "occC": "Find space",
+    "ownT": "Owners & developers",
+    "ownB": "List owner-direct, benchmark your asset against the verified rent index, and see live demand for your building and district.",
+    "ownC": "List your space",
+    "invT": "Investors & retailers",
+    "invB": "Site selection and highest-and-best-use: take a parcel and see, with data, whether to build office, retail, hospitality, or mixed-use.",
+    "invC": "Explore the map"
   }
 }
