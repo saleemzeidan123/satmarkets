@@ -59,8 +59,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                             <td className="px-5 py-3.5 text-charcoal">{place}</td>
                             <td className="px-5 py-3.5 text-[12.5px] intel-muted">{segmentLabel(r.segment, locale)}</td>
                             {r.sufficient ? (<>
-                              <td className="px-5 py-3.5 intel-muted tnum">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "—"}</td>
-                              <td className="px-5 py-3.5 font-display text-lg intel-gold tnum">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</td>
+                              <td className="px-5 py-3.5 intel-muted fig">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "—"}</td>
+                              <td className="px-5 py-3.5 fig text-lg intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</td>
                               <td className="px-5 py-3.5 text-[12px] intel-faint">{unitLabel(r.unit, locale)}</td>
                             </>) : (
                               <td className="px-5 py-3.5 text-[12.5px] italic intel-faint" colSpan={3}>◌ {r.note || t.insufficient}</td>

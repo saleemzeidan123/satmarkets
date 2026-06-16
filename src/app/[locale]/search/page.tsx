@@ -115,7 +115,7 @@ export default function SearchPage({ params }: { params: { locale: string } }) {
             </div>
             <h3 className="mt-2 font-display text-lg text-charcoal">{title}</h3>
             <div className="mt-1 text-[13px] text-charcoal/55">{dn}{l.districts?.city ? "، "+cityLabel(l.districts.city, locale) : ""} · {l.area_sqm} {dict.common.sqm}</div>
-            <div className="mt-2 font-display text-xl text-gold">{(l.asking_rent_sqm ?? l.sale_price ?? 0).toLocaleString()}</div>
+            <div className="mt-2 fig text-xl text-gold">{(l.asking_rent_sqm ?? l.sale_price ?? 0).toLocaleString()}</div>
           </Link>
         );})}
       </div>
