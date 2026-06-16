@@ -2,7 +2,8 @@ type L = "en" | "ar";
 const ASSET: Record<string, [string,string]> = {
   office:["Office","مكاتب"], retail:["Retail & F&B","تجزئة ومطاعم"], medical:["Medical","رعاية صحية"],
   showroom:["Showroom","معارض"], warehouse:["Warehouse","مستودعات"], serviced:["Serviced","مكاتب مخدومة"],
-  education:["Education","تعليم"], land:["Land","أراضٍ"]
+  education:["Education","تعليم"], hospitality:["Hospitality","ضيافة"], mixed_use:["Mixed-use","متعدد الاستخدامات"],
+  land:["Land","أراضٍ"]
 };
 const DEAL: Record<string,[string,string]> = { lease:["Lease","إيجار"], sale:["Sale","بيع"] };
 const GRADE: Record<string,[string,string]> = { a_plus:["A+","أ+"], a:["A","أ"], b:["B","ب"], c:["C","ج"], n_a:["—","—"] };

@@ -2,9 +2,26 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Locale } from "@/i18n/config";
-import { assetLabel, dealLabel } from "@/lib/labels";
+import { dealLabel } from "@/lib/labels";
 
-const CAT_KEYS = ["office","retail","warehouse","medical","showroom","serviced","land"];
+type Cat = { key: string; en: string; ar: string };
+const LEASE_CATS: Cat[] = [
+  { key: "office", en: "Office", ar: "مكاتب" },
+  { key: "retail", en: "Retail & F&B", ar: "تجزئة ومطاعم" },
+  { key: "warehouse", en: "Warehouse", ar: "مستودعات" },
+  { key: "medical", en: "Medical", ar: "رعاية صحية" },
+  { key: "showroom", en: "Showroom", ar: "معارض" },
+  { key: "serviced", en: "Serviced", ar: "مكاتب مخدومة" },
+  { key: "land", en: "Land", ar: "أراضٍ" },
+];
+const SALE_CATS: Cat[] = [
+  { key: "office", en: "Office building", ar: "مبنى مكاتب" },
+  { key: "retail", en: "Retail project", ar: "مشروع تجزئة" },
+  { key: "mixed_use", en: "Mixed-use", ar: "متعدد الاستخدامات" },
+  { key: "hospitality", en: "Hotel", ar: "فندق" },
+  { key: "warehouse", en: "Logistics", ar: "لوجستي" },
+  { key: "land", en: "Land", ar: "أرض" },
+];
 
 function CatIcon({ k }: { k: string }) {
   const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
@@ -16,15 +33,20 @@ function CatIcon({ k }: { k: string }) {
     case "showroom": return (<svg width="18" height="18" viewBox="0 0 24 24" {...p}><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M3 10h18"/></svg>);
     case "serviced": return (<svg width="18" height="18" viewBox="0 0 24 24" {...p}><circle cx="12" cy="8" r="3"/><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"/></svg>);
     case "land": return (<svg width="18" height="18" viewBox="0 0 24 24" {...p}><path d="M3 20h18"/><path d="M5 20l4-11 4 7 2-4 4 8"/></svg>);
+    case "mixed_use": return (<svg width="18" height="18" viewBox="0 0 24 24" {...p}><rect x="3" y="9" width="8" height="12" rx="1"/><rect x="13" y="4" width="8" height="17" rx="1"/><path d="M6 13h2M16 8h2M16 12h2"/></svg>);
+    case "hospitality": return (<svg width="18" height="18" viewBox="0 0 24 24" {...p}><path d="M3 20v-9M3 14h13a4 4 0 0 1 4 4v2"/><path d="M3 20h18"/><circle cx="7.5" cy="10.5" r="1.5"/></svg>);
     default: return null;
   }
 }
 
 export default function HeroSearch({ locale, placeholder, cta }: { locale: Locale; placeholder: string; cta: string }) {
+  const ar = locale === "ar";
   const [deal, setDeal] = useState<"lease" | "sale">("lease");
   const [asset, setAsset] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const router = useRouter();
+  const cats = deal === "sale" ? SALE_CATS : LEASE_CATS;
+  const pick = (key: "lease" | "sale") => { setDeal(key); setAsset(null); };
   const go = () => {
     const sp = new URLSearchParams();
     sp.set("deal", deal);
@@ -33,7 +55,7 @@ export default function HeroSearch({ locale, placeholder, cta }: { locale: Local
     router.push(`/${locale}/listings?${sp.toString()}`);
   };
   const tab = (key: "lease" | "sale") => (
-    <button type="button" onClick={() => setDeal(key)}
+    <button type="button" onClick={() => pick(key)}
       className={`relative pb-2.5 text-[14px] font-medium transition ${deal === key ? "text-white" : "text-white/55 hover:text-white/80"}`}>
       {dealLabel(key, locale)}
       <span className={`absolute inset-x-0 -bottom-px h-[2px] rounded-full ${deal === key ? "bg-gold-soft" : "bg-transparent"}`} />
@@ -46,13 +68,13 @@ export default function HeroSearch({ locale, placeholder, cta }: { locale: Local
         {tab("sale")}
       </div>
       <div className="mt-2.5 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {CAT_KEYS.map((k) => {
-          const on = asset === k;
+        {cats.map((c) => {
+          const on = asset === c.key;
           return (
-            <button key={k} type="button" onClick={() => setAsset(on ? null : k)}
+            <button key={c.key} type="button" onClick={() => setAsset(on ? null : c.key)}
               className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] leading-tight transition ${on ? "bg-gold text-white" : "text-white/80 hover:bg-white/10"}`}>
-              <CatIcon k={k} />
-              <span className="whitespace-nowrap">{assetLabel(k, locale)}</span>
+              <CatIcon k={c.key} />
+              <span className="whitespace-nowrap">{ar ? c.ar : c.en}</span>
             </button>
           );
         })}

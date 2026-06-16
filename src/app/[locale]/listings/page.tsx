@@ -7,7 +7,7 @@ import ListingCard from "@/components/ListingCard";
 import { assetLabel, cityLabel, dealLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 
-const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"];
+const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","hospitality","mixed_use","land"];
 const CITIES = ["Riyadh","Jeddah","Dammam","Khobar"];
 const DEALS = ["lease","sale"];
 
