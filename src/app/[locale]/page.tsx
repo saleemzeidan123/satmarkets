@@ -32,27 +32,28 @@ export default async function HomePage({ params }: { params: { locale: string } 
     : ["Verified, owner-direct","REGA-native","Lease & sale","English / Arabic"];
   return (
     <div className="space-y-20">
-      <section className="mesh relative -mx-5 -mt-8 overflow-hidden px-5 pt-12 sm:-mx-6 sm:-mt-10 sm:px-6 sm:pt-16">
-        <div className="grid-faint pointer-events-none absolute inset-0 opacity-60" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 pb-16 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <div className="eyebrow">{dict.hero.eyebrow}</div>
-            <h1 className="mt-4 font-display text-[46px] leading-[1.04] text-charcoal sm:text-[60px]">{dict.hero.title}</h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-charcoal/65">{dict.hero.subtitle}</p>
-            <div className="mt-8"><SearchBar locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
+      <section className="relative -mx-5 -mt-8 overflow-hidden sm:-mx-6 sm:-mt-10">
+        <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2000&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+        <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-soft">{dict.hero.eyebrow}</div>
+            <h1 className="mt-4 font-display text-[44px] leading-[1.05] text-white sm:text-[62px]">{dict.hero.title}</h1>
+            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
+            <div className="mt-8 max-w-xl"><SearchBar locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
             <div className="mt-6">
-              <div className="text-[11px] uppercase tracking-wide text-charcoal/40">{dict.home.lens}</div>
+              <div className="text-[11px] uppercase tracking-wide text-white/45">{dict.home.lens}</div>
               <div className="mt-2 flex flex-wrap gap-2">
                 {LENS.map((a)=>(
-                  <Link key={a} href={`/${locale}/listings?asset=${a}`} className="rounded-full border border-line bg-white/70 px-3 py-1.5 text-[12.5px] text-charcoal/70 transition hover:border-gold/50 hover:text-charcoal">{assetLabel(a, locale)}</Link>
+                  <Link key={a} href={`/${locale}/listings?asset=${a}`} className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 backdrop-blur-sm transition hover:border-gold/60 hover:bg-white/20">{assetLabel(a, locale)}</Link>
                 ))}
               </div>
             </div>
             <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
-              {chips.map((c)=>(<span key={c} className="chip-line"><Dot/>{c}</span>))}
+              {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-gold-soft" />{c}</span>))}
             </div>
           </div>
-          <HeroVisual locale={locale} />
         </div>
       </section>
 
