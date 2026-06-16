@@ -51,8 +51,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
         {groups.map((g) => (
           <div key={g.asset}>
             <h2 className="font-display text-xl text-charcoal">{assetLabel(g.asset, locale)}</h2>
-            <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
-              <table className="w-full text-sm">
+            <div className="mt-3 overflow-x-auto overflow-hidden rounded-2xl border border-line bg-white shadow-card">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-line bg-ivory-2/60 text-start text-[11px] uppercase tracking-wide text-charcoal/45">
                     <th className="px-5 py-3 text-start font-medium">{t.district}</th>
