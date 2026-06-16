@@ -34,6 +34,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = locale === "ar" ? "تسجيل الدخول" : "Sign in";
   const descriptor = locale === "ar" ? "ذكاء · تداول" : "intelligence · exchange";
+  const savedItem = { href: `/${locale}/saved`, label: locale === "ar" ? "المحفوظة" : "Saved" };
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
@@ -70,8 +71,11 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           </Link>
           <LanguageSwitch locale={locale} />
           <Link href={`/${locale}/login`} className="hidden text-[13.5px] text-charcoal/65 hover:text-charcoal lg:block">{signInLabel}</Link>
-          <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">{dict.nav.listSpace}</Link>
-          <MobileNav items={nav} signIn={`/${locale}/login`} signInLabel={signInLabel} />
+          <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
+            <span className="sm:hidden">{locale === "ar" ? "أدرج" : "List"}</span>
+            <span className="hidden sm:inline">{dict.nav.listSpace}</span>
+          </Link>
+          <MobileNav items={[...nav, savedItem]} signIn={`/${locale}/login`} signInLabel={signInLabel} />
         </div>
       </div>
     </header>
