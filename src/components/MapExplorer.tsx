@@ -149,7 +149,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
       {/* detail panel */}
       {sel && (
-        <div className={`absolute bottom-0 z-20 w-full sm:bottom-3 sm:${side==="right"?"right-3":"left-3"} sm:w-[330px]`}>
+        <div className={`absolute bottom-0 z-20 w-full sm:bottom-3 sm:w-[330px] ${side==="right"?"sm:right-3":"sm:left-3"}`}>
           <div className="overflow-hidden rounded-t-2xl border border-line bg-white shadow-lift sm:rounded-2xl">
             <div className="relative h-32">
               <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />

@@ -51,7 +51,7 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
       </div>
       <div className="mt-6 space-y-2">
         {listings.map((l) => (
-          <div key={l.id} className="flex items-center justify-between rounded-lg border border-charcoal/10 bg-white px-4 py-3">
+          <div key={l.id} className="flex flex-col gap-3 rounded-lg border border-charcoal/10 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="font-medium">{l.title_en || l.reference_code}</div>
               <div className="text-xs uppercase text-charcoal/50">{l.asset_type} · {l.area_sqm} sqm · {l.status}</div>
