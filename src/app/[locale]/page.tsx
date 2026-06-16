@@ -3,15 +3,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import SearchBar from "@/components/SearchBar";
+import HeroSearch from "@/components/HeroSearch";
 import ListingCard from "@/components/ListingCard";
-import HeroVisual from "@/components/HeroVisual";
 import ValuePillars from "@/components/ValuePillars";
 import Reveal from "@/components/Reveal";
 import type { Listing } from "@/lib/types";
 import { assetLabel } from "@/lib/labels";
-
-const LENS = ["office","retail","warehouse","medical","showroom","land"];
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -30,26 +27,24 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const chips = ar
     ? ["موثقة ومباشرة من المالك","متوافقة مع الهيئة","إيجار وبيع","عربي / إنجليزي"]
     : ["Verified, owner-direct","REGA-native","Lease & sale","English / Arabic"];
+  const dots = [{c:"#8A7342",x:54,y:60},{c:"#B5482E",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#C08A3E",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#7A5CA8",x:156,y:124},{c:"#4A7A4A",x:60,y:128},{c:"#8A7342",x:250,y:110}];
+  const gradMain = ar
+    ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
+    : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
   return (
     <div className="space-y-20">
-      <section className="relative -mx-5 -mt-8 overflow-hidden sm:-mx-6 sm:-mt-10">
-        <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2000&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/70 to-black/35" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+      <section className="relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
+        <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2200&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0" style={{ background: gradMain }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(24,17,8,0.55) 0%, rgba(24,17,8,0) 24%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,14,7,0.62) 0%, rgba(20,14,7,0) 44%)" }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(183,154,94,0.20), transparent 70%)" }} />
         <div className="relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
             <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-gold-soft">{dict.hero.eyebrow}</div>
-            <h1 className="mt-4 font-display text-[44px] leading-[1.05] text-white sm:text-[62px]">{dict.hero.title}</h1>
+            <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
-            <div className="mt-8 max-w-xl"><SearchBar locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
-            <div className="mt-6">
-              <div className="text-[11px] uppercase tracking-wide text-white/45">{dict.home.lens}</div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {LENS.map((a)=>(
-                  <Link key={a} href={`/${locale}/listings?asset=${a}`} className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[12.5px] text-white/85 backdrop-blur-sm transition hover:border-gold/60 hover:bg-white/20">{assetLabel(a, locale)}</Link>
-                ))}
-              </div>
-            </div>
+            <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
             <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
               {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-gold-soft" />{c}</span>))}
             </div>
@@ -75,16 +70,17 @@ export default async function HomePage({ params }: { params: { locale: string } 
               <Link href={`/${locale}/map`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.home.mapCta}</Link>
             </div>
             <div className="hidden lg:block">
-              <div className="overflow-hidden rounded-xl border border-line bg-white/60 p-3 shadow-card">
-                <svg viewBox="0 0 260 150" className="w-full">
-                  <rect width="260" height="150" rx="8" fill="#FBF9F3" />
-                  <g stroke="#E8E1D3" strokeWidth="1"><path d="M0 42H260M0 82H260M0 116H260M70 0V150M150 0V150M212 0V150" /></g>
-                  <g stroke="#DCD0B8" strokeWidth="2.5" fill="none" opacity="0.7"><path d="M0 96 L92 70 L150 95 L260 60" /><path d="M120 0 L150 95 L132 150" /></g>
-                  {[{c:"#8A7342",x:60,y:54},{c:"#8A7342",x:82,y:72},{c:"#B5482E",x:150,y:60},{c:"#2F6E6E",x:110,y:101},{c:"#5A6473",x:202,y:94},{c:"#C08A3E",x:95,y:42},{c:"#7A5CA8",x:176,y:118},{c:"#8A7342",x:132,y:78},{c:"#B5482E",x:212,y:55},{c:"#2F6E6E",x:150,y:118}].map((p,i)=>(
-                    <g key={i}><circle cx={p.x} cy={p.y} r="9" fill={p.c} opacity="0.14" /><circle cx={p.x} cy={p.y} r="4" fill={p.c} stroke="#fff" strokeWidth="1.5" /></g>
-                  ))}
-                </svg>
-              </div>
+              <svg viewBox="0 0 300 170" className="w-full rounded-xl border border-line bg-ivory/70">
+                <g stroke="rgba(28,26,21,0.07)" strokeWidth="1">
+                  <path d="M0 34h300M0 74h300M0 114h300M40 0v170M110 0v170M180 0v170M250 0v170" />
+                </g>
+                <g stroke="rgba(28,26,21,0.16)" strokeWidth="2.5" fill="none">
+                  <path d="M0 96 L120 96 L120 0" />
+                  <path d="M0 50 L70 50 L70 170" />
+                  <path d="M180 0 L180 130 L300 130" />
+                </g>
+                {dots.map((d,i)=>(<g key={i}><circle cx={d.x} cy={d.y} r="6.5" fill={d.c} opacity="0.92" /><circle cx={d.x} cy={d.y} r="11" fill={d.c} opacity="0.16" /></g>))}
+              </svg>
             </div>
           </div>
         </div>
@@ -157,7 +153,6 @@ export default async function HomePage({ params }: { params: { locale: string } 
     </div>
   );
 }
-function Dot(){ return <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/70" />; }
 function Stat({ n, l }: { n: string; l: string }) {
   return <div><div className="font-display text-3xl text-gold">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
 }
