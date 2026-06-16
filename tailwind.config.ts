@@ -5,7 +5,7 @@ const config: Config = {
     extend: {
       colors: {
         gold: "#8A7342", "gold-soft": "#B79A5E", "gold-deep": "#6E5B33",
-        charcoal: "#1C1A15", ink: "#14110B", ivory: "#FAF8F3", "ivory-2": "#F3EEE4",
+        charcoal: "#1C1A15", ink: "#14110B", ivory: "#FBFBF9", "ivory-2": "#EFEFEC",
         slate: "#2F4A4A", line: "rgba(28,26,21,0.10)"
       },
       fontFamily: {

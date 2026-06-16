@@ -9,7 +9,7 @@ body {
   background:
     radial-gradient(1100px 560px at 82% -12%, rgba(138,115,66,0.05), transparent 60%),
     radial-gradient(820px 460px at -8% 2%, rgba(47,74,74,0.035), transparent 55%),
-    #FCFBF8;
+    #FAFAF8;
   color: #1C1A15;
   font-family: Inter, system-ui, sans-serif;
 }
@@ -50,7 +50,7 @@ a { transition: color .18s ease; }
   background:
     radial-gradient(760px 380px at 8% 4%, rgba(138,115,66,0.10), transparent 62%),
     radial-gradient(620px 380px at 96% -6%, rgba(47,74,74,0.08), transparent 60%),
-    linear-gradient(180deg, #FDFBF7, #F7F2E9);
+    linear-gradient(180deg, #FCFCFA, #F3F3F0);
 }
 .grid-faint { background-image: linear-gradient(rgba(28,26,21,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(28,26,21,0.04) 1px, transparent 1px); background-size: 34px 34px; }
 .shine { position:relative; overflow:hidden; }
@@ -67,7 +67,7 @@ a { transition: color .18s ease; }
   background:
     radial-gradient(1000px 420px at 85% -10%, rgba(138,115,66,0.07), transparent 60%),
     radial-gradient(rgba(28,26,21,0.035) 1px, transparent 1px) 0 0 / 24px 24px,
-    #FBF9F3;
+    #FAFAF8;
   color: #1C1A15;
   border: 1px solid #ECE6D8;
 }
