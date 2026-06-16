@@ -9,8 +9,8 @@ import HtmlLangDir from "@/components/HtmlLangDir";
 export default function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
-  const ar = locale === "ar";
   const dict = getDictionary(locale);
+  const f = dict.footer;
   return (
     <>
       <HtmlLangDir locale={locale} />
@@ -21,10 +21,20 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
               <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></div>
-              <p className="mt-2 max-w-sm text-sm text-charcoal/55">{ar ? "عقارات تجارية موثقة للمملكة العربية السعودية. مدعومة من سات العقارية. مفتوحة للسوق." : "Verified commercial real estate for Saudi Arabia. Powered by SAT Real Estate. Open to the market."}</p>
+              <p className="mt-2 max-w-sm text-sm text-charcoal/55">{f.tagline}</p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm text-charcoal/65 sm:gap-x-12">
-              <Link href={`/${locale}/map`} className="hover:text-charcoal">{ar ? "الخريطة" : "Map"}</Link>
-              <Link href={`/${locale}/listings`} className="hover:text-charcoal">{ar ? "القوائم" : "Listings"}</Link>
-              <Link href={`/${locale}/search`} className="hover:text-charcoal">{ar ? "البحث الذكي" : "AI search"}</Link>
-              <Link href={`/${locale}/rent-index`} className="hover:text-
+              <Link href={`/${locale}/map`} className="hover:text-charcoal">{f.map}</Link>
+              <Link href={`/${locale}/listings`} className="hover:text-charcoal">{f.listings}</Link>
+              <Link href={`/${locale}/search`} className="hover:text-charcoal">{f.search}</Link>
+              <Link href={`/${locale}/rent-index`} className="hover:text-charcoal">{f.rentIndex}</Link>
+              <Link href={`/${locale}/dashboard`} className="hover:text-charcoal">{f.listSpace}</Link>
+            </div>
+          </div>
+          <div className="mt-8 hairline" />
+          <p className="mt-4 text-xs text-charcoal/45">{f.legal}</p>
+        </div>
+      </footer>
+    </>
+  );
+}

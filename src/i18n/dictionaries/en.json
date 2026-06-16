@@ -109,5 +109,14 @@
     "eyebrow": "Featured",
     "title": "Verified commercial space",
     "viewAll": "View all"
+  },
+  "footer": {
+    "tagline": "Verified commercial real estate for Saudi Arabia. Powered by SAT Real Estate. Open to the market.",
+    "map": "Map",
+    "listings": "Listings",
+    "search": "AI search",
+    "rentIndex": "Rent index",
+    "listSpace": "List your space",
+    "legal": "SAT Markets | Powered by SAT Real Estate. FAL licensed, Real Estate General Authority, KSA."
   }
 }
