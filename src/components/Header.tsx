@@ -26,6 +26,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = locale === "ar" ? "تسجيل الدخول" : "Sign in";
+  const descriptor = locale === "ar" ? "ذكاء · تداول" : "intelligence · exchange";
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
@@ -33,11 +34,17 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           <span className="logo-mark">
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="4.5" y="9" width="4" height="10" rx="1" fill="#fff" opacity="0.85" />
-              <rect x="10" y="5" width="4" height="14" rx="1" fill="#fff" />
+              <rect x="10" y="5" width="4" height="14" rx="1" fill="#5FD2C6" />
               <rect x="15.5" y="11.5" width="3.5" height="7.5" rx="1" fill="#fff" opacity="0.75" />
             </svg>
           </span>
-          <span className="font-display text-[20px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></span>
+          <span className="flex flex-col leading-none">
+            <span className="font-display text-[20px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></span>
+            <span className="mt-1 flex items-center gap-1.5">
+              <span className="live-dot" />
+              <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-slate/80">{descriptor}</span>
+            </span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex">

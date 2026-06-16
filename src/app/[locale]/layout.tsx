@@ -11,6 +11,8 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   const locale = params.locale;
   const dict = getDictionary(locale);
   const f = dict.footer;
+  const couplet = locale === "ar" ? "المساحة لك. وكذلك الأرقام." : "The space is yours. So are the numbers.";
+  const family = locale === "ar" ? "شركة ضمن مجموعة سات" : "An SAT company";
   return (
     <>
       <HtmlLangDir locale={locale} />
@@ -20,8 +22,13 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-6">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
-              <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></div>
-              <p className="mt-2 max-w-sm text-sm text-charcoal/55">{f.tagline}</p>
+              <div className="flex items-center gap-2">
+                <div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></div>
+                <span className="live-dot" />
+              </div>
+              <p className="mt-2 font-display text-[15px] italic text-gold/90">{couplet}</p>
+              <p className="mt-1.5 max-w-sm text-sm text-charcoal/55">{f.tagline}</p>
+              <p className="mt-3 text-[10.5px] uppercase tracking-[0.18em] text-charcoal/40">{family}</p>
             </div>
             <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-sm text-charcoal/65 sm:gap-x-12">
               <Link href={`/${locale}/map`} className="hover:text-charcoal">{f.map}</Link>
