@@ -181,7 +181,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
               )}
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12.5px] text-charcoal/60">{sel.listings} {t.available}</span>
-                <a href={`/${locale}/listings?asset=${sel.asset}&city=Riyadh`} className="text-[12.5px] font-medium text-gold hover:underline">{t.viewListings} →</a>
+                <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-gold hover:underline">{t.viewListings} →</a>
               </div>
             </div>
           </div>
