@@ -73,10 +73,17 @@ export default async function HomePage({ params }: { params: { locale: string } 
               <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-charcoal/65">{dict.home.mapBody}</p>
               <Link href={`/${locale}/map`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.home.mapCta}</Link>
             </div>
-            <div className="hidden gap-2 lg:grid lg:grid-cols-4">
-              {["#8A7342","#B5482E","#2F6E6E","#5A6473","#C08A3E","#7A5CA8","#4A7A4A","#8C7B52"].map((c,i)=>(
-                <span key={i} className="h-10 rounded-md" style={{ background: c, opacity: 0.35 + (i%4)*0.18 }} />
-              ))}
+            <div className="hidden lg:block">
+              <div className="overflow-hidden rounded-xl border border-line bg-white/60 p-3 shadow-card">
+                <svg viewBox="0 0 260 150" className="w-full">
+                  <rect width="260" height="150" rx="8" fill="#FBF9F3" />
+                  <g stroke="#E8E1D3" strokeWidth="1"><path d="M0 42H260M0 82H260M0 116H260M70 0V150M150 0V150M212 0V150" /></g>
+                  <g stroke="#DCD0B8" strokeWidth="2.5" fill="none" opacity="0.7"><path d="M0 96 L92 70 L150 95 L260 60" /><path d="M120 0 L150 95 L132 150" /></g>
+                  {[{c:"#8A7342",x:60,y:54},{c:"#8A7342",x:82,y:72},{c:"#B5482E",x:150,y:60},{c:"#2F6E6E",x:110,y:101},{c:"#5A6473",x:202,y:94},{c:"#C08A3E",x:95,y:42},{c:"#7A5CA8",x:176,y:118},{c:"#8A7342",x:132,y:78},{c:"#B5482E",x:212,y:55},{c:"#2F6E6E",x:150,y:118}].map((p,i)=>(
+                    <g key={i}><circle cx={p.x} cy={p.y} r="9" fill={p.c} opacity="0.14" /><circle cx={p.x} cy={p.y} r="4" fill={p.c} stroke="#fff" strokeWidth="1.5" /></g>
+                  ))}
+                </svg>
+              </div>
             </div>
           </div>
         </div>
