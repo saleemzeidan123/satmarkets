@@ -51,56 +51,63 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
         // cluster halo
         map.addLayer({ id: "cl-halo", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": "#8A7342", "circle-opacity": 0.12,
-          "circle-radius": ["step", ["get", "point_count"], 26, 5, 34, 15, 44],
+          "circle-color": "#8A7342", "circle-opacity": 0.16,
+          "circle-radius": ["step", ["get", "point_count"], 28, 5, 36, 15, 46],
         }});
-        // cluster core
+        // cluster core (warm gold, white ring)
         map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": "#1C1A15",
-          "circle-radius": ["step", ["get", "point_count"], 16, 5, 21, 15, 27],
-          "circle-stroke-width": 2, "circle-stroke-color": "#C8A84B",
+          "circle-color": ["step", ["get", "point_count"], "#9A803F", 5, "#8A7342", 15, "#6F5B2E"],
+          "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28],
+          "circle-stroke-width": 3, "circle-stroke-color": "#FFFFFF",
         }});
         map.addLayer({ id: "cl-count", type: "symbol", source: "b", filter: ["has", "point_count"], layout: {
           "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 13,
-        }, paint: { "text-color": "#FAF8F3" }});
+        }, paint: { "text-color": "#FFFFFF" }});
 
-        // unclustered glow + point
+        // unclustered: soft glow, solid core, transparent hit target
         const colorMatch: any[] = ["match", ["get", "asset"]];
         Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v));
         colorMatch.push("#8A7342");
         map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
-          "circle-color": colorMatch, "circle-opacity": 0.18,
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 9, 13, 15, 16, 22],
+          "circle-color": colorMatch, "circle-opacity": 0.16,
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 18, 16, 26],
         }});
         map.addLayer({ id: "pt", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
           "circle-color": colorMatch,
-          "circle-radius": ["+", ["interpolate", ["linear"], ["zoom"], 9, 5, 13, 7.5, 16, 11], ["case", ["boolean", ["feature-state", "hover"], false], 3, 0]],
-          "circle-stroke-width": ["case", ["boolean", ["feature-state", "hover"], false], 3, 2],
-          "circle-stroke-color": "#FAF8F3",
+          "circle-radius": ["+", ["interpolate", ["linear"], ["zoom"], 9, 6.5, 13, 9, 16, 13], ["case", ["boolean", ["feature-state", "hover"], false], 3, 0]],
+          "circle-stroke-width": 2.5, "circle-stroke-color": "#FFFFFF",
+        }});
+        map.addLayer({ id: "pt-hit", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
+          "circle-color": "#000000", "circle-opacity": 0,
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 15, 13, 21, 16, 30],
         }});
 
-        const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: "satm-tip" });
-        map.on("mousemove", "pt", (e: any) => {
+        const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 14, className: "satm-tip" });
+        const onMove = (e: any) => {
           map.getCanvas().style.cursor = "pointer";
           const f = e.features[0];
           if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
           hoverId = f.id; map.setFeatureState({ source: "b", id: hoverId }, { hover: true });
           const p = f.properties;
-          tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#8A7342">${esc(p.assetLabel)}</div>`).addTo(map);
-        });
-        map.on("mouseleave", "pt", () => {
+          tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#8A7342">${esc(p.assetLabel)}</div>`).addTo(map);
+        };
+        const onLeave = () => {
           map.getCanvas().style.cursor = "";
           if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
           hoverId = null; tip.remove();
-        });
-        map.on("click", "pt", (e: any) => {
+        };
+        const onClick = (e: any) => {
           const p = e.features[0].properties;
           setSel({ ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), listings: Number(p.listings) || 0 });
-        });
+        };
+        map.on("mousemove", "pt-hit", onMove);
+        map.on("mouseleave", "pt-hit", onLeave);
+        map.on("click", "pt-hit", onClick);
+
         map.on("click", "cl", (e: any) => {
           const f = map.queryRenderedFeatures(e.point, { layers: ["cl"] })[0];
           map.getSource("b").getClusterExpansionZoom(f.properties.cluster_id).then((z: number) => {
-            map.easeTo({ center: f.geometry.coordinates, zoom: z + 0.2, duration: 600 });
+            map.easeTo({ center: f.geometry.coordinates, zoom: Math.max(z + 0.4, map.getZoom() + 1.5), duration: 600 });
           });
         });
         map.on("mouseenter", "cl", () => map.getCanvas().style.cursor = "pointer");
