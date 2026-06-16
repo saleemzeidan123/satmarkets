@@ -33,7 +33,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = locale === "ar" ? "تسجيل الدخول" : "Sign in";
-  const descriptor = locale === "ar" ? "ذكاء · تداول" : "real-estate intelligence";
+  const descriptor = locale === "ar" ? "ذكاء السوق العقاري" : "real-estate intelligence";
   const savedItem = { href: `/${locale}/saved`, label: locale === "ar" ? "المحفوظة" : "Saved" };
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
