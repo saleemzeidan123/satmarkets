@@ -7,7 +7,8 @@ import RentBand from "@/components/RentBand";
 import LeadForm from "@/components/LeadForm";
 import { galleryFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, fitoutLabel, cityLabel } from "@/lib/labels";
-import type { Listing, RentIndexCell } from "@/lib/types";
+import type { Listing } from "@/lib/types";
+import type { PubBand } from "@/components/RentBand";
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -16,14 +17,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const ui = dict.ui;
   const sb = getSupabaseServer();
   let listing: Listing | null = null;
-  let cell: RentIndexCell | null = null;
+  let cell: PubBand | null = null;
   let briefCount = 0, availCount = 0;
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("id", params.id).single();
     listing = (data as Listing) ?? null;
     if (listing?.district_id) {
-      const { data: cells } = await sb.from("rent_index_cells").select("*").eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("deal_type", listing.deal_type).limit(1);
-      cell = ((cells as RentIndexCell[]) ?? [])[0] ?? null;
+      const { data: cells } = await sb.from("rent_index_published").select("band_low, band_high, median, unit, segment, sufficient").eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("sufficient", true).order("median", { ascending: false }).limit(1);
+      cell = ((cells as any[]) ?? [])[0] ?? null;
       const { count: bc } = await sb.from("tenant_briefs").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type); briefCount = bc ?? 0;
       const { count: ac } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("status","published"); availCount = ac ?? 0;
     }
@@ -60,7 +61,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
             <div className="eyebrow">{dict.areaIntel.title}</div>
             <div className="mt-4 space-y-4">
-              <RentBand cell={cell} locale={locale} labels={{ rentBand: dict.areaIntel.band, medianAchieved: dict.listing.medianAchieved, notEnough: ui.notEnough }} />
+              <RentBand row={cell} locale={locale} labels={{ rentBand: dict.areaIntel.band, median: dict.listing.medianAchieved, notEnough: ui.notEnough }} />
               <div className="grid grid-cols-2 gap-4">
                 <Metric n={briefCount} l={dict.areaIntel.briefs} />
                 <Metric n={availCount} l={dict.areaIntel.available} />
