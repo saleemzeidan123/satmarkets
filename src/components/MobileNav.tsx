@@ -1,9 +1,10 @@
 "use client";
 import { useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 
-export default function MobileNav({ items, signIn, signInLabel }: {
-  items: { href: string; label: string }[]; signIn: string; signInLabel: string;
+export default function MobileNav({ items, signIn, signInLabel, lang }: {
+  items: { href: string; label: string }[]; signIn: string; signInLabel: string; lang?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -14,12 +15,13 @@ export default function MobileNav({ items, signIn, signInLabel }: {
         </svg>
       </button>
       {open && (
-        <div className="absolute inset-x-0 top-full z-50 border-b border-line bg-ivory shadow-[0_12px_30px_rgba(28,26,21,0.18)]">
-          <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-6 py-3">
+        <div className="absolute inset-x-0 top-full z-50 border-b border-line bg-ivory shadow-[0_12px_30px_rgba(20,24,28,0.18)]">
+          <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-6 py-3">
             {items.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-[15px] text-charcoal/80 hover:bg-ivory-2">{n.label}</Link>
             ))}
             <Link href={signIn} onClick={() => setOpen(false)} className="rounded-lg px-2 py-2.5 text-[15px] text-charcoal/60 hover:bg-ivory-2">{signInLabel}</Link>
+            {lang ? <div className="mt-2 flex items-center gap-2 border-t border-line px-2 pt-3" onClick={() => setOpen(false)}>{lang}</div> : null}
           </nav>
         </div>
       )}

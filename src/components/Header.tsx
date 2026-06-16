@@ -38,14 +38,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-        <Link href={`/${locale}`} className="flex items-center gap-2.5">
-          <span className="logo-mark">
-            <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="4.5" y="9" width="4" height="10" rx="1" fill="#fff" opacity="0.85" />
-              <rect x="10" y="5" width="4" height="14" rx="1" fill="#5FD2C6" />
-              <rect x="15.5" y="11.5" width="3.5" height="7.5" rx="1" fill="#fff" opacity="0.75" />
-            </svg>
-          </span>
+        <Link href={`/${locale}`} className="flex items-center">
           <span className="flex flex-col leading-none">
             <span className="font-display text-[20px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="italic text-gold">Markets</span></span>
             <span className="mt-1 flex items-center gap-1.5">
@@ -69,13 +62,13 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           <Link href={`/${locale}/search`} aria-label="Search" className="icon-btn hidden sm:inline-flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </Link>
-          <LanguageSwitch locale={locale} />
+          <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
           <Link href={`/${locale}/login`} className="hidden text-[13.5px] text-charcoal/65 hover:text-charcoal lg:block">{signInLabel}</Link>
           <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
             <span className="sm:hidden">{locale === "ar" ? "أدرج" : "List"}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
-          <MobileNav items={[...nav, savedItem]} signIn={`/${locale}/login`} signInLabel={signInLabel} />
+          <MobileNav items={[...nav, savedItem]} signIn={`/${locale}/login`} signInLabel={signInLabel} lang={<LanguageSwitch locale={locale} />} />
         </div>
       </div>
     </header>
