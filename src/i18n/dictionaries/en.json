@@ -25,7 +25,7 @@
     "repNote": "Written mandate. SAT acts for you, within statutory limits."
   },
   "common": {
-    "poweredBy": "SAT Markets | Powered by SAT Real Estate",
+    "poweredBy": "SAT Markets — verified commercial real estate intelligence",
     "sqm": "sqm",
     "perSqm": "SAR / sqm"
   },
@@ -96,9 +96,9 @@
   },
   "statBand": {
     "listings": "Verified listings",
-    "assets": "Asset classes",
+    "buildings": "Buildings mapped",
     "cities": "Cities, Kingdom-wide",
-    "tx": "Transactions advised"
+    "districts": "Districts & clusters"
   },
   "rentTeaser": {
     "title": "Decision-grade rent bands. Verified, never modelled.",
@@ -111,13 +111,13 @@
     "viewAll": "View all"
   },
   "footer": {
-    "tagline": "Verified commercial real estate for Saudi Arabia. Powered by SAT Real Estate. Open to the market.",
+    "tagline": "Verified commercial real estate intelligence for Saudi Arabia. Open to the market.",
     "map": "Map",
     "listings": "Listings",
     "search": "AI search",
     "rentIndex": "Rent index",
     "listSpace": "List your space",
-    "legal": "SAT Markets | Powered by SAT Real Estate. FAL licensed, Real Estate General Authority, KSA."
+    "legal": "SAT Markets — verified commercial real estate intelligence, Saudi Arabia."
   },
   "home": {
     "lens": "Explore by asset class",
@@ -136,9 +136,9 @@
     "invB": "Site selection and highest-and-best-use: take a parcel and see, with data, whether to build office, retail, hospitality, or mixed-use.",
     "invC": "Explore the map",
     "chips": [
-      "FAL licensed",
+      "Verified, owner-direct",
       "REGA-native",
-      "500+ buildings reviewed",
+      "Lease & sale",
       "English / Arabic"
     ],
     "cityBars": [
@@ -147,6 +147,12 @@
       "Jeddah",
       "Dammam"
     ],
-    "rentEyebrow": "SAT Riyadh Commercial Rent Index"
+    "rentEyebrow": "SAT Riyadh Commercial Rent Index",
+    "teaserPlaces": [
+      "KAFD",
+      "Tahliah St.",
+      "Al Olaya",
+      "2nd Industrial"
+    ]
   }
 }

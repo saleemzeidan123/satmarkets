@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export const metadata = {
   title: "SAT Markets | Verified commercial real estate, Saudi Arabia",
-  description: "Riyadh-first commercial leasing and sales exchange. Verified listings, decision-grade rent index, AI search. Powered by SAT Real Estate. Open to the market."
+  description: "Riyadh-first commercial leasing and sales exchange. Verified listings, decision-grade rent index, AI search. A neutral, verified commercial real estate intelligence platform."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

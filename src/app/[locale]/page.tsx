@@ -29,9 +29,8 @@ export default async function HomePage({ params }: { params: { locale: string } 
     count = c ?? 0;
   }
   const chips = ar
-    ? ["مرخّصة من FAL","متوافقة مع الهيئة","أكثر من ٥٠٠ مبنى مُراجَع","عربي / إنجليزي"]
-    : ["FAL licensed","REGA-native","500+ buildings reviewed","English / Arabic"];
-  const cityBars = ar ? ["واجهة الرياض","العليا","جدة","الدمام"] : ["KAFD","Olaya","Jeddah","Dammam"];
+    ? ["موثقة ومباشرة من المالك","متوافقة مع الهيئة","إيجار وبيع","عربي / إنجليزي"]
+    : ["Verified, owner-direct","REGA-native","Lease & sale","English / Arabic"];
   return (
     <div className="space-y-20">
       <section className="mesh relative -mx-6 -mt-10 overflow-hidden px-6 pt-16">
@@ -109,9 +108,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
         <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#1C1A15] to-[#2A2620] px-8 py-9 text-ivory">
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             <Stat n={`${count}+`} l={dict.statBand.listings} />
-            <Stat n="7" l={dict.statBand.assets} />
+            <Stat n="60+" l={dict.statBand.buildings} />
             <Stat n="4" l={dict.statBand.cities} />
-            <Stat n="200+" l={dict.statBand.tx} />
+            <Stat n="9" l={dict.statBand.districts} />
           </div>
         </div>
       </Reveal>
@@ -132,17 +131,17 @@ export default async function HomePage({ params }: { params: { locale: string } 
         <div className="relative overflow-hidden rounded-2xl border border-line bg-white px-8 py-10 shadow-card">
           <div className="grid items-center gap-8 lg:grid-cols-2">
             <div>
-              <div className="eyebrow">{ar ? "مؤشر سات للإيجارات التجارية بالرياض" : "SAT Riyadh Commercial Rent Index"}</div>
+              <div className="eyebrow">{ar ? "مؤشر سات ماركتس للإيجارات التجارية" : "SAT Markets Rent Index"}</div>
               <h2 className="mt-2 font-display text-3xl text-charcoal">{dict.rentTeaser.title}</h2>
               <p className="mt-3 max-w-md text-charcoal/60">{dict.rentTeaser.body}</p>
               <Link href={`/${locale}/rent-index`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.rentTeaser.cta}</Link>
             </div>
-            <div className="flex h-44 items-end gap-3 rounded-xl border border-line bg-ivory-2/40 p-5">
-              {[3505,2670,2410,280].map((v,i)=>(
-                <div key={i} className="flex flex-1 flex-col items-center justify-end">
-                  <div className="bar w-full" style={{height: `${Math.min(100, v/40)}%`}} />
-                  <div className="mt-2 font-display text-sm text-gold">{v.toLocaleString()}</div>
-                  <div className="text-[10px] text-charcoal/45">{cityBars[i]}</div>
+            <div className="grid grid-cols-2 gap-3">
+              {[{a:"office",v:3700},{a:"retail",v:3200},{a:"medical",v:2000},{a:"warehouse",v:230}].map((m,i)=>(
+                <div key={i} className="rounded-xl border border-line bg-ivory-2/40 p-4">
+                  <div className="text-[11px] text-charcoal/50">{assetLabel(m.a, locale)}</div>
+                  <div className="mt-1 font-display text-2xl text-gold">{m.v.toLocaleString()}</div>
+                  <div className="text-[10px] text-charcoal/45">{dict.home.teaserPlaces[i]} · {locale==="ar"?"ريال/م²/سنة":"SAR/sqm/yr"}</div>
                 </div>
               ))}
             </div>

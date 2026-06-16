@@ -1,106 +1,186 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { photoFor } from "@/lib/photos";
 
 export interface MapBuilding {
   id: string; name: string; place: string; asset: string; assetLabel: string;
   grade: string; size: number | null; lat: number; lng: number;
-  band: number | null; unit: string | null; listings: number;
+  band: number | null; bandLow: number | null; bandHigh: number | null; unit: string | null; listings: number;
 }
 const COLORS: Record<string, string> = {
   office: "#8A7342", retail: "#B5482E", medical: "#2F6E6E", warehouse: "#5A6473",
   showroom: "#7A5CA8", serviced: "#C08A3E", education: "#4A7A4A", land: "#8C7B52",
 };
+const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
+const unitFmt = (u: string | null, l: string) =>
+  u === "sar_desk_month" ? (l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo") : (l === "ar" ? "ريال/م²/سنة" : "SAR/sqm/yr");
 
 export default function MapExplorer({ buildings, locale, t, assetOrder, assetLabels }: {
   buildings: MapBuilding[]; locale: "en" | "ar";
-  t: { all: string; legend: string; available: string; viewListings: string; rentBand: string; size: string; grade: string; sqm: string; perYr: string; noData: string };
+  t: { all: string; available: string; viewListings: string; rentBand: string; size: string; grade: string; sqm: string; noData: string; results: string; close: string; clusterUnit: string };
   assetOrder: string[]; assetLabels: Record<string, string>;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const fcRef = useRef<any>(null);
   const [active, setActive] = useState<string>("all");
+  const [sel, setSel] = useState<MapBuilding | null>(null);
+  const [ready, setReady] = useState(false);
+
+  function buildFC(list: MapBuilding[]) {
+    return { type: "FeatureCollection", features: list.map((b) => ({ type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: { ...b } })) };
+  }
 
   useEffect(() => {
-    let map: any; let cancelled = false;
+    let map: any; let cancelled = false; let hoverId: any = null;
     (async () => {
       const maplibregl = (await import("maplibre-gl")).default;
       if (cancelled || !ref.current) return;
       map = new maplibregl.Map({
         container: ref.current,
-        style: "https://tiles.openfreemap.org/styles/liberty",
-        center: [46.68, 24.71], zoom: 10.2,
+        style: "https://tiles.openfreemap.org/styles/positron",
+        center: [46.69, 24.71], zoom: 10.4, minZoom: 8, maxZoom: 17,
       });
       mapRef.current = map;
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), locale === "ar" ? "top-left" : "top-right");
-      const fc = {
-        type: "FeatureCollection",
-        features: buildings.map((b) => ({
-          type: "Feature",
-          geometry: { type: "Point", coordinates: [b.lng, b.lat] },
-          properties: { ...b },
-        })),
-      };
+
+      fcRef.current = buildFC(buildings);
       map.on("load", () => {
-        map.addSource("buildings", { type: "geojson", data: fc });
+        map.addSource("b", { type: "geojson", data: fcRef.current, cluster: true, clusterRadius: 46, clusterMaxZoom: 13, generateId: true });
+
+        // cluster halo
+        map.addLayer({ id: "cl-halo", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
+          "circle-color": "#8A7342", "circle-opacity": 0.12,
+          "circle-radius": ["step", ["get", "point_count"], 26, 5, 34, 15, 44],
+        }});
+        // cluster core
+        map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
+          "circle-color": "#1C1A15",
+          "circle-radius": ["step", ["get", "point_count"], 16, 5, 21, 15, 27],
+          "circle-stroke-width": 2, "circle-stroke-color": "#C8A84B",
+        }});
+        map.addLayer({ id: "cl-count", type: "symbol", source: "b", filter: ["has", "point_count"], layout: {
+          "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 13,
+        }, paint: { "text-color": "#FAF8F3" }});
+
+        // unclustered glow + point
         const colorMatch: any[] = ["match", ["get", "asset"]];
         Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v));
         colorMatch.push("#8A7342");
-        map.addLayer({
-          id: "b-circles", type: "circle", source: "buildings",
-          paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 4, 13, 7, 16, 11],
-            "circle-color": colorMatch,
-            "circle-opacity": 0.85,
-            "circle-stroke-width": 1.5, "circle-stroke-color": "#FAF8F3",
-          },
+        map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
+          "circle-color": colorMatch, "circle-opacity": 0.18,
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 9, 13, 15, 16, 22],
+        }});
+        map.addLayer({ id: "pt", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
+          "circle-color": colorMatch,
+          "circle-radius": ["+", ["interpolate", ["linear"], ["zoom"], 9, 5, 13, 7.5, 16, 11], ["case", ["boolean", ["feature-state", "hover"], false], 3, 0]],
+          "circle-stroke-width": ["case", ["boolean", ["feature-state", "hover"], false], 3, 2],
+          "circle-stroke-color": "#FAF8F3",
+        }});
+
+        const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: "satm-tip" });
+        map.on("mousemove", "pt", (e: any) => {
+          map.getCanvas().style.cursor = "pointer";
+          const f = e.features[0];
+          if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
+          hoverId = f.id; map.setFeatureState({ source: "b", id: hoverId }, { hover: true });
+          const p = f.properties;
+          tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#8A7342">${esc(p.assetLabel)}</div>`).addTo(map);
         });
-        const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, maxWidth: "260px" });
-        map.on("click", "b-circles", (e: any) => {
+        map.on("mouseleave", "pt", () => {
+          map.getCanvas().style.cursor = "";
+          if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
+          hoverId = null; tip.remove();
+        });
+        map.on("click", "pt", (e: any) => {
           const p = e.features[0].properties;
-          const band = p.band && p.band !== "null" ? Number(p.band) : null;
-          const sz = p.size && p.size !== "null" ? Number(p.size).toLocaleString() + " " + t.sqm : "";
-          const dir = locale === "ar" ? "rtl" : "ltr";
-          const html =
-            `<div dir="${dir}" style="font-family:Inter,system-ui,sans-serif">
-              <div style="font-weight:600;color:#1C1A15;font-size:14px">${esc(p.name)}</div>
-              <div style="color:#8A7342;font-size:11px;margin-top:2px">${esc(p.assetLabel)} · ${esc(p.place)}</div>
-              <div style="color:#5b574c;font-size:12px;margin-top:6px">${sz}${sz && p.grade && p.grade!=="n_a" ? " · " : ""}${p.grade && p.grade!=="n_a" ? t.grade+" "+gradeFmt(p.grade) : ""}</div>
-              ${band ? `<div style="margin-top:6px;font-size:12px;color:#5b574c">${t.rentBand}: <b style="color:#8A7342">${band.toLocaleString()}</b> ${unitFmt(p.unit, locale)}</div>` : `<div style="margin-top:6px;font-size:11px;color:#9a948a">${t.noData}</div>`}
-              <div style="margin-top:6px;font-size:12px;color:#1C1A15">${Number(p.listings)||0} ${t.available}</div>
-              <a href="/${locale}/listings?asset=${p.asset}&city=Riyadh" style="display:inline-block;margin-top:8px;font-size:12px;color:#8A7342;font-weight:600">${t.viewListings} →</a>
-            </div>`;
-          popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+          setSel({ ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), listings: Number(p.listings) || 0 });
         });
-        map.on("mouseenter", "b-circles", () => map.getCanvas().style.cursor = "pointer");
-        map.on("mouseleave", "b-circles", () => map.getCanvas().style.cursor = "");
+        map.on("click", "cl", (e: any) => {
+          const f = map.queryRenderedFeatures(e.point, { layers: ["cl"] })[0];
+          map.getSource("b").getClusterExpansionZoom(f.properties.cluster_id).then((z: number) => {
+            map.easeTo({ center: f.geometry.coordinates, zoom: z + 0.2, duration: 600 });
+          });
+        });
+        map.on("mouseenter", "cl", () => map.getCanvas().style.cursor = "pointer");
+        map.on("mouseleave", "cl", () => map.getCanvas().style.cursor = "");
+
+        // fit to data
+        try {
+          const lons = buildings.map((b) => b.lng), lats = buildings.map((b) => b.lat);
+          map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 70, maxZoom: 12.5, duration: 0 });
+        } catch {}
+        setReady(true);
       });
     })();
     return () => { cancelled = true; if (map) map.remove(); };
   }, [buildings, locale]);
 
   useEffect(() => {
-    const map = mapRef.current; if (!map || !map.getLayer || !map.getLayer("b-circles")) return;
-    map.setFilter("b-circles", active === "all" ? null : ["==", ["get", "asset"], active]);
+    const map = mapRef.current; if (!map || !map.getSource || !map.getSource("b")) return;
+    const list = active === "all" ? buildings : buildings.filter((b) => b.asset === active);
+    map.getSource("b").setData(buildFC(list));
   }, [active]);
+
+  const shown = active === "all" ? buildings.length : buildings.filter((b) => b.asset === active).length;
+  const side = locale === "ar" ? "left" : "right";
 
   return (
     <div className="relative overflow-hidden rounded-2xl border border-line shadow-card">
-      <div ref={ref} className="h-[64vh] min-h-[420px] w-full bg-ivory-2" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap gap-1.5 p-3">
-        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] backdrop-blur transition ${active==="all"?"border-gold bg-gold text-white":"border-line bg-white/85 text-charcoal/70 hover:border-gold/50"}`}>{t.all}</button>
+      <div ref={ref} className="h-[68vh] min-h-[440px] w-full bg-ivory-2" />
+
+      {/* filter chips */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1.5 p-3">
+        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-gold bg-gold text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>{t.all}</button>
         {assetOrder.map((a) => (
-          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] backdrop-blur transition ${active===a?"border-gold bg-gold text-white":"border-line bg-white/85 text-charcoal/70 hover:border-gold/50"}`}>
+          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-gold bg-gold text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#8A7342" }} />{assetLabels[a] || a}
           </button>
         ))}
       </div>
+
+      {/* result count */}
+      {ready && (
+        <div className="pointer-events-none absolute bottom-3 start-3 z-10 rounded-full bg-charcoal/85 px-3 py-1 text-[11px] text-ivory backdrop-blur">
+          {shown} {t.results}
+        </div>
+      )}
+
+      {/* detail panel */}
+      {sel && (
+        <div className={`absolute bottom-0 z-20 w-full sm:bottom-3 sm:${side==="right"?"right-3":"left-3"} sm:w-[330px]`}>
+          <div className="overflow-hidden rounded-t-2xl border border-line bg-white shadow-lift sm:rounded-2xl">
+            <div className="relative h-32">
+              <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
+              <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
+              <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || "#8A7342" }}>{sel.assetLabel}</span>
+            </div>
+            <div className="p-4">
+              <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
+              <div className="mt-1 text-[12.5px] text-charcoal/55">
+                {sel.place}{sel.size ? " · " + sel.size.toLocaleString() + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}
+              </div>
+              {sel.band != null ? (
+                <div className="mt-3 rounded-xl border border-line bg-ivory-2/50 p-3">
+                  <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{t.rentBand}</div>
+                  <div className="mt-0.5 flex items-baseline gap-2">
+                    <span className="font-display text-2xl text-gold">{Math.round(sel.band).toLocaleString()}</span>
+                    <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + "–" + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/45">{t.noData}</div>
+              )}
+              <div className="mt-3 flex items-center justify-between">
+                <span className="text-[12.5px] text-charcoal/60">{sel.listings} {t.available}</span>
+                <a href={`/${locale}/listings?asset=${sel.asset}&city=Riyadh`} className="text-[12.5px] font-medium text-gold hover:underline">{t.viewListings} →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 function esc(s: string) { return String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function gradeFmt(g: string) { return ({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || g; }
-function unitFmt(u: string, l: string) {
-  if (u === "sar_desk_month") return l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo";
-  return l === "ar" ? "ريال/م²/سنة" : "SAR/sqm/yr";
-}

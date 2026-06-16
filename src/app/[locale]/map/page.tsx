@@ -18,25 +18,23 @@ export default async function MapPage({ params }: { params: { locale: string } }
     const { data: bs } = await sb.from("buildings")
       .select("id,name_en,name_ar,district_label,district_label_ar,district_id,asset_type,grade,size_sqm,lat,lng")
       .not("lat","is",null);
-    const { data: bands } = await sb.from("rent_index_published").select("district_id,district_label,asset_type,median,unit,sufficient");
+    const { data: bands } = await sb.from("rent_index_published").select("district_id,district_label,asset_type,median,band_low,band_high,unit,sufficient");
     const { data: lst } = await sb.from("listings").select("building_id").eq("status","published").not("building_id","is",null);
 
-    const bandMap = new Map<string, { median: number|null; unit: string }>();
-    (bands ?? []).forEach((r: any) => { if (r.sufficient) bandMap.set(`${r.district_id ?? r.district_label}|${r.asset_type}`, { median: r.median, unit: r.unit }); });
+    const bandMap = new Map<string, { median: number|null; low: number|null; high: number|null; unit: string }>();
+    (bands ?? []).forEach((r: any) => { if (r.sufficient) bandMap.set(`${r.district_id ?? r.district_label}|${r.asset_type}`, { median: r.median, low: r.band_low, high: r.band_high, unit: r.unit }); });
     const counts = new Map<string, number>();
     (lst ?? []).forEach((r: any) => counts.set(r.building_id, (counts.get(r.building_id) ?? 0) + 1));
 
     buildings = (bs ?? []).filter((b: any) => b.lat != null && b.lng != null).map((b: any) => {
-      const key = `${b.district_id ?? b.district_label}|${b.asset_type}`;
-      const band = bandMap.get(key);
+      const band = bandMap.get(`${b.district_id ?? b.district_label}|${b.asset_type}`);
       return {
-        id: b.id,
-        name: (ar ? b.name_ar : b.name_en) || b.name_en,
+        id: b.id, name: (ar ? b.name_ar : b.name_en) || b.name_en,
         place: (ar ? b.district_label_ar : b.district_label) || "",
         asset: b.asset_type, assetLabel: assetLabel(b.asset_type, locale),
         grade: b.grade || "n_a", size: b.size_sqm,
         lat: Number(b.lat), lng: Number(b.lng),
-        band: band?.median ?? null, unit: band?.unit ?? null,
+        band: band?.median ?? null, bandLow: band?.low ?? null, bandHigh: band?.high ?? null, unit: band?.unit ?? null,
         listings: counts.get(b.id) ?? 0,
       };
     });
@@ -59,12 +57,13 @@ export default async function MapPage({ params }: { params: { locale: string } }
           assetLabels={assetLabels}
           t={{
             all: ar ? "الكل" : "All",
-            legend: ar ? "النوع" : "Asset",
             available: ar ? "قائمة متاحة" : "available",
             viewListings: ar ? "عرض القوائم" : "View listings",
             rentBand: ar ? "نطاق الإيجار" : "Rent band",
             size: dict.ui.area, grade: dict.ui.grade,
-            sqm: dict.common.sqm, perYr: dict.ui.perSqmYear, noData: dict.ui.notEnough,
+            sqm: dict.common.sqm, noData: dict.ui.notEnough,
+            results: ar ? "مبنى" : "buildings", close: ar ? "إغلاق" : "Close",
+            clusterUnit: ar ? "مبنى" : "buildings",
           }}
         />
       </div>
