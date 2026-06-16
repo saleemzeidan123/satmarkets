@@ -5,7 +5,6 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import SearchBar from "@/components/SearchBar";
 import ListingCard from "@/components/ListingCard";
-import Skyline from "@/components/Skyline";
 import HeroVisual from "@/components/HeroVisual";
 import ValuePillars from "@/components/ValuePillars";
 import Reveal from "@/components/Reveal";
@@ -35,7 +34,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
     <div className="space-y-20">
       <section className="mesh relative -mx-5 -mt-8 overflow-hidden px-5 pt-12 sm:-mx-6 sm:-mt-10 sm:px-6 sm:pt-16">
         <div className="grid-faint pointer-events-none absolute inset-0 opacity-60" />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-10 pb-24 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 pb-16 lg:grid-cols-[1.05fr_0.95fr]">
           <div>
             <div className="eyebrow">{dict.hero.eyebrow}</div>
             <h1 className="mt-4 font-display text-[46px] leading-[1.04] text-charcoal sm:text-[60px]">{dict.hero.title}</h1>
@@ -49,13 +48,12 @@ export default async function HomePage({ params }: { params: { locale: string } 
                 ))}
               </div>
             </div>
-            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2">
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
               {chips.map((c)=>(<span key={c} className="chip-line"><Dot/>{c}</span>))}
             </div>
           </div>
           <HeroVisual locale={locale} />
         </div>
-        <Skyline className="pointer-events-none absolute inset-x-0 bottom-0 w-full opacity-90" />
       </section>
 
       <Reveal>
