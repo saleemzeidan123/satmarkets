@@ -61,34 +61,32 @@ a { transition: color .18s ease; }
 .bar { background: linear-gradient(180deg, #A98C53, #7E6939); border-radius: 3px 3px 0 0; }
 .divider-gold { height:2px; width:46px; background: linear-gradient(90deg,#8A7342, transparent); border-radius: 2px; }
 
-/* ---- 2026 intelligence theme (dark, calm, data-forward) ---- */
+/* ---- intelligence theme (light, refined) ---- */
 .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 .intel-canvas {
   background:
-    radial-gradient(1200px 500px at 80% -10%, rgba(200,168,75,0.10), transparent 60%),
-    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 24px 24px,
-    #16140E;
-  color: #EDE8DC;
+    radial-gradient(1000px 420px at 85% -10%, rgba(138,115,66,0.07), transparent 60%),
+    radial-gradient(rgba(28,26,21,0.035) 1px, transparent 1px) 0 0 / 24px 24px,
+    #FBF9F3;
+  color: #1C1A15;
+  border: 1px solid #ECE6D8;
 }
 .intel-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-  border: 1px solid rgba(255,255,255,0.09);
+  background: linear-gradient(180deg, #ffffff, #fdfcf8);
+  border: 1px solid #ECE6D8;
   border-radius: 18px;
-  backdrop-filter: blur(10px);
-  transition: border-color .25s ease, transform .25s ease;
+  box-shadow: 0 1px 2px rgba(28,26,21,0.04), 0 10px 26px rgba(28,26,21,0.05);
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
 }
-.intel-card:hover { border-color: rgba(200,168,75,0.45); }
-.intel-muted { color: rgba(237,232,220,0.55); }
-.intel-faint { color: rgba(237,232,220,0.4); }
-.intel-gold { color: #D9B85B; }
-.intel-chip {
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10);
-  color: rgba(237,232,220,0.75); border-radius: 999px;
-}
-.intel-chip-active { background: #C8A84B; border-color: #C8A84B; color: #16140E; }
-.intel-divider { height:1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); }
-.tag-verified { background: rgba(73,122,74,0.18); color:#7FC587; border:1px solid rgba(127,197,135,0.3); }
-.tag-sample { background: rgba(200,168,75,0.14); color:#D9B85B; border:1px solid rgba(217,184,91,0.3); }
+.intel-card:hover { border-color: rgba(138,115,66,0.4); box-shadow: 0 2px 4px rgba(28,26,21,0.05), 0 14px 34px rgba(28,26,21,0.08); }
+.intel-muted { color: rgba(28,26,21,0.6); }
+.intel-faint { color: rgba(28,26,21,0.42); }
+.intel-gold { color: #8A7342; }
+.intel-chip { background: #fff; border: 1px solid #ECE6D8; color: rgba(28,26,21,0.7); border-radius: 999px; }
+.intel-chip-active { background: #8A7342; border-color: #8A7342; color: #fff; border-radius: 999px; }
+.intel-divider { height:1px; background: linear-gradient(90deg, transparent, rgba(28,26,21,0.10), transparent); }
+.tag-verified { background: rgba(47,74,74,0.08); color:#2F4A4A; border:1px solid rgba(47,74,74,0.22); }
+.tag-sample { background: rgba(138,115,66,0.10); color:#8A7342; border:1px solid rgba(138,115,66,0.28); }
 
 /* mobile: never allow horizontal scroll from full-bleed sections */
 html, body { overflow-x: hidden; }

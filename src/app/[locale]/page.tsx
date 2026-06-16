@@ -68,11 +68,11 @@ export default async function HomePage({ params }: { params: { locale: string } 
       </Reveal>
 
       <Reveal>
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#1C1A15] to-[#2A2620] px-8 py-10 text-ivory">
+        <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-ivory-2 to-white px-8 py-10 text-charcoal">
           <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
-              <div className="eyebrow text-gold-soft">{dict.home.mapTitle}</div>
-              <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-ivory/75">{dict.home.mapBody}</p>
+              <div className="eyebrow">{dict.home.mapTitle}</div>
+              <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-charcoal/65">{dict.home.mapBody}</p>
               <Link href={`/${locale}/map`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.home.mapCta}</Link>
             </div>
             <div className="hidden gap-2 lg:grid lg:grid-cols-4">
@@ -105,7 +105,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
       </Reveal>
 
       <Reveal>
-        <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-[#1C1A15] to-[#2A2620] px-8 py-9 text-ivory">
+        <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-ivory-2 to-white px-8 py-9 text-charcoal">
           <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
             <Stat n={`${count}+`} l={dict.statBand.listings} />
             <Stat n="60+" l={dict.statBand.buildings} />
@@ -153,5 +153,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
 }
 function Dot(){ return <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/70" />; }
 function Stat({ n, l }: { n: string; l: string }) {
-  return <div><div className="font-display text-3xl text-gold-soft">{n}</div><div className="mt-1 text-[12px] text-ivory/55">{l}</div></div>;
+  return <div><div className="font-display text-3xl text-gold">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
 }

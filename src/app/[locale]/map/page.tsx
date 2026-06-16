@@ -45,7 +45,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
       <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{ar ? "خريطة الذكاء العقاري" : "Commercial intelligence map"}</div>
-      <h1 className="mt-1 font-display text-3xl text-ivory sm:text-4xl">{ar ? "مباني الرياض التجارية" : "Riyadh commercial buildings"}</h1>
+      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{ar ? "مباني الرياض التجارية" : "Riyadh commercial buildings"}</h1>
       <p className="mt-2 max-w-2xl text-[15px] intel-muted">
         {ar ? "كل مبنى عنصر قابل للنقر مع ملف ذكاء: النوع، التصنيف، نطاق الإيجار الموثق، والمساحات المتاحة. مخطط أولي ببيانات تجريبية تُستبدل ببيانات المباني الحقيقية." : "Every building is a clickable object with an intelligence profile: asset class, grade, the verified rent band, and available space. Prototype with seed data, to be replaced by the real building graph."}
       </p>

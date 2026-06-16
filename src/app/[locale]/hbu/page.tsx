@@ -58,7 +58,7 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
       <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.eyebrow}</div>
-      <h1 className="mt-1 font-display text-3xl text-ivory sm:text-4xl">{t.title}</h1>
+      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{t.title}</h1>
       <p className="mt-2 max-w-2xl text-[15px] intel-muted">{t.intro}</p>
 
       <div className="mt-6">
@@ -70,14 +70,14 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
         </div>
       </div>
 
-      <h2 className="mt-8 font-display text-xl text-ivory">{t.rank} · {ar ? sel.ar : sel.en}</h2>
+      <h2 className="mt-8 font-display text-xl text-charcoal">{t.rank} · {ar ? sel.ar : sel.en}</h2>
       {uses.length === 0 ? <p className="mt-4 intel-muted">{t.none}</p> : (
         <div className="mt-4 space-y-3">
           {uses.map((u, i) => (
             <div key={u.asset} className={`intel-card p-5 ${i===0?"!border-gold/60":""}`} style={i===0?{boxShadow:"0 0 0 1px rgba(217,184,91,0.25), 0 8px 30px rgba(217,184,91,0.08)"}:{}}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="font-display text-lg text-ivory">{assetLabel(u.asset, locale)}</span>
+                  <span className="font-display text-lg text-charcoal">{assetLabel(u.asset, locale)}</span>
                   {i===0 && <span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium tag-sample">{t.strongest}</span>}
                 </div>
                 <div className="text-end"><div className="text-[10px] uppercase tracking-wide intel-faint">{t.opp}</div><div className="font-display intel-gold">{oppLabel(u.score)}</div></div>
@@ -88,7 +88,7 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
                 <Sig label={t.avail} value={String(u.avail)} />
                 <Sig label={t.supply} value={String(u.supply)} />
               </div>
-              <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full" style={{ width: `${Math.round(u.score*100)}%`, background:"#D9B85B" }} /></div>
+              <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{ width: `${Math.round(u.score*100)}%`, background:"#8A7342" }} /></div>
             </div>
           ))}
         </div>
@@ -98,8 +98,8 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
         <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.method}</div>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {[[t.t1,t.d1,t.need],[t.t2,t.d2,t.need],[t.t3,t.d3,t.have],[t.t4,t.d4,t.need]].map(([tt,dd,tag],i)=>(
-            <div key={i} className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
-              <div className="flex items-center justify-between"><div className="font-display text-[15px] text-ivory">{i+1}. {tt}</div><span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${tag===t.have?"tag-verified":"tag-sample"}`}>{tag}</span></div>
+            <div key={i} className="rounded-xl border border-line bg-ivory-2/40 p-4">
+              <div className="flex items-center justify-between"><div className="font-display text-[15px] text-charcoal">{i+1}. {tt}</div><span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${tag===t.have?"tag-verified":"tag-sample"}`}>{tag}</span></div>
               <p className="mt-1.5 text-[12.5px] leading-relaxed intel-muted">{dd}</p>
             </div>
           ))}
@@ -110,5 +110,5 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
   );
 }
 function Sig({ label, value }: { label: string; value: string }) {
-  return <div><div className="text-[10px] uppercase tracking-wide intel-faint">{label}</div><div className="mt-0.5 font-display text-base text-ivory tnum">{value}</div></div>;
+  return <div><div className="text-[10px] uppercase tracking-wide intel-faint">{label}</div><div className="mt-0.5 font-display text-base text-charcoal tnum">{value}</div></div>;
 }

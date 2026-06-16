@@ -33,7 +33,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
       <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.eyebrow}</div>
-      <h1 className="mt-1 font-display text-3xl text-ivory sm:text-4xl">{t.title}</h1>
+      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{t.title}</h1>
       <p className="mt-3 max-w-3xl text-[15px] leading-relaxed intel-muted">{t.intro}</p>
 
       <div className="mt-8 space-y-7">
@@ -42,21 +42,21 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           const label = ar ? ty.ar : ty.en;
           return (
             <div key={ty.k}>
-              <h2 className="font-display text-xl text-ivory">{label}</h2>
+              <h2 className="font-display text-xl text-charcoal">{label}</h2>
               {grp.length === 0 ? (
-                <div className="mt-3 rounded-2xl border border-dashed border-white/12 bg-white/[0.02] px-5 py-6 text-[13.5px] intel-faint">{t.awaiting}</div>
+                <div className="mt-3 rounded-2xl border border-dashed border-line bg-ivory-2/40 px-5 py-6 text-[13.5px] intel-faint">{t.awaiting}</div>
               ) : (
                 <div className="intel-card mt-3 overflow-x-auto">
                   <table className="w-full min-w-[640px] text-sm">
-                    <thead><tr className="border-b border-white/10 text-start text-[11px] uppercase tracking-wide intel-faint">
+                    <thead><tr className="border-b border-line text-start text-[11px] uppercase tracking-wide intel-faint">
                       <th className="px-5 py-3 text-start font-medium">{t.district}</th><th className="px-5 py-3 text-start font-medium">{t.segment}</th><th className="px-5 py-3 text-start font-medium">{t.band}</th><th className="px-5 py-3 text-start font-medium">{t.median}</th><th className="px-5 py-3 text-start font-medium">{t.unit}</th>
                     </tr></thead>
                     <tbody>
                       {grp.map((r) => {
                         const place = ar ? (r.district_label_ar || r.district_label) : r.district_label;
                         return (
-                          <tr key={r.id} className="border-t border-white/8">
-                            <td className="px-5 py-3.5 text-ivory">{place}</td>
+                          <tr key={r.id} className="border-t border-line">
+                            <td className="px-5 py-3.5 text-charcoal">{place}</td>
                             <td className="px-5 py-3.5 text-[12.5px] intel-muted">{segmentLabel(r.segment, locale)}</td>
                             {r.sufficient ? (<>
                               <td className="px-5 py-3.5 intel-muted tnum">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "—"}</td>

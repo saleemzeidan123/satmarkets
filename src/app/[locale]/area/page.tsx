@@ -69,7 +69,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
       <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.eyebrow}</div>
-      <h1 className="mt-1 font-display text-3xl text-ivory sm:text-4xl">{t.title}</h1>
+      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{t.title}</h1>
       <p className="mt-2 max-w-3xl text-[15px] intel-muted">{t.intro}</p>
 
       <div className="mt-6">
@@ -85,20 +85,20 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
         <Card title={t.footfall} ok={false} sample={t.sample} verified={t.verified}>
           <div className="flex items-end justify-between">
             <div className="font-display text-3xl intel-gold tnum">{weekly[weekly.length-1]}k</div>
-            <div className={`text-sm tnum ${wow>=0?"text-emerald-400":"text-red-400"}`}>{wow>=0?"▲":"▼"} {Math.abs(wow)}% <span className="intel-faint">{t.wow}</span></div>
+            <div className={`text-sm tnum ${wow>=0?"text-emerald-600":"text-red-500"}`}>{wow>=0?"▲":"▼"} {Math.abs(wow)}% <span className="intel-faint">{t.wow}</span></div>
           </div>
           <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full">
-            <defs><linearGradient id="ff" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#D9B85B" stopOpacity="0.4"/><stop offset="100%" stopColor="#D9B85B" stopOpacity="0"/></linearGradient></defs>
+            <defs><linearGradient id="ff" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="#8A7342" stopOpacity="0.4"/><stop offset="100%" stopColor="#8A7342" stopOpacity="0"/></linearGradient></defs>
             <path d={areaPath} fill="url(#ff)" />
-            <path d={line} fill="none" stroke="#D9B85B" strokeWidth="2.5" />
-            {pts.map((p,i)=>(<circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#D9B85B" />))}
+            <path d={line} fill="none" stroke="#8A7342" strokeWidth="2.5" />
+            {pts.map((p,i)=>(<circle key={i} cx={p[0]} cy={p[1]} r="3" fill="#8A7342" />))}
           </svg>
           <div className="mt-1 flex justify-between text-[10px] intel-faint">{days.map((d,i)=>(<span key={i}>{d}</span>))}</div>
         </Card>
 
         <Card title={t.hourly} ok={false} sample={t.sample} verified={t.verified}>
           <div className="flex h-[120px] items-end gap-[3px]">
-            {hours.map((v,h)=>(<div key={h} className="flex-1 rounded-t" style={{ height: `${(v/maxHour)*100}%`, background: [5,12,15,18,20].includes(h)?"rgba(217,184,91,0.3)":"#D9B85B" }} title={`${h}:00`} />))}
+            {hours.map((v,h)=>(<div key={h} className="flex-1 rounded-t" style={{ height: `${(v/maxHour)*100}%`, background: [5,12,15,18,20].includes(h)?"rgba(217,184,91,0.3)":"#8A7342" }} title={`${h}:00`} />))}
           </div>
           <div className="mt-1 flex justify-between text-[10px] intel-faint"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
           <div className="mt-1 text-[11px] intel-faint">● {t.prayer}</div>
@@ -107,7 +107,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
         <Card title={t.catchment} ok={false} sample={t.sample} verified={t.verified}>
           <div className="flex items-center gap-5">
             <svg viewBox="0 0 160 160" className="h-36 w-36">
-              <circle cx="80" cy="80" r="72" fill="#D9B85B" opacity="0.10" /><circle cx="80" cy="80" r="50" fill="#D9B85B" opacity="0.18" /><circle cx="80" cy="80" r="28" fill="#D9B85B" opacity="0.30" /><circle cx="80" cy="80" r="4" fill="#D9B85B" />
+              <circle cx="80" cy="80" r="72" fill="#8A7342" opacity="0.10" /><circle cx="80" cy="80" r="50" fill="#8A7342" opacity="0.18" /><circle cx="80" cy="80" r="28" fill="#8A7342" opacity="0.30" /><circle cx="80" cy="80" r="4" fill="#8A7342" />
             </svg>
             <div className="space-y-2 text-[13px]">
               <Ring label={t.min5} v={`${catch5}k`} o={0.3} /><Ring label={t.min10} v={`${catch10}k`} o={0.18} /><Ring label={t.min15} v={`${catch15}k`} o={0.1} />
@@ -134,9 +134,9 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
                 </tr></thead>
                 <tbody>
                   {real.map((r)=>(
-                    <tr key={r.asset} className="border-t border-white/10">
-                      <td className="py-2.5 text-ivory">{assetLabel(r.asset, locale)}</td>
-                      <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-white/10"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:"#D9B85B"}}/></div><span className="font-display intel-gold tnum">{r.rent?Math.round(r.rent).toLocaleString():"—"}</span></div></td>
+                    <tr key={r.asset} className="border-t border-line">
+                      <td className="py-2.5 text-charcoal">{assetLabel(r.asset, locale)}</td>
+                      <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:"#8A7342"}}/></div><span className="font-display intel-gold tnum">{r.rent?Math.round(r.rent).toLocaleString():"—"}</span></div></td>
                       <td className="py-2.5 intel-muted tnum">{r.supply}</td><td className="py-2.5 intel-muted tnum">{r.avail}</td><td className="py-2.5 intel-muted tnum">{r.demand}</td>
                     </tr>
                   ))}
@@ -156,7 +156,7 @@ function Card({ title, ok, sample, verified, children }: { title: string; ok: bo
   return (
     <div className="intel-card p-5">
       <div className="flex items-center justify-between">
-        <div className="font-display text-[15px] text-ivory">{title}</div>
+        <div className="font-display text-[15px] text-charcoal">{title}</div>
         <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${ok?"tag-verified":"tag-sample"}`}>{ok?verified:sample}</span>
       </div>
       <div className="mt-3">{children}</div>
@@ -164,13 +164,13 @@ function Card({ title, ok, sample, verified, children }: { title: string; ok: bo
   );
 }
 function Ring({ label, v, o }: { label: string; v: string; o: number }) {
-  return <div className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#D9B85B", opacity: o + 0.3 }} /><span className="intel-muted">{label}</span><span className="font-display text-ivory tnum">{v}</span></div>;
+  return <div className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full" style={{ background: "#8A7342", opacity: o + 0.3 }} /><span className="intel-muted">{label}</span><span className="font-display text-charcoal tnum">{v}</span></div>;
 }
 function Bar({ label, value, suffix, max }: { label: string; value: number; suffix: string; max: number }) {
   return (
     <div>
-      <div className="flex justify-between text-[12.5px]"><span className="intel-muted">{label}</span><span className="font-display text-ivory tnum">{value}{suffix}</span></div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full" style={{ width: `${Math.min(100,(value/max)*100)}%`, background:"#D9B85B" }} /></div>
+      <div className="flex justify-between text-[12.5px]"><span className="intel-muted">{label}</span><span className="font-display text-charcoal tnum">{value}{suffix}</span></div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{ width: `${Math.min(100,(value/max)*100)}%`, background:"#8A7342" }} /></div>
     </div>
   );
 }
