@@ -36,7 +36,11 @@
     "floorplan": "Floor plan",
     "documents": "Documents",
     "trustTitle": "Why you can trust this listing",
-    "trustBody": "Every listing is verified before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are permit-backed and structured, not classifieds."
+    "trustBody": "Every listing is verified before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are permit-backed and structured, not classifieds.",
+    "rentCheckTitle": "Asking vs verified band",
+    "rentInLine": "In line with the market band",
+    "rentAbove": "above the verified band",
+    "rentBelow": "below the verified band"
   },
   "common": {
     "poweredBy": "SAT Markets — verified commercial real estate intelligence",

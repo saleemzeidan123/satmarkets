@@ -40,6 +40,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const docs: any[] = Array.isArray(listing.documents) ? listing.documents : [];
   const video: string | null = listing.video_url || null;
   const isYT = !!video && (video.includes("youtube") || video.includes("youtu.be"));
+  const askNum = lease ? Number(listing.asking_rent_sqm ?? 0) : 0;
+  let rentCheck: { kind: "in" | "above" | "below"; pct: number } | null = null;
+  if (cell && askNum && (cell as any).band_low != null && (cell as any).band_high != null) {
+    const lo = (cell as any).band_low as number, hi = (cell as any).band_high as number, med = ((cell as any).median ?? askNum) as number;
+    if (askNum > hi) rentCheck = { kind: "above", pct: Math.round(((askNum - med) / (med || askNum)) * 100) };
+    else if (askNum < lo) rentCheck = { kind: "below", pct: Math.round(((med - askNum) / (med || askNum)) * 100) };
+    else rentCheck = { kind: "in", pct: 0 };
+  }
 
   return (
     <div>
@@ -130,6 +138,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="badge badge-gold">{repLabel}</span>
             {listing.ownership_verified && <span className="badge badge-verified">{L.ownershipVerified}</span>}
           </div>
+          {rentCheck && (
+            <div className="mt-3 rounded-xl border border-line bg-ivory-2/40 p-3">
+              <div className="text-[10px] uppercase tracking-wide text-charcoal/40">{L.rentCheckTitle}</div>
+              <div className={`mt-0.5 text-[13px] font-medium ${rentCheck.kind==="above"?"text-red-600":rentCheck.kind==="below"?"text-emerald-600":"text-charcoal"}`}>
+                {rentCheck.kind==="in" ? L.rentInLine : rentCheck.kind==="above" ? `${rentCheck.pct}% ${L.rentAbove}` : `${rentCheck.pct}% ${L.rentBelow}`}
+              </div>
+            </div>
+          )}
           <div className="mt-4 hairline" />
           <div className="mt-4"><LeadForm listingId={listing.id} labels={{ contactDirectly: dict.listing.contactDirectly, bookRepresentation: dict.listing.bookRepresentation, contactNote: dict.listing.contactNote, repNote: dict.listing.repNote }} /></div>
         </aside>
