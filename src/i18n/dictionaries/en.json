@@ -134,6 +134,19 @@
     "ownC": "List your space",
     "invT": "Investors & retailers",
     "invB": "Site selection and highest-and-best-use: take a parcel and see, with data, whether to build office, retail, hospitality, or mixed-use.",
-    "invC": "Explore the map"
+    "invC": "Explore the map",
+    "chips": [
+      "FAL licensed",
+      "REGA-native",
+      "500+ buildings reviewed",
+      "English / Arabic"
+    ],
+    "cityBars": [
+      "KAFD",
+      "Olaya",
+      "Jeddah",
+      "Dammam"
+    ],
+    "rentEyebrow": "SAT Riyadh Commercial Rent Index"
   }
 }
