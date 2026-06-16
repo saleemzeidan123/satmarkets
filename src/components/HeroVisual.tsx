@@ -11,8 +11,8 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en"|"ar" }) {
     cardMeta: ar ? "٨٥٠ م² · A+" : "850 sqm · A+",
   };
   return (
-    <div className="relative hidden lg:block">
-      <div className="float-slow card glass relative z-10 ms-auto w-[340px] p-5 shadow-lift">
+    <div className="relative hidden h-[430px] lg:block">
+      <div className="float-slow card glass absolute end-0 top-0 z-10 w-[330px] p-5 shadow-lift">
         <div className="flex items-center justify-between">
           <div className="eyebrow">{t.index}</div>
           <span className="badge badge-verified">{t.verified}</span>
@@ -26,7 +26,7 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en"|"ar" }) {
           {bars.map((h, i) => <div key={i} className="bar flex-1" style={{ height: `${h}%`, opacity: 0.5 + i * 0.06 }} />)}
         </div>
       </div>
-      <div className="card absolute -bottom-10 start-0 z-20 w-[240px] overflow-hidden shadow-lift">
+      <div className="card absolute start-0 top-[250px] z-20 w-[230px] overflow-hidden shadow-lift">
         <div className="relative h-24">
           <img src={photoFor("office","kafd-hero")} alt="" className="h-full w-full object-cover" />
           <span className="badge glass absolute start-2 top-2 text-[10px] text-charcoal/80">{ar?"موثق":"Verified"}</span>
