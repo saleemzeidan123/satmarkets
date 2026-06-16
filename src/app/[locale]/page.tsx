@@ -93,7 +93,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
           {[
             { t: dict.home.occT, b: dict.home.occB, c: dict.home.occC, href: `/${locale}/listings` },
             { t: dict.home.ownT, b: dict.home.ownB, c: dict.home.ownC, href: `/${locale}/dashboard` },
-            { t: dict.home.invT, b: dict.home.invB, c: dict.home.invC, href: `/${locale}/map` },
+            { t: dict.home.invT, b: dict.home.invB, c: dict.home.invC, href: `/${locale}/hbu` },
           ].map((p, i) => (
             <div key={i} className="card flex flex-col p-6">
               <h3 className="font-display text-xl text-charcoal">{p.t}</h3>
