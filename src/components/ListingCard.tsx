@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import type { Listing } from "@/lib/types";
 import type { Locale } from "@/i18n/config";

@@ -10,11 +10,18 @@ import type { Dictionary } from "@/i18n/getDictionary";
 export default function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  const [saved, setSaved] = useState(0);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 6);
     on(); window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
+  useEffect(() => {
+    const read = () => { try { const s = JSON.parse(localStorage.getItem("satm_saved") || "[]"); setSaved(Array.isArray(s) ? s.length : 0); } catch {} };
+    read();
+    window.addEventListener("focus", read); window.addEventListener("storage", read);
+    return () => { window.removeEventListener("focus", read); window.removeEventListener("storage", read); };
+  }, [pathname]);
   const nav = [
     { href: `/${locale}/map`, label: (dict.nav as any).map ?? "Map" },
     { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Area intel" },
@@ -54,6 +61,10 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-2.5">
+          <Link href={`/${locale}/saved`} aria-label="Saved" className="icon-btn relative hidden sm:inline-flex">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+            {saved > 0 ? <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
+          </Link>
           <Link href={`/${locale}/search`} aria-label="Search" className="icon-btn hidden sm:inline-flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </Link>
