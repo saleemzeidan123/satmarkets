@@ -27,6 +27,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const chips = ar
     ? ["موثقة ومباشرة من المالك","على مستوى المملكة · الرياض أولاً","إيجار وبيع","عربي / إنجليزي"]
     : ["Verified, owner-direct","Kingdom-wide · Riyadh first","Lease & sale","English / Arabic"];
+  const smartChips = ar
+    ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
+    : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
   const dots = [{c:"#8A7342",x:54,y:60},{c:"#B5482E",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#C08A3E",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#7A5CA8",x:156,y:124},{c:"#4A7A4A",x:60,y:128},{c:"#8A7342",x:250,y:110}];
   const gradMain = ar
     ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
@@ -51,6 +54,25 @@ export default async function HomePage({ params }: { params: { locale: string } 
           </div>
         </div>
       </section>
+
+      {featured.length > 0 && (
+        <Reveal>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#0E7C6F]">{ar ? "قوائم ذكية" : "Smart listings"}</div>
+              <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة — بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
+              <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية — مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed — with a rent band and area intelligence."}</p>
+            </div>
+            <Link href={`/${locale}/listings`} className="link-underline text-sm text-gold">{dict.featured.viewAll} →</Link>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+            {smartChips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-charcoal/60"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#0E7C6F" }} />{c}</span>))}
+          </div>
+          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((l, i)=>(<Reveal key={l.id} delay={i*60}><ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} /></Reveal>))}
+          </div>
+        </Reveal>
+      )}
 
       <Reveal>
         <div className="text-center">
@@ -116,18 +138,6 @@ export default async function HomePage({ params }: { params: { locale: string } 
           </div>
         </div>
       </Reveal>
-
-      {featured.length > 0 && (
-        <Reveal>
-          <div className="flex items-end justify-between">
-            <div><div className="eyebrow">{dict.featured.eyebrow}</div><h2 className="mt-1 font-display text-2xl text-charcoal">{dict.featured.title}</h2></div>
-            <Link href={`/${locale}/listings`} className="link-underline text-sm text-gold">{dict.featured.viewAll} →</Link>
-          </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((l, i)=>(<Reveal key={l.id} delay={i*60}><ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} /></Reveal>))}
-          </div>
-        </Reveal>
-      )}
 
       <Reveal>
         <div className="relative overflow-hidden rounded-2xl border border-line bg-white px-8 py-10 shadow-card">
