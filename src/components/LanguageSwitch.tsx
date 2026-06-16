@@ -6,20 +6,11 @@ import { locales, type Locale } from "@/i18n/config";
 export default function LanguageSwitch({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   return (
-    <div className="flex items-center gap-1 text-xs">
+    <div className="lang-pill">
       {locales.map((l) => {
         const rest = pathname.replace(/^\/(en|ar)/, "") || "";
         const href = `/${l}${rest}`;
-        const active = l === locale;
-        return (
-          <Link
-            key={l}
-            href={href}
-            className={`px-2 py-1 rounded ${active ? "bg-gold text-white" : "text-charcoal/70"}`}
-          >
-            {l.toUpperCase()}
-          </Link>
-        );
+        return <Link key={l} href={href} className={`lang-seg ${l === locale ? "on" : ""}`}>{l.toUpperCase()}</Link>;
       })}
     </div>
   );
