@@ -25,8 +25,8 @@ export default async function HomePage({ params }: { params: { locale: string } 
     count = c ?? 0;
   }
   const chips = ar
-    ? ["موثقة ومباشرة من المالك","متوافقة مع الهيئة","إيجار وبيع","عربي / إنجليزي"]
-    : ["Verified, owner-direct","REGA-native","Lease & sale","English / Arabic"];
+    ? ["موثقة ومباشرة من المالك","على مستوى المملكة · الرياض أولاً","إيجار وبيع","عربي / إنجليزي"]
+    : ["Verified, owner-direct","Kingdom-wide · Riyadh first","Lease & sale","English / Arabic"];
   const dots = [{c:"#8A7342",x:54,y:60},{c:"#B5482E",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#C08A3E",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#7A5CA8",x:156,y:124},{c:"#4A7A4A",x:60,y:128},{c:"#8A7342",x:250,y:110}];
   const gradMain = ar
     ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
