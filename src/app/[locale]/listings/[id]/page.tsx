@@ -12,7 +12,7 @@ import type { PubBand } from "@/components/RentBand";
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
-  const locale = params.locale;
+  const locale = params.locale; const ar = locale === "ar";
   const dict = getDictionary(locale);
   const ui = dict.ui; const L = dict.listing;
   const sb = getSupabaseServer();
@@ -48,6 +48,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     else if (askNum < lo) rentCheck = { kind: "below", pct: Math.round(((med - askNum) / (med || askNum)) * 100) };
     else rentCheck = { kind: "in", pct: 0 };
   }
+  const linkCls = "inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline";
 
   return (
     <div>
@@ -122,6 +123,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 <Metric n={availCount} l={dict.areaIntel.available} />
               </div>
               <p className="text-xs text-charcoal/40">{dict.areaIntel.note}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-3">
+                {listing.building_id ? <Link href={`/${locale}/building/${listing.building_id}`} className={linkCls}>{ar ? "تقرير المبنى" : "Building report"} →</Link> : null}
+                {listing.district_id ? <Link href={`/${locale}/area?district=${listing.district_id}`} className={linkCls}>{ar ? "تقرير المنطقة" : "Area report"} →</Link> : null}
+                <Link href={`/${locale}/rent-index`} className={linkCls}>{ar ? "مؤشر الإيجار" : "Rent index"} →</Link>
+                <Link href={`/${locale}/listings?asset=${listing.asset_type}&deal=${listing.deal_type}`} className={linkCls}>{ar ? "المزيد المماثل" : "More like this"} →</Link>
+              </div>
             </div>
           </div>
 
@@ -148,6 +155,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           )}
           <div className="mt-4 hairline" />
           <div className="mt-4"><LeadForm listingId={listing.id} labels={{ contactDirectly: dict.listing.contactDirectly, bookRepresentation: dict.listing.bookRepresentation, contactNote: dict.listing.contactNote, repNote: dict.listing.repNote }} /></div>
+          {(listing.building_id || listing.district_id) && (
+            <div className="mt-4 flex flex-col gap-1.5 border-t border-line pt-4">
+              {listing.building_id ? <Link href={`/${locale}/building/${listing.building_id}`} className={linkCls}>{ar ? "تقرير المبنى" : "Building report"} →</Link> : null}
+              {listing.district_id ? <Link href={`/${locale}/area?district=${listing.district_id}`} className={linkCls}>{ar ? "ذكاء المنطقة" : "Area intelligence"} →</Link> : null}
+            </div>
+          )}
         </aside>
       </div>
     </div>

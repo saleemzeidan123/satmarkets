@@ -164,7 +164,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
                 <tbody>
                   {real.map((r)=>(
                     <tr key={r.asset} className="border-t border-line">
-                      <td className="py-2.5 text-charcoal">{assetLabel(r.asset, locale)}</td>
+                      <td className="py-2.5"><Link href={`/${locale}/listings?asset=${r.asset}`} className="text-charcoal hover:text-gold">{assetLabel(r.asset, locale)}</Link></td>
                       <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:GOLD}}/></div><span className="fig" style={{color:GOLD}}>{r.rent?Math.round(r.rent).toLocaleString():"—"}</span></div></td>
                       <td className="py-2.5 intel-muted fig">{r.supply}</td><td className="py-2.5 intel-muted fig">{r.avail}</td><td className="py-2.5 intel-muted fig">{r.demand}</td>
                     </tr>
@@ -176,6 +176,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
         </Card>
       </div>
 
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/map`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "افتح الخريطة" : "Open the map"} →</Link><Link href={`/${locale}/listings`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تصفّح القوائم" : "Browse listings"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
       <p className="mt-4 text-xs intel-faint">{t.note}</p>
     </section>
   );

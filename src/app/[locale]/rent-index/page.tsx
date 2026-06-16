@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { segmentLabel, unitLabel } from "@/lib/labels";
+import Link from "next/link";
 
 interface Row { id: string; district_id: string | null; district_label: string; district_label_ar: string | null; asset_type: string; segment: string | null; unit: string; band_low: number | null; band_high: number | null; median: number | null; sufficient: boolean; note: string | null; sort_order: number; }
 
@@ -42,7 +43,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           const label = ar ? ty.ar : ty.en;
           return (
             <div key={ty.k}>
-              <h2 className="font-display text-xl text-charcoal">{label}</h2>
+              <div className="flex items-center justify-between gap-3"><h2 className="font-display text-xl text-charcoal">{label}</h2><Link href={`/${locale}/listings?asset=${ty.k}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تصفّح" : "Browse"} →</Link></div>
               {grp.length === 0 ? (
                 <div className="mt-3 rounded-2xl border border-dashed border-line bg-ivory-2/40 px-5 py-6 text-[13.5px] intel-faint">{t.awaiting}</div>
               ) : (

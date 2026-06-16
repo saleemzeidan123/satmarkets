@@ -35,6 +35,10 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
               <Link href={`/${locale}/listings`} className="hover:text-charcoal">{f.listings}</Link>
               <Link href={`/${locale}/search`} className="hover:text-charcoal">{f.search}</Link>
               <Link href={`/${locale}/rent-index`} className="hover:text-charcoal">{f.rentIndex}</Link>
+              <Link href={`/${locale}/area`} className="hover:text-charcoal">{(dict.nav as any).areas ?? "Area intel"}</Link>
+              <Link href={`/${locale}/hbu`} className="hover:text-charcoal">{(dict.nav as any).develop ?? "Develop"}</Link>
+              <Link href={`/${locale}/saved`} className="hover:text-charcoal">{locale === "ar" ? "المحفوظة" : "Saved"}</Link>
+              <Link href={`/${locale}/about`} className="hover:text-charcoal">{dict.nav.about}</Link>
               <Link href={`/${locale}/dashboard`} className="hover:text-charcoal">{f.listSpace}</Link>
             </div>
           </div>

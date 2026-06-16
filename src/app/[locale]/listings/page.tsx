@@ -35,7 +35,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   return (
     <section>
       <div className="eyebrow">{dict.ui.browse}</div>
-      <h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1>
+      <div className="flex items-end justify-between gap-3"><h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1><Link href={`/${locale}/map`} className="text-[13px] font-medium text-gold hover:underline">{ar ? "عرض على الخريطة" : "View on map"} →</Link></div>
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <span className="me-1 text-[11px] uppercase tracking-wide text-charcoal/40">{ar ? "نوع الصفقة" : "Deal"}</span>
         {DEALS.map((d)=>chip(dealLabel(d, locale),"deal",d))}
