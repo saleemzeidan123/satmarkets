@@ -18,6 +18,12 @@ async function verifyOwner(accountId: string, locale: string) {
   await sb.from("accounts").update({ verification_status: "verified" }).eq("id", accountId);
   revalidatePath(`/${locale}/admin`);
 }
+async function verifyAuthorization(id: string, locale: string) {
+  "use server";
+  const sb = getSupabaseServer(); if (!sb) return;
+  await sb.from("listings").update({ authorization_verified: true }).eq("id", id);
+  revalidatePath(`/${locale}/admin`);
+}
 
 export default async function AdminPage({ params, searchParams }: { params: { locale: string }; searchParams: { status?: string } }) {
   if (!isLocale(params.locale)) redirect("/en/admin");
@@ -50,11 +56,21 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
               <div className="font-medium">{l.title_en || l.reference_code}</div>
               <div className="text-xs uppercase text-charcoal/50">{l.asset_type} · {l.area_sqm} sqm · {l.status}</div>
               <div className="text-xs text-charcoal/50">{l.accounts?.legal_name} · owner {l.accounts?.verification_status}</div>
+              <div className="mt-0.5 text-xs text-charcoal/50">
+                {l.lister_type === "broker_authorized" ? "broker (authorized)" : l.lister_type === "sat" ? "SAT-listed" : "owner-direct"}
+                {l.lister_type === "broker_authorized" && (l.authorization_verified ? " · authorization verified" : " · authorization PENDING")}
+                {l.authorization_doc_url && (<a href={l.authorization_doc_url} target="_blank" rel="noopener noreferrer" className="ms-2 text-gold underline">authorization doc</a>)}
+              </div>
             </div>
             <div className="flex gap-2">
               {l.accounts?.verification_status !== "verified" && (
                 <form action={async () => { "use server"; await verifyOwner(l.account_id, locale); }}>
                   <button className="rounded border border-slate/40 px-3 py-1.5 text-xs text-slate">Verify owner</button>
+                </form>
+              )}
+              {l.lister_type === "broker_authorized" && !l.authorization_verified && (
+                <form action={async () => { "use server"; await verifyAuthorization(l.id, locale); }}>
+                  <button className="rounded border border-slate/40 px-3 py-1.5 text-xs text-slate">Verify authorization</button>
                 </form>
               )}
               <form action={async () => { "use server"; await setStatus(l.id, "published", locale); }}>

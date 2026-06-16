@@ -23,7 +23,19 @@
     "contactDirectly": "Contact directly",
     "bookRepresentation": "Book with representation",
     "contactNote": "Reach the lister. No mandate, no fee.",
-    "repNote": "Written mandate. SAT acts for you, within statutory limits."
+    "repNote": "Written mandate. SAT acts for you, within statutory limits.",
+    "representation": "Representation",
+    "ownerDirect": "Owner-direct",
+    "brokerAuthorized": "Broker — authorized to market",
+    "satListed": "SAT-listed",
+    "ownershipVerified": "Ownership verified",
+    "rightToMarket": "Right-to-market on file",
+    "adPermit": "Ad permit",
+    "video": "Video tour",
+    "floorplan": "Floor plan",
+    "documents": "Documents",
+    "trustTitle": "Why you can trust this listing",
+    "trustBody": "Every listing is verified before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are permit-backed and structured, not classifieds."
   },
   "common": {
     "poweredBy": "SAT Markets — verified commercial real estate intelligence",

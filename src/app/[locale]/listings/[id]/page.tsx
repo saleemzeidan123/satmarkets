@@ -14,14 +14,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const dict = getDictionary(locale);
-  const ui = dict.ui;
+  const ui = dict.ui; const L = dict.listing;
   const sb = getSupabaseServer();
-  let listing: Listing | null = null;
+  let listing: any = null;
   let cell: PubBand | null = null;
   let briefCount = 0, availCount = 0;
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("id", params.id).single();
-    listing = (data as Listing) ?? null;
+    listing = data ?? null;
     if (listing?.district_id) {
       const { data: cells } = await sb.from("rent_index_published").select("band_low, band_high, median, unit, segment, sufficient").eq("district_id", listing.district_id).eq("asset_type", listing.asset_type).eq("sufficient", true).order("median", { ascending: false }).limit(1);
       cell = ((cells as any[]) ?? [])[0] ?? null;
@@ -36,6 +36,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
   const lease = listing.deal_type === "lease";
   const pics = galleryFor(listing.asset_type, listing.id);
+  const repLabel = listing.lister_type === "broker_authorized" ? L.brokerAuthorized : listing.lister_type === "sat" ? L.satListed : L.ownerDirect;
+  const docs: any[] = Array.isArray(listing.documents) ? listing.documents : [];
+  const video: string | null = listing.video_url || null;
+  const isYT = !!video && (video.includes("youtube") || video.includes("youtu.be"));
 
   return (
     <div>
@@ -50,6 +54,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div>
             <div className="eyebrow">{assetLabel(listing.asset_type, locale)} · {place}</div>
             <h1 className="mt-1 font-display text-3xl text-charcoal">{title}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="badge badge-gold">{repLabel}</span>
+              {listing.ownership_verified && <span className="badge badge-verified">{L.ownershipVerified}</span>}
+              {(listing.authorization_verified || listing.lister_type === "owner_direct") && <span className="badge badge-verified">{L.rightToMarket}</span>}
+              {listing.ad_permit_no && <span className="badge">{L.adPermit}: {listing.ad_permit_no}</span>}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
             <Spec label={ui.area} value={`${listing.area_sqm} ${dict.common.sqm}`} />
@@ -58,6 +68,43 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <Spec label={lease ? ui.asking : ui.price} value={Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()} />
           </div>
           {(locale==="ar"?listing.description_ar:listing.description_en) && <p className="text-[15px] leading-relaxed text-charcoal/70">{locale==="ar"?listing.description_ar:listing.description_en}</p>}
+
+          {video && (
+            <div>
+              <div className="eyebrow">{L.video}</div>
+              <div className="mt-2 overflow-hidden rounded-2xl border border-line bg-black">
+                {isYT ? (
+                  <iframe src={video} title={L.video} className="aspect-video w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+                ) : (
+                  <video src={video} controls className="aspect-video w-full" />
+                )}
+              </div>
+            </div>
+          )}
+
+          {listing.floorplan_url && (
+            <div>
+              <div className="eyebrow">{L.floorplan}</div>
+              <div className="mt-2 overflow-hidden rounded-2xl border border-line bg-white">
+                <img src={listing.floorplan_url} alt={L.floorplan} className="max-h-[460px] w-full object-contain" />
+              </div>
+            </div>
+          )}
+
+          {docs.length > 0 && (
+            <div>
+              <div className="eyebrow">{L.documents}</div>
+              <div className="mt-2 flex flex-col gap-2">
+                {docs.map((doc, i) => (
+                  <a key={i} href={doc.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-xl border border-line bg-white px-4 py-3 text-[13.5px] text-charcoal/75 shadow-card hover:border-gold/50">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                    {locale==="ar" ? (doc.label_ar || doc.label_en) : (doc.label_en || doc.label_ar)}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
             <div className="eyebrow">{dict.areaIntel.title}</div>
             <div className="mt-4 space-y-4">
@@ -69,10 +116,20 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               <p className="text-xs text-charcoal/40">{dict.areaIntel.note}</p>
             </div>
           </div>
+
+          <div className="rounded-2xl border border-line bg-ivory-2/40 p-5">
+            <div className="eyebrow">{L.trustTitle}</div>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-charcoal/60">{L.trustBody}</p>
+          </div>
         </div>
+
         <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card lg:sticky lg:top-24">
           <div className="font-display text-2xl text-gold">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
           <div className="text-xs text-charcoal/45">{lease ? ui.perSqmYear : ui.sar}</div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <span className="badge badge-gold">{repLabel}</span>
+            {listing.ownership_verified && <span className="badge badge-verified">{L.ownershipVerified}</span>}
+          </div>
           <div className="mt-4 hairline" />
           <div className="mt-4"><LeadForm listingId={listing.id} labels={{ contactDirectly: dict.listing.contactDirectly, bookRepresentation: dict.listing.bookRepresentation, contactNote: dict.listing.contactNote, repNote: dict.listing.repNote }} /></div>
         </aside>
