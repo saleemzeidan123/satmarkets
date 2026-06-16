@@ -99,7 +99,7 @@ html, body { overflow-x: hidden; }
 .site-header { background: rgba(246,248,251,0.62); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid transparent; transition: background .25s ease, border-color .25s ease, box-shadow .25s ease; }
 .site-header.scrolled { background: rgba(246,248,251,0.9); border-bottom-color: rgba(28,33,38,0.08); box-shadow: 0 10px 30px -22px rgba(20,24,28,0.4); }
 .logo-mark { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:9px; background: linear-gradient(155deg,#9B8350,#6E5B33); box-shadow: 0 3px 10px -3px rgba(110,91,51,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
-.nav-link { position:relative; color: rgba(28,33,38,0.58); font-size:14px; font-weight:450; transition: color .18s ease; }
+.nav-link { position:relative; white-space:nowrap; color: rgba(28,33,38,0.58); font-size:14px; font-weight:450; transition: color .18s ease; }
 .nav-link:hover { color:#1C1A15; }
 .nav-link::after { content:""; position:absolute; left:0; right:0; bottom:-7px; height:2px; border-radius:2px; background:#8A7342; transform: scaleX(0); transform-origin: var(--o, left); transition: transform .22s cubic-bezier(.2,.7,.2,1); }
 .nav-link:hover::after { transform: scaleX(1); }

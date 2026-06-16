@@ -36,7 +36,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   const descriptor = locale === "ar" ? "ذكاء · تداول" : "intelligence · exchange";
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
-      <div className="relative mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
+      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center gap-2.5">
           <span className="logo-mark">
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -54,7 +54,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-5 lg:flex">
           {nav.map((n) => (
             <Link key={n.href} href={n.href} className={`nav-link ${active(n.href) ? "active" : ""}`}>{n.label}</Link>
           ))}

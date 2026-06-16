@@ -132,7 +132,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
         </div>
 
         <aside className="h-fit rounded-2xl border border-line bg-white p-5 shadow-card lg:sticky lg:top-24">
-          <div className="font-display text-2xl text-gold">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
+          <div className="fig text-2xl text-gold">{Number(listing.asking_rent_sqm ?? listing.sale_price ?? 0).toLocaleString()}</div>
           <div className="text-xs text-charcoal/45">{lease ? ui.perSqmYear : ui.sar}</div>
           <div className="mt-3 flex flex-wrap gap-1.5">
             <span className="badge badge-gold">{repLabel}</span>
@@ -154,8 +154,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   );
 }
 function Spec({ label, value }: { label: string; value: string }) {
-  return <div className="bg-white px-4 py-3"><div className="text-[10px] uppercase tracking-wide text-charcoal/40">{label}</div><div className="mt-0.5 font-display text-lg text-charcoal">{value}</div></div>;
+  return <div className="bg-white px-4 py-3"><div className="text-[10px] uppercase tracking-wide text-charcoal/40">{label}</div><div className="mt-0.5 fig text-lg text-charcoal">{value}</div></div>;
 }
 function Metric({ n, l }: { n: number; l: string }) {
-  return <div className="rounded-xl border border-line bg-ivory-2/40 p-3"><div className="font-display text-2xl text-gold">{n}</div><div className="text-[11px] text-charcoal/55">{l}</div></div>;
+  return <div className="rounded-xl border border-line bg-ivory-2/40 p-3"><div className="fig text-2xl text-gold">{n}</div><div className="text-[11px] text-charcoal/55">{l}</div></div>;
 }
