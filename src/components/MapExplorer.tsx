@@ -139,9 +139,9 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
       {/* filter chips */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-center gap-1.5 p-3">
-        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-gold bg-gold text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>{t.all}</button>
+        <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-gold bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>{t.all}</button>
         {assetOrder.map((a) => (
-          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-gold bg-gold text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>
+          <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-gold bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-gold/50"}`}>
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#8A7342" }} />{assetLabels[a] || a}
           </button>
         ))}
@@ -181,7 +181,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
               )}
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-[12.5px] text-charcoal/60">{sel.listings} {t.available}</span>
-                <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-gold hover:underline">{t.viewListings} →</a>
+                <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-signal hover:underline">{t.viewListings} →</a>
               </div>
             </div>
           </div>

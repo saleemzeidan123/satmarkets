@@ -167,7 +167,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تقرير المنطقة" : "Area report"} →</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تصفّح المعروض" : "Browse this use"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تقرير المنطقة" : "Area report"} →</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح المعروض" : "Browse this use"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
       <p className="mt-6 text-xs text-charcoal/40">{T.note}</p>
     </section>
   );

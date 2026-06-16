@@ -43,7 +43,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           const label = ar ? ty.ar : ty.en;
           return (
             <div key={ty.k}>
-              <div className="flex items-center justify-between gap-3"><h2 className="font-display text-xl text-charcoal">{label}</h2><Link href={`/${locale}/listings?asset=${ty.k}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تصفّح" : "Browse"} →</Link></div>
+              <div className="flex items-center justify-between gap-3"><h2 className="font-display text-xl text-charcoal">{label}</h2><Link href={`/${locale}/listings?asset=${ty.k}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح" : "Browse"} →</Link></div>
               {grp.length === 0 ? (
                 <div className="mt-3 rounded-2xl border border-dashed border-line bg-ivory-2/40 px-5 py-6 text-[13.5px] intel-faint">{t.awaiting}</div>
               ) : (

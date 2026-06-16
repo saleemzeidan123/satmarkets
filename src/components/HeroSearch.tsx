@@ -58,7 +58,7 @@ export default function HeroSearch({ locale, placeholder, cta }: { locale: Local
     <button type="button" onClick={() => pick(key)}
       className={`relative pb-2.5 text-[14px] font-medium transition ${deal === key ? "text-white" : "text-white/55 hover:text-white/80"}`}>
       {dealLabel(key, locale)}
-      <span className={`absolute inset-x-0 -bottom-px h-[2px] rounded-full ${deal === key ? "bg-gold-soft" : "bg-transparent"}`} />
+      <span className={`absolute inset-x-0 -bottom-px h-[2px] rounded-full ${deal === key ? "bg-signal" : "bg-transparent"}`} />
     </button>
   );
   return (
@@ -72,7 +72,7 @@ export default function HeroSearch({ locale, placeholder, cta }: { locale: Local
           const on = asset === c.key;
           return (
             <button key={c.key} type="button" onClick={() => setAsset(on ? null : c.key)}
-              className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] leading-tight transition ${on ? "bg-gold text-white" : "text-white/80 hover:bg-white/10"}`}>
+              className={`flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 text-[11px] leading-tight transition ${on ? "bg-signal text-white" : "text-white/80 hover:bg-white/10"}`}>
               <CatIcon k={c.key} />
               <span className="whitespace-nowrap">{ar ? c.ar : c.en}</span>
             </button>

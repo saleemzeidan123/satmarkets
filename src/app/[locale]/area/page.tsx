@@ -176,7 +176,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
         </Card>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/map`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "افتح الخريطة" : "Open the map"} →</Link><Link href={`/${locale}/listings`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "تصفّح القوائم" : "Browse listings"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/map`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "افتح الخريطة" : "Open the map"} →</Link><Link href={`/${locale}/listings`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح القوائم" : "Browse listings"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
       <p className="mt-4 text-xs intel-faint">{t.note}</p>
     </section>
   );

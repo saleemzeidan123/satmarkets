@@ -48,7 +48,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     else if (askNum < lo) rentCheck = { kind: "below", pct: Math.round(((med - askNum) / (med || askNum)) * 100) };
     else rentCheck = { kind: "in", pct: 0 };
   }
-  const linkCls = "inline-flex items-center gap-1 text-[12.5px] font-medium text-gold hover:underline";
+  const linkCls = "inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline";
 
   return (
     <div>

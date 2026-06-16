@@ -63,7 +63,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
               <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة — بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
               <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية — مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed — with a rent band and area intelligence."}</p>
             </div>
-            <Link href={`/${locale}/listings`} className="link-underline text-sm text-gold">{dict.featured.viewAll} →</Link>
+            <Link href={`/${locale}/listings`} className="link-underline text-sm text-signal">{dict.featured.viewAll} →</Link>
           </div>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
             {smartChips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-charcoal/60"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#0E7C6F" }} />{c}</span>))}
@@ -122,7 +122,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
             <div key={i} className="card flex flex-col p-6">
               <h3 className="font-display text-xl text-charcoal">{p.t}</h3>
               <p className="mt-2 flex-1 text-[14px] leading-relaxed text-charcoal/65">{p.b}</p>
-              <Link href={p.href} className="link-underline mt-4 text-sm text-gold">{p.c}</Link>
+              <Link href={p.href} className="link-underline mt-4 text-sm text-signal">{p.c}</Link>
             </div>
           ))}
         </div>

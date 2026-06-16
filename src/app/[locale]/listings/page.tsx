@@ -30,12 +30,12 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const active = searchParams[key] === val;
     const sp = new URLSearchParams(searchParams as any);
     if (active) sp.delete(key); else sp.set(key, val);
-    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-gold bg-gold text-white" : "border-line text-charcoal/65 hover:border-gold/50 hover:text-charcoal"}`}>{label}</Link>;
+    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-gold bg-signal text-white" : "border-line text-charcoal/65 hover:border-gold/50 hover:text-charcoal"}`}>{label}</Link>;
   };
   return (
     <section>
       <div className="eyebrow">{dict.ui.browse}</div>
-      <div className="flex items-end justify-between gap-3"><h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1><Link href={`/${locale}/map`} className="text-[13px] font-medium text-gold hover:underline">{ar ? "عرض على الخريطة" : "View on map"} →</Link></div>
+      <div className="flex items-end justify-between gap-3"><h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1><Link href={`/${locale}/map`} className="text-[13px] font-medium text-signal hover:underline">{ar ? "عرض على الخريطة" : "View on map"} →</Link></div>
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <span className="me-1 text-[11px] uppercase tracking-wide text-charcoal/40">{ar ? "نوع الصفقة" : "Deal"}</span>
         {DEALS.map((d)=>chip(dealLabel(d, locale),"deal",d))}
