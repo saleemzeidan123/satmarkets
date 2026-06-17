@@ -102,7 +102,7 @@ export default function HeroLive({ locale, hero, count }: {
   return (
     <section className="relative -mt-8 min-h-[580px] overflow-hidden sm:-mt-10 sm:min-h-[640px]" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "#070B17" }}>
       <style>{CSS}</style>
-      <div ref={ref} className="absolute inset-x-0 top-0 h-[720px]" />
+      <div ref={ref} className="!absolute inset-x-0 top-0 h-[720px]" />
       <div className="pointer-events-none absolute inset-0" style={{ background: grad }} />
       <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.5), rgba(7,11,23,0) 18%)" }} />
       <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.6), rgba(7,11,23,0) 34%)" }} />
