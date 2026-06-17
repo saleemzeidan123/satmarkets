@@ -94,7 +94,7 @@ a { transition: color .18s ease; }
 .tag-sample { background: rgba(138,115,66,0.10); color:#5b6470; border:1px solid rgba(91,100,112,0.28); }
 
 /* mobile: never allow horizontal scroll from full-bleed sections */
-html, body { overflow-x: hidden; }
+html, body { overflow-x: clip; }
 
 /* ---- advanced header ---- */
 .site-header { background: rgba(246,248,251,0.62); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid transparent; transition: background .25s ease, border-color .25s ease, box-shadow .25s ease; }
