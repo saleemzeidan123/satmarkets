@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 
-const TEAL = "#0E7C6F";
+const TEAL = "#2E5FE0";
 const GOLD = "#8A7342";
 
 const DISTRICTS = [
@@ -81,7 +81,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
       <div className="flex items-center gap-2">
         <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.eyebrow}</div>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#0E7C6F]/25 bg-[#0E7C6F]/8 px-2 py-0.5 text-[10px] font-medium text-[#0E7C6F]"><span className="live-dot" />{t.live}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-[#2E5FE0]/25 bg-[#2E5FE0]/8 px-2 py-0.5 text-[10px] font-medium text-[#2E5FE0]"><span className="live-dot" />{t.live}</span>
       </div>
       <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{t.title}</h1>
       <p className="mt-2 max-w-3xl text-[15px] intel-muted">{t.intro}</p>

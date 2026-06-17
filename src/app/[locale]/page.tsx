@@ -30,7 +30,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const smartChips = ar
     ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
     : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
-  const dots = [{c:"#2FA39A",x:54,y:60},{c:"#0E7C6F",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#2FB8A6",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#5b6470",x:156,y:124},{c:"#3E6E66",x:60,y:128},{c:"#2FA39A",x:250,y:110}];
+  const dots = [{c:"#6E92EC",x:54,y:60},{c:"#2E5FE0",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#4D7CF0",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#5b6470",x:156,y:124},{c:"#3E6E66",x:60,y:128},{c:"#6E92EC",x:250,y:110}];
   const gradMain = ar
     ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
     : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
@@ -41,7 +41,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
         <div className="absolute inset-0" style={{ background: gradMain }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,20,22,0.55) 0%, rgba(15,20,22,0) 24%)" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,19,0.62) 0%, rgba(12,17,19,0) 44%)" }} />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(47,184,166,0.16), transparent 70%)" }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(77,124,240,0.16), transparent 70%)" }} />
         <div className="anim-rise relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
             <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
@@ -59,14 +59,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
         <Reveal>
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#0E7C6F]">{ar ? "قوائم ذكية" : "Smart listings"}</div>
+              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#2E5FE0]">{ar ? "قوائم ذكية" : "Smart listings"}</div>
               <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة — بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
               <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية — مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed — with a rent band and area intelligence."}</p>
             </div>
             <Link href={`/${locale}/listings`} className="link-underline text-sm text-signal">{dict.featured.viewAll} →</Link>
           </div>
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-            {smartChips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-charcoal/60"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#0E7C6F" }} />{c}</span>))}
+            {smartChips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-charcoal/60"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#2E5FE0" }} />{c}</span>))}
           </div>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {featured.map((l, i)=>(<Reveal key={l.id} delay={i*60}><ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} /></Reveal>))}

@@ -39,7 +39,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center gap-2.5 sm:gap-3">
-          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-[11px]" style={{background:"#14181B"}}><svg width="24" height="24" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="1.6"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="1.6"/><circle cx="16" cy="16" r="3.4" fill="#2FB8A6"/></svg></span><span className="flex flex-col leading-none">
+          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-[11px]" style={{background:"#14181B"}}><svg width="24" height="24" viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="5" fill="#fff"/><rect x="17" y="17" width="9" height="9" rx="2.5" fill="#2E5FE0"/></svg></span><span className="flex flex-col leading-none">
             <span className="font-display text-[19px] sm:text-[22px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="italic font-normal text-charcoal/70">Markets</span></span>
             <span className="mt-1 hidden sm:flex items-center gap-1.5">
               <span className="live-dot" />

@@ -12,7 +12,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   const dict = getDictionary(locale);
   const f = dict.footer;
   const couplet = locale === "ar" ? "المساحة لك. وكذلك الأرقام." : "The space is yours. So are the numbers.";
-  const family = locale === "ar" ? "شركة ضمن مجموعة سات" : "An SAT company";
+  const family = locale === "ar" ? "من سات العقارية" : "By SAT Real Estate";
   return (
     <>
       <HtmlLangDir locale={locale} />
@@ -23,7 +23,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row">
             <div>
               <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{background:"#14181B"}}><svg width="20" height="20" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="#fff" strokeOpacity="0.3" strokeWidth="1.6"/><circle cx="16" cy="16" r="8.5" fill="none" stroke="#fff" strokeOpacity="0.5" strokeWidth="1.6"/><circle cx="16" cy="16" r="3.4" fill="#2FB8A6"/></svg></span><div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-charcoal">Markets</span></div>
+                <span className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{background:"#14181B"}}><svg width="20" height="20" viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="5" fill="#fff"/><rect x="17" y="17" width="9" height="9" rx="2.5" fill="#2E5FE0"/></svg></span><div className="font-display text-lg"><span className="text-charcoal">SAT</span> <span className="italic text-charcoal">Markets</span></div>
                 <span className="live-dot" />
               </div>
               <p className="mt-2 font-display text-[15px] italic text-charcoal/90">{couplet}</p>
