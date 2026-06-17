@@ -40,6 +40,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="mt-8 space-y-7">
         {TYPES.map((ty) => {
           const grp = rows.filter((r) => r.asset_type === ty.k);
+          const maxByUnit: Record<string, number> = {};
+          grp.forEach((r) => { if (r.sufficient && r.median != null) maxByUnit[r.unit] = Math.max(maxByUnit[r.unit] ?? 0, r.median); });
           const label = ar ? ty.ar : ty.en;
           return (
             <div key={ty.k}>
@@ -61,7 +63,12 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                             <td className="px-5 py-3.5 text-[12.5px] intel-muted">{segmentLabel(r.segment, locale)}</td>
                             {r.sufficient ? (<>
                               <td className="px-5 py-3.5 intel-muted fig">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "—"}</td>
-                              <td className="px-5 py-3.5 fig text-lg intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</td>
+                              <td className="px-5 py-3.5">
+                                <div className="fig text-lg leading-none intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</div>
+                                {r.median != null && (maxByUnit[r.unit] ?? 0) > 0 && (
+                                  <div className="mt-2 h-1 w-24 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-signal/80" style={{ width: `${Math.max(8, Math.round((r.median / maxByUnit[r.unit]) * 100))}%` }} /></div>
+                                )}
+                              </td>
                               <td className="px-5 py-3.5 text-[12px] intel-faint">{unitLabel(r.unit, locale)}</td>
                             </>) : (
                               <td className="px-5 py-3.5 text-[12.5px] italic intel-faint" colSpan={3}>◌ {(ar ? (r.note_ar ?? r.note) : r.note) || t.insufficient}</td>
