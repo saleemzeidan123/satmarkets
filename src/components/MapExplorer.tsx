@@ -75,7 +75,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         }});
         map.addLayer({ id: "pt", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
           "circle-color": colorMatch,
-          "circle-radius": ["+", ["interpolate", ["linear"], ["zoom"], 9, 6.5, 13, 9, 16, 13], ["case", ["boolean", ["feature-state", "hover"], false], 3, 0]],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 6.5, 13, 9, 16, 13],
           "circle-stroke-width": 2.5, "circle-stroke-color": "#FFFFFF",
         }});
         map.addLayer({ id: "pt-hit", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
