@@ -67,7 +67,7 @@ export default function HeroSearch({ locale, placeholder, cta }: { locale: Local
         {tab("lease")}
         {tab("sale")}
       </div>
-      <div className="mt-2.5 flex gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="mt-2.5 flex gap-1 overflow-x-auto pb-1 [mask-image:linear-gradient(to_right,transparent,#000_5%,#000_95%,transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {cats.map((c) => {
           const on = asset === c.key;
           return (

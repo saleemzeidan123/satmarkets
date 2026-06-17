@@ -62,7 +62,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           <Link href={`/${locale}/search`} aria-label="Search" className="icon-btn hidden sm:inline-flex">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
           </Link>
-          <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
+          <span className="inline-flex"><LanguageSwitch locale={locale} /></span>
           <Link href={`/${locale}/login`} className="hidden text-[13.5px] text-charcoal/65 hover:text-charcoal lg:block">{signInLabel}</Link>
           <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
             <span className="sm:hidden">{locale === "ar" ? "أدرج" : "List"}</span>

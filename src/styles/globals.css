@@ -114,7 +114,7 @@ html, body { overflow-x: hidden; }
 /* ===== Brand identity: texture + micro-motion ===== */
 .brand-grid { background-image: linear-gradient(rgba(20,24,27,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(20,24,27,0.04) 1px, transparent 1px); background-size: 46px 46px; }
 .brand-rings { position: relative; }
-.brand-rings::after { content:""; position:absolute; top:-14%; inset-inline-end:-8%; width:480px; height:480px; pointer-events:none; opacity:.4; background: radial-gradient(circle, transparent 0 47%, rgba(47,184,166,0.5) 47% 48%, transparent 48%), radial-gradient(circle, transparent 0 31%, rgba(255,255,255,0.16) 31% 32%, transparent 32%), radial-gradient(circle, transparent 0 16%, rgba(255,255,255,0.12) 16% 17%, transparent 17%); background-repeat:no-repeat; background-position:center; }
+.brand-rings::after { content:""; position:absolute; top:-14%; inset-inline-end:-8%; width:330px; height:330px; pointer-events:none; opacity:.24; background: radial-gradient(circle, transparent 0 47%, rgba(47,184,166,0.5) 47% 48%, transparent 48%), radial-gradient(circle, transparent 0 31%, rgba(255,255,255,0.16) 31% 32%, transparent 32%), radial-gradient(circle, transparent 0 16%, rgba(255,255,255,0.12) 16% 17%, transparent 17%); background-repeat:no-repeat; background-position:center; }
 .hairline { height:1px; background:linear-gradient(90deg, transparent, rgba(20,24,27,0.12), transparent); }
 @media (prefers-reduced-motion: no-preference){
   @keyframes apertureRise { from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:none;} }
