@@ -49,7 +49,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
   const t = {
     eyebrow: ar ? "ذكاء المنطقة" : "Area intelligence",
     title: ar ? "ما الذي يخبرك به الموقع" : "What a location tells you",
-    intro: ar ? "حركة الزوّار، نطاق الجذب، والسكان حول كل منطقة — مع الطلب والعرض والإيجار الموثق. الأزرق = حركة مأخوذة كعيّنة، الذهبي = بيانات سوق موثّقة من سات." : "Visitor movement, catchment, and population around each area — alongside verified demand, supply, and rent. Teal = sampled movement; gold = verified SAT market data.",
+    intro: ar ? "حركة الزوّار، نطاق الجذب، والسكان حول كل منطقة — مع الطلب والعرض والإيجار الموثق. الأزرق = حركة مأخوذة كعيّنة، الذهبي = بيانات سوق موثّقة من سات." : "Visitor movement, catchment, and population around each area — alongside verified demand, supply, and rent. Blue = sampled movement; gold = verified SAT market data.",
     area: ar ? "المنطقة" : "Area", verified: ar ? "موثق" : "Verified", sample: ar ? "عيّنة" : "Sample",
     overview: ar ? "نظرة عامة" : "Overview",
     visitors: ar ? "زوّار / أسبوع" : "Weekly visitors", wowK: ar ? "مقارنة بالأسبوع السابق" : "vs last week",

@@ -6,7 +6,7 @@ const config: Config = {
       colors: {
         gold: "#8A7342", "gold-soft": "#B79A5E", "gold-deep": "#6E5B33",
         charcoal: "#1C1A15", ink: "#14110B", ivory: "#F7F9FB", "ivory-2": "#E9EDF1",
-        slate: "#2F4A4A", signal: "#0E7C6F", "signal-soft": "#2FA39A", line: "rgba(28,33,38,0.10)"
+        slate: "#2F4A4A", signal: "#2E5FE0", "signal-soft": "#6E92EC", line: "rgba(28,33,38,0.10)"
       },
       fontFamily: {
         display: ["Fraunces", "Georgia", "serif"],
