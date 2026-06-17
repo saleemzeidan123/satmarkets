@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import HeroLive from "@/components/HeroLive";
+import HeroSearch from "@/components/HeroSearch";
 import ListingCard from "@/components/ListingCard";
 import ValuePillars from "@/components/ValuePillars";
 import Reveal from "@/components/Reveal";
@@ -24,13 +24,36 @@ export default async function HomePage({ params }: { params: { locale: string } 
     const { count: c } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("status","published");
     count = c ?? 0;
   }
+  const chips = ar
+    ? ["موثقة ومباشرة من المالك","على مستوى المملكة · الرياض أولاً","إيجار وبيع","عربي / إنجليزي"]
+    : ["Verified, owner-direct","Kingdom-wide · Riyadh first","Lease & sale","English / Arabic"];
   const smartChips = ar
     ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
     : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
   const dots = [{c:"#6E92EC",x:54,y:60},{c:"#2E5FE0",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#4D7CF0",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#5b6470",x:156,y:124},{c:"#3E6E66",x:60,y:128},{c:"#6E92EC",x:250,y:110}];
+  const gradMain = ar
+    ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
+    : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
   return (
     <div className="space-y-20">
-      <HeroLive locale={locale} hero={dict.hero} count={count} />
+      <section className="brand-rings relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
+        <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2200&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0" style={{ background: gradMain }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,20,22,0.55) 0%, rgba(15,20,22,0) 24%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,19,0.62) 0%, rgba(12,17,19,0) 44%)" }} />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(77,124,240,0.16), transparent 70%)" }} />
+        <div className="anim-rise relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
+          <div className="max-w-2xl">
+            <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
+            <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>
+            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
+            <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
+            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
+              {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-soft" />{c}</span>))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {featured.length > 0 && (
         <Reveal>
