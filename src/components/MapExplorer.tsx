@@ -9,8 +9,8 @@ export interface MapBuilding {
   band: number | null; bandLow: number | null; bandHigh: number | null; unit: string | null; listings: number;
 }
 const COLORS: Record<string, string> = {
-  office: "#8A7342", retail: "#B5482E", medical: "#2F6E6E", warehouse: "#5A6473",
-  showroom: "#7A5CA8", serviced: "#C08A3E", education: "#4A7A4A", land: "#8C7B52",
+  office: "#2E5FE0", retail: "#0E9488", medical: "#DB2777", warehouse: "#64748B",
+  showroom: "#7C3AED", serviced: "#0EA5E9", education: "#16A34A", land: "#CA8A04",
 };
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
 const unitFmt = (u: string | null, l: string) =>
@@ -33,7 +33,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   }
 
   useEffect(() => {
-    let map: any; let cancelled = false; let hoverId: any = null;
+    let map: any; let ro: any; let cancelled = false; let hoverId: any = null;
     (async () => {
       const maplibregl = (await import("maplibre-gl")).default;
       if (cancelled || !ref.current) return;
@@ -43,6 +43,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         center: [46.69, 24.71], zoom: 10.4, minZoom: 8, maxZoom: 17,
       });
       mapRef.current = map;
+      ro = new ResizeObserver(() => { try { map.resize(); } catch {} }); if (ref.current) ro.observe(ref.current);
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), locale === "ar" ? "top-left" : "top-right");
 
       fcRef.current = buildFC(buildings);
@@ -51,12 +52,12 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
         // cluster halo
         map.addLayer({ id: "cl-halo", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": "#8A7342", "circle-opacity": 0.16,
+          "circle-color": "#64748B", "circle-opacity": 0.16,
           "circle-radius": ["step", ["get", "point_count"], 28, 5, 36, 15, 46],
         }});
         // cluster core (warm gold, white ring)
         map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": ["step", ["get", "point_count"], "#9A803F", 5, "#8A7342", 15, "#6F5B2E"],
+          "circle-color": ["step", ["get", "point_count"], "#9A803F", 5, "#64748B", 15, "#6F5B2E"],
           "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28],
           "circle-stroke-width": 3, "circle-stroke-color": "#FFFFFF",
         }});
@@ -67,7 +68,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         // unclustered: soft glow, solid core, transparent hit target
         const colorMatch: any[] = ["match", ["get", "asset"]];
         Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v));
-        colorMatch.push("#8A7342");
+        colorMatch.push("#64748B");
         map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
           "circle-color": colorMatch, "circle-opacity": 0.16,
           "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 18, 16, 26],
@@ -89,7 +90,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
           if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
           hoverId = f.id; map.setFeatureState({ source: "b", id: hoverId }, { hover: true });
           const p = f.properties;
-          tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#8A7342">${esc(p.assetLabel)}</div>`).addTo(map);
+          tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#64748B">${esc(p.assetLabel)}</div>`).addTo(map);
         };
         const onLeave = () => {
           map.getCanvas().style.cursor = "";
@@ -118,10 +119,10 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
           const lons = buildings.map((b) => b.lng), lats = buildings.map((b) => b.lat);
           map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 70, maxZoom: 12.5, duration: 0 });
         } catch {}
-        setReady(true);
+        setReady(true); setTimeout(() => { try { map.resize(); } catch {} }, 60);
       });
     })();
-    return () => { cancelled = true; if (map) map.remove(); };
+    return () => { cancelled = true; if (ro) ro.disconnect(); if (map) map.remove(); };
   }, [buildings, locale]);
 
   useEffect(() => {
@@ -142,7 +143,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active==="all"?"border-signal bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
         {assetOrder.map((a) => (
           <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active===a?"border-signal bg-signal text-white":"border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
-            <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#8A7342" }} />{assetLabels[a] || a}
+            <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#64748B" }} />{assetLabels[a] || a}
           </button>
         ))}
       </div>
@@ -161,7 +162,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
             <div className="relative h-32">
               <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
               <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
-              <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || "#8A7342" }}>{sel.assetLabel}</span>
+              <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || "#64748B" }}>{sel.assetLabel}</span>
             </div>
             <div className="p-4">
               <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
