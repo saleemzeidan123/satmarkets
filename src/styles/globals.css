@@ -123,3 +123,6 @@ html, body { overflow-x: hidden; }
   .intel-card { transition: transform .25s cubic-bezier(.2,.7,.2,1), box-shadow .25s ease; }
   .intel-card:hover { transform: translateY(-3px); }
 }
+
+/* unified photo grade */
+.card img { filter: saturate(0.82) contrast(1.06) brightness(0.99); }
