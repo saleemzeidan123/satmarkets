@@ -67,6 +67,7 @@ export default function HeroLive({ locale, hero, count }: {
 
   useEffect(() => {
     let map: any;
+    let ro: any;
     let cancelled = false;
     (async () => {
       const maplibregl = (await import("maplibre-gl")).default;
@@ -78,6 +79,8 @@ export default function HeroLive({ locale, hero, count }: {
         zoom: 10.5,
         interactive: false,
       });
+      ro = new ResizeObserver(() => { try { map.resize(); } catch {} });
+      if (ref.current) ro.observe(ref.current);
       map.on("load", () => {
         PTS.forEach((p, i) => {
           const el = document.createElement("div");
@@ -86,10 +89,10 @@ export default function HeroLive({ locale, hero, count }: {
           el.style.animationDelay = (reduced ? 0 : 350 + i * 140) + "ms";
           new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
         });
-        setTimeout(() => { try { map.resize(); } catch {} }, 80);
+        [80, 300, 900].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
       });
     })();
-    return () => { cancelled = true; if (map) map.remove(); };
+    return () => { cancelled = true; if (ro) ro.disconnect(); if (map) map.remove(); };
   }, [reduced]);
 
   const grad = ar
@@ -99,7 +102,7 @@ export default function HeroLive({ locale, hero, count }: {
   return (
     <section className="relative -mt-8 min-h-[580px] overflow-hidden sm:-mt-10 sm:min-h-[640px]" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "#070B17" }}>
       <style>{CSS}</style>
-      <div ref={ref} className="absolute inset-0 h-full w-full" />
+      <div ref={ref} className="absolute inset-0" />
       <div className="pointer-events-none absolute inset-0" style={{ background: grad }} />
       <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.65), rgba(7,11,23,0) 20%)" }} />
       <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.78), rgba(7,11,23,0) 38%)" }} />
