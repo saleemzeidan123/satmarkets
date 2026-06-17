@@ -14,7 +14,8 @@ body {
   font-family: Inter, system-ui, sans-serif;
 }
 [dir="rtl"] { font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; }
-h1,h2,h3,.font-display { font-family: Fraunces, Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
+h1,h2,h3,.font-display { font-family: Fraunces, Georgia, serif; font-weight: 560; letter-spacing: -0.022em; text-wrap: balance; }
+p, li { text-wrap: pretty; }
 ::selection { background: rgba(46,95,224,0.16); }
 a { transition: color .18s ease; }
 .eyebrow { font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color:#2E5FE0; font-weight:600; }
