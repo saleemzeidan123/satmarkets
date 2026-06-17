@@ -57,7 +57,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         }});
         // cluster core (warm gold, white ring)
         map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": ["step", ["get", "point_count"], "#9A803F", 5, "#64748B", 15, "#6F5B2E"],
+          "circle-color": ["step", ["get", "point_count"], "#6E92EC", 5, "#64748B", 15, "#2E5FE0"],
           "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28],
           "circle-stroke-width": 3, "circle-stroke-color": "#FFFFFF",
         }});
