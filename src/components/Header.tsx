@@ -39,8 +39,8 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center gap-2.5 sm:gap-3">
-          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-[11px]" style={{background:"#14181B"}}><svg width="24" height="24" viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="5" fill="#fff"/><rect x="17" y="17" width="9" height="9" rx="2.5" fill="#2E5FE0"/></svg></span><span className="flex flex-col leading-none">
-            <span className="font-display text-[19px] sm:text-[22px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="italic font-normal text-charcoal/70">Markets</span></span>
+          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center"><svg width="34" height="34" viewBox="0 0 28 28" aria-hidden="true"><rect x="0" y="0" width="12" height="12" rx="3.2" fill="#14181B"/><rect x="16" y="0" width="12" height="12" rx="3.2" fill="#2E5FE0"/><rect x="0" y="16" width="12" height="12" rx="3.2" fill="#14181B"/><rect x="16" y="16" width="12" height="12" rx="3.2" fill="#14181B"/></svg></span><span className="flex flex-col leading-none">
+            <span className="font-display text-[19px] sm:text-[22px] tracking-tight"><span className="text-charcoal">SAT</span> <span className="font-medium text-charcoal/80">Markets</span></span>
             <span className="mt-1 hidden sm:flex items-center gap-1.5">
               <span className="live-dot" />
               <span className="text-[9.5px] font-medium uppercase tracking-[0.16em] text-slate/80">{descriptor}</span>
