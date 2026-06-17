@@ -21,8 +21,8 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <img src={photoFor(listing.asset_type, listing.id)} alt={title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
         <div className="absolute start-3 top-3 flex items-center gap-1.5">
-          <span className="rounded-md bg-white/90 px-2 py-1 text-[10px] font-medium text-charcoal backdrop-blur">{assetLabel(listing.asset_type, locale)}</span>
-          <span className="rounded-md bg-signal/90 px-2 py-1 text-[10px] font-medium text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md px-2 py-1 text-[10px] font-medium text-white backdrop-blur" style={{ background: "rgba(46,95,224,0.92)" }}>{locale === "ar" ? "ذكاء" : "Intel"}</span>
+          <span className="rounded-md bg-white/90 px-2 py-1 text-[10px] font-semibold text-charcoal ring-1 ring-black/5 backdrop-blur">{assetLabel(listing.asset_type, locale)}</span>
+          <span className="rounded-md bg-signal px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md bg-[#0E9488] px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{locale === "ar" ? "ذكاء" : "Intel"}</span>
         </div>
         <SaveHeart id={listing.id} label={ui.save || "Save"} />
         <div className="absolute bottom-3 start-3 text-white">
@@ -35,7 +35,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <div className="mt-1 text-[13px] text-charcoal/55">{place}{place ? " · " : ""}{listing.area_sqm} {sqm}{listing.building_grade !== "n_a" ? " · " + gradeLabel(listing.building_grade, locale) : ""}</div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
           <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/50">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2F6E6E" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E9488" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             {ui.verifiedListing}
           </span>
           <span className="text-[12px] text-charcoal/40 transition group-hover:text-signal">{ui.view} →</span>
