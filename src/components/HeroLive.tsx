@@ -96,16 +96,16 @@ export default function HeroLive({ locale, hero, count }: {
   }, [reduced]);
 
   const grad = ar
-    ? "linear-gradient(250deg, rgba(7,11,23,.94) 0%, rgba(7,11,23,.8) 40%, rgba(7,11,23,.42) 72%, rgba(7,11,23,.24) 100%)"
-    : "linear-gradient(110deg, rgba(7,11,23,.94) 0%, rgba(7,11,23,.8) 40%, rgba(7,11,23,.42) 72%, rgba(7,11,23,.24) 100%)";
+    ? "linear-gradient(250deg, rgba(7,11,23,.92) 0%, rgba(7,11,23,.72) 38%, rgba(7,11,23,.32) 70%, rgba(7,11,23,.12) 100%)"
+    : "linear-gradient(110deg, rgba(7,11,23,.92) 0%, rgba(7,11,23,.72) 38%, rgba(7,11,23,.32) 70%, rgba(7,11,23,.12) 100%)";
 
   return (
     <section className="relative -mt-8 min-h-[580px] overflow-hidden sm:-mt-10 sm:min-h-[640px]" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "#070B17" }}>
       <style>{CSS}</style>
-      <div ref={ref} className="absolute inset-0" />
+      <div ref={ref} className="absolute inset-x-0 top-0 h-[720px]" />
       <div className="pointer-events-none absolute inset-0" style={{ background: grad }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.65), rgba(7,11,23,0) 20%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.78), rgba(7,11,23,0) 38%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.5), rgba(7,11,23,0) 18%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.6), rgba(7,11,23,0) 34%)" }} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none">
         <defs><pattern id="hlg" width="68" height="68" patternUnits="userSpaceOnUse"><path d="M68 0H0V68" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth="1" /></pattern></defs>
         <rect width="100%" height="100%" fill="url(#hlg)" />
