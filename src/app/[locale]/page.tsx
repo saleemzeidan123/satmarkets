@@ -18,15 +18,18 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const sb = getSupabaseServer();
   let featured: Listing[] = [];
   let count = 0;
+  let buildings = 0;
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status","published").order("created_at",{ascending:false}).limit(6);
     featured = (data as Listing[]) ?? [];
     const { count: c } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("status","published");
     count = c ?? 0;
+    const { count: b } = await sb.from("buildings").select("*", { count:"exact", head:true });
+    buildings = b ?? 0;
   }
-  const chips = ar
-    ? ["موثقة ومباشرة من المالك","على مستوى المملكة · الرياض أولاً","إيجار وبيع","عربي / إنجليزي"]
-    : ["Verified, owner-direct","Kingdom-wide · Riyadh first","Lease & sale","English / Arabic"];
+  const proof = ar
+    ? [count > 0 ? `${count} قائمة موثّقة` : "قوائم موثّقة", buildings > 0 ? `${buildings} مبنى مرسوم` : "مبانٍ مرسومة", "مباشر من المالك أو بتفويض", "نطاقات إيجار من أدلة موثّقة"]
+    : [count > 0 ? `${count} verified listings` : "Verified listings", buildings > 0 ? `${buildings} buildings mapped` : "Buildings mapped", "Owner-direct or mandated", "Rent bands from verified evidence"];
   const smartChips = ar
     ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
     : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
@@ -48,8 +51,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
             <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>
             <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
             <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
-            <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
-              {chips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-white/70"><span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-soft" />{c}</span>))}
+            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
+              {proof.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12.5px] text-white/75"><span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-soft" />{c}</span>))}
+              <Link href={`/${locale}/rent-index`} className="text-[12.5px] text-signal-soft underline decoration-white/30 underline-offset-4 hover:text-white">{ar ? "كيف يُبنى مؤشر الإيجار ←" : "How the rent index is built →"}</Link>
             </div>
           </div>
         </div>

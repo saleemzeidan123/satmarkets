@@ -22,7 +22,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
         <div className="absolute start-3 top-3 flex items-center gap-1.5">
           <span className="rounded-md bg-white/90 px-2 py-1 text-[10px] font-semibold text-charcoal ring-1 ring-black/5 backdrop-blur">{assetLabel(listing.asset_type, locale)}</span>
-          <span className="rounded-md bg-signal px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md bg-[#0E9488] px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{locale === "ar" ? "ذكاء" : "Intel"}</span>
+          <span className="rounded-md bg-signal px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span><span className="rounded-md bg-[#0E9488] px-2 py-1 text-[10px] font-semibold text-white backdrop-blur">{locale === "ar" ? "نطاق إيجار" : "Rent band"}</span>
         </div>
         <SaveHeart id={listing.id} label={ui.save || "Save"} />
         <div className="absolute bottom-3 start-3 text-white">
