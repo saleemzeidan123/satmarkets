@@ -5,6 +5,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import RentBand from "@/components/RentBand";
 import LeadForm from "@/components/LeadForm";
+import Gallery from "@/components/Gallery";
 import { galleryFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, fitoutLabel, cityLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
@@ -55,11 +56,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       <Link href={`/${locale}/listings`} className="text-sm text-charcoal/50 hover:text-charcoal">← {ui.allListings}</Link>
       <div className="mt-3 grid gap-8 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          <div className="grid grid-cols-4 gap-2">
-            <div className="col-span-4 overflow-hidden rounded-2xl"><img src={pics[0]} alt={title} className="h-72 w-full object-cover" /></div>
-            <div className="col-span-2 overflow-hidden rounded-xl"><img src={pics[1]} alt="" className="h-28 w-full object-cover" /></div>
-            <div className="col-span-2 overflow-hidden rounded-xl"><img src={pics[2]} alt="" className="h-28 w-full object-cover" /></div>
-          </div>
+          <Gallery images={pics} title={title} photosLabel="photos" />
           <div>
             <div className="eyebrow">{assetLabel(listing.asset_type, locale)} · {place}</div>
             <h1 className="mt-1 font-display text-3xl text-charcoal">{title}</h1>
@@ -68,6 +65,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               {listing.ownership_verified && <span className="badge badge-verified">{L.ownershipVerified}</span>}
               {(listing.authorization_verified || listing.lister_type === "owner_direct") && <span className="badge badge-verified">{L.rightToMarket}</span>}
               {listing.ad_permit_no && <span className="badge">{L.adPermit}: {listing.ad_permit_no}</span>}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11.5px] text-charcoal/45">
+              <span className="inline-flex items-center gap-1 text-[#0E7C6F]"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M20 6 9 17l-5-5"/></svg>Verified by SAT</span>
+              {listing.created_at && <span>&middot; Updated {new Date(listing.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
