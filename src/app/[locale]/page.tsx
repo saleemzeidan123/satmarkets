@@ -39,21 +39,17 @@ export default async function HomePage({ params }: { params: { locale: string } 
     : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
   return (
     <div className="space-y-20">
-      <section className="brand-rings relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)" }}>
-        <img src="https://images.unsplash.com/photo-1663900108404-a05e8bf82cda?auto=format&fit=crop&w=2200&q=72" alt="Riyadh skyline at night" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0" style={{ background: gradMain }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(15,20,22,0.55) 0%, rgba(15,20,22,0) 24%)" }} />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(12,17,19,0.62) 0%, rgba(12,17,19,0) 44%)" }} />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(60% 78% at 80% 64%, rgba(77,124,240,0.16), transparent 70%)" }} />
+      <section className="brand-rings relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "linear-gradient(135deg,#FBFCFE 0%,#EEF2F8 52%,#E7EDF5 100%)" }}>
+        <svg viewBox="0 0 100 100" aria-hidden="true" className="pointer-events-none absolute -top-24 end-[-70px] h-[560px] w-[560px] opacity-[0.05]"><g fill="#3A6EA5"><path d="M22.0 13.0H40.84A2.5 2.5 0 0 1 43.34 15.5V50.46A2.5 2.5 0 0 1 40.84 52.96H15.5A2.5 2.5 0 0 1 13.0 50.46V22.0A9.0 9.0 0 0 1 22.0 13.0Z"/><path d="M50.28 13.0H78.0A9.0 9.0 0 0 1 87.0 22.0V50.46A2.5 2.5 0 0 1 84.5 52.96H50.28A2.5 2.5 0 0 1 47.78 50.46V15.5A2.5 2.5 0 0 1 50.28 13.0Z"/><path d="M15.5 57.4H40.84A2.5 2.5 0 0 1 43.34 59.9V84.5A2.5 2.5 0 0 1 40.84 87.0H22.0A9.0 9.0 0 0 1 13.0 78.0V59.9A2.5 2.5 0 0 1 15.5 57.4Z"/><path d="M50.28 57.4H84.5A2.5 2.5 0 0 1 87.0 59.9V78.0A9.0 9.0 0 0 1 78.0 87.0H50.28A2.5 2.5 0 0 1 47.78 84.5V59.9A2.5 2.5 0 0 1 50.28 57.4Z"/></g></svg>
         <div className="anim-rise relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
           <div className="max-w-2xl">
-            <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-signal-soft">{dict.hero.eyebrow}</div>
-            <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-white sm:text-[60px]">{dict.hero.title}</h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-white/75">{dict.hero.subtitle}</p>
+            <div className="fig text-[11px] font-medium uppercase tracking-[0.2em] text-[#3A6EA5]">{dict.hero.eyebrow}</div>
+            <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-[#14181B] sm:text-[60px]">{dict.hero.title}</h1>
+            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-[#5B6470]">{dict.hero.subtitle}</p>
             <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
             <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-              {proof.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12.5px] text-white/75"><span className="inline-block h-1.5 w-1.5 rounded-full bg-signal-soft" />{c}</span>))}
-              <Link href={`/${locale}/rent-index`} className="text-[12.5px] text-signal-soft underline decoration-white/30 underline-offset-4 hover:text-white">{ar ? "كيف يُبنى مؤشر الإيجار ←" : "How the rent index is built →"}</Link>
+              {proof.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12.5px] text-[#5B6470]"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[#2E5FE0]" />{c}</span>))}
+              <Link href={`/${locale}/rent-index`} className="text-[12.5px] text-[#2E5FE0] underline decoration-[#2E5FE0]/30 underline-offset-4 hover:text-[#1E47B0]">{ar ? "كيف يُبنى مؤشر الإيجار ←" : "How the rent index is built →"}</Link>
             </div>
           </div>
         </div>
