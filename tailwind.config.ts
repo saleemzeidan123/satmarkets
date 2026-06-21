@@ -9,10 +9,10 @@ const config: Config = {
         slate: "#2F4A4A", signal: "#2E5FE0", "signal-soft": "#6E92EC", line: "rgba(28,33,38,0.10)"
       },
       fontFamily: {
-        display: ["Fraunces", "Georgia", "serif"],
-        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Playfair Display", "Georgia", "serif"],
+        sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
         arabic: ["IBM Plex Sans Arabic", "system-ui", "sans-serif"],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"]
+        mono: ["IBM Plex Mono", "ui-monospace", "monospace"]
       },
       boxShadow: {
         card: "0 1px 2px rgba(20,24,28,0.04), 0 8px 24px -12px rgba(20,24,28,0.12)",
