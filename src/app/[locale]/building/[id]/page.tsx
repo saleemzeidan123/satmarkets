@@ -82,7 +82,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
             <h1 className="mt-1 font-display text-3xl text-white sm:text-4xl">{name}</h1>
             <div className="mt-2 flex flex-wrap gap-2 text-[12px] text-white/85">
               <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{assetLabel(b.asset_type, locale)}</span>
-              {grade && grade !== "—" ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{T.grade} {grade}</span> : null}
+              {grade && grade !== "N/A" ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{T.grade} {grade}</span> : null}
               {b.year_built ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur fig">{b.year_built}</span> : null}
               {b.size_sqm ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur"><span className="fig">{Number(b.size_sqm).toLocaleString()}</span> {dict.common.sqm}</span> : null}
               {b.owner_developer ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{b.owner_developer}</span> : null}
@@ -107,7 +107,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
       <SectionLabel n="00" title={T.overview} sub="" />
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi label={T.units} value={`${listings.length}`} tone="verified" />
-        <Kpi label={T.grade} value={grade && grade !== "—" ? grade : "—"} tone="verified" />
+        <Kpi label={T.grade} value={grade && grade !== "N/A" ? grade : "N/A"} tone="verified" />
         <Kpi label={T.visitors} value={`${weekly[weekly.length-1]}k`} tone="live" />
         <Kpi label={T.dwell} value={`${dwell} ${T.min}`} tone="live" />
         <Kpi label={T.catch15} value={`${catch15}k`} tone="live" />

@@ -83,7 +83,7 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
                 <div className="text-end"><div className="text-[10px] uppercase tracking-wide intel-faint">{t.opp}</div><div className="font-display intel-gold">{oppLabel(u.score)}</div></div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] sm:grid-cols-4">
-                <Sig label={t.rent} value={u.rent != null ? Math.round(u.rent).toLocaleString() : "—"} />
+                <Sig label={t.rent} value={u.rent != null ? Math.round(u.rent).toLocaleString() : "N/A"} />
                 <Sig label={t.demand} value={String(u.demand)} />
                 <Sig label={t.avail} value={String(u.avail)} />
                 <Sig label={t.supply} value={String(u.supply)} />

@@ -62,9 +62,9 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                             <td className="px-5 py-3.5 text-charcoal">{place}</td>
                             <td className="px-5 py-3.5 text-[12.5px] intel-muted">{segmentLabel(r.segment, locale)}</td>
                             {r.sufficient ? (<>
-                              <td className="px-5 py-3.5 intel-muted fig">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "—"}</td>
+                              <td className="px-5 py-3.5 intel-muted fig">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "N/A"}</td>
                               <td className="px-5 py-3.5">
-                                <div className="fig text-lg leading-none intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "—"}</div>
+                                <div className="fig text-lg leading-none intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "N/A"}</div>
                                 {r.median != null && (maxByUnit[r.unit] ?? 0) > 0 && (
                                   <div className="mt-2 h-1 w-24 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-signal/80" style={{ width: `${Math.max(8, Math.round((r.median / maxByUnit[r.unit]) * 100))}%` }} /></div>
                                 )}

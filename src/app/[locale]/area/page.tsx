@@ -165,7 +165,7 @@ export default async function AreaPage({ params, searchParams }: { params: { loc
                   {real.map((r)=>(
                     <tr key={r.asset} className="border-t border-line">
                       <td className="py-2.5"><Link href={`/${locale}/listings?asset=${r.asset}`} className="text-charcoal hover:text-charcoal">{assetLabel(r.asset, locale)}</Link></td>
-                      <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:GOLD}}/></div><span className="fig" style={{color:GOLD}}>{r.rent?Math.round(r.rent).toLocaleString():"—"}</span></div></td>
+                      <td className="py-2.5"><div className="flex items-center gap-2"><div className="h-1.5 w-20 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{width:`${r.rent?(r.rent/maxReal)*100:0}%`,background:GOLD}}/></div><span className="fig" style={{color:GOLD}}>{r.rent?Math.round(r.rent).toLocaleString():"N/A"}</span></div></td>
                       <td className="py-2.5 intel-muted fig">{r.supply}</td><td className="py-2.5 intel-muted fig">{r.avail}</td><td className="py-2.5 intel-muted fig">{r.demand}</td>
                     </tr>
                   ))}

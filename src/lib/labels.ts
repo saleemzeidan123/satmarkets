@@ -6,10 +6,10 @@ const ASSET: Record<string, [string,string]> = {
   land:["Land","أراضٍ"]
 };
 const DEAL: Record<string,[string,string]> = { lease:["Lease","إيجار"], sale:["Sale","بيع"] };
-const GRADE: Record<string,[string,string]> = { a_plus:["A+","أ+"], a:["A","أ"], b:["B","ب"], c:["C","ج"], n_a:["—","—"] };
+const GRADE: Record<string,[string,string]> = { a_plus:["A+","أ+"], a:["A","أ"], b:["B","ب"], c:["C","ج"], n_a:["N/A","N/A"] };
 const FITOUT: Record<string,[string,string]> = {
   shell_and_core:["Shell & core","على المحارة"], warm_shell:["Warm shell","نصف تشطيب"],
-  fitted:["Fitted","مجهز"], furnished:["Furnished","مفروش"], n_a:["—","—"]
+  fitted:["Fitted","مجهز"], furnished:["Furnished","مفروش"], n_a:["N/A","N/A"]
 };
 const CONF: Record<string,[string,string]> = { low:["Low","منخفضة"], medium:["Medium","متوسطة"], high:["High","عالية"] };
 const CITY: Record<string,[string,string]> = { Riyadh:["Riyadh","الرياض"], Jeddah:["Jeddah","جدة"], Dammam:["Dammam","الدمام"], Khobar:["Khobar","الخبر"] };

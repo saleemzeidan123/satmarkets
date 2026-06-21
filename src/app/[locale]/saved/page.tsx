@@ -44,7 +44,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     if (v == null) return T.onReq;
     return `${Number(v).toLocaleString()} ${lease ? T.perYear : T.sar}`;
   };
-  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return "—"; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
+  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return "N/A"; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
 
   return (
     <section>
@@ -86,8 +86,8 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.deal}>{listings.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{listings.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{listings.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span></Cell>)}</Row>
-                  <Row label={T.size}>{listings.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "—"}</span> {dict.common.sqm}</Cell>)}</Row>
-                  <Row label={T.grade}>{listings.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "—"}</Cell>)}</Row>
+                  <Row label={T.size}>{listings.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
+                  <Row label={T.grade}>{listings.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
                   <Row label={T.district}>{listings.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
                 </tbody>
               </table>
