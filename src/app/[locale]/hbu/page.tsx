@@ -88,7 +88,7 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
                 <Sig label={t.avail} value={String(u.avail)} />
                 <Sig label={t.supply} value={String(u.supply)} />
               </div>
-              <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{ width: `${Math.round(u.score*100)}%`, background:"#8A7342" }} /></div>
+              <div className="mt-3 flex h-1.5 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{ width: `${Math.round(u.score*100)}%`, background:"#3A6EA5" }} /></div>
             </div>
           ))}
         </div>

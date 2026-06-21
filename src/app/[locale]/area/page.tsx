@@ -5,7 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 
 const TEAL = "#2E5FE0";
-const GOLD = "#8A7342";
+const GOLD = "#3A6EA5";
 
 const DISTRICTS = [
   { id: "d1111111-1111-1111-1111-111111111111", en: "KAFD", ar: "واجهة الرياض المالية" },
