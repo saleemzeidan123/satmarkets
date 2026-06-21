@@ -18,7 +18,7 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en" | "ar" }) 
       {/* soft depth, behind the cards */}
       <div className="pointer-events-none absolute -end-12 top-4 -z-0 h-72 w-72 rounded-full bg-signal/10 blur-3xl" />
 
-      {/* clean vertical stack — flow layout, cannot overlap */}
+      {/* clean vertical stack, flow layout, cannot overlap */}
       <div className="relative z-10 ms-auto w-[340px] space-y-4">
         {/* listing preview (anchor) */}
         <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-lift">

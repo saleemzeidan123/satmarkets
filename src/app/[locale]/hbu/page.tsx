@@ -45,12 +45,12 @@ export default async function HbuPage({ params, searchParams }: { params: { loca
     area: ar ? "المنطقة" : "Area", rank: ar ? "الإشارة الحالية حسب الاستخدام" : "Current signal by use", strongest: ar ? "أقوى إشارة" : "Strongest", opp: ar ? "إشارة الفرصة" : "Opportunity",
     rent: ar ? "وسيط الإيجار" : "Median rent", supply: ar ? "مبانٍ" : "Buildings", avail: ar ? "متاح" : "Available", demand: ar ? "طلبات" : "Briefs",
     none: ar ? "لا بيانات كافية لهذه المنطقة بعد." : "Not enough data for this area yet.",
-    method: ar ? "منهجية أفضل استخدام — الاختبارات الأربعة" : "Highest-and-best-use — the four tests",
+    method: ar ? "منهجية أفضل استخدام, الاختبارات الأربعة" : "Highest-and-best-use, the four tests",
     t1: ar ? "مسموح نظامياً" : "Legally permissible", d1: ar ? "التنظيم ونسبة البناء للقطعة. مطلوب: بيانات الأمانة." : "Zoning and FAR. Input needed: municipal data.",
     t2: ar ? "ممكن مادياً" : "Physically possible", d2: ar ? "مساحة القطعة والوصول والمرافق. مطلوب: بيانات القطعة." : "Parcel size, access, utilities. Input needed: parcel data.",
-    t3: ar ? "مجدٍ مالياً" : "Financially feasible", d3: ar ? "الطلب مقابل العرض وقوة الإيجار — معروض أعلاه." : "Demand vs supply and rent strength — shown above.",
+    t3: ar ? "مجدٍ مالياً" : "Financially feasible", d3: ar ? "الطلب مقابل العرض وقوة الإيجار, معروض أعلاه." : "Demand vs supply and rent strength, shown above.",
     t4: ar ? "الأقصى إنتاجية" : "Maximally productive", d4: ar ? "القيمة المتبقية للأرض. مطلوب: تكاليف الإنشاء." : "Residual land value. Input needed: construction costs.",
-    disclaimer: ar ? "مؤشر إرشادي من بيانات موثقة، وليس توصية استثمارية." : "Indicative, from verified data — not investment advice.",
+    disclaimer: ar ? "مؤشر إرشادي من بيانات موثقة، وليس توصية استثمارية." : "Indicative, from verified data, not investment advice.",
     have: ar ? "متوفر" : "Have it", need: ar ? "مطلوب منك" : "Input needed", use: ar ? "الاستخدام" : "Use",
   };
   const oppLabel = (s: number) => s >= 0.6 ? (ar ? "قوية" : "Strong") : s >= 0.35 ? (ar ? "متوسطة" : "Moderate") : (ar ? "محدودة" : "Limited");

@@ -6,7 +6,7 @@ Separate from satestate.com. Its own repo, Supabase project, Vercel project, and
 
 ## Stack
 - Next.js 14 (App Router), TypeScript, Tailwind
-- Supabase (Postgres + PostGIS + auth + storage) — the SAT Markets project, not SAT CRM
+- Supabase (Postgres + PostGIS + auth + storage), the SAT Markets project, not SAT CRM
 - English-primary with full Arabic RTL mirror, hreflang (Arabic auto-served to Arabic-locale visitors)
 
 ## Getting started

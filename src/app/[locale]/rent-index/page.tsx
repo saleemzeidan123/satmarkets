@@ -27,7 +27,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     intro: ar ? "نطاقات ووسطاء الإيجار حسب الحي ونوع المساحة، مجمّعة من إصدارات السوق العامة وبيانات موثقة. لاحقاً سيحلّل المؤشر إيجارات المنصة نفسها لتقدير المتوسطات. كل أنواع المساحات مدرجة، وما لا تتوفر له أرقام بعد يظهر فارغاً." : "Rent bands and medians by district and space type, compiled from public market releases and verified data. Later the index will analyse the platform's own listings to estimate averages. Every space type is listed; those without figures yet appear blank.",
     district: ar ? "الحي / التجمّع" : "District / cluster", segment: ar ? "الشريحة" : "Segment", band: ar ? "النطاق" : "Band (low–high)", median: ar ? "الوسيط" : "Median", unit: ar ? "الوحدة" : "Unit",
     insufficient: ar ? "عينة غير كافية" : "Insufficient sample",
-    awaiting: ar ? "بانتظار بيانات موثقة لهذا النوع — ستُنشر عند توفّر عينة كافية." : "Awaiting verified data for this space type — figures will publish once a defensible sample exists.",
+    awaiting: ar ? "بانتظار بيانات موثقة لهذا النوع, ستُنشر عند توفّر عينة كافية." : "Awaiting verified data for this space type, figures will publish once a defensible sample exists.",
     cite: ar ? "حر الاقتباس مع الإسناد · CC BY 4.0. مجمّع من إصدارات السوق (JLL، Knight Frank، CBRE، Savills) ووسطاء القوائم وبيانات موثقة." : "Free to cite with attribution · CC BY 4.0. Compiled from market releases (JLL, Knight Frank, CBRE, Savills), listing-derived medians, and verified data.",
   };
 

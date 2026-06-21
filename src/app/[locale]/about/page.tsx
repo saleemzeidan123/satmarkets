@@ -13,7 +13,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
             ["موثقة لا إعلانات","يُوثَّق الملاك قبل نشر أي قائمة. مدعومة بالتصاريح، خالية من التكرار، ومنظمة."],
             ["حاجز بيانات حقيقي","مؤشر إيجار تجاري: وسيط الإيجارات حسب الحي ونوع المساحة، حد أدنى للعينة، وخلايا فارغة بصدق حين لا تتوفر البيانات."],
             ["متوافقة نظامياً","مصمّمة حول متطلبات الهيئة العامة للعقار، والتفويضات المكتوبة، وضبط تصاريح الإعلان، وحماية البيانات والفوترة."]],
-    foot: "سات ماركتس — ذكاء عقاري تجاري موثوق للمملكة العربية السعودية. (الاسم والعلامة قيد الإعداد.)",
+    foot: "سات ماركتس, ذكاء عقاري تجاري موثوق للمملكة العربية السعودية. (الاسم والعلامة قيد الإعداد.)",
   } : {
     eyebrow: "About",
     title: "The verified data authority for Gulf commercial real estate.",
@@ -22,7 +22,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
             ["Verified, not classifieds","Owners are verified before any listing publishes. Permit-backed, deduplicated, structured."],
             ["A real data moat","A commercial rent index: median rents by district and space type, minimum sample counts, and honest blanks where data is missing."],
             ["Compliance-native","Designed around REGA requirements, written mandates, ad-permit gating, and data-protection and e-invoicing by design."]],
-    foot: "SAT Markets — verified commercial real estate intelligence for Saudi Arabia. (Name and brand in progress.)",
+    foot: "SAT Markets, verified commercial real estate intelligence for Saudi Arabia. (Name and brand in progress.)",
   };
   return (
     <section className="mx-auto max-w-3xl">

@@ -64,8 +64,8 @@ export default async function HomePage({ params }: { params: { locale: string } 
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#2E5FE0]">{ar ? "قوائم ذكية" : "Smart listings"}</div>
-              <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة — بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
-              <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية — مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed — with a rent band and area intelligence."}</p>
+              <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة, بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
+              <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية, مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed, with a rent band and area intelligence."}</p>
             </div>
             <Link href={`/${locale}/listings`} className="link-underline text-sm text-signal">{dict.featured.viewAll} →</Link>
           </div>

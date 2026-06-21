@@ -27,7 +27,7 @@ export default function SearchPage({ params }: { params: { locale: string } }) {
     none: dict.search.none,
     go: dict.search.go,
     clarifyTitle: locale==="ar"?"دعني أساعدك في التحديد":"Let me help you narrow it down",
-    clarifyBody: locale==="ar"?"اختر نوع مساحة أو مدينة أو نوع الصفقة، أو صف ما تريده بكلماتك.":"Pick a space type, a city, or a deal — or describe it in your own words.",
+    clarifyBody: locale==="ar"?"اختر نوع مساحة أو مدينة أو نوع الصفقة، أو صف ما تريده بكلماتك.":"Pick a space type, a city, or a deal, or describe it in your own words.",
     pickType: locale==="ar"?"نوع المساحة":"Space type",
     pickCity: locale==="ar"?"المدينة":"City",
     pickDeal: locale==="ar"?"الصفقة":"Deal",

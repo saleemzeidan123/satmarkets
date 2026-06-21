@@ -12,7 +12,7 @@
   "hero": {
     "eyebrow": "Saudi Arabia · REGA-native commercial exchange",
     "title": "The Kingdom's home for verified commercial space",
-    "subtitle": "Verified listings, decision-grade rent data, and location intelligence for commercial real estate across Saudi Arabia — live now in Riyadh, expanding Kingdom-wide.",
+    "subtitle": "Verified listings, decision-grade rent data, and location intelligence for commercial real estate across Saudi Arabia, live now in Riyadh, expanding Kingdom-wide.",
     "searchPlaceholder": "Office, Al Olaya, up to 1,000 sqm",
     "browse": "Browse listings"
   },
@@ -27,7 +27,7 @@
     "repNote": "Written mandate. SAT acts for you, within statutory limits.",
     "representation": "Representation",
     "ownerDirect": "Owner-direct",
-    "brokerAuthorized": "Broker — authorized to market",
+    "brokerAuthorized": "Broker, authorized to market",
     "satListed": "SAT-listed",
     "ownershipVerified": "Ownership verified",
     "rightToMarket": "Right-to-market on file",
@@ -43,7 +43,7 @@
     "rentBelow": "below the verified band"
   },
   "common": {
-    "poweredBy": "SAT Markets — verified commercial real estate intelligence",
+    "poweredBy": "SAT Markets, verified commercial real estate intelligence",
     "sqm": "sqm",
     "perSqm": "SAR / sqm"
   },
@@ -135,12 +135,12 @@
     "search": "AI search",
     "rentIndex": "Rent index",
     "listSpace": "List your space",
-    "legal": "SAT Markets — verified commercial real estate intelligence, Saudi Arabia."
+    "legal": "SAT Markets, verified commercial real estate intelligence, Saudi Arabia."
   },
   "home": {
     "lens": "Explore by asset class",
     "mapTitle": "Every building, on one map",
-    "mapBody": "Explore the Kingdom's commercial buildings as clickable objects — verified rent bands, available space, and area intelligence. Live now in Riyadh, expanding nationwide. The intelligence platform, with the transaction built in.",
+    "mapBody": "Explore the Kingdom's commercial buildings as clickable objects, verified rent bands, available space, and area intelligence. Live now in Riyadh, expanding nationwide. The intelligence platform, with the transaction built in.",
     "mapCta": "Open the map",
     "forTitle": "Built for every decision",
     "forSub": "One platform, three journeys. Each sees the intelligence relevant to it.",

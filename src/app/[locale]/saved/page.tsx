@@ -27,7 +27,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
 
   const T = {
     title: ar ? "المحفوظة" : "Saved",
-    sub: ar ? "قائمتك المختصرة — قارن جنباً إلى جنب." : "Your shortlist — compare side by side.",
+    sub: ar ? "قائمتك المختصرة, قارن جنباً إلى جنب." : "Your shortlist, compare side by side.",
     empty: ar ? "لا شيء محفوظ بعد. اضغط على ♥ في أي قائمة لإضافتها هنا." : "Nothing saved yet. Tap the heart on any listing to add it here.",
     browse: ar ? "تصفّح القوائم" : "Browse listings",
     clear: ar ? "مسح الكل" : "Clear all",

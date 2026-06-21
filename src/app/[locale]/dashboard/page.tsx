@@ -37,7 +37,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
       );
     }
   } else {
-    // Open preview — sign-in disabled while testing
+    // Open preview, sign-in disabled while testing
     isSat = true; acctId = PREVIEW_ACCOUNT; acctName = "Preview";
   }
 
@@ -54,7 +54,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
     <section className="py-6">
       {!user && (
         <div className="mb-5 rounded-xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-charcoal/70">
-          Open preview — sign-in is disabled while we test. You can browse the dashboard and admin; saving a listing will need sign-in re-enabled.
+          Open preview, sign-in is disabled while we test. You can browse the dashboard and admin; saving a listing will need sign-in re-enabled.
         </div>
       )}
       <div className="flex items-center justify-between">

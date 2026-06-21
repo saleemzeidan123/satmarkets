@@ -40,7 +40,7 @@ export default async function AdminPage({ params, searchParams }: { params: { lo
 
   return (
     <section className="py-6">
-      {open && <div className="mb-5 rounded-xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-charcoal/70">Open preview — sign-in disabled while testing. Approve/verify actions need sign-in re-enabled.</div>}
+      {open && <div className="mb-5 rounded-xl border border-signal/30 bg-signal/5 px-4 py-3 text-sm text-charcoal/70">Open preview, sign-in disabled while testing. Approve/verify actions need sign-in re-enabled.</div>}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-charcoal">Admin: approval queue</h1>
         <div className="flex gap-2 text-xs">

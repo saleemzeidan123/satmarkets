@@ -21,7 +21,7 @@ export default async function NewListingPage({ params }: { params: { locale: str
   return (
     <section className="py-6">
       <h1 className="font-display text-2xl text-charcoal">New listing</h1>
-      {!user && <p className="mt-2 text-sm text-charcoal/55">Open preview — you can fill the form; saving needs sign-in re-enabled.</p>}
+      {!user && <p className="mt-2 text-sm text-charcoal/55">Open preview, you can fill the form; saving needs sign-in re-enabled.</p>}
       <div className="mt-6">
         <NewListingForm accountId={acctId} locale={locale} districts={(districts as any) ?? []} />
       </div>
