@@ -289,3 +289,8 @@
 .tier-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:stretch;}
 @media(max-width:1080px){.tier-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.tier-grid{grid-template-columns:1fr}}
+/* auth split layout */
+.auth-split{display:flex;min-height:100vh;}
+.auth-brand{width:520px;flex:none;background:var(--ink);color:#fff;padding:48px 52px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+.auth-form{flex:1;background:var(--paper);overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+@media(max-width:820px){.auth-brand{display:none}}
