@@ -21,7 +21,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         <span style={{ color: "rgba(255,255,255,.86)" }}>SAT Rent Index Q1 2026 is live. Verified rents across {stats.districts} Riyadh districts.</span>
         <Link href={L("/rent-index")} style={{ color: "var(--azure-l)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>Explore <Icon.arrow size={14} /></Link>
       </div>
-      <div style={{ position: "relative", padding: "72px 40px 64px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
+      <div className="satmkt-hero" style={{ position: "relative", padding: "72px 40px 64px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, opacity: .5, pointerEvents: "none" }}>
           <div style={{ position: "absolute", top: -66, right: -46 }}><Mark size={360} base="#E6ECF4" lit="#DCE6F1" /></div>
         </div>
