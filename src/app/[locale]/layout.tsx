@@ -5,6 +5,7 @@ import { isLocale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/getDictionary";
 import Header from "@/components/Header";
 import SatFooter from "@/components/SatFooter";
+import ChromeGate from "@/components/ChromeGate";
 import HtmlLangDir from "@/components/HtmlLangDir";
 
 export default function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
@@ -39,14 +40,16 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   return (
     <>
       <HtmlLangDir locale={locale} />
+      <ChromeGate header={<>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "#14181B", color: "#fff", padding: "8px 24px", fontSize: 12.5, flexWrap: "wrap" }}>
         <svg width="16" height="16" viewBox="0 0 100 100" style={{ flex: "none" }}><rect x="7" y="7" width="32" height="48" rx="3" fill="#F6F8FB"/><rect x="44" y="7" width="49" height="48" rx="3" fill="#3A6EA5"/><rect x="7" y="59" width="32" height="34" rx="3" fill="#F6F8FB"/><rect x="44" y="59" width="49" height="34" rx="3" fill="#F6F8FB"/></svg>
         <span style={{ color: "rgba(255,255,255,.86)" }}>SAT Rent Index Q1 2026 is live. Verified rents across 15 Riyadh districts.</span>
         <Link href={`/${locale}/rent-index`} style={{ color: "#6E92EE", fontWeight: 600, textDecoration: "none" }}>Explore →</Link>
       </div>
       <Header locale={locale} dict={dict} />
+      </>} footer={<SatFooter locale={locale} />}>
       <main className="min-h-[70vh]">{children}</main>
-      <SatFooter locale={locale} />
+      </ChromeGate>
     </>
   );
 }
