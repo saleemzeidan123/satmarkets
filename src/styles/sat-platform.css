@@ -242,3 +242,7 @@
 
 .dpanel .ph{background:none;overflow:visible;}
 .dpanel .ph::after,.dpanel .ph::before{content:none;}
+
+.map .zoom{position:absolute;display:flex;flex-direction:column;border-radius:9px;overflow:hidden;background:#fff;box-shadow:var(--sh-1);}
+.map .zoom span{padding:5px 10px;font-size:16px;color:var(--slate);text-align:center;line-height:1.1;}
+.map .zoom span+span{border-top:1px solid var(--silver);}

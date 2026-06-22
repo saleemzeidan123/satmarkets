@@ -61,7 +61,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
             </div>
           </div>
           <div style={{ flex: "1 1 360px", maxWidth: 404, position: "relative" }}>
-            <div className="card" style={{ position: "absolute", left: -10, top: 24, padding: "11px 14px", boxShadow: "var(--sh-2)", zIndex: 2 }}>
+            <div className="card" style={{ position: "absolute", left: -18, top: 30, padding: "11px 14px", boxShadow: "var(--sh-2)", zIndex: 2 }}>
               <div className="mono" style={{ fontSize: 19, fontWeight: 500, color: "var(--green)" }}>+8.4%</div>
               <div className="muted" style={{ fontSize: 10.5, marginTop: 1 }}>Olaya Grade A, YoY</div>
             </div>
@@ -72,12 +72,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
               <div className="road" style={{ left: 0, right: 0, top: "34%", height: 8 }} />
               <div className="road" style={{ left: 0, right: 0, top: "72%", height: 4 }} />
               <div className="road" style={{ top: 0, bottom: 0, left: "30%", width: 6 }} />
+              <div className="road" style={{ top: 0, bottom: 0, left: "66%", width: 4 }} />
               <div className="metro" style={{ left: "-6%", right: "-6%", top: "50%", transform: "rotate(-7deg)" }} />
               <MarkPin featured price="1,450" style={{ left: "40%", top: "30%" }} />
               <MarkPin price="2,100" style={{ left: "70%", top: "21%" }} />
               <MarkPin price="1,180" style={{ left: "21%", top: "60%" }} />
               <MarkPin muted price="640" style={{ left: "48%", top: "80%" }} />
-              <span className="tag" style={{ position: "absolute", left: 14, top: 14, background: "rgba(255,255,255,.94)", display: "flex", gap: 7, alignItems: "center", boxShadow: "var(--sh-1)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />248 verified, Al Olaya</span>
+              <span className="tag" style={{ position: "absolute", left: 14, bottom: 14, background: "rgba(255,255,255,.94)", display: "flex", gap: 7, alignItems: "center", boxShadow: "var(--sh-1)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />248 verified · Al Olaya</span>
+              <div className="zoom" style={{ position: "absolute", right: 14, top: 14 }}><span>+</span><span>−</span></div>
             </div>
             <div className="card" style={{ position: "absolute", right: -12, bottom: -18, width: 232, padding: 14, boxShadow: "var(--sh-2)", zIndex: 2 }}><div className="row between"><Verified /><span className="muted2"><Icon.heart size={15} /></span></div><div className="price" style={{ marginTop: 8 }}>1,450 <small>SAR/m²·yr</small></div><div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 2 }}>Grade A Office, Olaya Tower</div><div style={{ display: "flex", gap: 8, marginTop: 8, fontFamily: "var(--mono)", fontSize: 11, color: "var(--slate)" }}><span>Al Olaya</span><span>·</span><span>320 m²</span></div></div>
           </div>
