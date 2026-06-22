@@ -81,6 +81,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   activity: (p) => <Ic {...p}><path d="M3 12h4l2.5-7 4 14 2.5-7H21" /></Ic>,
   edit: (p) => <Ic {...p}><path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M14 6l4 4" /></Ic>,
   dots: (p) => <Ic {...p}><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></Ic>,
+  chevr: (p) => <Ic {...p}><path d="M9 6l6 6-6 6" /></Ic>,
+  cam: (p) => <Ic {...p}><rect x="3" y="7" width="18" height="13" rx="2" /><circle cx="12" cy="13.5" r="3.5" /><path d="M8 7l1.5-2h5L16 7" /></Ic>,
   download: (p) => <Ic {...p}><path d="M12 4v10M8 11l4 4 4-4M5 19h14" /></Ic>,
   grid: (p) => <Ic {...p}><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></Ic>,
   building: (p) => <Ic {...p}><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" /></Ic>,
