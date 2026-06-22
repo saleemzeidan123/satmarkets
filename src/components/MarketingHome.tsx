@@ -21,12 +21,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         <span style={{ color: "rgba(255,255,255,.86)" }}>SAT Rent Index Q1 2026 is live. Verified rents across {stats.districts} Riyadh districts.</span>
         <Link href={L("/rent-index")} style={{ color: "var(--azure-l)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>Explore <Icon.arrow size={14} /></Link>
       </div>
-      <div style={{ position: "relative", padding: "64px 24px 56px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
+      <div style={{ position: "relative", padding: "72px 40px 64px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, opacity: .5, pointerEvents: "none" }}>
           <div style={{ position: "absolute", top: -66, right: -46 }}><Mark size={360} base="#E6ECF4" lit="#DCE6F1" /></div>
         </div>
-        <div style={{ position: "relative", display: "flex", gap: 46, alignItems: "center", flexWrap: "wrap", maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ flex: "1 1 460px", maxWidth: 600 }}>
+        <div style={{ position: "relative", display: "flex", gap: 46, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
+          <div style={{ flex: "1 1 520px", maxWidth: 640 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid var(--silver)", borderRadius: 20, padding: "6px 13px", boxShadow: "var(--sh-1)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
               <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--slate)" }}>REGA-native commercial exchange</span>
@@ -84,6 +84,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
               <MarkPin muted price="640" style={{ left: "48%", top: "80%" }} />
               <span className="tag" style={{ position: "absolute", left: 14, top: 14, background: "rgba(255,255,255,.94)", display: "flex", gap: 7, alignItems: "center", boxShadow: "var(--sh-1)" }}><span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />248 verified, Al Olaya</span>
             </div>
+            <div className="card" style={{ position: "absolute", right: -12, bottom: -18, width: 232, padding: 14, boxShadow: "var(--sh-2)", zIndex: 2 }}><div className="row between"><Verified /><span className="muted2"><Icon.heart size={15} /></span></div><div className="price" style={{ marginTop: 8 }}>1,450 <small>SAR/m²·yr</small></div><div style={{ fontSize: 13.5, fontWeight: 600, marginTop: 2 }}>Grade A Office, Olaya Tower</div><div style={{ display: "flex", gap: 8, marginTop: 8, fontFamily: "var(--mono)", fontSize: 11, color: "var(--slate)" }}><span>Al Olaya</span><span>·</span><span>320 m²</span></div></div>
           </div>
         </div>
       </div>
@@ -95,7 +96,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           </div>
         ))}
       </div>
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto" }}>
         <div style={{ padding: "64px 24px 20px" }}>
           <div className="eyebrow">The exchange</div>
           <h2 className="serif" style={{ fontSize: 36, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
@@ -155,7 +156,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
             </div>
           </div>
         </div>
-        <div style={{ padding: "64px 24px 56px" }}>
+        <div style={{ padding: "72px 40px 64px" }}>
           <div className="eyebrow" style={{ textAlign: "center" }}>How a deal flows</div>
           <h2 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>You always make an explicit choice</h2>
           <div className="row gap20 wrap" style={{ maxWidth: 940, margin: "0 auto", alignItems: "stretch" }}>
