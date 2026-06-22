@@ -1,5 +1,6 @@
 import "@/styles/globals.css";
 import "@/styles/sat-platform.css";
+import "@/styles/footer.css";
 import type { ReactNode } from "react";
 
 export const metadata = {
