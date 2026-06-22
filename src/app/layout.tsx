@@ -1,4 +1,5 @@
 import "@/styles/globals.css";
+import "@/styles/sat-platform.css";
 import type { ReactNode } from "react";
 
 export const metadata = {

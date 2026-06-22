@@ -1,168 +1,50 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import HeroSearch from "@/components/HeroSearch";
-import ListingCard from "@/components/ListingCard";
-import ValuePillars from "@/components/ValuePillars";
-import Reveal from "@/components/Reveal";
-import type { Listing } from "@/lib/types";
 import { assetLabel } from "@/lib/labels";
+import type { Listing } from "@/lib/types";
+import MarketingHome, { type FeaturedListing } from "@/components/MarketingHome";
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
-  const dict = getDictionary(locale);
   const ar = locale === "ar";
   const sb = getSupabaseServer();
-  let featured: Listing[] = [];
-  let count = 0;
-  let buildings = 0;
+
+  let rows: Listing[] = [];
+  let listings = 0, districts = 0, buildings = 0;
   if (sb) {
-    const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status","published").order("created_at",{ascending:false}).limit(6);
-    featured = (data as Listing[]) ?? [];
-    const { count: c } = await sb.from("listings").select("*", { count:"exact", head:true }).eq("status","published");
-    count = c ?? 0;
-    const { count: b } = await sb.from("buildings").select("*", { count:"exact", head:true });
-    buildings = b ?? 0;
+    const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(4);
+    rows = (data as Listing[]) ?? [];
+    const { count: lc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published");
+    listings = lc ?? 0;
+    const { count: dc } = await sb.from("districts").select("*", { count: "exact", head: true });
+    districts = dc ?? 0;
+    const { count: bc } = await sb.from("buildings").select("*", { count: "exact", head: true });
+    buildings = bc ?? 0;
   }
-  const proof = ar
-    ? [count > 0 ? `${count} قائمة موثّقة` : "قوائم موثّقة", buildings > 0 ? `${buildings} مبنى مرسوم` : "مبانٍ مرسومة", "مباشر من المالك أو بتفويض", "نطاقات إيجار من أدلة موثّقة"]
-    : [count > 0 ? `${count} verified listings` : "Verified listings", buildings > 0 ? `${buildings} buildings mapped` : "Buildings mapped", "Owner-direct or mandated", "Rent bands from verified evidence"];
-  const smartChips = ar
-    ? ["ملكية موثّقة","مدعومة بتصريح","مطابَقة بمؤشر سات","ذكاء المنطقة"]
-    : ["Verified ownership","Permit-backed","Rent-checked vs SAT index","Area intelligence"];
-  const dots = [{c:"#6E92EC",x:54,y:60},{c:"#2E5FE0",x:120,y:42},{c:"#2F6E6E",x:182,y:78},{c:"#4D7CF0",x:96,y:104},{c:"#5A6473",x:226,y:54},{c:"#5b6470",x:156,y:124},{c:"#3E6E66",x:60,y:128},{c:"#6E92EC",x:250,y:110}];
-  const gradMain = ar
-    ? "linear-gradient(260deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)"
-    : "linear-gradient(100deg, rgba(28,20,9,0.92) 0%, rgba(43,31,15,0.72) 34%, rgba(66,49,24,0.34) 64%, rgba(86,64,30,0.10) 100%)";
-  return (
-    <div className="space-y-20">
-      <section className="brand-rings relative -mt-8 overflow-hidden sm:-mt-10" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "linear-gradient(135deg,#FBFCFE 0%,#EEF2F8 52%,#E7EDF5 100%)" }}>
-        <svg viewBox="0 0 100 100" aria-hidden="true" className="pointer-events-none absolute -top-24 end-[-70px] h-[560px] w-[560px] opacity-[0.05]"><g fill="#3A6EA5"><path d="M22.0 13.0H40.84A2.5 2.5 0 0 1 43.34 15.5V50.46A2.5 2.5 0 0 1 40.84 52.96H15.5A2.5 2.5 0 0 1 13.0 50.46V22.0A9.0 9.0 0 0 1 22.0 13.0Z"/><path d="M50.28 13.0H78.0A9.0 9.0 0 0 1 87.0 22.0V50.46A2.5 2.5 0 0 1 84.5 52.96H50.28A2.5 2.5 0 0 1 47.78 50.46V15.5A2.5 2.5 0 0 1 50.28 13.0Z"/><path d="M15.5 57.4H40.84A2.5 2.5 0 0 1 43.34 59.9V84.5A2.5 2.5 0 0 1 40.84 87.0H22.0A9.0 9.0 0 0 1 13.0 78.0V59.9A2.5 2.5 0 0 1 15.5 57.4Z"/><path d="M50.28 57.4H84.5A2.5 2.5 0 0 1 87.0 59.9V78.0A9.0 9.0 0 0 1 78.0 87.0H50.28A2.5 2.5 0 0 1 47.78 84.5V59.9A2.5 2.5 0 0 1 50.28 57.4Z"/></g></svg>
-        <div className="anim-rise relative mx-auto max-w-6xl px-5 pb-16 pt-20 sm:px-6 sm:pb-20 sm:pt-28">
-          <div className="max-w-2xl">
-            <div className="fig text-[11px] font-medium uppercase tracking-[0.2em] text-[#3A6EA5]">{dict.hero.eyebrow}</div>
-            <h1 className="mt-4 font-display text-[42px] leading-[1.05] text-[#14181B] sm:text-[60px]">{dict.hero.title}</h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-[#5B6470]">{dict.hero.subtitle}</p>
-            <div className="mt-8 max-w-2xl"><HeroSearch locale={locale} placeholder={dict.hero.searchPlaceholder} cta={dict.hero.browse} /></div>
-            <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2.5">
-              {proof.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12.5px] text-[#5B6470]"><span className="inline-block h-1.5 w-1.5 rounded-full bg-[#2E5FE0]" />{c}</span>))}
-              <Link href={`/${locale}/rent-index`} className="text-[12.5px] text-[#2E5FE0] underline decoration-[#2E5FE0]/30 underline-offset-4 hover:text-[#1E47B0]">{ar ? "كيف يُبنى مؤشر الإيجار ←" : "How the rent index is built →"}</Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {featured.length > 0 && (
-        <Reveal>
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#2E5FE0]">{ar ? "قوائم ذكية" : "Smart listings"}</div>
-              <h2 className="mt-1 font-display text-3xl text-charcoal">{ar ? "مساحات موثّقة, بذكاء مدمج" : "Verified space, with the intelligence built in"}</h2>
-              <p className="mt-1.5 max-w-2xl text-[14.5px] leading-relaxed text-charcoal/60">{ar ? "ليست إعلانات. كل قائمة موثّقة وذكية, مع نطاق إيجار وذكاء منطقة." : "Not classifieds. Every listing is verified and intelligence-backed, with a rent band and area intelligence."}</p>
-            </div>
-            <Link href={`/${locale}/listings`} className="link-underline text-sm text-signal">{dict.featured.viewAll} →</Link>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
-            {smartChips.map((c)=>(<span key={c} className="inline-flex items-center gap-2 text-[12px] text-charcoal/60"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: "#2E5FE0" }} />{c}</span>))}
-          </div>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featured.map((l, i)=>(<Reveal key={l.id} delay={i*60}><ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} /></Reveal>))}
-          </div>
-        </Reveal>
-      )}
+  const featured: FeaturedListing[] = rows.map((l) => {
+    const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
+    const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+    const type = assetLabel(l.asset_type, locale);
+    return {
+      id: l.id,
+      price: price != null ? Number(price).toLocaleString() : (ar ? "عند الطلب" : "On request"),
+      title: (ar ? l.title_ar : l.title_en) || l.reference_code,
+      district: dn || "Riyadh",
+      area: `${l.area_sqm} m²`,
+      type,
+      verified: true,
+      ph: `${type}, ${dn || "Riyadh"}`,
+    };
+  });
 
-      <Reveal>
-        <div className="text-center">
-          <div className="divider-gold mx-auto" />
-          <h2 className="mt-4 font-display text-3xl text-charcoal">{dict.why.title}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-charcoal/60">{dict.why.sub}</p>
-        </div>
-        <div className="mt-8"><ValuePillars why={dict.why} /></div>
-      </Reveal>
+  const stats = {
+    listings: listings > 0 ? `${listings}` : "Verified",
+    buildings: buildings > 0 ? `${buildings}+` : "60+",
+    districts: districts > 0 ? `${districts}` : "15",
+  };
 
-      <Reveal>
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-ivory-2 to-white px-8 py-10 text-charcoal">
-          <div className="grid items-center gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div>
-              <div className="eyebrow">{dict.home.mapTitle}</div>
-              <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-charcoal/65">{dict.home.mapBody}</p>
-              <Link href={`/${locale}/map`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.home.mapCta}</Link>
-            </div>
-            <div className="hidden lg:block">
-              <svg viewBox="0 0 300 170" className="w-full rounded-xl border border-line bg-ivory/70">
-                <g stroke="rgba(28,26,21,0.07)" strokeWidth="1">
-                  <path d="M0 34h300M0 74h300M0 114h300M40 0v170M110 0v170M180 0v170M250 0v170" />
-                </g>
-                <g stroke="rgba(28,26,21,0.16)" strokeWidth="2.5" fill="none">
-                  <path d="M0 96 L120 96 L120 0" />
-                  <path d="M0 50 L70 50 L70 170" />
-                  <path d="M180 0 L180 130 L300 130" />
-                </g>
-                {dots.map((d,i)=>(<g key={i}><circle cx={d.x} cy={d.y} r="6.5" fill={d.c} opacity="0.92" /><circle cx={d.x} cy={d.y} r="11" fill={d.c} opacity="0.16" /></g>))}
-              </svg>
-            </div>
-          </div>
-        </div>
-      </Reveal>
-
-      <Reveal>
-        <div className="text-center">
-          <h2 className="font-display text-3xl text-charcoal">{dict.home.forTitle}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-charcoal/60">{dict.home.forSub}</p>
-        </div>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {[
-            { t: dict.home.occT, b: dict.home.occB, c: dict.home.occC, href: `/${locale}/listings` },
-            { t: dict.home.ownT, b: dict.home.ownB, c: dict.home.ownC, href: `/${locale}/dashboard` },
-            { t: dict.home.invT, b: dict.home.invB, c: dict.home.invC, href: `/${locale}/hbu` },
-          ].map((p, i) => (
-            <div key={i} className="card flex flex-col p-6">
-              <h3 className="font-display text-xl text-charcoal">{p.t}</h3>
-              <p className="mt-2 flex-1 text-[14px] leading-relaxed text-charcoal/65">{p.b}</p>
-              <Link href={p.href} className="link-underline mt-4 text-sm text-signal">{p.c}</Link>
-            </div>
-          ))}
-        </div>
-      </Reveal>
-
-      <Reveal>
-        <div className="overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-ivory-2 to-white px-8 py-9 text-charcoal">
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-            <Stat n={`${count}+`} l={dict.statBand.listings} />
-            <Stat n="60+" l={dict.statBand.buildings} />
-            <Stat n="4" l={dict.statBand.cities} />
-            <Stat n="9" l={dict.statBand.districts} />
-          </div>
-        </div>
-      </Reveal>
-
-      <Reveal>
-        <div className="relative overflow-hidden rounded-2xl border border-line bg-white px-8 py-10 shadow-card">
-          <div className="grid items-center gap-8 lg:grid-cols-2">
-            <div>
-              <div className="eyebrow">{ar ? "مؤشر سات ماركتس للإيجارات التجارية" : "SAT Markets Rent Index"}</div>
-              <h2 className="mt-2 font-display text-3xl text-charcoal">{dict.rentTeaser.title}</h2>
-              <p className="mt-3 max-w-md text-charcoal/60">{dict.rentTeaser.body}</p>
-              <Link href={`/${locale}/rent-index`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{dict.rentTeaser.cta}</Link>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[{a:"office",v:3700},{a:"retail",v:3200},{a:"medical",v:2000},{a:"warehouse",v:230}].map((m,i)=>(
-                <div key={i} className="rounded-xl border border-line bg-ivory-2/40 p-4">
-                  <div className="text-[11px] text-charcoal/50">{assetLabel(m.a, locale)}</div>
-                  <div className="mt-1 fig text-[22px] text-charcoal tracking-tight">{m.v.toLocaleString()}</div>
-                  <div className="text-[10px] text-charcoal/45">{dict.home.teaserPlaces[i]} · {locale==="ar"?"ريال/م²/سنة":"SAR/sqm/yr"}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Reveal>
-    </div>
-  );
-}
-function Stat({ n, l }: { n: string; l: string }) {
-  return <div><div className="fig text-[26px] text-charcoal tracking-tight">{n}</div><div className="mt-1 text-[12px] text-charcoal/55">{l}</div></div>;
+  return <MarketingHome locale={locale} featured={featured} stats={stats} />;
 }
