@@ -177,3 +177,18 @@
 .intel-2{display:grid;grid-template-columns:1.55fr 1fr;gap:20px;}
 .intel-11{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
 @media(max-width:880px){.intel-2,.intel-11{grid-template-columns:1fr!important}}
+
+/* ===== investment underwriting classes ===== */
+.statpill{background:var(--paper);border:1px solid var(--silver);border-radius:11px;padding:16px 18px;box-shadow:var(--sh-1);}
+.statpill .v{font-family:var(--mono);font-weight:500;font-size:26px;letter-spacing:-.01em;}
+.statpill .l{font-size:11.5px;color:var(--slate);margin-top:4px;}
+.field{display:flex;flex-direction:column;gap:7px;}
+.field label{font-size:12px;font-weight:600;color:var(--ink);}
+.field .hint,.hint{font-size:11.5px;color:var(--slate);}
+.input{background:var(--paper);border:1px solid var(--silver-2);border-radius:9px;padding:11px 13px;font-size:13.5px;color:var(--ink);display:flex;align-items:center;gap:9px;}
+.b{background:var(--azure-wash);border:1px solid var(--azure-l);border-radius:5px 5px 0 0;}
+.b.hi{background:var(--azure);border-color:var(--azure);}
+.lgd .sw.amber{background:var(--amber);}
+.scn .field label{font-size:11.5px;}
+.invest-grid{display:grid;grid-template-columns:372px 1fr;gap:20px;align-items:start;}
+@media(max-width:920px){.invest-grid{grid-template-columns:1fr!important}}

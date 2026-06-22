@@ -68,6 +68,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   arrow: (p) => <Ic {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Ic>,
   chevd: (p) => <Ic {...p}><path d="M6 9l6 6 6-6" /></Ic>,
   store: (p) => <Ic {...p}><path d="M4 9l1.2-4h13.6L20 9M5 9v10h14V9M4 9h16" /></Ic>,
+  layers: (p) => <Ic {...p}><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3zM4 12l8 4.5L20 12M4 16.5L12 21l8-4.5" /></Ic>,
+  info: (p) => <Ic {...p}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 7.6v.2" /></Ic>,
   download: (p) => <Ic {...p}><path d="M12 4v10M8 11l4 4 4-4M5 19h14" /></Ic>,
   grid: (p) => <Ic {...p}><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></Ic>,
   building: (p) => <Ic {...p}><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" /></Ic>,
