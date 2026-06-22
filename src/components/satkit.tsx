@@ -100,6 +100,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   msg: (p) => <Ic {...p}><path d="M4 5h16v11H8l-4 4V5z" /></Ic>,
   headset: (p) => <Ic {...p}><path d="M5 13a7 7 0 0114 0M4 13h3v5H5a1 1 0 01-1-1v-4zM20 13h-3v5h2a1 1 0 001-1v-4zM12 20h3" /></Ic>,
   phone: (p) => <Ic {...p}><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L19 13l5 2v4a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1z" /></Ic>,
+  ruler: (p) => <Ic {...p}><path d="M4 14L14 4l6 6L10 20 4 14z" /><path d="M8 8l2 2M11 5l2 2M5 11l2 2" /></Ic>,
+  trash: (p) => <Ic {...p}><path d="M5 7h14M10 7V4h4v3M6 7l1 13h10l1-13" /></Ic>,
 };
 
 export function Ph({ src, label, h = 158, dark = false, style, badges, children }: { src?: string; label?: string; h?: number; dark?: boolean; style?: React.CSSProperties; badges?: React.ReactNode; children?: React.ReactNode }) {

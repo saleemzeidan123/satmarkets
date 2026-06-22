@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 export default function ChromeGate({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
   const path = usePathname() || "";
-  const bare = /\/(dashboard|admin|signup|advisor|messages)(\/|$)/.test(path);
+  const bare = /\/(dashboard|admin|signup|advisor|messages|docs)(\/|$)/.test(path);
   return (
     <>
       {!bare && header}
