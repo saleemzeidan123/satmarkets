@@ -1,4 +1,3 @@
-"use client";
 import React from "react";
 
 export const HARBOR = "#3A6EA5", AZURE = "#2E5FE0", INK = "#14181B", COOL = "#F6F8FB";
