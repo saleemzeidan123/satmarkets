@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import MobileNav from "@/components/MobileNav";
+import { Logo } from "@/components/satkit";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
 
@@ -38,15 +39,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-        <Link href={`/${locale}`} className="flex items-center gap-2.5 sm:gap-3">
-          <span className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center"><svg width="34" height="34" viewBox="0 0 100 100" aria-hidden="true"><path d="M22.0 13.0H40.84A2.5 2.5 0 0 1 43.34 15.5V50.46A2.5 2.5 0 0 1 40.84 52.96H15.5A2.5 2.5 0 0 1 13.0 50.46V22.0A9.0 9.0 0 0 1 22.0 13.0Z" fill="#14181B"/><path d="M50.28 13.0H78.0A9.0 9.0 0 0 1 87.0 22.0V50.46A2.5 2.5 0 0 1 84.5 52.96H50.28A2.5 2.5 0 0 1 47.78 50.46V15.5A2.5 2.5 0 0 1 50.28 13.0Z" fill="#3A6EA5"/><path d="M15.5 57.4H40.84A2.5 2.5 0 0 1 43.34 59.9V84.5A2.5 2.5 0 0 1 40.84 87.0H22.0A9.0 9.0 0 0 1 13.0 78.0V59.9A2.5 2.5 0 0 1 15.5 57.4Z" fill="#14181B"/><path d="M50.28 57.4H84.5A2.5 2.5 0 0 1 87.0 59.9V78.0A9.0 9.0 0 0 1 78.0 87.0H50.28A2.5 2.5 0 0 1 47.78 84.5V59.9A2.5 2.5 0 0 1 50.28 57.4Z" fill="#14181B"/></svg></span><span className="flex flex-col leading-none">
-            <span className="font-display text-[19px] sm:text-[22px] tracking-tight"><span className="text-[#3A6EA5]">SAT</span> <span className="font-medium text-charcoal/80">Markets</span></span>
-            <span className="mt-1 hidden sm:flex items-center gap-1.5">
-              <span className="live-dot" />
-              <span className="text-[9.5px] font-medium uppercase tracking-[0.16em] text-slate/80">{descriptor}</span>
-            </span>
-          </span>
-        </Link>
+        <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
 
         <nav className="hidden items-center gap-5 lg:flex">
           {nav.map((n) => (

@@ -135,3 +135,6 @@
 .kpi{display:flex;flex-direction:column;gap:3px;}
 .kpi .v{font-family:var(--mono);font-size:21px;font-weight:500;letter-spacing:-.01em;}
 .kpi .l{font-size:11.5px;color:var(--slate);}
+.satmkt-hero .map{background:radial-gradient(140% 120% at 25% 15%, #EEF3FA 0%, #E2EAF4 55%, #DBE4F0 100%), repeating-linear-gradient(0deg,rgba(58,110,165,.05) 0 1px,transparent 1px 56px), repeating-linear-gradient(90deg,rgba(58,110,165,.05) 0 1px,transparent 1px 56px);}
+.satmkt-hero .marea{background:rgba(58,110,165,.10);border-color:rgba(58,110,165,.26);}
+.satmkt-hero .road{background:#fff;box-shadow:0 0 0 1px rgba(58,110,165,.12);}
