@@ -79,6 +79,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   logout: (p) => <Ic {...p}><path d="M14 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4M9 12h11M16 8l4 4-4 4" /></Ic>,
   flag: (p) => <Ic {...p}><path d="M6 21V4M6 4h11l-2 4 2 4H6" /></Ic>,
   activity: (p) => <Ic {...p}><path d="M3 12h4l2.5-7 4 14 2.5-7H21" /></Ic>,
+  edit: (p) => <Ic {...p}><path d="M4 20h4L19 9l-4-4L4 16v4z" /><path d="M14 6l4 4" /></Ic>,
+  dots: (p) => <Ic {...p}><circle cx="5" cy="12" r="1.5" /><circle cx="12" cy="12" r="1.5" /><circle cx="19" cy="12" r="1.5" /></Ic>,
   download: (p) => <Ic {...p}><path d="M12 4v10M8 11l4 4 4-4M5 19h14" /></Ic>,
   grid: (p) => <Ic {...p}><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></Ic>,
   building: (p) => <Ic {...p}><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" /></Ic>,
