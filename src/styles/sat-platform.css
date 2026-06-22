@@ -239,3 +239,6 @@
 .statusdot.ok{color:var(--green);} .statusdot.pend{color:var(--amber);} .statusdot.off{color:var(--slate-2);}
 .dash-2col{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px;}
 @media(max-width:820px){.dside{display:none}.kgrid{grid-template-columns:repeat(2,1fr)}.dash-2col{grid-template-columns:1fr!important}}
+
+.dpanel .ph{background:none;overflow:visible;}
+.dpanel .ph::after,.dpanel .ph::before{content:none;}
