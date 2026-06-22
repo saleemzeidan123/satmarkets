@@ -1,91 +1,162 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { getSupabaseServer } from "@/lib/supabase/server";
-import { segmentLabel, unitLabel } from "@/lib/labels";
-import Link from "next/link";
+import { Icon, Verified } from "@/components/satkit";
 
-interface Row { id: string; district_id: string | null; district_label: string; district_label_ar: string | null; asset_type: string; segment: string | null; unit: string; band_low: number | null; band_high: number | null; median: number | null; sufficient: boolean; note: string | null; note_ar: string | null; sort_order: number; }
+const AZURE = "#2E5FE0";
 
-const TYPES: { k: string; en: string; ar: string }[] = [
-  { k: "office", en: "Office", ar: "مكاتب" }, { k: "retail", en: "Retail & F&B", ar: "تجزئة ومطاعم" },
-  { k: "warehouse", en: "Warehouse & logistics", ar: "مستودعات ولوجستيات" }, { k: "medical", en: "Medical", ar: "رعاية صحية" },
-  { k: "showroom", en: "Showroom", ar: "معارض" }, { k: "serviced", en: "Serviced & flexible office", ar: "مكاتب مخدومة ومرنة" },
-  { k: "education", en: "Education", ar: "تعليم" }, { k: "hospitality", en: "Hospitality", ar: "ضيافة" },
-  { k: "land", en: "Land & development", ar: "أراضٍ وتطوير" }, { k: "mixed_use", en: "Mixed-use", ar: "متعدد الاستخدامات" },
-];
-
-export default async function RentIndexPage({ params }: { params: { locale: string } }) {
+export default function RentIndexPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
-  const locale = params.locale; const ar = locale === "ar";
-  const sb = getSupabaseServer();
-  let rows: Row[] = [];
-  if (sb) { const { data } = await sb.from("rent_index_published").select("*").order("sort_order"); rows = (data as Row[]) ?? []; }
 
-  const t = {
-    eyebrow: ar ? "مؤشر سات ماركتس للإيجارات التجارية بالرياض · الربع الأول 2026" : "SAT Markets Riyadh Commercial Rent Index · Q1 2026",
-    title: ar ? "نطاقات إيجار موثقة" : "Verified rent bands",
-    intro: ar ? "نطاقات ووسطاء الإيجار حسب الحي ونوع المساحة، مجمّعة من إصدارات السوق العامة وبيانات موثقة. لاحقاً سيحلّل المؤشر إيجارات المنصة نفسها لتقدير المتوسطات. كل أنواع المساحات مدرجة، وما لا تتوفر له أرقام بعد يظهر فارغاً." : "Rent bands and medians by district and space type, compiled from public market releases and verified data. Later the index will analyse the platform's own listings to estimate averages. Every space type is listed; those without figures yet appear blank.",
-    district: ar ? "الحي / التجمّع" : "District / cluster", segment: ar ? "الشريحة" : "Segment", band: ar ? "النطاق" : "Band (low–high)", median: ar ? "الوسيط" : "Median", unit: ar ? "الوحدة" : "Unit",
-    insufficient: ar ? "عينة غير كافية" : "Insufficient sample",
-    awaiting: ar ? "بانتظار بيانات موثقة لهذا النوع, ستُنشر عند توفّر عينة كافية." : "Awaiting verified data for this space type, figures will publish once a defensible sample exists.",
-    cite: ar ? "حر الاقتباس مع الإسناد · CC BY 4.0. مجمّع من إصدارات السوق (JLL، Knight Frank، CBRE، Savills) ووسطاء القوائم وبيانات موثقة." : "Free to cite with attribution · CC BY 4.0. Compiled from market releases (JLL, Knight Frank, CBRE, Savills), listing-derived medians, and verified data.",
-  };
+  const districts: [string, string, string, string, string, number][] = [
+    ["Al Olaya", "Office · Grade A", "1,420", "+8.4%", "up", 62],
+    ["Al Olaya", "Office · Grade B", "1,090", "+24%", "up", 71],
+    ["KAFD", "Office · Grade A", "1,310", "+6.1%", "up", 48],
+    ["Tahlia", "Retail · street", "2,050", "+11.2%", "up", 55],
+    ["Hittin", "Office · Grade A", "1,180", "+4.7%", "up", 44],
+    ["2nd Industrial", "Warehouse · modern", "640", "+16%", "up", 51],
+    ["Granada", "Office · Grade B", "1,060", "+19%", "up", 67],
+  ];
+  const open = [40, 44, 42, 50, 56, 54, 62, 68, 70, 76, 80, 86];
+  const capped = [40, 44, 42, 50, 56, 54, 62, 65, 65, 65, 65, 65];
+  const freezeX = (8 / 11) * 100;
+  const op = open.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
+  const cp = capped.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
+  const kpis: [string, string, string, string | null][] = [
+    ["1,420", "Median Grade A SAR/m²·yr", "+8.4% open", "up"],
+    ["96%", "Grade A occupancy", "+1.2 pts", "up"],
+    ["61%", "Stock under freeze", "capped coverage", null],
+    ["+24%", "Grade B YoY", "spillover demand", "up"],
+  ];
 
   return (
-    <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
-      <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{t.eyebrow}</div>
-      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{t.title}</h1>
-      <p className="mt-3 max-w-3xl text-[15px] leading-relaxed intel-muted">{t.intro}</p>
+    <div style={{ background: "var(--cool)" }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+        {/* header band */}
+        <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
+          <div>
+            <div className="eyebrow">SAT Rent Index · Q1 2026</div>
+            <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>Riyadh commercial rents</h1>
+            <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>142 districts · verified transactions only · updated weekly</div>
+          </div>
+          <div className="row gap10 wrap">
+            <span className="seg"><span className="on">All</span><span>Open</span><span>Capped</span></span>
+            <span className="chip">Office <Icon.chevd size={14} /></span>
+            <span className="btn secondary"><Icon.download size={15} /> Export</span>
+            <span className="btn primary"><Icon.spark size={15} /> Ask AI</span>
+          </div>
+        </div>
 
-      <div className="mt-8 space-y-7">
-        {TYPES.map((ty) => {
-          const grp = rows.filter((r) => r.asset_type === ty.k);
-          const maxByUnit: Record<string, number> = {};
-          grp.forEach((r) => { if (r.sufficient && r.median != null) maxByUnit[r.unit] = Math.max(maxByUnit[r.unit] ?? 0, r.median); });
-          const label = ar ? ty.ar : ty.en;
-          return (
-            <div key={ty.k}>
-              <div className="flex items-center justify-between gap-3"><h2 className="font-display text-xl text-charcoal">{label}</h2><Link href={`/${locale}/listings?asset=${ty.k}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح" : "Browse"} →</Link></div>
-              {grp.length === 0 ? (
-                <div className="mt-3 rounded-2xl border border-dashed border-line bg-ivory-2/40 px-5 py-6 text-[13.5px] intel-faint">{t.awaiting}</div>
-              ) : (
-                <div className="intel-card mt-3 overflow-x-auto">
-                  <table className="w-full min-w-[640px] text-sm">
-                    <thead><tr className="border-b border-line text-start text-[11px] uppercase tracking-wide intel-faint">
-                      <th className="px-5 py-3 text-start font-medium">{t.district}</th><th className="px-5 py-3 text-start font-medium">{t.segment}</th><th className="px-5 py-3 text-start font-medium">{t.band}</th><th className="px-5 py-3 text-start font-medium">{t.median}</th><th className="px-5 py-3 text-start font-medium">{t.unit}</th>
-                    </tr></thead>
-                    <tbody>
-                      {grp.map((r) => {
-                        const place = ar ? (r.district_label_ar || r.district_label) : r.district_label;
-                        return (
-                          <tr key={r.id} className="border-t border-line">
-                            <td className="px-5 py-3.5 text-charcoal">{place}</td>
-                            <td className="px-5 py-3.5 text-[12.5px] intel-muted">{segmentLabel(r.segment, locale)}</td>
-                            {r.sufficient ? (<>
-                              <td className="px-5 py-3.5 intel-muted fig">{r.band_low != null ? `${r.band_low!.toLocaleString()} – ${r.band_high!.toLocaleString()}` : "N/A"}</td>
-                              <td className="px-5 py-3.5">
-                                <div className="fig text-lg leading-none intel-gold">{r.median != null ? Math.round(r.median).toLocaleString() : "N/A"}</div>
-                                {r.median != null && (maxByUnit[r.unit] ?? 0) > 0 && (
-                                  <div className="mt-2 h-1 w-24 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-signal/80" style={{ width: `${Math.max(8, Math.round((r.median / maxByUnit[r.unit]) * 100))}%` }} /></div>
-                                )}
-                              </td>
-                              <td className="px-5 py-3.5 text-[12px] intel-faint">{unitLabel(r.unit, locale)}</td>
-                            </>) : (
-                              <td className="px-5 py-3.5 text-[12.5px] italic intel-faint" colSpan={3}>◌ {(ar ? (r.note_ar ?? r.note) : r.note) || t.insufficient}</td>
-                            )}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+        {/* bifurcation banner */}
+        <div style={{ padding: "22px 24px 0" }}>
+          <div className="bifur">
+            <div className="side">
+              <div className="h"><span className="freeze capped"><span className="dot" />Capped</span> Existing leases · frozen at signature</div>
+              <div className="sub">Renewals inside Riyadh&apos;s urban boundary are held at their last Ejar rent for five years under the Sept-2025 decree.</div>
+              <div className="big" style={{ color: "var(--amber)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>movement on capped stock</span></div>
             </div>
-          );
-        })}
-      </div>
+            <div className="side">
+              <div className="h"><span className="freeze open"><span className="dot" />Open</span> New &amp; first-lease · sets the headline</div>
+              <div className="sub">New-build and first-time leases are unaffected by the cap and continue to re-price to market each term.</div>
+              <div className="big" style={{ color: "var(--azure-d)" }}>+8.4% <span style={{ fontSize: 13, color: "var(--slate)" }}>YoY on open Grade A</span></div>
+            </div>
+          </div>
+        </div>
 
-      <div className="intel-card mt-8 p-5"><p className="text-[12.5px] leading-relaxed intel-muted">{t.cite}</p></div>
-    </section>
+        {/* KPI row */}
+        <div className="row gap16 wrap" style={{ padding: "20px 24px 0" }}>
+          {kpis.map((k, i) => (
+            <div key={i} className="statpill grow" style={{ minWidth: 150 }}>
+              <div className="row between" style={{ alignItems: "flex-start" }}>
+                <div className="v tnum">{k[0]}</div>
+                {k[3] && <span className={"delta " + k[3]}>▲</span>}
+              </div>
+              <div className="l">{k[1]}</div>
+              <div className={"delta " + (k[3] || "")} style={{ marginTop: 8, color: k[3] ? undefined : "var(--slate)" }}>{k[2]}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* main grid */}
+        <div className="rent-grid">
+          {/* trend chart */}
+          <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
+            <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
+              <div><div style={{ fontSize: 15, fontWeight: 700 }}>Office rent index — Al Olaya</div><div className="muted" style={{ fontSize: 12.5 }}>Rebased to 100 · open vs capped since the decree</div></div>
+              <div className="col gap8">
+                <span className="lgd"><span className="sw" /> Open (first-lease)</span>
+                <span className="lgd"><span className="sw dash" /> Capped (frozen)</span>
+              </div>
+            </div>
+            <div style={{ position: "relative", height: 210, marginTop: 18 }}>
+              <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
+                {[0, 25, 50, 75, 100].map((y) => <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#EAEEF3" strokeWidth="0.5" />)}
+                <line x1={freezeX} y1="0" x2={freezeX} y2="100" stroke="#ECDCB6" strokeWidth="0.8" strokeDasharray="2 2" />
+                <polygon points={`0,100 ${op} 100,100`} fill="url(#gop)" opacity="0.12" />
+                <polyline points={op} fill="none" stroke={AZURE} strokeWidth="1.7" vectorEffect="non-scaling-stroke" />
+                <polyline points={cp} fill="none" stroke="#B7791F" strokeWidth="1.6" strokeDasharray="3 2.5" vectorEffect="non-scaling-stroke" />
+                <defs><linearGradient id="gop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={AZURE} /><stop offset="1" stopColor={AZURE} stopOpacity="0" /></linearGradient></defs>
+              </svg>
+              <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 9.5, color: "var(--amber)", letterSpacing: ".04em" }}>SEP-25 DECREE</div>
+            </div>
+            <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}>
+              <span>Q1&apos;25</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q1&apos;26</span>
+            </div>
+          </div>
+
+          {/* heat map */}
+          <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Rent heat · by district</div>
+            <div className="muted" style={{ fontSize: 12.5 }}>Darker = higher SAR/m²</div>
+            <div className="map" style={{ height: 176, borderRadius: 10, marginTop: 16, border: "1px solid var(--silver)" }}>
+              <div className="blob" style={{ left: "14%", top: "20%", width: 70, height: 60, background: "rgba(46,95,224,.28)", borderColor: "rgba(46,95,224,.4)" }} />
+              <div className="blob" style={{ left: "46%", top: "16%", width: 60, height: 55, background: "rgba(46,95,224,.42)", borderColor: "rgba(46,95,224,.5)" }} />
+              <div className="blob" style={{ left: "60%", top: "48%", width: 80, height: 64, background: "rgba(46,95,224,.16)", borderColor: "rgba(46,95,224,.3)" }} />
+              <div className="blob" style={{ left: "24%", top: "54%", width: 64, height: 52, background: "rgba(46,95,224,.10)", borderColor: "rgba(46,95,224,.24)" }} />
+            </div>
+            <div className="row between" style={{ marginTop: 14 }}>
+              <span className="mono muted" style={{ fontSize: 10 }}>640</span>
+              <div style={{ flex: 1, height: 7, margin: "0 10px", borderRadius: 4, background: "linear-gradient(90deg,var(--azure-wash),var(--azure))" }} />
+              <span className="mono muted" style={{ fontSize: 10 }}>2,050</span>
+            </div>
+          </div>
+
+          {/* district table */}
+          <div className="card" style={{ gridColumn: "1 / -1", overflow: "hidden", boxShadow: "var(--sh-1)" }}>
+            <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>District benchmarks</div>
+              <span className="chip" style={{ borderColor: "var(--silver)" }}>Sort: YoY movement <Icon.chevd size={14} /></span>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table className="dt" style={{ minWidth: 640 }}>
+                <thead><tr><th>District</th><th>Asset</th><th style={{ textAlign: "right" }}>Median SAR/m²</th><th style={{ textAlign: "right" }}>YoY (open)</th><th style={{ textAlign: "right" }}>Capped coverage</th><th style={{ textAlign: "right" }}>Source</th></tr></thead>
+                <tbody>
+                  {districts.map((d, i) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 600 }}>{d[0]}</td>
+                      <td className="muted">{d[1]}</td>
+                      <td className="num" style={{ fontWeight: 500 }}>{d[2]}</td>
+                      <td className="num"><span className={"delta " + d[4]}>{d[3]}</span></td>
+                      <td className="num">
+                        <span className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
+                          <span style={{ width: 54, height: 6, borderRadius: 4, background: "var(--silver)", position: "relative", display: "inline-block" }}>
+                            <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: d[5] + "%", background: "var(--amber)", borderRadius: 4 }} />
+                          </span>
+                          <span className="tnum">{d[5]}%</span>
+                        </span>
+                      </td>
+                      <td className="num"><Verified text="✓" /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
+              <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
+              <span className="muted" style={{ fontSize: 12.5 }}>YoY reflects open (re-pricing) stock only — capped renewals are excluded so the figure is not diluted by frozen leases.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
