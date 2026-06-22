@@ -66,6 +66,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   heart: (p) => <Ic {...p}><path d="M12 20s-7-4.3-7-9.5A4 4 0 0112 8a4 4 0 017-2.5C19 10.7 12 20 12 20z" /></Ic>,
   check: (p) => <Ic {...p}><path d="M5 12.5l4.5 4.5L19 7" /></Ic>,
   arrow: (p) => <Ic {...p}><path d="M5 12h14M13 6l6 6-6 6" /></Ic>,
+  chevd: (p) => <Ic {...p}><path d="M6 9l6 6 6-6" /></Ic>,
+  download: (p) => <Ic {...p}><path d="M12 4v10M8 11l4 4 4-4M5 19h14" /></Ic>,
   grid: (p) => <Ic {...p}><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></Ic>,
   building: (p) => <Ic {...p}><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" /></Ic>,
   bolt: (p) => <Ic {...p}><path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z" /></Ic>,
