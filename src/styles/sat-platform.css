@@ -143,3 +143,21 @@
 .ph .cap,.ph .badges,.photo .cap,.photo .badges,.photo .fav{z-index:2}
 .photo .vig{z-index:1}
 .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,16,22,0) 45%,rgba(10,16,22,.42));z-index:1}
+
+/* ===== motion + depth tokens (design handoff v2 — signature feel) ===== */
+:root{--spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.4,0,.2,1);--d-fast:.18s;--d:.34s;--d-slow:.6s;--z1:0 1px 2px rgba(20,24,27,.06),0 2px 8px rgba(20,24,27,.05);--z2:0 4px 14px rgba(20,24,27,.10),0 2px 6px rgba(20,24,27,.06);--z3:0 18px 44px rgba(20,24,27,.18),0 6px 16px rgba(20,24,27,.10);--glow:0 0 0 4px rgba(46,95,224,.16);}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,95,224,.4)}70%{box-shadow:0 0 0 12px rgba(46,95,224,0)}100%{box-shadow:0 0 0 0 rgba(46,95,224,0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.rise{animation:rise var(--d) var(--spring) both;}
+.pop{animation:pop var(--d) var(--spring) both;}
+.fade{animation:fadein var(--d) var(--ease) both;}
+.listing,.lift{transition:transform var(--d) var(--spring),box-shadow var(--d) var(--ease);}
+.listing:hover,.lift:hover{transform:translateY(-4px);box-shadow:var(--z3);}
+.btn{transition:transform var(--d-fast) var(--spring),box-shadow var(--d-fast) var(--ease),background var(--d-fast);}
+.btn:active{transform:scale(.96);}
+.sk{background:linear-gradient(90deg,var(--silver) 25%,#f2f5f8 50%,var(--silver) 75%);background-size:200% 100%;animation:shimmer 1.3s infinite;border-radius:8px;}
