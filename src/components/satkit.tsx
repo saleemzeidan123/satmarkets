@@ -77,6 +77,8 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   clock: (p) => <Ic {...p}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></Ic>,
   bell: (p) => <Ic {...p}><path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6z" /><path d="M10 19a2 2 0 004 0" /></Ic>,
   logout: (p) => <Ic {...p}><path d="M14 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4M9 12h11M16 8l4 4-4 4" /></Ic>,
+  flag: (p) => <Ic {...p}><path d="M6 21V4M6 4h11l-2 4 2 4H6" /></Ic>,
+  activity: (p) => <Ic {...p}><path d="M3 12h4l2.5-7 4 14 2.5-7H21" /></Ic>,
   download: (p) => <Ic {...p}><path d="M12 4v10M8 11l4 4 4-4M5 19h14" /></Ic>,
   grid: (p) => <Ic {...p}><rect x="4" y="4" width="7" height="7" rx="1.4" /><rect x="13" y="4" width="7" height="7" rx="1.4" /><rect x="4" y="13" width="7" height="7" rx="1.4" /><rect x="13" y="13" width="7" height="7" rx="1.4" /></Ic>,
   building: (p) => <Ic {...p}><rect x="5" y="3" width="14" height="18" rx="1.4" /><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2" /></Ic>,
