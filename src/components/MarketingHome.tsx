@@ -16,11 +16,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--ink)", color: "#fff", padding: "8px 24px", fontSize: 12.5, flexWrap: "wrap" }}>
-        <Mark size={16} base={COOL} lit={HARBOR} />
-        <span style={{ color: "rgba(255,255,255,.86)" }}>SAT Rent Index Q1 2026 is live. Verified rents across {stats.districts} Riyadh districts.</span>
-        <Link href={L("/rent-index")} style={{ color: "var(--azure-l)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, textDecoration: "none" }}>Explore <Icon.arrow size={14} /></Link>
-      </div>
       <div className="satmkt-hero" style={{ position: "relative", padding: "72px 40px 64px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, opacity: .5, pointerEvents: "none" }}>
           <div style={{ position: "absolute", top: -66, right: -46 }}><Mark size={360} base="#E6ECF4" lit="#DCE6F1" /></div>
