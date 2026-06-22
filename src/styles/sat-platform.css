@@ -267,3 +267,25 @@
 @media(max-width:560px){.lform-grid{grid-template-columns:1fr!important}}
 
 @media(max-width:760px){.hero-band{padding:32px 22px!important}.hero-band-grid{grid-template-columns:1fr!important;gap:24px!important}}
+/* pricing tiers + matrix */
+.tier{border:1px solid var(--silver);border-radius:16px;background:var(--paper);padding:24px 22px;display:flex;flex-direction:column;position:relative;}
+.tier.feat{border-color:var(--azure);box-shadow:0 0 0 3px var(--azure-wash);}
+.tier .ribbon{position:absolute;top:-11px;left:22px;background:var(--azure);color:#fff;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:6px;}
+.tier .nm{font-size:16px;font-weight:700;}
+.tier .who{font-size:12px;color:var(--slate);margin-top:3px;min-height:32px;}
+.tier .price{font-family:var(--mono);font-size:30px;font-weight:500;letter-spacing:-.01em;margin-top:10px;}
+.tier .price small{font-size:12px;color:var(--slate);font-weight:400;}
+.tier ul{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:9px;}
+.tier li{font-size:12.5px;color:var(--slate);display:flex;gap:9px;align-items:flex-start;line-height:1.45;}
+.tier li b{color:var(--ink);font-weight:600;}
+.tier li .ck{color:var(--green);flex:none;margin-top:1px;}
+.matrix{width:100%;border-collapse:collapse;min-width:720px;}
+.matrix th,.matrix td{padding:12px 14px;text-align:center;font-size:12.5px;border-top:1px solid var(--silver);}
+.matrix th{font-size:12px;}
+.matrix td:first-child,.matrix th:first-child{text-align:left;color:var(--slate);font-weight:500;}
+.matrix tr.grp td{background:var(--cool);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--slate);text-align:left;}
+.matrix .yes{color:var(--green);} .matrix .no{color:var(--silver-2);}
+.matrix td.tnum{font-family:var(--mono);}
+.tier-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:stretch;}
+@media(max-width:1080px){.tier-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.tier-grid{grid-template-columns:1fr}}
