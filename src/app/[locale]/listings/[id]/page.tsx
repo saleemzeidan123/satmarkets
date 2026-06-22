@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { Photo, Verified, Icon } from "@/components/satkit";
+import { photoFor } from "@/lib/photos";
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -29,7 +30,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
-          <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[<Verified key="v" />, <span key="f" className="freeze open"><span className="dot" />Open · first-lease</span>]} />
+          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[<Verified key="v" />, <span key="f" className="freeze open"><span className="dot" />Open · first-lease</span>]} />
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {lease ? "Lease" : "Sale"}</span>
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>

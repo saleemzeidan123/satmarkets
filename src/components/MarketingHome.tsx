@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, MarkPin, HARBOR, COOL } from "@/components/satkit";
 
-export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string };
+export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string };
 type Stats = { listings: string; buildings: string; districts: string };
 
 export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
@@ -122,7 +122,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18, marginTop: 28 }}>
             {featured.map((f) => (
               <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-                <Ph label={f.ph} h={150} badges={[f.verified ? <Verified key="v" /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
+                <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
                 <div className="body">
                   <div className="row between"><div className="price">{f.price}<small> SAR/m²·yr</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
                   <div className="ttl">{f.title}</div>

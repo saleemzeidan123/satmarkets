@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
+import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing } from "@/components/MarketingHome";
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
@@ -37,6 +38,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
       type,
       verified: true,
       ph: `${type}, ${dn || "Riyadh"}`,
+      img: photoFor(l.asset_type, l.id),
     };
   });
 
