@@ -1,55 +1,74 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import ListingCard from "@/components/ListingCard";
-import { assetLabel, cityLabel, dealLabel } from "@/lib/labels";
+import { assetLabel, dealLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
+import { Photo, Verified, Icon } from "@/components/satkit";
 
-const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","hospitality","mixed_use","land"];
-const CITIES = ["Riyadh","Jeddah","Dammam","Khobar"];
-const DEALS = ["lease","sale"];
+const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land"];
+const DEALS = ["lease", "sale"];
 
-export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; city?: string; deal?: string } }) {
+export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
-  const dict = getDictionary(locale);
-  const supabase = getSupabaseServer();
+  const sb = getSupabaseServer();
   let listings: Listing[] = [];
-  if (supabase) {
-    let query = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status","published").order("created_at",{ascending:false}).limit(60);
+  if (sb) {
+    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(60);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
     const { data } = await query;
     listings = (data as Listing[]) ?? [];
-    if (searchParams.city) listings = listings.filter((l)=>l.districts?.city === searchParams.city);
   }
-  const chip = (label: string, key: "asset"|"city"|"deal", val: string) => {
+  const chip = (label: string, key: "asset" | "deal", val: string) => {
     const active = searchParams[key] === val;
-    const sp = new URLSearchParams(searchParams as any);
+    const sp = new URLSearchParams(searchParams as Record<string, string>);
     if (active) sp.delete(key); else sp.set(key, val);
-    return <Link key={key+val} href={`/${locale}/listings?${sp.toString()}`} className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${active ? "border-signal bg-signal text-white" : "border-line text-charcoal/65 hover:border-signal/50 hover:text-charcoal"}`}>{label}</Link>;
+    return <Link key={key + val} href={`/${locale}/listings?${sp.toString()}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{label}</Link>;
   };
+  const kindFor = (a: string) => (a === "retail" || a === "showroom" ? "retail" : a === "warehouse" ? "warehouse" : "office");
   return (
-    <section>
-      <div className="eyebrow">{dict.ui.browse}</div>
-      <div className="flex items-end justify-between gap-3"><h1 className="mt-1 font-display text-3xl text-charcoal">{dict.nav.listings}</h1><Link href={`/${locale}/map`} className="text-[13px] font-medium text-signal hover:underline">{ar ? "عرض على الخريطة" : "View on map"} →</Link></div>
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        <span className="me-1 text-[11px] uppercase tracking-wide text-charcoal/40">{ar ? "نوع الصفقة" : "Deal"}</span>
-        {DEALS.map((d)=>chip(dealLabel(d, locale),"deal",d))}
+    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
+        <div>
+          <div className="eyebrow">The exchange</div>
+          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>Verified spaces in Riyadh</h1>
+        </div>
+        <Link href={`/${locale}/map`} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>View on map <Icon.pin size={16} /></Link>
       </div>
-      <div className="mt-2.5 flex flex-wrap gap-2">{ASSETS.map((a)=>chip(assetLabel(a, locale),"asset",a))}</div>
-      <div className="mt-2.5 flex flex-wrap gap-2">{CITIES.map((c)=>chip(cityLabel(c, locale),"city",c))}</div>
-      <div className="mt-3 text-sm text-charcoal/50">{listings.length} {dict.ui.results}</div>
+      <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
+        <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
+        <input name="q" defaultValue={searchParams.q || ""} placeholder="Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²" style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)" }} />
+        <button type="submit" className="btn primary">Search</button>
+      </form>
+      <div className="row gap8 wrap" style={{ marginTop: 14 }}>
+        <span className="tag">Deal:</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
+      </div>
+      <div className="row gap8 wrap" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
+      <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{listings.length} verified {listings.length === 1 ? "space" : "spaces"}</div>
       {listings.length === 0 ? (
-        <p className="mt-8 text-charcoal/50">{dict.ui.noMatch}</p>
+        <p className="muted" style={{ marginTop: 28 }}>No matching spaces. Try widening your filters.</p>
       ) : (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />))}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(250px,1fr))", gap: 18, marginTop: 18 }}>
+          {listings.map((l) => {
+            const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
+            const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+            const type = assetLabel(l.asset_type, locale);
+            return (
+              <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
+                <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn || "Riyadh"}`} h={150} fav badges={[<Verified key="v" />, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
+                <div className="body">
+                  <div className="price">{price != null ? Number(price).toLocaleString() : "On request"}<small> SAR/m²·yr</small></div>
+                  <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                  <div className="meta"><span>{dn || "Riyadh"}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span></div>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
-    </section>
+    </div>
   );
 }
