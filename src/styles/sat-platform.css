@@ -248,3 +248,6 @@
 .map .zoom span+span{border-top:1px solid var(--silver);}
 
 .dash{min-height:100vh;}
+
+.req-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+@media(max-width:640px){.req-grid{grid-template-columns:1fr!important}}
