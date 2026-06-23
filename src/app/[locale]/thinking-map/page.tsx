@@ -99,12 +99,12 @@ export default function ThinkingMapPage() {
           {mode === "reach" && (
             <div className="fade" style={{ position: "absolute", left: "38%", top: "33%", pointerEvents: "none" }}>
               {[[320, .06, "15 min"], [214, .10, "10 min"], [112, .17, "5 min"]].map((r, i) => (
-                <div key={i} style={{ position: "absolute", left: 0, top: 0, width: Number(r[0]), height: Number(r[0]) * 0.92, transform: "translate(-50%,-50%)", borderRadius: "50%", border: "1.5px solid rgba(46,95,224,.5)", background: `rgba(46,95,224,${r[1]})`, display: "flex", justifyContent: "center" }}>
+                <div key={i} style={{ position: "absolute", left: 0, top: 0, width: Number(r[0]), height: Number(r[0]) * 0.92, transform: "translate(-50%,-50%)", borderRadius: "50%", border: "1.5px solid rgba(58,110,165,.5)", background: `rgba(58,110,165,${r[1]})`, display: "flex", justifyContent: "center" }}>
                   <span className="mono" style={{ fontSize: 9, color: "var(--azure-d)", marginTop: -1, background: "#fff", padding: "1px 5px", borderRadius: 4, height: 13, transform: "translateY(-50%)" }}>{r[2]}</span>
                 </div>
               ))}
               <div style={{ position: "absolute", left: 0, top: 0, width: 320, height: 294, transform: "translate(-50%,-50%)", borderRadius: "50%", overflow: "hidden" }}>
-                <div style={{ position: "absolute", inset: 0, background: "conic-gradient(from 0deg, rgba(46,95,224,.28), transparent 60deg)", animation: "spin 3s linear infinite" }} />
+                <div style={{ position: "absolute", inset: 0, background: "conic-gradient(from 0deg, rgba(58,110,165,.28), transparent 60deg)", animation: "spin 3s linear infinite" }} />
               </div>
             </div>
           )}
@@ -125,7 +125,7 @@ export default function ThinkingMapPage() {
           })}
 
           {zone && zone.r > 1 && (
-            <div style={{ position: "absolute", left: zone.x + "%", top: zone.y + "%", width: zone.r * 2 + "%", height: zone.r * 2 + "%", transform: "translate(-50%,-50%)", borderRadius: "50%", border: "2px dashed var(--azure)", background: "rgba(46,95,224,.07)", pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: zone.x + "%", top: zone.y + "%", width: zone.r * 2 + "%", height: zone.r * 2 + "%", transform: "translate(-50%,-50%)", borderRadius: "50%", border: "2px dashed var(--azure)", background: "rgba(58,110,165,.07)", pointerEvents: "none" }}>
               <span className="mono" style={{ position: "absolute", left: "50%", top: -12, transform: "translateX(-50%)", fontSize: 10, background: "var(--azure)", color: "#fff", padding: "2px 8px", borderRadius: 5, whiteSpace: "nowrap" }}>{inZone.length} spaces in zone</span>
             </div>
           )}

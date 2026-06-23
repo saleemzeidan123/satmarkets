@@ -80,9 +80,9 @@
 .map{position:relative;background:linear-gradient(0deg,rgba(58,110,165,.04),rgba(58,110,165,.04)),repeating-linear-gradient(0deg,#EAEEF3 0 1px,transparent 1px 64px),repeating-linear-gradient(90deg,#EAEEF3 0 1px,transparent 1px 64px),#F1F4F8;overflow:hidden;}
 .map .road{position:absolute;background:#fff;box-shadow:0 0 0 1px #E4E9EF;}
 .map .marea{position:absolute;background:rgba(58,110,165,.06);border:1px solid rgba(58,110,165,.15);border-radius:20px;display:flex;align-items:flex-end;padding:9px 11px;}
-.map .marea.b{background:rgba(46,95,224,.06);border-color:rgba(46,95,224,.14);}
+.map .marea.b{background:rgba(58,110,165,.06);border-color:rgba(58,110,165,.14);}
 .map .marea span{font-family:var(--mono);font-size:9.5px;color:var(--harbor);letter-spacing:.05em;text-transform:uppercase;opacity:.75;}
-.map .metro{position:absolute;height:0;border-top:2px dashed rgba(46,95,224,.45);}
+.map .metro{position:absolute;height:0;border-top:2px dashed rgba(58,110,165,.45);}
 .markpin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;}
 .markpin .body{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--silver-2);border-radius:10px;padding:5px 10px 5px 6px;box-shadow:0 5px 14px rgba(20,24,27,.18);}
 .markpin .body .price{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink);white-space:nowrap;}
@@ -125,10 +125,10 @@
 .bars .b.hi{background:var(--azure);border-color:var(--azure);}
 .bars .b .v{position:absolute;top:-19px;left:0;right:0;text-align:center;font-family:var(--mono);font-size:10px;color:var(--slate);}
 .iso{position:absolute;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.iso.r1{border:1.5px solid rgba(46,95,224,.55);background:rgba(46,95,224,.10);}
-.iso.r2{border:1.5px dashed rgba(46,95,224,.40);background:rgba(46,95,224,.05);}
-.iso.r3{border:1.5px dashed rgba(46,95,224,.26);}
-.isodot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--azure);transform:translate(-50%,-50%);box-shadow:0 0 0 4px rgba(46,95,224,.18);}
+.iso.r1{border:1.5px solid rgba(58,110,165,.55);background:rgba(58,110,165,.10);}
+.iso.r2{border:1.5px dashed rgba(58,110,165,.40);background:rgba(58,110,165,.05);}
+.iso.r3{border:1.5px dashed rgba(58,110,165,.26);}
+.isodot{position:absolute;width:12px;height:12px;border-radius:50%;background:var(--azure);transform:translate(-50%,-50%);box-shadow:0 0 0 4px rgba(58,110,165,.18);}
 .hours{display:flex;align-items:flex-end;gap:3px;height:64px;}
 .hours .h{flex:1;background:var(--azure-l);border-radius:3px 3px 0 0;opacity:.5;}
 .hours .h.pk{background:var(--azure);opacity:1;}
@@ -145,11 +145,11 @@
 .ph::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,16,22,0) 45%,rgba(10,16,22,.42));z-index:1}
 
 /* ===== motion + depth tokens (design handoff v2 — signature feel) ===== */
-:root{--spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.4,0,.2,1);--d-fast:.18s;--d:.34s;--d-slow:.6s;--z1:0 1px 2px rgba(20,24,27,.06),0 2px 8px rgba(20,24,27,.05);--z2:0 4px 14px rgba(20,24,27,.10),0 2px 6px rgba(20,24,27,.06);--z3:0 18px 44px rgba(20,24,27,.18),0 6px 16px rgba(20,24,27,.10);--glow:0 0 0 4px rgba(46,95,224,.16);}
+:root{--spring:cubic-bezier(.34,1.56,.64,1);--ease:cubic-bezier(.4,0,.2,1);--d-fast:.18s;--d:.34s;--d-slow:.6s;--z1:0 1px 2px rgba(20,24,27,.06),0 2px 8px rgba(20,24,27,.05);--z2:0 4px 14px rgba(20,24,27,.10),0 2px 6px rgba(20,24,27,.06);--z3:0 18px 44px rgba(20,24,27,.18),0 6px 16px rgba(20,24,27,.10);--glow:0 0 0 4px rgba(58,110,165,.16);}
 @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,95,224,.4)}70%{box-shadow:0 0 0 12px rgba(46,95,224,0)}100%{box-shadow:0 0 0 0 rgba(46,95,224,0)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(58,110,165,.4)}70%{box-shadow:0 0 0 12px rgba(58,110,165,0)}100%{box-shadow:0 0 0 0 rgba(58,110,165,0)}}
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}

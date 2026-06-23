@@ -59,7 +59,7 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en" | "ar" }) 
               <div className="pb-1 text-[10px] text-charcoal/45">{t.unit}</div>
             </div>
             <div className="flex h-9 items-end gap-1">
-              {bars.map((h, i) => <div key={i} className="w-2 rounded-t-sm" style={{ height: `${h}%`, background: "#2E5FE0", opacity: 0.4 + i * 0.08 }} />)}
+              {bars.map((h, i) => <div key={i} className="w-2 rounded-t-sm" style={{ height: `${h}%`, background: "#3A6EA5", opacity: 0.4 + i * 0.08 }} />)}
             </div>
           </div>
         </div>

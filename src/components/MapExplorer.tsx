@@ -9,7 +9,7 @@ export interface MapBuilding {
   band: number | null; bandLow: number | null; bandHigh: number | null; unit: string | null; listings: number;
 }
 const COLORS: Record<string, string> = {
-  office: "#2E5FE0", retail: "#0E9488", medical: "#DB2777", warehouse: "#64748B",
+  office: "#3A6EA5", retail: "#0E9488", medical: "#DB2777", warehouse: "#64748B",
   showroom: "#7C3AED", serviced: "#0EA5E9", education: "#16A34A", land: "#CA8A04",
 };
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
@@ -57,7 +57,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
         }});
         // cluster core (warm gold, white ring)
         map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-          "circle-color": ["step", ["get", "point_count"], "#6E92EC", 5, "#64748B", 15, "#2E5FE0"],
+          "circle-color": ["step", ["get", "point_count"], "#9DBBD6", 5, "#64748B", 15, "#3A6EA5"],
           "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28],
           "circle-stroke-width": 3, "circle-stroke-color": "#FFFFFF",
         }});

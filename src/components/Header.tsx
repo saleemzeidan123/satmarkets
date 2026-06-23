@@ -25,7 +25,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   }, [pathname]);
   const nav = [
     { href: `/${locale}/map`, label: (dict.nav as any).map ?? "Map" },
-    { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Area intel" },
+    { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Location Intelligence" },
     { href: `/${locale}/listings`, label: dict.nav.listings },
     { href: `/${locale}/search`, label: dict.search.title },
     { href: `/${locale}/advisor`, label: locale === "ar" ? "المستشار الذكي" : "AI Advisor" },

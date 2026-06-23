@@ -8,7 +8,7 @@ import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
 
-const TEAL = "#2E5FE0"; const GOLD = "#3A6EA5";
+const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
 

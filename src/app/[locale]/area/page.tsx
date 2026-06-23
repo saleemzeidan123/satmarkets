@@ -60,7 +60,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
               ))}
               <div className="card" style={{ position: "absolute", left: 16, bottom: 16, padding: "11px 14px", boxShadow: "var(--sh-2)" }}>
                 <div className="row gap16">
-                  <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(46,95,224,.35)", border: "1.5px solid rgba(46,95,224,.55)", display: "inline-block" }} /> Trade area</span>
+                  <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(58,110,165,.35)", border: "1.5px solid rgba(58,110,165,.55)", display: "inline-block" }} /> Trade area</span>
                   <span className="lgd"><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", display: "inline-block" }} /> Comparable occupiers</span>
                 </div>
               </div>

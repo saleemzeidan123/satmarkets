@@ -5,12 +5,12 @@ import HeroSearch from "@/components/HeroSearch";
 
 type Pt = { lng: number; lat: number; c: string };
 const PTS: Pt[] = [
-  { lng: 46.685, lat: 24.690, c: "#2E5FE0" },
+  { lng: 46.685, lat: 24.690, c: "#3A6EA5" },
   { lng: 46.642, lat: 24.762, c: "#0E9488" },
-  { lng: 46.620, lat: 24.800, c: "#6E92EC" },
+  { lng: 46.620, lat: 24.800, c: "#9DBBD6" },
   { lng: 46.737, lat: 24.770, c: "#0EA5E9" },
   { lng: 46.622, lat: 24.690, c: "#7C3AED" },
-  { lng: 46.760, lat: 24.805, c: "#2E5FE0" },
+  { lng: 46.760, lat: 24.805, c: "#3A6EA5" },
   { lng: 46.660, lat: 24.835, c: "#0E9488" },
 ];
 

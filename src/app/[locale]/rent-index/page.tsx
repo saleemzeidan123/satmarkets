@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
-const AZURE = "#2E5FE0";
+const AZURE = "#3A6EA5";
 
 type DRow = [string, string, string, string, boolean];
 
@@ -137,10 +137,10 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
             <div style={{ fontSize: 15, fontWeight: 700 }}>Rent heat · by district</div>
             <div className="muted" style={{ fontSize: 12.5 }}>Darker = higher SAR/m²</div>
             <div className="map" style={{ height: 176, borderRadius: 10, marginTop: 16, border: "1px solid var(--silver)" }}>
-              <div className="blob" style={{ left: "14%", top: "20%", width: 70, height: 60, background: "rgba(46,95,224,.28)", borderColor: "rgba(46,95,224,.4)" }} />
-              <div className="blob" style={{ left: "46%", top: "16%", width: 60, height: 55, background: "rgba(46,95,224,.42)", borderColor: "rgba(46,95,224,.5)" }} />
-              <div className="blob" style={{ left: "60%", top: "48%", width: 80, height: 64, background: "rgba(46,95,224,.16)", borderColor: "rgba(46,95,224,.3)" }} />
-              <div className="blob" style={{ left: "24%", top: "54%", width: 64, height: 52, background: "rgba(46,95,224,.10)", borderColor: "rgba(46,95,224,.24)" }} />
+              <div className="blob" style={{ left: "14%", top: "20%", width: 70, height: 60, background: "rgba(58,110,165,.28)", borderColor: "rgba(58,110,165,.4)" }} />
+              <div className="blob" style={{ left: "46%", top: "16%", width: 60, height: 55, background: "rgba(58,110,165,.42)", borderColor: "rgba(58,110,165,.5)" }} />
+              <div className="blob" style={{ left: "60%", top: "48%", width: 80, height: 64, background: "rgba(58,110,165,.16)", borderColor: "rgba(58,110,165,.3)" }} />
+              <div className="blob" style={{ left: "24%", top: "54%", width: 64, height: 52, background: "rgba(58,110,165,.10)", borderColor: "rgba(58,110,165,.24)" }} />
             </div>
             <div className="row between" style={{ marginTop: 14 }}>
               <span className="mono muted" style={{ fontSize: 10 }}>640</span>

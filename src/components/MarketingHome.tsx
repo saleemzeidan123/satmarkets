@@ -16,20 +16,17 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-      <div className="satmkt-hero" style={{ position: "relative", padding: "72px 40px 64px", background: "linear-gradient(160deg,#FBFCFE 0%,#EEF2F8 60%,#E7EDF5 100%)", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, opacity: .5, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", top: -66, right: -46 }}><Mark size={360} base="#E6ECF4" lit="#DCE6F1" /></div>
-        </div>
+      <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(108deg, rgba(15,20,26,.90) 0%, rgba(17,24,33,.74) 40%, rgba(44,85,127,.50) 100%), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=72')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div style={{ position: "relative", display: "flex", gap: 46, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
-          <div style={{ flex: "1 1 520px", maxWidth: 640 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#fff", border: "1px solid var(--silver)", borderRadius: 20, padding: "6px 13px", boxShadow: "var(--sh-1)" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--green)" }} />
-              <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--slate)" }}>REGA-native commercial exchange</span>
+          <div style={{ flex: "1 1 520px", maxWidth: 660 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
+              <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>REGA-native commercial exchange</span>
             </div>
-            <h1 className="serif" style={{ fontSize: "clamp(34px,5.6vw,62px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.02em", margin: "20px 0 0", color: "var(--ink)" }}>
-              Riyadh&apos;s verified home for <span style={{ color: "var(--harbor)" }}>commercial space</span>
+            <h1 className="serif" style={{ fontSize: "clamp(34px,5.6vw,62px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.02em", margin: "20px 0 0", color: "#fff" }}>
+              Saudi Arabia&apos;s verified home for <span style={{ color: "#9DBBD6" }}>commercial space</span>
             </h1>
-            <p style={{ fontSize: 18, lineHeight: 1.6, color: "var(--slate)", margin: "20px 0 0", maxWidth: 560 }}>
+            <p style={{ fontSize: 18, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "20px 0 0", maxWidth: 560 }}>
               Find, compare and lease Grade A offices, retail and warehouses. Verified listings and decision-grade pricing, in one neutral exchange.
             </p>
             <div className="card" style={{ marginTop: 30, padding: 14, maxWidth: 660, boxShadow: "var(--sh-2)" }}>
@@ -50,13 +47,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
                 <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none" }}>Warehouse, 2nd Industrial</Link>
               </div>
             </div>
-            <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "var(--slate)" }}>
-              <span className="row gap8"><span style={{ color: "var(--green)" }}><Icon.check size={16} /></span> Owners verified before listing</span>
-              <span className="row gap8"><span style={{ color: "var(--green)" }}><Icon.check size={16} /></span> No assumed commission</span>
+            <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)" }}>
+              <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> Owners verified before listing</span>
+              <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> No assumed commission</span>
             </div>
             <div className="row gap8 wrap" style={{ marginTop: 18 }}>
               {["REGA-licensed", "PDPL-compliant", "Ejar-integrated", "100% verified"].map((t, i) => (
-                <span key={i} className="tag" style={{ gap: 6 }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)" }} />{t}</span>
+                <span key={i} className="tag" style={{ gap: 6, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", color: "rgba(255,255,255,.9)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3ECF8E" }} />{t}</span>
               ))}
             </div>
           </div>
@@ -162,11 +159,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
               <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>Contact the lister directly</div>
               <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>Self-serve and free. No mandate, no fee, no assumed commission. Most of the exchange runs this way.</div>
             </div>
-            <div className="card pad grow" style={{ borderColor: "var(--harbor)", minWidth: 280 }}>
+            <a href="https://satestate.com/contact" target="_blank" rel="noopener noreferrer" className="card pad grow lift" style={{ borderColor: "var(--harbor)", minWidth: 280, textDecoration: "none", color: "inherit", display: "block" }}>
               <span className="tag" style={{ color: "var(--harbor)", background: "rgba(58,110,165,.08)", borderColor: "rgba(58,110,165,.3)" }}>Path B, Opt-in</span>
-              <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>Appoint SAT to represent you</div>
-              <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>An explicit mandate when you want SAT&apos;s brokers at the table. Clear terms, agreed before any fee applies.</div>
-            </div>
+              <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>Appoint SAT Real Estate to represent you</div>
+              <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>An explicit mandate when you want SAT Real Estate&apos;s licensed brokers at the table. Clear terms, agreed before any fee applies.</div>
+              <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: "var(--harbor)" }}>Talk to SAT Real Estate &rarr;</div>
+            </a>
           </div>
         </div>
         <div style={{ padding: "20px 24px 20px" }}>
