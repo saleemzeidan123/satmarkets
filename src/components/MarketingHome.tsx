@@ -100,16 +100,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>No one in the Kingdom combines all four. That combination is the platform.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
             {[
-              [Icon.building, "Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings."],
-              [Icon.doc, "Requirements", "Occupiers post what they need; the right supply comes to them."],
-              [Icon.chart, "Rent Index", "Decision-grade pricing and catchment data. Every figure sourced."],
-              [Icon.user, "Representation", "An explicit, opt-in choice. Never a commission baked into a listing."],
+              [Icon.building, "Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
+              [Icon.doc, "Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
+              [Icon.chart, "Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
+              [Icon.user, "Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
             ].map((c, i) => { const I = c[0] as (p: { size?: number }) => JSX.Element; return (
-              <div key={i} className="card pad" style={{ boxShadow: "none" }}>
+              <Link key={i} href={L(c[3] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
                 <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
                 <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[1] as string}</div>
                 <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[2] as string}</div>
-              </div>
+              </Link>
             ); })}
           </div>
         </div>
@@ -175,24 +175,24 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
             {[
-              [Icon.building, "Verified listings + map", "Permit and FAL-checked, with branded map search.", "h"],
-              [Icon.chart, "Rent Index", "Decision-grade rents with the capped/open freeze lens.", "a"],
-              [Icon.target, "Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled.", ""],
-              [Icon.coins, "Investment underwriting", "Yield, NOI and scenarios on verified comps.", "h"],
-              [Icon.spark, "AI Advisor", "Conversational search and valuation, grounded in the Index.", "a"],
-              [Icon.msg, "Bilingual listings", "Author in Arabic or English, verified mirror in both.", ""],
-              [Icon.grid, "Owner dashboard", "Listing performance, leads and requirement matches.", "h"],
-              [Icon.coins, "Membership plans", "Grades with clear quota caps; ZATCA invoicing.", "a"],
-              [Icon.cal, "Deal rail", "Enquiry to viewing to offer to Ejar contract and escrow.", ""],
-              [Icon.phone, "Mobile app", "The whole exchange, iOS and Android.", "h"],
-              [Icon.shield, "Trust and compliance", "REGA, PDPL, AML and a checkable verification layer.", "a"],
-              [Icon.headset, "Support and help", "AI and live support, with a full help center.", ""],
+              [Icon.building, "Verified listings + map", "Permit and FAL-checked, with branded map search.", "h", "/map"],
+              [Icon.chart, "Rent Index", "Decision-grade rents with the capped/open freeze lens.", "a", "/rent-index"],
+              [Icon.target, "Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled.", "", "/area"],
+              [Icon.coins, "Investment underwriting", "Yield, NOI and scenarios on verified comps.", "h", "/invest"],
+              [Icon.spark, "AI Advisor", "Conversational search and valuation, grounded in the Index.", "a", "/advisor"],
+              [Icon.msg, "Bilingual listings", "Author in Arabic or English, verified mirror in both.", "", "/bilingual"],
+              [Icon.grid, "Owner dashboard", "Listing performance, leads and requirement matches.", "h", "/dashboard"],
+              [Icon.coins, "Membership plans", "Grades with clear quota caps; ZATCA invoicing.", "a", "/pricing"],
+              [Icon.cal, "Deal rail", "Enquiry to viewing to offer to Ejar contract and escrow.", "", "/deal"],
+              [Icon.bolt, "Thinking Map", "A live map that thinks: footfall, catchment, draw-a-zone.", "h", "/thinking-map"],
+              [Icon.spark, "AI Agent", "An agent that does the work, step by step, on verified data.", "a", "/agent"],
+              [Icon.shield, "Trust and compliance", "REGA, PDPL, AML and a checkable verification layer.", "", "/about"],
             ].map((m, i) => { const I = m[0] as (p: { size?: number }) => JSX.Element; const k = m[3] as string; return (
-              <div key={i} className="card pad" style={{ boxShadow: "none" }}>
+              <Link key={i} href={L(m[4] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
                 <div style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: k === "a" ? "var(--azure-wash)" : k === "h" ? "#EAF0F7" : "var(--cool)", color: k === "a" ? "var(--azure-d)" : "var(--harbor)" }}><I size={20} /></div>
                 <div style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 5px", letterSpacing: "-.01em" }}>{m[1] as string}</div>
                 <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{m[2] as string}</div>
-              </div>
+              </Link>
             ); })}
           </div>
         </div>
