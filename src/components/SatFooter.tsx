@@ -45,13 +45,14 @@ const FIcon = {
 };
 
 const FOOT_COLS: [string, string[]][] = [
-  ["Platform", ["Listings", "Requirements", "Rent Index", "Location Intelligence", "Investment", "For owners"]],
+  ["Platform", ["Listings", "Requirements", "Rent Index", "Compare spaces", "Investment underwriting", "Location Intelligence", "For owners", "Membership"]],
+  ["AI and deals", ["AI Advisor", "AI Agent", "Thinking Map", "Deal room", "Messages", "Notifications", "Floor plans", "Bilingual listing"]],
   ["Solutions", ["Occupiers", "Owners and landlords", "Brokers", "Investors", "Setting up an RHQ"]],
   ["Company", ["About SAT Real Estate", "Our neutrality", "Newsroom", "Careers", "Contact"]],
   ["Trust and legal", ["How we verify", "REGA compliance", "Terms of Service", "Privacy and PDPL", "Security", "Help center"]],
 ];
 const FOOT_TRUST = ["REGA-licensed", "PDPL-compliant", "Ejar-integrated", "ZATCA e-invoicing", "Nafath sign-in"];
-const ROUTES: Record<string, string> = { "Listings": "/listings", "Rent Index": "/rent-index", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "About SAT Real Estate": "/about", "Help center": "/search" };
+const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/post-requirement", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "AI Agent": "/agent", "Thinking Map": "/thinking-map", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "Bilingual listing": "/bilingual", "About SAT Real Estate": "/about", "Help center": "/search" };
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
   const L = (p: string) => `/${locale}${p}`;

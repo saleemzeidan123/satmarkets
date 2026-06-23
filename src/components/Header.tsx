@@ -28,8 +28,10 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Area intel" },
     { href: `/${locale}/listings`, label: dict.nav.listings },
     { href: `/${locale}/search`, label: dict.search.title },
+    { href: `/${locale}/advisor`, label: locale === "ar" ? "المستشار الذكي" : "AI Advisor" },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
     { href: `/${locale}/hbu`, label: (dict.nav as any).develop ?? "Develop" },
+    { href: `/${locale}/pricing`, label: locale === "ar" ? "الأسعار" : "Pricing" },
     { href: `/${locale}/about`, label: dict.nav.about },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");

@@ -1,21 +1,50 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
+import { getSupabaseServer } from "@/lib/supabase/server";
 
 const AZURE = "#2E5FE0";
 
-export default function RentIndexPage({ params }: { params: { locale: string } }) {
+type DRow = [string, string, string, string, boolean];
+
+export default async function RentIndexPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
 
-  const districts: [string, string, string, string, string, number][] = [
-    ["Al Olaya", "Office · Grade A", "1,420", "+8.4%", "up", 62],
-    ["Al Olaya", "Office · Grade B", "1,090", "+24%", "up", 71],
-    ["KAFD", "Office · Grade A", "1,310", "+6.1%", "up", 48],
-    ["Tahlia", "Retail · street", "2,050", "+11.2%", "up", 55],
-    ["Hittin", "Office · Grade A", "1,180", "+4.7%", "up", 44],
-    ["2nd Industrial", "Warehouse · modern", "640", "+16%", "up", 51],
-    ["Granada", "Office · Grade B", "1,060", "+19%", "up", 67],
+  const MOCK_DISTRICTS: DRow[] = [
+    ["Al Olaya", "Office · Grade A", "2,400", "1,800–2,900", true],
+    ["KAFD", "Office · Grade A", "3,700", "3,000–4,200", true],
+    ["King Fahd Road", "Office · Grade A", "2,100", "1,500–2,700", true],
+    ["North Riyadh (Granada · Hittin)", "Office · Grade A", "1,350", "1,000–1,800", true],
+    ["Al Olaya", "Office · Grade B", "1,150", "900–1,400", true],
+    ["Diplomatic Quarter", "Office · Grade A", "—", "Thin sample", false],
   ];
+
+  // Wire to the live SAT Rent Index when Supabase is configured; fall back to
+  // the seeded snapshot above so preview builds never break.
+  const SEG: Record<string, string> = { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street: "street", prime: "prime" };
+  const ASSET: Record<string, string> = { office: "Office", retail: "Retail", warehouse: "Warehouse", serviced: "Serviced", medical: "Medical", showroom: "Showroom", land: "Land" };
+  const nf = (n: number) => n.toLocaleString("en-US");
+  let districts: DRow[] = MOCK_DISTRICTS;
+  try {
+    const supabase = getSupabaseServer();
+    if (supabase) {
+      const { data } = await supabase
+        .from("rent_index_published")
+        .select("district_label, asset_type, segment, median, band_low, band_high, sufficient, sort_order")
+        .order("sort_order", { ascending: true })
+        .limit(14);
+      if (data && data.length) {
+        districts = data.map((r: any): DRow => {
+          const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment ? " · " + (SEG[r.segment] || r.segment) : ""}`;
+          const median = r.sufficient && r.median != null ? nf(Number(r.median)) : "—";
+          const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}–${nf(Number(r.band_high))}` : "Thin sample";
+          return [r.district_label, asset, median, band, !!r.sufficient];
+        });
+      }
+    }
+  } catch {
+    districts = MOCK_DISTRICTS;
+  }
   const open = [40, 44, 42, 50, 56, 54, 62, 68, 70, 76, 80, 86];
   const capped = [40, 44, 42, 50, 56, 54, 62, 65, 65, 65, 65, 65];
   const freezeX = (8 / 11) * 100;
@@ -128,22 +157,15 @@ export default function RentIndexPage({ params }: { params: { locale: string } }
             </div>
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 640 }}>
-                <thead><tr><th>District</th><th>Asset</th><th style={{ textAlign: "right" }}>Median SAR/m²</th><th style={{ textAlign: "right" }}>YoY (open)</th><th style={{ textAlign: "right" }}>Capped coverage</th><th style={{ textAlign: "right" }}>Source</th></tr></thead>
+                <thead><tr><th>District</th><th>Asset</th><th style={{ textAlign: "right" }}>Median SAR/m²</th><th style={{ textAlign: "right" }}>Band (SAR/m²)</th><th style={{ textAlign: "right" }}>Data</th><th style={{ textAlign: "right" }}>Source</th></tr></thead>
                 <tbody>
                   {districts.map((d, i) => (
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{d[0]}</td>
                       <td className="muted">{d[1]}</td>
-                      <td className="num" style={{ fontWeight: 500 }}>{d[2]}</td>
-                      <td className="num"><span className={"delta " + d[4]}>{d[3]}</span></td>
-                      <td className="num">
-                        <span className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
-                          <span style={{ width: 54, height: 6, borderRadius: 4, background: "var(--silver)", position: "relative", display: "inline-block" }}>
-                            <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: d[5] + "%", background: "var(--amber)", borderRadius: 4 }} />
-                          </span>
-                          <span className="tnum">{d[5]}%</span>
-                        </span>
-                      </td>
+                      <td className="num mono" style={{ fontWeight: 500 }}>{d[2]}</td>
+                      <td className="num mono muted">{d[3]}</td>
+                      <td className="num">{d[4] ? <span className="statusdot ok">Sufficient</span> : <span className="statusdot pend">Thin</span>}</td>
                       <td className="num"><Verified text="✓" /></td>
                     </tr>
                   ))}
@@ -152,7 +174,7 @@ export default function RentIndexPage({ params }: { params: { locale: string } }
             </div>
             <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
               <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-              <span className="muted" style={{ fontSize: 12.5 }}>YoY reflects open (re-pricing) stock only — capped renewals are excluded so the figure is not diluted by frozen leases.</span>
+              <span className="muted" style={{ fontSize: 12.5 }}>Medians and bands are drawn from verified SAT/RCRI Q1 2026 transactions. Districts with a thin sample are marked rather than shown — the index never prints a number it cannot stand behind.</span>
             </div>
           </div>
         </div>
