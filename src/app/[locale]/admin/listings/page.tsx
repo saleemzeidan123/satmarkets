@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, Logo, Photo } from "@/components/satkit";
@@ -32,7 +33,7 @@ export default function AdminListingsPage({ params }: { params: { locale: string
   return (
     <div className="dash">
       <aside className="dside">
-        <div className="brand"><Logo size={26} rev /></div>
+        <div className="brand"><Link href={`/${params.locale}`} aria-label="Home"><Logo size={26} rev /></Link></div>
         <div className="dnav">
           {nav.map((n, i) => n.sec
             ? <div key={i} className="sec">{n.label}</div>

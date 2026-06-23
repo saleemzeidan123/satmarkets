@@ -1,37 +1,65 @@
-import { isLocale } from "@/i18n/config";
-import { notFound } from "next/navigation";
-import { Icon, Logo, Photo, Verified } from "@/components/satkit";
+"use client";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { Icon, Logo } from "@/components/satkit";
+import { assetLabel } from "@/lib/labels";
+
+interface R { id: string; reference_code: string; asset_type: string; title_en: string|null; title_ar: string|null; area_sqm: number; asking_rent_sqm: number|null; sale_price: number|null; districts?: { name_en: string|null; name_ar: string|null; city: string|null } | null; }
+interface Msg { role: "u"|"a"; text: string; results?: R[]; note?: string; }
+
+const JOBS = [
+  { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe it in words — I search verified stock", prompt: "Fitted Grade A office in Al Olaya, ~300 m², under 1,600 SAR/m²" },
+  { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "From your details, write the whole listing", prompt: "Draft a listing for my Grade A floor in Olaya Tower, 320 m², fitted" },
+  { icon: <Icon.chart size={18} />, label: "Value a lease or deal", sub: "Plain-language, grounded in the Rent Index", prompt: "How does 1,450 SAR/m² compare for Grade A office in Al Olaya?" },
+  { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prompt: "Alert me when Al Olaya Grade A office rents move more than 3%" },
+];
 
 export default function AdvisorPage({ params }: { params: { locale: string } }) {
-  if (!isLocale(params.locale)) notFound();
-  const threads: [string, string, boolean][] = [
-    ["Grade A office, Olaya < 1,600", "2m ago", true],
-    ["Value my 3-yr KAFD lease", "1h ago", false],
-    ["Warehouse near 2nd Industrial", "Yesterday", false],
-    ["Tahlia retail footfall", "2 days ago", false],
-  ];
-  const matches: [string, string, string, string][] = [
-    ["Grade A Office, Olaya Tower", "320 m²", "1,450", "office"],
-    ["Olaya Plaza, Fl.12", "300 m²", "1,420", "office"],
-    ["Tahlia Gate, Fl.6", "285 m²", "1,560", "interior"],
-  ];
-  const sources: [(p: { size?: number }) => JSX.Element, string][] = [
-    [Icon.chart, "SAT Rent Index Q1 2026"], [Icon.shield, "REGA permit registry"], [Icon.target, "Mobility panel · footfall"],
-  ];
+  const locale = (params.locale === "ar" ? "ar" : "en") as "en"|"ar";
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy]);
+
+  async function send(text: string) {
+    const q = text.trim();
+    if (!q || busy) return;
+    setInput("");
+    setMsgs((m) => [...m, { role: "u", text: q }]);
+    setBusy(true);
+    try {
+      const r = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
+      const j = await r.json();
+      const results: R[] = j.results || [];
+      let note = "";
+      if (j.clarify) note = "Tell me a bit more — a space type, a city, or a budget — and I'll narrow it down.";
+      else if (results.length) note = `${results.length} verified ${results.length === 1 ? "match" : "matches"} from the SAT index — owner-verified, deduplicated, permit-backed.`;
+      else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
+      setMsgs((m) => [...m, { role: "a", text: note, results, note: "SAT Rent Index Q1 2026 · verified transactions only" }]);
+    } catch {
+      setMsgs((m) => [...m, { role: "a", text: "Something interrupted the search. Please try again." }]);
+    }
+    setBusy(false);
+  }
+
+  const started = msgs.length > 0;
+
   return (
     <div className="dash">
       <aside className="dside advisor-rail-l" style={{ background: "var(--paper)", color: "var(--ink)", borderRight: "1px solid var(--silver)" }}>
         <div className="brand" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Logo size={26} />
-          <span className="btn primary sm"><Icon.plus size={14} /> New</span>
+          <Link href={`/${locale}`} aria-label="Home"><Logo size={26} /></Link>
+          <button className="btn primary sm" onClick={() => setMsgs([])}><Icon.plus size={14} /> New</button>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, margin: "6px 0 10px", padding: "9px 12px", background: "var(--cool)", border: "1px solid var(--silver)", borderRadius: 9, color: "var(--slate-2)", fontSize: 12.5 }}><Icon.search size={15} /> Search chats…</div>
-        <div className="dnav" style={{ gap: 4 }}>
-          {threads.map((t, i) => (
-            <a key={i} className={t[2] ? "on" : ""} style={{ flexDirection: "column", alignItems: "flex-start", gap: 3, color: "var(--ink)", background: t[2] ? "var(--azure-wash)" : "transparent" }}>
-              <span style={{ fontSize: 13, fontWeight: 600 }}>{t[0]}</span>
-              <span className="mono" style={{ fontSize: 10, color: "var(--slate-2)" }}>{t[1]}</span>
-            </a>
+        <div className="dnav" style={{ gap: 4, marginTop: 10 }}>
+          <div className="eyebrow" style={{ padding: "4px 12px" }}>What I can do</div>
+          {JOBS.map((j, i) => (
+            <button key={i} onClick={() => send(j.prompt)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, color: "var(--ink)", background: "transparent", border: "none", textAlign: "left", padding: "9px 12px", borderRadius: 9, cursor: "pointer", width: "100%" }}>
+              <span style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "var(--harbor)" }}>{j.icon}</span>{j.label}</span>
+              <span className="mono" style={{ fontSize: 10, color: "var(--slate-2)" }}>{j.sub}</span>
+            </button>
           ))}
         </div>
         <div className="me" style={{ borderTopColor: "var(--silver)" }}>
@@ -43,47 +71,74 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       <div className="dmain" style={{ display: "flex", flexDirection: "column" }}>
         <div className="dtopbar">
           <span style={{ color: "var(--harbor)" }}><Icon.spark size={20} /></span>
-          <div><h1>SAT Advisor</h1><div className="sub">Grounded in the verified Rent Index · explains the data, never invents it</div></div>
+          <div><h1>SAT Advisor</h1><div className="sub">Search, draft, value and watch the market — grounded in the verified index, never invented</div></div>
           <span style={{ flex: 1 }} />
           <span className="tag">Beta</span>
-          <span className="btn secondary sm"><Icon.download size={14} /> Export</span>
         </div>
 
-        <div style={{ flex: 1, overflowY: "auto", padding: "26px 24px", background: "var(--cool)" }}>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "26px 24px", background: "var(--cool)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }} className="col gap18">
-            <div className="chatmsg u" style={{ alignSelf: "flex-end" }}>I need a fitted Grade A office in Al Olaya, around 300 m², under 1,600 SAR/m².</div>
-            <div className="chatmsg a">
-              <div className="row gap8" style={{ marginBottom: 10 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><b style={{ fontWeight: 600 }}>3 verified matches</b> in Al Olaya — all owner-verified, fitted, 280–340 m².</div>
-              <div className="col gap10">
-                {matches.map((r, i) => (
-                  <div key={i} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 10 }}>
-                    <Photo kind={r[3]} h={56} style={{ width: 80, borderRadius: 8, flex: "none" }} badges={[<Verified key="v" text="V" />]} />
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{r[0]}</div><div className="mono muted" style={{ fontSize: 11, marginTop: 3 }}>{r[1]} · Al Olaya</div></div>
-                    <div style={{ textAlign: "right" }}><div className="mono" style={{ fontSize: 15, fontWeight: 500 }}>{r[2]}</div><div className="muted" style={{ fontSize: 10.5 }}>SAR/m²·yr</div></div>
-                  </div>
-                ))}
+            {!started && (
+              <div>
+                <div className="eyebrow">What should I do for you?</div>
+                <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 4px" }}>An assistant that does the work.</h2>
+                <p className="muted" style={{ fontSize: 14, margin: "0 0 18px" }}>Not just a search box — pick a job or type below, and I run it on verified data.</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {JOBS.map((j, i) => (
+                    <button key={i} onClick={() => send(j.prompt)} className="card pad lift" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }}>
+                      <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
+                      <div style={{ fontSize: 15, fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
+                      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{j.sub}</div>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="src">SAT Rent Index Q1 2026 · 142 districts · verified transactions only</div>
-            </div>
-            <div className="chatmsg u" style={{ alignSelf: "flex-end" }}>How does 1,450 compare to the market?</div>
-            <div className="chatmsg a">
-              <div style={{ marginBottom: 10 }}>Olaya Tower at <b>1,450</b> sits <b style={{ color: "var(--green)" }}>2% above</b> the Al Olaya Grade A median of <b>1,420</b>, which is up <b style={{ color: "var(--green)" }}>+8.4% YoY</b>. It&apos;s an <b style={{ color: "var(--azure-d)" }}>open first-lease</b>, so it sets headline — not a frozen rent.</div>
-              <div className="bars" style={{ height: 84, marginTop: 6 }}>{[64, 70, 68, 76, 82, 90].map((h, i) => <div key={i} className={"b" + (i > 3 ? " hi" : "")} style={{ height: h + "%" }}><span className="v">{i === 5 ? "+8.4%" : ""}</span></div>)}</div>
-              <div className="src">Source: SAT Rent Index · Al Olaya · Grade A office</div>
-            </div>
+            )}
+
+            {msgs.map((m, i) => m.role === "u" ? (
+              <div key={i} className="chatmsg u" style={{ alignSelf: "flex-end" }}>{m.text}</div>
+            ) : (
+              <div key={i} className="chatmsg a">
+                <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
+                {m.results && m.results.length > 0 && (
+                  <div className="col gap10">
+                    {m.results.slice(0, 4).map((l) => {
+                      const title = (locale === "ar" ? l.title_ar : l.title_en) || l.reference_code;
+                      const dn = l.districts ? (locale === "ar" ? l.districts.name_ar : l.districts.name_en) : "";
+                      const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
+                      return (
+                        <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
+                          <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
+                          <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: 11, marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
+                          <div style={{ textAlign: "right" }}><div className="mono" style={{ fontSize: 15, fontWeight: 500 }}>{price ? price.toLocaleString() : "—"}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? "SAR/m²·yr" : "SAR"}</div></div>
+                        </Link>
+                      );
+                    })}
+                    {m.note && <div className="src">{m.note}</div>}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {busy && (
+              <div className="chatmsg a"><div className="row gap8"><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span className="muted">Searching the verified index…</span></div></div>
+            )}
           </div>
         </div>
 
         <div style={{ padding: "14px 24px 20px", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
-            <div className="row gap8 wrap" style={{ marginBottom: 10 }}>
-              {["Compare Olaya vs KAFD", "Value a 3-yr lease", "Catchment near Tahlia", "Capped vs open?"].map((p, i) => <span key={i} className="chip">{p}</span>)}
-            </div>
-            <div className="search focus" style={{ boxShadow: "none", border: "1px solid var(--azure)", padding: "11px 14px" }}>
+            {!started && (
+              <div className="row gap8 wrap" style={{ marginBottom: 10 }}>
+                {["Compare Olaya vs KAFD", "Warehouse near 2nd Industrial", "Retail with high footfall on Tahlia", "Offices under 1,200 SAR/m²"].map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => send(p)}>{p}</button>)}
+              </div>
+            )}
+            <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="search focus" style={{ boxShadow: "none", border: "1px solid var(--azure)", padding: "8px 10px 8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
               <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-              <div className="q"><span className="ph">Ask about rents, catchment, or value a lease…</span></div>
-              <span className="btn primary sm"><Icon.send size={15} /></span>
-            </div>
+              <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask about rents, find a space, value a lease…" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)" }} />
+              <button type="submit" className="btn primary sm" disabled={busy} aria-label="Send"><Icon.send size={15} /></button>
+            </form>
+            <p className="muted" style={{ fontSize: 11, margin: "8px 2px 0" }}>Grounded in the SAT Rent Index and verified listings. SAT Advisor explains the data — it doesn&apos;t invent it.</p>
           </div>
         </div>
       </div>
@@ -96,9 +151,9 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
             <div className="eyebrow">Sources used</div>
             <div className="col gap8" style={{ marginTop: 10 }}>
-              {sources.map((s, i) => { const I = s[0]; return (
-                <div key={i} className="row gap8" style={{ fontSize: 12 }}><span style={{ color: "var(--harbor)" }}><I size={14} /></span>{s[1]}</div>
-              ); })}
+              {[[<Icon.chart key="a" size={14} />, "SAT Rent Index Q1 2026"], [<Icon.shield key="b" size={14} />, "REGA permit registry"], [<Icon.target key="c" size={14} />, "Mobility panel · footfall"]].map((s, i) => (
+                <div key={i} className="row gap8" style={{ fontSize: 12 }}><span style={{ color: "var(--harbor)" }}>{s[0]}</span>{s[1]}</div>
+              ))}
             </div>
           </div>
         </div>

@@ -173,17 +173,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
             {[
-              [Icon.building, "Verified listings + map", "Permit and FAL-checked, with branded map search.", "h", "/map"],
+              [Icon.building, "Verified listings + map", "Permit and FAL-checked stock on a live Riyadh map.", "h", "/map"],
               [Icon.chart, "Rent Index", "Decision-grade rents with the capped/open freeze lens.", "a", "/rent-index"],
               [Icon.target, "Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled.", "", "/area"],
               [Icon.coins, "Investment underwriting", "Yield, NOI and scenarios on verified comps.", "h", "/invest"],
               [Icon.spark, "AI Advisor", "Conversational search and valuation, grounded in the Index.", "a", "/advisor"],
-              [Icon.msg, "Bilingual listings", "Author in Arabic or English, verified mirror in both.", "", "/bilingual"],
+              [Icon.msg, "Post a requirement", "Tell the market what you need; owners and brokers respond.", "", "/post-requirement"],
               [Icon.grid, "Owner dashboard", "Listing performance, leads and requirement matches.", "h", "/dashboard"],
               [Icon.coins, "Membership plans", "Grades with clear quota caps; ZATCA invoicing.", "a", "/pricing"],
-              [Icon.cal, "Deal rail", "Enquiry to viewing to offer to Ejar contract and escrow.", "", "/deal"],
-              [Icon.bolt, "Thinking Map", "A live map that thinks: footfall, catchment, draw-a-zone.", "h", "/thinking-map"],
-              [Icon.spark, "AI Agent", "An agent that does the work, step by step, on verified data.", "a", "/agent"],
+              [Icon.cal, "Deal tracking", "Enquiry to viewing to offer to handover, with verified parties.", "", "/deal"],
+              [Icon.bolt, "Compare spaces", "Shortlist side by side on verified facts and rent vs index.", "h", "/compare"],
               [Icon.shield, "Trust and compliance", "REGA, PDPL, AML and a checkable verification layer.", "", "/about"],
             ].map((m, i) => { const I = m[0] as (p: { size?: number }) => JSX.Element; const k = m[3] as string; return (
               <Link key={i} href={L(m[4] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>

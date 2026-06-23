@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, Logo, Photo } from "@/components/satkit";
@@ -17,15 +18,16 @@ function KCard({ icon: I, tone, v, l, delta, dir }: { icon: (p: { size?: number 
 
 export default function DashboardPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
-  const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean }[] = [
-    { label: "Overview", icon: Icon.grid },
-    { label: "My listings", icon: Icon.building },
-    { label: "Enquiries", icon: Icon.inbox, badge: "9" },
-    { label: "Requirement matches", icon: Icon.target, badge: "5" },
-    { label: "Performance", icon: Icon.chart },
+  const lp = params.locale;
+  const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean; href?: string }[] = [
+    { label: "Overview", icon: Icon.grid, href: `/${lp}/dashboard` },
+    { label: "My listings", icon: Icon.building, href: `/${lp}/listings` },
+    { label: "Enquiries", icon: Icon.inbox, badge: "9", href: `/${lp}/messages` },
+    { label: "Requirement matches", icon: Icon.target, badge: "5", href: `/${lp}/post-requirement` },
+    { label: "Performance", icon: Icon.chart, href: `/${lp}/dashboard` },
     { label: "Account", sec: true },
-    { label: "Billing & plan", icon: Icon.coins },
-    { label: "Settings", icon: Icon.gear },
+    { label: "Billing & plan", icon: Icon.coins, href: `/${lp}/pricing` },
+    { label: "Settings", icon: Icon.gear, href: `/${lp}/dashboard` },
   ];
   const listings: [string, string, string, string, string, number, number, number, string][] = [
     ["Grade A Office, Olaya Tower", "Al Olaya · 320 m²", "office", "1,450", "live", 4820, 186, 7, "+2%"],
@@ -48,15 +50,15 @@ export default function DashboardPage({ params }: { params: { locale: string } }
   return (
     <div className="dash">
       <aside className="dside">
-        <div className="brand"><Logo size={26} rev /></div>
+        <div className="brand"><Link href={`/${params.locale}`} aria-label="Home"><Logo size={26} rev /></Link></div>
         <div className="dnav">
           {nav.map((n, i) => n.sec
             ? <div key={i} className="sec">{n.label}</div>
-            : <a key={i} className={n.label === "Overview" ? "on" : ""}>
+            : <Link key={i} href={n.href || `/${params.locale}/dashboard`} className={n.label === "Overview" ? "on" : ""}>
                 <span className="ic">{n.icon && n.icon({ size: 18 })}</span>
                 <span>{n.label}</span>
                 {n.badge && <span className={"badge" + (n.warn ? " warn" : "")}>{n.badge}</span>}
-              </a>)}
+              </Link>)}
         </div>
         <div className="me">
           <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
@@ -70,7 +72,7 @@ export default function DashboardPage({ params }: { params: { locale: string } }
           <span style={{ flex: 1 }} />
           <span className="dsearch"><Icon.search size={16} /> Search…</span>
           <span style={{ color: "var(--slate)", position: "relative" }}><Icon.bell size={19} /><span style={{ position: "absolute", top: -2, right: -2, width: 7, height: 7, borderRadius: "50%", background: "var(--red)" }} /></span>
-          <span className="btn primary"><Icon.plus size={16} /> List a space</span>
+          <Link href={`/${params.locale}/list`} className="btn primary"><Icon.plus size={16} /> List a space</Link>
         </div>
         <div className="dbody">
           <div className="kgrid">
