@@ -46,13 +46,13 @@ const FIcon = {
 
 const FOOT_COLS: [string, string[]][] = [
   ["Platform", ["Listings", "Requirements", "Rent Index", "Compare spaces", "Investment underwriting", "Location Intelligence", "For owners", "Membership"]],
-  ["AI and deals", ["AI Advisor", "AI Agent", "Thinking Map", "Deal room", "Messages", "Notifications", "Floor plans", "Bilingual listing"]],
+  ["AI and deals", ["AI Advisor", "Deal room", "Messages", "Notifications", "Floor plans"]],
   ["Solutions", ["Occupiers", "Owners and landlords", "Brokers", "Investors", "Setting up an RHQ"]],
   ["Company", ["About SAT Real Estate", "Our neutrality", "Newsroom", "Careers", "Contact"]],
   ["Trust and legal", ["How we verify", "REGA compliance", "Terms of Service", "Privacy and PDPL", "Security", "Help center"]],
 ];
 const FOOT_TRUST = ["REGA-licensed", "PDPL-compliant", "Ejar-integrated", "ZATCA e-invoicing", "Nafath sign-in"];
-const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/post-requirement", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "AI Agent": "/agent", "Thinking Map": "/thinking-map", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "Bilingual listing": "/bilingual", "About SAT Real Estate": "/about", "Help center": "/search" };
+const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/post-requirement", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "About SAT Real Estate": "/about", "Help center": "/about" };
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
   const L = (p: string) => `/${locale}${p}`;

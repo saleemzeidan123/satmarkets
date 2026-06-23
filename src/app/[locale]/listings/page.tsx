@@ -60,7 +60,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                 <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn || "Riyadh"}`} h={150} fav badges={[<Verified key="v" />, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
                 <div className="body">
-                  <div className="price">{price != null ? Number(price).toLocaleString() : "On request"}<small> SAR/m²·yr</small></div>
+                  <div className="price">{price != null ? Number(price).toLocaleString() : "On request"}<small> {l.deal_type === "lease" ? "SAR/m²·yr" : "SAR"}</small></div>
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                   <div className="meta"><span>{dn || "Riyadh"}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span></div>
                 </div>
