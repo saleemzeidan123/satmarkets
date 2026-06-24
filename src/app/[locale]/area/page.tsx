@@ -32,7 +32,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       <div style={{ maxWidth: 1360, margin: "0 auto" }}>
         <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
           <div>
-            <div className="row gap8" style={{ alignItems: "center" }}><div className="eyebrow">Location Intelligence</div><span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>Preview · sample data</span></div>
+            <div className="eyebrow">Location Intelligence · Q1 2026</div>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>Al Olaya trade area</h1>
             <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>Footfall, catchment &amp; co-tenancy. Representative figures — live Saudi mobility, spend and demographic sources are being onboarded.</div>
           </div>

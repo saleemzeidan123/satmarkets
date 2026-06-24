@@ -1,19 +1,57 @@
-import { isLocale } from "@/i18n/config";
-import { notFound } from "next/navigation";
+"use client";
+import { useMemo, useState } from "react";
 import { Icon, Verified } from "@/components/satkit";
 
+const fmtM = (v: number) => (v / 1e6).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "M";
+const fmtPct = (v: number) => (v * 100).toFixed(1) + "%";
+const fmtN = (v: number) => Math.round(v).toLocaleString();
+
+function npv(rate: number, flows: number[]) { return flows.reduce((s, f, i) => s + f / Math.pow(1 + rate, i), 0); }
+function irr(flows: number[]) { let lo = -0.9, hi = 1.5; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (npv(m, flows) > 0) lo = m; else hi = m; } return (lo + hi) / 2; }
+
 export default function InvestPage({ params }: { params: { locale: string } }) {
-  if (!isLocale(params.locale)) notFound();
-  const open = [100, 106, 112, 118, 124, 130, 136];
-  const capped = [100, 100, 100, 100, 100, 118, 124];
-  const max = 140;
+  const [price, setPrice] = useState(64800000);
+  const [term, setTerm] = useState<3 | 5 | 10>(5);
+  const [esc, setEsc] = useState<"open" | "capped">("open");
+  const [occ, setOcc] = useState(0.96);
+  const [exitCap, setExitCap] = useState(0.065);
+  const [ltv, setLtv] = useState(0.55);
+  const [ran, setRan] = useState(false);
+
+  const m = useMemo(() => {
+    const potentialNOI = 4583333; // SAR/yr at 100% occupancy
+    const noi = potentialNOI * occ;
+    const value = noi / 0.068; // priced off the verified comp cap rate
+    const goingInYield = noi / price;
+    const gOpen = term === 3 ? 0.07 : term === 5 ? 0.06 : 0.052;
+    const years = 7, freeze = 5;
+    const openS: number[] = [], cappedS: number[] = [];
+    for (let y = 0; y < years; y++) {
+      openS.push(noi * Math.pow(1 + gOpen, y));
+      let cv;
+      if (term >= 10) cv = noi; // locked the whole hold under the freeze
+      else cv = y < freeze ? noi : noi * Math.pow(1.06, y - (freeze - 1));
+      cappedS.push(cv);
+    }
+    const series = esc === "open" ? openS : cappedS;
+    const yoc5 = series[4] / price;
+    const debt = price * ltv, equity = price * (1 - ltv), interest = debt * 0.06;
+    const cf: number[] = [];
+    for (let y = 0; y < 5; y++) cf.push(series[y] - interest);
+    const exit5 = series[4] / exitCap - debt;
+    cf[4] += exit5;
+    const flows = [-equity, ...cf];
+    return { noi, value, goingInYield, yoc5, openS, cappedS, series, irr: irr(flows), em: cf.reduce((a, b) => a + b, 0) / equity };
+  }, [price, term, esc, occ, exitCap, ltv]);
+
+  const maxBar = Math.max(...m.openS, ...m.cappedS);
   const kpis: [string, string, string, string | null][] = [
-    ["64.8M", "Indicative value, SAR", "", null],
-    ["6.8%", "Net initial yield", "+0.2 vs district", "up"],
-    ["4.40M", "Stabilised NOI, SAR/yr", "", null],
-    ["11.2%", "5-yr levered IRR", "base case", "up"],
-    ["1.6×", "Equity multiple", "over hold", null],
-    ["6.5%", "Exit cap rate", "assumed", null],
+    [fmtM(m.value), "Indicative value, SAR", "off verified comps", null],
+    [fmtPct(m.goingInYield), "Net initial yield", m.goingInYield >= 0.068 ? "at/above district" : "below district", m.goingInYield >= 0.068 ? "up" : null],
+    [fmtM(m.noi), "Stabilised NOI, SAR/yr", "", null],
+    [ran ? fmtPct(m.irr) : "— ", "5-yr levered IRR", ran ? "modeled" : "run the model", ran ? "up" : null],
+    [ran ? m.em.toFixed(1) + "×" : "— ", "Equity multiple", ran ? "over hold" : "run the model", null],
+    [fmtPct(exitCap), "Exit cap rate", "your assumption", null],
   ];
   const comps: string[][] = [
     ["Olaya Tower · whole floor", "Apr 2026", "1,440", "6.6%", "202M"],
@@ -54,56 +92,59 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
             <div className="row gap10" style={{ marginBottom: 18 }}>
               <span style={{ color: "var(--harbor)" }}><Icon.layers size={18} /></span>
               <div style={{ fontSize: 15, fontWeight: 700 }}>Scenario</div>
-              <span className="grow" /><span className="tag">Base case</span>
+              <span className="grow" /><span className="tag">{esc === "open" ? "Open · re-price" : "Capped"} · {term}yr</span>
             </div>
             <div className="col gap18">
               <div className="field">
                 <label>Acquisition price (SAR)</label>
-                <div className="input between"><span>64,800,000</span><span className="mono muted2">SAR</span></div>
+                <div className="input between" style={{ padding: 0 }}>
+                  <input value={fmtN(price)} onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (!isNaN(n)) setPrice(n || 0); }} style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)", padding: "10px 12px", width: "100%" }} />
+                  <span className="mono muted2" style={{ paddingRight: 12 }}>SAR</span>
+                </div>
               </div>
               <div className="field">
                 <label>Lease term</label>
-                <div className="seg" style={{ alignSelf: "flex-start" }}><span>3 yr</span><span className="on">5 yr</span><span>10 yr</span></div>
+                <div className="seg" style={{ alignSelf: "flex-start" }}>{([3, 5, 10] as const).map((t) => <span key={t} className={term === t ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTerm(t)}>{t} yr</span>)}</div>
               </div>
               <div className="field">
                 <label>Rent escalation</label>
-                <div className="seg" style={{ alignSelf: "flex-start" }}><span className="on">Open · re-price</span><span>Capped · frozen</span></div>
+                <div className="seg" style={{ alignSelf: "flex-start" }}><span className={esc === "open" ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setEsc("open")}>Open · re-price</span><span className={esc === "capped" ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setEsc("capped")}>Capped · frozen</span></div>
                 <span className="hint">Capped reflects the Sept-2025 Riyadh 5-yr freeze on existing leases.</span>
               </div>
               <div className="field">
-                <label>Stabilised occupancy <span className="hint">96%</span></label>
-                <div className="hbar" style={{ height: 10 }}><i style={{ width: "96%" }} /></div>
+                <label>Stabilised occupancy <span className="hint">{Math.round(occ * 100)}%</span></label>
+                <input type="range" min={0.8} max={1} step={0.01} value={occ} onChange={(e) => setOcc(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--harbor)" }} />
               </div>
               <div className="field">
-                <label>Exit cap rate <span className="hint">6.5%</span></label>
-                <div className="hbar" style={{ height: 10 }}><i style={{ width: "52%" }} /></div>
+                <label>Exit cap rate <span className="hint">{fmtPct(exitCap)}</span></label>
+                <input type="range" min={0.05} max={0.085} step={0.001} value={exitCap} onChange={(e) => setExitCap(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--harbor)" }} />
               </div>
               <div className="field">
-                <label>Leverage (LTV) <span className="hint">55%</span></label>
-                <div className="hbar" style={{ height: 10 }}><i className="h2" style={{ width: "55%" }} /></div>
+                <label>Leverage (LTV) <span className="hint">{Math.round(ltv * 100)}%</span></label>
+                <input type="range" min={0} max={0.7} step={0.05} value={ltv} onChange={(e) => setLtv(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--harbor)" }} />
               </div>
             </div>
             <div style={{ height: 1, background: "var(--silver)", margin: "20px 0" }} />
-            <div className="row between" style={{ fontSize: 13 }}><span className="muted">Going-in yield</span><b className="mono">6.8%</b></div>
-            <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">Yield-on-cost (yr 5)</span><b className="mono" style={{ color: "var(--green)" }}>8.1%</b></div>
-            <span className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }}>Run full model</span>
+            <div className="row between" style={{ fontSize: 13 }}><span className="muted">Going-in yield</span><b className="mono">{fmtPct(m.goingInYield)}</b></div>
+            <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">Yield-on-cost (yr 5)</span><b className="mono" style={{ color: "var(--green)" }}>{fmtPct(m.yoc5)}</b></div>
+            <button className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }} onClick={() => setRan(true)}>{ran ? "Model updated ✓ — IRR " + fmtPct(m.irr) : "Run full model"}</button>
           </div>
 
           <div className="col gap20">
             <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
               <div className="row between wrap" style={{ alignItems: "flex-start", gap: 12 }}>
-                <div><div style={{ fontSize: 15, fontWeight: 700 }}>NOI projection · 7-year hold</div><div className="muted" style={{ fontSize: 12.5 }}>Indexed to 100 at acquisition · open vs capped escalation</div></div>
+                <div><div style={{ fontSize: 15, fontWeight: 700 }}>NOI projection · 7-year hold</div><div className="muted" style={{ fontSize: 12.5 }}>SAR/yr · open vs capped escalation · {term}yr term</div></div>
                 <div className="col gap8">
                   <span className="lgd"><span className="sw" /> Open · re-prices to market</span>
                   <span className="lgd"><span className="sw amber" /> Capped · frozen yrs 1–5</span>
                 </div>
               </div>
               <div className="row" style={{ alignItems: "flex-end", gap: 18, height: 188, marginTop: 22 }}>
-                {open.map((o, i) => (
+                {m.openS.map((o, i) => (
                   <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                     <div className="row" style={{ alignItems: "flex-end", gap: 5, height: 150, width: "100%", justifyContent: "center" }}>
-                      <div className="b hi" style={{ height: (o / max * 100) + "%", width: 18, borderRadius: "4px 4px 0 0" }} />
-                      <div className="b" style={{ height: (capped[i] / max * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", background: "#FBF4E6", borderColor: "#ECDCB6" }} />
+                      <div className="b hi" style={{ height: (o / maxBar * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", opacity: esc === "open" ? 1 : 0.45 }} />
+                      <div className="b" style={{ height: (m.cappedS[i] / maxBar * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", background: "#FBF4E6", borderColor: "#ECDCB6", opacity: esc === "capped" ? 1 : 0.6 }} />
                     </div>
                     <span className="mono muted" style={{ fontSize: 10.5 }}>Y{i + 1}</span>
                   </div>
@@ -111,7 +152,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
               </div>
               <div className="row gap10" style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
                 <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
-                <span className="muted" style={{ fontSize: 12.5 }}>If this asset is a new first-lease it is <b style={{ color: "var(--ink)" }}>unaffected by the freeze</b> and re-prices every term — that gap is the underwriting upside.</span>
+                <span className="muted" style={{ fontSize: 12.5 }}>If this asset is a new first-lease it is <b style={{ color: "var(--ink)" }}>unaffected by the freeze</b> and re-prices every term — that gap (open vs capped) is the underwriting upside.</span>
               </div>
             </div>
 
