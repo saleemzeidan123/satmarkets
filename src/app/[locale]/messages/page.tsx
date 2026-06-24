@@ -1,14 +1,15 @@
-import { isLocale } from "@/i18n/config";
-import { notFound } from "next/navigation";
+"use client";
+import { useState, useRef, useEffect } from "react";
 import { Icon, Photo, Verified } from "@/components/satkit";
 
+interface Msg { role: "u" | "a"; text: string; }
+
 export default function MessagesPage({ params }: { params: { locale: string } }) {
-  if (!isLocale(params.locale)) notFound();
   const convs: [string, string, string, string, boolean, string][] = [
     ["OT", "Olaya Towers Co.", "Permit cleared — shall we book a viewing?", "2m", true, "var(--harbor)"],
     ["KD", "KAFD Devco", "The floor is available from March.", "1h", true, "var(--slate)"],
     ["SA", "SAT Advisor", "3 verified matches in Al Olaya.", "3h", false, "var(--azure)"],
-    ["TH", "Tahlia Holdings", "I’ll send the brochure shortly.", "Tue", false, "var(--harbor)"],
+    ["TH", "Tahlia Holdings", "I'll send the brochure shortly.", "Tue", false, "var(--harbor)"],
   ];
   const days = ["M", "T", "W", "T", "F", "S", "S"];
   const dates = [10, 11, 12, 13, 14, 15, 16];
@@ -17,12 +18,27 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     ["Enquiry sent", "6 days ago", "done"],
     ["Viewing — Thu 10:00", "Scheduled", "on"],
     ["Offer", "Not started", ""],
-    ["Ejar contract", "", ""],
-    ["Deposit · escrow", "", ""],
+    ["Contract — Ejar (off-platform)", "", ""],
+    ["Handover", "", ""],
   ];
+  const [msgs, setMsgs] = useState<Msg[]>([
+    { role: "a", text: "Hello — thanks for your interest in the Olaya Tower floor. It's fitted and available now. Happy to answer any questions." },
+    { role: "u", text: "Looks ideal for our HQ. Could we arrange a viewing this week?" },
+    { role: "a", text: "Of course. I've proposed a few slots — pick what suits you." },
+  ]);
+  const [input, setInput] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { ref.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs]);
+
+  function send() {
+    const t = input.trim(); if (!t) return;
+    setInput("");
+    setMsgs((m) => [...m, { role: "u", text: t }]);
+    setTimeout(() => setMsgs((m) => [...m, { role: "a", text: "Thanks — noted. I'll confirm and get back to you shortly." }]), 900);
+  }
+
   return (
     <div className="dash msg-dash">
-      {/* conversation list */}
       <aside className="msg-list" style={{ width: 330, flex: "none", background: "var(--paper)", borderRight: "1px solid var(--silver)", display: "flex", flexDirection: "column" }}>
         <div className="dtopbar" style={{ padding: "16px 18px" }}><div><h1 style={{ fontSize: 17 }}>Messages</h1><div className="sub">2 unread</div></div><span style={{ flex: 1 }} /><span className="muted2"><Icon.edit size={18} /></span></div>
         <div style={{ padding: "0 16px 12px" }}><div className="dsearch" style={{ minWidth: 0 }}><Icon.search size={15} /> Search…</div></div>
@@ -40,7 +56,6 @@ export default function MessagesPage({ params }: { params: { locale: string } })
         </div>
       </aside>
 
-      {/* thread */}
       <div className="dmain" style={{ display: "flex", flexDirection: "column", background: "var(--cool)" }}>
         <div className="dtopbar">
           <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
@@ -54,11 +69,11 @@ export default function MessagesPage({ params }: { params: { locale: string } })
           <div className="grow"><div style={{ fontSize: 13, fontWeight: 600 }}>Grade A Office, Olaya Tower</div><div className="mono muted" style={{ fontSize: 11 }}>1,450 SAR/m² · 320 m² · Al Olaya</div></div>
           <span className="freeze open"><span className="dot" />Open</span>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+        <div ref={ref} style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
           <div style={{ maxWidth: 660 }} className="col gap14">
-            <div className="chatmsg a" style={{ background: "#fff", border: "1px solid var(--silver)" }}>Hello — thanks for your interest in the Olaya Tower floor. It’s fitted and available now. Happy to answer any questions.</div>
-            <div className="chatmsg u" style={{ alignSelf: "flex-end", background: "var(--ink)", color: "#fff" }}>Looks ideal for our HQ. Could we arrange a viewing this week?</div>
-            <div className="chatmsg a" style={{ background: "#fff", border: "1px solid var(--silver)" }}>Of course. I’ve proposed a few slots — pick what suits you.</div>
+            {msgs.map((m, i) => m.role === "a"
+              ? <div key={i} className="chatmsg a" style={{ background: "#fff", border: "1px solid var(--silver)" }}>{m.text}</div>
+              : <div key={i} className="chatmsg u" style={{ alignSelf: "flex-end", background: "var(--ink)", color: "#fff" }}>{m.text}</div>)}
             <div className="card" style={{ padding: 18, boxShadow: "var(--sh-1)", maxWidth: 460 }}>
               <div className="row gap8" style={{ marginBottom: 14 }}><span style={{ color: "var(--harbor)" }}><Icon.cal size={17} /></span><span style={{ fontSize: 14, fontWeight: 700 }}>Book a viewing</span></div>
               <div className="cal" style={{ marginBottom: 14 }}>
@@ -73,16 +88,15 @@ export default function MessagesPage({ params }: { params: { locale: string } })
           </div>
         </div>
         <div style={{ padding: "14px 32px 18px", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
-          <div className="search focus" style={{ boxShadow: "none", border: "1px solid var(--silver-2)", padding: "11px 14px" }}>
+          <form onSubmit={(e) => { e.preventDefault(); send(); }} className="search focus" style={{ boxShadow: "none", border: "1px solid var(--silver-2)", padding: "8px 10px 8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
             <span className="muted2"><Icon.plus size={18} /></span>
-            <div className="q"><span className="ph">Write a message…</span></div>
-            <span className="chip"><Icon.spark size={13} /> AI draft</span>
-            <span className="btn primary sm"><Icon.send size={15} /></span>
-          </div>
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Write a message…" style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)" }} />
+            <button type="button" className="chip" onClick={() => setInput("Hi, is the floor still available for a March move-in?")}><Icon.spark size={13} /> AI draft</button>
+            <button type="submit" className="btn primary sm" aria-label="Send"><Icon.send size={15} /></button>
+          </form>
         </div>
       </div>
 
-      {/* deal context */}
       <aside className="msg-deal" style={{ width: 280, flex: "none", background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto", padding: 20 }}>
         <div className="eyebrow" style={{ marginBottom: 12 }}>Deal progress</div>
         <div className="tl">
@@ -92,7 +106,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
         </div>
         <span className="btn secondary" style={{ width: "100%", justifyContent: "center", marginTop: 16 }}>Appoint SAT to represent me</span>
         <div className="card pad" style={{ marginTop: 16, boxShadow: "none", background: "var(--cool)" }}>
-          <div className="row gap8"><span style={{ color: "var(--green)" }}><Icon.shield size={15} /></span><span className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>Keep it on-platform — deposits via escrow are protected. Never pay an owner directly.</span></div>
+          <div className="row gap8"><span style={{ color: "var(--green)" }}><Icon.shield size={15} /></span><span className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>Keep it on-platform — SAT verifies both parties and tracks every milestone. The Ejar contract is signed directly with the owner or their licensed broker.</span></div>
         </div>
       </aside>
     </div>
