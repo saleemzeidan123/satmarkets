@@ -12,13 +12,22 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   const router = useRouter();
   const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
   const [q, setQ] = useState("");
-  const go = (e?: React.FormEvent) => { if (e) e.preventDefault(); const sp = new URLSearchParams(); sp.set("deal", deal === "buy" ? "sale" : "lease"); if (q.trim()) sp.set("q", q.trim()); router.push(`/${locale}/listings?${sp.toString()}`); };
+  const [assetType, setAssetType] = useState("");
+  const go = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
+    const sp = new URLSearchParams();
+    sp.set("deal", deal === "buy" ? "sale" : "lease");
+    if (assetType) sp.set("asset", assetType);
+    if (q.trim()) sp.set("q", q.trim());
+    router.push(`/${locale}/listings?${sp.toString()}`);
+  };
   const L = (p: string) => `/${locale}${p}`;
   const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
       <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(100deg, rgba(11,15,21,.92) 0%, rgba(16,26,38,.72) 46%, rgba(44,85,127,.30) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div style={{ position: "relative", display: "flex", gap: 46, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
+        <div style={{ position: "relative", display: "flex", gap: 72, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
           <div style={{ flex: "1 1 520px", maxWidth: 660 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
@@ -30,16 +39,32 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
             <p style={{ fontSize: 18, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "20px 0 0", maxWidth: 560 }}>
               Find, compare and lease Grade A offices, retail and warehouses. Verified listings and decision-grade pricing, in one neutral exchange.
             </p>
-            <div className="card" style={{ marginTop: 30, padding: 14, maxWidth: 660, boxShadow: "var(--sh-2)" }}>
+            <div className="card" style={{ marginTop: 28, padding: 10, maxWidth: 600, boxShadow: "var(--sh-2)", borderRadius: 16 }}>
               <div className="seg" style={{ marginBottom: 12 }}>
                 <span className={deal === "lease" ? "on" : ""} onClick={() => setDeal("lease")} style={{ cursor: "pointer" }}>Lease</span>
                 <span className={deal === "buy" ? "on" : ""} onClick={() => setDeal("buy")} style={{ cursor: "pointer" }}>Buy</span>
                 <span className={deal === "req" ? "on" : ""} onClick={() => setDeal("req")} style={{ cursor: "pointer" }}>Post a requirement</span>
               </div>
-              <form onSubmit={go} className="search focus" style={{ boxShadow: "none", border: "1px solid var(--azure)" }}>
-                <span style={{ color: "var(--azure)" }}><Icon.search size={19} /></span>
-                <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={'Search by district, building or asset type, e.g. "Grade A office, Al Olaya"'} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14.5, color: "var(--ink)", fontFamily: "var(--sans)" }} />
-                <button type="submit" className="btn primary">Search</button>
+              <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "var(--sh-1)" }}>
+                {deal !== "req" && (
+                  <div style={{ display: "flex", alignItems: "center", borderRight: "1px solid var(--silver)", paddingLeft: 14 }}>
+                    <select value={assetType} onChange={(e) => setAssetType(e.target.value)} aria-label="Asset type" style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--ink)", fontFamily: "var(--sans)", height: 56, paddingRight: 8, cursor: "pointer" }}>
+                      <option value="">All types</option>
+                      <option value="office">Office</option>
+                      <option value="retail">Retail &amp; F&amp;B</option>
+                      <option value="medical">Medical</option>
+                      <option value="warehouse">Warehouse</option>
+                      <option value="showroom">Showroom</option>
+                      <option value="serviced">Serviced</option>
+                      <option value="land">Land</option>
+                    </select>
+                  </div>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 16px", minWidth: 0 }}>
+                  <span style={{ color: "var(--azure)", flex: "none" }}><Icon.search size={20} /></span>
+                  <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area \u2014 e.g. Al Olaya"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15, height: 56, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0 }} />
+                </div>
+                <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 26px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
               </form>
               <div className="row gap8 wrap" style={{ marginTop: 12 }}>
                 <span className="tag">Popular:</span>
