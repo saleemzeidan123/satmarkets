@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
+import ListingEnquiry from "@/components/ListingEnquiry";
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -42,12 +43,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="row gap6"><Icon.pin size={16} /> {dn}, Riyadh</span><span>·</span><span>{l.area_sqm} m²</span>
           </div>
           <div className="tabs" style={{ marginTop: 22 }}>
-            <span className="t on"><Icon.doc size={15} /> Overview</span>
-            <span className="t"><Icon.target size={15} /> Location intelligence</span>
-            <span className="t"><Icon.coins size={15} /> Investment</span>
-            <span className="t"><Icon.chart size={15} /> Comparable rents</span>
+            <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> Overview</a>
+            <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> Location intelligence</a>
+            <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> Investment</Link>
+            <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> Comparable rents</a>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
+          <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
             {[["Area", `${l.area_sqm} m²`], ["Grade", gradeLabel(l.building_grade, locale)], ["Fit-out", fitoutLabel(l.fitout_condition, locale)], [lease ? "Asking" : "Price", price != null ? Number(price).toLocaleString() + " SAR" : "On request"]].map((s, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
                 <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
@@ -56,7 +57,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             ))}
           </div>
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
-          <div className="card pad" style={{ marginTop: 22, background: "var(--cool)", boxShadow: "none" }}>
+          <div id="comps" className="card pad" style={{ scrollMarginTop: 80, marginTop: 22, background: "var(--cool)", boxShadow: "none" }}>
             <div className="row between" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
               <div>
                 <div className="eyebrow">Priced in context · SAT Rent Index <span className="tag" style={{ marginLeft: 8 }}>sample</span></div>
@@ -67,7 +68,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           </div>
-          <div className="card pad" style={{ marginTop: 18, boxShadow: "none" }}>
+          <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
             <div className="modhead"><Icon.target size={18} /><span className="ttl">Location intelligence</span><span className="grow" /><span className="tag">sample</span></div>
             <div className="satmkt-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
               <div className="map" style={{ height: 200, borderRadius: 11, border: "1px solid var(--silver)", position: "relative" }}>
@@ -91,19 +92,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           </div>
         </div>
         <div>
-          <div className="card pad" style={{ position: "sticky", top: 90 }}>
-            <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : "On request"}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {lease ? "SAR/m²·yr" : "SAR"}</small></div>
-            <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{type} · {l.area_sqm} m² · {dn}</div>
-            <div className="row gap8 wrap" style={{ marginTop: 14 }}>
-              <span className="verified"><span className="dot" />Verified owner</span>
-              {l.ad_permit_no && <span className="tag">Permit {l.ad_permit_no}</span>}
-            </div>
-            <div className="col gap10" style={{ marginTop: 18 }}>
-              <Link href={L("/login")} className="btn primary" style={{ justifyContent: "center", textDecoration: "none" }}>Contact the lister</Link>
-              <Link href={L("/dashboard")} className="btn secondary" style={{ justifyContent: "center", textDecoration: "none" }}>Request SAT representation</Link>
-            </div>
-            <div className="muted" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.6 }}>Free to contact the lister directly. Representation is an explicit, opt-in choice, never an assumed commission.</div>
-          </div>
+          <ListingEnquiry listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? "SAR/m\u00b2\u00b7yr" : "SAR"} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} />
         </div>
       </div>
     </div>
