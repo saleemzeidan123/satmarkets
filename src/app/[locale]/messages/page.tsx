@@ -27,6 +27,8 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     { role: "a", text: "Of course. I've proposed a few slots — pick what suits you." },
   ]);
   const [input, setInput] = useState("");
+  // On phones only one pane fits — start in the inbox, open a thread on tap.
+  const [pane, setPane] = useState<"list" | "thread">("list");
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { ref.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs]);
 
@@ -38,13 +40,13 @@ export default function MessagesPage({ params }: { params: { locale: string } })
   }
 
   return (
-    <div className="dash msg-dash">
+    <div className={"dash msg-dash pane-" + pane}>
       <aside className="msg-list" style={{ width: 330, flex: "none", background: "var(--paper)", borderRight: "1px solid var(--silver)", display: "flex", flexDirection: "column" }}>
         <div className="dtopbar" style={{ padding: "16px 18px" }}><div><h1 style={{ fontSize: 17 }}>Messages</h1><div className="sub">2 unread</div></div><span style={{ flex: 1 }} /><span className="muted2"><Icon.edit size={18} /></span></div>
         <div style={{ padding: "0 16px 12px" }}><div className="dsearch" style={{ minWidth: 0 }}><Icon.search size={15} /> Search…</div></div>
         <div style={{ flex: 1, overflowY: "auto" }}>
           {convs.map((c, i) => (
-            <div key={i} className={"conv" + (i === 0 ? " on" : "")}>
+            <div key={i} className={"conv" + (i === 0 ? " on" : "")} style={{ cursor: "pointer" }} onClick={() => setPane("thread")}>
               <span className="avatar" style={{ background: c[5] }}>{c[0]}</span>
               <div className="grow" style={{ minWidth: 0 }}>
                 <div className="row between"><span style={{ fontSize: 13.5, fontWeight: 600 }}>{c[1]}</span><span className="mono muted" style={{ fontSize: 10 }}>{c[3]}</span></div>
@@ -58,6 +60,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
 
       <div className="dmain" style={{ display: "flex", flexDirection: "column", background: "var(--cool)" }}>
         <div className="dtopbar">
+          <button className="msg-back" aria-label="Back to inbox" onClick={() => setPane("list")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", padding: 4, marginInlineStart: -4 }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={20} /></span></button>
           <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
           <div><h1 style={{ fontSize: 16 }}>Olaya Towers Co.</h1><div className="sub"><Verified text="Verified owner" /> · responds in ~2h</div></div>
           <span style={{ flex: 1 }} />

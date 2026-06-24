@@ -352,7 +352,13 @@ table.dt tbody tr:hover{background:var(--cool);}
 .deal-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;}
 @media(max-width:900px){.deal-grid{grid-template-columns:1fr!important}}
 @media(max-width:1040px){.msg-deal{display:none!important}}
-@media(max-width:720px){.msg-list{display:none!important}}
+.msg-back{display:none}
+@media(max-width:720px){
+  .msg-dash .msg-list{width:100%!important}
+  .msg-dash.pane-thread .msg-list{display:none!important}
+  .msg-dash.pane-list .dmain{display:none!important}
+  .msg-back{display:inline-flex;align-items:center}
+}
 /* ===== notifications / docs viewer / bilingual ===== */
 .notif-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;}
 @media(max-width:900px){.notif-grid{grid-template-columns:1fr!important}}
