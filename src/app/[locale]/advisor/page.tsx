@@ -35,6 +35,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       const results: R[] = j.results || [];
       let note = "";
       if (j.clarify) note = "Tell me a bit more — a space type, a city, or a budget — and I'll narrow it down.";
+      else if (j.relaxed && results.length) note = `No exact matches, so here are the closest ${results.length} — some are ${j.relaxedReason || "outside your filters"}. Adjust the budget, size, or district to tighten it.`;
       else if (results.length) note = `${results.length} verified ${results.length === 1 ? "match" : "matches"} from the SAT index — owner-verified, deduplicated, permit-backed.`;
       else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
       setMsgs((m) => [...m, { role: "a", text: note, results, note: "SAT Rent Index Q1 2026 · verified transactions only" }]);

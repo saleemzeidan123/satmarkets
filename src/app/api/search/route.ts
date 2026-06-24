@@ -28,21 +28,45 @@ export async function POST(req: NextRequest) {
   const vague = /(suggest|recommend|help|idea|option|advice|not sure|don'?t know|dont know|anything|what (can|do|should)|where should|guide)/i.test(raw);
   const clarify = !hasIntent && (vague || raw.trim().length < 4);
 
-  let sb = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
-  if (!clarify) {
+  // Build the query at a chosen relaxation level. Level 0 = all constraints;
+  // each higher level drops the most negotiable constraint so the searcher
+  // always sees the closest verified stock instead of an empty result.
+  const build = (level: number) => {
+    let sb = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
+    if (clarify) return sb;
     if (asset) sb = sb.eq("asset_type", asset);
     if (dealDetected) sb = sb.eq("deal_type", dealDetected);
-    if (dMatch) sb = sb.eq("district_id", dMatch.id);
-    if (minSize) sb = sb.gte("area_sqm", minSize * 0.6);
-    if (maxRent && dealDetected !== "sale") sb = sb.lte("asking_rent_sqm", maxRent);
+    if (dMatch && level < 3) sb = sb.eq("district_id", dMatch.id);
+    if (minSize && level < 2) sb = sb.gte("area_sqm", minSize * 0.6);
+    if (maxRent && dealDetected !== "sale" && level < 1) sb = sb.lte("asking_rent_sqm", maxRent);
+    return sb;
+  };
+
+  // Relaxation ladder: budget -> size -> district. Stop at the first level
+  // that returns matches, and remember what we loosened to get there.
+  const relaxNotes = [
+    maxRent && dealDetected !== "sale" ? `above your ${maxRent.toLocaleString()} SAR/m² cap` : null,
+    minSize ? "smaller than your size" : null,
+    dMatch ? `outside ${dMatch.name_en}` : null,
+  ];
+  let data: any[] = []; let level = 0; let relaxedReason: string | null = null;
+  for (level = 0; level <= 3; level++) {
+    const { data: d, error } = await build(level);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    data = d ?? [];
+    if (clarify || data.length > 0 || level === 3) {
+      relaxedReason = level > 0 ? relaxNotes[level - 1] : null;
+      break;
+    }
   }
-  const { data, error } = await sb;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const relaxed = !clarify && level > 0 && data.length > 0;
 
   return NextResponse.json({
     parsed: { asset: asset ?? null, deal: dealDetected, district: dMatch?.name_en ?? null, minSize, maxRent },
     clarify,
-    count: (data ?? []).length,
-    results: data ?? []
+    relaxed,
+    relaxedReason,
+    count: data.length,
+    results: data
   });
 }
