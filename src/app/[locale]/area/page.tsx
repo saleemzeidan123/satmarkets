@@ -32,9 +32,9 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       <div style={{ maxWidth: 1360, margin: "0 auto" }}>
         <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
           <div>
-            <div className="eyebrow">Location Intelligence · Q1 2026</div>
+            <div className="row gap8" style={{ alignItems: "center" }}><div className="eyebrow">Location Intelligence</div><span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>Preview · sample data</span></div>
             <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>Al Olaya trade area</h1>
-            <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>Footfall, catchment &amp; co-tenancy · mobility-panel + transaction sourced</div>
+            <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>Footfall, catchment &amp; co-tenancy. Representative figures — live Saudi mobility, spend and demographic sources are being onboarded.</div>
           </div>
           <div className="row gap10 wrap">
             <span className="chip">Drive-time 10 min <Icon.chevd size={14} /></span>
@@ -131,7 +131,37 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
             </div>
             <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
               <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-              <span className="muted" style={{ fontSize: 12.5 }}>Mobility figures from anonymised panel data; occupier mix from verified SAT listings — every metric is sourced, never modelled.</span>
+              <span className="muted" style={{ fontSize: 12.5 }}>Occupier mix is drawn from verified SAT listings (live). Mobility, dwell and spend figures shown here are representative samples — the live Saudi data partnerships behind them are described below.</span>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "8px 24px 48px" }}>
+          <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
+            <div className="eyebrow">How SAT builds location intelligence</div>
+            <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 6px" }}>Built for Saudi Arabia, because no global panel covers it</h2>
+            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>Placer.ai, PassBy and Gini stop at the US and Europe. For reliable, market-wide site selection in the Kingdom, SAT sources locally and scores transparently — so you can defend every decision.</p>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>
+              {[["Mobile signals","Anonymised GPS / Wi-Fi from Saudi telecom partners — visits, dwell, trade areas."],["On-site sensors","ToF / LiDAR counters in key malls calibrate the models against ground truth."],["Spend data","Anonymised transaction patterns from payment gateways feed revenue potential."],["Public records","GASTAT, REGA and Ejar for population, income, lease activity and demand."]].map((d,i)=>(
+                <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 700 }}>{d[0]}</div>
+                  <div className="muted" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 4 }}>{d[1]}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="eyebrow" style={{ margin: "22px 0 10px" }}>Transparent score · five lenses</div>
+            <div className="row gap8 wrap">
+              {["Foot traffic","Demographics fit","Market potential","Competition","Visibility"].map((l,i)=>(
+                <span key={i} className="chip on" style={{ fontSize: 12 }}>{l}</span>
+              ))}
+            </div>
+            <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>Each site is scored across these five lenses with the reasoning shown — never a black-box number. Works across offices, retail, mixed-use and warehouses, not just retail.</p>
+
+            <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)", alignItems: "flex-start" }}>
+              <span style={{ color: "var(--harbor)", marginTop: 1 }}><Icon.shield size={15} /></span>
+              <span className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>PDPL-native: location data is treated as sensitive, anonymised and aggregated, hosted in the Kingdom, registered with SDAIA. Any sensors carry CST type-approval. No personal images, ever.</span>
             </div>
           </div>
         </div>

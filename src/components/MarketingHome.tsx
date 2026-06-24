@@ -16,7 +16,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-      <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(108deg, rgba(15,20,26,.90) 0%, rgba(17,24,33,.74) 40%, rgba(44,85,127,.50) 100%), url('https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1920&q=72')", backgroundSize: "cover", backgroundPosition: "center" }}>
+      <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(100deg, rgba(11,15,21,.92) 0%, rgba(16,26,38,.72) 46%, rgba(44,85,127,.30) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
         <div style={{ position: "relative", display: "flex", gap: 46, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
           <div style={{ flex: "1 1 520px", maxWidth: 660 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
