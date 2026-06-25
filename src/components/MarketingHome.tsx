@@ -34,20 +34,36 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.78) 0%, rgba(11,15,21,.62) 38%, rgba(11,15,21,.82) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-    <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
-     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
-      <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>REGA-native commercial exchange</span>
+   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(48px,10vw,78px) 20px clamp(54px,10vw,90px)", overflow: "hidden", background: "radial-gradient(125% 85% at 50% -12%, #143150 0%, #0C2138 46%, #081522 100%)" }}>
+    <style>{`
+      .satmkt-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(157,187,214,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(157,187,214,.07) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(120% 92% at 50% 0%,#000 32%,transparent 78%);mask-image:radial-gradient(120% 92% at 50% 0%,#000 32%,transparent 78%);pointer-events:none}
+      .satmkt-hero::after{content:"";position:absolute;inset:0;background:url('/hero-riyadh.svg') center bottom/cover no-repeat;opacity:.09;mix-blend-mode:luminosity;pointer-events:none}
+      .hero-rise{opacity:0;transform:translateY(14px);animation:heroRise .72s cubic-bezier(.2,.7,.2,1) forwards}
+      .hero-rise.d1{animation-delay:.07s}.hero-rise.d2{animation-delay:.15s}.hero-rise.d3{animation-delay:.25s}.hero-rise.d4{animation-delay:.36s}
+      @keyframes heroRise{to{opacity:1;transform:none}}
+      @keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(62,207,142,.55)}50%{box-shadow:0 0 0 5px rgba(62,207,142,0)}}
+      .live-dot{width:7px;height:7px;border-radius:50%;background:#3ECF8E;flex:none;animation:livePulse 2.4s ease-in-out infinite}
+      .reg-rail{display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;border:1px solid rgba(157,187,214,.2);border-radius:12px;background:rgba(8,21,34,.5);backdrop-filter:blur(6px);overflow:hidden}
+      .reg-cell{display:flex;flex-direction:column;gap:3px;padding:11px 22px;border-left:1px solid rgba(157,187,214,.14);text-align:left}
+      .reg-cell.lead{border-left:none;justify-content:center;background:rgba(157,187,214,.06)}
+      @media (max-width:560px){.reg-cell{flex:1 1 50%}.reg-cell.lead{flex:1 1 100%;align-items:center;text-align:center}}
+      @media (prefers-reduced-motion:reduce){.hero-rise{animation:none;opacity:1;transform:none}.live-dot{animation:none}}
+    `}</style>
+    <div style={{ position: "relative", maxWidth: 940, margin: "0 auto", textAlign: "center" }}>
+     <div className="hero-rise mono" style={{ display: "inline-flex", alignItems: "center", gap: 9, fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "rgba(196,214,233,.92)" }}>
+      <span className="live-dot" />
+      REGA-native exchange
+      <span style={{ opacity: .42 }}>/</span>
+      Riyadh 24.71&deg;N 46.67&deg;E
      </div>
-     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.05, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820 }}>
-      Where Saudi business finds <span style={{ color: "#9DBBD6" }}>verified commercial space</span>
+     <h1 className="serif hero-rise d1" style={{ fontSize: "clamp(34px,5.4vw,60px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.022em", margin: "20px auto 0", color: "#F5F8FC", maxWidth: 860 }}>
+      Where Saudi business finds <span style={{ color: "#9DBBD6", borderBottom: "2px solid rgba(157,187,214,.42)", paddingBottom: 1 }}>verified commercial space</span>
      </h1>
-     <p style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>
+     <p className="hero-rise d2" style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(214,224,235,.8)", margin: "18px auto 0", maxWidth: 600 }}>
       Offices, retail, medical and warehouses across Riyadh. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.
      </p>
 
-     <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
+     <div className="hero-rise d3" style={{ margin: "30px auto 0", maxWidth: 870, background: "rgba(10,24,38,.55)", border: "1px solid rgba(157,187,214,.2)", borderRadius: 18, backdropFilter: "blur(12px)", padding: "18px 18px 16px", boxShadow: "0 30px 70px rgba(0,0,0,.42)" }}>
       <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
        {([["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const).map(([v,l]) => (
         <button key={v} type="button" onClick={() => setDeal(v)} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
@@ -84,10 +100,20 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       </div>
      </div>
 
-     <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> Owners verified before listing</span>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> No assumed commission</span>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> REGA-licensed &amp; PDPL-compliant</span>
+     <div className="hero-rise d4" style={{ margin: "20px auto 0", maxWidth: 740 }}>
+      <div className="reg-rail">
+       <div className="reg-cell lead">
+        <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(214,228,244,.9)" }}><span className="live-dot" /> SAT Index</span>
+        <span className="mono" style={{ fontSize: 10, letterSpacing: ".08em", color: "rgba(170,188,208,.6)", textTransform: "uppercase" }}>Live, Q1 2026</span>
+       </div>
+       {[["+8.4%", "Olaya office, YoY"], ["1,420", "Median SAR/m²"], ["96%", "Grade A occupancy"]].map((x, i) => (
+        <div key={i} className="reg-cell">
+         <span className="mono tnum" style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>{x[0]}</span>
+         <span className="mono" style={{ fontSize: 10, letterSpacing: ".05em", color: "rgba(180,198,218,.7)", textTransform: "uppercase" }}>{x[1]}</span>
+        </div>
+       ))}
+      </div>
+      <div className="mono" style={{ marginTop: 12, fontSize: 11, letterSpacing: ".03em", color: "rgba(170,188,208,.66)" }}>Owners verified before listing &middot; No assumed commission &middot; REGA-licensed, PDPL-compliant</div>
      </div>
     </div>
    </div>
