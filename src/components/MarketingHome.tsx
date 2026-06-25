@@ -11,8 +11,10 @@ const ASSETS = [
  { v: "office", label: "Office", icon: <Icon.building size={22} /> },
  { v: "retail", label: "Retail", icon: <Icon.store size={22} /> },
  { v: "medical", label: "Medical", icon: <Icon.activity size={22} /> },
- { v: "warehouse", label: "Warehouse", icon: <Icon.layers size={22} /> },
  { v: "showroom", label: "Showroom", icon: <Icon.grid size={22} /> },
+ { v: "warehouse", label: "Warehouse", icon: <Icon.layers size={22} /> },
+ { v: "serviced", label: "Serviced", icon: <Icon.user size={22} /> },
+ { v: "education", label: "Education", icon: <Icon.doc size={22} /> },
  { v: "land", label: "Land", icon: <Icon.ruler size={22} /> },
 ];
 
