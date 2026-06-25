@@ -413,3 +413,8 @@ html,body{max-width:100%;overflow-x:hidden;}
   .seg{flex-wrap:wrap;}
   .agent-grid,.bilingual-specs{grid-template-columns:1fr!important;}
 }
+
+@media(max-width:760px){
+  .sstat-cell{flex:1 1 42%!important;min-width:0!important;border-right:none!important;padding:18px 10px!important;}
+  .sstat-cell .tnum{font-size:23px!important;}
+}

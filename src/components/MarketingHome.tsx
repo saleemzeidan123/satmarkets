@@ -34,7 +34,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-   <div className="satmkt-hero" style={{ position: "relative", padding: "70px 24px 84px", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.78) 0%, rgba(11,15,21,.62) 38%, rgba(11,15,21,.82) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.78) 0%, rgba(11,15,21,.62) 38%, rgba(11,15,21,.82) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
     <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
@@ -93,16 +93,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
    </div>
    <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
     {sStat.map((x, i) => (
-     <div key={i} className="grow" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
+     <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
       <div className="mono tnum" style={{ fontSize: 28, fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
       <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{x[1]}</div>
      </div>
     ))}
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
-    <div style={{ padding: "64px 24px 20px" }}>
+    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
      <div className="eyebrow">The exchange</div>
-     <h2 className="serif" style={{ fontSize: 36, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
+     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
      <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>No one in the Kingdom combines all four. That combination is the platform.</p>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
       {[
@@ -119,11 +119,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       ); })}
      </div>
     </div>
-    <div style={{ padding: "52px 24px 20px" }}>
+    <div style={{ padding: "clamp(36px,7vw,52px) 20px 20px" }}>
      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
       <div>
        <div className="eyebrow">Featured, Riyadh</div>
-       <h2 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Verified spaces, priced in context</h2>
+       <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Verified spaces, priced in context</h2>
       </div>
       <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>Browse all listings <Icon.arrow size={16} /></Link>
      </div>
@@ -145,7 +145,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 40, alignItems: "center" }}>
       <div>
        <div className="eyebrow" style={{ color: "var(--azure-l)" }}>SAT Rent Index, Q1 2026</div>
-       <h2 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>The pricing layer behind every decision</h2>
+       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>The pricing layer behind every decision</h2>
        <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>Verified transaction data across {stats.districts} Riyadh districts. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.</p>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>Explore the Rent Index</Link>
       </div>
@@ -159,9 +159,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       </div>
      </div>
     </div>
-    <div style={{ padding: "72px 40px 64px" }}>
+    <div style={{ padding: "clamp(44px,9vw,72px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
      <div className="eyebrow" style={{ textAlign: "center" }}>How a deal flows</div>
-     <h2 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>You always make an explicit choice</h2>
+     <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>You always make an explicit choice</h2>
      <div className="row gap20 wrap" style={{ maxWidth: 940, margin: "0 auto", alignItems: "stretch" }}>
       <div className="card pad grow" style={{ minWidth: 280 }}>
        <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>Path A, Free</span>
@@ -178,7 +178,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     </div>
     <div style={{ padding: "20px 24px 20px" }}>
      <div className="eyebrow" style={{ textAlign: "center" }}>One exchange</div>
-     <h2 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px", textAlign: "center" }}>Everything the market needs, in one place</h2>
+     <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px", textAlign: "center" }}>Everything the market needs, in one place</h2>
      <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.</p>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
       {[
@@ -203,8 +203,8 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      </div>
     </div>
     <div style={{ padding: "44px 24px 64px" }}>
-     <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "52px 40px", textAlign: "center" }}>
-      <h2 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>List your space, or find your next one</h2>
+     <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
+      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>List your space, or find your next one</h2>
       <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>Join the verified exchange built for Riyadh&apos;s commercial market.</p>
       <div className="row gap12 center wrap">
        <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>List your space</Link>
