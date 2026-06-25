@@ -43,6 +43,8 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       @keyframes heroRise{to{opacity:1;transform:none}}
       @keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(62,207,142,.55)}50%{box-shadow:0 0 0 5px rgba(62,207,142,0)}}
       .live-dot{width:7px;height:7px;border-radius:50%;background:#3ECF8E;flex:none;animation:livePulse 2.4s ease-in-out infinite}
+      .hero-assets{scrollbar-width:none}.hero-assets::-webkit-scrollbar{display:none}
+      @media (max-width:640px){.hero-assets{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:6px}.hero-assets>button{flex:0 0 auto!important;scroll-snap-align:start}}
       .reg-rail{display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;border:1px solid rgba(157,187,214,.2);border-radius:12px;background:rgba(8,21,34,.5);backdrop-filter:blur(6px);overflow:hidden}
       .reg-cell{display:flex;flex-direction:column;gap:3px;padding:11px 22px;border-left:1px solid rgba(157,187,214,.14);text-align:left}
       .reg-cell.lead{border-left:none;justify-content:center;background:rgba(157,187,214,.06)}
