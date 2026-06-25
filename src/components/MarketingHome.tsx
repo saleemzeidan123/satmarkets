@@ -166,20 +166,20 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       ))}
      </div>
     </div>
-    <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "48px 40px", position: "relative", overflow: "hidden" }}>
-     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .35 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
+    <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "radial-gradient(130% 130% at 100% 0%, #143150 0%, #0C2138 52%, #081522 100%)", color: "#fff", padding: "clamp(34px,6vw,48px) clamp(24px,5vw,40px)", position: "relative", overflow: "hidden", border: "1px solid rgba(157,187,214,.16)" }}>
+     <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(157,187,214,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(157,187,214,.06) 1px,transparent 1px)", backgroundSize: "42px 42px", WebkitMaskImage: "radial-gradient(130% 130% at 100% 0%,#000 28%,transparent 74%)", maskImage: "radial-gradient(130% 130% at 100% 0%,#000 28%,transparent 74%)", pointerEvents: "none" }} />
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 40, alignItems: "center" }}>
       <div>
-       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>SAT Rent Index, Q1 2026</div>
+       <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "rgba(196,214,233,.9)" }}><span className="live-dot" /> SAT Index / Q1 2026</span>
        <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>The pricing layer behind every decision</h2>
        <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>Verified transaction data across {stats.districts} Riyadh districts. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.</p>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>Explore the Rent Index</Link>
       </div>
       <div className="row gap16 wrap">
        {[["+8.4%", "Olaya office, YoY"], ["1,420", "Median office SAR/m²"], ["96%", "Occupancy, Grade A"]].map((x, i) => (
-        <div key={i} className="grow" style={{ minWidth: 120, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: "18px 16px" }}>
-         <div className="mono tnum" style={{ fontSize: 24, fontWeight: 500, color: "#fff" }}>{x[0]}</div>
-         <div style={{ fontSize: 11.5, color: "#8A93A0", marginTop: 6 }}>{x[1]}</div>
+        <div key={i} className="grow" style={{ minWidth: 120, background: "rgba(8,21,34,.5)", border: "1px solid rgba(157,187,214,.18)", borderRadius: 12, padding: "18px 16px" }}>
+         <div className="mono tnum" style={{ fontSize: 24, fontWeight: 600, color: "#fff" }}>{x[0]}</div>
+         <div className="mono" style={{ fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase", color: "rgba(180,198,218,.7)", marginTop: 6 }}>{x[1]}</div>
         </div>
        ))}
       </div>
