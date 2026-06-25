@@ -3,10 +3,18 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
-import HeroMiniMap from "@/components/HeroMiniMap";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string };
 type Stats = { listings: string; buildings: string; districts: string };
+
+const ASSETS = [
+  { v: "office", label: "Office", icon: <Icon.office size={22} /> },
+  { v: "retail", label: "Retail", icon: <Icon.retail size={22} /> },
+  { v: "medical", label: "Medical", icon: <Icon.activity size={22} /> },
+  { v: "warehouse", label: "Warehouse", icon: <Icon.warehouse size={22} /> },
+  { v: "showroom", label: "Showroom", icon: <Icon.store size={22} /> },
+  { v: "land", label: "Land", icon: <Icon.ruler size={22} /> },
+];
 
 export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
   const router = useRouter();
@@ -26,65 +34,60 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-      <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(100deg, rgba(11,15,21,.92) 0%, rgba(16,26,38,.72) 46%, rgba(44,85,127,.30) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div style={{ position: "relative", display: "flex", gap: 64, alignItems: "flex-start", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
-          <div style={{ flex: "1 1 520px", maxWidth: 660 }}>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
-              <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
-              <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>REGA-native commercial exchange</span>
-            </div>
-            <h1 className="serif" style={{ fontSize: "clamp(34px,5.6vw,62px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.02em", margin: "20px 0 0", color: "#fff" }}>
-              Saudi Arabia&apos;s verified home for <span style={{ color: "#9DBBD6" }}>commercial space</span>
-            </h1>
-            <p style={{ fontSize: 18, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "20px 0 0", maxWidth: 560 }}>
-              Find, compare and lease Grade A offices, retail and warehouses. Verified listings and decision-grade pricing, in one neutral exchange.
-            </p>
-            <div className="card" style={{ marginTop: 28, padding: 10, maxWidth: 600, boxShadow: "var(--sh-2)", borderRadius: 16 }}>
-              <div className="seg" style={{ marginBottom: 12 }}>
-                <span className={deal === "lease" ? "on" : ""} onClick={() => setDeal("lease")} style={{ cursor: "pointer" }}>Lease</span>
-                <span className={deal === "buy" ? "on" : ""} onClick={() => setDeal("buy")} style={{ cursor: "pointer" }}>Buy</span>
-                <span className={deal === "req" ? "on" : ""} onClick={() => setDeal("req")} style={{ cursor: "pointer" }}>Post a requirement</span>
-              </div>
-              <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "var(--sh-1)" }}>
-                {deal !== "req" && (
-                  <div style={{ display: "flex", alignItems: "center", borderRight: "1px solid var(--silver)", paddingLeft: 14 }}>
-                    <select value={assetType} onChange={(e) => setAssetType(e.target.value)} aria-label="Asset type" style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, fontWeight: 600, color: "var(--ink)", fontFamily: "var(--sans)", height: 56, paddingRight: 8, cursor: "pointer" }}>
-                      <option value="">All types</option>
-                      <option value="office">Office</option>
-                      <option value="retail">Retail &amp; F&amp;B</option>
-                      <option value="medical">Medical</option>
-                      <option value="warehouse">Warehouse</option>
-                      <option value="showroom">Showroom</option>
-                      <option value="serviced">Serviced</option>
-                      <option value="land">Land</option>
-                    </select>
-                  </div>
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 16px", minWidth: 0 }}>
-                  <span style={{ color: "var(--azure)", flex: "none" }}><Icon.search size={20} /></span>
-                  <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area \u2014 e.g. Al Olaya"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15, height: 56, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0 }} />
-                </div>
-                <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 26px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
-              </form>
-              <div className="row gap8 wrap" style={{ marginTop: 12 }}>
-                <span className="tag">Popular:</span>
-                <Link href={L("/listings?q=Al%20Olaya")} className="chip on" style={{ textDecoration: "none" }}>Office, Al Olaya</Link>
-                <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none" }}>Retail, Tahlia</Link>
-                <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none" }}>Warehouse, 2nd Industrial</Link>
-              </div>
-            </div>
-            <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)" }}>
-              <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> Owners verified before listing</span>
-              <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> No assumed commission</span>
-            </div>
-            <div className="row gap8 wrap" style={{ marginTop: 18 }}>
-              {["REGA-licensed", "PDPL-compliant", "Ejar-integrated", "100% verified"].map((t, i) => (
-                <span key={i} className="tag" style={{ gap: 6, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", color: "rgba(255,255,255,.9)" }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: "#3ECF8E" }} />{t}</span>
+      <div className="satmkt-hero" style={{ position: "relative", padding: "70px 24px 84px", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.78) 0%, rgba(11,15,21,.62) 38%, rgba(11,15,21,.82) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+        <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
+            <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>REGA-native commercial exchange</span>
+          </div>
+          <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.05, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820 }}>
+            Where Saudi business finds <span style={{ color: "#9DBBD6" }}>verified commercial space</span>
+          </h1>
+          <p style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>
+            Offices, retail, medical and warehouses across Riyadh. Owner-verified, permit-backed, decision-grade pricing — one neutral exchange.
+          </p>
+
+          <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
+            <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
+              {([["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const).map(([v,l]) => (
+                <button key={v} type="button" onClick={() => setDeal(v)} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
               ))}
             </div>
+
+            {deal !== "req" && (
+              <div className="hero-assets" style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+                {ASSETS.map((a) => {
+                  const on = assetType === a.v;
+                  return (
+                    <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 92, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+                      <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
+                      <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{a.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
+                <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
+                <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "Enter a district, building or area — e.g. Al Olaya"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
+              </div>
+              <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
+            </form>
+
+            <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
+              <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>Popular:</span>
+              <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Office, Al Olaya</Link>
+              <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Retail, Tahlia</Link>
+              <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Warehouse, 2nd Industrial</Link>
+            </div>
           </div>
-          <div style={{ flex: "1 1 440px", maxWidth: 500, position: "relative", marginTop: 6, alignSelf: "stretch", display: "flex" }}>
-            <HeroMiniMap locale={locale as "en" | "ar"} />
+
+          <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
+            <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> Owners verified before listing</span>
+            <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> No assumed commission</span>
+            <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> REGA-licensed &amp; PDPL-compliant</span>
           </div>
         </div>
       </div>
