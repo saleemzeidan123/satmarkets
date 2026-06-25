@@ -8,11 +8,11 @@ export type FeaturedListing = { id: string; price: string; title: string; distri
 type Stats = { listings: string; buildings: string; districts: string };
 
 const ASSETS = [
-  { v: "office", label: "Office", icon: <Icon.office size={22} /> },
-  { v: "retail", label: "Retail", icon: <Icon.retail size={22} /> },
+  { v: "office", label: "Office", icon: <Icon.building size={22} /> },
+  { v: "retail", label: "Retail", icon: <Icon.store size={22} /> },
   { v: "medical", label: "Medical", icon: <Icon.activity size={22} /> },
-  { v: "warehouse", label: "Warehouse", icon: <Icon.warehouse size={22} /> },
-  { v: "showroom", label: "Showroom", icon: <Icon.store size={22} /> },
+  { v: "warehouse", label: "Warehouse", icon: <Icon.layers size={22} /> },
+  { v: "showroom", label: "Showroom", icon: <Icon.grid size={22} /> },
   { v: "land", label: "Land", icon: <Icon.ruler size={22} /> },
 ];
 
