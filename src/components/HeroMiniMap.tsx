@@ -56,7 +56,7 @@ export default function HeroMiniMap({ locale = "en" }: { locale?: "en" | "ar" })
   }, [locale, ar, router]);
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", width: "100%", display: "flex", flexDirection: "column", minHeight: 420 }}>
       <style>{`
         .hmpin{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--silver);border-radius:20px;padding:5px 11px;box-shadow:0 4px 14px rgba(16,26,38,.16);cursor:pointer;white-space:nowrap;transition:transform .12s ease,box-shadow .12s ease;}
         .hmpin:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(16,26,38,.24);}
@@ -65,7 +65,7 @@ export default function HeroMiniMap({ locale = "en" }: { locale?: "en" | "ar" })
         .hmpin.feat .d{background:#3ECF8E;}
         .hm-wrap .maplibregl-ctrl-group{border-radius:9px;overflow:hidden;box-shadow:0 2px 10px rgba(16,26,38,.18);}
       `}</style>
-      <div className="hm-wrap" ref={ref} style={{ height: 384, borderRadius: 18, border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", overflow: "hidden", background: "#eef2f6" }} />
+      <div className="hm-wrap" ref={ref} style={{ flex: 1, minHeight: 420, borderRadius: 18, border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", overflow: "hidden", background: "#eef2f6" }} />
       <div className="card" style={{ position: "absolute", left: -18, top: 26, padding: "11px 14px", boxShadow: "var(--sh-2)", zIndex: 2, background: "#fff" }}>
         <div className="mono" style={{ fontSize: 19, fontWeight: 500, color: "var(--green)" }}>+8.4%</div>
         <div className="muted" style={{ fontSize: 10.5, marginTop: 1 }}>{ar ? "العليا فئة أ، سنوياً" : "Olaya Grade A, YoY"}</div>

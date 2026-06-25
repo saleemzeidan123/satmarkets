@@ -27,7 +27,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
       <div className="satmkt-hero" style={{ position: "relative", padding: "84px 40px 76px", overflow: "hidden", backgroundImage: "linear-gradient(100deg, rgba(11,15,21,.92) 0%, rgba(16,26,38,.72) 46%, rgba(44,85,127,.30) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div style={{ position: "relative", display: "flex", gap: 72, alignItems: "center", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
+        <div style={{ position: "relative", display: "flex", gap: 64, alignItems: "flex-start", flexWrap: "wrap", maxWidth: 1360, margin: "0 auto" }}>
           <div style={{ flex: "1 1 520px", maxWidth: 660 }}>
             <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
               <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
@@ -83,7 +83,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
               ))}
             </div>
           </div>
-          <div style={{ flex: "1 1 360px", maxWidth: 404, position: "relative" }}>
+          <div style={{ flex: "1 1 440px", maxWidth: 500, position: "relative", marginTop: 6, alignSelf: "stretch", display: "flex" }}>
             <HeroMiniMap locale={locale as "en" | "ar"} />
           </div>
         </div>
