@@ -266,7 +266,7 @@
 .lform-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:26px;max-width:720px;}
 @media(max-width:560px){.lform-grid{grid-template-columns:1fr!important}}
 
-@media(max-width:760px){.hero-band{padding:32px 22px!important}.hero-band-grid{grid-template-columns:1fr!important;gap:24px!important}}
+@media(max-width:760px){.hero-band{padding:32px 22px!important}.hero-band-grid{grid-template-columns:1fr!important;gap:24px!important}.band-mark{display:none!important}}
 /* pricing tiers + matrix */
 .tier{border:1px solid var(--silver);border-radius:16px;background:var(--paper);padding:24px 22px;display:flex;flex-direction:column;position:relative;}
 .tier.feat{border-color:var(--azure);box-shadow:0 0 0 3px var(--azure-wash);}

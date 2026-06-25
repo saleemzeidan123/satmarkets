@@ -71,7 +71,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
-        <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "Enter a district, building or area, e.g. Al Olaya"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
+        <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
        </div>
        <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
       </form>
@@ -141,7 +141,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      </div>
     </div>
     <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "48px 40px", position: "relative", overflow: "hidden" }}>
-     <div style={{ position: "absolute", right: -20, bottom: -40, opacity: .35 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
+     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .35 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 40, alignItems: "center" }}>
       <div>
        <div className="eyebrow" style={{ color: "var(--azure-l)" }}>SAT Rent Index, Q1 2026</div>
