@@ -2,35 +2,96 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"] as const;
+type AssetT = typeof ASSETS[number];
+type Parsed = { asset: AssetT | null; deal: "lease" | "sale" | null; district: string | null; minSize: number | null; maxRent: number | null };
 
-// Rules-based intent parser. Swap this function for an Anthropic call later;
-// the response contract (parsed + clarify + results) stays the same so the UI is unchanged.
-export async function POST(req: NextRequest) {
-  const { query } = (await req.json()) as { query?: string };
-  const raw = query || "";
+// Rules-based parser, kept as a fast, reliable fallback for when the model is
+// unavailable (no key set, timeout, or error). It never sees the network.
+function rulesParse(raw: string): Parsed {
   const q = raw.toLowerCase();
-  const supabase = getSupabaseServer();
-  if (!supabase) return NextResponse.json({ results: [], parsed: {}, clarify: false });
-
-  const asset = ASSETS.find((a) => q.includes(a)) || (q.includes("clinic") ? "medical" : (q.includes("logistic") || q.includes("warehouse")) ? "warehouse" : (q.includes("shop") || q.includes("f&b") || q.includes("restaurant")) ? "retail" : null);
-  const dealDetected = /\b(buy|sale|for sale|purchase|freehold|acquire)\b/.test(q) ? "sale" : (/\b(lease|rent|rental|let)\b/.test(q) ? "lease" : null);
+  const asset = (ASSETS.find((a) => q.includes(a)) as AssetT | undefined) || (q.includes("clinic") ? "medical" : (q.includes("logistic") || q.includes("warehouse")) ? "warehouse" : (q.includes("shop") || q.includes("f&b") || q.includes("restaurant")) ? "retail" : null);
+  const deal: Parsed["deal"] = /\b(buy|sale|for sale|purchase|freehold|acquire)\b/.test(q) ? "sale" : (/\b(lease|rent|rental|let)\b/.test(q) ? "lease" : null);
   const sizeMatch = q.match(/([0-9][0-9,\.]{1,9})\s*(sqm|sq m|m2|m²|meter)/);
   const minSize = sizeMatch ? Number(sizeMatch[1].replace(/[,]/g, "")) : null;
   const budgetMatch = q.match(/(under|below|max|up to)\s*(sar)?\s*([0-9][0-9,\.]{1,9})/);
   const maxRent = budgetMatch ? Number(budgetMatch[3].replace(/[,]/g, "")) : null;
+  return { asset: asset ?? null, deal, district: null, minSize, maxRent };
+}
+
+const SYS = `You extract structured search filters from a commercial real estate query for Riyadh, Saudi Arabia. Understand both Arabic and English, including dialect and loose phrasing. Respond with strict JSON only, no prose, with exactly these keys:
+- asset: one of "office","retail","medical","showroom","warehouse","serviced","education","land", or null
+- deal: "lease", "sale", or null
+- district: the Riyadh district or area name the user means as a string, or null
+- minSize: minimum floor area in square metres as a number, or null
+- maxRent: maximum rent in SAR per square metre per year as a number, or null
+Infer intent: a clinic is medical, a logistics shed is warehouse, a restaurant or shop is retail, a fitted or co-working suite is serviced, a school or training centre is education. Never invent a value that is not implied. Output only the JSON object.`;
+
+// DeepSeek (OpenAI-compatible) intent parser. Server-side only; the key is read
+// from AI_API_KEY and never reaches the browser. Falls back to rules on any failure.
+async function llmParse(raw: string): Promise<Parsed | null> {
+  const key = process.env.AI_API_KEY || process.env.deepseek_key;
+  if (!key || raw.trim().length < 3) return null;
+  const base = process.env.AI_BASE_URL || "https://api.deepseek.com";
+  const model = process.env.AI_MODEL || "deepseek-chat";
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 7000);
+    const res = await fetch(`${base}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        response_format: { type: "json_object" },
+        messages: [{ role: "system", content: SYS }, { role: "user", content: raw }],
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    const txt: string | undefined = j?.choices?.[0]?.message?.content;
+    if (!txt) return null;
+    const o: any = JSON.parse(txt);
+    const asset = (ASSETS as readonly string[]).includes(o?.asset) ? (o.asset as AssetT) : null;
+    const deal: Parsed["deal"] = o?.deal === "lease" || o?.deal === "sale" ? o.deal : null;
+    const district = typeof o?.district === "string" && o.district.trim() ? o.district.trim() : null;
+    const minSize = typeof o?.minSize === "number" && isFinite(o.minSize) ? o.minSize : null;
+    const maxRent = typeof o?.maxRent === "number" && isFinite(o.maxRent) ? o.maxRent : null;
+    return { asset, deal, district, minSize, maxRent };
+  } catch {
+    return null;
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const { query } = (await req.json()) as { query?: string };
+  const raw = query || "";
+  const supabase = getSupabaseServer();
+  if (!supabase) return NextResponse.json({ results: [], parsed: {}, clarify: false });
+
+  // Smart parse first (DeepSeek, Arabic + nuance), rules parser as the fallback.
+  const ai = await llmParse(raw);
+  const parsed = ai || rulesParse(raw);
+  const aiUsed = !!ai;
+  const asset = parsed.asset;
+  const dealDetected = parsed.deal;
+  const minSize = parsed.minSize;
+  const maxRent = parsed.maxRent;
 
   const { data: districts } = await supabase.from("districts").select("id, name_en, city");
-  const dMatch = (districts ?? []).find((d: any) =>
-    q.includes((d.name_en || "").toLowerCase()) || q.includes((d.city || "").toLowerCase()) || (d.name_en === "KAFD" && q.includes("kafd"))
-  );
+  const wanted = (parsed.district || "").toLowerCase();
+  const dMatch = (districts ?? []).find((d: any) => {
+    const ne = (d.name_en || "").toLowerCase();
+    const ci = (d.city || "").toLowerCase();
+    if (parsed.district) return (ne && (wanted.includes(ne) || ne.includes(wanted))) || (d.name_en === "KAFD" && /kafd/i.test(parsed.district));
+    return raw.toLowerCase().includes(ne) || raw.toLowerCase().includes(ci) || (d.name_en === "KAFD" && /kafd/i.test(raw));
+  });
 
   const hasIntent = !!(asset || dMatch || minSize || maxRent || dealDetected);
   const vague = /(suggest|recommend|help|idea|option|advice|not sure|don'?t know|dont know|anything|what (can|do|should)|where should|guide)/i.test(raw);
   const clarify = !hasIntent && (vague || raw.trim().length < 4);
 
-  // Build the query at a chosen relaxation level. Level 0 = all constraints;
-  // each higher level drops the most negotiable constraint so the searcher
-  // always sees the closest verified stock instead of an empty result.
   const build = (level: number) => {
     let sb = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
     if (clarify) return sb;
@@ -42,8 +103,6 @@ export async function POST(req: NextRequest) {
     return sb;
   };
 
-  // Relaxation ladder: budget -> size -> district. Stop at the first level
-  // that returns matches, and remember what we loosened to get there.
   const relaxNotes = [
     maxRent && dealDetected !== "sale" ? `above your ${maxRent.toLocaleString()} SAR/m² cap` : null,
     minSize ? "smaller than your size" : null,
@@ -66,7 +125,8 @@ export async function POST(req: NextRequest) {
     clarify,
     relaxed,
     relaxedReason,
+    aiUsed,
     count: data.length,
-    results: data
+    results: data,
   });
 }
