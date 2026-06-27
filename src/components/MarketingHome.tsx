@@ -253,7 +253,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18, marginTop: 28 }}>
       {featured.map((f) => (
        <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-        <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
+        <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
         <div className="body">
          <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
          <div className="ttl">{f.title}</div>
