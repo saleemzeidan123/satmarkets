@@ -398,7 +398,7 @@ table.dt tbody tr:hover{background:var(--cool);}
 @media(max-width:760px){.tmap-side{display:none!important}}
 
 /* ===== global mobile hardening (review pass) ===== */
-html,body{max-width:100%;overflow-x:hidden;}
+html,body{max-width:100%;overflow-x:clip;}
 .poc{height:100dvh;}
 .msg-dash{height:100dvh;}
 @media(max-width:600px){
