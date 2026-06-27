@@ -8,48 +8,20 @@ export type FeaturedListing = { id: string; price: string; title: string; distri
 type Stats = { listings: string; buildings: string; districts: string };
 
 const ASSETS = [
- { v: "office", label: "Office", icon: <Icon.building size={22} /> },
- { v: "retail", label: "Retail", icon: <Icon.store size={22} /> },
- { v: "medical", label: "Medical", icon: <Icon.activity size={22} /> },
- { v: "showroom", label: "Showroom", icon: <Icon.grid size={22} /> },
- { v: "warehouse", label: "Warehouse", icon: <Icon.layers size={22} /> },
- { v: "serviced", label: "Serviced", icon: <Icon.user size={22} /> },
- { v: "education", label: "Education", icon: <Icon.doc size={22} /> },
- { v: "land", label: "Land", icon: <Icon.ruler size={22} /> },
-];
-
-const LOCATIONS: { label: string; kind: "city" | "district" }[] = [
- { label: "Riyadh", kind: "city" }, { label: "Jeddah", kind: "city" }, { label: "Makkah", kind: "city" }, { label: "Madinah", kind: "city" }, { label: "Dammam", kind: "city" }, { label: "Khobar", kind: "city" },
- { label: "Al Olaya", kind: "district" }, { label: "KAFD", kind: "district" }, { label: "Hittin", kind: "district" }, { label: "Al Malaz", kind: "district" }, { label: "Qurtubah", kind: "district" }, { label: "Granada", kind: "district" }, { label: "Sulay", kind: "district" }, { label: "Diplomatic Quarter", kind: "district" }, { label: "ITCC", kind: "district" }, { label: "Laysen Valley", kind: "district" },
- { label: "Al Hamra", kind: "district" }, { label: "Ar Rawdah", kind: "district" }, { label: "Ash Shati", kind: "district" }, { label: "Al Balad", kind: "district" }, { label: "Al Aziziyah", kind: "district" }, { label: "Ajyad", kind: "district" }, { label: "Quba", kind: "district" }, { label: "Corniche", kind: "district" },
+ { v: "office", en: "Office", ar: "مكاتب", icon: <Icon.building size={22} /> },
+ { v: "retail", en: "Retail", ar: "تجزئة", icon: <Icon.store size={22} /> },
+ { v: "medical", en: "Medical", ar: "طبي", icon: <Icon.activity size={22} /> },
+ { v: "warehouse", en: "Warehouse", ar: "مستودعات", icon: <Icon.layers size={22} /> },
+ { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
+ { v: "land", en: "Land", ar: "أراضٍ", icon: <Icon.ruler size={22} /> },
 ];
 
 export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
  const router = useRouter();
+ const ar = locale === "ar";
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
- const [open, setOpen] = useState(false);
- const [hi, setHi] = useState(0);
- const boxRef = React.useRef<HTMLDivElement>(null);
- const [results, setResults] = useState<{ label: string; sub?: string; kind: string }[]>([]);
- React.useEffect(() => {
-  const onDoc = (e: MouseEvent) => { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); };
-  document.addEventListener("mousedown", onDoc);
-  return () => document.removeEventListener("mousedown", onDoc);
- }, []);
- React.useEffect(() => {
-  const t = q.trim();
-  if (deal === "req" || t.length < 2) { setResults([]); return; }
-  const ctrl = new AbortController();
-  const id = setTimeout(() => {
-   fetch(`/api/places?q=${encodeURIComponent(t)}`, { signal: ctrl.signal })
-    .then((r) => r.json())
-    .then((j) => { setResults(Array.isArray(j.items) ? j.items : []); setHi(0); })
-    .catch(() => {});
-  }, 220);
-  return () => { clearTimeout(id); ctrl.abort(); };
- }, [q, deal]);
  const go = (e?: React.FormEvent) => {
   if (e) e.preventDefault();
   if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
@@ -59,56 +31,154 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   if (q.trim()) sp.set("q", q.trim());
   router.push(`/${locale}/listings?${sp.toString()}`);
  };
- const lf = LOCATIONS.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 8);
- const sugg: { label: string; sub?: string; kind: string }[] = q.trim().length >= 2 ? (results.length ? results : lf) : LOCATIONS;
- const pick = (label: string) => {
-  setQ(label); setOpen(false);
-  if (deal === "req") { router.push(`/${locale}/post-requirement?q=${encodeURIComponent(label)}`); return; }
-  const sp = new URLSearchParams();
-  sp.set("deal", deal === "buy" ? "sale" : "lease");
-  if (assetType) sp.set("asset", assetType);
-  sp.set("q", label);
-  router.push(`/${locale}/listings?${sp.toString()}`);
- };
  const L = (p: string) => `/${locale}${p}`;
- const sStat = [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]];
+
+ const T = ar ? {
+  eyebrow: "منصّة تجارية متوافقة مع الهيئة العامة للعقار",
+  h1a: "حيث تجد الأعمال السعودية ",
+  h1b: "مساحات تجارية موثّقة",
+  sub: "مكاتب ومتاجر وعيادات ومستودعات في الرياض. موثّقة من المالك، مدعومة بالتراخيص، بأسعار تُعتمد للقرار، في منصّة محايدة واحدة.",
+  tabs: [["lease","إيجار"],["buy","شراء"],["req","أدرج طلبك"]] as const,
+  phReq: "ما المساحة التي تبحث عنها؟",
+  phStd: "الحي أو المبنى أو المنطقة",
+  btnReq: "أدرج",
+  btnStd: "بحث",
+  popular: "الأكثر طلباً:",
+  chip1: "مكاتب، العليا", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
+  micro1: "توثيق المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "مرخّصة من الهيئة العامة للعقار ومتوافقة مع نظام حماية البيانات",
+  stat: [[stats.listings, "عروض موثّقة"], ["100%", "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string,string][],
+  exEye: "المنصّة",
+  exH: "أربع وظائف، في مكان محايد واحد",
+  exP: "لا أحد في المملكة يجمع الوظائف الأربع معاً. هذا الجمع هو المنصّة.",
+  cards: [
+   ["عروض موثّقة", "مباشرة من المالك الموثّق، أو من SAT بموجب تفويض. لا عروض وسطاء غير موثّقة.", "/listings"],
+   ["الطلبات", "يدرج المستأجرون ما يحتاجونه، فيأتيهم العرض المناسب.", "/post-requirement"],
+   ["مؤشر الإيجارات", "أسعار تُعتمد للقرار وبيانات النطاق. كل رقم موثّق المصدر.", "/rent-index"],
+   ["التمثيل", "خيار صريح بالاختيار. ولا عمولة مدمجة في أي عرض.", "/dashboard"],
+  ] as [string,string,string][],
+  ftEye: "مختارة، الرياض",
+  ftH: "مساحات موثّقة، بأسعار في سياقها",
+  ftBrowse: "تصفّح كل العروض",
+  unit: " ريال/م²·سنة",
+  bandEye: "مؤشر SAT للإيجارات، الربع الأول 2026",
+  bandH: "طبقة التسعير خلف كل قرار",
+  bandP1: "بيانات صفقات موثّقة في ", bandP2: " حياً بالرياض. قِس إيجاراً، أو حدّد نطاقاً، أو قيّم عقد إيجار. موثّقة المصدر، لا تقديرات.",
+  bandBtn: "استكشف مؤشر الإيجارات",
+  bandStat: [["+8.4%", "مكاتب العليا، سنوياً"], ["1,420", "وسيط المكاتب ريال/م²"], ["96%", "إشغال، الفئة A"]] as [string,string][],
+  flowEye: "كيف تسير الصفقة",
+  flowH: "أنت دائماً تتخذ خياراً صريحاً",
+  pathATag: "المسار أ، مجاني",
+  pathATitle: "تواصل مع المُدرِج مباشرة",
+  pathADesc: "خدمة ذاتية ومجانية. لا تفويض، لا رسوم، لا عمولة مفترضة. هكذا تعمل غالبية المنصّة.",
+  pathBTag: "المسار ب، اختياري",
+  pathBTitle: "وكّل SAT العقارية لتمثيلك",
+  pathBDesc: "تفويض صريح عندما تريد وسطاء SAT العقارية المرخّصين إلى جانبك. شروط واضحة، يُتفق عليها قبل أي رسوم.",
+  pathBLink: "تحدّث إلى SAT العقارية ←",
+  oneEye: "منصّة واحدة",
+  oneH: "كل ما يحتاجه السوق، في مكان واحد",
+  oneP: "الاكتشاف، وبيانات تُعتمد للقرار، والذكاء الاصطناعي، والصفقة كاملة، للمستأجرين والمُلّاك والوسطاء والمستثمرين.",
+  feats: [
+   ["عروض موثّقة + خريطة", "عروض مدقّقة بالتراخيص ورخصة فال على خريطة مباشرة للرياض."],
+   ["مؤشر الإيجارات", "إيجارات تُعتمد للقرار، مع تمييز العقود المسقوفة والمفتوحة."],
+   ["ذكاء الموقع", "الحركة والنطاق والجوار التجاري. موثّقة المصدر، لا مُقدّرة."],
+   ["تحليل الاستثمار", "العائد وصافي الدخل التشغيلي والسيناريوهات على مقارنات موثّقة."],
+   ["المستشار الذكي", "بحث وتقييم حواري، مبني على المؤشر."],
+   ["أدرج طلباً", "أخبر السوق بما تحتاجه، فيستجيب المُلّاك والوسطاء."],
+   ["لوحة المالك", "أداء العروض، والعملاء المحتملون، ومطابقات الطلبات."],
+   ["باقات العضوية", "فئات بحدود واضحة للحصص، وفوترة متوافقة مع هيئة الزكاة والضريبة والجمارك."],
+   ["تتبّع الصفقة", "من الاستفسار إلى المعاينة إلى العرض إلى التسليم، بأطراف موثّقة."],
+   ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على حقائق موثّقة والإيجار مقابل المؤشر."],
+   ["الثقة والامتثال", "الهيئة العامة للعقار، ونظام حماية البيانات، ومكافحة غسل الأموال، وطبقة توثيق قابلة للتحقّق."],
+  ] as [string,string][],
+  ctaH: "أدرج مساحتك، أو اعثر على التالية",
+  ctaP: "انضمّ إلى المنصّة الموثّقة المبنية للسوق التجاري في الرياض.",
+  ctaList: "أدرج مساحتك", ctaBrowse: "تصفّح العروض",
+ } : {
+  eyebrow: "REGA-native commercial exchange",
+  h1a: "Where Saudi business finds ",
+  h1b: "verified commercial space",
+  sub: "Offices, retail, medical and warehouses across Riyadh. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.",
+  tabs: [["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const,
+  phReq: "What space are you looking for?",
+  phStd: "District, building or area",
+  btnReq: "Post",
+  btnStd: "Search",
+  popular: "Popular:",
+  chip1: "Office, Al Olaya", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
+  micro1: "Owners verified before listing", micro2: "No assumed commission", micro3: "REGA-licensed & PDPL-compliant",
+  stat: [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string,string][],
+  exEye: "The exchange",
+  exH: "Four jobs, one neutral place",
+  exP: "No one in the Kingdom combines all four. That combination is the platform.",
+  cards: [
+   ["Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
+   ["Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
+   ["Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
+   ["Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
+  ] as [string,string,string][],
+  ftEye: "Featured, Riyadh",
+  ftH: "Verified spaces, priced in context",
+  ftBrowse: "Browse all listings",
+  unit: " SAR/m²·yr",
+  bandEye: "SAT Rent Index, Q1 2026",
+  bandH: "The pricing layer behind every decision",
+  bandP1: "Verified transaction data across ", bandP2: " Riyadh districts. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.",
+  bandBtn: "Explore the Rent Index",
+  bandStat: [["+8.4%", "Olaya office, YoY"], ["1,420", "Median office SAR/m²"], ["96%", "Occupancy, Grade A"]] as [string,string][],
+  flowEye: "How a deal flows",
+  flowH: "You always make an explicit choice",
+  pathATag: "Path A, Free",
+  pathATitle: "Contact the lister directly",
+  pathADesc: "Self-serve and free. No mandate, no fee, no assumed commission. Most of the exchange runs this way.",
+  pathBTag: "Path B, Opt-in",
+  pathBTitle: "Appoint SAT Real Estate to represent you",
+  pathBDesc: "An explicit mandate when you want SAT Real Estate's licensed brokers at the table. Clear terms, agreed before any fee applies.",
+  pathBLink: "Talk to SAT Real Estate →",
+  oneEye: "One exchange",
+  oneH: "Everything the market needs, in one place",
+  oneP: "Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.",
+  feats: [
+   ["Verified listings + map", "Permit and FAL-checked stock on a live Riyadh map."],
+   ["Rent Index", "Decision-grade rents with the capped/open freeze lens."],
+   ["Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled."],
+   ["Investment underwriting", "Yield, NOI and scenarios on verified comps."],
+   ["AI Advisor", "Conversational search and valuation, grounded in the Index."],
+   ["Post a requirement", "Tell the market what you need; owners and brokers respond."],
+   ["Owner dashboard", "Listing performance, leads and requirement matches."],
+   ["Membership plans", "Grades with clear quota caps; ZATCA invoicing."],
+   ["Deal tracking", "Enquiry to viewing to offer to handover, with verified parties."],
+   ["Compare spaces", "Shortlist side by side on verified facts and rent vs index."],
+   ["Trust and compliance", "REGA, PDPL, AML and a checkable verification layer."],
+  ] as [string,string][],
+  ctaH: "List your space, or find your next one",
+  ctaP: "Join the verified exchange built for Riyadh's commercial market.",
+  ctaList: "List your space", ctaBrowse: "Browse listings",
+ };
+
+ const featLinks = ["/map","/rent-index","/area","/invest","/advisor","/post-requirement","/dashboard","/pricing","/deal","/compare","/about"];
+ const featKeys = ["h","a","","h","a","","h","a","","h",""];
+ const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield];
+ const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
+
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(48px,10vw,78px) 20px clamp(54px,10vw,90px)", overflow: "hidden", background: "radial-gradient(125% 85% at 50% -12%, #143150 0%, #0C2138 46%, #081522 100%)" }}>
-    <style>{`
-      .satmkt-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(157,187,214,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(157,187,214,.07) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(120% 92% at 50% 0%,#000 32%,transparent 78%);mask-image:radial-gradient(120% 92% at 50% 0%,#000 32%,transparent 78%);pointer-events:none}
-      .satmkt-hero::after{content:"";position:absolute;inset:0;background:url('/hero-riyadh.svg') center bottom/cover no-repeat;opacity:.09;mix-blend-mode:luminosity;pointer-events:none}
-      .hero-rise{opacity:0;transform:translateY(14px);animation:heroRise .72s cubic-bezier(.2,.7,.2,1) forwards}
-      .hero-rise.d1{animation-delay:.07s}.hero-rise.d2{animation-delay:.15s}.hero-rise.d3{animation-delay:.25s}.hero-rise.d4{animation-delay:.36s}
-      @keyframes heroRise{to{opacity:1;transform:none}}
-      @keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(62,207,142,.55)}50%{box-shadow:0 0 0 5px rgba(62,207,142,0)}}
-      .live-dot{width:7px;height:7px;border-radius:50%;background:#3ECF8E;flex:none;animation:livePulse 2.4s ease-in-out infinite}
-      .hero-assets{scrollbar-width:none}.hero-assets::-webkit-scrollbar{display:none}
-      @media (max-width:640px){.hero-assets{flex-wrap:nowrap!important;justify-content:flex-start!important;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;padding-bottom:6px}.hero-assets>button{flex:0 0 auto!important;scroll-snap-align:start}}
-      .reg-rail{display:flex;align-items:stretch;justify-content:center;flex-wrap:wrap;border:1px solid rgba(157,187,214,.2);border-radius:12px;background:rgba(8,21,34,.5);backdrop-filter:blur(6px);overflow:hidden}
-      .reg-cell{display:flex;flex-direction:column;gap:3px;padding:11px 22px;border-left:1px solid rgba(157,187,214,.14);text-align:left}
-      .reg-cell.lead{border-left:none;justify-content:center;background:rgba(157,187,214,.06)}
-      @media (max-width:560px){.reg-cell{flex:1 1 50%}.reg-cell.lead{flex:1 1 100%;align-items:center;text-align:center}}
-      @media (prefers-reduced-motion:reduce){.hero-rise{animation:none;opacity:1;transform:none}.live-dot{animation:none}}
-    `}</style>
-    <div style={{ position: "relative", maxWidth: 940, margin: "0 auto", textAlign: "center" }}>
-     <div className="hero-rise mono" style={{ display: "inline-flex", alignItems: "center", gap: 9, fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "rgba(196,214,233,.92)" }}>
-      <span className="live-dot" />
-      REGA-native exchange
-      <span style={{ opacity: .42 }}>/</span>
-      Saudi Arabia
+   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.78) 0%, rgba(11,15,21,.62) 38%, rgba(11,15,21,.82) 100%), url('/hero-riyadh.svg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+    <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
+     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
+      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
+      <span className="mono" style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>{T.eyebrow}</span>
      </div>
-     <h1 className="serif hero-rise d1" style={{ fontSize: "clamp(34px,5.4vw,60px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.022em", margin: "20px auto 0", color: "#F5F8FC", maxWidth: 860 }}>
-      Where Saudi business finds <span style={{ color: "#9DBBD6", borderBottom: "2px solid rgba(157,187,214,.42)", paddingBottom: 1 }}>verified commercial space</span>
+     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.05, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820 }}>
+      {T.h1a}<span style={{ color: "#9DBBD6" }}>{T.h1b}</span>
      </h1>
-     <p className="hero-rise d2" style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(214,224,235,.8)", margin: "18px auto 0", maxWidth: 600 }}>
-      Offices, retail, medical and warehouses across Riyadh, Jeddah, Makkah, Madinah and the Eastern Province. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.
+     <p style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>
+      {T.sub}
      </p>
 
-     <div className="hero-rise d3" style={{ position: "relative", zIndex: 30, margin: "30px auto 0", maxWidth: 870, background: "rgba(10,24,38,.55)", border: "1px solid rgba(157,187,214,.2)", borderRadius: 18, backdropFilter: "blur(12px)", padding: "18px 18px 16px", boxShadow: "0 30px 70px rgba(0,0,0,.42)" }}>
+     <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
       <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
-       {([["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const).map(([v,l]) => (
-        <button key={v} type="button" onClick={() => setDeal(v)} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
+       {T.tabs.map(([v,l]) => (
+        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
        ))}
       </div>
 
@@ -119,61 +189,38 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
          return (
           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 92, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
-           <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{a.label}</span>
+           <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
           </button>
          );
         })}
        </div>
       )}
 
-      <div ref={boxRef} style={{ position: "relative" }}>
       <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
-        <input className="q" value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); setHi(0); }} onFocus={() => setOpen(true)} onKeyDown={(e) => { if (deal === "req") return; if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, sugg.length - 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); } else if (e.key === "Enter" && open && sugg[hi]) { e.preventDefault(); pick(sugg[hi].label); } else if (e.key === "Escape") setOpen(false); }} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
+        <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? T.phReq : T.phStd} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: ar ? "right" : "left" }} />
        </div>
-       <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
+       <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? T.btnReq : T.btnStd}</button>
       </form>
-      {open && deal !== "req" && sugg.length > 0 ? (
-       <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "#fff", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,.22)", zIndex: 50, overflow: "hidden" }}>
-        {sugg.map((o, i) => (
-         <button key={o.label} type="button" onMouseEnter={() => setHi(i)} onClick={() => pick(o.label)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "11px 16px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: i === hi ? "var(--cool)" : "#fff", color: "var(--ink)", fontSize: 14.5 }}>
-          <span style={{ color: o.kind === "city" ? "var(--azure-d)" : "var(--slate)", flex: "none" }}><Icon.pin size={15} /></span>
-          <span style={{ fontWeight: o.kind === "city" ? 600 : 400 }}>{o.label}</span>
-          <span className="tag" style={{ marginLeft: "auto", fontSize: 10.5 }}>{(o as any).sub ? (o as any).sub : o.kind === "city" ? "City" : "District"}</span>
-         </button>
-        ))}
-       </div>
-      ) : null}
-      </div>
 
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
-       <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>Popular:</span>
-       <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Office, Al Olaya</Link>
-       <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Retail, Tahlia</Link>
-       <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>Warehouse, 2nd Industrial</Link>
+       <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
+       <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
+       <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip2}</Link>
+       <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip3}</Link>
       </div>
      </div>
 
-     <div className="hero-rise d4" style={{ margin: "20px auto 0", maxWidth: 740 }}>
-      <div className="reg-rail">
-       <div className="reg-cell lead">
-        <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "rgba(214,228,244,.9)" }}><span className="live-dot" /> SAT Index</span>
-        <span className="mono" style={{ fontSize: 10, letterSpacing: ".08em", color: "rgba(170,188,208,.6)", textTransform: "uppercase" }}>Live, Q1 2026</span>
-       </div>
-       {[["+8.4%", "Olaya office, YoY"], ["1,420", "Median SAR/m²"], ["96%", "Grade A occupancy"]].map((x, i) => (
-        <div key={i} className="reg-cell">
-         <span className="mono tnum" style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>{x[0]}</span>
-         <span className="mono" style={{ fontSize: 10, letterSpacing: ".05em", color: "rgba(180,198,218,.7)", textTransform: "uppercase" }}>{x[1]}</span>
-        </div>
-       ))}
-      </div>
-      <div className="mono" style={{ marginTop: 12, fontSize: 11, letterSpacing: ".03em", color: "rgba(170,188,208,.66)" }}>Owners verified before listing &middot; No assumed commission &middot; REGA-licensed, PDPL-compliant</div>
+     <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
+      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro1}</span>
+      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro2}</span>
+      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro3}</span>
      </div>
     </div>
    </div>
    <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
-    {sStat.map((x, i) => (
+    {T.stat.map((x, i) => (
      <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
       <div className="mono tnum" style={{ fontSize: 28, fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
       <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{x[1]}</div>
@@ -181,20 +228,34 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     ))}
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
+     <div className="eyebrow">{T.exEye}</div>
+     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.exH}</h2>
+     <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>{T.exP}</p>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
+      {T.cards.map((c, i) => { const I = cardIcons[i] as (p: { size?: number }) => JSX.Element; return (
+       <Link key={i} href={L(c[2])} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
+        <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[0]}</div>
+        <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[1]}</div>
+       </Link>
+      ); })}
+     </div>
+    </div>
     <div style={{ padding: "clamp(36px,7vw,52px) 20px 20px" }}>
      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
       <div>
-       <div className="eyebrow">Featured across the Kingdom</div>
-       <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Verified spaces, priced in context</h2>
+       <div className="eyebrow">{T.ftEye}</div>
+       <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2>
       </div>
-      <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>Browse all listings <Icon.arrow size={16} /></Link>
+      <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
      </div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18, marginTop: 28 }}>
       {featured.map((f) => (
        <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
         <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
         <div className="body">
-         <div className="row between"><div className="price">{f.price}<small> SAR/m²·yr</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
+         <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
          <div className="ttl">{f.title}</div>
          <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
         </div>
@@ -202,94 +263,63 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       ))}
      </div>
     </div>
-    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
-     <div className="eyebrow">The exchange</div>
-     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
-     <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>No one in the Kingdom combines all four. That combination is the platform.</p>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
-      {[
-       [Icon.building, "Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
-       [Icon.doc, "Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
-       [Icon.chart, "Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
-       [Icon.user, "Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
-      ].map((c, i) => { const I = c[0] as (p: { size?: number }) => JSX.Element; return (
-       <Link key={i} href={L(c[3] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
-        <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
-        <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[1] as string}</div>
-        <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[2] as string}</div>
-       </Link>
-      ); })}
-     </div>
-    </div>
-    <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "radial-gradient(130% 130% at 100% 0%, #143150 0%, #0C2138 52%, #081522 100%)", color: "#fff", padding: "clamp(34px,6vw,48px) clamp(24px,5vw,40px)", position: "relative", overflow: "hidden", border: "1px solid rgba(157,187,214,.16)" }}>
-     <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "linear-gradient(rgba(157,187,214,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(157,187,214,.06) 1px,transparent 1px)", backgroundSize: "42px 42px", WebkitMaskImage: "radial-gradient(130% 130% at 100% 0%,#000 28%,transparent 74%)", maskImage: "radial-gradient(130% 130% at 100% 0%,#000 28%,transparent 74%)", pointerEvents: "none" }} />
+    <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "48px 40px", position: "relative", overflow: "hidden" }}>
+     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .35 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 40, alignItems: "center" }}>
       <div>
-       <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "rgba(196,214,233,.9)" }}><span className="live-dot" /> SAT Index / Q1 2026</span>
-       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>The pricing layer behind every decision</h2>
-       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>Verified transaction data across {stats.districts} districts, Riyadh first and expanding Kingdom-wide. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.</p>
-       <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>Explore the Rent Index</Link>
+       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}</div>
+       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
+       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
+       <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
       </div>
       <div className="row gap16 wrap">
-       {[["+8.4%", "Olaya office, YoY"], ["1,420", "Median office SAR/m²"], ["96%", "Occupancy, Grade A"]].map((x, i) => (
-        <div key={i} className="grow" style={{ minWidth: 120, background: "rgba(8,21,34,.5)", border: "1px solid rgba(157,187,214,.18)", borderRadius: 12, padding: "18px 16px" }}>
-         <div className="mono tnum" style={{ fontSize: 24, fontWeight: 600, color: "#fff" }}>{x[0]}</div>
-         <div className="mono" style={{ fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase", color: "rgba(180,198,218,.7)", marginTop: 6 }}>{x[1]}</div>
+       {T.bandStat.map((x, i) => (
+        <div key={i} className="grow" style={{ minWidth: 120, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: "18px 16px" }}>
+         <div className="mono tnum" style={{ fontSize: 24, fontWeight: 500, color: "#fff" }}>{x[0]}</div>
+         <div style={{ fontSize: 11.5, color: "#8A93A0", marginTop: 6 }}>{x[1]}</div>
         </div>
        ))}
       </div>
      </div>
     </div>
     <div style={{ padding: "clamp(44px,9vw,72px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
-     <div className="eyebrow" style={{ textAlign: "center" }}>How a deal flows</div>
-     <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>You always make an explicit choice</h2>
+     <div className="eyebrow" style={{ textAlign: "center" }}>{T.flowEye}</div>
+     <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>{T.flowH}</h2>
      <div className="row gap20 wrap" style={{ maxWidth: 940, margin: "0 auto", alignItems: "stretch" }}>
       <div className="card pad grow" style={{ minWidth: 280 }}>
-       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>Path A, Free</span>
-       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>Contact the lister directly</div>
-       <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>Self-serve and free. No mandate, no fee, no assumed commission. Most of the exchange runs this way.</div>
+       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{T.pathATag}</span>
+       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>{T.pathATitle}</div>
+       <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>{T.pathADesc}</div>
       </div>
       <a href="https://satestate.com/contact" target="_blank" rel="noopener noreferrer" className="card pad grow lift" style={{ borderColor: "var(--harbor)", minWidth: 280, textDecoration: "none", color: "inherit", display: "block" }}>
-       <span className="tag" style={{ color: "var(--harbor)", background: "rgba(58,110,165,.08)", borderColor: "rgba(58,110,165,.3)" }}>Path B, Opt-in</span>
-       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>Appoint SAT Real Estate to represent you</div>
-       <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>An explicit mandate when you want SAT Real Estate&apos;s licensed brokers at the table. Clear terms, agreed before any fee applies.</div>
-       <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: "var(--harbor)" }}>Talk to SAT Real Estate &rarr;</div>
+       <span className="tag" style={{ color: "var(--harbor)", background: "rgba(58,110,165,.08)", borderColor: "rgba(58,110,165,.3)" }}>{T.pathBTag}</span>
+       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>{T.pathBTitle}</div>
+       <div className="muted" style={{ fontSize: 14, lineHeight: 1.6 }}>{T.pathBDesc}</div>
+       <div style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: "var(--harbor)" }}>{T.pathBLink}</div>
       </a>
      </div>
     </div>
     <div style={{ padding: "20px 24px 20px" }}>
-     <div className="eyebrow" style={{ textAlign: "center" }}>One exchange</div>
-     <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px", textAlign: "center" }}>Everything the market needs, in one place</h2>
-     <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.</p>
+     <div className="eyebrow" style={{ textAlign: "center" }}>{T.oneEye}</div>
+     <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px", textAlign: "center" }}>{T.oneH}</h2>
+     <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>{T.oneP}</p>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
-      {[
-       [Icon.building, "Verified listings + map", "Permit and FAL-checked stock on a live national map.", "h", "/map"],
-       [Icon.chart, "Rent Index", "Decision-grade rents with the capped/open freeze lens.", "a", "/rent-index"],
-       [Icon.target, "Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled.", "", "/area"],
-       [Icon.coins, "Investment underwriting", "Yield, NOI and scenarios on verified comps.", "h", "/invest"],
-       [Icon.spark, "AI Advisor", "Conversational search and valuation, grounded in the Index.", "a", "/advisor"],
-       [Icon.msg, "Post a requirement", "Tell the market what you need; owners and brokers respond.", "", "/post-requirement"],
-       [Icon.grid, "Owner dashboard", "Listing performance, leads and requirement matches.", "h", "/dashboard"],
-       [Icon.coins, "Membership plans", "Grades with clear quota caps; ZATCA invoicing.", "a", "/pricing"],
-       [Icon.cal, "Deal tracking", "Enquiry to viewing to offer to handover, with verified parties.", "", "/deal"],
-       [Icon.bolt, "Compare spaces", "Shortlist side by side on verified facts and rent vs index.", "h", "/compare"],
-       [Icon.shield, "Trust and compliance", "REGA, PDPL, AML and a checkable verification layer.", "", "/about"],
-      ].map((m, i) => { const I = m[0] as (p: { size?: number }) => JSX.Element; const k = m[3] as string; return (
-       <Link key={i} href={L(m[4] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
+      {T.feats.map((m, i) => { const I = featIcons[i] as (p: { size?: number }) => JSX.Element; const k = featKeys[i]; return (
+       <Link key={i} href={L(featLinks[i])} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
         <div style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: k === "a" ? "var(--azure-wash)" : k === "h" ? "#EAF0F7" : "var(--cool)", color: k === "a" ? "var(--azure-d)" : "var(--harbor)" }}><I size={20} /></div>
-        <div style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 5px", letterSpacing: "-.01em" }}>{m[1] as string}</div>
-        <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{m[2] as string}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 5px", letterSpacing: "-.01em" }}>{m[0]}</div>
+        <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{m[1]}</div>
        </Link>
       ); })}
      </div>
     </div>
     <div style={{ padding: "44px 24px 64px" }}>
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
-      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>List your space, or find your next one</h2>
-      <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>Join the verified exchange built for Saudi Arabia&apos;s commercial market.</p>
+      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>{T.ctaH}</h2>
+      <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
       <div className="row gap12 center wrap">
-       <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>List your space</Link>
-       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>Browse listings</Link>
+       <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
+       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
      </div>
     </div>
