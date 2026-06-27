@@ -5,14 +5,15 @@ export const dynamic = "force-dynamic";
 
 type Item = { label: string; sub: string; kind: string };
 
-const KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.google_places_key || "";
+const GKEY = process.env.GOOGLE_MAPS_API_KEY || process.env.google_places_key || "";
+const MBOX = process.env.MAPBOX_TOKEN || process.env.mapbox_token || "";
 
 async function google(q: string): Promise<Item[] | null> {
-  if (!KEY) return null;
+  if (!GKEY) return null;
   try {
     const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": KEY },
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": GKEY },
       body: JSON.stringify({ input: q, includedRegionCodes: ["sa"], languageCode: "en" }),
       cache: "no-store",
     });
@@ -32,6 +33,38 @@ async function google(q: string): Promise<Item[] | null> {
         : types.some((t) => /sublocality|neighborhood/.test(t))
         ? "district"
         : "place";
+      out.push({ label, sub, kind });
+      if (out.length >= 8) break;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+async function mapbox(q: string): Promise<Item[] | null> {
+  if (!MBOX) return null;
+  try {
+    const url =
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
+      `?access_token=${MBOX}&country=sa&autocomplete=true&limit=8&language=en` +
+      `&proximity=46.6753,24.7136&types=poi,place,locality,neighborhood,address,region,district`;
+    const r = await fetch(url, { cache: "no-store" });
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    const out: Item[] = [];
+    for (const f of j.features || []) {
+      const label = f.text as string;
+      if (!label) continue;
+      const ctx: any[] = f.context || [];
+      const parts = ctx
+        .map((c) => String(c.id || ""))
+        .map((id, idx) => ({ id, text: ctx[idx]?.text as string }))
+        .filter((c) => /neighborhood|locality|place|region/.test(c.id) && c.text && c.text !== label)
+        .map((c) => c.text);
+      const sub = Array.from(new Set(parts)).slice(0, 2).join(", ");
+      const pt = String((f.place_type || [])[0] || "");
+      const kind = /place|locality|region/.test(pt) ? "city" : /neighborhood|district/.test(pt) ? "district" : "place";
       out.push({ label, sub, kind });
       if (out.length >= 8) break;
     }
@@ -81,6 +114,8 @@ export async function GET(req: Request) {
   if (q.length < 2) return NextResponse.json({ items: [] });
   const g = await google(q);
   if (g && g.length) return NextResponse.json({ items: g, src: "google" });
+  const m = await mapbox(q);
+  if (m && m.length) return NextResponse.json({ items: m, src: "mapbox" });
   const items = await photon(q);
-  return NextResponse.json({ items, src: KEY ? "osm_fallback" : "osm" });
+  return NextResponse.json({ items, src: GKEY || MBOX ? "osm_fallback" : "osm" });
 }
