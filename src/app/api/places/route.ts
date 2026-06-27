@@ -45,26 +45,28 @@ async function google(q: string): Promise<Item[] | null> {
 async function mapbox(q: string): Promise<Item[] | null> {
   if (!MBOX) return null;
   try {
+    const g: any = globalThis as any;
+    const session =
+      g.crypto && g.crypto.randomUUID ? g.crypto.randomUUID() : "sat-" + Math.random().toString(36).slice(2);
     const url =
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json` +
-      `?access_token=${MBOX}&country=sa&autocomplete=true&limit=8&language=en` +
-      `&proximity=46.6753,24.7136&types=poi,place,locality,neighborhood,address,region,district`;
+      `https://api.mapbox.com/search/searchbox/v1/suggest?q=${encodeURIComponent(q)}` +
+      `&access_token=${MBOX}&language=en&limit=8&country=sa` +
+      `&proximity=46.6753,24.7136&session_token=${session}`;
     const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) return null;
     const j: any = await r.json();
     const out: Item[] = [];
-    for (const f of j.features || []) {
-      const label = f.text as string;
+    for (const sg of j.suggestions || []) {
+      const label = sg.name as string;
       if (!label) continue;
-      const ctx: any[] = f.context || [];
-      const parts = ctx
-        .map((c) => String(c.id || ""))
-        .map((id, idx) => ({ id, text: ctx[idx]?.text as string }))
-        .filter((c) => /neighborhood|locality|place|region/.test(c.id) && c.text && c.text !== label)
-        .map((c) => c.text);
-      const sub = Array.from(new Set(parts)).slice(0, 2).join(", ");
-      const pt = String((f.place_type || [])[0] || "");
-      const kind = /place|locality|region/.test(pt) ? "city" : /neighborhood|district/.test(pt) ? "district" : "place";
+      let sub = String(sg.place_formatted || sg.address || "");
+      sub = sub.replace(/,?\s*(Saudi Arabia|السعودية)$/i, "").trim();
+      const ft = String(sg.feature_type || "");
+      const kind = /place|locality|region|country/.test(ft)
+        ? "city"
+        : /neighborhood|district|postcode|locality/.test(ft)
+        ? "district"
+        : "place";
       out.push({ label, sub, kind });
       if (out.length >= 8) break;
     }
