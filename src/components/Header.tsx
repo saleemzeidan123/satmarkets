@@ -1,9 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
-import MobileNav from "@/components/MobileNav";
 import { Logo } from "@/components/satkit";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
@@ -12,6 +11,9 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [saved, setSaved] = useState(0);
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 6);
     on(); window.addEventListener("scroll", on, { passive: true });
@@ -23,46 +25,96 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     window.addEventListener("focus", read); window.addEventListener("storage", read);
     return () => { window.removeEventListener("focus", read); window.removeEventListener("storage", read); };
   }, [pathname]);
+  useEffect(() => { setOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDoc); document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+
+  const ar = locale === "ar";
   const nav = [
     { href: `/${locale}/map`, label: (dict.nav as any).map ?? "Map" },
     { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Location Intelligence" },
     { href: `/${locale}/listings`, label: dict.nav.listings },
-    { href: `/${locale}/advisor`, label: locale === "ar" ? "المستشار الذكي" : "AI Advisor" },
+    { href: `/${locale}/advisor`, label: ar ? "المستشار الذكي" : "AI Advisor" },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
     { href: `/${locale}/hbu`, label: (dict.nav as any).develop ?? "Develop" },
-    { href: `/${locale}/pricing`, label: locale === "ar" ? "الأسعار" : "Pricing" },
+    { href: `/${locale}/pricing`, label: ar ? "الأسعار" : "Pricing" },
     { href: `/${locale}/about`, label: dict.nav.about },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  const signInLabel = locale === "ar" ? "تسجيل الدخول" : "Sign in";
-  const descriptor = locale === "ar" ? "ذكاء السوق العقاري" : "real-estate intelligence";
-  const savedItem = { href: `/${locale}/saved`, label: locale === "ar" ? "المحفوظة" : "Saved" };
+  const signInLabel = ar ? "تسجيل الدخول" : "Sign in";
+  const menuLabel = ar ? "القائمة" : "Menu";
+  const browseLabel = ar ? "تصفّح" : "Browse";
+  const accountLabel = ar ? "الحساب" : "Account";
+  const savedLabel = ar ? "المحفوظة" : "Saved";
+  const dashLabel = ar ? "لوحة التحكم" : "Owner dashboard";
+  const welcomeTitle = ar ? "أهلاً بك في سوق سات" : "Welcome to SAT Markets";
+  const welcomeSub = ar ? "ذكاء العقارات التجارية في السعودية" : "Commercial real-estate intelligence";
+
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
 
-        <nav className="hidden items-center gap-5 lg:flex">
-          {nav.map((n) => (
-            <Link key={n.href} href={n.href} className={`nav-link ${active(n.href) ? "active" : ""}`}>{n.label}</Link>
-          ))}
-        </nav>
-
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <Link href={`/${locale}/saved`} aria-label="Saved" className="icon-btn relative hidden sm:inline-flex">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
-            {saved > 0 ? <span className="absolute -end-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
-          </Link>
-          <Link href={`/${locale}/advisor`} aria-label="Search" className="icon-btn hidden sm:inline-flex">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4-4" /></svg>
-          </Link>
-          <span className="inline-flex"><LanguageSwitch locale={locale} /></span>
-          <Link href={`/${locale}/login`} className="hidden text-[13.5px] text-charcoal/65 hover:text-charcoal lg:block">{signInLabel}</Link>
+          <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
           <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
-            <span className="sm:hidden">{locale === "ar" ? "أدرج" : "List"}</span>
+            <span className="sm:hidden">{ar ? "أدرج" : "List"}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
-          <MobileNav items={[...nav, savedItem]} signIn={`/${locale}/login`} signInLabel={signInLabel} lang={<LanguageSwitch locale={locale} />} />
+
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              aria-label={menuLabel}
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+              className={`inline-flex h-9 items-center gap-2 rounded-lg border border-line px-2.5 text-charcoal/75 transition-colors hover:bg-ivory-2 ${open ? "bg-ivory-2" : ""}`}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                {open ? <><path d="M6 6l12 12"/><path d="M18 6l-12 12"/></> : <><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></>}
+              </svg>
+              <span className="hidden text-[13px] font-medium sm:inline">{menuLabel}</span>
+              {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
+            </button>
+
+            {open && (
+              <div className="absolute end-0 top-full z-50 mt-2 w-[270px] overflow-hidden rounded-xl border border-line bg-ivory shadow-[0_18px_44px_rgba(20,24,28,0.20)]">
+                <div className="border-b border-line bg-ivory-2 px-4 py-3">
+                  <p className="text-[14px] font-semibold text-charcoal">{welcomeTitle}</p>
+                  <p className="mt-0.5 text-[11.5px] text-charcoal/55">{welcomeSub}</p>
+                </div>
+
+                <div className="px-2 py-2">
+                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/40">{browseLabel}</p>
+                  {nav.map((n) => (
+                    <Link key={n.href} href={n.href} className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] hover:bg-ivory-2 ${active(n.href) ? "bg-ivory-2 font-medium text-charcoal" : "text-charcoal/80"}`}>
+                      {n.label}
+                    </Link>
+                  ))}
+                </div>
+
+                <div className="border-t border-line px-2 py-2">
+                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/40">{accountLabel}</p>
+                  <Link href={`/${locale}/saved`} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">
+                    <span>{savedLabel}</span>
+                    {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
+                  </Link>
+                  <Link href={`/${locale}/dashboard`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{dashLabel}</Link>
+                  <Link href={`/${locale}/login`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{signInLabel}</Link>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:hidden">
+                  <span className="text-[12px] text-charcoal/55">{ar ? "اللغة" : "Language"}</span>
+                  <LanguageSwitch locale={locale} />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
