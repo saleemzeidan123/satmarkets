@@ -105,7 +105,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       Offices, retail, medical and warehouses across Riyadh, Jeddah, Makkah, Madinah and the Eastern Province. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.
      </p>
 
-     <div className="hero-rise d3" style={{ margin: "30px auto 0", maxWidth: 870, background: "rgba(10,24,38,.55)", border: "1px solid rgba(157,187,214,.2)", borderRadius: 18, backdropFilter: "blur(12px)", padding: "18px 18px 16px", boxShadow: "0 30px 70px rgba(0,0,0,.42)" }}>
+     <div className="hero-rise d3" style={{ position: "relative", zIndex: 40, margin: "30px auto 0", maxWidth: 870, background: "rgba(10,24,38,.55)", border: "1px solid rgba(157,187,214,.2)", borderRadius: 18, backdropFilter: "blur(12px)", padding: "18px 18px 16px", boxShadow: "0 30px 70px rgba(0,0,0,.42)" }}>
       <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
        {([["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const).map(([v,l]) => (
         <button key={v} type="button" onClick={() => setDeal(v)} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
