@@ -181,25 +181,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     ))}
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
-    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
-     <div className="eyebrow">The exchange</div>
-     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
-     <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>No one in the Kingdom combines all four. That combination is the platform.</p>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
-      {[
-       [Icon.building, "Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
-       [Icon.doc, "Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
-       [Icon.chart, "Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
-       [Icon.user, "Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
-      ].map((c, i) => { const I = c[0] as (p: { size?: number }) => JSX.Element; return (
-       <Link key={i} href={L(c[3] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
-        <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
-        <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[1] as string}</div>
-        <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[2] as string}</div>
-       </Link>
-      ); })}
-     </div>
-    </div>
     <div style={{ padding: "clamp(36px,7vw,52px) 20px 20px" }}>
      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
       <div>
@@ -219,6 +200,25 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         </div>
        </Link>
       ))}
+     </div>
+    </div>
+    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
+     <div className="eyebrow">The exchange</div>
+     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>Four jobs, one neutral place</h2>
+     <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>No one in the Kingdom combines all four. That combination is the platform.</p>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
+      {[
+       [Icon.building, "Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
+       [Icon.doc, "Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
+       [Icon.chart, "Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
+       [Icon.user, "Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
+      ].map((c, i) => { const I = c[0] as (p: { size?: number }) => JSX.Element; return (
+       <Link key={i} href={L(c[3] as string)} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
+        <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[1] as string}</div>
+        <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[2] as string}</div>
+       </Link>
+      ); })}
      </div>
     </div>
     <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "radial-gradient(130% 130% at 100% 0%, #143150 0%, #0C2138 52%, #081522 100%)", color: "#fff", padding: "clamp(34px,6vw,48px) clamp(24px,5vw,40px)", position: "relative", overflow: "hidden", border: "1px solid rgba(157,187,214,.16)" }}>

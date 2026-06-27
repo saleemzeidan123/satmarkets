@@ -5,29 +5,63 @@ export const dynamic = "force-dynamic";
 
 type Item = { label: string; sub: string; kind: string };
 
-export async function GET(req: Request) {
-  const q = (new URL(req.url).searchParams.get("q") || "").trim();
-  if (q.length < 2) return NextResponse.json({ items: [] });
+const KEY = process.env.GOOGLE_MAPS_API_KEY || process.env.google_places_key || "";
+
+async function google(q: string): Promise<Item[] | null> {
+  if (!KEY) return null;
+  try {
+    const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": KEY },
+      body: JSON.stringify({ input: q, includedRegionCodes: ["sa"], languageCode: "en" }),
+      cache: "no-store",
+    });
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    const out: Item[] = [];
+    for (const s of j.suggestions || []) {
+      const pp = s.placePrediction;
+      if (!pp) continue;
+      const label = pp.structuredFormat?.mainText?.text || pp.text?.text;
+      if (!label) continue;
+      let sub = pp.structuredFormat?.secondaryText?.text || "";
+      sub = sub.replace(/,?\s*(Saudi Arabia|السعودية)$/i, "").trim();
+      const types: string[] = pp.types || [];
+      const kind = types.some((t) => /locality|administrative_area|country/.test(t))
+        ? "city"
+        : types.some((t) => /sublocality|neighborhood/.test(t))
+        ? "district"
+        : "place";
+      out.push({ label, sub, kind });
+      if (out.length >= 8) break;
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
+async function photon(q: string): Promise<Item[]> {
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=en&limit=15&lat=24.7136&lon=46.6753`;
     const r = await fetch(url, { headers: { "User-Agent": "SATMarkets/1.0 (satmarkets.sa)" }, cache: "no-store" });
-    if (!r.ok) return NextResponse.json({ items: [] });
+    if (!r.ok) return [];
     const j: any = await r.json();
     const seen = new Set<string>();
     const items: Item[] = [];
     for (const f of j.features || []) {
-      const p = f.properties || {};
-      if (p.countrycode !== "SA") continue;
-      const name: string = p.name;
+      const pr = f.properties || {};
+      if (pr.countrycode !== "SA") continue;
+      const name: string = pr.name;
       if (!name) continue;
-      const parts = [p.district, p.city, p.county, p.state].filter(
+      const parts = [pr.district, pr.city, pr.county, pr.state].filter(
         (x: string, i: number, a: string[]) => x && x !== name && a.indexOf(x) === i
       );
       const sub = parts.slice(0, 2).join(", ");
       const key = (name + "|" + sub).toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      const ov = String(p.osm_value || p.type || "");
+      const ov = String(pr.osm_value || pr.type || "");
       const kind = /city|town|state|province/.test(ov)
         ? "city"
         : /suburb|neighbourhood|neighborhood|district|quarter|village/.test(ov)
@@ -36,8 +70,17 @@ export async function GET(req: Request) {
       items.push({ label: name, sub, kind });
       if (items.length >= 8) break;
     }
-    return NextResponse.json({ items });
+    return items;
   } catch {
-    return NextResponse.json({ items: [] });
+    return [];
   }
+}
+
+export async function GET(req: Request) {
+  const q = (new URL(req.url).searchParams.get("q") || "").trim();
+  if (q.length < 2) return NextResponse.json({ items: [] });
+  const g = await google(q);
+  if (g && g.length) return NextResponse.json({ items: g, src: "google" });
+  const items = await photon(q);
+  return NextResponse.json({ items, src: KEY ? "osm_fallback" : "osm" });
 }
