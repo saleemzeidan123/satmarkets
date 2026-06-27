@@ -30,6 +30,14 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   setMsgs((m) => [...m, { role: "u", text: q }]);
   setBusy(true);
   try {
+   const adv = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
+   const aj = await adv.json().catch(() => ({}));
+   if (aj && (aj.mode === "chat" || aj.mode === "draft" || aj.mode === "value")) {
+    const note = aj.mode === "value" ? "SAT Rent Index Q1 2026, figures retrieved not invented" : aj.mode === "draft" ? "Draft from your details, set your own asking figure" : undefined;
+    setMsgs((m) => [...m, { role: "a", text: aj.message || "", note }]);
+    setBusy(false);
+    return;
+   }
    const r = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
    const j = await r.json();
    const results: R[] = j.results || [];
