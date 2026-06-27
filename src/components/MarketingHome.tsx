@@ -58,13 +58,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <span className="live-dot" />
       REGA-native exchange
       <span style={{ opacity: .42 }}>/</span>
-      Riyadh 24.71&deg;N 46.67&deg;E
+      Saudi Arabia
      </div>
      <h1 className="serif hero-rise d1" style={{ fontSize: "clamp(34px,5.4vw,60px)", fontWeight: 500, lineHeight: 1.04, letterSpacing: "-.022em", margin: "20px auto 0", color: "#F5F8FC", maxWidth: 860 }}>
       Where Saudi business finds <span style={{ color: "#9DBBD6", borderBottom: "2px solid rgba(157,187,214,.42)", paddingBottom: 1 }}>verified commercial space</span>
      </h1>
      <p className="hero-rise d2" style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(214,224,235,.8)", margin: "18px auto 0", maxWidth: 600 }}>
-      Offices, retail, medical and warehouses across Riyadh. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.
+      Offices, retail, medical and warehouses across Riyadh, Jeddah, Makkah, Madinah and the Eastern Province. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.
      </p>
 
      <div className="hero-rise d3" style={{ margin: "30px auto 0", maxWidth: 870, background: "rgba(10,24,38,.55)", border: "1px solid rgba(157,187,214,.2)", borderRadius: 18, backdropFilter: "blur(12px)", padding: "18px 18px 16px", boxShadow: "0 30px 70px rgba(0,0,0,.42)" }}>
@@ -152,7 +152,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     <div style={{ padding: "clamp(36px,7vw,52px) 20px 20px" }}>
      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
       <div>
-       <div className="eyebrow">Featured, Riyadh</div>
+       <div className="eyebrow">Featured across the Kingdom</div>
        <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Verified spaces, priced in context</h2>
       </div>
       <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>Browse all listings <Icon.arrow size={16} /></Link>
@@ -176,7 +176,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <div>
        <span className="mono" style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "rgba(196,214,233,.9)" }}><span className="live-dot" /> SAT Index / Q1 2026</span>
        <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>The pricing layer behind every decision</h2>
-       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>Verified transaction data across {stats.districts} Riyadh districts. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.</p>
+       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>Verified transaction data across {stats.districts} districts, Riyadh first and expanding Kingdom-wide. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.</p>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>Explore the Rent Index</Link>
       </div>
       <div className="row gap16 wrap">
@@ -212,7 +212,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.</p>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
       {[
-       [Icon.building, "Verified listings + map", "Permit and FAL-checked stock on a live Riyadh map.", "h", "/map"],
+       [Icon.building, "Verified listings + map", "Permit and FAL-checked stock on a live national map.", "h", "/map"],
        [Icon.chart, "Rent Index", "Decision-grade rents with the capped/open freeze lens.", "a", "/rent-index"],
        [Icon.target, "Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled.", "", "/area"],
        [Icon.coins, "Investment underwriting", "Yield, NOI and scenarios on verified comps.", "h", "/invest"],
@@ -235,7 +235,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     <div style={{ padding: "44px 24px 64px" }}>
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>List your space, or find your next one</h2>
-      <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>Join the verified exchange built for Riyadh&apos;s commercial market.</p>
+      <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>Join the verified exchange built for Saudi Arabia&apos;s commercial market.</p>
       <div className="row gap12 center wrap">
        <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>List your space</Link>
        <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>Browse listings</Link>

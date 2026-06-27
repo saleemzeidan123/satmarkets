@@ -84,7 +84,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
    const maplibregl = (await import("maplibre-gl")).default;
    if (cancelled || !ref.current) return;
    map = new maplibregl.Map({ container: ref.current, style: "https://tiles.openfreemap.org/styles/positron",
-    center: [46.69, 24.71], zoom: 10.4, minZoom: 8, maxZoom: 17 });
+    center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17 });
    mapRef.current = map;
    ro = new ResizeObserver(() => { try { map.resize(); } catch {} }); if (ref.current) ro.observe(ref.current);
    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
