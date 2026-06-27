@@ -20,21 +20,31 @@ function ago(d: string) { const s = (Date.now() - new Date(d).getTime()) / 1000;
 function pseudo(id: string, base: number, span: number) { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return base + (h % span); }
 const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-export default async function DashboardPage({ params }: { params: { locale: string } }) {
+export default async function DashboardPage({ params, searchParams }: { params: { locale: string }; searchParams?: { as?: string } }) {
  if (!isLocale(params.locale)) notFound();
  const lp = params.locale;
+ const PERSONAS = [
+  { slug: "landlord", id: "b1111111-1111-1111-1111-111111111111", name: "Al Nakheel Holding", role: "Owner, direct" },
+  { slug: "broker", id: "b2222222-2222-2222-2222-222222222222", name: "Riyadh Prime Brokers", role: "Broker, authorized" },
+  { slug: "lister", id: "b3333333-3333-3333-3333-333333333333", name: "Tamkeen Developments", role: "Developer, lister" },
+ ];
+ const asSlug = String((searchParams && searchParams.as) || "").toLowerCase();
+ const persona = PERSONAS.find((pp) => pp.slug === asSlug || pp.id === asSlug) || null;
+ const acctName = persona ? persona.name : "Olaya Towers";
+ const acctRole = persona ? persona.role : "Verified owner";
 
  const sb = getSupabaseServer();
  let pub: any[] = [], leadRows: any[] = [], briefs: any[] = [], districts: any[] = [], pubCount = 0;
  if (sb) {
   const [a, b, c, d, e] = await Promise.all([
-   sb.from("listings").select("id,title_en,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").limit(12),
+   (persona ? sb.from("listings").select("id,title_en,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").eq("account_id", persona.id).limit(50) : sb.from("listings").select("id,title_en,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").limit(12)),
    sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(20),
    sb.from("tenant_briefs").select("id,title,asset_type,size_min_sqm,size_max_sqm,district_id,city,ref_code").eq("status", "open").limit(6),
    sb.from("districts").select("id,name_en"),
-   sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published"),
+   (persona ? sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published").eq("account_id", persona.id) : sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published")),
   ]);
   pub = a.data || []; leadRows = b.data || []; briefs = c.data || []; districts = d.data || []; pubCount = e.count || pub.length;
+  if (persona) leadRows = leadRows.filter((l: any) => pub.some((x: any) => x.id === l.listing_id));
  }
  const dmap = new Map(districts.map((x: any) => [x.id, x.name_en]));
  const titleById = new Map(pub.map((x: any) => [x.id, x.title_en]));
@@ -82,18 +92,23 @@ export default async function DashboardPage({ params }: { params: { locale: stri
        </Link>)}
     </div>
     <div className="me">
-     <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
-     <div><div className="nm">Olaya Towers Co.</div><div className="rl">Verified owner</div></div>
+     <span className="avatar" style={{ background: "var(--harbor)" }}>{acctName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
+     <div><div className="nm">{acctName}</div><div className="rl">{acctRole}</div></div>
      <span style={{ marginLeft: "auto", color: "#6B7480" }}><Icon.logout size={17} /></span>
     </div>
    </aside>
    <div className="dmain">
     <div className="dtopbar">
-     <div><h1>Welcome back, Olaya Towers</h1><div className="sub">{pubCount} active listings · {leadRows.length} enquiries</div></div>
+     <div><h1>Welcome back, {acctName}</h1><div className="sub">{pubCount} active listings · {leadRows.length} enquiries</div></div>
      <span style={{ flex: 1 }} />
      <span className="dsearch"><Icon.search size={16} /> Search…</span>
      <span style={{ color: "var(--slate)", position: "relative" }}><Icon.bell size={19} /><span style={{ position: "absolute", top: -2, right: -2, width: 7, height: 7, borderRadius: "50%", background: "var(--red)" }} /></span>
      <Link href={`/${params.locale}/list`} className="btn primary"><Icon.plus size={16} /> List a space</Link>
+    </div>
+    <div className="row gap8 wrap" style={{ padding: "12px 0 0", alignItems: "center" }}>
+     <span className="mono" style={{ fontSize: 11, color: "var(--slate)", textTransform: "uppercase", letterSpacing: ".06em" }}>View as</span>
+     <a href={`/${lp}/dashboard`} className="tag" style={!persona ? { borderColor: "var(--harbor)", color: "var(--harbor)", textDecoration: "none" } : { textDecoration: "none" }}>All</a>
+     {PERSONAS.map((pp) => (<a key={pp.slug} href={`/${lp}/dashboard?as=${pp.slug}`} className="tag" style={persona && persona.slug === pp.slug ? { borderColor: "var(--harbor)", color: "var(--harbor)", textDecoration: "none" } : { textDecoration: "none" }}>{pp.name}</a>))}
     </div>
     <div className="dbody">
      <div className="kgrid">
