@@ -65,13 +65,24 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      <div>
       <div className="eyebrow">SAT Rent Index · Q1 2026</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>Riyadh commercial rents</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>142 districts · verified transactions only · updated weekly</div>
+      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>142 districts · attributed market sources · indicative, not advice · updated quarterly</div>
      </div>
      <div className="row gap10 wrap">
       <span className="seg"><span className="on">All</span><span>Open</span><span>Capped</span></span>
       <span className="chip">Office <Icon.chevd size={14} /></span>
       <span className="btn secondary"><Icon.download size={15} /> Export</span>
       <span className="btn primary"><Icon.spark size={15} /> Ask AI</span>
+     </div>
+    </div>
+
+    {/* sources + disclaimer notice */}
+    <div style={{ padding: "12px 24px", background: "var(--paper)", borderBottom: "1px solid var(--silver)" }}>
+     <div className="row gap10" style={{ alignItems: "flex-start" }}>
+      <span style={{ color: "var(--harbor)", flex: "none", marginTop: 1 }}><Icon.info size={15} /></span>
+      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>
+       <strong style={{ color: "var(--ink)" }}>Indicative market information, not advice.</strong> Figures are drawn from cited public sources and are not a valuation, appraisal, or transaction advice. Verify independently for any transaction.
+       <span className="mono" style={{ display: "block", marginTop: 6, fontSize: 11, letterSpacing: ".02em" }}>Sources: JLL, CBRE, Savills, Knight Frank, Colliers, Cushman &amp; Wakefield, with official anchors REGA, GASTAT, and Ejar. SAT verified transactions join as a labelled second layer as deal data accumulates.</span>
+      </div>
      </div>
     </div>
 
@@ -174,7 +185,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       </div>
       <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>Medians and bands are drawn from verified SAT/RCRI Q1 2026 transactions. Districts with a thin sample are marked rather than shown, the index never prints a number it cannot stand behind.</span>
+       <span className="muted" style={{ fontSize: 12.5 }}>Q1 2026. Layer 1 aggregates and attributes the major market reports (JLL, CBRE, Savills, Knight Frank, Colliers, Cushman &amp; Wakefield) alongside official anchors (REGA, GASTAT, Ejar). SAT&apos;s own verified transactions join as a second, clearly labelled layer as deal data accumulates. Indicative market information, not advice; verify independently for any transaction. Districts with a thin sample are marked rather than shown, the index never prints a number it cannot stand behind.</span>
       </div>
      </div>
     </div>
