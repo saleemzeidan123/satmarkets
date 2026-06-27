@@ -30,7 +30,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   setMsgs((m) => [...m, { role: "u", text: q }]);
   setBusy(true);
   try {
-   const adv = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
+   const adv = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, history: msgs.slice(-6).map((mm) => ({ role: mm.role === "u" ? "user" : "assistant", text: mm.text })) }) });
    const aj = await adv.json().catch(() => ({}));
    if (aj && (aj.mode === "chat" || aj.mode === "ask" || aj.mode === "draft" || aj.mode === "value" || aj.mode === "watch")) {
     const note = aj.mode === "value" ? "SAT Rent Index Q1 2026, figures retrieved not invented" : aj.mode === "draft" ? "Draft from your details, set your own asking figure" : aj.mode === "watch" ? "Watch saved against the SAT Rent Index baseline" : undefined;
@@ -143,7 +143,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
      <div style={{ maxWidth: 760, margin: "0 auto" }}>
       {!started && (
        <div className="row gap8 wrap" style={{ marginBottom: 10 }}>
-        {["Compare Olaya vs KAFD", "Warehouse near 2nd Industrial", "Retail with high footfall on Tahlia", "Offices under 1,200 SAR/m²"].map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => send(p)}>{p}</button>)}
+        {["Olaya vs Hittin office rents", "KAFD vs ITCC Grade A", "Warehouses in Sulay or 2nd Industrial City", "Offices under 1,200 SAR/m²"].map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => send(p)}>{p}</button>)}
        </div>
       )}
       <form onSubmit={(e) => { e.preventDefault(); send(input); }} className="search focus" style={{ boxShadow: "none", border: "1px solid var(--azure)", padding: "8px 10px 8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
