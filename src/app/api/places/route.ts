@@ -62,6 +62,7 @@ async function mapbox(q: string): Promise<Item[] | null> {
       let sub = String(sg.place_formatted || sg.address || "");
       sub = sub.replace(/,?\s*(Saudi Arabia|السعودية)$/i, "").trim();
       const ft = String(sg.feature_type || "");
+      if (/category|brand/i.test(ft) || /^(category|brand)$/i.test(sub)) continue;
       const kind = /place|locality|region|country/.test(ft)
         ? "city"
         : /neighborhood|district|postcode|locality/.test(ft)
