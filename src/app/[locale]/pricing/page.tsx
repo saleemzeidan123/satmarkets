@@ -7,7 +7,7 @@ type Tier = { nm: string; who: string; price: string; unit: string; feat: boolea
 export default function PricingPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const tiers: Tier[] = [
-  { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Current plan",
+  { nm: "Explorer", who: "Browse and enquire, free", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Current plan",
    pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district medians", "<b>10</b> AI Advisor queries / mo"] },
   { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
    pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
@@ -45,6 +45,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
     <div className="eyebrow">Membership</div>
     <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Plans that scale with how you use the exchange</h1>
     <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats.</p>
+    <p className="muted" style={{ fontSize: 13, maxWidth: 600, margin: "8px auto 0" }}>Browsing is free, and a free account unlocks full listings, leads, and saved searches. For owners, listing is free during the launch window, then moves to a paid plan.</p>
     <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">Monthly</span><span>Annual · save 2 months</span></div>
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
