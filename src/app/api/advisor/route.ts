@@ -27,7 +27,8 @@ async function llm(messages: any[], json: boolean): Promise<string | null> {
     clearTimeout(timer);
     if (!res.ok) return null;
     const j: any = await res.json();
-    return j?.choices?.[0]?.message?.content ?? null;
+    const out = j?.choices?.[0]?.message?.content ?? null;
+    return out ? out.replace(/\s*[\u2014\u2013]\s*/g, ", ") : null;
   } catch {
     return null;
   }
