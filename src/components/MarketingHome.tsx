@@ -32,11 +32,24 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const [open, setOpen] = useState(false);
  const [hi, setHi] = useState(0);
  const boxRef = React.useRef<HTMLDivElement>(null);
+ const [results, setResults] = useState<{ label: string; sub?: string; kind: string }[]>([]);
  React.useEffect(() => {
   const onDoc = (e: MouseEvent) => { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); };
   document.addEventListener("mousedown", onDoc);
   return () => document.removeEventListener("mousedown", onDoc);
  }, []);
+ React.useEffect(() => {
+  const t = q.trim();
+  if (deal === "req" || t.length < 2) { setResults([]); return; }
+  const ctrl = new AbortController();
+  const id = setTimeout(() => {
+   fetch(`/api/places?q=${encodeURIComponent(t)}`, { signal: ctrl.signal })
+    .then((r) => r.json())
+    .then((j) => { setResults(Array.isArray(j.items) ? j.items : []); setHi(0); })
+    .catch(() => {});
+  }, 220);
+  return () => { clearTimeout(id); ctrl.abort(); };
+ }, [q, deal]);
  const go = (e?: React.FormEvent) => {
   if (e) e.preventDefault();
   if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
@@ -46,11 +59,8 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   if (q.trim()) sp.set("q", q.trim());
   router.push(`/${locale}/listings?${sp.toString()}`);
  };
- const sugg = (() => {
-  const t = q.trim().toLowerCase();
-  const base = t ? LOCATIONS.filter((o) => o.label.toLowerCase().includes(t)) : LOCATIONS;
-  return base.slice(0, 8);
- })();
+ const lf = LOCATIONS.filter((o) => o.label.toLowerCase().includes(q.trim().toLowerCase())).slice(0, 8);
+ const sugg: { label: string; sub?: string; kind: string }[] = q.trim().length >= 2 ? (results.length ? results : lf) : LOCATIONS;
  const pick = (label: string) => {
   setQ(label); setOpen(false);
   if (deal === "req") { router.push(`/${locale}/post-requirement?q=${encodeURIComponent(label)}`); return; }
@@ -130,7 +140,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
          <button key={o.label} type="button" onMouseEnter={() => setHi(i)} onClick={() => pick(o.label)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "11px 16px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: i === hi ? "var(--cool)" : "#fff", color: "var(--ink)", fontSize: 14.5 }}>
           <span style={{ color: o.kind === "city" ? "var(--azure-d)" : "var(--slate)", flex: "none" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: o.kind === "city" ? 600 : 400 }}>{o.label}</span>
-          <span className="tag" style={{ marginLeft: "auto", fontSize: 10.5 }}>{o.kind === "city" ? "City" : "District"}</span>
+          <span className="tag" style={{ marginLeft: "auto", fontSize: 10.5 }}>{(o as any).sub ? (o as any).sub : o.kind === "city" ? "City" : "District"}</span>
          </button>
         ))}
        </div>
