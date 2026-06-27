@@ -6,8 +6,20 @@ type Tier = { nm: string; who: string; price: string; unit: string; feat: boolea
 
 export default function PricingPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
- const tiers: Tier[] = [
-  { nm: "Explorer", who: "Browse and enquire, free", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Current plan",
+ const ar = params.locale === "ar";
+ const tiers: Tier[] = ar ? [
+  { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "باقتك الحالية",
+   pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، وسطاء الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
+  { nm: "مبتدئ", who: "ملاك أفراد في البداية", price: "299", unit: "ريال/شهر", feat: false, cta: "اختر مبتدئ",
+   pts: ["<b>5</b> قوائم نشطة", "<b>1</b> تمييز مميّز / شهر", "<b>50</b> كشف تواصل / شهر", "مؤشر الإيجارات الكامل + تنبيهات", "<b>100</b> استفسار ذكاء / شهر"] },
+  { nm: "احترافي", who: "ملاك نشطون ووسطاء أفراد", price: "899", unit: "ريال/شهر", feat: true, cta: "اختر احترافي",
+   pts: ["<b>25</b> قائمة نشطة", "<b>5</b> تمييزات / شهر", "كشوفات وعملاء بلا حدود", "ذكاء الموقع، <b>10</b>/شهر", "<b>5</b> مقاعد · تفويضات تمثيل"] },
+  { nm: "وكالة", who: "مكاتب وساطة وفرق متعددة", price: "2,900", unit: "ريال/شهر", feat: false, cta: "اختر وكالة",
+   pts: ["<b>150</b> قائمة نشطة", "<b>30</b> تمييز / شهر", "ذكاء الموقع، <b>50</b>/شهر", "<b>15</b> مقعداً · توجيه العملاء", "واجهة برمجية، <b>25k</b> طلب / شهر"] },
+  { nm: "مؤسسات", who: "مطوّرون وصناديق ومؤسسات", price: "مخصّص", unit: "", feat: false, ghost: true, cta: "تحدّث للمبيعات",
+   pts: ["<b>بلا حدود</b> قوائم ومقاعد", "بيانات كاملة وموجزات برمجية", "دخول موحّد وأدوار مخصّصة", "تقارير محفظة مجدولة", "مدير مخصّص + اتفاقية مستوى خدمة"] },
+ ] : [
+  { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Current plan",
    pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district medians", "<b>10</b> AI Advisor queries / mo"] },
   { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
    pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
@@ -18,7 +30,26 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   { nm: "Enterprise", who: "Developers, REITs & institutions", price: "Custom", unit: "", feat: false, ghost: true, cta: "Talk to sales",
    pts: ["<b>Unlimited</b> listings & seats", "Full data & API feeds", "SSO & custom roles", "Scheduled portfolio reports", "Dedicated manager + SLA"] },
  ];
- const matrix: string[][] = [
+ const matrix: string[][] = ar ? [
+  ["grp", "العروض والتسويق"],
+  ["القوائم النشطة", "1", "5", "25", "150", "∞"],
+  ["تمييزات / شهر", "غير متاح", "1", "5", "30", "مخصّص"],
+  ["الطلبات المنشورة", "2", "10", "∞", "∞", "∞"],
+  ["grp", "العملاء والاستفسارات"],
+  ["كشوفات التواصل / شهر", "5", "50", "∞", "∞", "∞"],
+  ["صندوق العملاء والتحليلات", "no", "yes", "yes", "yes", "yes"],
+  ["عمليات البحث المحفوظة والتنبيهات", "3", "20", "∞", "∞", "∞"],
+  ["grp", "البيانات والذكاء"],
+  ["مؤشر الإيجارات", "وسطاء", "كامل", "كامل + سجل", "كامل + بالجملة", "كامل + موجز"],
+  ["ذكاء الموقع / شهر", "غير متاح", "2", "10", "50", "∞"],
+  ["استفسارات المستشار الذكي / شهر", "10", "100", "500", "2,000", "∞"],
+  ["تصدير التقارير", "no", "yes", "yes", "yes", "yes"],
+  ["grp", "الفريق والواجهة البرمجية والدعم"],
+  ["مقاعد الفريق", "1", "2", "5", "15", "∞"],
+  ["تفويضات التمثيل", "no", "no", "yes", "yes", "yes"],
+  ["الوصول للواجهة البرمجية", "no", "no", "no", "25k/شهر", "مخصّص"],
+  ["الدعم", "المجتمع", "بريد", "أولوية", "مدير", "اتفاقية + مدير"],
+ ] : [
   ["grp", "Listings & marketing"],
   ["Active listings", "1", "5", "25", "150", "∞"],
   ["Featured boosts / mo", "n/a", "1", "5", "30", "Custom"],
@@ -38,21 +69,21 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   ["API access", "no", "no", "no", "25k/mo", "Custom"],
   ["Support", "Community", "Email", "Priority", "Manager", "SLA + manager"],
  ];
- const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : v === "no" ? <span className="no">n/a</span> : <span className="tnum">{v}</span>;
+ const heads = ar ? ["مستكشف", "مبتدئ", "احترافي", "وكالة", "مؤسسات"] : ["Explorer", "Starter", "Professional", "Agency", "Enterprise"];
+ const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : v === "no" ? <span className="no">{ar ? "غير متاح" : "n/a"}</span> : <span className="tnum">{v}</span>;
  return (
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg,var(--cool),var(--paper))" }}>
-    <div className="eyebrow">Membership</div>
-    <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>Plans that scale with how you use the exchange</h1>
-    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats.</p>
-    <p className="muted" style={{ fontSize: 13, maxWidth: 600, margin: "8px auto 0" }}>Browsing is free, and a free account unlocks full listings, leads, and saved searches. For owners, listing is free during the launch window, then moves to a paid plan.</p>
-    <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">Monthly</span><span>Annual · save 2 months</span></div>
+    <div className="eyebrow">{ar ? "العضوية" : "Membership"}</div>
+    <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{ar ? "باقات تتوسّع مع طريقة استخدامك للمنصّة" : "Plans that scale with how you use the exchange"}</h1>
+    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>{ar ? "كل فئة تشمل العروض الموثّقة ومؤشر الإيجارات. الفئات الأعلى ترفع حدودك وعروضك وعملاءك وبياناتك ومقاعدك." : "Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats."}</p>
+    <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">{ar ? "شهري" : "Monthly"}</span><span>{ar ? "سنوي · وفّر شهرين" : "Annual · save 2 months"}</span></div>
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     <div className="tier-grid" style={{ padding: "14px 24px 8px" }}>
      {tiers.map((t, i) => (
       <div key={i} className={"tier" + (t.feat ? " feat" : "")}>
-       {t.feat && <span className="ribbon">Most popular</span>}
+       {t.feat && <span className="ribbon">{ar ? "الأكثر شيوعاً" : "Most popular"}</span>}
        <div className="nm">{t.nm}</div>
        <div className="who">{t.who}</div>
        <div className="price">{t.price}{t.unit && <small> {t.unit}</small>}</div>
@@ -64,14 +95,14 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
       </div>
      ))}
     </div>
-    <p className="muted" style={{ textAlign: "center", fontSize: 12, margin: "10px 0 0" }}>Prices exclude 15% VAT · ZATCA-compliant tax invoices · cancel anytime</p>
+    <p className="muted" style={{ textAlign: "center", fontSize: 12, margin: "10px 0 0" }}>{ar ? "الأسعار لا تشمل ضريبة القيمة المضافة 15% · فواتير ضريبية متوافقة مع هيئة الزكاة والضريبة والجمارك · ألغِ في أي وقت" : "Prices exclude 15% VAT · ZATCA-compliant tax invoices · cancel anytime"}</p>
 
     <div style={{ padding: "36px 24px 48px" }}>
-     <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>Compare every limit</h2>
+     <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{ar ? "قارن كل الحدود" : "Compare every limit"}</h2>
      <div className="card" style={{ overflow: "hidden", boxShadow: "none" }}>
       <div style={{ overflowX: "auto" }}>
        <table className="matrix">
-        <thead><tr><th></th><th>Explorer</th><th>Starter</th><th style={{ color: "var(--azure-d)" }}>Professional</th><th>Agency</th><th>Enterprise</th></tr></thead>
+        <thead><tr><th></th><th>{heads[0]}</th><th>{heads[1]}</th><th style={{ color: "var(--azure-d)" }}>{heads[2]}</th><th>{heads[3]}</th><th>{heads[4]}</th></tr></thead>
         <tbody>
          {matrix.map((r, i) => r[0] === "grp"
           ? <tr key={i} className="grp"><td colSpan={6}>{r[1]}</td></tr>
