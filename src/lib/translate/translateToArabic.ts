@@ -2,19 +2,11 @@
 //
 // SAT Markets. Automatic English to professional Saudi MSA Arabic translation.
 //
-// Design (see work/plans/arabic-auto-translation-system.md):
-//  1. A deterministic protect-and-restore layer masks anything that must never
-//     change (FAL number 1200025510, SAT brand names, Western numerals, URLs,
-//     proper nouns) BEFORE the model sees the text, and restores the exact
-//     original strings afterward. The model literally cannot drift on them.
-//  2. Claude does the actual translation. Haiku for routine fields, Sonnet for
-//     hero / marketing copy. Only the glossary terms present in the text are
-//     injected, with do-not-translate instructions as a second safety layer.
-//  3. An injectable cache keyed by hash(source + lang + model) avoids paying
-//     for identical strings twice. hashSource() drives staleness detection.
-//
-// No third-party SDK: calls the Anthropic Messages API over fetch (Node 18+).
-// The API key is read from process.env and never leaves the server.
+// Protect-and-restore uses ASCII sentinel tokens (e.g. [[KA]]) because real
+// models reliably echo ASCII tokens but DROP private-use Unicode characters.
+// Only things that must stay byte-exact are masked: the FAL number, Western
+// numerals/units, URLs, emails. Proper nouns are NOT masked; Claude renders
+// Saudi district names in natural Arabic (e.g. Al Olaya -> العليا).
 
 import { createHash } from "crypto";
 import { DNT_LITERALS, PROPER_NOUNS, RE_GLOSSARY } from "./glossary";
@@ -53,9 +45,10 @@ export function hashSource(text: string): string {
   return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
-// Private-use sentinels so placeholders never collide with real text.
-const L = "";
-const R = "";
+// ASCII sentinels. Models preserve these reliably; the inner counter is letters
+// only so the number-masking pass below never re-matches a token.
+const L = "[[K";
+const R = "]]";
 
 interface Masked {
   text: string;
@@ -66,8 +59,6 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-// Encode the counter with letters ONLY, so placeholder tokens contain no ASCII
-// digits and cannot be re-matched by the number-masking pass below.
 function toAlpha(n: number): string {
   let s = "";
   do {
@@ -88,13 +79,13 @@ function protect(input: string): Masked {
     return token;
   };
 
-  // 1. Literal brand / licence strings (longest first).
+  // 1. Literal must-not-change strings (FAL number, product URLs). Longest first.
   for (const lit of [...DNT_LITERALS].sort((a, b) => b.length - a.length)) {
     const re = new RegExp(escapeRegExp(lit), "g");
     text = text.replace(re, (m) => stash(m));
   }
 
-  // 2. Known proper nouns (district / city names) in their Latin form.
+  // 2. Optional Latin-only proper nouns (kept Latin on purpose, e.g. KAFD).
   for (const noun of [...PROPER_NOUNS].sort((a, b) => b.length - a.length)) {
     const re = new RegExp("\\b" + escapeRegExp(noun) + "\\b", "g");
     text = text.replace(re, (m) => stash(m));
@@ -110,7 +101,6 @@ function protect(input: string): Masked {
   return { text, map };
 }
 
-/** Put the exact original strings back (exact token match, order-independent). */
 function restore(text: string, map: Map<string, string>): string {
   let out = text;
   for (const [token, original] of map) {
@@ -137,10 +127,10 @@ function buildSystem(text: string): string {
     "Hard rules:",
     "- Output ONLY the Arabic translation. No preamble, no notes, no quotes around it.",
     "- Use formal MSA. Natural, fluent, professional. Not literal or robotic.",
-    "- Any token wrapped in the private-use characters U+E000 and U+E001 is a protected placeholder. Keep each one EXACTLY as-is and in place. Never alter, translate, reorder, or drop it.",
-    "- Do not translate proper nouns, brand names, URLs, or numbers; those are already protected as placeholders.",
+    "- Some tokens look like [[KA]], [[KB]], etc. (double square brackets). Keep each one EXACTLY as written, including the brackets, in place. Never translate, alter, space out, or drop them.",
+    "- Render Saudi place and district names in their natural Arabic form.",
     "- Do not add facts, prices, figures, or claims that are not in the source.",
-    "- Preserve the meaning precisely. If the source is a short label or fragment, translate it as a short label or fragment.",
+    "- Preserve meaning precisely. If the source is a short label, translate it as a short label.",
     glossary ? "\nUse these preferred Arabic equivalents for domain terms where they fit naturally:\n" + glossary : "",
   ].filter(Boolean).join("\n");
 }
