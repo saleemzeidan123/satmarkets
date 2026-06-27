@@ -18,11 +18,25 @@ const ASSETS = [
  { v: "land", label: "Land", icon: <Icon.ruler size={22} /> },
 ];
 
+const LOCATIONS: { label: string; kind: "city" | "district" }[] = [
+ { label: "Riyadh", kind: "city" }, { label: "Jeddah", kind: "city" }, { label: "Makkah", kind: "city" }, { label: "Madinah", kind: "city" }, { label: "Dammam", kind: "city" }, { label: "Khobar", kind: "city" },
+ { label: "Al Olaya", kind: "district" }, { label: "KAFD", kind: "district" }, { label: "Hittin", kind: "district" }, { label: "Al Malaz", kind: "district" }, { label: "Qurtubah", kind: "district" }, { label: "Granada", kind: "district" }, { label: "Sulay", kind: "district" }, { label: "Diplomatic Quarter", kind: "district" }, { label: "ITCC", kind: "district" }, { label: "Laysen Valley", kind: "district" },
+ { label: "Al Hamra", kind: "district" }, { label: "Ar Rawdah", kind: "district" }, { label: "Ash Shati", kind: "district" }, { label: "Al Balad", kind: "district" }, { label: "Al Aziziyah", kind: "district" }, { label: "Ajyad", kind: "district" }, { label: "Quba", kind: "district" }, { label: "Corniche", kind: "district" },
+];
+
 export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
  const router = useRouter();
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
+ const [open, setOpen] = useState(false);
+ const [hi, setHi] = useState(0);
+ const boxRef = React.useRef<HTMLDivElement>(null);
+ React.useEffect(() => {
+  const onDoc = (e: MouseEvent) => { if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false); };
+  document.addEventListener("mousedown", onDoc);
+  return () => document.removeEventListener("mousedown", onDoc);
+ }, []);
  const go = (e?: React.FormEvent) => {
   if (e) e.preventDefault();
   if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
@@ -30,6 +44,20 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   sp.set("deal", deal === "buy" ? "sale" : "lease");
   if (assetType) sp.set("asset", assetType);
   if (q.trim()) sp.set("q", q.trim());
+  router.push(`/${locale}/listings?${sp.toString()}`);
+ };
+ const sugg = (() => {
+  const t = q.trim().toLowerCase();
+  const base = t ? LOCATIONS.filter((o) => o.label.toLowerCase().includes(t)) : LOCATIONS;
+  return base.slice(0, 8);
+ })();
+ const pick = (label: string) => {
+  setQ(label); setOpen(false);
+  if (deal === "req") { router.push(`/${locale}/post-requirement?q=${encodeURIComponent(label)}`); return; }
+  const sp = new URLSearchParams();
+  sp.set("deal", deal === "buy" ? "sale" : "lease");
+  if (assetType) sp.set("asset", assetType);
+  sp.set("q", label);
   router.push(`/${locale}/listings?${sp.toString()}`);
  };
  const L = (p: string) => `/${locale}${p}`;
@@ -88,13 +116,26 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        </div>
       )}
 
+      <div ref={boxRef} style={{ position: "relative" }}>
       <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
-        <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
+        <input className="q" value={q} onChange={(e) => { setQ(e.target.value); setOpen(true); setHi(0); }} onFocus={() => setOpen(true)} onKeyDown={(e) => { if (deal === "req") return; if (e.key === "ArrowDown") { e.preventDefault(); setHi((h) => Math.min(h + 1, sugg.length - 1)); } else if (e.key === "ArrowUp") { e.preventDefault(); setHi((h) => Math.max(h - 1, 0)); } else if (e.key === "Enter" && open && sugg[hi]) { e.preventDefault(); pick(sugg[hi].label); } else if (e.key === "Escape") setOpen(false); }} placeholder={deal === "req" ? "What space are you looking for?" : "District, building or area"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15.5, height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: "left" }} />
        </div>
        <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? "Post" : "Search"}</button>
       </form>
+      {open && deal !== "req" && sugg.length > 0 ? (
+       <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: "#fff", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 16px 40px rgba(0,0,0,.22)", zIndex: 50, overflow: "hidden" }}>
+        {sugg.map((o, i) => (
+         <button key={o.label} type="button" onMouseEnter={() => setHi(i)} onClick={() => pick(o.label)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left", padding: "11px 16px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: i === hi ? "var(--cool)" : "#fff", color: "var(--ink)", fontSize: 14.5 }}>
+          <span style={{ color: o.kind === "city" ? "var(--azure-d)" : "var(--slate)", flex: "none" }}><Icon.pin size={15} /></span>
+          <span style={{ fontWeight: o.kind === "city" ? 600 : 400 }}>{o.label}</span>
+          <span className="tag" style={{ marginLeft: "auto", fontSize: 10.5 }}>{o.kind === "city" ? "City" : "District"}</span>
+         </button>
+        ))}
+       </div>
+      ) : null}
+      </div>
 
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>Popular:</span>
