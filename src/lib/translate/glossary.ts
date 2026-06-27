@@ -1,9 +1,9 @@
 // src/lib/translate/glossary.ts
 //
 // Domain term base and do-not-translate list for SAT Markets Arabic translation.
-// The glossary nudges the model toward consistent, professional Saudi MSA for
-// real-estate vocabulary. The DNT list is enforced deterministically by the
-// protect-and-restore layer, NOT by the prompt, so those strings can never drift.
+// Brand decision (owner, June 2026): the brand name MAY appear in Arabic in body
+// text; only the visual logo stays Latin. So "SAT Markets" is no longer hard-
+// protected here. The FAL licence number and URLs remain protected absolutely.
 
 /** English to Arabic term base for commercial real estate (matched case-insensitively). */
 export const RE_GLOSSARY: Record<string, string> = {
@@ -12,12 +12,15 @@ export const RE_GLOSSARY: Record<string, string> = {
   "office floor": "طابق مكتبي",
   "retail": "تجزئة",
   "retail space": "مساحة تجارية",
+  "retail unit": "وحدة تجارية",
   "showroom": "صالة عرض",
   "warehouse": "مستودع",
   "logistics": "خدمات لوجستية",
+  "logistics shed": "مستودع لوجستي",
   "industrial": "صناعي",
   "clinic": "عيادة",
   "medical clinic": "عيادة طبية",
+  "clinic floor": "طابق عيادات",
   "shop": "محل",
   "building": "مبنى",
   "whole building": "مبنى كامل",
@@ -25,6 +28,7 @@ export const RE_GLOSSARY: Record<string, string> = {
   "land": "أرض",
   "plot": "قطعة أرض",
   "mixed use": "متعدد الاستخدامات",
+  "corniche": "الكورنيش",
   "grade a": "الفئة A",
   "grade a+": "الفئة A+",
   "grade b": "الفئة B",
@@ -60,7 +64,9 @@ export const RE_GLOSSARY: Record<string, string> = {
   "meeting rooms": "غرف اجتماعات",
   "pantry": "مطبخ صغير",
   "loading bay": "رصيف تحميل",
+  "loading dock": "رصيف تحميل",
   "high ceiling": "سقف مرتفع",
+  "clear height": "ارتفاع صافٍ",
   "main road": "شارع رئيسي",
   "corner": "زاوية",
   "ground floor": "الطابق الأرضي",
@@ -74,19 +80,19 @@ export const RE_GLOSSARY: Record<string, string> = {
   "sqm": "م²",
   "per year": "سنوياً",
   "per month": "شهرياً",
+  "sat markets": "سات ماركتس",
+  "sat real estate": "سات العقارية",
 };
 
 /**
  * Do-not-translate literals. Masked before translation, restored exactly after.
- * Order matters: longer / more specific strings first (mask "SAT Markets" before "SAT").
+ * The FAL licence number and product URLs must never change. Brand NAMES are no
+ * longer here (owner allows them in Arabic text; the logo stays Latin in the UI).
  */
 export const DNT_LITERALS: string[] = [
   "1200025510",
-  "SAT Markets",
-  "SAT Real Estate",
   "satmarkets.sa",
   "satestate.com",
-  "SAT",
 ];
 
 /** Saudi proper nouns kept in their established Latin form. Extend as needed. */
@@ -95,13 +101,39 @@ export const PROPER_NOUNS: string[] = [
   "Olaya",
   "Al Malqa",
   "Al Malaz",
+  "Al Hamra",
+  "Ar Rawdah",
+  "Al Rawdah",
+  "Al Sahafa",
+  "As Sahafah",
+  "Al Yasmin",
+  "Al Wurud",
+  "Al Worood",
+  "Granada",
+  "Al Faisaliyah",
+  "Qurtubah",
+  "An Narjis",
+  "Al Narjis",
+  "Al Aqiq",
+  "Al Murabba",
+  "Diplomatic Quarter",
   "Hittin",
   "KAFD",
   "King Abdullah Financial District",
   "Al Nakheel",
   "King Fahd Road",
+  "King Abdulaziz Road",
   "Olaya Street",
+  "Tahlia Street",
   "Riyadh",
   "Jeddah",
   "Dammam",
+  "Al Khobar",
+  "Khobar",
+  "Dhahran",
+  "Makkah",
+  "Mecca",
+  "Madinah",
+  "Medina",
+  "Al Hamra District",
 ];
