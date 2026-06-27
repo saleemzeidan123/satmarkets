@@ -35,14 +35,17 @@ async function llm(messages: any[], json: boolean): Promise<string | null> {
 }
 
 const CLASSIFY = `Classify a message to a Saudi commercial real estate assistant into one intent. Respond strict JSON only with keys:
-- mode: "chat" (a greeting, small talk, or asking what you can do, or a general question not tied to a specific space or figure), "search" (they want to find or browse actual spaces or listings), "draft" (they want listing copy written for a space they own or represent), or "value" (they ask whether a rent or price is fair, or about current rent levels for a district and asset type).
-- district: the Riyadh district they mention, or null.
+- mode: "chat" (a greeting, small talk, or asking what you can do, or a general question not tied to a specific space or figure), "search" (they want to find or browse actual spaces or listings), "draft" (they want listing copy written for a space they own or represent), "value" (they ask whether a rent or price is fair, or about current rent levels for a district and asset type), or "watch" (they want a standing alert when rents in a district or asset move).
+- district: the Saudi district or city they mention, or null.
 - asset: one of "office","retail","medical","showroom","warehouse","serviced","education","land", or null.
 - figure: any SAR per square metre number they mention, or null.
+- threshold: the percent move they want to be alerted on as a number, or null.
 Output only the JSON object.`;
 
 // Closed-domain persona: sounds human, but knowledge is limited to SAT data only.
-const CHAT_SYS = `You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets in Riyadh, Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. Your knowledge is strictly limited to SAT Markets: its verified listings, the SAT Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the SAT Rent Index, draft a listing, or watch the market. If the user greets you, greet them back warmly and ask what they are looking for. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic here; if they want numbers, ask for a district and an asset type and tell them you will pull the figure from the SAT Rent Index. No em dashes. Invent nothing.`;
+const CHAT_SYS = `You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. Your knowledge is strictly limited to SAT Markets: its verified listings, the SAT Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the SAT Rent Index, draft a listing, or watch the market. If the user greets you, welcome them to SAT Markets in one warm, well-written sentence that conveys it is the verified commercial real estate marketplace for Saudi Arabia, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic here; if they want numbers, ask for a district and an asset type and tell them you will pull the figure from the SAT Rent Index. No em dashes. Invent nothing.`;
+
+const ASK_SYS = `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. No em dashes.`;
 
 export async function POST(req: NextRequest) {
   const { query } = (await req.json()) as { query?: string };
@@ -53,10 +56,17 @@ export async function POST(req: NextRequest) {
   const cText = await llm([{ role: "system", content: CLASSIFY }, { role: "user", content: raw }], true);
   let intent: any = {};
   try { intent = cText ? JSON.parse(cText) : {}; } catch { intent = {}; }
-  const mode = ["chat", "draft", "value"].includes(intent?.mode) ? intent.mode : "search";
-  if (mode === "search") return NextResponse.json({ mode: "search" });
+  const mode = ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
 
   const supabase = getSupabaseServer();
+
+  if (mode === "search") {
+    // Broad request (no district and no budget): ask a clarifying question instead of dumping stock.
+    const broad = !intent?.district && (intent?.figure === null || intent?.figure === undefined);
+    if (!broad) return NextResponse.json({ mode: "search" });
+    const askMsg = await llm([{ role: "system", content: ASK_SYS }, { role: "user", content: raw }], false);
+    return NextResponse.json({ mode: "ask", message: askMsg || "Happy to help you find the right space. Which district are you considering, what is your budget per square metre, and roughly what size do you need?" });
+  }
 
   if (mode === "chat") {
     const msg = await llm([{ role: "system", content: CHAT_SYS }, { role: "user", content: raw }], false);
@@ -93,8 +103,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ mode: "value", message: msg || fallback, band });
   }
 
+  if (mode === "watch") {
+    if (!intent?.district && !intent?.asset) {
+      return NextResponse.json({ mode: "watch", message: "Tell me the district and asset type you want to watch, for example Al Olaya office, and the percent move to alert on." });
+    }
+    let band: any = null;
+    if (supabase) {
+      let q = supabase
+        .from("rent_index_published")
+        .select("period, district_label, asset_type, segment, unit, band_low, band_high, median, source")
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (intent?.asset) q = q.eq("asset_type", intent.asset);
+      if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
+      const { data } = await q;
+      band = data && data[0] ? data[0] : null;
+    }
+    if (!band) {
+      return NextResponse.json({ mode: "watch", message: "I do not have published SAT Rent Index data for that district and asset type yet, so I cannot set a baseline. Try another district, for example Al Olaya office." });
+    }
+    const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
+    const seg = band.segment ? ` ${band.segment}` : "";
+    let saved = false;
+    if (supabase) {
+      const { error } = await supabase.from("market_watches").insert({
+        district_label: band.district_label,
+        asset_type: band.asset_type,
+        segment: band.segment ?? null,
+        threshold_pct: threshold,
+        baseline_median: band.median,
+        baseline_band_low: band.band_low,
+        baseline_band_high: band.band_high,
+        baseline_period: band.period,
+      });
+      saved = !error;
+    }
+    const baseline = `${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}, for ${band.period}`;
+    const message = saved
+      ? `Done. I am watching ${band.district_label} ${band.asset_type}${seg} for you. The baseline is the current SAT Rent Index band, ${baseline}. When the index next updates, I will flag any move of more than ${threshold} percent. Source ${band.source}.`
+      : `I could not save the watch just now, but the current SAT Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${band.source}.`;
+    return NextResponse.json({ mode: "watch", message, band, threshold, saved });
+  }
+
   // draft: write listing copy from only what the user gave. No invented figures.
-  const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing for Riyadh from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete, in English. No em dashes.`;
+  const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete, in English. No em dashes.`;
   const msg = await llm([{ role: "system", content: sys }, { role: "user", content: raw }], false);
   return NextResponse.json({ mode: "draft", message: msg || "Tell me the asset type, district, size, and condition, and I will draft the listing." });
 }

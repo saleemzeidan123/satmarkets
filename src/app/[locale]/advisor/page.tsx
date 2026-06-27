@@ -8,10 +8,10 @@ interface R { id: string; reference_code: string; asset_type: string; title_en: 
 interface Msg { role: "u"|"a"; text: string; results?: R[]; note?: string; }
 
 const JOBS = [
- { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe it in words, I search verified stock", prompt: "Fitted Grade A office in Al Olaya, ~300 m², under 1,600 SAR/m²" },
- { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "From your details, write the whole listing", prompt: "Draft a listing for my Grade A floor in Olaya Tower, 320 m², fitted" },
- { icon: <Icon.chart size={18} />, label: "Value a lease or deal", sub: "Plain-language, grounded in the Rent Index", prompt: "How does 1,450 SAR/m² compare for Grade A office in Al Olaya?" },
- { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prompt: "Alert me when Al Olaya Grade A office rents move more than 3%" },
+ { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe it in words, I search verified stock", intro: "I can search our verified listings from a plain description. Tell me the district, the asset type, your budget per square metre, and a rough size, and I will pull the closest verified matches.", prompt: "Fitted Grade A office in Al Olaya, ~300 m², under 1,600 SAR/m²" },
+ { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "From your details, write the whole listing", intro: "I can write a full listing from your details. Give me the asset type, district, size, condition, and any asking price, and I will draft the title and description for you.", prompt: "Draft a listing for my Grade A floor in Olaya Tower, 320 m², fitted" },
+ { icon: <Icon.chart size={18} />, label: "Value a lease or deal", sub: "Plain-language, grounded in the Rent Index", intro: "I can tell you how a rent or price compares to the SAT Rent Index. Give me the district and asset type, and the figure you want to check.", prompt: "How does 1,450 SAR/m² compare for Grade A office in Al Olaya?" },
+ { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", intro: "I can set a standing watch on a district. Tell me the district and asset type, and the percent move you want to be alerted on.", prompt: "Alert me when Al Olaya Grade A office rents move more than 3%" },
 ];
 
 export default function AdvisorPage({ params }: { params: { locale: string } }) {
@@ -32,8 +32,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   try {
    const adv = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
    const aj = await adv.json().catch(() => ({}));
-   if (aj && (aj.mode === "chat" || aj.mode === "draft" || aj.mode === "value")) {
-    const note = aj.mode === "value" ? "SAT Rent Index Q1 2026, figures retrieved not invented" : aj.mode === "draft" ? "Draft from your details, set your own asking figure" : undefined;
+   if (aj && (aj.mode === "chat" || aj.mode === "ask" || aj.mode === "draft" || aj.mode === "value" || aj.mode === "watch")) {
+    const note = aj.mode === "value" ? "SAT Rent Index Q1 2026, figures retrieved not invented" : aj.mode === "draft" ? "Draft from your details, set your own asking figure" : aj.mode === "watch" ? "Watch saved against the SAT Rent Index baseline" : undefined;
     setMsgs((m) => [...m, { role: "a", text: aj.message || "", note }]);
     setBusy(false);
     return;
@@ -53,6 +53,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   setBusy(false);
  }
 
+ function start(job: { intro: string }) {
+  setMsgs((m) => [...m, { role: "a", text: job.intro }]);
+ }
+
  const started = msgs.length > 0;
 
  return (
@@ -65,7 +69,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     <div className="dnav" style={{ gap: 4, marginTop: 10 }}>
      <div className="eyebrow" style={{ padding: "4px 12px" }}>What I can do</div>
      {JOBS.map((j, i) => (
-      <button key={i} onClick={() => send(j.prompt)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, color: "var(--ink)", background: "transparent", border: "none", textAlign: "left", padding: "9px 12px", borderRadius: 9, cursor: "pointer", width: "100%" }}>
+      <button key={i} onClick={() => start(j)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, color: "var(--ink)", background: "transparent", border: "none", textAlign: "left", padding: "9px 12px", borderRadius: 9, cursor: "pointer", width: "100%" }}>
        <span style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "var(--harbor)" }}>{j.icon}</span>{j.label}</span>
        <span className="mono" style={{ fontSize: 10, color: "var(--slate-2)" }}>{j.sub}</span>
       </button>
@@ -94,7 +98,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
         <p className="muted" style={{ fontSize: 14, margin: "0 0 18px" }}>Not just a search box, pick a job or type below, and I run it on verified data.</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
          {JOBS.map((j, i) => (
-          <button key={i} onClick={() => send(j.prompt)} className="card pad lift" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }}>
+          <button key={i} onClick={() => start(j)} className="card pad lift" style={{ textAlign: "left", cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }}>
            <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
            <div style={{ fontSize: 15, fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{j.sub}</div>
