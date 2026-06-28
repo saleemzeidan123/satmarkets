@@ -9,6 +9,13 @@ type Verdict = {
   line_en: string;
   line_ar: string;
 };
+type Underwrite = {
+  status: "ok" | "na";
+  grossYieldPct: number | null;
+  paybackYears: number | null;
+  line_en: string;
+  line_ar: string;
+};
 type Row = {
   id: string;
   reference_code: string;
@@ -21,6 +28,7 @@ type Row = {
   building_grade: string | null;
   fit_score: number;
   verdict: Verdict;
+  underwrite?: Underwrite;
 };
 
 const ASSETS: { v: string; en: string; ar: string }[] = [
@@ -60,7 +68,7 @@ export default function FindPage() {
   const T = ar
     ? {
         h1: "اعثر على مساحتك",
-        sub: "صف ما تريده، ويعرض SAT قائمة مختصرة مرتبة، كل خيار مُقيّم مقابل مؤشر SAT للإيجارات.",
+        sub: "صف ما تريده، ويعرض SAT قائمة مختصرة مرتبة، كل خيار مُقيّم مقابل مراجع السوق الموثّقة.",
         asset: "نوع الأصل",
         deal: "النوع",
         lease: "إيجار",
@@ -78,7 +86,7 @@ export default function FindPage() {
       }
     : {
         h1: "Find your space",
-        sub: "Describe what you need, and SAT returns a ranked shortlist, each option graded against the SAT Rent Index.",
+        sub: "Describe what you need, and SAT returns a ranked shortlist, each option graded against verified market benchmarks.",
         asset: "Asset type",
         deal: "Type",
         lease: "Lease",
@@ -132,8 +140,8 @@ export default function FindPage() {
       na: "bg-gray-50 text-gray-500 border-gray-200",
     };
     const label = ar
-      ? { below: "قيمة جيدة", within: "سعر عادل", above: "أعلى من السوق", na: "لا مؤشر" }
-      : { below: "Good value", within: "Fairly priced", above: "Above market", na: "No index" };
+      ? { below: "قيمة جيدة", within: "سعر عادل", above: "أعلى من السوق", na: "لا مرجع" }
+      : { below: "Good value", within: "Fairly priced", above: "Above market", na: "No benchmark" };
     return (
       <span className={`inline-block rounded-full border px-2.5 py-0.5 text-xs font-medium ${map[v.status]}`}>
         {(label as Record<string, string>)[v.status]}
@@ -185,7 +193,7 @@ export default function FindPage() {
           <input value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" className={inp} />
         </label>
         <div className="col-span-2 sm:col-span-3">
-          <button type="submit" disabled={loading} className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60">
+          <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "#fff", padding: "11px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
             {loading ? T.loading : T.go}
           </button>
         </div>
@@ -210,11 +218,21 @@ export default function FindPage() {
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                {chip(r.verdict)}
+                {r.underwrite && r.underwrite.status === "ok" ? (
+                  <span className="inline-block rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
+                    ~{r.underwrite.grossYieldPct}% {ar ? "عائد" : "yield"}
+                  </span>
+                ) : (
+                  chip(r.verdict)
+                )}
                 <span className="text-[11px] text-slate-400">{r.fit_score}% {T.fit}</span>
               </div>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-slate-600">{ar ? r.verdict.line_ar : r.verdict.line_en}</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              {r.underwrite && r.underwrite.status === "ok"
+                ? ar ? r.underwrite.line_ar : r.underwrite.line_en
+                : ar ? r.verdict.line_ar : r.verdict.line_en}
+            </p>
           </div>
         ))}
       </div>

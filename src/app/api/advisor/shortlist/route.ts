@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import { underwrite } from "@/lib/market/underwrite";
 
 export const runtime = "nodejs";
 
@@ -34,7 +35,7 @@ function sb() {
 }
 
 const SEL =
-  "id, reference_code, title_en, title_ar, asset_type, deal_type, area_sqm, asking_rent_sqm, building_grade, fitout_condition, district_id, districts(name_en,name_ar)";
+  "id, reference_code, title_en, title_ar, asset_type, deal_type, area_sqm, asking_rent_sqm, building_grade, fitout_condition, district_id, sale_price, sale_price_sqm, service_charge_sqm, districts(name_en,name_ar)";
 
 function fitScore(l: any, b: Brief, verdictStatus: string): number {
   let s = 50;
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest) {
     const row = pickIndexRow(drows, l.asset_type, l.building_grade);
     const dist = l.districts || {};
     const v = marketVerdict(l.asking_rent_sqm, row, dist.name_en, dist.name_ar);
+    const u = underwrite(l, row, dist.name_en, dist.name_ar);
     const fit = fitScore(l, b, v.status);
     return {
       id: l.id,
@@ -126,6 +128,7 @@ export async function POST(req: NextRequest) {
       building_grade: l.building_grade,
       fit_score: fit,
       verdict: v,
+      underwrite: u,
     };
   });
 
