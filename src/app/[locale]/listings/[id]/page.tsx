@@ -49,7 +49,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> Comparable rents</a>
           </div>
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
-            {[["Area", `${l.area_sqm} m²`], ["Grade", gradeLabel(l.building_grade, locale)], ["Fit-out", fitoutLabel(l.fitout_condition, locale)], [lease ? "Asking" : "Price", price != null ? Number(price).toLocaleString() + " SAR" : "On request"]].map((s, i) => (
+            {[["Area", `${l.area_sqm} m²`], ["Grade", gradeLabel(l.building_grade, locale)], ["Fit-out", fitoutLabel(l.fitout_condition, locale)], [lease ? "Asking" : "Price", price != null ? Number(price).toLocaleString() + (lease ? " SAR/m²·yr" : " SAR") : "On request"]].map((s, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
                 <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
                 <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>

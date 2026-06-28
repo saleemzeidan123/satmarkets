@@ -9,9 +9,9 @@ export default function HeroVisual({ locale = "en" }: { locale?: "en" | "ar" }) 
     idxMeta: ar ? "واجهة الرياض · مكاتب · الوسيط" : "KAFD · Office · median",
     unit: ar ? "ريال/م²/سنة" : "SAR/sqm/yr",
     cardTitle: ar ? "مكتب فئة A، واجهة الرياض" : "Grade A Office, KAFD",
-    cardMeta: ar ? "٨٥٠ م² · A+ · واجهة الرياض" : "850 sqm · A+ · KAFD, Riyadh",
+    cardMeta: ar ? "850 م² · A+ · واجهة الرياض" : "850 sqm · A+ · KAFD, Riyadh",
     inline: ar ? "ضمن نطاق السوق" : "In line with the market band",
-    band: ar ? "النطاق ٣٬٠٠٠–٤٬٢٠٠" : "Band 3,000–4,200",
+    band: ar ? "النطاق 3٬000–4٬200" : "Band 3,000–4,200",
   };
   return (
     <div className="relative hidden lg:block">
