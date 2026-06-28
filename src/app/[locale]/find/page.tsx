@@ -207,7 +207,7 @@ export default function FindPage() {
 
       <div className="mt-6 space-y-3">
         {rows?.map((r) => (
-          <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+          <a key={r.id} href={`/${ar ? "ar" : "en"}/listings/${r.id}`} className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 hover:shadow-sm" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-slate-900">{ar ? r.title_ar || r.title_en : r.title_en}</div>
@@ -233,7 +233,7 @@ export default function FindPage() {
                 ? ar ? r.underwrite.line_ar : r.underwrite.line_en
                 : ar ? r.verdict.line_ar : r.verdict.line_en}
             </p>
-          </div>
+          </a>
         ))}
       </div>
     </main>
