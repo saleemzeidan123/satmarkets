@@ -55,24 +55,26 @@ const FOOT_TRUST = ["REGA-licensed", "PDPL-compliant", "Ejar-integrated", "ZATCA
 const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "About SAT Real Estate": "/about", "Help center": "/about" };
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
+  const __T: Record<string, string> = {"Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملاك والمؤجرون","Brokers":"الوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","REGA compliance":"الامتثال للهيئة العامة للعقار","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","REGA-licensed":"مرخّصة من الهيئة العامة للعقار","PDPL-compliant":"متوافقة مع حماية البيانات","Ejar-integrated":"مدمجة مع إيجار","ZATCA e-invoicing":"فوترة إلكترونية متوافقة مع الزكاة والضريبة","Nafath sign-in":"دخول عبر نفاذ","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on verified ground.":"أدرج، أجّر، أو استثمر، على أرض موثّقة.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's REGA-native commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.":"منصة سعودية للتأجير والبيع التجاري متوافقة مع الهيئة العامة للعقار. عروض موثّقة، بيانات تدعم القرار، وصفقات متكاملة."};
+  const t = (x: string): string => (locale === "ar" ? (__T[x] ?? x) : x);
   const L = (p: string) => `/${locale}${p}`;
   return (
     <footer className="foot">
       <div className="foot-mark"><SatMark size={300} base="#fff" lit={HARBOR} /></div>
       <div className="cta">
         <div className="cta-copy">
-          <div className="cta-title">List, lease or invest, on verified ground.</div>
-          <div className="cta-sub">Join owners, occupiers and licensed brokers across the Kingdom.</div>
+          <div className="cta-title">{t("List, lease or invest, on verified ground.")}</div>
+          <div className="cta-sub">{t("Join owners, occupiers and licensed brokers across the Kingdom.")}</div>
         </div>
         <div className="cta-actions">
-          <Link href={L("/dashboard")} className="btn btn-light">List your space</Link>
-          <Link href={L("/listings")} className="btn btn-outline">Browse listings</Link>
+          <Link href={L("/dashboard")} className="btn btn-light">{t("List your space")}</Link>
+          <Link href={L("/listings")} className="btn btn-outline">{t("Browse listings")}</Link>
         </div>
       </div>
       <div className="foot-cols">
         <div className="foot-brand">
           <SatLogo size={30} />
-          <p>Saudi Arabia&apos;s REGA-native commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.</p>
+          <p>{t("Saudi Arabia's REGA-native commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.")}</p>
           <div className="stores">
             <a className="store">{FIcon.phone(18)}<span><span className="ec">Download on the</span><span className="nm">App Store</span></span></a>
             <a className="store">{FIcon.phone(18)}<span><span className="ec">Get it on</span><span className="nm">Google Play</span></span></a>
@@ -80,8 +82,8 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         </div>
         {FOOT_COLS.map(([title, links]) => (
           <div className="foot-col" key={title}>
-            <h5 className="col-h">{title}</h5>
-            {links.map((l) => (ROUTES[l] ? <Link key={l} href={L(ROUTES[l])}>{l}</Link> : <a key={l}>{l}</a>))}
+            <h5 className="col-h">{t(title)}</h5>
+            {links.map((l) => (ROUTES[l] ? <Link key={l} href={L(ROUTES[l])}>{t(l)}</Link> : <a key={l}>{t(l)}</a>))}
           </div>
         ))}
       </div>
@@ -98,7 +100,7 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
       </div>
       <div className="bottom">
         <span>© 2026 SAT MARKETS · SATMARKETS.SA · RIYADH, KSA · SAT REAL ESTATE FAL 1200025510</span>
-        <span>POWERED BY SAT REAL ESTATE</span>
+        <span>{t("POWERED BY SAT REAL ESTATE")}</span>
       </div>
     </footer>
   );
