@@ -40,6 +40,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Location Intelligence" },
     { href: `/${locale}/listings`, label: dict.nav.listings },
     { href: `/${locale}/advisor`, label: ar ? "المستشار الذكي" : "AI Advisor" },
+    { href: `/${locale}/find`, label: ar ? "اعثر على مساحتك" : "Find your space" },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
     { href: `/${locale}/hbu`, label: (dict.nav as any).develop ?? "Develop" },
     { href: `/${locale}/pricing`, label: ar ? "الأسعار" : "Pricing" },
