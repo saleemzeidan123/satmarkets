@@ -23,7 +23,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
     if (isBroker && !f.authorization_doc_url.trim()) { setError("Brokers must provide an authorization-to-market document URL."); return; }
     setBusy(true);
     const sb = getSupabaseBrowser(); if (!sb) return;
-    const { error } = await sb.from("listings").insert({
+    const { data, error } = await sb.from("listings").insert({
       account_id: accountId, title_en: f.title_en, asset_type: f.asset_type, deal_type: f.deal_type,
       district_id: f.district_id || null, area_sqm: Number(f.area_sqm),
       asking_rent_sqm: f.deal_type === "lease" ? Number(f.price) : null,
@@ -33,9 +33,9 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       video_url: f.video_url || null, floorplan_url: f.floorplan_url || null,
       authorization_doc_url: isBroker ? f.authorization_doc_url : null,
       status: "draft"
-    });
+    }).select("id").single();
     if (error) { setError(error.message); setBusy(false); }
-    else router.push(`/${locale}/dashboard`);
+    else { try { if (data?.id) fetch(`/api/listings/${data.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) }); } catch {} router.push(`/${locale}/dashboard`); }
   }
 
   const inp = "w-full rounded border border-charcoal/20 px-3 py-2";
