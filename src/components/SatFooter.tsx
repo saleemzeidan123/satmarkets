@@ -89,7 +89,7 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
       </div>
       <div className="foot-mid">
         <div className="trust-row">
-          {FOOT_TRUST.map((t) => <span className="tpill" key={t}><span className="d" />{t}</span>)}
+          {FOOT_TRUST.map((b) => <span className="tpill" key={b}><span className="d" />{t(b)}</span>)}
         </div>
         <div className="foot-end">
           <span className="langtog"><span className="on">EN</span><span>العربية</span></span>

@@ -70,7 +70,7 @@ export default function ComparePage({ params }: { params: { locale: string } }) 
            <Ph label={c.ph} h={108} style={{ borderRadius: 9 }} badges={[<Verified key="v" text="V" />, <span key="f" className={"freeze " + c.freeze} style={{ background: "rgba(255,255,255,.92)" }}><span className="dot" />{c.freeze === "open" ? (ar ? "مفتوح" : "Open") : (ar ? "مسقوف" : "Capped")}</span>]} />
           </div>
           <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{c.ttl}</div>
-          <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{c.dist}، {ar ? "الرياض" : "Riyadh"}</div>
+          <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{c.dist}{ar ? "، " : ", "}{ar ? "الرياض" : "Riyadh"}</div>
          </div>
         ))}
        </div>
