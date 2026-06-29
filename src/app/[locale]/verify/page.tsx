@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import ReviewActions from "@/components/ReviewActions";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,7 @@ export default async function VerifyQueue({ searchParams }: { searchParams: { ke
                 <td style={td}>{r.verified_at ? new Date(r.verified_at).toISOString().slice(0, 10) : "-"}</td>
                 <td style={td}>{r.authorization_doc_url ? <a href={r.authorization_doc_url} style={{ color: "#2E5FE0" }}>view</a> : "-"}</td>
                 <td style={td}>{r.ad_permit_number || "-"}</td>
-                <td style={td}>{needs(r) ? <span style={{ color: "#B7791F", fontWeight: 600 }}>REVIEW</span> : <span style={{ color: "#1F8A5B" }}>OK</span>}</td>
+                <td style={td}><ReviewActions id={r.id} token={token} /></td>
               </tr>
             ))}
           </tbody>
