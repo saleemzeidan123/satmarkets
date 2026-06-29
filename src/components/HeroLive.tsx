@@ -1,11 +1,27 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import "maplibre-gl/dist/maplibre-gl.css";
 import HeroSearch from "@/components/HeroSearch";
 
+type Pt = { lng: number; lat: number; c: string };
+const PTS: Pt[] = [
+  { lng: 46.685, lat: 24.690, c: "#3A6EA5" },
+  { lng: 46.642, lat: 24.762, c: "#0E9488" },
+  { lng: 46.620, lat: 24.800, c: "#9DBBD6" },
+  { lng: 46.737, lat: 24.770, c: "#0EA5E9" },
+  { lng: 46.622, lat: 24.690, c: "#7C3AED" },
+  { lng: 46.760, lat: 24.805, c: "#3A6EA5" },
+  { lng: 46.660, lat: 24.835, c: "#0E9488" },
+];
+
 const CSS = `
+.hl-mk{width:13px;height:13px;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px rgba(255,255,255,.92),0 2px 10px rgba(0,0,0,.45);opacity:0;transform:translateY(-10px) scale(.6);animation:hlDrop .55s cubic-bezier(.2,.7,.2,1) forwards;position:relative}
+.hl-mk::after{content:"";position:absolute;inset:-5px;border-radius:50%;border:2px solid var(--c);opacity:.55;animation:hlPulse 2.4s ease-out infinite}
+@keyframes hlDrop{to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes hlPulse{0%{transform:scale(.6);opacity:.6}100%{transform:scale(2.3);opacity:0}}
 .hl-live{display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;animation:hlLive 1.8s ease-out infinite}
 @keyframes hlLive{0%{box-shadow:0 0 0 0 rgba(52,211,153,.5)}100%{box-shadow:0 0 0 8px rgba(52,211,153,0)}}
-@media (prefers-reduced-motion:reduce){.hl-live{animation:none}}
+@media (prefers-reduced-motion:reduce){.hl-mk{animation:none;opacity:1;transform:none}.hl-mk::after{animation:none;opacity:.4}.hl-live{animation:none}}
 `;
 
 function useReduced(): boolean {
@@ -43,23 +59,53 @@ export default function HeroLive({ locale, hero, count }: {
   hero: { eyebrow: string; title: string; subtitle: string; searchPlaceholder: string; browse: string };
   count: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
   const reduced = useReduced();
   const ar = locale === "ar";
   const rent = useCountUp(3700, reduced, 1500);
   const ver = useCountUp(count || 0, reduced, 1500);
 
+  useEffect(() => {
+    let map: any;
+    let ro: any;
+    let cancelled = false;
+    (async () => {
+      const maplibregl = (await import("maplibre-gl")).default;
+      if (cancelled || !ref.current) return;
+      map = new maplibregl.Map({
+        container: ref.current,
+        style: "https://tiles.openfreemap.org/styles/positron",
+        center: [46.687, 24.745],
+        zoom: 10.5,
+        interactive: false,
+      });
+      ro = new ResizeObserver(() => { try { map.resize(); } catch {} });
+      if (ref.current) ro.observe(ref.current);
+      map.on("load", () => {
+        PTS.forEach((p, i) => {
+          const el = document.createElement("div");
+          el.className = "hl-mk";
+          el.style.setProperty("--c", p.c);
+          el.style.animationDelay = (reduced ? 0 : 350 + i * 140) + "ms";
+          new maplibregl.Marker({ element: el }).setLngLat([p.lng, p.lat]).addTo(map);
+        });
+        [80, 300, 900].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
+      });
+    })();
+    return () => { cancelled = true; if (ro) ro.disconnect(); if (map) map.remove(); };
+  }, [reduced]);
+
   const grad = ar
-    ? "linear-gradient(250deg, rgba(7,11,23,.94) 0%, rgba(7,11,23,.74) 40%, rgba(7,11,23,.34) 72%, rgba(7,11,23,.16) 100%)"
-    : "linear-gradient(110deg, rgba(7,11,23,.94) 0%, rgba(7,11,23,.74) 40%, rgba(7,11,23,.34) 72%, rgba(7,11,23,.16) 100%)";
+    ? "linear-gradient(250deg, rgba(7,11,23,.92) 0%, rgba(7,11,23,.72) 38%, rgba(7,11,23,.32) 70%, rgba(7,11,23,.12) 100%)"
+    : "linear-gradient(110deg, rgba(7,11,23,.92) 0%, rgba(7,11,23,.72) 38%, rgba(7,11,23,.32) 70%, rgba(7,11,23,.12) 100%)";
 
   return (
     <section className="relative -mt-8 min-h-[580px] overflow-hidden sm:-mt-10 sm:min-h-[640px]" style={{ width: "100vw", marginInlineStart: "calc(50% - 50vw)", background: "#070B17" }}>
       <style>{CSS}</style>
-      <div className="!absolute inset-0" style={{ backgroundImage: "url(/hero-kafd.jpg)", backgroundSize: "cover", backgroundPosition: "center 38%" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "rgba(7,11,23,.28)" }} />
+      <div ref={ref} className="!absolute inset-x-0 top-0 h-[720px]" />
       <div className="pointer-events-none absolute inset-0" style={{ background: grad }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.55), rgba(7,11,23,0) 20%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.78), rgba(7,11,23,0) 38%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(7,11,23,.5), rgba(7,11,23,0) 18%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "linear-gradient(to top, rgba(7,11,23,.6), rgba(7,11,23,0) 34%)" }} />
       <svg className="pointer-events-none absolute inset-0 h-full w-full" preserveAspectRatio="none">
         <defs><pattern id="hlg" width="68" height="68" patternUnits="userSpaceOnUse"><path d="M68 0H0V68" fill="none" stroke="rgba(255,255,255,.05)" strokeWidth="1" /></pattern></defs>
         <rect width="100%" height="100%" fill="url(#hlg)" />
