@@ -13,12 +13,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const sb = getSupabaseServer();
 
   let rows: Listing[] = [];
-  let listings = 0, districts = 0, buildings = 0;
+  let listings = 0, districts = 0, buildings = 0, verified = 0;
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(4);
     rows = (data as Listing[]) ?? [];
     const { count: lc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published");
     listings = lc ?? 0;
+    const { count: vc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published").or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    verified = vc ?? 0;
     const { count: dc } = await sb.from("districts").select("*", { count: "exact", head: true });
     districts = dc ?? 0;
     const { count: bc } = await sb.from("buildings").select("*", { count: "exact", head: true });
@@ -36,7 +38,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
       district: dn || "Riyadh",
       area: `${l.area_sqm} m²`,
       type,
-      verified: true,
+      verified: !!((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed),
       ph: `${type}, ${dn || "Riyadh"}`,
       img: photoFor(l.asset_type, l.id),
     };
@@ -46,6 +48,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
     listings: listings > 0 ? `${listings}` : "Verified",
     buildings: buildings > 0 ? `${buildings}+` : "60+",
     districts: districts > 0 ? `${districts}` : "15",
+    verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : "100%",
   };
 
   return <MarketingHome locale={locale} featured={featured} stats={stats} />;

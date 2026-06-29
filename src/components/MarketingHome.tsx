@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string };
-type Stats = { listings: string; buildings: string; districts: string };
+type Stats = { listings: string; buildings: string; districts: string; verifiedPct: string };
 
 const ASSETS = [
  { v: "office", en: "Office", ar: "مكاتب", icon: <Icon.building size={22} /> },
@@ -106,7 +106,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   popular: "Popular:",
   chip1: "Office, Al Olaya", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
   micro1: "Owners verified before listing", micro2: "No assumed commission", micro3: "REGA-licensed & PDPL-compliant",
-  stat: [[stats.listings, "Verified listings"], ["100%", "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string,string][],
+  stat: [[stats.listings, "Verified listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string,string][],
   exEye: "The exchange",
   exH: "Four jobs, one neutral place",
   exP: "No one in the Kingdom combines all four. That combination is the platform.",

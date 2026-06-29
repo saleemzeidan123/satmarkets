@@ -59,7 +59,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn || rcity}`} h={150} fav badges={[<Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} />, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
+                <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn || rcity}`} h={150} fav badges={[...((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed ? [<Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
                 <div className="body">
                   <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (ar ? "عند الطلب" : "On request")}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
