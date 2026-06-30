@@ -159,6 +159,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const featKeys = ["h","a","","h","a","","h","a","","h",""];
  const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield];
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
+ const groups: { label: string; idx: number[] }[] = [
+  { label: ar ? "اكتشف" : "Discover", idx: [0, 2, 5, 9] },
+  { label: ar ? "قيّم وقرّر" : "Decide", idx: [1, 3, 4, 8] },
+  { label: ar ? "أنجز ووثّق" : "Transact and trust", idx: [6, 7, 10] },
+ ];
+ const f0 = featured[0];
+ const rest = featured.slice(1);
+ const vtxt = ar ? "موثّق من المالك" : "Verified owner";
 
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
@@ -171,17 +179,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.05, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820 }}>
       {T.h1a}<span style={{ color: "#9DBBD6" }}>{T.h1b}</span>
      </h1>
-     <p style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>
-      {T.sub}
-     </p>
-
+     <p style={{ fontSize: 17.5, lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>{T.sub}</p>
      <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
       <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
-       {T.tabs.map(([v,l]) => (
-        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal===v ? "#fff" : "transparent", color: deal===v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
+       {T.tabs.map(([v, l]) => (
+        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: 13, fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal === v ? "#fff" : "transparent", color: deal === v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
        ))}
       </div>
-
       {deal !== "req" && (
        <div className="hero-assets" style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
         {ASSETS.map((a) => {
@@ -195,7 +199,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         })}
        </div>
       )}
-
       <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
@@ -203,7 +206,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        </div>
        <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? T.btnReq : T.btnStd}</button>
       </form>
-
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
        <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
@@ -211,7 +213,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip3}</Link>
       </div>
      </div>
-
      <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: 13, color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
       <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro1}</span>
       <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro2}</span>
@@ -219,6 +220,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      </div>
     </div>
    </div>
+
    <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
     {T.stat.map((x, i) => (
      <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
@@ -227,62 +229,129 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
      </div>
     ))}
    </div>
+
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
-    <div style={{ padding: "clamp(40px,8vw,64px) 20px 20px" }}>
-     <div className="eyebrow">{T.exEye}</div>
-     <h2 className="serif" style={{ fontSize: "clamp(26px,6vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.exH}</h2>
-     <p className="muted" style={{ fontSize: 16, maxWidth: 620 }}>{T.exP}</p>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 34 }}>
-      {T.cards.map((c, i) => { const I = cardIcons[i] as (p: { size?: number }) => JSX.Element; return (
-       <Link key={i} href={L(c[2])} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
-        <div style={{ width: 42, height: 42, borderRadius: 11, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><I size={21} /></div>
-        <div style={{ fontSize: 17, fontWeight: 600, margin: "16px 0 8px", letterSpacing: "-.01em" }}>{c[0]}</div>
-        <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>{c[1]}</div>
-       </Link>
-      ); })}
-     </div>
-    </div>
-    <div style={{ padding: "clamp(36px,7vw,52px) 20px 20px" }}>
-     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
-      <div>
-       <div className="eyebrow">{T.ftEye}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2>
+
+    {f0 && (
+     <div style={{ padding: "clamp(44px,7vw,72px) 24px 8px" }}>
+      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
+       <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(24px,5vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
+       <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
       </div>
-      <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
-     </div>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18, marginTop: 28 }}>
-      {featured.map((f) => (
-       <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-        <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
-        <div className="body">
-         <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
-         <div className="ttl">{f.title}</div>
-         <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
-        </div>
-       </Link>
-      ))}
-     </div>
-    </div>
-    <div className="hero-band" style={{ margin: "56px 24px 0", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "48px 40px", position: "relative", overflow: "hidden" }}>
-     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .35 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
-     <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1.1fr) minmax(0,1fr)", gap: 40, alignItems: "center" }}>
-      <div>
-       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
-       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 24px", maxWidth: 440 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
-       <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
-      </div>
-      <div className="row gap16 wrap">
-       {T.bandStat.map((x, i) => (
-        <div key={i} className="grow" style={{ minWidth: 120, background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, padding: "18px 16px" }}>
-         <div className="mono tnum" style={{ fontSize: 24, fontWeight: 500, color: "#fff" }}>{x[0]}</div>
-         <div style={{ fontSize: 11.5, color: "#8A93A0", marginTop: 6 }}>{x[1]}</div>
-        </div>
+      <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
+       <Ph src={f0.img} label={f0.ph} h={284} badges={[f0.verified ? <Verified key="v" text={vtxt} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>].filter(Boolean)} />
+       <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
+        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}>{T.unit}</small></div>
+        <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
+        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: 12, color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
+        <span style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{ar ? "اعرض التفاصيل" : "View listing"} <Icon.arrow size={16} /></span>
+       </div>
+      </Link>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 18 }}>
+       {rest.map((f) => (
+        <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
+         <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" text={vtxt} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
+         <div className="body">
+          <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
+          <div className="ttl">{f.title}</div>
+          <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
+         </div>
+        </Link>
        ))}
       </div>
      </div>
+    )}
+
+    <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
+     <div className="home-jobs" style={{ display: "grid", gridTemplateColumns: ".9fr 1.1fr", gap: 54, alignItems: "center" }}>
+      <div>
+       <div className="eyebrow">{T.exEye}</div>
+       <h2 className="serif" style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{T.exH}</h2>
+       <p className="muted" style={{ fontSize: 17, lineHeight: 1.65, marginTop: 18, maxWidth: 380 }}>{T.exP}</p>
+      </div>
+      <div style={{ borderTop: "1px solid var(--silver)" }}>
+       {T.cards.map((c, i) => { const I = cardIcons[i] as (p: { size?: number }) => JSX.Element; return (
+        <Link key={i} href={L(c[2])} className="home-job" style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 18, alignItems: "center", padding: "22px 6px", borderBottom: i < 3 ? "1px solid var(--silver)" : "none", textDecoration: "none", color: "inherit" }}>
+         <span className="mono" style={{ fontSize: 13, color: "var(--harbor)", fontWeight: 500 }}>{"0" + (i + 1)}</span>
+         <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <span style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cool)", color: "var(--harbor)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><I size={21} /></span>
+          <span>
+           <span style={{ display: "block", fontSize: 17, fontWeight: 600, letterSpacing: "-.01em" }}>{c[0]}</span>
+           <span className="muted" style={{ display: "block", fontSize: 13.5, marginTop: 3, lineHeight: 1.5 }}>{c[1]}</span>
+          </span>
+         </span>
+         <span style={{ color: "var(--slate-2)" }}><Icon.arrow size={18} /></span>
+        </Link>
+       ); })}
+      </div>
+     </div>
     </div>
-    <div style={{ padding: "clamp(44px,9vw,72px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
+
+    <div className="hero-band" style={{ margin: "0 24px", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "clamp(40px,6vw,56px) clamp(28px,5vw,48px)", position: "relative", overflow: "hidden" }}>
+     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .3 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
+     <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.05fr)", gap: 48, alignItems: "center" }}>
+      <div>
+       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}</div>
+       <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
+       <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
+       <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
+        {["Al Olaya", "KAFD", "Hittin", "Tahlia"].map((d, i) => (
+         <span key={d} style={{ fontSize: 12.5, fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === 0 ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === 0 ? "#fff" : "transparent" }}>{d}</span>
+        ))}
+       </div>
+       <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
+      </div>
+      <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
+       <div className="row between" style={{ alignItems: "flex-start" }}>
+        <div><div style={{ fontSize: 13, fontWeight: 600 }}>{ar ? "العليا، مكاتب رئيسية" : "Al Olaya, prime office"}</div><div style={{ fontSize: 11.5, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{ar ? "الربع الأول 2026" : "Q1 2026"}</span>
+       </div>
+       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
+        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{T.bandStat[1][0]}</span>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,.55)" }}>{T.bandStat[1][1]}</span>
+       </div>
+       <div style={{ color: "#34d399", fontSize: 13, fontWeight: 600, marginTop: 8 }}>{T.bandStat[0][0]} · {T.bandStat[0][1]}</div>
+       <svg viewBox="0 0 480 110" width="100%" style={{ marginTop: 16, display: "block" }} preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18 L480 110 L0 110 Z" fill="rgba(52,211,153,.12)" />
+        <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="480" cy="18" r="4" fill="#34d399" />
+       </svg>
+       <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: 12, color: "rgba(255,255,255,.6)" }}>
+        <span>{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{T.bandStat[2][0]}</span>
+       </div>
+      </div>
+     </div>
+    </div>
+
+    <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
+     <div style={{ textAlign: "center" }}>
+      <div className="eyebrow">{T.oneEye}</div>
+      <h2 className="serif" style={{ fontSize: "clamp(26px,5vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
+      <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
+     </div>
+     <div className="home-caps" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20, marginTop: 36 }}>
+      {groups.map((g, gi) => (
+       <div key={gi} className="card" style={{ padding: "22px 22px 10px" }}>
+        <div className="row gap8" style={{ alignItems: "center", marginBottom: 6 }}>
+         <span className="eyebrow">{g.label}</span><span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: g.idx.length > 2 ? "1fr 1fr" : "1fr", gap: 2 }}>
+         {g.idx.map((fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
+          <Link key={fi} href={L(featLinks[fi])} className="cap-item" style={{ display: "flex", gap: 12, padding: "14px 8px", borderRadius: 12, textDecoration: "none", color: "inherit", alignItems: "flex-start" }}>
+           <span style={{ width: 38, height: 38, flex: "none", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: k === "a" ? "var(--azure-wash)" : k === "h" ? "#EAF0F7" : "var(--cool)", color: k === "a" ? "var(--azure-d)" : "var(--harbor)" }}><I size={19} /></span>
+           <span>
+            <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, letterSpacing: "-.01em" }}>{T.feats[fi][0]}</span>
+            <span className="muted" style={{ display: "block", fontSize: 12.5, marginTop: 3, lineHeight: 1.45 }}>{T.feats[fi][1]}</span>
+           </span>
+          </Link>
+         ); })}
+        </div>
+       </div>
+      ))}
+     </div>
+    </div>
+
+    <div style={{ padding: "clamp(44px,7vw,64px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
      <div className="eyebrow" style={{ textAlign: "center" }}>{T.flowEye}</div>
      <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>{T.flowH}</h2>
      <div className="row gap20 wrap" style={{ maxWidth: 940, margin: "0 auto", alignItems: "stretch" }}>
@@ -299,28 +368,15 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       </a>
      </div>
     </div>
-    <div style={{ padding: "20px 24px 20px" }}>
-     <div className="eyebrow" style={{ textAlign: "center" }}>{T.oneEye}</div>
-     <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px", textAlign: "center" }}>{T.oneH}</h2>
-     <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto", textAlign: "center" }}>{T.oneP}</p>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 14, marginTop: 34 }}>
-      {T.feats.map((m, i) => { const I = featIcons[i] as (p: { size?: number }) => JSX.Element; const k = featKeys[i]; return (
-       <Link key={i} href={L(featLinks[i])} className="card pad lift" style={{ boxShadow: "none", textDecoration: "none", color: "inherit", display: "block" }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: k === "a" ? "var(--azure-wash)" : k === "h" ? "#EAF0F7" : "var(--cool)", color: k === "a" ? "var(--azure-d)" : "var(--harbor)" }}><I size={20} /></div>
-        <div style={{ fontSize: 15, fontWeight: 600, margin: "14px 0 5px", letterSpacing: "-.01em" }}>{m[0]}</div>
-        <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{m[1]}</div>
-       </Link>
-      ); })}
-     </div>
-    </div>
-    <div style={{ padding: "44px 24px 64px" }}>
+
+    <div style={{ padding: "8px 24px 64px" }}>
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
       <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>{T.ctaH}</h2>
       <p style={{ fontSize: 16, color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
       <div className="row gap12 center wrap">
        <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
        <Link href={L("/find")} className="btn lg" style={{ background: "#fff", color: "var(--ink)", textDecoration: "none" }}>{ar ? "اعثر على مساحتك" : "Find your space"}</Link>
-        <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
+       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
      </div>
     </div>
