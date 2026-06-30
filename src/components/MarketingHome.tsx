@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
 
-export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string };
+export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 type Stats = { listings: string; buildings: string; districts: string; verifiedPct: string };
 
 const ASSETS = [
@@ -162,6 +162,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const f0 = featured[0];
  const rest = featured.slice(1);
  const vtxt = ar ? "موثّق من المالك" : "Verified owner";
+ const idxBar = (f: FeaturedListing) => f.idx ? (
+  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (ar ? "ضمن نطاق مؤشر سات" : "Within the SAT Rent Index band") : f.idx.v === "below" ? (ar ? "أقل من نطاق المؤشر" : "Below the index band") : (ar ? "أعلى من نطاق المؤشر" : "Above the index band")}</div></div>
+ ) : null;
 
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
@@ -239,6 +242,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}>{T.unit}</small></div>
         <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: 12, color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
+        {idxBar(f0)}
         <span style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{ar ? "اعرض التفاصيل" : "View listing"} <Icon.arrow size={16} /></span>
        </div>
       </Link>
@@ -250,6 +254,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
           <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
           <div className="ttl">{f.title}</div>
           <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
+          {idxBar(f)}
          </div>
         </Link>
        ))}
