@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { allow } from "@/lib/ratelimit";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -69,8 +70,9 @@ const CHAT_SYS = `You are SAT Advisor, a warm, plain-spoken commercial real esta
 const ASK_SYS = `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. No em dashes.`;
 
 export async function POST(req: NextRequest) {
+  if (!allow("advisor", req)) return NextResponse.json({ mode: "search" }, { status: 429 });
   const { query, history } = (await req.json()) as { query?: string; history?: { role: string; text: string }[] };
-  const raw = (query || "").trim();
+  const raw = (query || "").trim().slice(0, 2000);
   const hist = (Array.isArray(history) ? history : []).slice(-6).filter((h: any) => h && (h.role === "user" || h.role === "assistant") && h.text).map((h: any) => ({ role: h.role as "user" | "assistant", content: String(h.text).slice(0, 600) }));
   const allowedSrc = raw + " " + hist.map((h) => h.content).join(" ");
   if (!raw || !key()) return NextResponse.json({ mode: "search" });

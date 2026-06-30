@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
+import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -35,6 +36,7 @@ function sbServer() {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!allow("translate", req, 10)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   const id = params.id;
   let body: { force?: boolean; tier?: Tier } = {};
   try {

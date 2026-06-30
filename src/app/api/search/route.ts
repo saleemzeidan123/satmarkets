@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { allow } from "@/lib/ratelimit";
 
 const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"] as const;
 type AssetT = typeof ASSETS[number];
@@ -65,8 +66,9 @@ async function llmParse(raw: string): Promise<Parsed | null> {
 }
 
 export async function POST(req: NextRequest) {
+  if (!allow("search", req)) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });
   const { query } = (await req.json()) as { query?: string };
-  const raw = query || "";
+  const raw = (query || "").slice(0, 2000);
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ results: [], parsed: {}, clarify: false });
 
