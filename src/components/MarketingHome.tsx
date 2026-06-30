@@ -159,11 +159,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const featKeys = ["h","a","","h","a","","h","a","","h",""];
  const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield];
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
- const groups: { label: string; idx: number[] }[] = [
-  { label: ar ? "اكتشف" : "Discover", idx: [0, 2, 5, 9] },
-  { label: ar ? "قيّم وقرّر" : "Decide", idx: [1, 3, 4, 8] },
-  { label: ar ? "أنجز ووثّق" : "Transact and trust", idx: [6, 7, 10] },
- ];
  const f0 = featured[0];
  const rest = featured.slice(1);
  const vtxt = ar ? "موثّق من المالك" : "Verified owner";
@@ -329,25 +324,30 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <h2 className="serif" style={{ fontSize: "clamp(26px,5vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
       <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
-     <div className="home-caps" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 20, marginTop: 36 }}>
-      {groups.map((g, gi) => (
-       <div key={gi} className="card" style={{ padding: "22px 22px 10px" }}>
-        <div className="row gap8" style={{ alignItems: "center", marginBottom: 6 }}>
-         <span className="eyebrow">{g.label}</span><span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: g.idx.length > 2 ? "1fr 1fr" : "1fr", gap: 2 }}>
-         {g.idx.map((fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
-          <Link key={fi} href={L(featLinks[fi])} className="cap-item" style={{ display: "flex", gap: 12, padding: "14px 8px", borderRadius: 12, textDecoration: "none", color: "inherit", alignItems: "flex-start" }}>
-           <span style={{ width: 38, height: 38, flex: "none", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: k === "a" ? "var(--azure-wash)" : k === "h" ? "#EAF0F7" : "var(--cool)", color: k === "a" ? "var(--azure-d)" : "var(--harbor)" }}><I size={19} /></span>
-           <span>
-            <span style={{ display: "block", fontSize: 14.5, fontWeight: 600, letterSpacing: "-.01em" }}>{T.feats[fi][0]}</span>
-            <span className="muted" style={{ display: "block", fontSize: 12.5, marginTop: 3, lineHeight: 1.45 }}>{T.feats[fi][1]}</span>
-           </span>
-          </Link>
-         ); })}
-        </div>
+     <div className="home-bento" style={{ marginTop: 36 }}>
+      <Link href={L(featLinks[1])} className="fc hero">
+       <span className="ic"><Icon.chart size={20} /></span>
+       <div>
+        <div className="bento-eyebrow">{ar ? "قرّر" : "Decide"}</div>
+        <h4>{T.feats[1][0]}</h4>
+        <p>{T.feats[1][1]}</p>
+        <svg className="bento-spark" viewBox="0 0 300 44" width="100%" preserveAspectRatio="none" aria-hidden="true"><path d="M0 36 L50 32 L100 34 L150 24 L200 26 L250 14 L300 8" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" /><path d="M0 36 L50 32 L100 34 L150 24 L200 26 L250 14 L300 8 L300 44 L0 44Z" fill="rgba(52,211,153,.12)" /></svg>
        </div>
-      ))}
+      </Link>
+      <Link href={L(featLinks[0])} className="fc wide">
+       <span className="ic"><Icon.building size={20} /></span>
+       <div className="bento-wide-row">
+        <div><h4>{T.feats[0][0]}</h4><p>{T.feats[0][1]}</p></div>
+        <div className="bento-map" aria-hidden="true"><span style={{ left: "22%", top: "32%" }} /><span style={{ left: "58%", top: "54%" }} /><span style={{ left: "40%", top: "72%" }} /></div>
+       </div>
+      </Link>
+      {[2, 4, 3, 9, 6, 7, 8, 5, 10].map((fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
+       <Link key={fi} href={L(featLinks[fi])} className="fc">
+        <span className={k === "a" ? "ic a" : "ic"}><I size={19} /></span>
+        <h4>{T.feats[fi][0]}</h4>
+        <p>{T.feats[fi][1]}</p>
+       </Link>
+      ); })}
      </div>
     </div>
 
