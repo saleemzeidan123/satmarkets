@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import LocationScore from "@/components/LocationScore";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -43,6 +44,16 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
             <span className="row gap6"><Icon.pin size={16} /> {dn}, Riyadh</span><span>·</span><span>{l.area_sqm} m²</span>
           </div>
+          <JsonLd data={{
+            "@type": "RealEstateListing",
+            name: title,
+            url: `${SITE}/${locale}/listings/${l.id}`,
+            inLanguage: ar ? "ar" : "en",
+            provider: { "@type": "Organization", name: "SAT Markets", url: SITE },
+            ...(price != null ? { offers: { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: lease ? "Asking rent, SAR per square metre per year" : "Asking sale price, SAR" } } : {}),
+            ...(l.area_sqm ? { floorSize: { "@type": "QuantitativeValue", value: l.area_sqm, unitCode: "MTK" } } : {}),
+            address: { "@type": "PostalAddress", addressLocality: "Riyadh", addressRegion: String(dn), addressCountry: "SA" },
+          }} />
           <div className="tabs" style={{ marginTop: 22 }}>
             <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> Overview</a>
             <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> Location intelligence</a>

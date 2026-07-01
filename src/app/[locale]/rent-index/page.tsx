@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 const AZURE = "#3A6EA5";
 
@@ -74,6 +75,17 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
 
  return (
   <div style={{ background: "var(--cool)" }}>
+   <JsonLd data={{
+    "@type": "Dataset",
+    name: "SAT Rent Index, Q1 2026",
+    url: `${SITE}/${params.locale}/rent-index`,
+    inLanguage: ["ar", "en"],
+    description: "A comparison of published Saudi commercial rent benchmarks for Q1 2026, compiled and attributed by SAT Markets. Sources: JLL Q1 2026, CBRE Q1 2026, Knight Frank, SAMA. Indicative market context, not advice; SAT does not originate these figures.",
+    creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
+    isBasedOn: ["JLL Q1 2026 published research", "CBRE Q1 2026 published research", "Knight Frank published research", "SAMA published data"],
+    temporalCoverage: "2026-01/2026-03",
+    spatialCoverage: "Riyadh, Saudi Arabia",
+   }} />
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>

@@ -7,6 +7,7 @@ import Header from "@/components/Header";
 import SatFooter from "@/components/SatFooter";
 import ChromeGate from "@/components/ChromeGate";
 import HtmlLangDir from "@/components/HtmlLangDir";
+import JsonLd, { ORG } from "@/components/JsonLd";
 
 export default function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -40,6 +41,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   return (
     <>
       <HtmlLangDir locale={locale} />
+      <JsonLd data={ORG} />
       <ChromeGate header={<>
       <div className="topnotice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "#14181B", color: "#fff", padding: "8px 24px", fontSize: 12.5, flexWrap: "wrap" }}>
         <svg width="16" height="16" viewBox="0 0 100 100" style={{ flex: "none" }}><rect x="7" y="7" width="32" height="48" rx="3" fill="#F6F8FB"/><rect x="44" y="7" width="49" height="48" rx="3" fill="#3A6EA5"/><rect x="7" y="59" width="32" height="34" rx="3" fill="#F6F8FB"/><rect x="44" y="59" width="49" height="34" rx="3" fill="#F6F8FB"/></svg>

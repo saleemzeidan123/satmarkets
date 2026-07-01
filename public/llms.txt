@@ -1,0 +1,12 @@
+# SAT Markets (satmarkets.sa)
+
+Verified commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL licence 1200025510). Arabic-first with a full English mirror.
+
+## What this site offers
+- /en/listings and /ar/listings: verified commercial listings (office, retail, medical, warehouse, showroom, serviced, education, land), lease and sale.
+- /en/rent-index and /ar/rent-index: the SAT Rent Index, a comparison of published Saudi commercial rent benchmarks, attributed to their sources (JLL, CBRE, Knight Frank, SAMA). Indicative market context, not advice. SAT does not originate these figures.
+- /en/area: location intelligence methodology for Saudi trade areas.
+- /en/find: requirement-based matching graded against published benchmarks.
+
+## Citation
+Cite figures with their original source as attributed on the page (for example "JLL Q1 2026, as compiled by SAT Markets"). Do not present compiled benchmarks as SAT's own primary data.

@@ -6,11 +6,12 @@ import { assetLabel, dealLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
+import SaveSearch from "@/components/SaveSearch";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land"];
 const DEALS = ["lease", "sale"];
 
-export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string } }) {
+export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string; view?: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
@@ -45,6 +46,25 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   if (searchParams.deal) baseSp.set("deal", searchParams.deal);
   if (searchParams.q) baseSp.set("q", searchParams.q);
   const base = baseSp.toString();
+  const insightsView = searchParams.view === "insights";
+  const qsWith = (extra?: Record<string, string>) => {
+    const p = new URLSearchParams(baseSp);
+    if (searchParams.district) p.set("district", searchParams.district);
+    if (extra) Object.entries(extra).forEach(([k, v]) => p.set(k, v));
+    const s = p.toString();
+    return s ? `?${s}` : "";
+  };
+  let idx: any[] = [];
+  if (sb && insightsView) {
+    let iq = sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, median, band_low, band_high, sufficient, sort_order").order("sort_order", { ascending: true }).limit(20);
+    if (searchParams.asset) iq = iq.eq("asset_type", searchParams.asset);
+    if (searchParams.district) iq = iq.eq("district_id", searchParams.district);
+    const { data: idata } = await iq;
+    idx = idata ?? [];
+  }
+  const SEGL: Record<string, string> = params.locale === "ar"
+    ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street_front: "واجهة شارع", mall_inline: "داخل مول", clinic: "عيادة" }
+    : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street_front: "Street front", mall_inline: "Mall inline", clinic: "Clinic" };
   const rcity = ar ? "الرياض" : "Riyadh";
   const chip = (label: string, key: "asset" | "deal", val: string) => {
     const active = searchParams[key] === val;
@@ -77,9 +97,42 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
       )}
       <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}</div>
+      <div className="row gap8 wrap" style={{ marginTop: 14 }}>
+        <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
+        <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "رؤى المؤشر" : "Insights"}</Link>
+      </div>
+      <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={[searchParams.deal ? dealLabel(searchParams.deal, locale) : "", searchParams.asset ? assetLabel(searchParams.asset, locale) : "", activeDistrict ? activeDistrict.name : ""].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces")} />
       <div className="lst-split" style={{ marginTop: 18 }}>
       <div>
-      {shown.length === 0 ? (
+      {insightsView ? (
+        <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
+          <div className="row between" style={{ padding: "14px 18px", borderBottom: "1px solid var(--silver)" }}>
+            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{ar ? "شرائح المؤشر للتصفية الحالية · عيّنة المنصّة" : "Index cut for this filter · platform sample"}</div>
+            <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{ar ? "المؤشر الكامل" : "Full index"}</Link>
+          </div>
+          {idx.length === 0 ? (
+            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{ar ? "لا توجد شرائح مؤشر لهذه التصفية. ما لا يحمل بيانات كافية يُوجَّه إلى المستشار." : "No index segments for this filter. Anything without sufficient data routes to the advisor."}</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="dt" style={{ minWidth: 520 }}>
+                <thead><tr><th>{ar ? "الحي" : "District"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق" : "Band"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th></tr></thead>
+                <tbody>
+                  {idx.map((r: any, i: number) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
+                      <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + (SEGL[r.segment] || r.segment) : ""}</td>
+                      <td className="num mono">{r.sufficient && r.median != null ? Number(r.median).toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</td>
+                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} \u2013 ${Number(r.band_high).toLocaleString("en-US")}` : (ar ? "عيّنة قليلة" : "Thin sample")}</td>
+                      <td className="num">{r.sufficient ? <span className="statusdot ok">{ar ? "كافٍ" : "Sufficient"}</span> : <span className="statusdot pend">{ar ? "قليل" : "Thin"}</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. النطاقات المنشورة المنسوبة على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published bands live on the Rent Index page."}</div>
+        </div>
+      ) : shown.length === 0 ? (
         <p className="muted" style={{ marginTop: 10 }}>{ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية." : "No matching spaces. Try widening your filters."}</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
