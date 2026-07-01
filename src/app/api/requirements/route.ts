@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 const ASSETS = ["office","retail","warehouse","medical","showroom","serviced","education"];
@@ -26,6 +27,7 @@ export async function GET() {
 
 // POST: create a requirement, notify the three audiences, return match count
 export async function POST(req: NextRequest) {
+  if (!allow("requirements", req, 8)) return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
  const b = await req.json();
  if (!ASSETS.includes(b.asset_type) || !DEALS.includes(b.deal_type)) {
   return NextResponse.json({ error: "invalid asset or deal type" }, { status: 400 });

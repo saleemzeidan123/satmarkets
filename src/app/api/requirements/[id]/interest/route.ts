@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 // POST: a broker or landlord registers interest in a requirement
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!allow("interest", req, 8)) return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
   const b = await req.json();
   const party_type = b.party_type === "broker" ? "broker" : "landlord";
   const sb = getSupabaseServer();

@@ -452,3 +452,11 @@ html,body{max-width:100%;overflow-x:clip;}
 .idxbar-cap{font-size:11.5px;font-weight:600;margin-top:6px}
 .idxbar-cap[data-v="within"],.idxbar-cap[data-v="below"]{color:var(--green)}
 .idxbar-cap[data-v="above"]{color:#9a6a00}
+
+.feat-card{background:#fff;border:1px solid var(--silver);border-radius:12px;padding:20px;transition:border-color .15s,box-shadow .15s,transform .15s;display:block}
+.feat-card:hover{border-color:var(--harbor);box-shadow:0 8px 22px rgba(20,24,27,.06);transform:translateY(-2px)}
+.feat-ic{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#EAF0F7;color:var(--harbor-d);margin-bottom:14px}
+.feat-ic.a{background:var(--azure-wash);color:var(--azure-d)}
+.feat-ic.s{background:var(--cool);color:var(--slate)}
+.feat-h{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.feat-p{font-size:12.5px;color:var(--slate);margin-top:5px;line-height:1.5}

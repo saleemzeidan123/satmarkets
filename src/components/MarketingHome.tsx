@@ -329,28 +329,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <h2 className="serif" style={{ fontSize: "clamp(26px,5vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
       <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
-     <div className="home-bento" style={{ marginTop: 36 }}>
-      <Link href={L(featLinks[1])} className="fc hero">
-       <span className="ic"><Icon.chart size={20} /></span>
-       <div>
-        <div className="bento-eyebrow">{ar ? "قرّر" : "Decide"}</div>
-        <h4>{T.feats[1][0]}</h4>
-        <p>{T.feats[1][1]}</p>
-        <svg className="bento-spark" viewBox="0 0 300 44" width="100%" preserveAspectRatio="none" aria-hidden="true"><path d="M0 36 L50 32 L100 34 L150 24 L200 26 L250 14 L300 8" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" /><path d="M0 36 L50 32 L100 34 L150 24 L200 26 L250 14 L300 8 L300 44 L0 44Z" fill="rgba(52,211,153,.12)" /></svg>
-       </div>
-      </Link>
-      <Link href={L(featLinks[0])} className="fc wide">
-       <span className="ic"><Icon.building size={20} /></span>
-       <div className="bento-wide-row">
-        <div><h4>{T.feats[0][0]}</h4><p>{T.feats[0][1]}</p></div>
-        <div className="bento-map" aria-hidden="true"><span style={{ left: "22%", top: "32%" }} /><span style={{ left: "58%", top: "54%" }} /><span style={{ left: "40%", top: "72%" }} /></div>
-       </div>
-      </Link>
-      {[2, 4, 3, 9, 6, 7, 8, 5, 10].map((fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
-       <Link key={fi} href={L(featLinks[fi])} className="fc">
-        <span className={k === "a" ? "ic a" : "ic"}><I size={19} /></span>
-        <h4>{T.feats[fi][0]}</h4>
-        <p>{T.feats[fi][1]}</p>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(232px,1fr))", gap: 16, marginTop: 36 }}>
+      {T.feats.map((m, fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
+       <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
+        <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
+        <div className="feat-h">{m[0]}</div>
+        <div className="feat-p">{m[1]}</div>
        </Link>
       ); })}
      </div>

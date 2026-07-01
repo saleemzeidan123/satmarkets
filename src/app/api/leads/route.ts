@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 // The two explicit paths. A lead is direct_contact or representation, nothing
 // in between. Representation leads are expected to spawn a SAT mandate.
 export async function POST(req: NextRequest) {
+  if (!allow("leads", req, 8)) return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
   const body = (await req.json()) as {
     listing_id?: string;
     path?: "direct_contact" | "representation";
