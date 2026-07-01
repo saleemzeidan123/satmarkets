@@ -473,3 +473,11 @@ html,body{max-width:100%;overflow-x:clip;}
   .lst-map-panel.open .lst-map-close{display:inline-flex}
   .lst-map-toggle{display:inline-flex;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;box-shadow:var(--sh-3)}
 }
+
+/* flyer print isolation */
+@media print {
+  body * { visibility: hidden !important; }
+  .flyer-page, .flyer-page * { visibility: visible !important; }
+  .flyer-page { position: absolute !important; inset: 0 !important; max-width: none !important; border: none !important; border-radius: 0 !important; }
+  .no-print { display: none !important; }
+}
