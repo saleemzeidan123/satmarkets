@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
+import LocationScore from "@/components/LocationScore";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -68,6 +69,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           </div>
+          <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} />
           <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
             <div className="modhead"><Icon.target size={18} /><span className="ttl">Location intelligence</span><span className="grow" /><span className="tag">sample</span></div>
             <div className="satmkt-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
