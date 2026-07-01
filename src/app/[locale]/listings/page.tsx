@@ -16,7 +16,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const sb = getSupabaseServer();
   let listings: Listing[] = [];
   if (sb) {
-    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(60);
+    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(200);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
     const { data } = await query;
@@ -35,7 +35,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
           <div className="eyebrow">{ar ? "المنصّة" : "The exchange"}</div>
-          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{ar ? "مساحات موثّقة في الرياض" : "Verified spaces in Riyadh"}</h1>
+          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{ar ? "مساحات موثّقة في المملكة" : "Verified spaces across the Kingdom"}</h1>
         </div>
         <Link href={`/${locale}/map`} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{ar ? "عرض على الخريطة" : "View on map"} <Icon.pin size={16} /></Link>
       </div>

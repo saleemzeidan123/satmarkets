@@ -61,15 +61,15 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  const op = open.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
  const cp = capped.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
  const kpis: [string, string, string, string | null][] = ar ? [
-  ["1,420", "وسيط الفئة A ريال/م²·سنة", "+8.4% مفتوح", "up"],
-  ["96%", "إشغال الفئة A", "+1.2 نقطة", "up"],
-  ["61%", "المخزون تحت التجميد", "تغطية المسقوف", null],
-  ["+24%", "الفئة B سنوياً", "طلب فائض", "up"],
+  ["3,630", "كافد الفئة الأولى ريال/م²·سنة", "+5.5% سنوياً", "up"],
+  ["2,370", "الفئة A ريال/م²·سنة", "+2.1% سنوياً", "up"],
+  ["1,680", "الفئة B ريال/م²·سنة", "+5.1% سنوياً", "up"],
+  ["97.7%", "إشغال الفئة A", "شواغر الفئة الأولى 3.1%", null],
  ] : [
-  ["1,420", "Median Grade A SAR/m²·yr", "+8.4% open", "up"],
-  ["96%", "Grade A occupancy", "+1.2 pts", "up"],
-  ["61%", "Stock under freeze", "capped coverage", null],
-  ["+24%", "Grade B YoY", "spillover demand", "up"],
+  ["3,630", "KAFD prime SAR/m²·yr", "+5.5% YoY", "up"],
+  ["2,370", "Grade A SAR/m²·yr", "+2.1% YoY", "up"],
+  ["1,680", "Grade B SAR/m²·yr", "+5.1% YoY", "up"],
+  ["97.7%", "Grade A occupancy", "prime vacancy 3.1%", null],
  ];
 
  return (
@@ -80,7 +80,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      <div>
       <div className="eyebrow">{ar ? "مؤشر SAT للإيجارات · الربع الأول 2026" : "SAT Rent Index · Q1 2026"}</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "إيجارات الرياض التجارية" : "Riyadh commercial rents"}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "142 حياً · صفقات موثّقة فقط · يُحدّث أسبوعياً" : "142 districts · verified transactions only · updated weekly"}</div>
+      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "الربع الأول 2026 · معايير سوق منشورة منسوبة إلى مصادرها · معاينة المنصّة على بيانات عيّنة" : "Q1 2026 · published market benchmarks, attributed to source · platform preview on sample data"}</div>
      </div>
      <div className="row gap10 wrap">
       <span className="seg"><span className="on">{ar ? "الكل" : "All"}</span><span>{ar ? "مفتوح" : "Open"}</span><span>{ar ? "مسقوف" : "Capped"}</span></span>
@@ -101,7 +101,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="side">
        <div className="h"><span className="freeze open"><span className="dot" />{ar ? "مفتوح" : "Open"}</span> {ar ? "جديد وأول إيجار · يحدّد العنوان" : "New & first-lease · sets the headline"}</div>
        <div className="sub">{ar ? "المباني الجديدة وعقود الإيجار الأولى غير متأثرة بالسقف وتُعاد تسعيرها وفق السوق كل مدة." : "New-build and first-time leases are unaffected by the cap and continue to re-price to market each term."}</div>
-       <div className="big" style={{ color: "var(--azure-d)" }}>+8.4% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "سنوياً على الفئة A المفتوحة" : "YoY on open Grade A"}</span></div>
+       <div className="big" style={{ color: "var(--azure-d)" }}>+2.1% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "سنوياً على الفئة A (منشور)" : "YoY on Grade A (published)"}</span></div>
       </div>
      </div>
     </div>
@@ -120,12 +120,26 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      ))}
     </div>
 
+    <div style={{ padding: "12px 24px 0" }}>
+     <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "معايير الربع الأول 2026 المنشورة. المصادر: JLL الربع الأول 2026، CBRE الربع الأول 2026، نايت فرانك، ساما. سياق سوقي منسوب إلى مصدره، استرشادي، ليس نصيحة." : "Published Q1 2026 benchmarks. Sources: JLL Q1 2026, CBRE Q1 2026, Knight Frank, SAMA. Attributed market context. Indicative, not advice."}</span>
+    </div>
+
     {/* main grid */}
     <div className="rent-grid">
+     {/* published bands, attributed (Layer 1) */}
+     <div className="card pad" style={{ gridColumn: "1 / -1", boxShadow: "var(--sh-1)" }}>
+      <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "النطاقات المنشورة · الربع الأول 2026 (منسوبة)" : "Published bands · Q1 2026 (attributed)"}</div>
+      <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ar ? "قارن تطويراً بتطوير وحياً بحي، لا عبر الفئات. ما لا يحمل مصدراً مُسمّى يُوجَّه إلى المستشار." : "Compare development with development, district with district, never across tiers. Anything without a named source routes to the advisor."}</div>
+      <div className="col gap8" style={{ marginTop: 14, fontSize: 13.5 }}>
+       <div><strong>{ar ? "التطويرات:" : "Developments:"}</strong> {ar ? "كافد 3,400 إلى 3,800 (موثّق) · وادي ليسن 3,000 إلى 4,000 (موثّق) · البقية بانتظار بيانات موثّقة" : "KAFD 3,400 to 3,800 (verified) · Laysen Valley 3,000 to 4,000 (verified) · others pending verified data"}</div>
+       <div><strong>{ar ? "الأحياء:" : "Districts:"}</strong> {ar ? "العليا 2,200 إلى 3,200 (موثّق) · حطين والصحافة 1,800 إلى 2,600 (موثّق) · البقية بانتظار بيانات موثّقة" : "Al Olaya 2,200 to 3,200 (verified) · Hittin and Sahafa 1,800 to 2,600 (verified) · others pending verified data"}</div>
+       <div><strong>{ar ? "الشوارع:" : "Streets:"}</strong> {ar ? "شارع التحلية، تجزئة: 2,500 إلى 4,000، الوسيط 3,200 (موثّق) · البقية بانتظار بيانات موثّقة" : "Tahlia Street, retail: 2,500 to 4,000, median 3,200 (verified) · others pending verified data"}</div>
+      </div>
+     </div>
      {/* trend chart */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
-       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "مؤشر إيجار المكاتب، العليا" : "Office rent index, Al Olaya"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مُعاد إلى 100 · مفتوح مقابل مسقوف منذ القرار" : "Rebased to 100 · open vs capped since the decree"}</div></div>
+       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "مؤشر إيجار المكاتب، العليا" : "Office rent index, Al Olaya"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مُعاد إلى 100 · مفتوح مقابل مسقوف · عيّنة توضيحية قبل الإطلاق" : "Rebased to 100 · open vs capped · illustrative pre-launch sample"}</div></div>
        <div className="col gap8">
         <span className="lgd"><span className="sw" /> {ar ? "مفتوح (أول إيجار)" : "Open (first-lease)"}</span>
         <span className="lgd"><span className="sw dash" /> {ar ? "مسقوف (مجمّد)" : "Capped (frozen)"}</span>
@@ -150,7 +164,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "حرارة الإيجار · حسب الحي" : "Rent heat · by district"}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "الأغمق = ريال/م² أعلى" : "Darker = higher SAR/m²"}</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "الأغمق = ريال/م² أعلى · عيّنة توضيحية" : "Darker = higher SAR/m² · illustrative sample"}</div>
       <div className="map" style={{ height: 176, borderRadius: 10, marginTop: 16, border: "1px solid var(--silver)" }}>
        <div className="blob" style={{ left: "14%", top: "20%", width: 70, height: 60, background: "rgba(58,110,165,.28)", borderColor: "rgba(58,110,165,.4)" }} />
        <div className="blob" style={{ left: "46%", top: "16%", width: 60, height: 55, background: "rgba(58,110,165,.42)", borderColor: "rgba(58,110,165,.5)" }} />
@@ -167,7 +181,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      {/* district table */}
      <div className="card" style={{ gridColumn: "1 / -1", overflow: "hidden", boxShadow: "var(--sh-1)" }}>
       <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "معايير الأحياء" : "District benchmarks"}</div>
+       <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "معايير الأحياء · عيّنة المنصّة" : "District benchmarks · platform sample"}</div>
        <span className="chip" style={{ borderColor: "var(--silver)" }}>{ar ? "ترتيب: الحركة السنوية" : "Sort: YoY movement"} <Icon.chevd size={14} /></span>
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -181,7 +195,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
            <td className="num mono" style={{ fontWeight: 500 }}>{d[2]}</td>
            <td className="num mono muted">{d[3]}</td>
            <td className="num">{d[4] ? <span className="statusdot ok">{ar ? "كافٍ" : "Sufficient"}</span> : <span className="statusdot pend">{ar ? "قليل" : "Thin"}</span>}</td>
-           <td className="num"><Verified text="✓" /></td>
+           <td className="num"><span className="statusdot pend">{ar ? "عيّنة" : "Sample"}</span></td>
           </tr>
          ))}
         </tbody>
@@ -189,7 +203,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       </div>
       <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "تُستمد الوسطاء والنطاقات من صفقات SAT/RCRI الموثّقة للربع الأول 2026. تُوسَم الأحياء ذات العينة القليلة بدلاً من عرضها، فالمؤشر لا يطبع رقماً لا يستطيع الوقوف خلفه." : "Medians and bands are drawn from verified SAT/RCRI Q1 2026 transactions. Districts with a thin sample are marked rather than shown, the index never prints a number it cannot stand behind."}</span>
+       <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح آلية المؤشر. عند الإطلاق تُحسب الوسطاء والنطاقات من صفقات مُقفلة موثّقة فقط، وتُوسَم العينات القليلة بدلاً من عرضها، فالمؤشر لا يطبع رقماً لا يستطيع الوقوف خلفه." : "Pre-launch sample data illustrating the index mechanism. At launch, medians and bands are computed from verified closed transactions only, and thin samples are marked rather than shown. The index never prints a number it cannot stand behind."}</span>
       </div>
      </div>
     </div>

@@ -164,8 +164,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    <aside className="advisor-rail-r" style={{ background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto" }}>
     <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{ar ? "السياق المباشر · العليا" : "Live context · Al Olaya"}</div></div>
     <div style={{ padding: 20 }} className="col gap16">
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>1,420</span><span className="l">{ar ? "وسيط الفئة A" : "Median Grade A"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>+8.4%</span><span className="l">{ar ? "سنوياً · المخزون المفتوح" : "YoY · open stock"}</span></div></div>
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>96%</span><span className="l">{ar ? "الإشغال" : "Occupancy"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{ar ? "النطاق النهاري" : "Daytime catchment"}</span></div></div>
+     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>2,370</span><span className="l">{ar ? "وسيط الفئة A (منشور)" : "Median Grade A (published)"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>+2.1%</span><span className="l">{ar ? "سنوياً · الفئة A" : "YoY · Grade A"}</span></div></div>
+     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>97.7%</span><span className="l">{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{ar ? "النطاق النهاري" : "Daytime catchment"}</span></div></div>
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
       <div className="eyebrow">{ar ? "المصادر المستخدمة" : "Sources used"}</div>
       <div className="col gap8" style={{ marginTop: 10 }}>

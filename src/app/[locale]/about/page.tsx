@@ -21,7 +21,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
    ["وسطاء مرخّصون","أي وسيط على المنصة يحمل ترخيص فال سارياً من الهيئة العامة للعقار، نتحقق منه قبل أن يعمل."],
    ["ثم تُنشر","بعد هذه الفحوص فقط تُنشر القائمة، مع شارة موثّقة يمكن لأي زائر الاطمئنان لها."],
   ],
-  foot: "سات ماركتس, ذكاء عقاري تجاري موثوق للمملكة العربية السعودية. (الاسم والعلامة قيد الإعداد.)",
+  foot: "سات ماركتس، ذكاء عقاري تجاري موثوق للمملكة العربية السعودية.",
  } : {
   eyebrow: "About",
   title: "The verified data authority for Gulf commercial real estate.",
@@ -38,7 +38,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
    ["Licensed brokers","Any broker on the platform holds a valid FAL licence from REGA. We verify it before they can act on a deal."],
    ["Then it goes live","Only after these checks does a listing publish, with a Verified badge any visitor can trust."],
   ],
-  foot: "SAT Markets, verified commercial real estate intelligence for Saudi Arabia. (Name and brand in progress.)",
+  foot: "SAT Markets, verified commercial real estate intelligence for Saudi Arabia.",
  };
  return (
   <section className="mx-auto max-w-3xl">

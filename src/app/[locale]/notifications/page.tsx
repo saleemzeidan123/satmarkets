@@ -15,7 +15,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
   ]],
   [ar ? "سابقاً" : "Earlier", [
    [Icon.cal, "a", ar ? "تم تأكيد المعاينة" : "Viewing confirmed", ar ? "الخميس 10:00 مع شركة أبراج العليا. أُضيفت إلى تقويمك." : "Thursday 10:00 with Olaya Towers Co. Added to your calendar.", ar ? "أمس" : "Yesterday", false],
-   [Icon.coins, "h", ar ? "عرض مستلَم" : "Offer received", ar ? "قدّمت ريم د. عرضاً: 1,420 ريال/م²، مدة 5 سنوات." : "Reem D. submitted an offer: 1,420 SAR/m², 5-year term.", ar ? "أمس" : "Yesterday", false],
+   [Icon.coins, "h", ar ? "عرض مستلَم" : "Offer received", ar ? "قدّمت ريم د. عرضاً: 1,850 ريال/م²، مدة 5 سنوات." : "Reem D. submitted an offer: 1,850 SAR/m², 5-year term.", ar ? "أمس" : "Yesterday", false],
    [Icon.chart, "", ar ? "تحديث مؤشر الإيجار" : "Rent Index update", ar ? "ارتفعت فئة A في العليا +0.6% هذا الأسبوع (المعروض المفتوح)." : "Al Olaya Grade A rose +0.6% this week (open stock).", ar ? "منذ يومين" : "2 days", false],
    [Icon.flag, "a", ar ? "ترخيص على وشك الانتهاء" : "Permit expiring", ar ? "ترخيص الإعلان لمتجر التحلية ينتهي خلال 30 يوماً." : "Advertising permit for Tahlia retail expires in 30 days.", ar ? "منذ 3 أيام" : "3 days", false],
   ]],
