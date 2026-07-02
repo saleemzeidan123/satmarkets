@@ -3,7 +3,9 @@ const ASSET: Record<string, [string,string]> = {
   office:["Office","مكاتب"], retail:["Retail & F&B","تجزئة ومطاعم"], medical:["Medical","رعاية صحية"],
   showroom:["Showroom","معارض"], warehouse:["Warehouse","مستودعات"], serviced:["Serviced","مكاتب مخدومة"],
   education:["Education","تعليم"], hospitality:["Hospitality","ضيافة"], mixed_use:["Mixed-use","متعدد الاستخدامات"],
-  land:["Land","أراضٍ"]
+  land:["Land","أراضٍ"], gas_station:["Gas station","محطة وقود"],
+  entertainment:["Entertainment","ترفيه"], wedding_hall:["Events & wedding halls","قاعات ومناسبات"],
+  worker_housing:["Worker housing","سكن عمالة"], self_storage:["Self storage","تخزين ذاتي"]
 };
 const DEAL: Record<string,[string,string]> = { lease:["Lease","إيجار"], sale:["Sale","بيع"] };
 const GRADE: Record<string,[string,string]> = { a_plus:["A+","أ+"], a:["A","أ"], b:["B","ب"], c:["C","ج"], n_a:["N/A","N/A"] };

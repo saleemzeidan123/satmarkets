@@ -8,7 +8,7 @@ import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
 import SaveSearch from "@/components/SaveSearch";
 
-const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land"];
+const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const DEALS = ["lease", "sale"];
 
 export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string; view?: string } }) {

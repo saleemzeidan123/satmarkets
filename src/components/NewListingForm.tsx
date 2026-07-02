@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { assetLabel } from "@/lib/labels";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 
 interface District { id: string; name_en: string | null; city: string | null; }
@@ -15,7 +16,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
     lister_type: "owner_direct", video_url: "", floorplan_url: "", authorization_doc_url: "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
-  const assets = ["office","retail","medical","showroom","warehouse","serviced","education","land"];
+  const assets = ["office","retail","medical","showroom","warehouse","serviced","education","land","gas_station","entertainment","wedding_hall","worker_housing","self_storage","hospitality","mixed_use"];
   const isBroker = f.lister_type === "broker_authorized";
 
   async function submit(e: React.FormEvent) {
@@ -43,7 +44,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
     <form onSubmit={submit} className="max-w-xl space-y-3">
       <input required placeholder="Title" value={f.title_en} onChange={(e)=>set("title_en",e.target.value)} className={inp} />
       <div className="flex gap-3">
-        <select value={f.asset_type} onChange={(e)=>set("asset_type",e.target.value)} className={inp+" flex-1"}>{assets.map(a=><option key={a} value={a}>{a}</option>)}</select>
+        <select value={f.asset_type} onChange={(e)=>set("asset_type",e.target.value)} className={inp+" flex-1"}>{assets.map(a=><option key={a} value={a}>{assetLabel(a, locale as "en" | "ar")}</option>)}</select>
         <select value={f.deal_type} onChange={(e)=>set("deal_type",e.target.value)} className={inp+" flex-1"}><option value="lease">lease</option><option value="sale">sale</option></select>
       </div>
       <select value={f.district_id} onChange={(e)=>set("district_id",e.target.value)} className={inp}>

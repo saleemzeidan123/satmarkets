@@ -40,6 +40,11 @@ const ASSETS: { v: string; en: string; ar: string }[] = [
   { v: "land", en: "Land", ar: "أرض" },
   { v: "mixed_use", en: "Mixed use", ar: "متعدد الاستخدامات" },
   { v: "hospitality", en: "Hospitality", ar: "ضيافة" },
+  { v: "gas_station", en: "Gas station", ar: "محطة وقود" },
+  { v: "entertainment", en: "Entertainment", ar: "ترفيه" },
+  { v: "wedding_hall", en: "Events & wedding halls", ar: "قاعات ومناسبات" },
+  { v: "worker_housing", en: "Worker housing", ar: "سكن عمالة" },
+  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي" },
   { v: "education", en: "Education", ar: "تعليم" },
 ];
 const GRADES: { v: string; en: string; ar: string }[] = [

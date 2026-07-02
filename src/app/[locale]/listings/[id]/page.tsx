@@ -80,7 +80,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           </div>
-          <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} />
+          <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} dealType={l.deal_type} price={price != null ? Number(price) : null} areaSqm={l.area_sqm ?? null} />
           <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
             <div className="modhead"><Icon.target size={18} /><span className="ttl">Location intelligence</span><span className="grow" /><span className="tag">sample</span></div>
             <div className="satmkt-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>

@@ -11,6 +11,8 @@ export interface MapBuilding {
 const COLORS: Record<string, string> = {
  office: "#3A6EA5", retail: "#0E9488", medical: "#DB2777", warehouse: "#64748B",
  showroom: "#7C3AED", serviced: "#0EA5E9", education: "#16A34A", land: "#CA8A04",
+ hospitality: "#F472B6", mixed_use: "#1D4ED8", gas_station: "#D97706", entertainment: "#E11D48",
+ wedding_hall: "#A88B5C", worker_housing: "#475569", self_storage: "#65A30D",
 };
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
 const unitFmt = (u: string | null, l: string) =>
