@@ -5,7 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
 
-const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced"];
+const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
 
 export default async function MapPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();

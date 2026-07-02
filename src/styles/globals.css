@@ -167,3 +167,9 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   .tag{padding:5px 10px;}
   .tabs .t{padding:14px 16px;min-height:44px;}
 }
+
+/* ---- Hero asset tiles: swipeable one-line rail on mobile, centered wrap on desktop ---- */
+.hero-assets{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;justify-content:flex-start;padding:2px;}
+.hero-assets::-webkit-scrollbar{display:none;}
+.hero-assets>*{flex:none;scroll-snap-align:start;}
+@media(min-width:1024px){.hero-assets{flex-wrap:wrap;overflow:visible;justify-content:center;}}

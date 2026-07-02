@@ -14,6 +14,15 @@ const ASSETS = [
  { v: "warehouse", en: "Warehouse", ar: "مستودعات", icon: <Icon.layers size={22} /> },
  { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
  { v: "land", en: "Land", ar: "أراضٍ", icon: <Icon.ruler size={22} /> },
+ { v: "serviced", en: "Serviced", ar: "مكاتب مخدومة", icon: <Icon.clock size={22} /> },
+ { v: "mixed_use", en: "Mixed use", ar: "متعدد الاستخدامات", icon: <Icon.city size={22} /> },
+ { v: "hospitality", en: "Hospitality", ar: "ضيافة", icon: <Icon.star size={22} /> },
+ { v: "education", en: "Education", ar: "تعليم", icon: <Icon.doc size={22} /> },
+ { v: "gas_station", en: "Gas station", ar: "محطة وقود", icon: <Icon.bolt size={22} /> },
+ { v: "entertainment", en: "Entertainment", ar: "ترفيه", icon: <Icon.spark size={22} /> },
+ { v: "wedding_hall", en: "Events & halls", ar: "قاعات ومناسبات", icon: <Icon.cal size={22} /> },
+ { v: "worker_housing", en: "Worker housing", ar: "سكن عمالة", icon: <Icon.user size={22} /> },
+ { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
 export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
@@ -185,7 +194,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        ))}
       </div>
       {deal !== "req" && (
-       <div className="hero-assets" style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+       <div className="hero-assets" style={{ display: "flex", gap: 6, marginBottom: 16 }}>
         {ASSETS.map((a) => {
          const on = assetType === a.v;
          return (
