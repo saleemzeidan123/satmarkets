@@ -173,3 +173,35 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .hero-assets::-webkit-scrollbar{display:none;}
 .hero-assets>*{flex:none;scroll-snap-align:start;}
 @media(min-width:1024px){.hero-assets{flex-wrap:wrap;overflow:visible;justify-content:center;}}
+
+/* ---- Brand mark language: the SAT 2x2 mark (one Harbor-lit quadrant) woven through the UI ---- */
+/* Every eyebrow kicker carries the mark: the brand thread across the whole site. */
+.eyebrow{display:inline-flex;align-items:center;gap:8px;}
+.eyebrow::before{content:"";width:9px;height:9px;flex:none;border-radius:1.5px;background:
+  linear-gradient(#3A6EA5,#3A6EA5) 100% 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 0 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 0 100%/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 100% 100%/46% 46% no-repeat;}
+/* Feature cards: quiet mark in the corner, everything wakes on hover. */
+.feat-card{position:relative;border-radius:14px;}
+.feat-card::after{content:"";position:absolute;top:16px;inset-inline-end:16px;width:11px;height:11px;opacity:.35;pointer-events:none;transition:opacity .2s ease,transform .2s ease;background:
+  linear-gradient(#3A6EA5,#3A6EA5) 100% 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 100%/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 100% 100%/46% 46% no-repeat;}
+.feat-card:hover::after{opacity:1;transform:scale(1.25);}
+.feat-ic{transition:background .2s ease,color .2s ease,transform .2s ease;}
+.feat-card:hover .feat-ic,.feat-card:hover .feat-ic.a,.feat-card:hover .feat-ic.s{background:#3A6EA5;color:#fff;transform:translateY(-2px);}
+/* Four-jobs rows: warm wash + Harbor pulse on hover. */
+.home-job{transition:background .18s ease;border-radius:12px;}
+.home-job:hover{background:rgba(58,110,165,.05);}
+.home-job > span:last-child{transition:color .18s ease,transform .18s ease;}
+.home-job:hover > span:last-child{color:#3A6EA5;}
+/* Deal-path and hero lead cards (.lift) carry the corner mark too. */
+.lift{position:relative;}
+.lift::after{content:"";position:absolute;top:16px;inset-inline-end:16px;width:11px;height:11px;opacity:.35;pointer-events:none;transition:opacity .2s ease,transform .2s ease;background:
+  linear-gradient(#3A6EA5,#3A6EA5) 100% 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 100%/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 100% 100%/46% 46% no-repeat;}
+.lift:hover::after{opacity:1;transform:scale(1.25);}
