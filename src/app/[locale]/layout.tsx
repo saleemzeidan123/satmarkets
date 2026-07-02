@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import Header from "@/components/Header";
 import SatFooter from "@/components/SatFooter";
 import ChromeGate from "@/components/ChromeGate";
+import TabBar from "@/components/TabBar";
 import HtmlLangDir from "@/components/HtmlLangDir";
 import JsonLd, { ORG } from "@/components/JsonLd";
 
@@ -49,8 +50,8 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
         <Link href={`/${locale}/rent-index`} style={{ color: "#9DBBD6", fontWeight: 600, textDecoration: "none" }}>{ar ? "استكشف ←" : "Explore →"}</Link>
       </div>
       <Header locale={locale} dict={dict} />
-      </>} footer={<SatFooter locale={locale} />}>
-      <main className="min-h-[70vh]">{children}</main>
+      </>} footer={<><SatFooter locale={locale} /><TabBar locale={locale} /></>}>
+      <main className="min-h-[70vh] has-tabbar">{children}</main>
       </ChromeGate>
     </>
   );

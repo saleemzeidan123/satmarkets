@@ -246,7 +246,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         <span style={{ marginTop: 8, fontSize: 13, fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{ar ? "اعرض التفاصيل" : "View listing"} <Icon.arrow size={16} /></span>
        </div>
       </Link>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 18, marginTop: 18 }}>
+      <div className="snap-row" style={{ marginTop: 18 }}>
        {rest.map((f) => (
         <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
          <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" text={vtxt} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
