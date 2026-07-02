@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 const SITE = "https://satmarkets-sat-markets.vercel.app";
-const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/find", "/advisor", "/compare", "/invest", "/pricing", "/about", "/requirements", "/post-requirement", "/deal", "/locations"];
+const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/find", "/advisor", "/compare", "/invest", "/pricing", "/about", "/requirements", "/post-requirement", "/deal", "/locations", "/market"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

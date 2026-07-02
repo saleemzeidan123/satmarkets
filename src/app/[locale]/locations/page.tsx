@@ -38,6 +38,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
       <div className="eyebrow">{ar ? "الدليل" : "The directory"}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "المواقع التجارية في المملكة" : "Commercial locations across the Kingdom"}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{ar ? "الأحياء والمشاريع والمناطق التي تغطيها المنصّة، مع عدد المساحات الموثّقة ووسيط مؤشر SAT للمكاتب حيث تتوفر بيانات كافية." : "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient."}</p>
+      <div className="row gap8" style={{ marginTop: 12 }}><Link href={`/${locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{ar ? "نبض السوق" : "Market pulse"}</Link></div>
       {KIND_ORDER.map((k) => {
         const group = locs.filter((l) => l.kind === k).sort((a, b) => b.count - a.count || a.name_en.localeCompare(b.name_en));
         if (group.length === 0) return null;

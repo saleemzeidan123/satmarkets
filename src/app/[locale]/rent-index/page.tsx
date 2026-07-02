@@ -1,4 +1,5 @@
 import { isLocale } from "@/i18n/config";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -97,6 +98,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      <div className="row gap10 wrap">
       <span className="seg"><span className="on">{ar ? "الكل" : "All"}</span><span>{ar ? "مفتوح" : "Open"}</span><span>{ar ? "مسقوف" : "Capped"}</span></span>
       <span className="chip">{ar ? "مكاتب" : "Office"} <Icon.chevd size={14} /></span>
+      <Link href={`/${params.locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{ar ? "نبض السوق" : "Market pulse"}</Link>
       <span className="btn secondary"><Icon.download size={15} /> {ar ? "تصدير" : "Export"}</span>
       <span className="btn primary"><Icon.spark size={15} /> {ar ? "اسأل الذكاء" : "Ask AI"}</span>
      </div>
