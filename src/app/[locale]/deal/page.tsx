@@ -1,5 +1,6 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Icon } from "@/components/satkit";
 
 export default function DealPage({ params }: { params: { locale: string } }) {
@@ -70,7 +71,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
        ))}
       </div>
       <div className="row gap10" style={{ marginTop: 16 }}>
-       <span className="btn secondary grow center"><Icon.download size={14} /> {ar ? "تنزيل ورقة الشروط" : "Download term sheet"}</span>
+       <Link href={`/${params.locale}/deal/termsheet`} className="btn secondary grow center" style={{ textDecoration: "none" }}><Icon.download size={14} /> {ar ? "تنزيل ورقة الشروط" : "Download term sheet"}</Link>
        <span className="btn primary grow center">{ar ? "راسل المالك" : "Message the owner"} <Icon.arrow size={15} /></span>
       </div>
      </div>
