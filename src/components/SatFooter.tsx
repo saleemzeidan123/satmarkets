@@ -99,7 +99,7 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         </div>
       </div>
       <div className="bottom">
-        <span>© 2026 SAT MARKETS · SATMARKETS.SA · RIYADH, KSA · SAT REAL ESTATE FAL 1200025510</span>
+        <span>© 2026 SAT MARKETS · SATMARKETS.SA · {locale === "ar" ? "الرياض، السعودية" : "RIYADH, KSA"} · SAT REAL ESTATE FAL 1200025510</span>
         <span>{t("POWERED BY SAT REAL ESTATE")}</span>
       </div>
     </footer>

@@ -168,7 +168,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
         <polyline points={cp} fill="none" stroke="#B7791F" strokeWidth="1.6" strokeDasharray="3 2.5" vectorEffect="non-scaling-stroke" />
         <defs><linearGradient id="gop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={AZURE} /><stop offset="1" stopColor={AZURE} stopOpacity="0" /></linearGradient></defs>
        </svg>
-       <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 9.5, color: "var(--amber)", letterSpacing: ".04em" }}>{ar ? "قرار سبتمبر 2025" : "SEP-25 DECREE"}</div>
+       <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 11, color: "var(--amber)", letterSpacing: ".04em" }}>{ar ? "قرار سبتمبر 2025" : "SEP-25 DECREE"}</div>
       </div>
       <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}>
        <span>Q1&apos;25</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q1&apos;26</span>
