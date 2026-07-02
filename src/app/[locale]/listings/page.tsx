@@ -7,6 +7,7 @@ import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
 import SaveSearch from "@/components/SaveSearch";
+import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const DEALS = ["lease", "sale"];
@@ -19,6 +20,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let listings: Listing[] = [];
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
+  const idxByDistrict = new Map<string, IndexRow[]>();
   if (sb) {
     let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(200);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
@@ -26,6 +28,12 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const { data } = await query;
     listings = (data as Listing[]) ?? [];
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng");
+    const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
+    (irows ?? []).forEach((r: any) => {
+      const arr = idxByDistrict.get(r.district_id) ?? [];
+      arr.push(r as IndexRow);
+      idxByDistrict.set(r.district_id, arr);
+    });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
     bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: (params.locale === "ar" ? g.name_ar : g.name_en) || g.name_en, lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
@@ -158,6 +166,15 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                 <Photo kind={kindFor(l.asset_type)} label={`${type}, ${dn || rcity}`} h={150} fav badges={[...((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed ? [<Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
                 <div className="body">
                   <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (ar ? "عند الطلب" : "On request")}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
+                  {(() => {
+                    if (l.deal_type !== "lease" || l.asking_rent_sqm == null || !l.district_id) return null;
+                    const v = marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade));
+                    if (v.status === "na" || v.deltaPct == null) return null;
+                    const a = Math.abs(v.deltaPct);
+                    const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (ar ? "ضمن نطاق المؤشر" : "Within index band");
+                    const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
+                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={ar ? "مقابل مؤشر SAT للإيجارات، عيّنة المنصّة. استرشادي وليس نصيحة." : "Vs the SAT Rent Index, platform sample. Indicative, not advice."}>{txt}</div>;
+                  })()}
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                   <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span></div>
                 </div>
