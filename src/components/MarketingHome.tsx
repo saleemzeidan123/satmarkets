@@ -295,7 +295,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
        <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
        <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
-        {["Al Olaya", "KAFD", "Hittin", "Tahlia"].map((d, i) => (
+        {(ar ? ["العليا", "كافد", "حطين", "التحلية"] : ["Al Olaya", "KAFD", "Hittin", "Tahlia"]).map((d, i) => (
          <span key={d} style={{ fontSize: 12.5, fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === 0 ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === 0 ? "#fff" : "transparent" }}>{d}</span>
         ))}
        </div>
