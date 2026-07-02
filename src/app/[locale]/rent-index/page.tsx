@@ -29,8 +29,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  ];
 
  const SEG: Record<string, string> = ar
-  ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street: "شارع تجزئة", prime: "مميّز" }
-  : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street: "street", prime: "prime" };
+  ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street: "شارع تجزئة", prime: "مميّز", clinic: "عيادات", street_front: "واجهة شارع", mall_inline: "داخل مول", modern: "حديثة", older: "أقدم", blended: "مجمّع" }
+  : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street: "street", prime: "prime", clinic: "Clinic", street_front: "Street front", mall_inline: "Mall inline", modern: "Modern", older: "Older", blended: "Blended" };
  const ASSET: Record<string, string> = ar
   ? { office: "مكاتب", retail: "تجزئة", warehouse: "مستودعات", serviced: "مفروشة", medical: "طبي", showroom: "معارض", land: "أراضٍ" }
   : { office: "Office", retail: "Retail", warehouse: "Warehouse", serviced: "Serviced", medical: "Medical", showroom: "Showroom", land: "Land" };
@@ -41,7 +41,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   if (supabase) {
    const { data } = await supabase
     .from("rent_index_published")
-    .select("district_label, asset_type, segment, median, band_low, band_high, sufficient, sort_order")
+    .select("district_label, district_label_ar, asset_type, segment, median, band_low, band_high, sufficient, sort_order")
     .order("sort_order", { ascending: true })
     .limit(14);
    if (data && data.length) {
@@ -49,7 +49,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment ? " · " + (SEG[r.segment] || r.segment) : ""}`;
      const median = r.sufficient && r.median != null ? nf(Number(r.median)) : (ar ? "غير متاح" : "n/a");
      const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}–${nf(Number(r.band_high))}` : (ar ? "عينة قليلة" : "Thin sample");
-     return [r.district_label, asset, median, band, !!r.sufficient];
+     return [ar ? (r.district_label_ar || r.district_label) : r.district_label, asset, median, band, !!r.sufficient];
     });
    }
   }

@@ -14,7 +14,7 @@ const FITOUT: Record<string,[string,string]> = {
   fitted:["Fitted","مجهز"], furnished:["Furnished","مفروش"], n_a:["N/A","N/A"]
 };
 const CONF: Record<string,[string,string]> = { low:["Low","منخفضة"], medium:["Medium","متوسطة"], high:["High","عالية"] };
-const CITY: Record<string,[string,string]> = { Riyadh:["Riyadh","الرياض"], Jeddah:["Jeddah","جدة"], Dammam:["Dammam","الدمام"], Khobar:["Khobar","الخبر"] };
+const CITY: Record<string,[string,string]> = { Riyadh:["Riyadh","الرياض"], Jeddah:["Jeddah","جدة"], Dammam:["Dammam","الدمام"], Khobar:["Khobar","الخبر"], Makkah:["Makkah","مكة المكرمة"], Madinah:["Madinah","المدينة المنورة"] };
 const idx = (l: L) => (l === "ar" ? 1 : 0);
 export const assetLabel = (t: string, l: L) => (ASSET[t]?.[idx(l)]) ?? t;
 export const dealLabel = (t: string, l: L) => (DEAL[t]?.[idx(l)]) ?? t;

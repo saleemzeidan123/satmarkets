@@ -82,7 +82,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     </div>
     <div className="me" style={{ borderTopColor: "var(--silver)" }}>
      <span className="avatar" style={{ background: "var(--harbor)" }}>AK</span>
-     <div><div className="nm" style={{ color: "var(--ink)" }}>Ahmed K.</div><div className="rl">{ar ? "مستأجر · شركة آكمي" : "Occupier · Acme Co."}</div></div>
+     <div><div className="nm" style={{ color: "var(--ink)" }}>{ar ? "أحمد ك." : "Ahmed K."}</div><div className="rl">{ar ? "مستأجر · شركة آكمي" : "Occupier · Acme Co."}</div></div>
     </div>
    </aside>
 
