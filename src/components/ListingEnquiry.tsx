@@ -5,11 +5,71 @@ import { Icon } from "@/components/satkit";
 
 type Path = "direct_contact" | "representation";
 
+type QOpt = { v: string; en: string; ar: string };
+type Q = { k: string; en: string; ar: string; opts: QOpt[] };
+
+const Q_ROLE: Q = { k: "role", en: "You are", ar: "أنت", opts: [
+ { v: "tenant", en: "The occupier", ar: "المستأجر نفسه" },
+ { v: "broker", en: "Broker for a client", ar: "وسيط عن عميل" },
+ { v: "investor", en: "An investor", ar: "مستثمر" },
+] };
+const Q_TIME: Q = { k: "timeline", en: "Timeline", ar: "الإطار الزمني", opts: [
+ { v: "now", en: "Ready now", ar: "جاهز الآن" },
+ { v: "3m", en: "Within 3 months", ar: "خلال 3 أشهر" },
+ { v: "exploring", en: "Exploring", ar: "أستكشف" },
+] };
+const QUAL: Record<string, Q[]> = {
+ office: [Q_ROLE, { k: "company", en: "Team size", ar: "حجم الفريق", opts: [
+  { v: "1_10", en: "1-10", ar: "1-10" }, { v: "11_50", en: "11-50", ar: "11-50" }, { v: "51_200", en: "51-200", ar: "51-200" }, { v: "200p", en: "200+", ar: "+200" },
+ ] }, Q_TIME],
+ retail: [{ k: "concept", en: "Concept", ar: "النشاط", opts: [
+  { v: "cafe", en: "Cafe", ar: "مقهى" }, { v: "qsr", en: "Quick-service F&B", ar: "مطعم خدمة سريعة" }, { v: "fashion", en: "Fashion", ar: "أزياء" }, { v: "services", en: "Services", ar: "خدمات" }, { v: "other", en: "Other", ar: "أخرى" },
+ ] }, { k: "branches", en: "Branches today", ar: "عدد الفروع الحالية", opts: [
+  { v: "first", en: "First location", ar: "أول فرع" }, { v: "2_5", en: "2-5", ar: "2-5" }, { v: "6p", en: "6+", ar: "+6" },
+ ] }, { k: "fitout", en: "Fit-out budget", ar: "ميزانية التجهيز", opts: [
+  { v: "ready", en: "Ready", ar: "جاهزة" }, { v: "estimate", en: "Needs estimate", ar: "أحتاج تقديراً" },
+ ] }],
+ warehouse: [{ k: "use", en: "Use", ar: "الاستخدام", opts: [
+  { v: "storage", en: "Storage", ar: "تخزين" }, { v: "distribution", en: "Distribution", ar: "توزيع" }, { v: "light_industrial", en: "Light industrial", ar: "صناعي خفيف" }, { v: "cold", en: "Cold chain", ar: "تبريد" },
+ ] }, { k: "height", en: "Clear height", ar: "الارتفاع الصافي", opts: [
+  { v: "any", en: "Any", ar: "أي ارتفاع" }, { v: "6m", en: "6m+", ar: "+6م" }, { v: "9m", en: "9m+", ar: "+9م" },
+ ] }, Q_TIME],
+ land: [{ k: "intent", en: "Intent", ar: "الهدف", opts: [
+  { v: "develop", en: "Develop", ar: "تطوير" }, { v: "hold", en: "Hold", ar: "احتفاظ" }, { v: "bts", en: "Build to suit", ar: "بناء حسب الطلب" },
+ ] }, { k: "capital", en: "Capital", ar: "التمويل", opts: [
+  { v: "own", en: "Own funds", ar: "تمويل ذاتي" }, { v: "financing", en: "Financing arranged", ar: "تمويل مرتب" }, { v: "exploring", en: "Exploring", ar: "قيد الدراسة" },
+ ] }, { k: "track", en: "Projects delivered", ar: "مشاريع منفذة", opts: [
+  { v: "first", en: "First project", ar: "أول مشروع" }, { v: "2_5", en: "2-5", ar: "2-5" }, { v: "6p", en: "6+", ar: "+6" },
+ ] }],
+ medical: [{ k: "specialty", en: "Specialty", ar: "التخصص", opts: [
+  { v: "clinic", en: "General clinic", ar: "عيادة عامة" }, { v: "dental", en: "Dental", ar: "أسنان" }, { v: "poly", en: "Polyclinic", ar: "مجمع عيادات" }, { v: "lab", en: "Lab / imaging", ar: "مختبر / أشعة" },
+ ] }, { k: "licence", en: "Health licence", ar: "الترخيص الصحي", opts: [
+  { v: "licensed", en: "Licensed", ar: "مرخّص" }, { v: "in_progress", en: "In progress", ar: "قيد الإصدار" }, { v: "exploring", en: "Exploring", ar: "أستكشف" },
+ ] }, Q_TIME],
+ showroom: [{ k: "category", en: "Category", ar: "الفئة", opts: [
+  { v: "auto", en: "Automotive", ar: "سيارات" }, { v: "furniture", en: "Furniture", ar: "أثاث" }, { v: "electronics", en: "Electronics", ar: "إلكترونيات" }, { v: "other", en: "Other", ar: "أخرى" },
+ ] }, Q_ROLE, Q_TIME],
+ gas_station: [{ k: "operator", en: "Operator status", ar: "وضع المشغّل", opts: [
+  { v: "existing", en: "Existing operator", ar: "مشغّل قائم" }, { v: "new", en: "New entrant", ar: "داخل جديد" },
+ ] }, Q_TIME],
+ serviced: [{ k: "team", en: "Team size", ar: "حجم الفريق", opts: [
+  { v: "1_5", en: "1-5", ar: "1-5" }, { v: "6_20", en: "6-20", ar: "6-20" }, { v: "21p", en: "21+", ar: "+21" },
+ ] }, { k: "term", en: "Term", ar: "المدة", opts: [
+  { v: "short", en: "Short term", ar: "قصيرة" }, { v: "long", en: "12 months+", ar: "+12 شهراً" },
+ ] }],
+};
+const QUAL_SALE: Q[] = [{ k: "ticket", en: "Ticket", ar: "قيمة الصفقة", opts: [
+ { v: "within", en: "Within asking range", ar: "ضمن النطاق المطلوب" }, { v: "below", en: "Below asking", ar: "أقل من المطلوب" }, { v: "exploring", en: "Exploring", ar: "أستكشف" },
+] }, { k: "funding", en: "Funding", ar: "التمويل", opts: [
+ { v: "cash", en: "Cash", ar: "نقدي" }, { v: "financing", en: "Financing arranged", ar: "تمويل مرتب" }, { v: "subject", en: "Subject to financing", ar: "مشروط بالتمويل" },
+] }, Q_TIME];
+const QUAL_DEFAULT: Q[] = [Q_ROLE, Q_TIME];
+
 export default function ListingEnquiry({
- listingId, price, lease, unit, type, area, district, locale, permit,
+ listingId, price, lease, unit, type, area, district, locale, permit, assetType,
 }: {
  listingId: string; price: number | null; lease: boolean; unit: string;
- type: string; area: number; district: string; locale: string; permit?: string | null;
+ type: string; area: number; district: string; locale: string; permit?: string | null; assetType?: string;
 }) {
  const L = (p: string) => `/${locale}${p}`;
  const ar = locale === "ar";
@@ -25,6 +85,9 @@ export default function ListingEnquiry({
  const [vBusy, setVBusy] = useState(false);
  const [vDone, setVDone] = useState(false);
  const [vErr, setVErr] = useState("");
+ const [qual, setQual] = useState<Record<string, string>>({});
+ const questions: Q[] = !lease ? QUAL_SALE : (QUAL[assetType || ""] || QUAL_DEFAULT);
+ const qualComplete = questions.every((q) => qual[q.k]);
 
  useEffect(() => {
   try {
@@ -64,13 +127,20 @@ export default function ListingEnquiry({
  }, [locale]);
 
  async function submitViewing() {
-  if (!slot || !name.trim() || !email.trim()) return;
+  if (!slot || !name.trim() || !email.trim() || !qualComplete) return;
   setVBusy(true); setVErr("");
   try {
    const res = await fetch("/api/viewings", {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ listing_id: listingId, scheduled_at: slot, contact_name: name, contact_email: email }),
+    body: JSON.stringify({
+     listing_id: listingId, scheduled_at: slot, contact_name: name, contact_email: email,
+     qualification: {
+      answers: qual,
+      summary_en: questions.map((q) => q.opts.find((o) => o.v === qual[q.k])?.en).filter(Boolean).join(" · "),
+      summary_ar: questions.map((q) => q.opts.find((o) => o.v === qual[q.k])?.ar).filter(Boolean).join(" · "),
+     },
+    }),
    });
    const j = await res.json().catch(() => ({}));
    if (res.ok && !j.error) { setVDone(true); } else { setVErr(ar ? "تعذر إرسال الطلب. حاول مرة أخرى." : "Could not send the request. Please try again."); }
@@ -167,10 +237,21 @@ export default function ListingEnquiry({
        </div>
        {slot && (
         <div className="col gap8" style={{ marginTop: 10 }}>
+         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{ar ? "ثلاث إجابات سريعة ليعرف المعلن أن الزيارة تستحق وقته." : "Three quick answers so the lister knows the visit is worth their time."}</div>
+         {questions.map((q) => (
+          <div key={q.k}>
+           <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</div>
+           <div className="row gap6 wrap">
+            {q.opts.map((o) => (
+             <button key={o.v} type="button" onClick={() => setQual((p) => ({ ...p, [q.k]: p[q.k] === o.v ? "" : o.v }))} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{ar ? o.ar : o.en}</button>
+            ))}
+           </div>
+          </div>
+         ))}
          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "اسمك" : "Your name"} style={fld} />
          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Work email"} type="email" style={fld} />
          {vErr ? <div style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
-         <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
+         <button type="button" disabled={vBusy || !name.trim() || !email.trim() || !qualComplete} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() || !qualComplete ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
         </div>
        )}
       </>

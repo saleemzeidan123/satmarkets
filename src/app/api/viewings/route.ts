@@ -7,7 +7,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 // that a person has not agreed to.
 export async function POST(req: NextRequest) {
   if (!allow("viewings", req, 6)) return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
-  let body: { listing_id?: string; scheduled_at?: string; contact_name?: string; contact_email?: string; note?: string } = {};
+  let body: { listing_id?: string; scheduled_at?: string; contact_name?: string; contact_email?: string; note?: string; qualification?: Record<string, unknown> } = {};
   try { body = await req.json(); } catch {}
   const id = String(body.listing_id ?? "");
   if (!/^[0-9a-f-]{36}$/.test(id)) return NextResponse.json({ error: "invalid listing" }, { status: 400 });
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     contact_name: name.slice(0, 120),
     contact_email: email.slice(0, 200),
     note: body.note ? String(body.note).slice(0, 400) : null,
+    qualification: body.qualification && typeof body.qualification === "object" && JSON.stringify(body.qualification).length < 2000 ? body.qualification : null,
   });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
