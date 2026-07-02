@@ -87,10 +87,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <input name="q" defaultValue={searchParams.q || ""} placeholder={ar ? "صف ما تحتاجه، مثل: مكتب فئة A مجهّز في العليا بأقل من 1,600، بنحو 300 م²" : "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
       </form>
-      <div className="row gap8 wrap" style={{ marginTop: 14 }}>
+      <div className="row gap8 chip-rail" style={{ marginTop: 14 }}>
         <span className="tag">{ar ? "نوع الصفقة:" : "Deal:"}</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
       </div>
-      <div className="row gap8 wrap" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
+      <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
       {activeDistrict && (
         <div className="row gap8 wrap" style={{ marginTop: 8 }}>
           <Link href={`/${locale}/listings${base ? `?${base}` : ""}`} className="chip on" style={{ textDecoration: "none" }}>{(ar ? "الحي: " : "District: ") + activeDistrict.name} ✕</Link>
