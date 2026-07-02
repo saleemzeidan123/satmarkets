@@ -36,7 +36,7 @@ export default function LocationSearch({ locale, options, initial }: { locale: s
             else if (e.key === "Enter") { e.preventDefault(); if (matches[hi]) go(matches[hi]); }
             else if (e.key === "Escape") setOpen(false);
           }}
-          placeholder="Search any city or district across Saudi Arabia"
+          placeholder="Search any city, district or project across Saudi Arabia"
           style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 15, color: "var(--ink)", fontFamily: "var(--sans)" }}
         />
         {q ? <button type="button" onClick={() => { setQ(""); setOpen(true); }} aria-label="Clear" style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", fontSize: 18, lineHeight: 1 }}>&times;</button> : null}

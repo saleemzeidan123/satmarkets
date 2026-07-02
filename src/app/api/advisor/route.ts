@@ -88,19 +88,19 @@ export async function POST(req: NextRequest) {
     const broad = !intent?.district && (intent?.figure === null || intent?.figure === undefined);
     if (!broad) return NextResponse.json({ mode: "search" });
     const askMsg = await llm([{ role: "system", content: ASK_SYS }, { role: "user", content: raw }], false);
-    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : "Happy to help you find the right space. Which district are you considering, what is your budget per square metre, and roughly what size do you need?";
+    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : "Happy to help you find the right space. Which location are you considering, for example Al Olaya or KAFD, what is your budget per square metre, and roughly what size do you need?";
     return NextResponse.json({ mode: "ask", message: askSafe });
   }
 
   if (mode === "chat") {
     const msg = await llm([{ role: "system", content: CHAT_SYS }, ...hist, { role: "user", content: raw }], false);
-    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : "I would rather pull any rent or price from the SAT Rent Index than quote one from memory. Tell me the district and asset type, for example Al Olaya office, and I will give you the verified band.";
+    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : "I would rather pull any rent or price from the SAT Rent Index than quote one from memory. Tell me the location and asset type, for example Al Olaya office or KAFD office, and I will give you the verified band.";
     return NextResponse.json({ mode: "chat", message: chatSafe });
   }
 
   if (mode === "value") {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "value", message: "Tell me the district and the asset type, for example Al Olaya office, and I will pull the current band from the SAT Rent Index." });
+      return NextResponse.json({ mode: "value", message: "Tell me the location and the asset type, for example Al Olaya office or KAFD office, and I will pull the current band from the SAT Rent Index." });
     }
     let band: any = null;
     if (supabase) {
@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "value", message: "I do not have published SAT Rent Index data for that district and asset type yet, so I will not put a number on it. Try another district, for example Al Olaya office, or browse the verified listings." });
+      return NextResponse.json({ mode: "value", message: "I do not have published SAT Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example Al Olaya office, or browse the verified listings." });
     }
     const seg = band.segment ? ` ${band.segment}` : "";
     const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the SAT Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, median ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${band.source}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the median. If they gave no figure, just describe the current band plainly. Two to four sentences. No em dashes.`;
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
 
   if (mode === "watch") {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "watch", message: "Tell me the district and asset type you want to watch, for example Al Olaya office, and the percent move to alert on." });
+      return NextResponse.json({ mode: "watch", message: "Tell me the location and asset type you want to watch, for example Al Olaya office or KAFD office, and the percent move to alert on." });
     }
     let band: any = null;
     if (supabase) {
@@ -133,7 +133,7 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "watch", message: "I do not have published SAT Rent Index data for that district and asset type yet, so I cannot set a baseline. Try another district, for example Al Olaya office." });
+      return NextResponse.json({ mode: "watch", message: "I do not have published SAT Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example Al Olaya office." });
     }
     const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
     const seg = band.segment ? ` ${band.segment}` : "";

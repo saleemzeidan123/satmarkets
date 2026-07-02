@@ -19,14 +19,14 @@ const INTEL: Record<string, Tpl> = {
     hero: [
       ["Metro access", "الوصول للمترو", "8 min", "walk to nearest station", "مشياً إلى أقرب محطة"],
       ["Amenity within 500m", "الخدمات ضمن 500م", "24", "F&B and retail units", "مطاعم ومقاهٍ وتجزئة"],
-      ["RHQ firms in district", "شركات المقرات الإقليمية بالحي", "46", "MISA-licensed presence", "مرخّصة لدى وزارة الاستثمار"],
+      ["RHQ firms in the area", "شركات المقرات الإقليمية بالمنطقة", "46", "MISA-licensed presence", "مرخّصة لدى وزارة الاستثمار"],
       ["Working-age reach", "الوصول للقوى العاملة", "2.1M", "30-min drive-time", "ضمن 30 دقيقة قيادة"],
     ],
     uses: [
       ["Regional HQ", "مقر إقليمي", 5, "Grade, cluster and metro access fit the RHQ profile", "الفئة والتجمّع والمترو تناسب المقرات الإقليمية"],
-      ["Professional services", "خدمات مهنية", 5, "Client-proximate district with strong amenity", "حي قريب من العملاء بخدمات قوية"],
+      ["Professional services", "خدمات مهنية", 5, "Client-proximate location with strong amenity", "موقع قريب من العملاء بخدمات قوية"],
       ["Tech and fintech", "تقنية وتقنية مالية", 4, "Talent reach is strong, cluster still forming", "وصول جيد للكفاءات والتجمّع في تشكّل"],
-      ["Government-adjacent", "قريب من الجهات الحكومية", 3, "Depends on ministry proximity for this district", "يعتمد على قرب الجهات لهذا الحي"],
+      ["Government-adjacent", "قريب من الجهات الحكومية", 3, "Depends on ministry proximity for this location", "يعتمد على قرب الجهات لهذا الموقع"],
       ["Back office", "مكاتب مساندة", 2, "Rent level suits front-of-house functions better", "مستوى الإيجار يناسب الوظائف الأمامية أكثر"],
     ],
     usesTitle: ["Best-fit occupiers", "أنسب الشاغلين"],
@@ -103,7 +103,7 @@ const INTEL: Record<string, Tpl> = {
     hero: [
       ["Metro access", "الوصول للمترو", "8 min", "walk to nearest station", "مشياً إلى أقرب محطة"],
       ["Hotels within 1km", "فنادق ضمن كيلومتر", "6", "visiting-team demand", "طلب الفرق الزائرة"],
-      ["RHQ soft-landing demand", "طلب الهبوط الناعم للمقرات", "High", "district RHQ activity", "نشاط المقرات في الحي"],
+      ["RHQ soft-landing demand", "طلب الهبوط الناعم للمقرات", "High", "RHQ activity around the location", "نشاط المقرات حول الموقع"],
       ["Amenity within 500m", "الخدمات ضمن 500م", "24", "F&B and retail units", "مطاعم وتجزئة"],
     ],
     uses: [
@@ -239,7 +239,7 @@ const INTEL: Record<string, Tpl> = {
     uses: [
       ["Serviced apartments", "شقق مخدومة", 5, "Long-stay corporate and relocation demand", "طلب إقامات طويلة للشركات والانتقال"],
       ["Business hotel", "فندق أعمال", 4, "Office base fills weekdays", "قاعدة المكاتب تملأ أيام الأسبوع"],
-      ["Boutique", "بوتيك", 3, "Depends on district character", "يعتمد على طابع الحي"],
+      ["Boutique", "بوتيك", 3, "Depends on the area character", "يعتمد على طابع المنطقة"],
       ["Economy", "اقتصادي", 3, "Rate positioning against supply pipeline", "تموضع سعري مقابل الإمداد القادم"],
     ],
     usesTitle: ["Best-fit formats", "أنسب الصيغ"],
@@ -256,7 +256,7 @@ const INTEL: Record<string, Tpl> = {
     uses: [
       ["Retail podium", "تجزئة الدور الأرضي", 5, "Footfall carries convenience and F&B", "حركة المشاة تحمل التجزئة اليومية والمطاعم"],
       ["Offices above", "مكاتب علوية", 4, "Transit and amenity fit office floors", "النقل والخدمات يناسبان الأدوار المكتبية"],
-      ["Serviced floors", "أدوار مخدومة", 4, "Flex demand from the district cluster", "طلب مرن من تجمّع الحي"],
+      ["Serviced floors", "أدوار مخدومة", 4, "Flex demand from the surrounding cluster", "طلب مرن من التجمّع المحيط"],
       ["Residential upper floors", "سكني علوي", 4, "Amenity-rich living for professionals", "سكن غني بالخدمات للمهنيين"],
     ],
     usesTitle: ["Best-fit stack", "أنسب التوزيع الرأسي"],

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
  return NextResponse.json({ ok: true, id, ref, match: count ?? 0, notified: NOTIFIED, stored: true });
 }
 
-const NOTIFIED = ["SAT broker network", "Verified landlords in your districts", "SAT requirements desk"];
+const NOTIFIED = ["SAT broker network", "Verified landlords in your locations", "SAT requirements desk"];
 const MOCK = [
  { id: "m1", ref: "R-20418", title: "Regional HQ office, Grade A, KAFD", asset: "office", deal: "lease", district: "KAFD", city: "Riyadh", sizeMin: 500, sizeMax: 1200, budget: 3000, timeline: "Q3", mustHaves: ["Fitted","Parking","Metro nearby"], interest: 1 },
  { id: "m2", ref: "R-20420", title: "Fitted office, regional team, Al Olaya", asset: "office", deal: "lease", district: "Al Olaya", city: "Riyadh", sizeMin: 300, sizeMax: 700, budget: 2700, timeline: "Q4", mustHaves: ["Fitted","Raised floor"], interest: 0 },

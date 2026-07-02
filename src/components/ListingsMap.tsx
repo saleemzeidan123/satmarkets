@@ -62,7 +62,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams }: {
       <div className={"lst-map-panel" + (open ? " open" : "")}>
         <div ref={ref} style={{ position: "absolute", inset: 0 }} />
         <button type="button" className="btn primary lst-map-close" onClick={() => setOpen(false)}>{ar ? "إغلاق الخريطة" : "Close map"}</button>
-        <span className="tag" style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.92)" }}>{ar ? "فقاعات على مستوى الحي، ونقاط خضراء لمبانٍ محددة" : "District-level bubbles, green dots are exact buildings"}</span>
+        <span className="tag" style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.92)" }}>{ar ? "فقاعات على مستوى الموقع، ونقاط خضراء لمبانٍ محددة" : "Location-level bubbles, green dots are exact buildings"}</span>
       </div>
       <button type="button" className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{ar ? "عرض الخريطة" : "Show map"}</button>
     </>
