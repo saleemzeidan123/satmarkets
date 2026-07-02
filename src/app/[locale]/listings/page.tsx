@@ -41,6 +41,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   }
   const shown = searchParams.district ? listings.filter((l: any) => l.district_id === searchParams.district) : listings;
   const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
+  const dtop = bubbles.slice().sort((a, b) => b.count - a.count).slice(0, 12);
+  if (activeDistrict && !dtop.some((d) => d.id === activeDistrict.id)) dtop.unshift(activeDistrict);
   const baseSp = new URLSearchParams();
   if (searchParams.asset) baseSp.set("asset", searchParams.asset);
   if (searchParams.deal) baseSp.set("deal", searchParams.deal);
@@ -91,9 +93,20 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <span className="tag">{ar ? "نوع الصفقة:" : "Deal:"}</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
       </div>
       <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
-      {activeDistrict && (
-        <div className="row gap8 wrap" style={{ marginTop: 8 }}>
-          <Link href={`/${locale}/listings${base ? `?${base}` : ""}`} className="chip on" style={{ textDecoration: "none" }}>{(ar ? "الحي: " : "District: ") + activeDistrict.name} ✕</Link>
+      {dtop.length > 0 && (
+        <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>
+          <span className="tag">{ar ? "الحي:" : "District:"}</span>
+          {dtop.map((b) => {
+            const active = searchParams.district === b.id;
+            const sp = new URLSearchParams(searchParams as Record<string, string>);
+            if (active) sp.delete("district"); else sp.set("district", b.id);
+            const s = sp.toString();
+            return (
+              <Link key={b.id} href={`/${locale}/listings${s ? `?${s}` : ""}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>
+                {b.name} <span style={{ opacity: 0.55, fontFamily: "var(--mono)", fontSize: 11 }}>{b.count}</span>{active ? " ✕" : ""}
+              </Link>
+            );
+          })}
         </div>
       )}
       <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}</div>
