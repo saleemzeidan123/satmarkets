@@ -9,6 +9,7 @@ import type { Listing } from "@/lib/types";
 
 const KEY = "satm_saved";
 const FKEY = "satm_saved_folders";
+const PKEY = "satm_saved_px";
 
 export default function SavedPage({ params }: { params: { locale: string } }) {
   const locale = (isLocale(params.locale) ? params.locale : "en") as "en" | "ar";
@@ -18,13 +19,34 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const [loading, setLoading] = useState(true);
   const [folders, setFolders] = useState<Record<string, string>>({});
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [px, setPx] = useState<Record<string, { was: number; now: number }>>({});
 
   useEffect(() => {
     let saved: string[] = [];
     try { const s = JSON.parse(localStorage.getItem(KEY) || "[]"); saved = Array.isArray(s) ? s : []; } catch {}
     try { const f = JSON.parse(localStorage.getItem(FKEY) || "{}"); if (f && typeof f === "object") setFolders(f); } catch {}
     if (!saved.length) { setLoading(false); return; }
-    fetch(`/api/saved?ids=${saved.join(",")}`).then((r) => r.json()).then((d) => { setListings(d.listings || []); setLoading(false); }).catch(() => setLoading(false));
+    fetch(`/api/saved?ids=${saved.join(",")}`).then((r) => r.json()).then((d) => {
+      const ls: Listing[] = d.listings || [];
+      setListings(ls);
+      try {
+        const prev = JSON.parse(localStorage.getItem(PKEY) || "{}");
+        const stored: Record<string, number> = prev && typeof prev === "object" ? prev : {};
+        const changes: Record<string, { was: number; now: number }> = {};
+        const nextStore: Record<string, number> = {};
+        ls.forEach((l: any) => {
+          const v = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+          if (v == null) return;
+          const now = Number(v);
+          nextStore[l.id] = now;
+          const was = stored[l.id];
+          if (typeof was === "number" && was !== now) changes[l.id] = { was, now };
+        });
+        localStorage.setItem(PKEY, JSON.stringify(nextStore));
+        setPx(changes);
+      } catch {}
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, []);
 
   const clearAll = () => { try { localStorage.setItem(KEY, "[]"); localStorage.setItem(FKEY, "{}"); } catch {} setListings([]); setFolders({}); setActiveFolder(null); };
@@ -62,6 +84,18 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     if (v == null) return T.onReq;
     return `${Number(v).toLocaleString()} ${lease ? T.perYear : T.sar}`;
   };
+  const pxNote = (id: string) => {
+    const c = px[id];
+    if (!c) return null;
+    const pct = Math.round(((c.now - c.was) / c.was) * 100);
+    const down = c.now < c.was;
+    return (
+      <span className="fig block text-[11px] font-semibold" style={{ color: down ? "#1F8A5B" : "#8A5A1F" }}>
+        {ar ? `كان ${c.was.toLocaleString("en-US")} · ${down ? "انخفض" : "ارتفع"} ${Math.abs(pct)}%` : `was ${c.was.toLocaleString("en-US")} · ${down ? "down" : "up"} ${Math.abs(pct)}%`}
+      </span>
+    );
+  };
+  const pxCount = Object.keys(px).length;
   const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return "N/A"; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
 
   return (
@@ -75,6 +109,11 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
         {listings.length > 0 ? <button onClick={clearAll} className="btn-ghost px-3.5 py-2 text-[13px] text-charcoal/70">{T.clear}</button> : null}
       </div>
 
+      {pxCount > 0 && (
+        <div className="mt-5 rounded-xl border border-line bg-white/80 px-4 py-3 text-[13px] text-charcoal">
+          {ar ? `تغيّرت أسعار ${pxCount} من مساحاتك المحفوظة منذ زيارتك الأخيرة. التفاصيل تحت كل سعر.` : `${pxCount} of your saved ${pxCount === 1 ? "space has" : "spaces have"} changed price since your last visit. Details under each price.`}
+        </div>
+      )}
       {loading ? (
         <p className="mt-10 text-charcoal/50">{T.loading}</p>
       ) : listings.length === 0 ? (
@@ -129,7 +168,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 <tbody className="text-charcoal/75">
                   <Row label={T.deal}>{shownL.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
-                  <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span></Cell>)}</Row>
+                  <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
                   <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
                   <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
