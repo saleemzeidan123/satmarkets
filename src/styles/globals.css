@@ -205,3 +205,17 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 100%/46% 46% no-repeat,
   linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 100% 100%/46% 46% no-repeat;}
 .lift:hover::after{opacity:1;transform:scale(1.25);}
+
+/* ---- Brand mark depth pass: listing cards and module headers carry the mark ---- */
+.listing .body{position:relative;}
+.listing .body::after{content:"";position:absolute;bottom:14px;inset-inline-end:14px;width:9px;height:9px;opacity:.3;pointer-events:none;transition:opacity .2s ease;background:
+  linear-gradient(#3A6EA5,#3A6EA5) 100% 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 0 100%/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.16),rgba(28,33,38,.16)) 100% 100%/46% 46% no-repeat;}
+.listing:hover .body::after{opacity:.9;}
+.modhead::before{content:"";width:9px;height:9px;flex:none;margin-inline-end:2px;background:
+  linear-gradient(#3A6EA5,#3A6EA5) 100% 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 0 0/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 0 100%/46% 46% no-repeat,
+  linear-gradient(rgba(28,33,38,.18),rgba(28,33,38,.18)) 100% 100%/46% 46% no-repeat;}
