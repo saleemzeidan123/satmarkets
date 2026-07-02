@@ -8,6 +8,7 @@ import { assetLabel, dealLabel, gradeLabel, cityLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 
 const KEY = "satm_saved";
+const FKEY = "satm_saved_folders";
 
 export default function SavedPage({ params }: { params: { locale: string } }) {
   const locale = (isLocale(params.locale) ? params.locale : "en") as "en" | "ar";
@@ -15,15 +16,27 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const dict = getDictionary(locale);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [folders, setFolders] = useState<Record<string, string>>({});
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
 
   useEffect(() => {
     let saved: string[] = [];
     try { const s = JSON.parse(localStorage.getItem(KEY) || "[]"); saved = Array.isArray(s) ? s : []; } catch {}
+    try { const f = JSON.parse(localStorage.getItem(FKEY) || "{}"); if (f && typeof f === "object") setFolders(f); } catch {}
     if (!saved.length) { setLoading(false); return; }
     fetch(`/api/saved?ids=${saved.join(",")}`).then((r) => r.json()).then((d) => { setListings(d.listings || []); setLoading(false); }).catch(() => setLoading(false));
   }, []);
 
-  const clearAll = () => { try { localStorage.setItem(KEY, "[]"); } catch {} setListings([]); };
+  const clearAll = () => { try { localStorage.setItem(KEY, "[]"); localStorage.setItem(FKEY, "{}"); } catch {} setListings([]); setFolders({}); setActiveFolder(null); };
+
+  const setFolder = (id: string, name: string) => {
+    const next = { ...folders };
+    if (name) next[id] = name; else delete next[id];
+    setFolders(next);
+    try { localStorage.setItem(FKEY, JSON.stringify(next)); } catch {}
+  };
+  const folderNames = Array.from(new Set(Object.values(folders))).sort();
+  const shownL = activeFolder === null ? listings : listings.filter((l) => (folders[l.id] || "") === activeFolder);
 
   const T = {
     title: ar ? "المحفوظة" : "Saved",
@@ -33,6 +46,11 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     clear: ar ? "مسح الكل" : "Clear all",
     loading: ar ? "جارٍ تحميل قائمتك…" : "Loading your shortlist…",
     compare: ar ? "مقارنة" : "Compare",
+    fAll: ar ? "الكل" : "All",
+    fNew: ar ? "مجلد جديد…" : "New folder…",
+    fNone: ar ? "بدون مجلد" : "No folder",
+    fPrompt: ar ? "اسم المجلد" : "Folder name",
+    fDevice: ar ? "المجلدات محفوظة على هذا الجهاز" : "Folders are saved on this device",
     deal: ar ? "الصفقة" : "Deal", type: ar ? "النوع" : "Type", price: ar ? "الإيجار / السعر" : "Rent / price",
     size: ar ? "المساحة" : "Size", grade: ar ? "التصنيف" : "Grade", district: ar ? "الحي" : "District",
     perYear: ar ? "ريال/م²/سنة" : "SAR/sqm/yr", sar: ar ? "ريال" : "SAR", onReq: ar ? "عند الطلب" : "On request",
@@ -69,8 +87,34 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
         </div>
       ) : (
         <>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {listings.map((l) => (<ListingCard key={l.id} listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />))}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <button onClick={() => setActiveFolder(null)} className={activeFolder === null ? "chip on" : "chip"}>{T.fAll} · {listings.length}</button>
+            {folderNames.map((n) => (
+              <button key={n} onClick={() => setActiveFolder(n)} className={activeFolder === n ? "chip on" : "chip"}>{n} · {listings.filter((l) => folders[l.id] === n).length}</button>
+            ))}
+            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/40">{T.fDevice}</span>}
+          </div>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {shownL.map((l) => (
+              <div key={l.id}>
+                <ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />
+                <select
+                  value={folders[l.id] || ""}
+                  onChange={(e) => {
+                    if (e.target.value === "__new__") {
+                      const name = window.prompt(T.fPrompt);
+                      if (name && name.trim()) setFolder(l.id, name.trim());
+                      e.target.value = folders[l.id] || "";
+                    } else setFolder(l.id, e.target.value);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12.5px] text-charcoal/70"
+                >
+                  <option value="">{T.fNone}</option>
+                  {folderNames.map((n) => (<option key={n} value={n}>{n}</option>))}
+                  <option value="__new__">{T.fNew}</option>
+                </select>
+              </div>
+            ))}
           </div>
           <div className="mt-10">
             <h2 className="font-display text-xl text-charcoal">{T.compare}</h2>
@@ -79,16 +123,16 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 <thead>
                   <tr className="border-b border-line">
                     <th className="p-3 text-start text-[11px] uppercase tracking-wide text-charcoal/40"></th>
-                    {listings.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{(ar ? l.title_ar : l.title_en) || (l as any).reference_code}</th>))}
+                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{(ar ? l.title_ar : l.title_en) || (l as any).reference_code}</th>))}
                   </tr>
                 </thead>
                 <tbody className="text-charcoal/75">
-                  <Row label={T.deal}>{listings.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
-                  <Row label={T.type}>{listings.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
-                  <Row label={T.price}>{listings.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span></Cell>)}</Row>
-                  <Row label={T.size}>{listings.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
-                  <Row label={T.grade}>{listings.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
-                  <Row label={T.district}>{listings.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
+                  <Row label={T.deal}>{shownL.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
+                  <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
+                  <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span></Cell>)}</Row>
+                  <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
+                  <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
+                  <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
                 </tbody>
               </table>
             </div>
