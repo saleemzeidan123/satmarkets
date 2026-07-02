@@ -20,6 +20,11 @@ export default function ListingEnquiry({
  const [busy, setBusy] = useState(false);
  const [done, setDone] = useState<Path | null>(null);
  const [saved, setSaved] = useState(false);
+ const [slot, setSlot] = useState<string | null>(null);
+ const [slots, setSlots] = useState<{ iso: string; label: string }[]>([]);
+ const [vBusy, setVBusy] = useState(false);
+ const [vDone, setVDone] = useState(false);
+ const [vErr, setVErr] = useState("");
 
  useEffect(() => {
   try {
@@ -37,6 +42,41 @@ export default function ListingEnquiry({
    setSaved(next.includes(listingId));
    window.dispatchEvent(new Event("storage"));
   } catch {}
+ }
+
+ useEffect(() => {
+  const dayAr = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  const dayEn = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const isAr = locale === "ar";
+  const out: { iso: string; label: string }[] = [];
+  let added = 0, i = 1;
+  while (added < 3 && i < 10) {
+   const day = new Date(Date.now() + i * 86400000); i++;
+   const dow = day.getDay();
+   if (dow === 5 || dow === 6) continue;
+   for (const h of [10, 13, 16]) {
+    const dt = new Date(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate(), h - 3, 0, 0));
+    out.push({ iso: dt.toISOString(), label: `${isAr ? dayAr[dow] : dayEn[dow]} ${day.getDate()}/${day.getMonth() + 1} · ${h}:00` });
+   }
+   added++;
+  }
+  setSlots(out);
+ }, [locale]);
+
+ async function submitViewing() {
+  if (!slot || !name.trim() || !email.trim()) return;
+  setVBusy(true); setVErr("");
+  try {
+   const res = await fetch("/api/viewings", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ listing_id: listingId, scheduled_at: slot, contact_name: name, contact_email: email }),
+   });
+   const j = await res.json().catch(() => ({}));
+   if (res.ok && !j.error) { setVDone(true); } else { setVErr(ar ? "تعذر إرسال الطلب. حاول مرة أخرى." : "Could not send the request. Please try again."); }
+  } catch {
+   setVErr(ar ? "تعذر إرسال الطلب. حاول مرة أخرى." : "Could not send the request. Please try again.");
+  } finally { setVBusy(false); }
  }
 
  async function submit(path: Path) {
@@ -107,6 +147,34 @@ export default function ListingEnquiry({
     <div className="col gap10" style={{ marginTop: 18 }}>
      <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center" }}><Icon.send size={15} /> {ar ? "تواصل مع المعلن" : "Contact the lister"}</button>
      <button onClick={() => submit("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center" }}>{ar ? "اطلب تمثيل سات" : "Request SAT representation"}</button>
+    </div>
+   )}
+
+   {open !== "direct_contact" && (
+    <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
+     <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 9 }}>{ar ? "احجز معاينة" : "Book a viewing"}</div>
+     {vDone ? (
+      <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>
+       <span style={{ color: "var(--green)", flex: "none", marginTop: 1 }}><Icon.check size={16} /></span>
+       <span style={{ lineHeight: 1.55 }}>{ar ? "طُلبت المعاينة. تؤكد سات الموعد مع المالك وتراسلك بالبريد." : "Viewing requested. SAT confirms the slot with the owner and emails you."}</span>
+      </div>
+     ) : (
+      <>
+       <div className="chip-rail row gap6" style={{ maxWidth: "100%" }}>
+        {slots.map((sl) => (
+         <button key={sl.iso} type="button" onClick={() => setSlot(slot === sl.iso ? null : sl.iso)} className={slot === sl.iso ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{sl.label}</button>
+        ))}
+       </div>
+       {slot && (
+        <div className="col gap8" style={{ marginTop: 10 }}>
+         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "اسمك" : "Your name"} style={fld} />
+         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Work email"} type="email" style={fld} />
+         {vErr ? <div style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
+         <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
+        </div>
+       )}
+      </>
+     )}
     </div>
    )}
 
