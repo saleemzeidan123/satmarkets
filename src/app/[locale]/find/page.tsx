@@ -54,6 +54,57 @@ const GRADES: { v: string; en: string; ar: string }[] = [
   { v: "b", en: "Grade B", ar: "الفئة B" },
 ];
 
+const NEEDS: Record<string, { v: string; en: string; ar: string }[]> = {
+  office: [
+    { v: "fitted", en: "Fitted", ar: "مجهز" },
+    { v: "whole_floor", en: "Whole floor", ar: "دور كامل" },
+    { v: "parking", en: "Strong parking", ar: "مواقف كافية" },
+    { v: "metro", en: "Metro nearby", ar: "قرب المترو" },
+    { v: "rhq", en: "RHQ-grade", ar: "بمستوى المقرات الإقليمية" },
+  ],
+  retail: [
+    { v: "street_frontage", en: "Street frontage", ar: "واجهة شارع" },
+    { v: "mall_unit", en: "Mall unit", ar: "وحدة مول" },
+    { v: "fnb_venting", en: "F&B venting", ar: "تهوية مطاعم" },
+    { v: "drive_thru", en: "Drive-thru", ar: "خدمة السيارات" },
+    { v: "high_footfall", en: "High footfall", ar: "حركة مشاة عالية" },
+  ],
+  warehouse: [
+    { v: "clear_9m", en: "Clear height 9m+", ar: "ارتفاع صافٍ +9م" },
+    { v: "dock", en: "Dock loading", ar: "أرصفة تحميل" },
+    { v: "power", en: "Heavy power", ar: "قدرة كهربائية عالية" },
+    { v: "cold", en: "Cold chain", ar: "سلسلة تبريد" },
+    { v: "yard", en: "Yard space", ar: "ساحة خارجية" },
+  ],
+  medical: [
+    { v: "cbahi", en: "CBAHI-ready", ar: "جاهز لاعتماد سباهي" },
+    { v: "ground", en: "Ground floor", ar: "دور أرضي" },
+    { v: "parking", en: "Strong parking", ar: "مواقف كافية" },
+    { v: "clinic_zoning", en: "Clinic zoning", ar: "ترخيص عيادات" },
+  ],
+  land: [
+    { v: "corner", en: "Corner plot", ar: "قطعة زاوية" },
+    { v: "high_far", en: "High FAR", ar: "معامل بناء مرتفع" },
+    { v: "main_road", en: "Main-road frontage", ar: "واجهة طريق رئيسي" },
+    { v: "utilities", en: "Utilities at plot", ar: "خدمات عند القطعة" },
+  ],
+  showroom: [
+    { v: "main_road", en: "Main-road frontage", ar: "واجهة طريق رئيسي" },
+    { v: "double_height", en: "Double height", ar: "ارتفاع مضاعف" },
+    { v: "parking", en: "Strong parking", ar: "مواقف كافية" },
+  ],
+  serviced: [
+    { v: "furnished", en: "Furnished", ar: "مفروش" },
+    { v: "short_term", en: "Short term", ar: "مدة قصيرة" },
+    { v: "meeting", en: "Meeting rooms", ar: "قاعات اجتماعات" },
+  ],
+  gas_station: [
+    { v: "highway", en: "Highway access", ar: "وصول طريق سريع" },
+    { v: "corner", en: "Corner site", ar: "موقع زاوية" },
+    { v: "ev", en: "EV-ready", ar: "جاهز لشحن الكهربائية" },
+  ],
+};
+
 function n(v: number | null): string {
   return v == null ? "" : Number(v).toLocaleString("en-US");
 }
@@ -66,6 +117,7 @@ export default function FindPage() {
   const [sizeMin, setSizeMin] = useState("");
   const [sizeMax, setSizeMax] = useState("");
   const [budget, setBudget] = useState("");
+  const [needs, setNeeds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<Row[] | null>(null);
   const [err, setErr] = useState("");
@@ -121,6 +173,7 @@ export default function FindPage() {
       if (sizeMin) body.sizeMin = Number(sizeMin);
       if (sizeMax) body.sizeMax = Number(sizeMax);
       if (budget) body.budgetSqmMax = Number(budget);
+      if (needs.length) body.needs = needs;
       const res = await fetch("/api/advisor/shortlist", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -164,7 +217,7 @@ export default function FindPage() {
       <form onSubmit={run} className="mt-6 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
         <label className="col-span-2 sm:col-span-1 text-xs text-slate-500">
           {T.asset}
-          <select value={assetType} onChange={(e) => setAssetType(e.target.value)} className={inp}>
+          <select value={assetType} onChange={(e) => { setAssetType(e.target.value); setNeeds([]); }} className={inp}>
             {ASSETS.map((a) => (
               <option key={a.v} value={a.v}>{ar ? a.ar : a.en}</option>
             ))}
@@ -197,6 +250,22 @@ export default function FindPage() {
           {T.budget}
           <input value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" className={inp} />
         </label>
+        {(NEEDS[assetType] || []).length > 0 && (
+          <div className="col-span-2 sm:col-span-3">
+            <div className="text-xs text-slate-500">{ar ? "احتياجات خاصة بالنوع" : "Asset-specific needs"}</div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {(NEEDS[assetType] || []).map((n) => {
+                const on = needs.includes(n.v);
+                return (
+                  <button key={n.v} type="button" onClick={() => setNeeds((p) => (on ? p.filter((x) => x !== n.v) : [...p, n.v]))} className={on ? "chip on" : "chip"} style={{ cursor: "pointer" }}>
+                    {ar ? n.ar : n.en}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{ar ? "تُرفق هذه الاحتياجات بطلبك ليعمل عليها مستشار سات. الترتيب اليوم يعتمد على المساحة والفئة والميزانية الموثّقة." : "These needs are attached to your brief for SAT's advisor. Ranking today uses verified size, grade and budget."}</p>
+          </div>
+        )}
         <div className="col-span-2 sm:col-span-3">
           <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "#fff", padding: "11px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
             {loading ? T.loading : T.go}
