@@ -98,6 +98,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
    ["تتبّع الصفقة", "من الاستفسار إلى المعاينة إلى العرض إلى التسليم، بأطراف موثّقة."],
    ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على حقائق موثّقة والإيجار مقابل المؤشر."],
    ["الثقة والامتثال", "الهيئة العامة للعقار، ونظام حماية البيانات، ومكافحة غسل الأموال، وطبقة توثيق قابلة للتحقّق."],
+   ["نبض السوق", "لوحة السوق الحيّة: نطاقات الإيجار حسب الموقع، والمعروض، وانضباط التسعير مقابل المؤشر."],
   ] as [string,string][],
   ctaH: "أدرج مساحتك، أو اعثر على التالية",
   ctaP: "انضمّ إلى المنصّة الموثّقة المبنية للسوق التجاري في الرياض.",
@@ -158,15 +159,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
    ["Deal tracking", "Enquiry to viewing to offer to handover, with verified parties."],
    ["Compare spaces", "Shortlist side by side on verified facts and rent vs index."],
    ["Trust and compliance", "REGA, PDPL, AML and a checkable verification layer."],
+   ["Market pulse", "The live market board: rent bands by location, supply and pricing discipline vs the index."],
   ] as [string,string][],
   ctaH: "List your space, or find your next one",
   ctaP: "Join the verified exchange built for Riyadh's commercial market.",
   ctaList: "List your space", ctaBrowse: "Browse listings",
  };
 
- const featLinks = ["/map","/rent-index","/area","/invest","/advisor","/post-requirement","/dashboard","/pricing","/deal","/compare","/about"];
- const featKeys = ["h","a","","h","a","","h","a","","h",""];
- const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield];
+ const featLinks = ["/map","/rent-index","/area","/invest","/advisor","/post-requirement","/dashboard","/pricing","/deal","/compare","/about","/market"];
+ const featKeys = ["h","a","","h","a","","h","a","","h","","a"];
+ const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield, Icon.activity];
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
  const f0 = featured[0];
  const rest = featured.slice(1);
@@ -339,7 +341,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
      <div>
-      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 2, 3]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 8, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
+      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 11, 2, 3]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 8, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
        <div key={gi} style={{ marginTop: gi === 0 ? 36 : 30 }}>
         <div className="row gap10" style={{ alignItems: "center", marginBottom: 14 }}>
          <span className="eyebrow">{gt}</span>
