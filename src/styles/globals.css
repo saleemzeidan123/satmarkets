@@ -157,3 +157,6 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 @media(min-width:1024px){.chip-rail{flex-wrap:wrap;overflow:visible;}}
 .listing{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
 .listing:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(20,24,28,.18);border-color:rgba(58,110,165,.35);}
+
+/* ---- Slice 3: listing detail grid collapses on mobile; map chips become a one-line rail ---- */
+@media(max-width:920px){.satmkt-2col{grid-template-columns:1fr!important;}}

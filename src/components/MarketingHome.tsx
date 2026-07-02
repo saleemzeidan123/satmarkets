@@ -329,14 +329,24 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       <h2 className="serif" style={{ fontSize: "clamp(26px,5vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
       <p className="muted" style={{ fontSize: 15.5, maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(232px,1fr))", gap: 16, marginTop: 36 }}>
-      {T.feats.map((m, fi) => { const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
-       <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
-        <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
-        <div className="feat-h">{m[0]}</div>
-        <div className="feat-p">{m[1]}</div>
-       </Link>
-      ); })}
+     <div>
+      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 2, 3]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 8, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
+       <div key={gi} style={{ marginTop: gi === 0 ? 36 : 30 }}>
+        <div className="row gap10" style={{ alignItems: "center", marginBottom: 14 }}>
+         <span className="eyebrow">{gt}</span>
+         <span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(232px,1fr))", gap: 16 }}>
+         {idxs.map((fi) => { const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
+          <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
+           <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
+           <div className="feat-h">{m[0]}</div>
+           <div className="feat-p">{m[1]}</div>
+          </Link>
+         ); })}
+        </div>
+       </div>
+      ))}
      </div>
     </div>
 

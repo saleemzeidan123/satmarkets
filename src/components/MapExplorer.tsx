@@ -232,7 +232,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     </div>
     {/* asset chips (hidden in zone draw to reduce clutter) */}
     {mode !== "zone" && (
-     <div className="flex flex-wrap items-center gap-1.5">
+     <div className="chip-rail flex items-center gap-1.5 lg:flex-wrap" style={{ maxWidth: "100%" }}>
       <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === "all" ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
       {assetOrder.map((a) => (
        <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === a ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
