@@ -74,7 +74,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     fPrompt: ar ? "اسم المجلد" : "Folder name",
     fDevice: ar ? "المجلدات محفوظة على هذا الجهاز" : "Folders are saved on this device",
     deal: ar ? "الصفقة" : "Deal", type: ar ? "النوع" : "Type", price: ar ? "الإيجار / السعر" : "Rent / price",
-    size: ar ? "المساحة" : "Size", grade: ar ? "التصنيف" : "Grade", district: ar ? "الحي" : "District",
+    size: ar ? "المساحة" : "Size", grade: ar ? "التصنيف" : "Grade", district: ar ? "الموقع" : "Location",
     perYear: ar ? "ريال/م²/سنة" : "SAR/sqm/yr", sar: ar ? "ريال" : "SAR", onReq: ar ? "عند الطلب" : "On request",
   };
 

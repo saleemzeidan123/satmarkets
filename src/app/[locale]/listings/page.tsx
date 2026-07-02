@@ -21,13 +21,15 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
+  const locKind = new Map<string, string>();
   if (sb) {
     let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(200);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
     const { data } = await query;
     listings = (data as Listing[]) ?? [];
-    const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng");
+    const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
+    (geo ?? []).forEach((g: any) => { if (g.kind) locKind.set(g.id, g.kind); });
     const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
     (irows ?? []).forEach((r: any) => {
       const arr = idxByDistrict.get(r.district_id) ?? [];
@@ -103,7 +105,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
       {dtop.length > 0 && (
         <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>
-          <span className="tag">{ar ? "الحي:" : "District:"}</span>
+          <span className="tag">{ar ? "الموقع:" : "Location:"}</span>
           {dtop.map((b) => {
             const active = searchParams.district === b.id;
             const sp = new URLSearchParams(searchParams as Record<string, string>);
@@ -111,7 +113,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const s = sp.toString();
             return (
               <Link key={b.id} href={`/${locale}/listings${s ? `?${s}` : ""}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>
-                {b.name} <span style={{ opacity: 0.55, fontFamily: "var(--mono)", fontSize: 11 }}>{b.count}</span>{active ? " ✕" : ""}
+                {b.name}{locKind.get(b.id) === "development" ? <span style={{ opacity: 0.6, fontSize: 10.5 }}> · {ar ? "مشروع" : "project"}</span> : null} <span style={{ opacity: 0.55, fontFamily: "var(--mono)", fontSize: 11 }}>{b.count}</span>{active ? " ✕" : ""}
               </Link>
             );
           })}
@@ -136,7 +138,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 520 }}>
-                <thead><tr><th>{ar ? "الحي" : "District"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق" : "Band"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th></tr></thead>
+                <thead><tr><th>{ar ? "الموقع" : "Location"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق" : "Band"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th></tr></thead>
                 <tbody>
                   {idx.map((r: any, i: number) => (
                     <tr key={i}>

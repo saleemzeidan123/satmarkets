@@ -198,7 +198,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       </div>
       <div style={{ overflowX: "auto" }}>
        <table className="dt" style={{ minWidth: 640 }}>
-        <thead><tr><th>{ar ? "الحي" : "District"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق (ريال/م²)" : "Band (SAR/m²)"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th><th style={{ textAlign: "right" }}>{ar ? "المصدر" : "Source"}</th></tr></thead>
+        <thead><tr><th>{ar ? "الموقع" : "Location"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق (ريال/م²)" : "Band (SAR/m²)"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th><th style={{ textAlign: "right" }}>{ar ? "المصدر" : "Source"}</th></tr></thead>
         <tbody>
          {districts.map((d, i) => (
           <tr key={i}>

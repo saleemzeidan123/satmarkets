@@ -64,7 +64,7 @@ export default function ListPage({ params }: { params: { locale: string } }) {
       <div className="input"><span>{ar ? "18 · النطاق العلوي" : "18 · High zone"}</span></div>
      </div>
      <div className="field" style={{ gridColumn: "1 / -1" }}>
-      <label>{ar ? "الحي" : "District"}</label>
+      <label>{ar ? "الموقع" : "Location"}</label>
       <div className="input between"><span className="row gap8"><span style={{ color: "var(--harbor)" }}><Icon.pin size={16} /></span> {ar ? "العليا، الرياض" : "Al Olaya, Riyadh"}</span><span className="muted2"><Icon.chevd size={16} /></span></div>
      </div>
      <div className="field" style={{ gridColumn: "1 / -1" }}>
