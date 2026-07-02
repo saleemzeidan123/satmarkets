@@ -117,6 +117,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
               </Link>
             );
           })}
+          <Link href={`/${locale}/locations`} className="chip" style={{ textDecoration: "none", opacity: 0.85 }}>{ar ? "كل المواقع" : "All locations"}</Link>
         </div>
       )}
       <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}</div>
