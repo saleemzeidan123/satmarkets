@@ -27,7 +27,9 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams }: {
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       ro = new ResizeObserver(() => { try { map.resize(); } catch {} });
       ro.observe(ref.current);
+      [80, 300, 900, 2000].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
       map.on("load", () => {
+        [60, 400].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
         map.addSource("d", { type: "geojson", data: { type: "FeatureCollection", features: bubbles.map((b) => ({ type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: { id: b.id, name: b.name, count: b.count } })) } });
         map.addLayer({ id: "d-c", type: "circle", source: "d", paint: { "circle-color": "#3A6EA5", "circle-opacity": 0.85, "circle-radius": ["interpolate", ["linear"], ["get", "count"], 1, 13, 12, 22, 30, 30], "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
         map.addLayer({ id: "d-n", type: "symbol", source: "d", layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": "#ffffff" } });
