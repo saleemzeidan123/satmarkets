@@ -6,6 +6,28 @@ const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
 const model = () => process.env.AI_MODEL || "deepseek-chat";
 
+const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
+
+// Cluster-aware examples per the owner market briefing (2026-07-03): Riyadh is
+// polycentric, so examples rotate across clusters instead of defaulting to Al Olaya.
+// Every entry here is backed by a sufficient published index segment today.
+const EX_EN = ["a KAFD office", "a Granada office", "a retail unit in Hittin", "an Al Olaya office"];
+const EX_AR = ["\u0645\u0643\u062a\u0628 \u0641\u064a \u0643\u0627\u0641\u062f", "\u0645\u0643\u062a\u0628 \u0641\u064a \u063a\u0631\u0646\u0627\u0637\u0629", "\u0645\u062d\u0644 \u062a\u062c\u0632\u0626\u0629 \u0641\u064a \u062d\u0637\u064a\u0646", "\u0645\u0643\u062a\u0628 \u0641\u064a \u0627\u0644\u0639\u0644\u064a\u0627"];
+function examplePair(arabic: boolean): string {
+  const list = arabic ? EX_AR : EX_EN;
+  const i = Math.floor(Math.random() * list.length);
+  return `${list[i]}${arabic ? " \u0623\u0648 " : " or "}${list[(i + 1) % list.length]}`;
+}
+
+// Owner posture (recorded 2026-07-02): the Rent Index is compiled from published,
+// attributed market benchmarks; never presented as SAT own primary figures.
+function srcLabel(s: string, arabic: boolean): string {
+  if (/rcri/i.test(s || "")) return arabic
+    ? "\u0645\u0639\u0627\u064a\u064a\u0631 \u0633\u0648\u0642 \u0645\u0646\u0634\u0648\u0631\u0629 (JLL \u0648CBRE \u0648\u0646\u0627\u064a\u062a \u0641\u0631\u0627\u0646\u0643 \u0648\u0646\u0638\u0631\u0627\u0624\u0647\u0627)\u060c \u062c\u0645\u0639\u062a\u0647\u0627 \u0633\u0627\u062a\u060c \u0627\u0644\u0631\u0628\u0639 \u0627\u0644\u0623\u0648\u0644 2026"
+    : "published market benchmarks (JLL, CBRE, Knight Frank and peers), compiled by SAT, Q1 2026";
+  return s;
+}
+
 // Law 3 (structural): block any rent, price, or market figure in free-text
 // model output that is not present in the allowed source (the user's own words
 // or a verified band we supplied). Errs safe. The value and watch paths are
@@ -79,9 +101,9 @@ const CLASSIFY = `Classify a message to a Saudi commercial real estate assistant
 - threshold: the percent move they want to be alerted on as a number, or null.
 Output only the JSON object.`;
 
-const CHAT_SYS = `You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. Your knowledge is strictly limited to SAT Markets: its verified listings, the SAT Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the SAT Rent Index, draft a listing, or watch the market. If the user greets you, welcome them to SAT Markets in one warm sentence, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. Respect Saudi commercial tiers and never compare across tiers: developments are KAFD, ITCC, Laysen Valley and Roshn Front; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic here; if they want numbers, ask for a district and an asset type and tell them you will pull the figure from the SAT Rent Index. No em dashes. Invent nothing.`;
+const chatSys = (ctx: string) => `You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. Reply in the language of the user's last message: Modern Standard Arabic with Western numerals if they write Arabic, otherwise British English. Your knowledge is strictly limited to SAT Markets: its verified listings, the SAT Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the SAT Rent Index, draft a listing, or watch the market. Market structure you respect: Riyadh is polycentric and organised in clusters, for example the Laysen Valley cluster in the west beside the Diplomatic Quarter, the KAFD cluster in the north-center, and the Granada cluster in the east, with more forming; each Saudi city has its own market logic and Riyadh's cluster story never transfers to Jeddah, Makkah, Madinah or the Eastern Province. Respect Saudi commercial tiers and never compare across tiers: developments are projects like KAFD, ITCC, Laysen Valley and Roshn Front, never districts; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. Deal types go beyond lease and sale: land can be sold or ground-leased, and lease rights can be assigned (tanazul), sometimes with the fit-out sold alongside; you may explain these in general terms, and any specific assignment or capex deal routes to SAT's verified process. The SAT Rent Index is compiled from published, attributed market benchmarks such as JLL, CBRE and Knight Frank; it is indicative, never advice, and every figure is cited to its source.${ctx ? ` Live platform context you may cite: ${ctx}. Use only these counts; every rent or price figure still comes only from the SAT Rent Index.` : ""} If the user greets you, welcome them to SAT Markets in one warm sentence, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic that is not in the live platform context; if they want numbers, ask for a location and an asset type and tell them you will pull the figure from the SAT Rent Index. No em dashes. Invent nothing.`;
 
-const ASK_SYS = `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. No em dashes.`;
+const ASK_SYS = `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most, in the language of the user's message: Modern Standard Arabic with Western numerals if they write Arabic, otherwise British English. No em dashes.`;
 
 export async function POST(req: NextRequest) {
   if (!allow("advisor", req)) return NextResponse.json({ mode: "search" }, { status: 429 });
@@ -98,24 +120,37 @@ export async function POST(req: NextRequest) {
   const mode = greeting ? "chat" : ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
 
   const supabase = getSupabaseServer();
+  const arq = isAr(raw);
+
+  // Per-conversation live context (counts only, honest pre-launch posture).
+  let ctx = "";
+  if (supabase && mode === "chat") {
+    try {
+      const [ls, seg] = await Promise.all([
+        supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "published"),
+        supabase.from("rent_index_published").select("*", { count: "exact", head: true }).eq("sufficient", true),
+      ]);
+      if (ls?.count != null && seg?.count != null) ctx = `${ls.count} verified listings live on the exchange (pre-launch sample inventory) and ${seg.count} published SAT Rent Index segments with sufficient data`;
+    } catch {}
+  }
 
   if (mode === "search") {
     const broad = !intent?.district && (intent?.figure === null || intent?.figure === undefined);
     if (!broad) return NextResponse.json({ mode: "search" });
     const askMsg = await llm([{ role: "system", content: ASK_SYS }, { role: "user", content: raw }], false);
-    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : "Happy to help you find the right space. Which location are you considering, for example Al Olaya or KAFD, what is your budget per square metre, and roughly what size do you need?";
+    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : (arq ? `يسعدني مساعدتك في إيجاد المساحة المناسبة. أي موقع تفكر فيه، مثلاً ${examplePair(true)}، وما ميزانيتك للمتر المربع، وما المساحة التي تحتاجها تقريباً؟` : `Happy to help you find the right space. Which location are you considering, for example ${examplePair(false)}, what is your budget per square metre, and roughly what size do you need?`);
     return NextResponse.json({ mode: "ask", message: askSafe });
   }
 
   if (mode === "chat") {
-    const msg = await llm([{ role: "system", content: CHAT_SYS }, ...hist, { role: "user", content: raw }], false);
-    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : "I would rather pull any rent or price from the SAT Rent Index than quote one from memory. Tell me the location and asset type, for example Al Olaya office or KAFD office, and I will give you the verified band.";
+    const msg = await llm([{ role: "system", content: chatSys(ctx) }, ...hist, { role: "user", content: raw }], false);
+    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc + " " + ctx) ? msg : (arq ? `أفضل أن آخذ أي إيجار أو سعر من مؤشر سات للإيجارات لا من الذاكرة. أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأعطيك النطاق الموثّق.` : `I would rather pull any rent or price from the SAT Rent Index than quote one from memory. Tell me the location and asset type, for example ${examplePair(false)}, and I will give you the verified band.`);
     return NextResponse.json({ mode: "chat", message: chatSafe });
   }
 
   if (mode === "value") {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "value", message: "Tell me the location and the asset type, for example Al Olaya office or KAFD office, and I will pull the current band from the SAT Rent Index." });
+      return NextResponse.json({ mode: "value", message: arq ? `أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأستخرج النطاق الحالي من مؤشر سات للإيجارات.` : `Tell me the location and the asset type, for example ${examplePair(false)}, and I will pull the current band from the SAT Rent Index.` });
     }
     let band: any = null;
     if (supabase) {
@@ -126,18 +161,20 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "value", message: "I do not have published SAT Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example Al Olaya office, or browse the verified listings." });
+      return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر سات للإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true)}، أو تصفّح العروض الموثّقة.` : `I do not have published SAT Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false)}, or browse the verified listings.` });
     }
     const seg = band.segment ? ` ${band.segment}` : "";
-    const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the SAT Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, median ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${band.source}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the median. If they gave no figure, just describe the current band plainly. Two to four sentences. No em dashes.`;
+    const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the SAT Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, median ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${srcLabel(band.source, arq)}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the median. If they gave no figure, just describe the current band plainly. Two to four sentences, in the language of the user's message: Modern Standard Arabic with Western numerals if they write Arabic, otherwise British English. No em dashes.`;
     const msg = await llm([{ role: "system", content: sys }, { role: "user", content: raw }], false);
-    const fallback = `SAT Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}. Source ${band.source}.`;
+    const fallback = arq
+      ? `\u0645\u0624\u0634\u0631 \u0633\u0627\u062a \u0644\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a ${band.period}\u060c ${band.district_label} ${band.asset_type}${seg}: \u0645\u0646 ${band.band_low} \u0625\u0644\u0649 ${band.band_high} ${band.unit}\u060c \u0627\u0644\u0648\u0633\u064a\u0637 ${band.median}. \u0627\u0644\u0645\u0635\u062f\u0631 ${srcLabel(band.source, true)}.`
+      : `SAT Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}. Source ${srcLabel(band.source, false)}.`;
     return NextResponse.json({ mode: "value", message: msg || fallback, band });
   }
 
   if (mode === "watch") {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "watch", message: "Tell me the location and asset type you want to watch, for example Al Olaya office or KAFD office, and the percent move to alert on." });
+      return NextResponse.json({ mode: "watch", message: arq ? `أخبرني بالموقع ونوع الأصل الذي تريد مراقبته، مثلاً ${examplePair(true)}، ونسبة التحرك التي تريد التنبيه عندها.` : `Tell me the location and asset type you want to watch, for example ${examplePair(false)}, and the percent move to alert on.` });
     }
     let band: any = null;
     if (supabase) {
@@ -148,7 +185,7 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "watch", message: "I do not have published SAT Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example Al Olaya office." });
+      return NextResponse.json({ mode: "watch", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر سات للإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لا أستطيع تثبيت خط أساس. جرّب موقعاً آخر، مثلاً ${examplePair(true)}.` : `I do not have published SAT Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example ${examplePair(false)}.` });
     }
     const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
     const seg = band.segment ? ` ${band.segment}` : "";
@@ -157,13 +194,21 @@ export async function POST(req: NextRequest) {
       const { error } = await supabase.from("market_watches").insert({ district_label: band.district_label, asset_type: band.asset_type, segment: band.segment ?? null, threshold_pct: threshold, baseline_median: band.median, baseline_band_low: band.band_low, baseline_band_high: band.band_high, baseline_period: band.period });
       saved = !error;
     }
-    const baseline = `${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}, for ${band.period}`;
-    const message = saved ? `Done. I am watching ${band.district_label} ${band.asset_type}${seg} for you. The baseline is the current SAT Rent Index band, ${baseline}. When the index next updates, I will flag any move of more than ${threshold} percent. Source ${band.source}.` : `I could not save the watch just now, but the current SAT Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${band.source}.`;
+    const baseline = arq
+      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، الوسيط ${band.median}، للفترة ${band.period}`
+      : `${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}, for ${band.period}`;
+    const message = saved
+      ? (arq
+        ? `تم. أراقب لك ${band.district_label} ${band.asset_type}${seg}. خط الأساس هو نطاق مؤشر سات الحالي، ${baseline}. عند التحديث القادم للمؤشر سأنبهك لأي حركة تتجاوز ${threshold} بالمئة. المصدر ${srcLabel(band.source, true)}.`
+        : `Done. I am watching ${band.district_label} ${band.asset_type}${seg} for you. The baseline is the current SAT Rent Index band, ${baseline}. When the index next updates, I will flag any move of more than ${threshold} percent. Source ${srcLabel(band.source, false)}.`)
+      : (arq
+        ? `تعذر حفظ المراقبة الآن، لكن نطاق مؤشر سات الحالي لـ ${band.district_label} ${band.asset_type}${seg} هو ${baseline}. المصدر ${srcLabel(band.source, true)}.`
+        : `I could not save the watch just now, but the current SAT Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${srcLabel(band.source, false)}.`);
     return NextResponse.json({ mode: "watch", message, band, threshold, saved });
   }
 
-  const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete, in English. No em dashes.`;
+  const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete, in the language of the user's message: Modern Standard Arabic with Western numerals if they write Arabic, otherwise British English. No em dashes.`;
   const msg = await llm([{ role: "system", content: sys }, { role: "user", content: raw }], false);
-  const draftSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : "I have kept any figure out of the draft so nothing unverified goes into your listing. Tell me the asking price you want, or set your own, and I will format the rest from only the details you give.";
+  const draftSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : (arq ? `أبقيت أي رقم خارج المسودة حتى لا يدخل شيء غير موثّق في إعلانك. أخبرني بالسعر المطلوب الذي تريده، أو حدده بنفسك، وسأنسق الباقي مما تقدمه من تفاصيل فقط.` : `I have kept any figure out of the draft so nothing unverified goes into your listing. Tell me the asking price you want, or set your own, and I will format the rest from only the details you give.`);
   return NextResponse.json({ mode: "draft", message: draftSafe });
 }

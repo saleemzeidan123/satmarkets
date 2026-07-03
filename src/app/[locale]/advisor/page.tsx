@@ -16,20 +16,20 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  const scrollRef = useRef<HTMLDivElement>(null);
 
  const JOBS = ar ? [
-  { icon: <Icon.search size={18} />, label: "ابحث عن مساحة", sub: "صِفها بالكلمات وأبحث في العروض الموثّقة", prompt: "مكتب فئة A مجهّز في العليا، نحو 300 م²، بأقل من 1,600 ريال/م²" },
-  { icon: <Icon.spark size={18} />, label: "اكتب إعلاناً", sub: "من تفاصيلك، أكتب الإعلان كاملاً", prompt: "اكتب إعلاناً لطابق فئة A في برج العليا، 320 م²، مجهّز" },
-  { icon: <Icon.chart size={18} />, label: "قيّم إيجاراً أو صفقة", sub: "بلغة واضحة، مبني على مؤشر الإيجارات", prompt: "كيف يقارن سعر 1,450 ريال/م² لمكتب فئة A في العليا؟" },
-  { icon: <Icon.target size={18} />, label: "راقب السوق", sub: "تنبيه دائم عند تحرّك المؤشر", prompt: "نبّهني عندما تتحرك إيجارات مكاتب فئة A في العليا أكثر من 3%" },
+  { icon: <Icon.search size={18} />, label: "ابحث عن مساحة", sub: "صِفها بالكلمات وأبحث في العروض الموثّقة", prompt: "مكتب فئة A مجهّز في غرناطة، نحو 300 م²، بأقل من 1,600 ريال/م²" },
+  { icon: <Icon.spark size={18} />, label: "اكتب إعلاناً", sub: "من تفاصيلك، أكتب الإعلان كاملاً", prompt: "اكتب إعلاناً لطابق فئة A في برج بكافد، 320 م²، مجهّز" },
+  { icon: <Icon.chart size={18} />, label: "قيّم إيجاراً أو صفقة", sub: "بلغة واضحة، مبني على مؤشر الإيجارات", prompt: "كيف يقارن سعر 3,500 ريال/م² لمكتب فئة A في كافد؟" },
+  { icon: <Icon.target size={18} />, label: "راقب السوق", sub: "تنبيه دائم عند تحرّك المؤشر", prompt: "نبّهني عندما تتحرك إيجارات المكاتب في كافد أكثر من 3%" },
  ] : [
-  { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe it in words, I search verified stock", prompt: "Fitted Grade A office in Al Olaya, ~300 m², under 1,600 SAR/m²" },
-  { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "From your details, write the whole listing", prompt: "Draft a listing for my Grade A floor in Olaya Tower, 320 m², fitted" },
-  { icon: <Icon.chart size={18} />, label: "Value a lease or deal", sub: "Plain-language, grounded in the Rent Index", prompt: "How does 1,450 SAR/m² compare for Grade A office in Al Olaya?" },
-  { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prompt: "Alert me when Al Olaya Grade A office rents move more than 3%" },
+  { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe it in words, I search verified stock", prompt: "Fitted Grade A office in Granada, ~300 m², under 1,600 SAR/m²" },
+  { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "From your details, write the whole listing", prompt: "Draft a listing for my Grade A floor in a KAFD tower, 320 m², fitted" },
+  { icon: <Icon.chart size={18} />, label: "Value a lease or deal", sub: "Plain-language, grounded in the Rent Index", prompt: "How does 3,500 SAR/m² compare for a Grade A office in KAFD?" },
+  { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prompt: "Alert me when KAFD office rents move more than 3%" },
  ];
 
  const CHIPS = ar
-  ? ["قارن العليا مقابل كافد", "مستودع قرب الصناعية الثانية", "تجزئة بحركة عالية في التحلية", "مكاتب بأقل من 1,200 ريال/م²"]
-  : ["Compare Olaya vs KAFD", "Warehouse near 2nd Industrial", "Retail with high footfall on Tahlia", "Offices under 1,200 SAR/m²"];
+  ? ["قارن مكاتب العليا مقابل غرناطة", "مستودع قرب الصناعية الثانية", "تجزئة بحركة عالية في التحلية", "مكاتب بأقل من 1,200 ريال/م²"]
+  : ["Compare Al Olaya vs Granada offices", "Warehouse near 2nd Industrial", "Retail with high footfall on Tahlia", "Offices under 1,200 SAR/m²"];
 
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy]);
 
