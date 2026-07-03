@@ -30,8 +30,10 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
   if (!open) return;
   const el = panelRef.current;
   if (!el) return;
-  const inputEl = el.querySelector("input");
-  (inputEl as HTMLInputElement | null)?.focus();
+  if (window.matchMedia("(min-width:1024px)").matches) {
+   const inputEl = el.querySelector("input");
+   (inputEl as HTMLInputElement | null)?.focus();
+  }
   const onKey = (e: KeyboardEvent) => {
    if (e.key === "Escape") { setOpen(false); return; }
    if (e.key !== "Tab") return;
