@@ -38,7 +38,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
-    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: (params.locale === "ar" ? g.name_ar : g.name_en) || g.name_en, lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((params.locale === "ar" ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? (params.locale === "ar" ? " · مشروع" : " · project") : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);

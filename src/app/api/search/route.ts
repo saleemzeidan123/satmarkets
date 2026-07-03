@@ -81,13 +81,19 @@ export async function POST(req: NextRequest) {
   const minSize = parsed.minSize;
   const maxRent = parsed.maxRent;
 
-  const { data: districts } = await supabase.from("districts").select("id, name_en, city");
-  const wanted = (parsed.district || "").toLowerCase();
+  const { data: districts } = await supabase.from("districts").select("id, name_en, name_ar, city");
+  const SYN: Record<string, string> = { kafd: "KAFD", cafd: "KAFD", "كافد": "KAFD", "واجهة الرياض المالية": "KAFD", "المركز المالي": "KAFD", olaya: "Al Olaya", "al olaya": "Al Olaya", "العليا": "Al Olaya", hittin: "Hittin", "حطين": "Hittin", granada: "Granada", "غرناطة": "Granada", itcc: "ITCC", "روشن": "Roshn Front", "roshn": "Roshn Front" };
+  let wanted = (parsed.district || "").toLowerCase().trim();
+  const rawLower = raw.toLowerCase();
+  for (const [k, v] of Object.entries(SYN)) {
+    if (wanted.includes(k) || rawLower.includes(k)) { wanted = v.toLowerCase(); break; }
+  }
   const dMatch = (districts ?? []).find((d: any) => {
     const ne = (d.name_en || "").toLowerCase();
     const ci = (d.city || "").toLowerCase();
-    if (parsed.district) return (ne && (wanted.includes(ne) || ne.includes(wanted))) || (d.name_en === "KAFD" && /kafd/i.test(parsed.district));
-    return raw.toLowerCase().includes(ne) || raw.toLowerCase().includes(ci) || (d.name_en === "KAFD" && /kafd/i.test(raw));
+    const na = (d.name_ar || "");
+    if (wanted) return (ne && (wanted.includes(ne) || ne.includes(wanted))) || (na && raw.includes(na));
+    return rawLower.includes(ne) || rawLower.includes(ci) || (na && raw.includes(na));
   });
 
   const hasIntent = !!(asset || dMatch || minSize || maxRent || dealDetected);

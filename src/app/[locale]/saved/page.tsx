@@ -76,6 +76,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     deal: ar ? "الصفقة" : "Deal", type: ar ? "النوع" : "Type", price: ar ? "الإيجار / السعر" : "Rent / price",
     size: ar ? "المساحة" : "Size", grade: ar ? "التصنيف" : "Grade", district: ar ? "الموقع" : "Location",
     perYear: ar ? "ريال/م²/سنة" : "SAR/sqm/yr", sar: ar ? "ريال" : "SAR", onReq: ar ? "عند الطلب" : "On request",
+    vsIdx: ar ? "مقابل المؤشر" : "vs index",
   };
 
   const priceOf = (l: Listing) => {
@@ -169,6 +170,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.deal}>{shownL.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
+                  <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{ar ? "لا مؤشر كافٍ" : "No sufficient index"}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (ar ? "ضمن النطاق" : "Within band"); const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "#3A6EA5"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
                   <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
                   <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
