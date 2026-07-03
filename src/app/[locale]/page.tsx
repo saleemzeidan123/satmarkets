@@ -4,7 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
-import MarketingHome, { type FeaturedListing } from "@/components/MarketingHome";
+import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 
 function idxSegment(asset: string, grade: string | null): string | null {
   if (asset === "office") return grade === "a" || grade === "a_plus" ? "grade_a" : grade === "b" || grade === "c" ? "grade_b" : null;
@@ -22,6 +22,8 @@ export default async function HomePage({ params }: { params: { locale: string } 
   let rows: Listing[] = [];
   let listings = 0, districts = 0, buildings = 0, verified = 0;
   const idxBands = new Map<string, { low: number; high: number }>();
+  const heroBands: HeroBand[] = [];
+  let openReqs: number | null = null, idxSegs: number | null = null;
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(4);
     rows = (data as Listing[]) ?? [];
@@ -35,6 +37,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
     buildings = bc ?? 0;
     const { data: idxRows } = await sb.from("rent_index_published").select("district_label, asset_type, segment, band_low, band_high");
     for (const r of (idxRows ?? []) as any[]) idxBands.set(`${String(r.district_label).toLowerCase()}|${r.asset_type}|${r.segment}`, { low: Number(r.band_low), high: Number(r.band_high) });
+    const { data: bandRows } = await sb.from("rent_index_published").select("district_label, district_label_ar, band_low, band_high, median, period").eq("asset_type", "office").eq("segment", "grade_a").eq("sufficient", true).order("median", { ascending: false });
+    for (const r of (bandRows ?? []) as any[]) heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period });
+    const oi = heroBands.findIndex((b) => b.en === "Al Olaya");
+    if (oi > -1 && oi < heroBands.length - 1) heroBands.push(heroBands.splice(oi, 1)[0]);
+    const { count: rc } = await sb.from("requirements_public").select("*", { count: "exact", head: true });
+    openReqs = rc ?? null;
+    const { count: sc } = await sb.from("rent_index_published").select("*", { count: "exact", head: true }).eq("sufficient", true);
+    idxSegs = sc ?? null;
   }
 
   const featured: FeaturedListing[] = rows.map((l) => {
@@ -74,5 +84,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
     verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : "100%",
   };
 
-  return <MarketingHome locale={locale} featured={featured} stats={stats} />;
+  return <MarketingHome locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;
 }

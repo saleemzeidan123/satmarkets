@@ -1,6 +1,6 @@
 // src/lib/market/underwrite.ts
 //
-// Buy-side underwrite: implied yield from the SAT Rent Index market rent against
+// Buy-side underwrite: implied yield from the Rent Index market rent against
 // the asking sale price. Transparent math on verified inputs (index rent +
 // listing price). Indicative, not advice. No invented benchmark yields.
 

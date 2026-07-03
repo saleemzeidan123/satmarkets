@@ -1,6 +1,6 @@
 // src/lib/market/verdict.ts
 //
-// Market-rent verdict: grade a listing's asking rent against the SAT Rent Index.
+// Market-rent verdict: grade a listing's asking rent against the Rent Index.
 // This is what turns a listing from "a price" into "a priced fairly / priced high
 // / good value" call, grounded in SAT's own verified index. Indicative market
 // context, NOT financial advice (per the Rent Index doctrine).
@@ -122,8 +122,8 @@ export function marketVerdict(
       band_high: row?.band_high ?? null,
       period: row?.period ?? null,
       segment: row?.segment ?? null,
-      line_en: "No SAT Rent Index baseline for this space yet.",
-      line_ar: "لا يوجد أساس من مؤشر SAT للإيجارات لهذه المساحة بعد.",
+      line_en: "No Rent Index baseline for this space yet.",
+      line_ar: "لا يوجد أساس من مؤشر الإيجارات لهذه المساحة بعد.",
     };
   }
   const asking = Number(askingRentSqm);

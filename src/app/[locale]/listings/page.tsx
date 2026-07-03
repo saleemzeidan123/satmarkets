@@ -176,7 +176,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     const a = Math.abs(v.deltaPct);
                     const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (ar ? "ضمن نطاق المؤشر" : "Within index band");
                     const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
-                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={ar ? "مقابل مؤشر SAT للإيجارات، عيّنة المنصّة. استرشادي وليس نصيحة." : "Vs the SAT Rent Index, platform sample. Indicative, not advice."}>{txt}</div>;
+                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={ar ? "مقابل مؤشر الإيجارات، عيّنة المنصّة. استرشادي وليس نصيحة." : "Vs the Rent Index, platform sample. Indicative, not advice."}>{txt}</div>;
                   })()}
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                   <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span></div>

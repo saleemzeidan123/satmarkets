@@ -105,7 +105,7 @@ export default function ComparePage({ params }: { params: { locale: string } }) 
 
      <div className="row gap10" style={{ marginTop: 16 }}>
       <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>
-      <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "الخلايا المميّزة تشير إلى أقوى قيمة لكل مقياس. النطاق والعائد وزمن التأجير مستمدة من مؤشر SAT للإيجارات وذكاء الموقع، وكل رقم موثّق المصدر." : "Highlighted cells mark the strongest value on each metric. Catchment, yield and time-to-lease are drawn from the SAT Rent Index & Location Intelligence, every figure is sourced."}</span>
+      <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "الخلايا المميّزة تشير إلى أقوى قيمة لكل مقياس. النطاق والعائد وزمن التأجير مستمدة من مؤشر الإيجارات وذكاء الموقع، وكل رقم موثّق المصدر." : "Highlighted cells mark the strongest value on each metric. Catchment, yield and time-to-lease are drawn from the Rent Index & Location Intelligence, every figure is sourced."}</span>
      </div>
     </div>
    </div>

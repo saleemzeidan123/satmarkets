@@ -3,8 +3,10 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
+import Reveal from "@/components/Reveal";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
+export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
 type Stats = { listings: string; buildings: string; districts: string; verifiedPct: string };
 
 const ASSETS = [
@@ -25,10 +27,12 @@ const ASSETS = [
  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
-export default function MarketingHome({ locale = "en", featured = [], stats }: { locale?: string; featured?: FeaturedListing[]; stats: Stats }) {
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null } }) {
  const router = useRouter();
  const ar = locale === "ar";
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
+ const [bi, setBi] = useState(0);
+ const band = bands[bi] || bands[0] || null;
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
  const [sug, setSug] = useState<{ label: string; sub: string }[]>([]);
@@ -73,7 +77,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   btnReq: "أدرج",
   btnStd: "بحث",
   popular: "الأكثر طلباً:",
-  chip1: "مكاتب، العليا", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
+  chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
   micro1: "توثيق المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "مرخّصة من الهيئة العامة للعقار ومتوافقة مع نظام حماية البيانات",
   stat: [[stats.listings, "عروض موثّقة"], ["100%", "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string,string][],
   exEye: "المنصّة",
@@ -89,11 +93,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   ftH: "مساحات موثّقة، بأسعار في سياقها",
   ftBrowse: "تصفّح كل العروض",
   unit: " ريال/م²·سنة",
-  bandEye: "مؤشر SAT للإيجارات، الربع الأول 2026",
+  bandEye: "مؤشر الإيجارات، الربع الأول 2026",
   bandH: "طبقة التسعير خلف كل قرار",
   bandP1: "معايير الربع الأول 2026 المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو حدّد نطاقاً، أو قيّم عقد إيجار. موثّقة المصدر، لا تقديرات.",
   bandBtn: "استكشف مؤشر الإيجارات",
-  bandStat: [["+2.1%", "الفئة A، سنوياً (منشور)"], ["2,370", "وسيط الفئة A ريال/م²·سنة"], ["97.7%", "إشغال الفئة A"]] as [string,string][],
+  bandStat: [["+2.1%", "الفئة A بالرياض، سنوياً (منشور)"], ["2,370", "وسيط الفئة A ريال/م²·سنة"], ["97.7%", "إشغال الفئة A"]] as [string,string][],
   flowEye: "كيف تسير الصفقة",
   flowH: "أنت دائماً تتخذ خياراً صريحاً",
   pathATag: "المسار أ، مجاني",
@@ -134,7 +138,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   btnReq: "Post",
   btnStd: "Search",
   popular: "Popular:",
-  chip1: "Office, Al Olaya", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
+  chip1: "Office, KAFD", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
   micro1: "Owners verified before listing", micro2: "No assumed commission", micro3: "REGA-licensed & PDPL-compliant",
   stat: [[stats.listings, "Verified listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string,string][],
   exEye: "The exchange",
@@ -150,11 +154,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
   ftH: "Verified spaces, priced in context",
   ftBrowse: "Browse all listings",
   unit: " SAR/m²·yr",
-  bandEye: "SAT Rent Index, Q1 2026",
+  bandEye: "Rent Index, Q1 2026",
   bandH: "The pricing layer behind every decision",
   bandP1: "Published Q1 2026 benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.",
   bandBtn: "Explore the Rent Index",
-  bandStat: [["+2.1%", "Grade A, YoY (published)"], ["2,370", "Grade A median SAR/m²·yr"], ["97.7%", "Grade A occupancy"]] as [string,string][],
+  bandStat: [["+2.1%", "Riyadh Grade A, YoY (published)"], ["2,370", "Grade A median SAR/m²·yr"], ["97.7%", "Grade A occupancy"]] as [string,string][],
   flowEye: "How a deal flows",
   flowH: "You always make an explicit choice",
   pathATag: "Path A, Free",
@@ -194,7 +198,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const rest = featured.slice(1);
  const vtxt = ar ? "موثّق من المالك" : "Verified owner";
  const idxBar = (f: FeaturedListing) => f.idx ? (
-  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (ar ? "ضمن نطاق مؤشر سات" : "Within the SAT Rent Index band") : f.idx.v === "below" ? (ar ? "أقل من نطاق المؤشر" : "Below the index band") : (ar ? "أعلى من نطاق المؤشر" : "Above the index band")}</div></div>
+  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (ar ? "ضمن نطاق المؤشر" : "Within the Rent Index band") : f.idx.v === "below" ? (ar ? "أقل من نطاق المؤشر" : "Below the index band") : (ar ? "أعلى من نطاق المؤشر" : "Above the index band")}</div></div>
  ) : null;
 
  return (
@@ -251,7 +255,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
       </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
-       <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
+       <Link href={L("/listings?q=KAFD")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
        <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip2}</Link>
        <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip3}</Link>
       </div>
@@ -308,26 +312,42 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
     )}
 
     <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
-     <div className="home-jobs" style={{ display: "grid", gridTemplateColumns: ".9fr 1.1fr", gap: 54, alignItems: "center" }}>
-      <div>
+     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+      <div style={{ maxWidth: 560 }}>
        <div className="eyebrow">{T.exEye}</div>
        <h2 className="serif" style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{T.exH}</h2>
-       <p className="muted" style={{ fontSize: 17, lineHeight: 1.65, marginTop: 18, maxWidth: 380 }}>{T.exP}</p>
+       <p className="muted" style={{ fontSize: 17, lineHeight: 1.65, marginTop: 16 }}>{T.exP}</p>
       </div>
-      <div style={{ borderTop: "1px solid var(--silver)" }}>
-       {T.cards.map((c, i) => { const I = cardIcons[i] as (p: { size?: number }) => JSX.Element; return (
-        <Link key={i} href={L(c[2])} className="home-job" style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 18, alignItems: "center", padding: "22px 6px", borderBottom: i < 3 ? "1px solid var(--silver)" : "none", textDecoration: "none", color: "inherit" }}>
-         <span className="mono" style={{ fontSize: 13, color: "var(--harbor)", fontWeight: 500 }}>{"0" + (i + 1)}</span>
-         <span style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <span style={{ width: 44, height: 44, borderRadius: 12, background: "var(--cool)", color: "var(--harbor)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}><I size={21} /></span>
-          <span>
-           <span style={{ display: "block", fontSize: 17, fontWeight: 600, letterSpacing: "-.01em" }}>{c[0]}</span>
-           <span className="muted" style={{ display: "block", fontSize: 13.5, marginTop: 3, lineHeight: 1.5 }}>{c[1]}</span>
-          </span>
-         </span>
-         <span style={{ color: "var(--slate-2)" }}><Icon.arrow size={18} /></span>
-        </Link>
-       ); })}
+      <div className="job-grid" style={{ marginTop: 36 }}>
+       {T.cards.map((c, i) => {
+        const I = cardIcons[i] as (p: { size?: number }) => JSX.Element;
+        const st: [string, string] | null =
+         i === 0 ? [stats.listings, ar ? "مساحة موثّقة، مباشرة الآن" : "verified spaces live now"]
+         : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), ar ? "طلبات مفتوحة أمام السوق" : "open requirements on the board"] : null)
+         : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), ar ? "شريحة مؤشر ببيانات كافية" : "index segments with sufficient data"] : null)
+         : ["FAL 1200025510", ar ? "مرخّصة من الهيئة، بتفويض صريح فقط" : "REGA-licensed, opt-in only"];
+        return (
+         <Reveal key={i} delay={i * 90}>
+          <Link href={L(c[2])} className="job-card">
+           <span className="row between" style={{ alignItems: "center" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
+             <span className="jc-ic"><I size={22} /></span>
+             <span className="mono" style={{ fontSize: 13, color: "var(--harbor)", fontWeight: 500 }}>{"0" + (i + 1)}</span>
+            </span>
+            <span className="jc-arrow"><Icon.arrow size={19} /></span>
+           </span>
+           <span style={{ display: "block", fontSize: 20, fontWeight: 600, letterSpacing: "-.01em", marginTop: 14 }}>{c[0]}</span>
+           <span className="muted" style={{ display: "block", fontSize: 14.5, marginTop: 6, lineHeight: 1.55 }}>{c[1]}</span>
+           {st && (
+            <span className="jc-stat">
+             <span className="mono" style={{ fontSize: i === 3 ? 16 : 26, fontWeight: 500, color: "var(--ink)", letterSpacing: i === 3 ? ".02em" : "0" }}>{st[0]}</span>
+             <span className="muted" style={{ fontSize: 12.5 }}>{st[1]}</span>
+            </span>
+           )}
+          </Link>
+         </Reveal>
+        );
+       })}
       </div>
      </div>
     </div>
@@ -340,21 +360,22 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
        <p style={{ fontSize: 16, lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
        <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
-        {(ar ? ["العليا", "كافد", "حطين", "التحلية"] : ["Al Olaya", "KAFD", "Hittin", "Tahlia"]).map((d, i) => (
-         <span key={d} style={{ fontSize: 12.5, fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === 0 ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === 0 ? "#fff" : "transparent" }}>{d}</span>
+        {bands.map((b, i) => (
+         <button key={b.en} type="button" onClick={() => setBi(i)} style={{ cursor: "pointer", fontFamily: "var(--sans)", fontSize: 12.5, fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === bi ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === bi ? "#fff" : "transparent", transition: "all .15s ease" }}>{ar ? b.ar : b.en}</button>
         ))}
        </div>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
       </div>
-      <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
+      {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div><div style={{ fontSize: 13, fontWeight: 600 }}>{ar ? "العليا، مكاتب رئيسية" : "Al Olaya, prime office"}</div><div style={{ fontSize: 11.5, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{ar ? "الربع الأول 2026" : "Q1 2026"}</span>
+        <div><div style={{ fontSize: 13, fontWeight: 600 }}>{(ar ? band.ar : band.en) + (ar ? "، مكاتب الفئة A" : ", Grade A office")}</div><div style={{ fontSize: 11.5, color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{ar ? "الربع الأول 2026" : band.period}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
-        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{T.bandStat[1][0]}</span>
-        <span style={{ fontSize: 13, color: "rgba(255,255,255,.55)" }}>{T.bandStat[1][1]}</span>
+        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{band.median.toLocaleString()}</span>
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,.55)" }}>{ar ? "الوسيط، ريال/م²·سنة" : "median SAR/m²·yr"}</span>
        </div>
+       <div style={{ fontSize: 13, color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${band.low.toLocaleString()} إلى ${band.high.toLocaleString()}` : `Published band: ${band.low.toLocaleString()} to ${band.high.toLocaleString()}`}</div>
        <div style={{ color: "#34d399", fontSize: 13, fontWeight: 600, marginTop: 8 }}>{T.bandStat[0][0]} · {T.bandStat[0][1]}</div>
        <svg viewBox="0 0 480 110" width="100%" style={{ marginTop: 16, display: "block" }} preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18 L480 110 L0 110 Z" fill="rgba(52,211,153,.12)" />
@@ -362,9 +383,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         <circle cx="480" cy="18" r="4" fill="#34d399" />
        </svg>
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: 12, color: "rgba(255,255,255,.6)" }}>
-        <span>{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{T.bandStat[2][0]}</span>
+        <span>{ar ? "إشغال الفئة A بالرياض" : "Riyadh Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{T.bandStat[2][0]}</span>
        </div>
-      </div>
+      </div>}
      </div>
     </div>
 

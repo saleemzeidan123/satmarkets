@@ -68,7 +68,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
         />
       </div>
       <p className="mt-3 text-xs intel-faint">
-        {ar ? "بيانات المباني والإيجارات الموثقة من مؤشر سات. خرائط مجانية مفتوحة المصدر." : "Verified building and rent data from the SAT index. Free, open-source map tiles."}
+        {ar ? "بيانات المباني والإيجارات الموثقة من مؤشر الإيجارات. خرائط مجانية مفتوحة المصدر." : "Verified building and rent data from the verified index. Free, open-source map tiles."}
       </p>
     </section>
   );

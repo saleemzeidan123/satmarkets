@@ -78,7 +78,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   <div style={{ background: "var(--cool)" }}>
    <JsonLd data={{
     "@type": "Dataset",
-    name: "SAT Rent Index, Q1 2026",
+    name: "Riyadh Commercial Rent Index, Q1 2026",
     url: `${SITE}/${params.locale}/rent-index`,
     inLanguage: ["ar", "en"],
     description: "A comparison of published Saudi commercial rent benchmarks for Q1 2026, compiled and attributed by SAT Markets. Sources: JLL Q1 2026, CBRE Q1 2026, Knight Frank, SAMA. Indicative market context, not advice; SAT does not originate these figures.",
@@ -91,7 +91,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ar ? "مؤشر SAT للإيجارات · الربع الأول 2026" : "SAT Rent Index · Q1 2026"}</div>
+      <div className="eyebrow">{ar ? "مؤشر الإيجارات · الربع الأول 2026" : "Rent Index · Q1 2026"}</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "إيجارات الرياض التجارية" : "Riyadh commercial rents"}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "الربع الأول 2026 · معايير سوق منشورة منسوبة إلى مصادرها · معاينة المنصّة على بيانات عيّنة" : "Q1 2026 · published market benchmarks, attributed to source · platform preview on sample data"}</div>
      </div>

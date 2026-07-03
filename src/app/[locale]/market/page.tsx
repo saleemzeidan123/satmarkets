@@ -76,7 +76,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="eyebrow">{ar ? "نبض السوق" : "Market pulse"}</div>
       <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "السوق التجاري في الرياض، بنظرة واحدة" : "The Riyadh commercial market, at a glance"}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{ar ? "كل رقم في هذه الصفحة من بيانات المنصّة الموثّقة أو من مؤشر SAT للإيجارات، عيّنة المنصّة. لا تقديرات ولا أرقام بلا مصدر." : "Every figure on this page comes from verified platform data or the SAT Rent Index, platform sample. No estimates, no unsourced numbers."}</p>
+      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{ar ? "كل رقم في هذه الصفحة من بيانات المنصّة الموثّقة أو من مؤشر الإيجارات، عيّنة المنصّة. لا تقديرات ولا أرقام بلا مصدر." : "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers."}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginTop: 26 }}>
         {tiles.map((t, i) => (

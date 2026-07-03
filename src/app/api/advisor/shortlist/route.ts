@@ -1,7 +1,7 @@
 // src/app/api/advisor/shortlist/route.ts
 //
 // The deal agent's core: a requirement in, a verdict-graded shortlist out.
-// Each result is scored for fit AND graded against the SAT Rent Index, so the
+// Each result is scored for fit AND graded against the Rent Index, so the
 // answer is not "here are some listings" but "here is what to take, and why."
 // Read-only over published listings + the Rent Index. No auth, no AI cost.
 

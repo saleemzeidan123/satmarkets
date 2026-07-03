@@ -37,7 +37,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="eyebrow">{ar ? "الدليل" : "The directory"}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "المواقع التجارية في المملكة" : "Commercial locations across the Kingdom"}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{ar ? "الأحياء والمشاريع والمناطق التي تغطيها المنصّة، مع عدد المساحات الموثّقة ووسيط مؤشر SAT للمكاتب حيث تتوفر بيانات كافية." : "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient."}</p>
+      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{ar ? "الأحياء والمشاريع والمناطق التي تغطيها المنصّة، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تتوفر بيانات كافية." : "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient."}</p>
       <div className="row gap8" style={{ marginTop: 12 }}><Link href={`/${locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{ar ? "نبض السوق" : "Market pulse"}</Link></div>
       {KIND_ORDER.map((k) => {
         const group = locs.filter((l) => l.kind === k).sort((a, b) => b.count - a.count || a.name_en.localeCompare(b.name_en));
@@ -64,7 +64,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
           </section>
         );
       })}
-      <p className="muted" style={{ marginTop: 30, fontSize: 12 }}>{ar ? "الوسيط من مؤشر SAT للإيجارات، عيّنة المنصّة، للشرائح ذات البيانات الكافية فقط. استرشادي وليس نصيحة." : "Medians come from the SAT Rent Index, platform sample, sufficient segments only. Indicative, not advice."}</p>
+      <p className="muted" style={{ marginTop: 30, fontSize: 12 }}>{ar ? "الوسيط من مؤشر الإيجارات، عيّنة المنصّة، للشرائح ذات البيانات الكافية فقط. استرشادي وليس نصيحة." : "Medians come from the Rent Index, platform sample, sufficient segments only. Indicative, not advice."}</p>
     </div>
   );
 }

@@ -130,7 +130,7 @@ export default function HeroLive({ locale, hero, count }: {
             <div className="w-full max-w-[340px] overflow-hidden rounded-2xl border border-white/12 bg-white/[0.06] p-5 shadow-lift backdrop-blur-md">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[12px] font-medium text-white/85">{ar ? "مؤشر سات للإيجار" : "SAT Rent Index"}</div>
+                  <div className="text-[12px] font-medium text-white/85">{ar ? "مؤشر الإيجار" : "Rent Index"}</div>
                   <div className="text-[11px] text-white/50">{ar ? "مكاتب رئيسية · الرياض" : "Prime office · Riyadh"}</div>
                 </div>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium tracking-wide text-emerald-300"><span className="hl-live" />{ar ? "مباشر" : "LIVE"}</span>

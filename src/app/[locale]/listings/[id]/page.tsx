@@ -73,7 +73,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div id="comps" className="card pad" style={{ scrollMarginTop: 80, marginTop: 22, background: "var(--cool)", boxShadow: "none" }}>
             <div className="row between" style={{ alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
               <div>
-                <div className="eyebrow">{ar ? "مسعّر في سياقه · مؤشر سات للإيجارات" : "Priced in context · SAT Rent Index"} <span className="tag" style={{ marginInlineStart: 8 }}>{ar ? "عيّنة" : "sample"}</span></div>
+                <div className="eyebrow">{ar ? "مسعّر في سياقه · مؤشر الإيجارات" : "Priced in context · Rent Index"} <span className="tag" style={{ marginInlineStart: 8 }}>{ar ? "عيّنة" : "sample"}</span></div>
                 <p className="muted" style={{ fontSize: 14, marginTop: 8, maxWidth: 340, lineHeight: 1.6 }}>{ar ? `كيف يقف هذا الإيجار المطلوب مقابل صفقات مقارنة في ${dn}.` : `How this asking rent sits against comparable transactions in ${dn}.`}</p>
               </div>
               <div className="bars" style={{ width: 210, height: 120 }}>

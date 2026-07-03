@@ -106,7 +106,7 @@
     "p1t": "Verified supply",
     "p1d": "Owner-direct listings, permit-backed, verified before they publish. Not a classifieds dump.",
     "p2t": "Decision-grade data",
-    "p2d": "The SAT rent index: median achieved rents by district and asset, from real transactions.",
+    "p2d": "The Rent Index: published Riyadh rent benchmarks by location and asset, attributed to source.",
     "p3t": "AI search, grounded",
     "p3d": "Describe what you need in plain language. Answers come from verified data, never a model.",
     "p4t": "Representation built in",
@@ -165,7 +165,7 @@
       "Jeddah",
       "Dammam"
     ],
-    "rentEyebrow": "SAT Riyadh Commercial Rent Index",
+    "rentEyebrow": "Riyadh Commercial Rent Index",
     "teaserPlaces": [
       "KAFD",
       "Tahliah St.",
