@@ -159,7 +159,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .listing:hover{transform:translateY(-2px);box-shadow:0 12px 30px -12px rgba(20,24,28,.18);border-color:rgba(58,110,165,.35);}
 
 /* ---- Slice 3: listing detail grid collapses on mobile; map chips become a one-line rail ---- */
-@media(max-width:920px){.satmkt-2col{grid-template-columns:1fr!important;}}
+@media(max-width:920px){.satmkt-2col{grid-template-columns:minmax(0,1fr)!important;}.satmkt-2col>*{min-width:0;}}
 
 /* ---- QA: comfortable tap targets on touch layouts ---- */
 @media(max-width:1024px){
@@ -259,3 +259,14 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 /* Advisor page: mobile chrome helpers */
 .adv-mob{display:none;}
 @media(max-width:820px){.adv-mob{display:inline-flex;}.adv-desk{display:none;}.adv-jobs-grid{grid-template-columns:1fr!important;}}
+
+/* ---- Mobile fit guard (owner report 2026-07-03): no element wider than the screen ---- */
+/* Grid/flex min-content traps: images and mono strings can force 1fr tracks wider than the
+   viewport even when the collapse rule matches; min-width:0 breaks the cycle. */
+@media(max-width:920px){
+  .rent-grid,.rent-grid>*,.modhead{min-width:0;}
+  .gallery img,.photo img{max-width:100%;height:auto;}
+  .idxbar,.jc-stat{min-width:0;}
+  .jc-stat .mono{overflow-wrap:anywhere;}
+  h1,h2,h3,.ttl{overflow-wrap:break-word;}
+}
