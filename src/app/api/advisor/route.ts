@@ -91,10 +91,11 @@ export async function POST(req: NextRequest) {
   const allowedSrc = raw + " " + hist.map((h) => h.content).join(" ");
   if (!raw || !key()) return NextResponse.json({ mode: "search" });
 
-  const cText = await llm([{ role: "system", content: CLASSIFY }, { role: "user", content: raw }], true);
+  const greeting = /^(hey+|hi+|hello+|hala|halla|salam+|salaam|marhaba|\u0647\u0644\u0627|\u0645\u0631\u062d\u0628\u0627?|\u0627\u0644\u0633\u0644\u0627\u0645( \u0639\u0644\u064a\u0643\u0645)?|good (morning|evening|afternoon)|yo|sup)[\s!.\u061f?]*$/i.test(raw) || raw.length < 4;
+  const cText = greeting ? null : await llm([{ role: "system", content: CLASSIFY }, { role: "user", content: raw }], true);
   let intent: any = {};
   try { intent = cText ? JSON.parse(cText) : {}; } catch { intent = {}; }
-  const mode = ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
+  const mode = greeting ? "chat" : ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
 
   const supabase = getSupabaseServer();
 

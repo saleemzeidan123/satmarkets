@@ -162,14 +162,14 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    </div>
 
    <aside className="advisor-rail-r" style={{ background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto" }}>
-    <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{ar ? "السياق المباشر · العليا" : "Live context · Al Olaya"}</div></div>
+    <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{ar ? "لوحة توضيحية · بيانات عيّنة" : "Sample panel · illustrative data"}</div></div>
     <div style={{ padding: 20 }} className="col gap16">
      <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>2,370</span><span className="l">{ar ? "وسيط الفئة A (منشور)" : "Median Grade A (published)"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>+2.1%</span><span className="l">{ar ? "سنوياً · الفئة A" : "YoY · Grade A"}</span></div></div>
      <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>97.7%</span><span className="l">{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{ar ? "النطاق النهاري" : "Daytime catchment"}</span></div></div>
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
       <div className="eyebrow">{ar ? "المصادر المستخدمة" : "Sources used"}</div>
       <div className="col gap8" style={{ marginTop: 10 }}>
-       {[[<Icon.chart key="a" size={14} />, ar ? "مؤشر SAT للإيجارات للربع الأول 2026" : "SAT Rent Index Q1 2026"], [<Icon.shield key="b" size={14} />, ar ? "سجل تراخيص الهيئة العامة للعقار" : "REGA permit registry"], [<Icon.target key="c" size={14} />, ar ? "لوحة الحركة · حركة المشاة" : "Mobility panel · footfall"]].map((s, i) => (
+       {[[<Icon.chart key="a" size={14} />, ar ? "مؤشر SAT للإيجارات للربع الأول 2026" : "SAT Rent Index Q1 2026"], [<Icon.shield key="b" size={14} />, ar ? "سجل تراخيص الهيئة العامة للعقار" : "REGA permit registry"], [<Icon.target key="c" size={14} />, ar ? "عروض المنصّة الموثّقة" : "Verified platform listings"]].map((s, i) => (
         <div key={i} className="row gap8" style={{ fontSize: 12 }}><span style={{ color: "var(--harbor)" }}>{s[0]}</span>{s[1]}</div>
        ))}
       </div>
