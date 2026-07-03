@@ -142,15 +142,16 @@ export async function POST(req: NextRequest) {
   if (shown.length === 0) {
     message = locale === "ar" ? "لا توجد مساحات موثّقة مطابقة الآن. وسّع الميزانية أو الموقع، أو انشر طلباً وسيصلك ردّ المُلّاك والوسطاء." : "No verified spaces match right now. Widen the budget or location, or post a requirement and let owners and brokers come to you.";
   } else {
-    const prices = shown.map((r: any) => r.listing?.asking_rent_sqm ?? r.listing?.sale_price_sqm).filter((v: any) => v != null).map(Number);
+    const prices = shown.map((r: any) => r.asking_rent_sqm).filter((v: any) => v != null).map(Number);
     const lo = prices.length ? Math.min(...prices).toLocaleString("en-US") : null;
     const hi = prices.length ? Math.max(...prices).toLocaleString("en-US") : null;
     const within = shown.filter((r: any) => r.verdict?.status === "within" || r.verdict?.status === "below").length;
-    const range = lo && hi ? (locale === "ar" ? `الأسعار من ${lo} إلى ${hi} ريال/م²·سنة` : `asking runs ${lo} to ${hi} SAR/m²·yr`) : "";
-    const disc = prices.length ? (locale === "ar" ? `، ${within} منها ضمن نطاق المؤشر أو أدنى` : `, ${within} of them at or below their index band`) : "";
+    const mid = lo && hi
+      ? (locale === "ar" ? ` الأسعار المعلنة من ${lo} إلى ${hi} ريال/م²·سنة، منها ${within} ضمن نطاق المؤشر أو أدنى.` : ` Asking runs ${lo} to ${hi} SAR/m²·yr, with ${within} at or below their index band.`)
+      : "";
     message = locale === "ar"
-      ? `وجدت ${shown.length} مساحة موثّقة مطابقة. ${range}${disc}. أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
-      : `Found ${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}. Where prices are stated, ${range}${disc}. Give me a budget, size or location to narrow it, or ask me about any of them.`;
+      ? `وجدت ${shown.length} مساحة موثّقة مطابقة.${mid} أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
+      : `Found ${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}.${mid} Give me a budget, size or location to narrow it, or ask me about any of them.`;
   }
   return NextResponse.json({ count: results.length, relaxed, message, results: shown });
 }
