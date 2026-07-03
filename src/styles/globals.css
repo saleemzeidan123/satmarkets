@@ -268,7 +268,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 @media(max-width:920px){
   .rent-grid,.rent-grid>*,.modhead{min-width:0;}
   .card{min-width:0;}
-  .card .row.between{flex-wrap:wrap;}
+  .card .row{flex-wrap:wrap;}
   .card .mono{overflow-wrap:anywhere;min-width:0;}
   .gallery img,.photo img{max-width:100%;height:auto;}
   .idxbar,.jc-stat{min-width:0;}
