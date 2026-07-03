@@ -30,17 +30,15 @@ function unsourcedFigure(text: string, allowed: string): boolean {
 
 // Single server-side call to DeepSeek (OpenAI-compatible). The key never reaches
 // the browser. Returns message text, or null on any failure so callers fall back.
-async function llm(messages: any[], json: boolean): Promise<string | null> {
-  const k = key();
-  if (!k) return null;
+async function callProvider(baseUrl: string, k: string, mdl: string, messages: any[], json: boolean): Promise<string | null> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 12000);
-    const res = await fetch(`${base()}/chat/completions`, {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
       body: JSON.stringify({
-        model: model(),
+        model: mdl,
         temperature: json ? 0 : 0.4,
         ...(json ? { response_format: { type: "json_object" } } : {}),
         messages,
@@ -55,6 +53,22 @@ async function llm(messages: any[], json: boolean): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+// Primary: the configured provider (DeepSeek by default). Fallback: the Anthropic
+// key already in the environment, via Anthropic's OpenAI-compatible endpoint, so
+// the advisor stays alive when one provider is down (two-provider resilience).
+async function llm(messages: any[], json: boolean): Promise<string | null> {
+  const k = key();
+  if (k) {
+    const out = await callProvider(base(), k, model(), messages, json);
+    if (out) return out;
+  }
+  const ak = process.env.ANTHROPIC_API_KEY;
+  if (ak) {
+    return callProvider(process.env.AI_FALLBACK_BASE_URL || "https://api.anthropic.com/v1", ak, process.env.AI_FALLBACK_MODEL || "claude-haiku-4-5-20251001", messages, json);
+  }
+  return null;
 }
 
 const CLASSIFY = `Classify a message to a Saudi commercial real estate assistant into one intent. Respond strict JSON only with keys:

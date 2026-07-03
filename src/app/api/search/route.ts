@@ -31,15 +31,17 @@ Infer intent: a clinic is medical, a logistics shed is warehouse, a restaurant o
 // from AI_API_KEY and never reaches the browser. Falls back to rules on any failure.
 async function llmParse(raw: string): Promise<Parsed | null> {
   const key = process.env.AI_API_KEY || process.env.deepseek_key;
-  if (!key || raw.trim().length < 3) return null;
-  const base = process.env.AI_BASE_URL || "https://api.deepseek.com";
-  const model = process.env.AI_MODEL || "deepseek-chat";
+  if (raw.trim().length < 3) return null;
+  const providers: [string, string, string][] = [];
+  if (key) providers.push([process.env.AI_BASE_URL || "https://api.deepseek.com", key, process.env.AI_MODEL || "deepseek-chat"]);
+  if (process.env.ANTHROPIC_API_KEY) providers.push([process.env.AI_FALLBACK_BASE_URL || "https://api.anthropic.com/v1", process.env.ANTHROPIC_API_KEY, process.env.AI_FALLBACK_MODEL || "claude-haiku-4-5-20251001"]);
+  for (const [base, k, model] of providers) {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 7000);
     const res = await fetch(`${base}/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${k}` },
       body: JSON.stringify({
         model,
         temperature: 0,
@@ -49,10 +51,10 @@ async function llmParse(raw: string): Promise<Parsed | null> {
       signal: ctrl.signal,
     });
     clearTimeout(timer);
-    if (!res.ok) return null;
+    if (!res.ok) continue;
     const j: any = await res.json();
     const txt: string | undefined = j?.choices?.[0]?.message?.content;
-    if (!txt) return null;
+    if (!txt) continue;
     const o: any = JSON.parse(txt);
     const asset = (ASSETS as readonly string[]).includes(o?.asset) ? (o.asset as AssetT) : null;
     const deal: Parsed["deal"] = o?.deal === "lease" || o?.deal === "sale" ? o.deal : null;
@@ -61,8 +63,10 @@ async function llmParse(raw: string): Promise<Parsed | null> {
     const maxRent = typeof o?.maxRent === "number" && isFinite(o.maxRent) ? o.maxRent : null;
     return { asset, deal, district, minSize, maxRent };
   } catch {
-    return null;
+    continue;
   }
+  }
+  return null;
 }
 
 export async function POST(req: NextRequest) {
