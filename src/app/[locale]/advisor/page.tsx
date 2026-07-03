@@ -40,6 +40,16 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   setMsgs((m) => [...m, { role: "u", text: q }]);
   setBusy(true);
   try {
+   const hist = msgs.slice(-6).map((mm) => ({ role: mm.role === "u" ? "user" : "assistant", text: mm.text })).filter((h) => h.text);
+   const ar1 = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, history: hist }) });
+   const aj = await ar1.json();
+   if (aj?.mode && aj.mode !== "search" && aj.message) {
+    setMsgs((m) => [...m, { role: "a", text: aj.message }]);
+    setBusy(false);
+    return;
+   }
+  } catch {}
+  try {
    const r = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
    const j = await r.json();
    const results: R[] = j.results || [];
