@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
@@ -31,6 +31,26 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
+ const [sug, setSug] = useState<{ label: string; sub: string }[]>([]);
+ const [sopen, setSopen] = useState(false);
+ const sref = useRef<HTMLDivElement>(null);
+ useEffect(() => {
+  const onDoc = (e: MouseEvent) => { if (sref.current && !sref.current.contains(e.target as Node)) setSopen(false); };
+  document.addEventListener("mousedown", onDoc);
+  return () => document.removeEventListener("mousedown", onDoc);
+ }, []);
+ useEffect(() => {
+  const term = q.trim();
+  if (term.length < 2) { setSug([]); return; }
+  const ctl = new AbortController();
+  const t = setTimeout(() => {
+   fetch(`/api/places?q=${encodeURIComponent(term)}`, { signal: ctl.signal })
+    .then((r) => r.json())
+    .then((d) => { setSug((d.items || []).slice(0, 6)); setSopen(true); })
+    .catch(() => {});
+  }, 220);
+  return () => { clearTimeout(t); ctl.abort(); };
+ }, [q]);
  const go = (e?: React.FormEvent) => {
   if (e) e.preventDefault();
   if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
@@ -208,6 +228,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
         })}
        </div>
       )}
+      <div ref={sref} style={{ position: "relative" }}>
       <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
@@ -215,6 +236,19 @@ export default function MarketingHome({ locale = "en", featured = [], stats }: {
        </div>
        <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: 15, fontWeight: 600, flex: "none" }}>{deal === "req" ? T.btnReq : T.btnStd}</button>
       </form>
+      {sopen && sug.length > 0 && (
+       <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, background: "#fff", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 14px 36px rgba(20,24,27,.22)", zIndex: 50, overflow: "hidden", textAlign: ar ? "right" : "left" }}>
+        {sug.map((o, i) => (
+         <button key={i} type="button" onClick={() => { setQ(o.label); setSopen(false); }}
+          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "#fff", color: "var(--ink)", fontSize: 14, fontFamily: "var(--sans)", textAlign: "inherit" }}>
+          <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
+          <span style={{ fontWeight: 600 }}>{o.label}</span>
+          {o.sub ? <span className="muted" style={{ fontSize: 12 }}>{o.sub}</span> : null}
+         </button>
+        ))}
+       </div>
+      )}
+      </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
        <Link href={L("/listings?q=Al%20Olaya")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
