@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { addWatch } from "@/lib/watches";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; }
@@ -40,6 +41,9 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
    const ar1 = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, history: hist }) });
    const aj = await ar1.json();
    if (aj?.mode && aj.mode !== "search" && aj.message) {
+    if (aj.mode === "watch" && aj.band && aj.band.median != null) {
+     addWatch({ districtLabel: aj.band.district_label, assetType: aj.band.asset_type, segment: aj.band.segment, thresholdPct: aj.threshold, median: Number(aj.band.median), period: aj.band.period });
+    }
     setMsgs((m) => [...m, { role: "a", text: aj.message }]);
     setBusy(false);
     return;

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import WatchBanner from "@/components/WatchBanner";
 
 const AZURE = "#3A6EA5";
 
@@ -102,6 +103,11 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <span className="btn secondary"><Icon.download size={15} /> {ar ? "تصدير" : "Export"}</span>
       <span className="btn primary"><Icon.spark size={15} /> {ar ? "اسأل الذكاء" : "Ask AI"}</span>
      </div>
+    </div>
+
+    {/* device-local index watches */}
+    <div style={{ padding: "18px 24px 0" }}>
+     <WatchBanner locale={params.locale as "en" | "ar"} />
     </div>
 
     {/* bifurcation banner */}

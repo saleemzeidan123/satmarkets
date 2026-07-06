@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import WatchBanner from "@/components/WatchBanner";
 
 export const revalidate = 1800;
 
@@ -77,6 +78,8 @@ export default async function MarketPage({ params }: { params: { locale: string 
       <div className="eyebrow">{ar ? "نبض السوق" : "Market pulse"}</div>
       <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "السوق التجاري في الرياض، بنظرة واحدة" : "The Riyadh commercial market, at a glance"}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{ar ? "كل رقم في هذه الصفحة من بيانات المنصّة الموثّقة أو من مؤشر الإيجارات، عيّنة المنصّة. لا تقديرات ولا أرقام بلا مصدر." : "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers."}</p>
+
+      <div style={{ marginTop: 22 }}><WatchBanner locale={params.locale as "en" | "ar"} /></div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginTop: 26 }}>
         {tiles.map((t, i) => (
