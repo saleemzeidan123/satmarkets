@@ -105,9 +105,10 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       <div>
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")}
           className="input" style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box", textAlign: ar ? "right" : "left" }} />
-        <div className="muted" style={{ fontSize: 12, margin: "8px 2px 6px" }}>{t("Full Saudi coverage. Verified areas first.", "تغطية كاملة للسعودية. المناطق الموثّقة أولاً.")}</div>
+        <div className="muted" style={{ fontSize: 12, margin: "8px 2px 6px" }}>{q.trim() ? t("Verified areas first, then all of Saudi Arabia.", "المناطق الموثّقة أولاً، ثم كل السعودية.") : t("Areas with verified spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات موثّقة. اكتب للبحث في كل السعودية.")}</div>
         {cities.map((c) => {
-          const inCity = locations.filter((l) => l.city === c.key && (!q.trim() || l.en.toLowerCase().includes(q.trim().toLowerCase()) || (l.ar || "").includes(q.trim())));
+          const ql = q.trim().toLowerCase();
+          const inCity = locations.filter((l) => l.city === c.key && (ql ? (l.en.toLowerCase().includes(ql) || (l.ar || "").includes(q.trim())) : (Number(l.count) || 0) > 0));
           if (!inCity.length) return null;
           return (
             <div key={c.key} style={{ marginBottom: 4 }}>
