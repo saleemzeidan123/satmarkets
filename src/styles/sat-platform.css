@@ -5,7 +5,7 @@
 :root{
   --ink:#14181B; --ink-2:#2B3138;
   --cool:#F6F8FB; --paper:#FFFFFF;
-  --silver:#E9EDF1; --silver-2:#D7DDE5; --slate:#5B6470; --slate-2:#8A93A0; --mid:#9AA3AE;
+  --silver:#E9EDF1; --silver-2:#D7DDE5; --slate:#5B6470; --slate-2:#6B7480; --mid:#9AA3AE;
   --harbor:#3A6EA5; --harbor-d:#2C557F;
   --azure:#3A6EA5; --azure-d:#2C557F; --azure-l:#9DBBD6; --azure-wash:#ECF2F8;
   --brass:#A88B5C; --stone:#EDE7DC;
@@ -481,3 +481,21 @@ html,body{max-width:100%;overflow-x:clip;}
   .flyer-page { position: absolute !important; inset: 0 !important; max-width: none !important; border: none !important; border-radius: 0 !important; }
   .no-print { display: none !important; }
 }
+
+/* ---- Sprint A1 item 5: visible keyboard focus (a11y). Keyboard-only via :focus-visible, never on mouse click. ---- */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+[role="button"]:focus-visible, .chip:focus-visible, .btn:focus-visible, .tabs .t:focus-visible,
+.seg span:focus-visible, .listing:focus-visible, .card:focus-visible, .lang:focus-visible {
+  outline: 2px solid var(--azure);
+  outline-offset: 2px;
+}
+.tabbar a:focus-visible { outline: 2px solid var(--azure); outline-offset: -3px; border-radius: 12px; }
+
+/* ---- Sprint A1 item 5: visible keyboard focus (a11y). Keyboard-only via :focus-visible, never on mouse click. ---- */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+[role="button"]:focus-visible, .chip:focus-visible, .btn:focus-visible, .tabs .t:focus-visible,
+.seg span:focus-visible, .listing:focus-visible, .card:focus-visible, .lang:focus-visible {
+  outline: 2px solid var(--azure);
+  outline-offset: 2px;
+}
+.tabbar a:focus-visible { outline: 2px solid var(--azure); outline-offset: -3px; border-radius: 12px; }

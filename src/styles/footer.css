@@ -1,6 +1,6 @@
 .foot{
   --ink:#14181B; --harbor:#3A6EA5; --green:#1F8A5B;
-  --slate:#5B6470; --slate-2:#8A93A0;
+  --slate:#5B6470; --slate-2:#6B7480;
   position:relative; overflow:hidden;
   background:var(--ink); color:var(--slate-2);
   padding:48px 64px 36px;
