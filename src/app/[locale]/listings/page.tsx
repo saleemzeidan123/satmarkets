@@ -2,31 +2,36 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, dealLabel, cityLabel } from "@/lib/labels";
+import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
 import SaveSearch from "@/components/SaveSearch";
-import LocationFilter, { type LocOpt } from "@/components/LocationFilter";
+import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
-const DEALS = ["lease", "sale"];
+const GRADES = ["a_plus", "a", "b", "c"];
+const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
-export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string; view?: string; smin?: string; smax?: string; pmin?: string; pmax?: string } }) {
+type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; grade?: string; fit?: string; verified?: string; sort?: string };
+
+export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
+  const t = (en: string, arr: string) => (ar ? arr : en);
+  const list = (k?: string) => (k ? k.split(",").filter(Boolean) : []);
   const sb = getSupabaseServer();
   let listings: Listing[] = [];
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
   let locations: LocOpt[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
-  const locKind = new Map<string, string>();
   if (sb) {
-    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(200);
-    if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
+    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").limit(300);
+    const assetArr = list(searchParams.asset);
+    if (assetArr.length) query = query.in("asset_type", assetArr);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
     if (searchParams.smin) query = query.gte("area_sqm", Number(searchParams.smin));
     if (searchParams.smax) query = query.lte("area_sqm", Number(searchParams.smax));
@@ -34,89 +39,91 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       if (searchParams.pmin) query = query.gte("asking_rent_sqm", Number(searchParams.pmin));
       if (searchParams.pmax) query = query.lte("asking_rent_sqm", Number(searchParams.pmax));
     }
-    const { data } = await query;
+    const gradeArr = list(searchParams.grade);
+    if (gradeArr.length) query = query.in("building_grade", gradeArr);
+    const fitArr = list(searchParams.fit);
+    if (fitArr.length) query = query.in("fitout_condition", fitArr);
+    if (searchParams.verified) query = query.or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
     const { data: allLocs } = await sb.from("districts").select("id,city,name_en,name_ar,kind");
-    (geo ?? []).forEach((g: any) => { if (g.kind) locKind.set(g.id, g.kind); });
     const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
-    (irows ?? []).forEach((r: any) => {
-      const arr = idxByDistrict.get(r.district_id) ?? [];
-      arr.push(r as IndexRow);
-      idxByDistrict.set(r.district_id, arr);
-    });
+    (irows ?? []).forEach((r: any) => { const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
-    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((params.locale === "ar" ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? (params.locale === "ar" ? " · مشروع" : " · project") : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((ar ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? t(" · project", " · مشروع") : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
     locations = (allLocs ?? []).map((d: any) => ({ id: d.id, city: d.city || "Other", kind: d.kind || "district", en: d.name_en, ar: d.name_ar, count: counts.get(d.id) ?? 0 }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
       const bmap = new Map((bs ?? []).map((b: any) => [b.id, b]));
-      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => {
-        const b: any = bmap.get(l.building_id);
-        return { id: l.id, title: (params.locale === "ar" ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: "" };
-      });
+      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: "" }; });
     }
   }
-  const shown = searchParams.district ? listings.filter((l: any) => l.district_id === searchParams.district) : listings;
-  const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
-  const dtop = bubbles.slice().sort((a, b) => b.count - a.count).slice(0, 12);
-  if (activeDistrict && !dtop.some((d) => d.id === activeDistrict.id)) dtop.unshift(activeDistrict);
+
   const cityTotals = new Map<string, number>();
   locations.forEach((l) => cityTotals.set(l.city, (cityTotals.get(l.city) ?? 0) + l.count));
   const cities = Array.from(new Set(locations.map((l) => l.city)))
     .sort((a, b) => (b === "Riyadh" ? 1 : 0) - (a === "Riyadh" ? 1 : 0) || (cityTotals.get(b) ?? 0) - (cityTotals.get(a) ?? 0))
     .map((k) => ({ key: k, label: cityLabel(k, locale) }));
+
+  const cityIds = new Set(searchParams.city ? locations.filter((l) => l.city === searchParams.city).map((l) => l.id) : []);
+  const placeIds = searchParams.place ? new Set(locations.filter((l) => l.en.toLowerCase() === searchParams.place!.toLowerCase() || (l.ar || "") === searchParams.place).map((l) => l.id)) : null;
+  let shown = listings.slice();
+  if (searchParams.district) shown = shown.filter((l: any) => l.district_id === searchParams.district);
+  else if (placeIds) shown = placeIds.size ? shown.filter((l: any) => l.district_id && placeIds.has(l.district_id)) : [];
+  else if (searchParams.city) shown = shown.filter((l: any) => l.district_id && cityIds.has(l.district_id));
+
+  const szT = searchParams.sz ? Number(searchParams.sz) : null;
+  const rtT = searchParams.rt ? Number(searchParams.rt) : null;
+  const sort = searchParams.sort || (szT || rtT ? "best" : "new");
+  if (szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
+  else if (rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
+  else if (sort === "rent") shown.sort((a: any, b: any) => (a.asking_rent_sqm ?? 1e12) - (b.asking_rent_sqm ?? 1e12));
+  else if (sort === "size") shown.sort((a: any, b: any) => (a.area_sqm || 0) - (b.area_sqm || 0));
+
+  const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
+
+  const fparams: Record<string, string> = {};
+  (Object.keys(searchParams) as (keyof SP)[]).forEach((k) => { if (searchParams[k]) fparams[k] = String(searchParams[k]); });
+
   const baseSp = new URLSearchParams();
-  if (searchParams.asset) baseSp.set("asset", searchParams.asset);
-  if (searchParams.deal) baseSp.set("deal", searchParams.deal);
-  if (searchParams.q) baseSp.set("q", searchParams.q);
-  if (searchParams.smin) baseSp.set("smin", searchParams.smin);
-  if (searchParams.smax) baseSp.set("smax", searchParams.smax);
-  if (searchParams.pmin) baseSp.set("pmin", searchParams.pmin);
-  if (searchParams.pmax) baseSp.set("pmax", searchParams.pmax);
+  Object.entries(fparams).forEach(([k, v]) => { if (k !== "district" && k !== "place" && k !== "view") baseSp.set(k, v); });
   const base = baseSp.toString();
   const insightsView = searchParams.view === "insights";
   const qsWith = (extra?: Record<string, string>) => {
-    const p = new URLSearchParams(baseSp);
-    if (searchParams.district) p.set("district", searchParams.district);
+    const p = new URLSearchParams();
+    Object.entries(fparams).forEach(([k, v]) => { if (k !== "view") p.set(k, v); });
     if (extra) Object.entries(extra).forEach(([k, v]) => p.set(k, v));
     const s = p.toString();
     return s ? `?${s}` : "";
   };
+
   let idx: any[] = [];
   if (sb && insightsView) {
     let iq = sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, median, band_low, band_high, sufficient, sort_order").order("sort_order", { ascending: true }).limit(20);
-    if (searchParams.asset) iq = iq.eq("asset_type", searchParams.asset);
+    const aArr = list(searchParams.asset);
+    if (aArr.length) iq = iq.in("asset_type", aArr);
     if (searchParams.district) iq = iq.eq("district_id", searchParams.district);
     const { data: idata } = await iq;
     idx = idata ?? [];
   }
-  const SEGL: Record<string, string> = params.locale === "ar"
+  const SEGL: Record<string, string> = ar
     ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street_front: "واجهة شارع", mall_inline: "داخل مول", clinic: "عيادة" }
     : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street_front: "Street front", mall_inline: "Mall inline", clinic: "Clinic" };
   const rcity = ar ? "الرياض" : "Riyadh";
-  const chip = (label: string, key: "asset" | "deal", val: string) => {
-    const active = searchParams[key] === val;
-    const sp = new URLSearchParams(searchParams as Record<string, string>);
-    if (active) sp.delete(key); else sp.set(key, val);
-    return <Link key={key + val} href={`/${locale}/listings?${sp.toString()}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{label}</Link>;
-  };
-  const rangeChip = (label: string, minKey: string, maxKey: string, minVal: string, maxVal: string) => {
-    const sp = new URLSearchParams(searchParams as Record<string, string>);
-    const active = (sp.get(minKey) || "") === minVal && (sp.get(maxKey) || "") === maxVal;
-    if (active) { sp.delete(minKey); sp.delete(maxKey); }
-    else { if (minVal) sp.set(minKey, minVal); else sp.delete(minKey); if (maxVal) sp.set(maxKey, maxVal); else sp.delete(maxKey); }
-    return <Link key={minKey + label} href={`/${locale}/listings?${sp.toString()}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{label}</Link>;
-  };
-  const SIZES: string[][] = ar
-    ? [["أقل من 200 م²", "", "200"], ["200 إلى 500", "200", "500"], ["500 إلى 1,000", "500", "1000"], ["1,000 إلى 2,500", "1000", "2500"], ["أكثر من 2,500", "2500", ""]]
-    : [["Under 200 m²", "", "200"], ["200 to 500", "200", "500"], ["500 to 1,000", "500", "1000"], ["1,000 to 2,500", "1000", "2500"], ["Over 2,500 m²", "2500", ""]];
-  const PRICES: string[][] = ar
-    ? [["أقل من 1,000", "", "1000"], ["1,000 إلى 2,000", "1000", "2000"], ["2,000 إلى 3,000", "2000", "3000"], ["أكثر من 3,000", "3000", ""]]
-    : [["Under 1,000", "", "1000"], ["1,000 to 2,000", "1000", "2000"], ["2,000 to 3,000", "2000", "3000"], ["Over 3,000", "3000", ""]];
   const kindFor = (a: string) => (a === "retail" || a === "showroom" ? "retail" : a === "warehouse" ? "warehouse" : "office");
+
+  const assets = ASSETS.map((a) => ({ value: a, label: assetLabel(a, locale) }));
+  const grades = GRADES.map((g) => ({ value: g, label: gradeLabel(g, locale) }));
+  const fits = FITS.map((f) => ({ value: f, label: fitoutLabel(f, locale) }));
+  const sorts = ar
+    ? [{ value: "new", label: "الأحدث" }, { value: "rent", label: "الإيجار من الأقل" }, { value: "size", label: "المساحة من الأصغر" }, { value: "best", label: "الأفضل مطابقة" }]
+    : [{ value: "new", label: "Newest" }, { value: "rent", label: "Rent, low to high" }, { value: "size", label: "Size, small to large" }, { value: "best", label: "Best match" }];
+
+  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces");
+
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
@@ -131,35 +138,17 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <input name="q" defaultValue={searchParams.q || ""} placeholder={ar ? "صف ما تحتاجه، مثل: مكتب فئة A مجهّز في العليا بأقل من 1,600، بنحو 300 م²" : "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
       </form>
-      <div className="card pad" style={{ marginTop: 16, boxShadow: "var(--sh-1)" }}>
-        <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
-          <span className="tag" style={{ minWidth: 62 }}>{ar ? "الصفقة" : "Deal"}</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
-        </div>
-        <div className="row gap8" style={{ alignItems: "flex-start", marginBottom: 10 }}>
-          <span className="tag" style={{ minWidth: 62, marginTop: 6 }}>{ar ? "النوع" : "Type"}</span>
-          <div className="row gap8 wrap" style={{ flex: 1, minWidth: 0 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
-        </div>
-        <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
-          <span className="tag" style={{ minWidth: 62 }}>{ar ? "المساحة" : "Size"}</span>{SIZES.map((sz) => rangeChip(sz[0], "smin", "smax", sz[1], sz[2]))}
-        </div>
-        {searchParams.deal !== "sale" && (
-          <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
-            <span className="tag" style={{ minWidth: 62 }}>{ar ? "الإيجار" : "Rent"}</span>{PRICES.map((pr) => rangeChip(pr[0], "pmin", "pmax", pr[1], pr[2]))}<span className="muted" style={{ fontSize: 11 }}>{ar ? "ريال/م²·سنة" : "SAR/m²·yr"}</span>
-          </div>
-        )}
-        <div className="row gap8" style={{ alignItems: "flex-start", borderTop: "1px solid var(--silver)", paddingTop: 12 }}>
-          <span className="tag" style={{ minWidth: 62, marginTop: 6 }}>{ar ? "الموقع" : "Location"}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <LocationFilter locale={locale as "en" | "ar"} locations={locations} cities={cities} selected={searchParams.district ?? null} basePath={`/${locale}/listings`} baseQs={base} />
-          </div>
+      <div style={{ marginTop: 16 }}>
+        <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} basePath={`/${locale}/listings`} />
+      </div>
+      <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
+        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}</div>
+        <div className="row gap8 wrap">
+          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
+          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "رؤى المؤشر" : "Insights"}</Link>
         </div>
       </div>
-      <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}</div>
-      <div className="row gap8 wrap" style={{ marginTop: 14 }}>
-        <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
-        <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "رؤى المؤشر" : "Insights"}</Link>
-      </div>
-      <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={[searchParams.deal ? dealLabel(searchParams.deal, locale) : "", searchParams.asset ? assetLabel(searchParams.asset, locale) : "", activeDistrict ? activeDistrict.name : ""].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces")} />
+      <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={saveLabel} />
       <div className="lst-split" style={{ marginTop: 18 }}>
       <div>
       {insightsView ? (
@@ -180,7 +169,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + (SEGL[r.segment] || r.segment) : ""}</td>
                       <td className="num mono">{r.sufficient && r.median != null ? Number(r.median).toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</td>
-                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} \u2013 ${Number(r.band_high).toLocaleString("en-US")}` : (ar ? "عيّنة قليلة" : "Thin sample")}</td>
+                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}` : (ar ? "عيّنة قليلة" : "Thin sample")}</td>
                       <td className="num">{r.sufficient ? <span className="statusdot ok">{ar ? "كافٍ" : "Sufficient"}</span> : <span className="statusdot pend">{ar ? "قليل" : "Thin"}</span>}</td>
                     </tr>
                   ))}
