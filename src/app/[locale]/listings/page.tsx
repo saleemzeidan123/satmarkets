@@ -2,17 +2,18 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, dealLabel } from "@/lib/labels";
+import { assetLabel, dealLabel, cityLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
 import SaveSearch from "@/components/SaveSearch";
+import LocationFilter, { type LocOpt } from "@/components/LocationFilter";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const DEALS = ["lease", "sale"];
 
-export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string; view?: string } }) {
+export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: { asset?: string; deal?: string; q?: string; district?: string; view?: string; smin?: string; smax?: string; pmin?: string; pmax?: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
@@ -20,15 +21,23 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let listings: Listing[] = [];
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
+  let locations: LocOpt[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
   const locKind = new Map<string, string>();
   if (sb) {
     let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").order("created_at", { ascending: false }).limit(200);
     if (searchParams.asset) query = query.eq("asset_type", searchParams.asset);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
+    if (searchParams.smin) query = query.gte("area_sqm", Number(searchParams.smin));
+    if (searchParams.smax) query = query.lte("area_sqm", Number(searchParams.smax));
+    if (searchParams.deal !== "sale") {
+      if (searchParams.pmin) query = query.gte("asking_rent_sqm", Number(searchParams.pmin));
+      if (searchParams.pmax) query = query.lte("asking_rent_sqm", Number(searchParams.pmax));
+    }
     const { data } = await query;
     listings = (data as Listing[]) ?? [];
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
+    const { data: allLocs } = await sb.from("districts").select("id,city,name_en,name_ar,kind");
     (geo ?? []).forEach((g: any) => { if (g.kind) locKind.set(g.id, g.kind); });
     const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
     (irows ?? []).forEach((r: any) => {
@@ -39,6 +48,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
     bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((params.locale === "ar" ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? (params.locale === "ar" ? " · مشروع" : " · project") : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    locations = (allLocs ?? []).map((d: any) => ({ id: d.id, city: d.city || "Other", kind: d.kind || "district", en: d.name_en, ar: d.name_ar, count: counts.get(d.id) ?? 0 }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
@@ -53,10 +63,19 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
   const dtop = bubbles.slice().sort((a, b) => b.count - a.count).slice(0, 12);
   if (activeDistrict && !dtop.some((d) => d.id === activeDistrict.id)) dtop.unshift(activeDistrict);
+  const cityTotals = new Map<string, number>();
+  locations.forEach((l) => cityTotals.set(l.city, (cityTotals.get(l.city) ?? 0) + l.count));
+  const cities = Array.from(new Set(locations.map((l) => l.city)))
+    .sort((a, b) => (b === "Riyadh" ? 1 : 0) - (a === "Riyadh" ? 1 : 0) || (cityTotals.get(b) ?? 0) - (cityTotals.get(a) ?? 0))
+    .map((k) => ({ key: k, label: cityLabel(k, locale) }));
   const baseSp = new URLSearchParams();
   if (searchParams.asset) baseSp.set("asset", searchParams.asset);
   if (searchParams.deal) baseSp.set("deal", searchParams.deal);
   if (searchParams.q) baseSp.set("q", searchParams.q);
+  if (searchParams.smin) baseSp.set("smin", searchParams.smin);
+  if (searchParams.smax) baseSp.set("smax", searchParams.smax);
+  if (searchParams.pmin) baseSp.set("pmin", searchParams.pmin);
+  if (searchParams.pmax) baseSp.set("pmax", searchParams.pmax);
   const base = baseSp.toString();
   const insightsView = searchParams.view === "insights";
   const qsWith = (extra?: Record<string, string>) => {
@@ -84,6 +103,19 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (active) sp.delete(key); else sp.set(key, val);
     return <Link key={key + val} href={`/${locale}/listings?${sp.toString()}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{label}</Link>;
   };
+  const rangeChip = (label: string, minKey: string, maxKey: string, minVal: string, maxVal: string) => {
+    const sp = new URLSearchParams(searchParams as Record<string, string>);
+    const active = (sp.get(minKey) || "") === minVal && (sp.get(maxKey) || "") === maxVal;
+    if (active) { sp.delete(minKey); sp.delete(maxKey); }
+    else { if (minVal) sp.set(minKey, minVal); else sp.delete(minKey); if (maxVal) sp.set(maxKey, maxVal); else sp.delete(maxKey); }
+    return <Link key={minKey + label} href={`/${locale}/listings?${sp.toString()}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{label}</Link>;
+  };
+  const SIZES: string[][] = ar
+    ? [["أقل من 200 م²", "", "200"], ["200 إلى 500", "200", "500"], ["500 إلى 1,000", "500", "1000"], ["1,000 إلى 2,500", "1000", "2500"], ["أكثر من 2,500", "2500", ""]]
+    : [["Under 200 m²", "", "200"], ["200 to 500", "200", "500"], ["500 to 1,000", "500", "1000"], ["1,000 to 2,500", "1000", "2500"], ["Over 2,500 m²", "2500", ""]];
+  const PRICES: string[][] = ar
+    ? [["أقل من 1,000", "", "1000"], ["1,000 إلى 2,000", "1000", "2000"], ["2,000 إلى 3,000", "2000", "3000"], ["أكثر من 3,000", "3000", ""]]
+    : [["Under 1,000", "", "1000"], ["1,000 to 2,000", "1000", "2000"], ["2,000 to 3,000", "2000", "3000"], ["Over 3,000", "3000", ""]];
   const kindFor = (a: string) => (a === "retail" || a === "showroom" ? "retail" : a === "warehouse" ? "warehouse" : "office");
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
@@ -99,27 +131,29 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <input name="q" defaultValue={searchParams.q || ""} placeholder={ar ? "صف ما تحتاجه، مثل: مكتب فئة A مجهّز في العليا بأقل من 1,600، بنحو 300 م²" : "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
       </form>
-      <div className="row gap8 chip-rail" style={{ marginTop: 14 }}>
-        <span className="tag">{ar ? "نوع الصفقة:" : "Deal:"}</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
-      </div>
-      <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
-      {dtop.length > 0 && (
-        <div className="row gap8 chip-rail" style={{ marginTop: 8 }}>
-          <span className="tag">{ar ? "الموقع:" : "Location:"}</span>
-          {dtop.map((b) => {
-            const active = searchParams.district === b.id;
-            const sp = new URLSearchParams(searchParams as Record<string, string>);
-            if (active) sp.delete("district"); else sp.set("district", b.id);
-            const s = sp.toString();
-            return (
-              <Link key={b.id} href={`/${locale}/listings${s ? `?${s}` : ""}`} className={active ? "chip on" : "chip"} style={{ textDecoration: "none" }}>
-                {b.name}{locKind.get(b.id) === "development" ? <span style={{ opacity: 0.6, fontSize: 10.5 }}> · {ar ? "مشروع" : "project"}</span> : null} <span style={{ opacity: 0.55, fontFamily: "var(--mono)", fontSize: 11 }}>{b.count}</span>{active ? " ✕" : ""}
-              </Link>
-            );
-          })}
-          <Link href={`/${locale}/locations`} className="chip" style={{ textDecoration: "none", opacity: 0.85 }}>{ar ? "كل المواقع" : "All locations"}</Link>
+      <div className="card pad" style={{ marginTop: 16, boxShadow: "var(--sh-1)" }}>
+        <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
+          <span className="tag" style={{ minWidth: 62 }}>{ar ? "الصفقة" : "Deal"}</span>{DEALS.map((d) => chip(dealLabel(d, locale), "deal", d))}
         </div>
-      )}
+        <div className="row gap8" style={{ alignItems: "flex-start", marginBottom: 10 }}>
+          <span className="tag" style={{ minWidth: 62, marginTop: 6 }}>{ar ? "النوع" : "Type"}</span>
+          <div className="row gap8 wrap" style={{ flex: 1, minWidth: 0 }}>{ASSETS.map((a) => chip(assetLabel(a, locale), "asset", a))}</div>
+        </div>
+        <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
+          <span className="tag" style={{ minWidth: 62 }}>{ar ? "المساحة" : "Size"}</span>{SIZES.map((sz) => rangeChip(sz[0], "smin", "smax", sz[1], sz[2]))}
+        </div>
+        {searchParams.deal !== "sale" && (
+          <div className="row gap8 wrap" style={{ alignItems: "center", marginBottom: 10 }}>
+            <span className="tag" style={{ minWidth: 62 }}>{ar ? "الإيجار" : "Rent"}</span>{PRICES.map((pr) => rangeChip(pr[0], "pmin", "pmax", pr[1], pr[2]))}<span className="muted" style={{ fontSize: 11 }}>{ar ? "ريال/م²·سنة" : "SAR/m²·yr"}</span>
+          </div>
+        )}
+        <div className="row gap8" style={{ alignItems: "flex-start", borderTop: "1px solid var(--silver)", paddingTop: 12 }}>
+          <span className="tag" style={{ minWidth: 62, marginTop: 6 }}>{ar ? "الموقع" : "Location"}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <LocationFilter locale={locale as "en" | "ar"} locations={locations} cities={cities} selected={searchParams.district ?? null} basePath={`/${locale}/listings`} baseQs={base} />
+          </div>
+        </div>
+      </div>
       <div className="muted" style={{ marginTop: 14, fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}</div>
       <div className="row gap8 wrap" style={{ marginTop: 14 }}>
         <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
