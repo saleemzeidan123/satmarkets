@@ -111,7 +111,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
      <div>
       <div className="eyebrow">{ar ? "تحليل الاستثمار · الربع الأول 2026" : "Investment underwriting · Q1 2026"}</div>
       <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "طابق مكاتب فئة A، برج العليا" : "Grade A Office Floor, Olaya Tower"}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "320 م² · العليا · مُحلَّل على صفقات مقارنة موثّقة" : "320 m² · Al Olaya · underwritten on verified comparable transactions"}</div>
+      <div className="muted" style={{ fontSize: "var(--fs-base)", marginTop: 6 }}>{ar ? "320 م² · العليا · مُحلَّل على صفقات مقارنة موثّقة" : "320 m² · Al Olaya · underwritten on verified comparable transactions"}</div>
      </div>
      <div className="row gap10 wrap">
       <button type="button" onClick={exportCsv} className="btn secondary" style={{ cursor: "pointer" }}><Icon.download size={15} /> {ar ? "تصدير النموذج" : "Export model"}</button>
@@ -136,14 +136,14 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
      <div className="card pad scn" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row gap10" style={{ marginBottom: 18 }}>
        <span style={{ color: "var(--harbor)" }}><Icon.layers size={18} /></span>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "السيناريو" : "Scenario"}</div>
+       <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "السيناريو" : "Scenario"}</div>
        <span className="grow" /><span className="tag">{esc === "open" ? (ar ? "مفتوح · إعادة تسعير" : "Open · re-price") : (ar ? "مسقوف" : "Capped")} · {term}{ar ? " سنة" : "yr"}</span>
       </div>
       <div className="col gap18">
        <div className="field">
         <label>{ar ? "سعر الاستحواذ (ريال)" : "Acquisition price (SAR)"}</label>
         <div className="input between" style={{ padding: 0 }}>
-         <input value={fmtN(price)} onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (!isNaN(n)) setPrice(n || 0); }} style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)", padding: "10px 12px", width: "100%", textAlign: ar ? "right" : "left" }} />
+         <input value={fmtN(price)} onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (!isNaN(n)) setPrice(n || 0); }} style={{ border: "none", outline: "none", background: "transparent", fontSize: "var(--fs-base)", color: "var(--ink)", padding: "10px 12px", width: "100%", textAlign: ar ? "right" : "left" }} />
          <span className="mono muted2" style={{ paddingRight: 12 }}>{ar ? "ريال" : "SAR"}</span>
         </div>
        </div>
@@ -170,15 +170,15 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
        </div>
       </div>
       <div style={{ height: 1, background: "var(--silver)", margin: "20px 0" }} />
-      <div className="row between" style={{ fontSize: 13 }}><span className="muted">{ar ? "العائد عند الدخول" : "Going-in yield"}</span><b className="mono">{fmtPct(m.goingInYield)}</b></div>
-      <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">{ar ? "العائد على التكلفة (السنة 5)" : "Yield-on-cost (yr 5)"}</span><b className="mono" style={{ color: "var(--green)" }}>{fmtPct(m.yoc5)}</b></div>
+      <div className="row between" style={{ fontSize: "var(--fs-sm)" }}><span className="muted">{ar ? "العائد عند الدخول" : "Going-in yield"}</span><b className="mono">{fmtPct(m.goingInYield)}</b></div>
+      <div className="row between" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}><span className="muted">{ar ? "العائد على التكلفة (السنة 5)" : "Yield-on-cost (yr 5)"}</span><b className="mono" style={{ color: "var(--green)" }}>{fmtPct(m.yoc5)}</b></div>
       <button className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }} onClick={() => setRan(true)}>{ran ? (ar ? "حُدّث النموذج ✓، العائد الداخلي " : "Model updated ✓, IRR ") + fmtPct(m.irr) : (ar ? "شغّل النموذج الكامل" : "Run full model")}</button>
      </div>
 
      <div className="col gap20">
       <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
        <div className="row between wrap" style={{ alignItems: "flex-start", gap: 12 }}>
-        <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "توقّع صافي الدخل التشغيلي · حيازة 7 سنوات" : "NOI projection · 7-year hold"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? `ريال/سنة · تصعيد مفتوح مقابل مسقوف · مدة ${term} سنة` : `SAR/yr · open vs capped escalation · ${term}yr term`}</div></div>
+        <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "توقّع صافي الدخل التشغيلي · حيازة 7 سنوات" : "NOI projection · 7-year hold"}</div><div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? `ريال/سنة · تصعيد مفتوح مقابل مسقوف · مدة ${term} سنة` : `SAR/yr · open vs capped escalation · ${term}yr term`}</div></div>
         <div className="col gap8">
          <span className="lgd"><span className="sw" /> {ar ? "مفتوح · يُعاد تسعيره وفق السوق" : "Open · re-prices to market"}</span>
          <span className="lgd"><span className="sw amber" /> {ar ? "مسقوف · مجمّد السنوات 1–5" : "Capped · frozen yrs 1–5"}</span>
@@ -191,19 +191,19 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
            <div className="b hi" style={{ height: (o / maxBar * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", opacity: esc === "open" ? 1 : 0.45 }} />
            <div className="b" style={{ height: (m.cappedS[i] / maxBar * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", background: "#FBF4E6", borderColor: "#ECDCB6", opacity: esc === "capped" ? 1 : 0.6 }} />
           </div>
-          <span className="mono muted" style={{ fontSize: 10.5 }}>{ar ? "س" : "Y"}{i + 1}</span>
+          <span className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? "س" : "Y"}{i + 1}</span>
          </div>
         ))}
        </div>
        <div className="row gap10" style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
         <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
-        <span className="muted" style={{ fontSize: 12.5 }}>{ar ? <>إذا كان هذا الأصل عقد إيجار أول جديد فهو <b style={{ color: "var(--ink)" }}>غير متأثر بالتجميد</b> ويُعاد تسعيره كل مدة، وهذا الفارق (مفتوح مقابل مسقوف) هو القيمة المضافة في التحليل.</> : <>If this asset is a new first-lease it is <b style={{ color: "var(--ink)" }}>unaffected by the freeze</b> and re-prices every term, that gap (open vs capped) is the underwriting upside.</>}</span>
+        <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? <>إذا كان هذا الأصل عقد إيجار أول جديد فهو <b style={{ color: "var(--ink)" }}>غير متأثر بالتجميد</b> ويُعاد تسعيره كل مدة، وهذا الفارق (مفتوح مقابل مسقوف) هو القيمة المضافة في التحليل.</> : <>If this asset is a new first-lease it is <b style={{ color: "var(--ink)" }}>unaffected by the freeze</b> and re-prices every term, that gap (open vs capped) is the underwriting upside.</>}</span>
        </div>
       </div>
 
       <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
        <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "صفقات مقارنة" : "Comparable transactions"}</div>
+        <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "صفقات مقارنة" : "Comparable transactions"}</div>
         <span className="chip" style={{ borderColor: "var(--silver)" }}>{ar ? "آخر 6 أشهر" : "Last 6 months"} <Icon.chevd size={14} /></span>
        </div>
        <div style={{ overflowX: "auto" }}>
@@ -225,7 +225,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
        </div>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
         <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-        <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "المقارنات مستمدة فقط من صفقات موثّقة بمشورة SAT، لا أسعار طلب، ولا أرقام مستخرجة." : "Comps drawn only from verified SAT-advised transactions, no asking prices, no scraped figures."}</span>
+        <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? "المقارنات مستمدة فقط من صفقات موثّقة بمشورة SAT، لا أسعار طلب، ولا أرقام مستخرجة." : "Comps drawn only from verified SAT-advised transactions, no asking prices, no scraped figures."}</span>
        </div>
       </div>
      </div>
