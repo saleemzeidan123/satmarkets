@@ -33,8 +33,10 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
     document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
   }, []);
   useEffect(() => {
     const s = q.trim();

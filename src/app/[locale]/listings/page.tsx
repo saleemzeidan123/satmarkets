@@ -216,7 +216,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. النطاقات المنشورة المنسوبة على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published bands live on the Rent Index page."}</div>
         </div>
       ) : shown.length === 0 ? (
-        <p className="muted" style={{ marginTop: 10 }}>{ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية." : "No matching spaces. Try widening your filters."}</p>
+        <div style={{ marginTop: 12 }}>
+          <p className="muted" style={{ margin: 0 }}>{ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية أو مسح الكل." : "No matching spaces. Try widening your filters, or clear them all."}</p>
+          <Link href={`/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{ar ? "مسح كل عوامل التصفية" : "Clear all filters"}</Link>
+        </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
           {shown.map((l) => {
