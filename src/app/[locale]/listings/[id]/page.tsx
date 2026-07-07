@@ -22,7 +22,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
   const title = (ar ? l.title_ar : l.title_en) || l.reference_code;
-  const kindFor = (a: string) => (a === "retail" || a === "showroom" ? "retail" : a === "warehouse" ? "warehouse" : "office");
+  const kindFor = (a: string) => a;
   const hours = [3, 2, 4, 7, 11, 15, 17, 18, 16, 17, 15, 9, 5];
   const bars = [62, 70, 78, 92, 74, 58];
   const L = (p: string) => `/${locale}${p}`;

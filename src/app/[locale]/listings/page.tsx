@@ -136,7 +136,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street_front: "واجهة شارع", mall_inline: "داخل مول", clinic: "عيادة" }
     : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street_front: "Street front", mall_inline: "Mall inline", clinic: "Clinic" };
   const rcity = ar ? "الرياض" : "Riyadh";
-  const kindFor = (a: string) => (a === "retail" || a === "showroom" ? "retail" : a === "warehouse" ? "warehouse" : "office");
+  const kindFor = (a: string) => a;
 
   const assets = ASSETS.map((a) => ({ value: a, label: assetLabel(a, locale) }));
   const grades = GRADES.map((g) => ({ value: g, label: gradeLabel(g, locale) }));
