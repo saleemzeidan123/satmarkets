@@ -1,6 +1,7 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, MarkPin } from "@/components/satkit";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string; dir?: string }) {
  return (
@@ -13,6 +14,14 @@ function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string;
    {delta && <div className={"delta " + (dir || "")} style={{ marginTop: 8, color: dir ? undefined : "var(--slate)" }}>{delta}</div>}
   </div>
  );
+}
+
+export async function generateMetadata({ params }: { params: { locale: string } }) {
+ const ar = params.locale === "ar";
+ const title = ar ? "ذكاء الموقع، نطاق العليا التجاري | سات ماركتس" : "Location Intelligence, Al Olaya trade area | SAT Markets";
+ const description = ar ? "حركة المشاة والنطاق التجاري والجوار في العليا بالرياض، مبنية للمملكة ومقيّمة بشفافية عبر خمس عدسات." : "Footfall, trade-area catchment and co-tenancy for Al Olaya, Riyadh. Built for Saudi Arabia and scored transparently across five lenses for reliable site selection.";
+ const url = `${SITE}/${params.locale}/area`;
+ return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
 }
 
 export default function AreaPage({ params }: { params: { locale: string } }) {
@@ -35,6 +44,10 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
  const comp: [string, string][] = [["44%", "34%"], ["62%", "40%"], ["58%", "62%"], ["40%", "60%"], ["68%", "52%"]];
  return (
   <div style={{ background: "var(--cool)" }}>
+   <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+    { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${params.locale}` },
+    { "@type": "ListItem", position: 2, name: ar ? "ذكاء الموقع" : "Location Intelligence", item: `${SITE}/${params.locale}/area` },
+   ] }} />
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
