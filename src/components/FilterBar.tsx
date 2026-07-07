@@ -75,9 +75,15 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     [t("Under 1,000", "أقل من 1,000"), "", "1000"], [t("1,000 to 2,000", "1,000 إلى 2,000"), "1000", "2000"],
     [t("2,000 to 3,000", "2,000 إلى 3,000"), "2000", "3000"], [t("Over 3,000", "أكثر من 3,000"), "3000", ""],
   ];
+  const SALE_PRICES: [string, string, string][] = [
+    [t("Under 5M SAR", "أقل من 5 مليون ريال"), "", "5000000"], [t("5M to 15M", "5 إلى 15 مليون"), "5000000", "15000000"],
+    [t("15M to 50M", "15 إلى 50 مليون"), "15000000", "50000000"], [t("Over 50M", "أكثر من 50 مليون"), "50000000", ""],
+  ];
+  const isSale = params.deal === "sale";
   const assetSel = csv("asset"), gradeSel = csv("grade"), fitSel = csv("fit");
   const activeSize = params.sz ? `${Number(params.sz).toLocaleString("en-US")} m²` : (params.smin || params.smax ? SIZES.find((s) => s[1] === (params.smin || "") && s[2] === (params.smax || ""))?.[0] : "");
   const activeRent = params.rt ? `${Number(params.rt).toLocaleString("en-US")}` : (params.pmin || params.pmax ? RENTS.find((s) => s[1] === (params.pmin || "") && s[2] === (params.pmax || ""))?.[0] : "");
+  const activePrice = params.sp ? `${Number(params.sp).toLocaleString("en-US")}` : (params.spmin || params.spmax ? SALE_PRICES.find((s) => s[1] === (params.spmin || "") && s[2] === (params.spmax || ""))?.[0] : "");
 
   const pill = (key: string, label: string, active: boolean, right?: boolean) => (
     <button type="button" key={key} onClick={() => setOpen(open === key ? null : key)} aria-expanded={open === key}
@@ -147,7 +153,19 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         </div>
       </div>
     );
-    if (open === "rent") return (
+    if (open === "rent") return isSale ? (
+      <div>
+        <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("SAR total. Sale listings.", "ريال إجمالي. عروض البيع.")}</div>
+        {SALE_PRICES.map((s) => row(s[0], (params.spmin || "") === s[1] && (params.spmax || "") === s[2] && !params.sp, () => nav({ spmin: s[1], spmax: s[2], sp: "" })))}
+        <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
+          <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("Or enter an exact price, we show the nearest", "أو أدخل سعراً محدداً، ونعرض الأقرب")}</div>
+          <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("sp") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ sp: v, spmin: "", spmax: "" }); }} className="row gap8">
+            <input name="sp" defaultValue={params.sp || ""} inputMode="numeric" placeholder={t("e.g. 12,000,000", "مثال 12,000,000")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box" }} />
+            <button type="submit" className="btn primary" style={{ height: 42 }}>{t("SAR", "ريال")}</button>
+          </form>
+        </div>
+      </div>
+    ) : (
       <div>
         <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("SAR / m² / yr. Lease listings.", "ريال / م² / سنة. عروض الإيجار.")}</div>
         {RENTS.map((s) => row(s[0], (params.pmin || "") === s[1] && (params.pmax || "") === s[2] && !params.rt, () => nav({ pmin: s[1], pmax: s[2], rt: "" })))}
@@ -170,7 +188,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {pill("deal", params.deal ? (params.deal === "sale" ? t("For sale", "للبيع") : t("For lease", "للإيجار")) : t("Deal", "الصفقة"), !!params.deal)}
         {pill("asset", assetSel.length ? `${t("Type", "النوع")} (${assetSel.length})` : t("Property type", "نوع العقار"), assetSel.length > 0)}
         {pill("size", activeSize || t("Size", "المساحة"), !!activeSize)}
-        {pill("rent", activeRent ? `${activeRent}` : t("Rent", "الإيجار"), !!activeRent)}
+        {pill("rent", isSale ? (activePrice || t("Price", "السعر")) : (activeRent || t("Rent", "الإيجار")), isSale ? !!activePrice : !!activeRent)}
         {pill("grade", gradeSel.length ? `${t("Grade", "الفئة")} (${gradeSel.length})` : t("Grade", "الفئة"), gradeSel.length > 0)}
         {pill("fit", fitSel.length ? `${t("Fit-out", "التجهيز")} (${fitSel.length})` : t("Fit-out", "التجهيز"), fitSel.length > 0)}
         <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} className="chip"

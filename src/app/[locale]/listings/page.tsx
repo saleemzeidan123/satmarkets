@@ -15,7 +15,7 @@ const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "service
 const GRADES = ["a_plus", "a", "b", "c"];
 const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
-type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; grade?: string; fit?: string; verified?: string; sort?: string };
+type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string };
 
 export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
@@ -61,6 +61,9 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (searchParams.deal !== "sale") {
       if (searchParams.pmin) query = query.gte("asking_rent_sqm", Number(searchParams.pmin));
       if (searchParams.pmax) query = query.lte("asking_rent_sqm", Number(searchParams.pmax));
+    } else {
+      if (searchParams.spmin) query = query.gte("sale_price", Number(searchParams.spmin));
+      if (searchParams.spmax) query = query.lte("sale_price", Number(searchParams.spmax));
     }
     const gradeArr = list(searchParams.grade);
     if (gradeArr.length) query = query.in("building_grade", gradeArr);
@@ -100,9 +103,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
 
   const szT = searchParams.sz ? Number(searchParams.sz) : null;
   const rtT = searchParams.rt ? Number(searchParams.rt) : null;
-  const sort = searchParams.sort || (szT || rtT ? "best" : "new");
+  const spT = searchParams.sp ? Number(searchParams.sp) : null;
+  const sort = searchParams.sort || (szT || rtT || spT ? "best" : "new");
   if (szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
   else if (rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
+  else if (spT != null) shown.sort((a: any, b: any) => Math.abs((a.sale_price || 0) - spT) - Math.abs((b.sale_price || 0) - spT));
   else if (sort === "rent") shown.sort((a: any, b: any) => (a.asking_rent_sqm ?? 1e12) - (b.asking_rent_sqm ?? 1e12));
   else if (sort === "size") shown.sort((a: any, b: any) => (a.area_sqm || 0) - (b.area_sqm || 0));
 
