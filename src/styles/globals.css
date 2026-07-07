@@ -277,3 +277,10 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   .jc-stat .mono{overflow-wrap:anywhere;}
   h1,h2,h3,.ttl{overflow-wrap:break-word;}
 }
+
+
+/* ---- Skip-to-content link (a11y): visually hidden until keyboard focus ---- */
+.skip-link{position:fixed;top:8px;left:8px;z-index:200;background:var(--harbor,#3A6EA5);color:#fff;padding:10px 16px;border-radius:8px;font:600 13.5px "Hanken Grotesk",system-ui,sans-serif;text-decoration:none;transform:translateY(-160%);transition:transform .18s ease;}
+.skip-link:focus{transform:translateY(0);outline:2px solid #fff;outline-offset:2px;}
+[dir="rtl"] .skip-link{left:auto;right:8px;}
+#main:focus{outline:none;}

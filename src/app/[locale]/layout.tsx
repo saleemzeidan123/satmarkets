@@ -42,6 +42,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   ];
   return (
     <>
+      <a href="#main" className="skip-link">{ar ? "تخطّ إلى المحتوى" : "Skip to content"}</a>
       <HtmlLangDir locale={locale} />
       <JsonLd data={ORG} />
       <ChromeGate header={<>
@@ -52,7 +53,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       </div>
       <Header locale={locale} dict={dict} />
       </>} footer={<><SatFooter locale={locale} /><TabBar locale={locale} /></>}>
-      <main className="min-h-[70vh] has-tabbar">{children}</main>
+      <main id="main" tabIndex={-1} className="min-h-[70vh] has-tabbar">{children}</main>
       </ChromeGate>
       <AdvisorWidget locale={locale} />
     </>
