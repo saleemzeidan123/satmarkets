@@ -51,6 +51,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let pins: ExactPin[] = [];
   let locations: LocOpt[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
+  const assetCounts: Record<string, number> = {}, gradeCounts: Record<string, number> = {}, fitCounts: Record<string, number> = {};
   if (sb) {
     let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").limit(300);
     const assetArr = list(searchParams.asset);
@@ -72,6 +73,16 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (searchParams.verified) query = query.or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
     const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
+    // Booking-style per-option counts: same filters minus the multi-select facets themselves.
+    let fq = sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published").limit(400);
+    if (searchParams.deal) fq = fq.eq("deal_type", searchParams.deal);
+    if (searchParams.smin) fq = fq.gte("area_sqm", Number(searchParams.smin));
+    if (searchParams.smax) fq = fq.lte("area_sqm", Number(searchParams.smax));
+    if (searchParams.deal !== "sale") { if (searchParams.pmin) fq = fq.gte("asking_rent_sqm", Number(searchParams.pmin)); if (searchParams.pmax) fq = fq.lte("asking_rent_sqm", Number(searchParams.pmax)); }
+    else { if (searchParams.spmin) fq = fq.gte("sale_price", Number(searchParams.spmin)); if (searchParams.spmax) fq = fq.lte("sale_price", Number(searchParams.spmax)); }
+    if (searchParams.verified) fq = fq.or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    const { data: fdata } = await fq;
+    (fdata ?? []).forEach((r: any) => { if (r.asset_type) assetCounts[r.asset_type] = (assetCounts[r.asset_type] || 0) + 1; if (r.building_grade) gradeCounts[r.building_grade] = (gradeCounts[r.building_grade] || 0) + 1; if (r.fitout_condition) fitCounts[r.fitout_condition] = (fitCounts[r.fitout_condition] || 0) + 1; });
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
     const { data: allLocs } = await sb.from("districts").select("id,city,name_en,name_ar,kind");
     const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
@@ -175,7 +186,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
       </form>
       <div style={{ marginTop: 16 }}>
-        <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} basePath={`/${locale}/listings`} />
+        <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
         <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}</div>

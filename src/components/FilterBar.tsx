@@ -19,9 +19,10 @@ const KIND_T: Record<string, [string, string]> = {
 };
 const KIND_ORDER = ["development", "district", "area"];
 
-export default function FilterBar({ locale, params, cities, locations, assets, grades, fits, sorts, basePath }: {
+export default function FilterBar({ locale, params, cities, locations, assets, grades, fits, sorts, basePath, assetCounts, gradeCounts, fitCounts }: {
   locale: "en" | "ar"; params: Params; cities: { key: string; label: string }[];
   locations: LocOpt[]; assets: Opt[]; grades: Opt[]; fits: Opt[]; sorts: Opt[]; basePath: string;
+  assetCounts?: Record<string, number>; gradeCounts?: Record<string, number>; fitCounts?: Record<string, number>;
 }) {
   const ar = locale === "ar";
   const router = useRouter();
@@ -101,10 +102,11 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       {active ? <span style={{ color: "var(--azure-d)" }}>✓</span> : null}
     </button>
   );
-  const check = (label: string, on: boolean, toggle: () => void) => (
+  const check = (label: string, on: boolean, toggle: () => void, count?: number) => (
     <button key={label} type="button" onClick={toggle} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: "transparent", color: "var(--ink)" }}>
       <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "var(--fs-xs)" }}>{on ? "✓" : ""}</span>
-      {label}
+      <span style={{ flex: 1 }}>{label}</span>
+      {count != null ? <span className="mono" style={{ fontSize: "var(--fs-2xs)", color: "var(--slate-2)" }}>{count}</span> : null}
     </button>
   );
 
@@ -139,9 +141,9 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       </div>
     );
     if (open === "deal") return (<div>{row(t("Any", "الكل"), !params.deal, () => nav({ deal: "" }))}{row(t("For lease", "للإيجار"), params.deal === "lease", () => nav({ deal: "lease" }))}{row(t("For sale", "للبيع"), params.deal === "sale", () => nav({ deal: "sale" }))}</div>);
-    if (open === "asset") return (<div><div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Pick one or more.", "اختر واحداً أو أكثر.")}</div>{assets.map((a) => check(a.label, assetSel.includes(a.value), () => toggleCsv("asset", a.value)))}</div>);
-    if (open === "grade") return (<div>{grades.map((g) => check(g.label, gradeSel.includes(g.value), () => toggleCsv("grade", g.value)))}</div>);
-    if (open === "fit") return (<div>{fits.map((f) => check(f.label, fitSel.includes(f.value), () => toggleCsv("fit", f.value)))}</div>);
+    if (open === "asset") return (<div><div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Pick one or more.", "اختر واحداً أو أكثر.")}</div>{assets.map((a) => check(a.label, assetSel.includes(a.value), () => toggleCsv("asset", a.value), assetCounts?.[a.value]))}</div>);
+    if (open === "grade") return (<div>{grades.map((g) => check(g.label, gradeSel.includes(g.value), () => toggleCsv("grade", g.value), gradeCounts?.[g.value]))}</div>);
+    if (open === "fit") return (<div>{fits.map((f) => check(f.label, fitSel.includes(f.value), () => toggleCsv("fit", f.value), fitCounts?.[f.value]))}</div>);
     if (open === "sort") return (<div>{sorts.map((s) => row(s.label, (params.sort || sorts[0].value) === s.value, () => nav({ sort: s.value })))}</div>);
     if (open === "size") return (
       <div>
