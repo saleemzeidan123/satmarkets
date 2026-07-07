@@ -33,6 +33,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           });
         }
       });
+      const { data: bdata } = await sb.from("buildings").select("id").limit(500);
+      (bdata ?? []).forEach((b: any) => {
+        for (const loc of ["en", "ar"]) {
+          entries.push({ url: `${SITE}/${loc}/building/${b.id}`, lastModified: now, changeFrequency: "weekly", priority: 0.6, alternates: { languages: { en: `${SITE}/en/building/${b.id}`, ar: `${SITE}/ar/building/${b.id}` } } });
+        }
+      });
+      const { data: ddata } = await sb.from("districts").select("id").limit(200);
+      (ddata ?? []).forEach((d: any) => {
+        for (const loc of ["en", "ar"]) {
+          entries.push({ url: `${SITE}/${loc}/listings?district=${d.id}`, lastModified: now, changeFrequency: "weekly", priority: 0.6, alternates: { languages: { en: `${SITE}/en/listings?district=${d.id}`, ar: `${SITE}/ar/listings?district=${d.id}` } } });
+        }
+      });
     }
   } catch {}
   return entries;
