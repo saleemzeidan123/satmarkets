@@ -51,6 +51,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
         { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
         { "@type": "ListItem", position: 2, name: ar ? "المواقع" : "Locations", item: `${SITE}/${locale}/locations` },
       ] }} />
+      <JsonLd data={{ "@type": "ItemList", name: ar ? "المواقع التجارية في السعودية" : "Commercial locations in Saudi Arabia", numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${(ar ? l.name_ar : l.name_en) || l.name_en}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
       <div className="eyebrow">{ar ? "الدليل" : "The directory"}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "المواقع التجارية في المملكة" : "Commercial locations across the Kingdom"}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{ar ? "الأحياء والمشاريع والمناطق التي تغطيها المنصّة، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تتوفر بيانات كافية." : "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient."}</p>

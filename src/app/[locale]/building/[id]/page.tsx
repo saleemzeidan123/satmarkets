@@ -7,10 +7,31 @@ import { photoFor } from "@/lib/photos";
 import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
 function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+
+export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+  if (!isLocale(params.locale)) return {};
+  const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const ar = loc === "ar";
+  const sb = getSupabaseServer();
+  let b: any = null;
+  if (sb) { const { data } = await sb.from("buildings").select("name_en,name_ar,district_label,district_label_ar,city,grade,asset_type").eq("id", params.id).maybeSingle(); b = data; }
+  if (!b) return { title: ar ? "المبنى غير موجود | سات ماركتس" : "Building not found | SAT Markets" };
+  const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (ar ? "مبنى" : "Building");
+  const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
+  const grade = gradeLabel(b.grade, loc);
+  const type = assetLabel(b.asset_type, loc);
+  const title = ar ? `${name}، ${place} | سات ماركتس` : `${name}, ${place} | SAT Markets`;
+  const description = ar
+    ? `${name}: مبنى ${type} ${grade} في ${place}. الوحدات المتاحة ونطاق الإيجار الموثّق وذكاء الموقع على سات ماركتس. استرشادي وليس نصيحة.`
+    : `${name}: ${grade} ${type} building in ${place}. Available units, verified rent band and location intelligence on SAT Markets. Indicative, not advice.`;
+  const url = `${SITE}/${params.locale}/building/${params.id}`;
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
+}
 
 export default async function BuildingPage({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -70,6 +91,12 @@ export default async function BuildingPage({ params }: { params: { locale: strin
 
   return (
     <section>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: ar ? "العروض" : "Listings", item: `${SITE}/${locale}/listings` },
+        ...(b.district_id ? [{ "@type": "ListItem", position: 3, name: ar ? (b.district_label_ar || b.district_label) : b.district_label, item: `${SITE}/${locale}/listings?district=${b.district_id}` }] : []),
+        { "@type": "ListItem", position: b.district_id ? 4 : 3, name, item: `${SITE}/${locale}/building/${b.id}` },
+      ] }} />
       <Link href={`/${locale}/map`} className="text-[13px] text-charcoal/55 hover:text-charcoal">← {T.back}</Link>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
