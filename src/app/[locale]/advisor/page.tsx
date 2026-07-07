@@ -62,8 +62,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  ];
 
  const CHIPS = ar
-  ? ["قارن مكاتب العليا مقابل غرناطة", "مستودع قرب الصناعية الثانية", "تجزئة بحركة عالية في التحلية", "مكاتب بأقل من 1,200 ريال/م²"]
-  : ["Compare Al Olaya vs Granada offices", "Warehouse near 2nd Industrial", "Retail with high footfall on Tahlia", "Offices under 1,200 SAR/m²"];
+  ? ["سعّر مكتب فئة A في العليا", "ما النطاق المنشور في كافد؟", "هل 1,600 ريال/م² عادل لمكاتب غرناطة؟", "راقب مكاتب كافد فئة A"]
+  : ["Price a Grade A office in Al Olaya", "What's within band in KAFD?", "Is 1,600 SAR/m² fair for Granada offices?", "Watch KAFD Grade A offices"];
 
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy, tool]);
 
@@ -229,8 +229,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     <div style={{ padding: "14px 24px 20px", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
      <div style={{ maxWidth: 760, margin: "0 auto" }}>
       {!started && (
-       <div className="row gap8 wrap" style={{ marginBottom: 10 }}>
-        {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => { setInput(p); inputRef.current?.focus(); }}>{p}</button>)}
+       <div style={{ marginBottom: 10 }}>
+        <div className="muted" style={{ fontSize: 11, margin: "0 2px 7px" }}>{ar ? "جرّب أن تسأل" : "Try asking"}</div>
+        <div className="row gap8 wrap">
+         {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
+        </div>
        </div>
       )}
       <form onSubmit={(e) => { e.preventDefault(); const t = input; setInput(""); send(t); }} className="search focus" style={{ boxShadow: "0 4px 16px rgba(20,24,27,.06)", border: "1px solid var(--azure)", borderRadius: 999, padding: "8px 10px 8px 18px", display: "flex", alignItems: "center", gap: 8 }}>
