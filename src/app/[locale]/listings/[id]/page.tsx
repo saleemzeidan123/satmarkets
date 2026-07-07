@@ -9,6 +9,29 @@ import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
 
+export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+  if (!isLocale(params.locale)) return {};
+  const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const ar = loc === "ar";
+  const sb = getSupabaseServer();
+  let l: any = null;
+  if (sb) { const { data } = await sb.from("listings").select("title_en,title_ar,reference_code,asset_type,building_grade,deal_type,area_sqm,asking_rent_sqm,sale_price,districts(name_en,name_ar,city)").eq("id", params.id).single(); l = data; }
+  if (!l) return { title: ar ? "العرض غير موجود | سات ماركتس" : "Listing not found | SAT Markets" };
+  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
+  const type = assetLabel(l.asset_type, loc);
+  const grade = gradeLabel(l.building_grade, loc);
+  const t0 = (ar ? l.title_ar : l.title_en) || l.reference_code;
+  const lease = l.deal_type === "lease";
+  const price = lease ? l.asking_rent_sqm : l.sale_price;
+  const priceStr = price != null ? `${Number(price).toLocaleString("en-US")} ${lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}` : (ar ? "عند الطلب" : "On request");
+  const title = ar ? `${t0}، ${type} في ${dn} | سات ماركتس` : `${t0}, ${type} in ${dn} | SAT Markets`;
+  const description = ar
+    ? `${type} ${grade} في ${dn}، ${l.area_sqm} م²، ${priceStr}. عرض موثّق من المالك على سات ماركتس، مدعوم بمؤشر الإيجارات المنشور. استرشادي وليس نصيحة.`
+    : `${grade} ${type} in ${dn}, ${l.area_sqm} m², ${priceStr}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.`;
+  const url = `${SITE}/${params.locale}/listings/${params.id}`;
+  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
+}
+
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale; const ar = locale === "ar";
@@ -18,6 +41,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{params.locale === "ar" ? "العرض غير موجود." : "Listing not found."}</div>;
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
   const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (ar ? "الرياض" : "Riyadh");
+  const cityEn = l.districts && l.districts.city ? cityLabel(l.districts.city, "en") : "Riyadh";
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
@@ -53,8 +77,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             provider: { "@type": "Organization", name: "SAT Markets", url: SITE },
             ...(price != null ? { offers: { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: lease ? "Asking rent, SAR per square metre per year" : "Asking sale price, SAR" } } : {}),
             ...(l.area_sqm ? { floorSize: { "@type": "QuantitativeValue", value: l.area_sqm, unitCode: "MTK" } } : {}),
-            address: { "@type": "PostalAddress", addressLocality: "Riyadh", addressRegion: String(dn), addressCountry: "SA" },
+            address: { "@type": "PostalAddress", streetAddress: String(dn), addressLocality: cityEn, addressCountry: "SA" },
           }} />
+          <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+            { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
+            { "@type": "ListItem", position: 2, name: ar ? "العروض" : "Listings", item: `${SITE}/${locale}/listings` },
+            ...(l.district_id ? [{ "@type": "ListItem", position: 3, name: String(dn), item: `${SITE}/${locale}/listings?district=${l.district_id}` }] : []),
+            { "@type": "ListItem", position: l.district_id ? 4 : 3, name: title, item: `${SITE}/${locale}/listings/${l.id}` },
+          ] }} />
           <div className="tabs" style={{ marginTop: 22 }}>
             <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "نظرة عامة" : "Overview"}</a>
             <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> {ar ? "ذكاء الموقع" : "Location intelligence"}</a>
