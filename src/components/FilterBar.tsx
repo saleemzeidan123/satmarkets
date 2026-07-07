@@ -90,20 +90,20 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const pill = (key: string, label: string, active: boolean, right?: boolean) => (
     <button type="button" key={key} onClick={() => setOpen(open === key ? null : key)} aria-expanded={open === key}
       className="chip" style={{ height: 38, padding: "0 13px", borderRadius: 999, gap: 7, cursor: "pointer", marginInlineStart: right ? "auto" : undefined,
-        borderColor: active || open === key ? "var(--azure)" : "var(--silver-2)", background: active ? "var(--azure-wash)" : "var(--paper)", color: active ? "var(--azure-d)" : "var(--ink)", fontSize: 13.5, whiteSpace: "nowrap" }}>
-      {label}<span style={{ fontSize: 13, color: "var(--slate-2)", transform: open === key ? "rotate(180deg)" : undefined }}>▾</span>
+        borderColor: active || open === key ? "var(--azure)" : "var(--silver-2)", background: active ? "var(--azure-wash)" : "var(--paper)", color: active ? "var(--azure-d)" : "var(--ink)", fontSize: "var(--fs-base)", whiteSpace: "nowrap" }}>
+      {label}<span style={{ fontSize: "var(--fs-sm)", color: "var(--slate-2)", transform: open === key ? "rotate(180deg)" : undefined }}>▾</span>
     </button>
   );
   const row = (label: React.ReactNode, active: boolean, on: () => void, rightTxt?: string) => (
-    <button type="button" onClick={on} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14.5, background: active ? "var(--azure-wash)" : "transparent", color: "var(--ink)" }}>
+    <button type="button" onClick={on} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: active ? "var(--azure-wash)" : "transparent", color: "var(--ink)" }}>
       <span style={{ flex: 1 }}>{label}</span>
-      {rightTxt ? <span className="mono" style={{ fontSize: 12, color: "var(--slate-2)" }}>{rightTxt}</span> : null}
+      {rightTxt ? <span className="mono" style={{ fontSize: "var(--fs-xs)", color: "var(--slate-2)" }}>{rightTxt}</span> : null}
       {active ? <span style={{ color: "var(--azure-d)" }}>✓</span> : null}
     </button>
   );
   const check = (label: string, on: boolean, toggle: () => void) => (
-    <button key={label} type="button" onClick={toggle} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14.5, background: "transparent", color: "var(--ink)" }}>
-      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 12 }}>{on ? "✓" : ""}</span>
+    <button key={label} type="button" onClick={toggle} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: "transparent", color: "var(--ink)" }}>
+      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "var(--fs-xs)" }}>{on ? "✓" : ""}</span>
       {label}
     </button>
   );
@@ -112,18 +112,18 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     if (open === "loc") return (
       <div>
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")}
-          className="input" style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box", textAlign: ar ? "right" : "left" }} />
-        <div className="muted" style={{ fontSize: 12, margin: "8px 2px 6px" }}>{q.trim() ? t("Verified areas first, then all of Saudi Arabia.", "المناطق الموثّقة أولاً، ثم كل السعودية.") : t("Areas with verified spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات موثّقة. اكتب للبحث في كل السعودية.")}</div>
+          className="input" style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box", textAlign: ar ? "right" : "left" }} />
+        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "8px 2px 6px" }}>{q.trim() ? t("Verified areas first, then all of Saudi Arabia.", "المناطق الموثّقة أولاً، ثم كل السعودية.") : t("Areas with verified spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات موثّقة. اكتب للبحث في كل السعودية.")}</div>
         {cities.map((c) => {
           const ql = q.trim().toLowerCase();
           const inCity = locations.filter((l) => l.city === c.key && (ql ? (l.en.toLowerCase().includes(ql) || (l.ar || "").includes(q.trim())) : (Number(l.count) || 0) > 0));
           if (!inCity.length) return null;
           return (
             <div key={c.key} style={{ marginBottom: 4 }}>
-              <div style={{ fontSize: 13.5, fontWeight: 500, margin: "6px 2px 2px" }}>{c.label}</div>
+              <div style={{ fontSize: "var(--fs-base)", fontWeight: 500, margin: "6px 2px 2px" }}>{c.label}</div>
               {KIND_ORDER.filter((k) => inCity.some((l) => l.kind === k)).map((k) => (
                 <div key={k}>
-                  <div className="muted2" style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".07em", margin: "6px 2px 2px", fontFamily: "var(--mono)" }}>{ar ? KIND_T[k][1] : KIND_T[k][0]}</div>
+                  <div className="muted2" style={{ fontSize: "var(--fs-2xs)", textTransform: "uppercase", letterSpacing: ".07em", margin: "6px 2px 2px", fontFamily: "var(--mono)" }}>{ar ? KIND_T[k][1] : KIND_T[k][0]}</div>
                   {inCity.filter((l) => l.kind === k).map((l) => row(nameOf(l) + (k === "development" ? t(" · project", " · مشروع") : ""), params.district === l.id, () => nav({ district: l.id, city: c.key, place: "" }), String(l.count)))}
                 </div>
               ))}
@@ -132,14 +132,14 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         })}
         {places.length ? (
           <div style={{ marginTop: 6, borderTop: "1px solid var(--silver)", paddingTop: 6 }}>
-            <div className="muted2" style={{ fontSize: 10.5, textTransform: "uppercase", letterSpacing: ".07em", margin: "0 2px 2px", fontFamily: "var(--mono)" }}>{t("Across Saudi Arabia", "في أنحاء السعودية")}</div>
+            <div className="muted2" style={{ fontSize: "var(--fs-2xs)", textTransform: "uppercase", letterSpacing: ".07em", margin: "0 2px 2px", fontFamily: "var(--mono)" }}>{t("Across Saudi Arabia", "في أنحاء السعودية")}</div>
             {places.map((p, i) => row(`${p.label}${p.sub ? ` · ${p.sub}` : ""}`, false, () => nav({ place: p.label, district: "", city: "" })))}
           </div>
         ) : null}
       </div>
     );
     if (open === "deal") return (<div>{row(t("Any", "الكل"), !params.deal, () => nav({ deal: "" }))}{row(t("For lease", "للإيجار"), params.deal === "lease", () => nav({ deal: "lease" }))}{row(t("For sale", "للبيع"), params.deal === "sale", () => nav({ deal: "sale" }))}</div>);
-    if (open === "asset") return (<div><div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("Pick one or more.", "اختر واحداً أو أكثر.")}</div>{assets.map((a) => check(a.label, assetSel.includes(a.value), () => toggleCsv("asset", a.value)))}</div>);
+    if (open === "asset") return (<div><div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Pick one or more.", "اختر واحداً أو أكثر.")}</div>{assets.map((a) => check(a.label, assetSel.includes(a.value), () => toggleCsv("asset", a.value)))}</div>);
     if (open === "grade") return (<div>{grades.map((g) => check(g.label, gradeSel.includes(g.value), () => toggleCsv("grade", g.value)))}</div>);
     if (open === "fit") return (<div>{fits.map((f) => check(f.label, fitSel.includes(f.value), () => toggleCsv("fit", f.value)))}</div>);
     if (open === "sort") return (<div>{sorts.map((s) => row(s.label, (params.sort || sorts[0].value) === s.value, () => nav({ sort: s.value })))}</div>);
@@ -147,9 +147,9 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       <div>
         {SIZES.map((s) => row(s[0], (params.smin || "") === s[1] && (params.smax || "") === s[2] && !params.sz, () => nav({ smin: s[1], smax: s[2], sz: "" })))}
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
-          <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("Or enter an exact size, we show the nearest", "أو أدخل مساحة محددة، ونعرض الأقرب")}</div>
+          <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact size, we show the nearest", "أو أدخل مساحة محددة، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("sz") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ sz: v, smin: "", smax: "" }); }} className="row gap8">
-            <input name="sz" defaultValue={params.sz || ""} inputMode="numeric" placeholder={t("e.g. 350", "مثال 350")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box" }} />
+            <input name="sz" defaultValue={params.sz || ""} inputMode="numeric" placeholder={t("e.g. 350", "مثال 350")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("m²", "م²")}</button>
           </form>
         </div>
@@ -157,24 +157,24 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     );
     if (open === "rent") return isSale ? (
       <div>
-        <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("SAR total. Sale listings.", "ريال إجمالي. عروض البيع.")}</div>
+        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("SAR total. Sale listings.", "ريال إجمالي. عروض البيع.")}</div>
         {SALE_PRICES.map((s) => row(s[0], (params.spmin || "") === s[1] && (params.spmax || "") === s[2] && !params.sp, () => nav({ spmin: s[1], spmax: s[2], sp: "" })))}
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
-          <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("Or enter an exact price, we show the nearest", "أو أدخل سعراً محدداً، ونعرض الأقرب")}</div>
+          <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact price, we show the nearest", "أو أدخل سعراً محدداً، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("sp") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ sp: v, spmin: "", spmax: "" }); }} className="row gap8">
-            <input name="sp" defaultValue={params.sp || ""} inputMode="numeric" placeholder={t("e.g. 12,000,000", "مثال 12,000,000")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box" }} />
+            <input name="sp" defaultValue={params.sp || ""} inputMode="numeric" placeholder={t("e.g. 12,000,000", "مثال 12,000,000")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("SAR", "ريال")}</button>
           </form>
         </div>
       </div>
     ) : (
       <div>
-        <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("SAR / m² / yr. Lease listings.", "ريال / م² / سنة. عروض الإيجار.")}</div>
+        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("SAR / m² / yr. Lease listings.", "ريال / م² / سنة. عروض الإيجار.")}</div>
         {RENTS.map((s) => row(s[0], (params.pmin || "") === s[1] && (params.pmax || "") === s[2] && !params.rt, () => nav({ pmin: s[1], pmax: s[2], rt: "" })))}
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
-          <div className="muted" style={{ fontSize: 12, margin: "0 2px 6px" }}>{t("Or enter an exact rent, we show the nearest", "أو أدخل إيجاراً محدداً، ونعرض الأقرب")}</div>
+          <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact rent, we show the nearest", "أو أدخل إيجاراً محدداً، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("rt") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ rt: v, pmin: "", pmax: "" }); }} className="row gap8">
-            <input name="rt" defaultValue={params.rt || ""} inputMode="numeric" placeholder={t("e.g. 1,800", "مثال 1,800")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: 16, boxSizing: "border-box" }} />
+            <input name="rt" defaultValue={params.rt || ""} inputMode="numeric" placeholder={t("e.g. 1,800", "مثال 1,800")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("SAR", "ريال")}</button>
           </form>
         </div>
@@ -211,7 +211,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {pill("grade", gradeSel.length ? `${t("Grade", "الفئة")} (${gradeSel.length})` : t("Grade", "الفئة"), gradeSel.length > 0)}
         {pill("fit", fitSel.length ? `${t("Fit-out", "التجهيز")} (${fitSel.length})` : t("Fit-out", "التجهيز"), fitSel.length > 0)}
         <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} className="chip"
-          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "#1F8A5B" : "var(--ink)", fontSize: 13.5 }}>
+          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "#1F8A5B" : "var(--ink)", fontSize: "var(--fs-base)" }}>
           {params.verified ? "✓ " : ""}{t("Verified owners", "ملاك موثّقون")}
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}
@@ -220,12 +220,12 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 9 }}>
           {activeChips.map((c, i) => (
             <button key={i} type="button" onClick={() => nav(c.clear)} aria-label={`${t("Remove", "إزالة")} ${c.label}`}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 999, border: "1px solid var(--silver-2)", background: "var(--azure-wash)", color: "var(--azure-d)", fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>
-              {c.label}<span aria-hidden style={{ fontSize: 15, lineHeight: 1, color: "var(--slate-2)" }}>×</span>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 999, border: "1px solid var(--silver-2)", background: "var(--azure-wash)", color: "var(--azure-d)", fontSize: "var(--fs-sm)", cursor: "pointer", whiteSpace: "nowrap" }}>
+              {c.label}<span aria-hidden style={{ fontSize: "var(--fs-md)", lineHeight: 1, color: "var(--slate-2)" }}>×</span>
             </button>
           ))}
           <button type="button" onClick={clearAll}
-            style={{ height: 30, padding: "0 8px", border: "none", background: "transparent", color: "var(--slate-2)", fontSize: 12.5, cursor: "pointer", textDecoration: "underline", whiteSpace: "nowrap" }}>
+            style={{ height: 30, padding: "0 8px", border: "none", background: "transparent", color: "var(--slate-2)", fontSize: "var(--fs-sm)", cursor: "pointer", textDecoration: "underline", whiteSpace: "nowrap" }}>
             {t("Clear all", "مسح الكل")}
           </button>
         </div>
