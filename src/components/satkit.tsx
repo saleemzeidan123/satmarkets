@@ -104,10 +104,10 @@ export const Icon: Record<string, (p: IcP) => JSX.Element> = {
   trash: (p) => <Ic {...p}><path d="M5 7h14M10 7V4h4v3M6 7l1 13h10l1-13" /></Ic>,
 };
 
-export function Ph({ src, label, h = 158, dark = false, style, badges, children }: { src?: string; label?: string; h?: number; dark?: boolean; style?: React.CSSProperties; badges?: React.ReactNode; children?: React.ReactNode }) {
+export function Ph({ src, label, alt, h = 158, dark = false, style, badges, children }: { src?: string; label?: string; alt?: string; h?: number; dark?: boolean; style?: React.CSSProperties; badges?: React.ReactNode; children?: React.ReactNode }) {
   return (
     <div className={"ph" + (dark ? " dark" : "")} style={{ height: h, position: "relative", overflow: "hidden", ...style }}>
-      {src && <img alt="" loading="lazy" src={src} />}{badges && <div className="badges">{badges}</div>}
+      {src && <img alt={alt ?? label ?? ""} loading="lazy" src={src} />}{badges && <div className="badges">{badges}</div>}
       {label && <div className="cap">{label}</div>}
       {children}
     </div>
@@ -118,7 +118,7 @@ export function Verified({ text = "Verified owner" }: { text?: string }) {
   return <span className="verified"><span className="dot" />{text}</span>;
 }
 
-export function Photo({ src, kind = "office", label, h = 158, style, badges, fav, children }: { src?: string; kind?: string; label?: string; h?: number; style?: React.CSSProperties; badges?: React.ReactNode; fav?: boolean; children?: React.ReactNode }) {
+export function Photo({ src, kind = "office", label, alt, h = 158, style, badges, fav, children }: { src?: string; kind?: string; label?: string; alt?: string; h?: number; style?: React.CSSProperties; badges?: React.ReactNode; fav?: boolean; children?: React.ReactNode }) {
   const grad = (({
     office: "linear-gradient(165deg,#33455c,#5d7186 58%,#a9b9cb)",
     retail: "linear-gradient(165deg,#5b4a44,#8d7560 58%,#c9b6a1)",
@@ -160,7 +160,7 @@ export function Photo({ src, kind = "office", label, h = 158, style, badges, fav
   return (
     <div className="photo" style={{ height: h, ...style }}>
       <div className="sky" style={{ background: grad }} />
-      {src && <img alt="" loading="lazy" src={src} />}
+      {src && <img alt={alt ?? label ?? ""} loading="lazy" src={src} />}
       {bands.map((b, i) => <div key={i} className="band" style={{ left: b[0] + "%", width: b[1] + "%", height: b[2] + "%" }} />)}
       <div className="grid" />
       <div className="vig" />
