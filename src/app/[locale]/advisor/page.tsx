@@ -33,7 +33,7 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
 export default function AdvisorPage({ params }: { params: { locale: string } }) {
  const locale = (params.locale === "ar" ? "ar" : "en") as "en"|"ar";
  const ar = locale === "ar";
- const { msgs, setMsgs, busy, send, reset } = useAdvisorChat(locale);
+ const { msgs, setMsgs, busy, send, reset } = useAdvisorChat(locale, "sat_advisor_page");
  const [input, setInput] = useState("");
  const [tool, setTool] = useState<null | "value">(null);
  const [segs, setSegs] = useState<SegRow[] | null>(null);
@@ -228,9 +228,9 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
 
     <div style={{ padding: "14px 24px 20px", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-      {!started && (
+      {!busy && (
        <div style={{ marginBottom: 10 }}>
-        <div className="muted" style={{ fontSize: 11, margin: "0 2px 7px" }}>{ar ? "جرّب أن تسأل" : "Try asking"}</div>
+        <div className="muted" style={{ fontSize: 11, margin: "0 2px 7px" }}>{started ? (ar ? "تابع الاستكشاف" : "Keep exploring") : (ar ? "جرّب أن تسأل" : "Try asking")}</div>
         <div className="row gap8 wrap">
          {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
         </div>
