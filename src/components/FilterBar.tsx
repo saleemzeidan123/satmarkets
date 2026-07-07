@@ -181,6 +181,23 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     return null;
   };
 
+  const clearAll = () => {
+    const p = new URLSearchParams();
+    if (params.sort) p.set("sort", params.sort);
+    setOpen(null);
+    router.push(`${basePath}${p.toString() ? `?${p.toString()}` : ""}`);
+  };
+  const activeChips: { label: string; clear: Params }[] = [];
+  if (selLoc) activeChips.push({ label: nameOf(selLoc), clear: { district: "", city: "", place: "" } });
+  else if (params.place) activeChips.push({ label: params.place, clear: { place: "" } });
+  if (params.deal) activeChips.push({ label: params.deal === "sale" ? t("For sale", "للبيع") : t("For lease", "للإيجار"), clear: { deal: "" } });
+  if (assetSel.length) activeChips.push({ label: `${t("Type", "النوع")} (${assetSel.length})`, clear: { asset: "" } });
+  if (activeSize) activeChips.push({ label: activeSize as string, clear: { smin: "", smax: "", sz: "" } });
+  if (isSale ? activePrice : activeRent) activeChips.push({ label: (isSale ? activePrice : activeRent) as string, clear: isSale ? { spmin: "", spmax: "", sp: "" } : { pmin: "", pmax: "", rt: "" } });
+  if (gradeSel.length) activeChips.push({ label: `${t("Grade", "الفئة")} (${gradeSel.length})`, clear: { grade: "" } });
+  if (fitSel.length) activeChips.push({ label: `${t("Fit-out", "التجهيز")} (${fitSel.length})`, clear: { fit: "" } });
+  if (params.verified) activeChips.push({ label: t("Verified owners", "ملاك موثّقون"), clear: { verified: "" } });
+
   return (
     <div ref={wrapRef}>
       <div className="row gap8 wrap" style={{ alignItems: "center" }}>
@@ -197,6 +214,20 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}
       </div>
+      {activeChips.length > 0 ? (
+        <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 9 }}>
+          {activeChips.map((c, i) => (
+            <button key={i} type="button" onClick={() => nav(c.clear)} aria-label={`${t("Remove", "إزالة")} ${c.label}`}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 999, border: "1px solid var(--silver-2)", background: "var(--azure-wash)", color: "var(--azure-d)", fontSize: 12.5, cursor: "pointer", whiteSpace: "nowrap" }}>
+              {c.label}<span aria-hidden style={{ fontSize: 15, lineHeight: 1, color: "var(--slate-2)" }}>×</span>
+            </button>
+          ))}
+          <button type="button" onClick={clearAll}
+            style={{ height: 30, padding: "0 8px", border: "none", background: "transparent", color: "var(--slate-2)", fontSize: 12.5, cursor: "pointer", textDecoration: "underline", whiteSpace: "nowrap" }}>
+            {t("Clear all", "مسح الكل")}
+          </button>
+        </div>
+      ) : null}
       {open ? (
         <div className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
           {renderPanel()}
