@@ -117,11 +117,14 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const spT = searchParams.sp ? Number(searchParams.sp) : null;
   const sort = searchParams.sort || (szT || rtT || spT ? "best" : "new");
   const vScore = (l: any) => { if (l.deal_type !== "lease" || l.asking_rent_sqm == null) return Infinity; const row = pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade); const med = row?.median; return med == null ? Infinity : Number(l.asking_rent_sqm) / Number(med); };
+  const priceOf = (l: any) => Number(l.deal_type === "sale" ? (l.sale_price ?? 1e15) : (l.asking_rent_sqm ?? 1e15));
   if (szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
   else if (rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
   else if (spT != null) shown.sort((a: any, b: any) => Math.abs((a.sale_price || 0) - spT) - Math.abs((b.sale_price || 0) - spT));
-  else if (sort === "rent") shown.sort((a: any, b: any) => (a.asking_rent_sqm ?? 1e12) - (b.asking_rent_sqm ?? 1e12));
+  else if (sort === "rent") shown.sort((a: any, b: any) => priceOf(a) - priceOf(b));
+  else if (sort === "rent_desc") shown.sort((a: any, b: any) => priceOf(b) - priceOf(a));
   else if (sort === "size") shown.sort((a: any, b: any) => (a.area_sqm || 0) - (b.area_sqm || 0));
+  else if (sort === "size_desc") shown.sort((a: any, b: any) => (b.area_sqm || 0) - (a.area_sqm || 0));
   else if (sort === "best") shown.sort((a: any, b: any) => vScore(a) - vScore(b));
 
   const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
@@ -160,8 +163,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const grades = GRADES.map((g) => ({ value: g, label: gradeLabel(g, locale) }));
   const fits = FITS.map((f) => ({ value: f, label: fitoutLabel(f, locale) }));
   const sorts = ar
-    ? [{ value: "new", label: "الأحدث" }, { value: "rent", label: "الإيجار من الأقل" }, { value: "size", label: "المساحة من الأصغر" }, { value: "best", label: "الأفضل مطابقة" }]
-    : [{ value: "new", label: "Newest" }, { value: "rent", label: "Rent, low to high" }, { value: "size", label: "Size, small to large" }, { value: "best", label: "Best match" }];
+    ? [{ value: "new", label: "الأحدث" }, { value: "rent", label: "السعر من الأقل" }, { value: "rent_desc", label: "السعر من الأعلى" }, { value: "size", label: "المساحة من الأصغر" }, { value: "size_desc", label: "المساحة من الأكبر" }, { value: "best", label: "الأفضل مطابقة" }]
+    : [{ value: "new", label: "Newest" }, { value: "rent", label: "Price, low to high" }, { value: "rent_desc", label: "Price, high to low" }, { value: "size", label: "Size, small to large" }, { value: "size_desc", label: "Size, large to small" }, { value: "best", label: "Best match" }];
 
   const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces");
 
