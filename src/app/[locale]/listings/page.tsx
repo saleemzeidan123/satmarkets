@@ -9,12 +9,35 @@ import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/Li
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const GRADES = ["a_plus", "a", "b", "c"];
 const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
 type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; grade?: string; fit?: string; verified?: string; sort?: string };
+
+export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
+  const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const ar = loc === "ar";
+  let locLabel = "";
+  if (searchParams.district) {
+    const sb = getSupabaseServer();
+    if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar").eq("id", searchParams.district).single(); if (data) locLabel = ar ? (data.name_ar || data.name_en) : data.name_en; }
+  } else if (searchParams.place) locLabel = searchParams.place;
+  else if (searchParams.city) locLabel = cityLabel(searchParams.city, loc);
+  const asset = searchParams.asset && !searchParams.asset.includes(",") ? assetLabel(searchParams.asset, loc) : "";
+  const deal = searchParams.deal ? dealLabel(searchParams.deal, loc) : "";
+  const what = [asset, deal].filter(Boolean).join(" ").trim();
+  const title = locLabel
+    ? (ar ? `${what || "مساحات تجارية"} في ${locLabel} | سات ماركتس` : `${what || "Commercial spaces"} in ${locLabel} | SAT Markets`)
+    : (ar ? "مساحات تجارية موثّقة في السعودية | سات ماركتس" : "Verified commercial spaces in Saudi Arabia | SAT Markets");
+  const description = locLabel
+    ? (ar ? `تصفّح المساحات التجارية الموثّقة في ${locLabel} على سات ماركتس، من الملّاك مباشرة ومدعومة بمؤشر الإيجارات المنشور.` : `Browse verified commercial spaces in ${locLabel} on SAT Markets, owner-verified and backed by the published Rent Index.`)
+    : (ar ? "تصفّح المساحات التجارية الموثّقة في المملكة، من الملّاك مباشرة، مدعومة بمؤشر الإيجارات." : "Browse verified commercial spaces across Saudi Arabia, owner-verified and backed by the Rent Index.");
+  const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
+  return { title, description, alternates: { canonical: `${SITE}/${params.locale}/listings${qs}` } };
+}
 
 export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   if (!isLocale(params.locale)) notFound();
@@ -124,8 +147,16 @@ export default async function ListingsPage({ params, searchParams }: { params: {
 
   const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces");
 
+  const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
+  const crumbLoc = distLoc ? (ar ? (distLoc.ar || distLoc.en) : distLoc.en) : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""));
+  const crumbQs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: ar ? "المساحات" : "Listings", item: `${SITE}/${locale}/listings` },
+        ...(crumbLoc ? [{ "@type": "ListItem", position: 3, name: crumbLoc, item: `${SITE}/${locale}/listings${crumbQs}` }] : []),
+      ] }} />
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
           <div className="eyebrow">{ar ? "المنصّة" : "The exchange"}</div>

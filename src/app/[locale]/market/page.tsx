@@ -5,8 +5,20 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 export const revalidate = 1800;
+
+export async function generateMetadata({ params }: { params: { locale: string } }) {
+  const ar = params.locale === "ar";
+  return {
+    title: ar ? "نبض السوق التجاري في الرياض | سات ماركتس" : "Riyadh commercial market pulse | SAT Markets",
+    description: ar
+      ? "السوق التجاري في الرياض بنظرة واحدة: نطاقات مؤشر الإيجارات المنشورة والمنسوبة ومؤشرات المنصّة الموثّقة. استرشادي وليس نصيحة."
+      : "The Riyadh commercial market at a glance: published, attributed Rent Index bands and verified platform indicators. Indicative, not advice.",
+    alternates: { canonical: `${SITE}/${params.locale}/market` },
+  };
+}
 
 export default async function MarketPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -75,6 +87,20 @@ export default async function MarketPage({ params }: { params: { locale: string 
 
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: ar ? "نبض السوق" : "Market pulse", item: `${SITE}/${locale}/market` },
+      ] }} />
+      <JsonLd data={{
+        "@type": "Dataset",
+        name: `Riyadh Commercial Market Pulse${period ? ", " + period : ""}`,
+        url: `${SITE}/${locale}/market`,
+        inLanguage: ["ar", "en"],
+        description: "Published, attributed Saudi commercial rent benchmarks and verified platform indicators for Riyadh, compiled by SAT Markets. Indicative market context, not advice; SAT does not originate these figures.",
+        creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
+        isBasedOn: ["JLL published research", "CBRE published research", "Knight Frank published research", "SAMA published data"],
+        spatialCoverage: "Riyadh, Saudi Arabia",
+      }} />
       <div className="eyebrow">{ar ? "نبض السوق" : "Market pulse"}</div>
       <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "السوق التجاري في الرياض، بنظرة واحدة" : "The Riyadh commercial market, at a glance"}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{ar ? "كل رقم في هذه الصفحة من بيانات المنصّة الموثّقة أو من مؤشر الإيجارات، عيّنة المنصّة. لا تقديرات ولا أرقام بلا مصدر." : "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers."}</p>

@@ -3,12 +3,24 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { cityLabel } from "@/lib/labels";
+import JsonLd, { SITE } from "@/components/JsonLd";
 
 export const revalidate = 3600;
 
 type Loc = { id: string; city: string; name_en: string; name_ar: string; kind: string; count: number; officeMedian: number | null };
 
 const KIND_ORDER = ["district", "development", "area"];
+
+export async function generateMetadata({ params }: { params: { locale: string } }) {
+  const ar = params.locale === "ar";
+  return {
+    title: ar ? "المواقع التجارية في المملكة | سات ماركتس" : "Commercial locations across Saudi Arabia | SAT Markets",
+    description: ar
+      ? "الأحياء والمشاريع والمناطق التجارية التي تغطيها سات ماركتس، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تكفي البيانات."
+      : "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index median where the data is sufficient.",
+    alternates: { canonical: `${SITE}/${params.locale}/locations` },
+  };
+}
 
 export default async function LocationsPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -35,6 +47,10 @@ export default async function LocationsPage({ params }: { params: { locale: stri
   };
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: ar ? "المواقع" : "Locations", item: `${SITE}/${locale}/locations` },
+      ] }} />
       <div className="eyebrow">{ar ? "الدليل" : "The directory"}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "المواقع التجارية في المملكة" : "Commercial locations across the Kingdom"}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{ar ? "الأحياء والمشاريع والمناطق التي تغطيها المنصّة، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تتوفر بيانات كافية." : "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient."}</p>
