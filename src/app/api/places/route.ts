@@ -16,7 +16,7 @@ async function verified(q: string, lang: "en" | "ar"): Promise<Item[]> {
     if (!sb) return [];
     const s = q.replace(/[(),\\%]/g, " ").trim();
     if (!s) return [];
-    const { data } = await sb.from("districts").select("id,city,name_en,name_ar,kind").or(`name_en.ilike.%${s}%,name_ar.ilike.%${s}%,slug.ilike.%${s}%`).limit(6);
+    const { data } = await sb.from("districts").select("id,city,name_en,name_ar,kind").or(`name_en.ilike.%${s}%,name_ar.ilike.%${s}%,slug.ilike.${s}%,slug.ilike.%-${s}%`).limit(6);
     return (data ?? []).map((d: any) => ({
       label: (lang === "ar" ? (d.name_ar || d.name_en) : d.name_en) as string,
       sub: cityLabel(d.city, lang),
