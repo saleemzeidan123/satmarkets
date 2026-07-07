@@ -1,12 +1,33 @@
 import { NextResponse } from "next/server";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { cityLabel } from "@/lib/labels";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Item = { label: string; sub: string; kind: string };
+type Item = { label: string; sub: string; kind: string; did?: string; verified?: boolean };
 
 const GKEY = process.env.GOOGLE_MAPS_API_KEY || process.env.google_places_key || "";
 const MBOX = process.env.MAPBOX_TOKEN || process.env.mapbox_token || "";
+
+async function verified(q: string, lang: "en" | "ar"): Promise<Item[]> {
+  try {
+    const sb = getSupabaseServer();
+    if (!sb) return [];
+    const s = q.replace(/[(),\\%]/g, " ").trim();
+    if (!s) return [];
+    const { data } = await sb.from("districts").select("id,city,name_en,name_ar,kind").or(`name_en.ilike.%${s}%,name_ar.ilike.%${s}%,slug.ilike.%${s}%`).limit(6);
+    return (data ?? []).map((d: any) => ({
+      label: (lang === "ar" ? (d.name_ar || d.name_en) : d.name_en) as string,
+      sub: cityLabel(d.city, lang),
+      kind: d.kind === "development" ? "development" : d.kind === "area" ? "place" : "district",
+      did: d.id as string,
+      verified: true,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 async function google(q: string): Promise<Item[] | null> {
   if (!GKEY) return null;
@@ -113,12 +134,16 @@ async function photon(q: string): Promise<Item[]> {
 }
 
 export async function GET(req: Request) {
-  const q = (new URL(req.url).searchParams.get("q") || "").trim();
+  const url = new URL(req.url);
+  const q = (url.searchParams.get("q") || "").trim();
   if (q.length < 2) return NextResponse.json({ items: [] });
-  const g = await google(q);
-  if (g && g.length) return NextResponse.json({ items: g, src: "google" });
-  const m = await mapbox(q);
-  if (m && m.length) return NextResponse.json({ items: m, src: "mapbox" });
-  const items = await photon(q);
-  return NextResponse.json({ items, src: GKEY || MBOX ? "osm_fallback" : "osm" });
+  const lang = url.searchParams.get("lang") === "ar" ? "ar" : "en";
+  const v = url.searchParams.get("v") === "1" ? await verified(q, lang) : [];
+  let ext = await google(q);
+  if (!ext || !ext.length) ext = await mapbox(q);
+  if (!ext || !ext.length) ext = await photon(q);
+  ext = ext || [];
+  const seen = new Set(v.map((x) => x.label.toLowerCase()));
+  const items = [...v, ...ext.filter((e) => !seen.has(e.label.toLowerCase()))].slice(0, 8);
+  return NextResponse.json({ items, src: (v.length ? "verified+" : "") + (GKEY ? "google" : MBOX ? "mapbox" : "osm") });
 }

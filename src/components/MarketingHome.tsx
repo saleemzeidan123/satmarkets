@@ -35,7 +35,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const band = bands[bi] || bands[0] || null;
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
- const [sug, setSug] = useState<{ label: string; sub: string }[]>([]);
+ const [sug, setSug] = useState<{ label: string; sub: string; did?: string; verified?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
  useEffect(() => {
@@ -48,7 +48,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   if (term.length < 2) { setSug([]); return; }
   const ctl = new AbortController();
   const t = setTimeout(() => {
-   fetch(`/api/places?q=${encodeURIComponent(term)}`, { signal: ctl.signal })
+   fetch(`/api/places?q=${encodeURIComponent(term)}&v=1&lang=${locale}`, { signal: ctl.signal })
     .then((r) => r.json())
     .then((d) => { setSug((d.items || []).slice(0, 6)); setSopen(true); })
     .catch(() => {});
@@ -243,10 +243,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       {sopen && sug.length > 0 && (
        <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, background: "#fff", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 14px 36px rgba(20,24,27,.22)", zIndex: 50, overflow: "hidden", textAlign: ar ? "right" : "left" }}>
         {sug.map((o, i) => (
-         <button key={i} type="button" onClick={() => { setQ(o.label); setSopen(false); }}
+         <button key={i} type="button" onClick={() => { setSopen(false); if (o.did) { const sp = new URLSearchParams(); sp.set("deal", deal === "buy" ? "sale" : "lease"); sp.set("district", o.did); router.push(`/${locale}/listings?${sp.toString()}`); } else { setQ(o.label); } }}
           style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "#fff", color: "var(--ink)", fontSize: 14, fontFamily: "var(--sans)", textAlign: "inherit" }}>
           <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 600 }}>{o.label}</span>
+          {o.verified ? <span className="mono" style={{ fontSize: 9.5, color: "var(--green)", border: "1px solid var(--green-line)", background: "var(--green-wash)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{ar ? "موثّق" : "verified"}</span> : null}
           {o.sub ? <span className="muted" style={{ fontSize: 12 }}>{o.sub}</span> : null}
          </button>
         ))}
