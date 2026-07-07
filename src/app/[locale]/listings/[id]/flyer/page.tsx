@@ -7,6 +7,8 @@ import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { Logo } from "@/components/satkit";
 import PrintButton from "@/components/PrintButton";
+import { SITE } from "@/components/JsonLd";
+import QRCode from "qrcode";
 
 // Branded property flyer: the landlord outreach artifact. Print-to-PDF via the
 // browser (native feature, no dependencies). Every figure is the listing's own
@@ -40,6 +42,9 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   const row = lease ? pickIndexRow(idxRows, l.asset_type, l.building_grade) : null;
   const v = lease ? marketVerdict(l.asking_rent_sqm, row, l.districts?.name_en, l.districts?.name_ar) : null;
   const today = new Date().toISOString().slice(0, 10);
+  const liveUrl = `${SITE}/${locale}/listings/${l.id}`;
+  let qrSvg = "";
+  try { qrSvg = await QRCode.toString(liveUrl, { type: "svg", margin: 2, width: 104, color: { dark: "#14181B", light: "#ffffff" } }); } catch {}
 
   return (
     <div className="flyer-wrap" style={{ background: "var(--cool)", padding: "24px 16px 48px" }}>
@@ -88,9 +93,17 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
               : "Published Q1 2026 benchmarks (attributed): Grade A offices 2,370 · Grade B 1,680 SAR/m²·yr. Sources: JLL, CBRE, Knight Frank, SAMA. Attributed market context. Indicative, not advice."}
           </div>
         </div>
-        <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 8 }}>
-          <span style={{ fontWeight: 600 }}>{ar ? "سات ماركتس · من سات العقارية · رخصة فال 1200025510" : "SAT Markets · Powered by SAT Real Estate · FAL 1200025510"}</span>
-          <span className="mono muted">satmarkets-sat-markets.vercel.app/{locale}/listings/{l.id.slice(0, 8)}…</span>
+        <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>
+          <div className="col gap4" style={{ minWidth: 0 }}>
+            <span style={{ fontWeight: 600 }}>{ar ? "سات ماركتس · من سات العقارية · رخصة فال 1200025510" : "SAT Markets · Powered by SAT Real Estate · FAL 1200025510"}</span>
+            <span className="mono muted" style={{ fontSize: 11 }}>satmarkets-sat-markets.vercel.app/{locale}/listings/{l.id.slice(0, 8)}…</span>
+          </div>
+          {qrSvg ? (
+            <div className="row gap8" style={{ alignItems: "center", flex: "none" }}>
+              <span className="muted" style={{ fontSize: 10.5, maxWidth: 96, textAlign: "end", lineHeight: 1.45 }}>{ar ? "امسح الرمز لفتح العرض المباشر" : "Scan to open the live listing"}</span>
+              <div aria-label={ar ? "رمز الاستجابة السريعة للعرض المباشر" : "QR code to the live listing"} style={{ width: 104, height: 104, flex: "none", background: "#fff", border: "1px solid var(--silver)", borderRadius: 8, overflow: "hidden", lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: qrSvg }} />
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
