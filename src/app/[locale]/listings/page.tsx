@@ -116,11 +116,13 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const rtT = searchParams.rt ? Number(searchParams.rt) : null;
   const spT = searchParams.sp ? Number(searchParams.sp) : null;
   const sort = searchParams.sort || (szT || rtT || spT ? "best" : "new");
+  const vScore = (l: any) => { if (l.deal_type !== "lease" || l.asking_rent_sqm == null) return Infinity; const row = pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade); const med = row?.median; return med == null ? Infinity : Number(l.asking_rent_sqm) / Number(med); };
   if (szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
   else if (rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
   else if (spT != null) shown.sort((a: any, b: any) => Math.abs((a.sale_price || 0) - spT) - Math.abs((b.sale_price || 0) - spT));
   else if (sort === "rent") shown.sort((a: any, b: any) => (a.asking_rent_sqm ?? 1e12) - (b.asking_rent_sqm ?? 1e12));
   else if (sort === "size") shown.sort((a: any, b: any) => (a.area_sqm || 0) - (b.area_sqm || 0));
+  else if (sort === "best") shown.sort((a: any, b: any) => vScore(a) - vScore(b));
 
   const activeDistrict = searchParams.district ? bubbles.find((b) => b.id === searchParams.district) ?? null : null;
 
