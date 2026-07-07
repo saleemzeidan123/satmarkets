@@ -73,6 +73,36 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   ["Tahlia Gate · office", "Jan 2026", "1,520", "6.4%", "141M"],
   ["Granada Oasis · tower", "Dec 2025", "1,060", "7.6%", "486M"],
  ];
+ function exportCsv() {
+  const rows: (string | number)[][] = [];
+  rows.push([ar ? "طابق مكاتب فئة A، برج العليا" : "Grade A Office Floor, Olaya Tower"]);
+  rows.push([ar ? "تحليل استثماري إرشادي · الربع الأول 2026 · استرشادي وليس نصيحة" : "Indicative underwriting, Q1 2026, off verified comps, indicative not advice"]);
+  rows.push([]);
+  rows.push([ar ? "المدخلات" : "Inputs"]);
+  rows.push([ar ? "سعر الاستحواذ (SAR)" : "Acquisition price (SAR)", price]);
+  rows.push([ar ? "المدة (سنة)" : "Term (yr)", term]);
+  rows.push([ar ? "التصعيد" : "Escalation", esc]);
+  rows.push([ar ? "الإشغال" : "Occupancy", fmtPct(occ)]);
+  rows.push([ar ? "معدل الخروج الرأسمالي" : "Exit cap rate", fmtPct(exitCap)]);
+  rows.push([ar ? "نسبة الدين" : "LTV", fmtPct(ltv)]);
+  rows.push([]);
+  rows.push([ar ? "النتائج" : "Outputs"]);
+  rows.push([ar ? "قيمة إرشادية (SAR)" : "Indicative value (SAR)", Math.round(m.value)]);
+  rows.push([ar ? "صافي العائد الأولي" : "Net initial yield", fmtPct(m.goingInYield)]);
+  rows.push([ar ? "صافي الدخل المستقر (SAR/yr)" : "Stabilised NOI (SAR/yr)", Math.round(m.noi)]);
+  rows.push([ar ? "العائد الداخلي المرفوع 5 سنوات" : "5-yr levered IRR", fmtPct(m.irr)]);
+  rows.push([ar ? "مضاعف حقوق الملكية" : "Equity multiple", m.em.toFixed(2) + "x"]);
+  rows.push([]);
+  rows.push([ar ? "صافي الدخل حسب السنة" : "NOI by year", ...m.series.map((_, i) => "Y" + (i + 1))]);
+  rows.push(["SAR", ...m.series.map((v) => Math.round(v))]);
+  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "sat-underwriting-olaya-tower.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+ }
  const tdir = ar ? "rtl" : "ltr";
  return (
   <div style={{ background: "var(--cool)" }}>
@@ -84,7 +114,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "320 م² · العليا · مُحلَّل على صفقات مقارنة موثّقة" : "320 m² · Al Olaya · underwritten on verified comparable transactions"}</div>
      </div>
      <div className="row gap10 wrap">
-      <span className="btn secondary"><Icon.download size={15} /> {ar ? "تصدير النموذج" : "Export model"}</span>
+      <button type="button" onClick={exportCsv} className="btn secondary" style={{ cursor: "pointer" }}><Icon.download size={15} /> {ar ? "تصدير النموذج" : "Export model"}</button>
       <span className="btn primary"><Icon.spark size={15} /> {ar ? "اطلب تحليل الذكاء" : "Ask AI to underwrite"}</span>
      </div>
     </div>
