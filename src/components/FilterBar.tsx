@@ -204,7 +204,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
 
   return (
     <div ref={wrapRef}>
-      <div className="row gap8 wrap" style={{ alignItems: "center" }}>
+      <div className="row gap8 wrap lst-filterpills" style={{ alignItems: "center" }}>
         {pill("loc", selLoc ? nameOf(selLoc) : params.place ? params.place : t("Location", "الموقع"), !!(selLoc || params.place))}
         {pill("deal", params.deal ? (params.deal === "sale" ? t("For sale", "للبيع") : t("For lease", "للإيجار")) : t("Deal", "الصفقة"), !!params.deal)}
         {pill("asset", assetSel.length ? `${t("Type", "النوع")} (${assetSel.length})` : t("Property type", "نوع العقار"), assetSel.length > 0)}

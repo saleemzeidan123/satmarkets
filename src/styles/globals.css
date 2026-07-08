@@ -301,3 +301,13 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .t-md{font-size:var(--fs-md);} .t-lg{font-size:var(--fs-lg);}
 .t-xl{font-size:var(--fs-xl);} .t-2xl{font-size:var(--fs-2xl);}
 .t-3xl{font-size:var(--fs-3xl);} .t-4xl{font-size:var(--fs-4xl);}
+
+
+/* ---- Mobile: filter pills as one horizontally-scrollable rail (Booking-style) ---- */
+@media(max-width:768px){
+  .lst-filterpills{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:2px;-webkit-mask-image:linear-gradient(90deg,#000 93%,transparent);mask-image:linear-gradient(90deg,#000 93%,transparent);}
+  [dir="rtl"] .lst-filterpills{-webkit-mask-image:linear-gradient(270deg,#000 93%,transparent);mask-image:linear-gradient(270deg,#000 93%,transparent);}
+  .lst-filterpills::-webkit-scrollbar{display:none;}
+  .lst-filterpills>button{flex:0 0 auto;}
+  .lst-filterpills>button[style*="auto"]{margin-inline-start:0 !important;}
+}
