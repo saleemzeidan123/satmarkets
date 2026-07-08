@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
     }
     let band: any = null;
     if (supabase) {
-      let q = supabase.from("rent_index_published").select("period, district_label, asset_type, segment, unit, band_low, band_high, median, source").order("created_at", { ascending: false }).limit(1);
+      let q = supabase.from("rent_index_published").select("period, district_label, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
       if (intent?.asset) q = q.eq("asset_type", intent.asset);
       if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
       const { data } = await q;
@@ -178,7 +178,7 @@ export async function POST(req: NextRequest) {
     }
     let band: any = null;
     if (supabase) {
-      let q = supabase.from("rent_index_published").select("period, district_label, asset_type, segment, unit, band_low, band_high, median, source").order("created_at", { ascending: false }).limit(1);
+      let q = supabase.from("rent_index_published").select("period, district_label, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
       if (intent?.asset) q = q.eq("asset_type", intent.asset);
       if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
       const { data } = await q;
