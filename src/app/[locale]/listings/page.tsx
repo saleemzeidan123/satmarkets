@@ -15,7 +15,7 @@ const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "service
 const GRADES = ["a_plus", "a", "b", "c"];
 const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
-type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string };
+type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string; bbox?: string };
 
 export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
@@ -49,6 +49,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let listings: Listing[] = [];
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
+  const coordByListing = new Map<string, { lat: number; lng: number }>();
   let locations: LocOpt[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
   const assetCounts: Record<string, number> = {}, gradeCounts: Record<string, number> = {}, fitCounts: Record<string, number> = {};
@@ -95,7 +96,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
       const bmap = new Map((bs ?? []).map((b: any) => [b.id, b]));
-      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
+      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); coordByListing.set(l.id, { lat: Number(b.lat), lng: Number(b.lng) }); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
     }
   }
 
@@ -111,6 +112,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   if (searchParams.district) shown = shown.filter((l: any) => l.district_id === searchParams.district);
   else if (placeIds) shown = placeIds.size ? shown.filter((l: any) => l.district_id && placeIds.has(l.district_id)) : [];
   else if (searchParams.city) shown = shown.filter((l: any) => l.district_id && cityIds.has(l.district_id));
+  const bbox = (() => { if (!searchParams.bbox) return null; const p = searchParams.bbox.split(",").map(Number); return p.length === 4 && p.every((n) => Number.isFinite(n)) ? p : null; })();
+  if (bbox) { const [w, so, e, no] = bbox; shown = shown.filter((l: any) => { const c = coordByListing.get(l.id); return !!c && c.lng >= w && c.lng <= e && c.lat >= so && c.lat <= no; }); }
 
   const szT = searchParams.sz ? Number(searchParams.sz) : null;
   const rtT = searchParams.rt ? Number(searchParams.rt) : null;
@@ -133,7 +136,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   (Object.keys(searchParams) as (keyof SP)[]).forEach((k) => { if (searchParams[k]) fparams[k] = String(searchParams[k]); });
 
   const baseSp = new URLSearchParams();
-  Object.entries(fparams).forEach(([k, v]) => { if (k !== "district" && k !== "place" && k !== "view") baseSp.set(k, v); });
+  Object.entries(fparams).forEach(([k, v]) => { if (k !== "district" && k !== "place" && k !== "view" && k !== "bbox") baseSp.set(k, v); });
   const base = baseSp.toString();
   const insightsView = searchParams.view === "insights";
   const qsWith = (extra?: Record<string, string>) => {
@@ -194,7 +197,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
-        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}</div>
+        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {ar ? "ضمن منطقة الخريطة" : "in this map area"} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{ar ? "مسح" : "clear"}</Link></> : null}</div>
         <div className="row gap8 wrap">
           <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
           <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "رؤى المؤشر" : "Insights"}</Link>
@@ -265,7 +268,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
       )}
       </div>
-      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} />
+      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} initialBbox={bbox ?? undefined} />
       </div>
     </div>
   );
