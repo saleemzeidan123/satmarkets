@@ -15,7 +15,10 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  let res = NextResponse.next({ request: req });
+  const currentLocale = pathname.split("/")[1] === "ar" ? "ar" : "en";
+  const reqHeaders = new Headers(req.headers);
+  reqHeaders.set("x-locale", currentLocale);
+  let res = NextResponse.next({ request: { headers: reqHeaders } });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (url && key) {
@@ -26,7 +29,7 @@ export async function middleware(req: NextRequest) {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
           cookiesToSet.forEach(({ name, value }) => req.cookies.set(name, value));
-          res = NextResponse.next({ request: req });
+          res = NextResponse.next({ request: { headers: reqHeaders } });
           cookiesToSet.forEach(({ name, value, options }) =>
             res.cookies.set(name, value, options as any)
           );

@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import "@/styles/sat-platform.css";
 import "@/styles/footer.css";
 import type { ReactNode } from "react";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "SAT Markets | Verified commercial real estate, Saudi Arabia",
@@ -16,8 +17,10 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const locale = headers().get("x-locale") === "ar" ? "ar" : "en";
+  const dir = locale === "ar" ? "rtl" : "ltr";
   return (
-    <html lang="en" dir="ltr">
+    <html lang={locale} dir={dir}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
