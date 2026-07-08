@@ -257,7 +257,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={ar ? "مقابل مؤشر الإيجارات، عيّنة المنصّة. استرشادي وليس نصيحة." : "Vs the Rent Index, platform sample. Indicative, not advice."}>{txt}</div>;
                   })()}
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                  <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span></div>
+                  <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
                 </div>
               </Link>
             );
