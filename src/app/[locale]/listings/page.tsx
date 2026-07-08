@@ -95,7 +95,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
       const bmap = new Map((bs ?? []).map((b: any) => [b.id, b]));
-      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: "" }; });
+      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
     }
   }
 

@@ -65,7 +65,14 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams }: {
     const wire = (m: any, maplibregl: any) => {
       const tip = new maplibregl.Popup({ closeButton: false, offset: 12 });
       m.on("click", "d-c", (e: any) => { const f = e.features?.[0]; if (!f) return; const sp = new URLSearchParams(baseParams); sp.set("district", f.properties.id); window.location.href = `/${locale}/listings?${sp.toString()}`; });
-      m.on("click", "p-c", (e: any) => { const f = e.features?.[0]; if (!f) return; window.location.href = `/${locale}/listings/${f.properties.id}`; });
+      const look = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "220px" });
+      m.on("click", "p-c", (e: any) => {
+        const f = e.features?.[0]; if (!f) return;
+        const p = f.properties;
+        const t = String(p.title).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const pr = p.price ? String(p.price).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:#14181B;line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:#14181B;margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:#3A6EA5;text-decoration:none">${ar ? "عرض القائمة \u2190" : "View listing \u2192"}</a>`).addTo(m);
+      });
       m.on("mouseenter", "d-c", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${ar ? "مساحة، انقر للتصفية" : "spaces, click to filter"}</div>`).addTo(m); });
       m.on("mouseleave", "d-c", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
       m.on("mouseenter", "p-c", (e: any) => {

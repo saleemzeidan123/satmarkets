@@ -471,7 +471,7 @@ html,body{max-width:100%;overflow-x:clip;}
   .lst-map-panel{display:none}
   .lst-map-panel.open{display:block;position:fixed;inset:0;z-index:90;height:100%;border-radius:0;border:none}
   .lst-map-panel.open .lst-map-close{display:inline-flex}
-  .lst-map-toggle{display:inline-flex;position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;box-shadow:var(--sh-3)}
+  .lst-map-toggle{display:inline-flex;position:fixed;bottom:calc(74px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:60;box-shadow:var(--sh-3)}
 }
 
 /* flyer print isolation */
