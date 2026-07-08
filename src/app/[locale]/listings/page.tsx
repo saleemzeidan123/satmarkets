@@ -236,8 +236,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p className="muted" style={{ margin: 0 }}>{ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية أو مسح الكل." : "No matching spaces. Try widening your filters, or clear them all."}</p>
-          <Link href={`/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{ar ? "مسح كل عوامل التصفية" : "Clear all filters"}</Link>
+          <p className="muted" style={{ margin: 0 }}>{bbox ? (ar ? "لا توجد مساحات موثّقة في منطقة الخريطة هذه. جرّب تصغير التكبير أو مسح منطقة الخريطة." : "No verified spaces in this map area. Try zooming out, or clear the map area.") : (ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية أو مسح الكل." : "No matching spaces. Try widening your filters, or clear them all.")}</p>
+          <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (ar ? "مسح منطقة الخريطة" : "Clear the map area") : (ar ? "مسح كل عوامل التصفية" : "Clear all filters")}</Link>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
