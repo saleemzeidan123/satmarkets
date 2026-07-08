@@ -183,7 +183,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           <div className="eyebrow">{ar ? "المنصّة" : "The exchange"}</div>
           <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{ar ? "مساحات موثّقة في المملكة" : "Verified spaces across the Kingdom"}</h1>
         </div>
-        <Link href={`/${locale}/map`} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{ar ? "عرض على الخريطة" : "View on map"} <Icon.pin size={16} /></Link>
+        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {ar ? "عرض على الخريطة" : "View on map"}</Link>
       </div>
       <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>

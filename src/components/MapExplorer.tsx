@@ -139,6 +139,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   let map: any; let ro: any; let cancelled = false; let hoverId: any = null;
   (async () => {
    const maplibregl = (await import("maplibre-gl")).default;
+   try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
    if (cancelled || !ref.current) return;
    map = new maplibregl.Map({ container: ref.current, style: "https://tiles.openfreemap.org/styles/positron",
     center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17 });
@@ -309,7 +310,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     </div>
     {/* asset chips (hidden in zone draw to reduce clutter) */}
     {mode !== "zone" && (
-     <div className="chip-rail flex items-center gap-1.5 lg:flex-wrap" style={{ maxWidth: "100%" }}>
+     <div className="chip-rail map-rail pointer-events-auto flex items-center gap-1.5 overflow-x-auto lg:flex-wrap lg:overflow-visible [&>button]:shrink-0" style={{ maxWidth: "100%" }}>
       <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === "all" ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
       {assetOrder.map((a) => (
        <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === a ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
