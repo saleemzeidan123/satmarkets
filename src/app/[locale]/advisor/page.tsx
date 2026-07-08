@@ -105,7 +105,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
     ` ${activeRow.period}, published market benchmarks attributed to source (JLL, CBRE, Knight Frank and peers). Indicative, not advice.`;
   }
-  setMsgs((m) => [...m, { role: "a", text }]);
+  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, median: med, high: hi, unit: activeRow.unit }, quoted: r }]);
  }
 
  const started = msgs.length > 0;
@@ -162,6 +162,30 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       ) : (
        <div key={i} className="chatmsg a">
         <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
+        {m.band && (() => {
+         const b = m.band; const q0 = m.quoted ?? null;
+         const lo = b.low, md = b.median, hi = b.high;
+         const mn0 = Math.min(lo, q0 ?? lo), mx0 = Math.max(hi, q0 ?? hi);
+         const pad = ((mx0 - mn0) || 1) * 0.12; const mn = mn0 - pad, mx = mx0 + pad; const sp = (mx - mn) || 1;
+         const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
+         const st = q0 == null ? null : q0 < lo ? "below" : q0 > hi ? "above" : "within";
+         const col = st === "below" ? "#1F8A5B" : st === "above" ? "#8A5A1F" : "#3A6EA5";
+         const unitL = b.unit === "sar_sqm_year" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : b.unit === "sar_desk_month" ? (ar ? "ريال/مكتب·شهر" : "SAR/desk·mo") : "";
+         const fmt = (n: number) => n.toLocaleString("en-US");
+         return (
+          <div style={{ margin: "10px 0 2px" }}>
+           <div style={{ position: "relative", height: 8, borderRadius: 999, background: "var(--silver)" }}>
+            <div style={{ position: "absolute", top: 0, bottom: 0, left: pc(lo), width: `calc(${pc(hi)} - ${pc(lo)})`, background: "var(--azure-wash)", borderRadius: 999 }} />
+            <div style={{ position: "absolute", top: -3, bottom: -3, left: pc(md), width: 2, background: "var(--harbor)" }} />
+            {q0 != null && <div style={{ position: "absolute", top: -5, bottom: -5, left: pc(q0), width: 3, marginInlineStart: -1, background: col, borderRadius: 2 }} />}
+           </div>
+           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--slate)", marginTop: 6 }}>
+            <span>{fmt(lo)}</span><span>{(ar ? "الوسيط " : "median ") + fmt(md) + (unitL ? " · " + unitL : "")}</span><span>{fmt(hi)}</span>
+           </div>
+           {q0 != null && <div style={{ fontSize: 11, fontWeight: 600, color: col, marginTop: 4 }}>{(ar ? "سعرك " : "your rate ") + fmt(q0)}</div>}
+          </div>
+         );
+        })()}
         {m.results && m.results.length > 0 && (
          <div className="col gap10">
           {m.results.slice(0, 4).map((l) => {
