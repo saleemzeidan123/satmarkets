@@ -153,7 +153,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
                 <div style={{ flex: 1, height: 10, background: "var(--cool)", borderRadius: 5 }}>
                   <span style={{ display: "block", width: `${Math.max((n / assetMax) * 100, 3)}%`, height: "100%", background: "var(--harbor)", borderRadius: 5, opacity: 0.85 }} />
                 </div>
-                <span className="mono" style={{ width: 30, flex: "none", fontSize: 12, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{n}</span>
+                <span className="mono" style={{ width: 30, flex: "none", fontSize: "var(--fs-xs)", color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{n}</span>
               </div>
             ))}
           </div>
@@ -192,7 +192,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
         <Link href={`/${locale}/rent-index`} className="btn secondary" style={{ textDecoration: "none" }}>{ar ? "مؤشر الإيجارات الكامل" : "The full Rent Index"}</Link>
         <Link href={`/${locale}/locations`} className="btn ghost" style={{ textDecoration: "none" }}>{ar ? "دليل المواقع" : "Locations directory"}</Link>
       </div>
-      <p className="muted" style={{ marginTop: 22, fontSize: 12 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. المعايير المنشورة المنسوبة إلى مصادرها على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."}</p>
+      <p className="muted" style={{ marginTop: 22, fontSize: "var(--fs-xs)" }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. المعايير المنشورة المنسوبة إلى مصادرها على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."}</p>
     </div>
   );
 }

@@ -97,19 +97,19 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div className="intel-2" style={{ padding: "20px 24px 0" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "إيقاع الحركة، أيام الأسبوع" : "Footfall rhythm, weekday"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مؤشر بالساعة · الذروة 12–14 و18–19" : "Hourly index · peaks 12–14h & 18–19h"}</div></div>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "إيقاع الحركة، أيام الأسبوع" : "Footfall rhythm, weekday"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مؤشر بالساعة · الذروة 12–14 و18–19" : "Hourly index · peaks 12–14h & 18–19h"}</div></div>
        <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ar ? "العليا" : "Olaya"}</span>
       </div>
       <div className="hours" style={{ height: 150, marginTop: 20, gap: 4 }}>
        {hours.map((h, i) => <div key={i} className={"h" + (h >= 30 ? " pk" : "")} style={{ height: (h / 33 * 100) + "%" }} />)}
       </div>
-      <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}>
+      <div className="row between mono muted" style={{ fontSize: "var(--fs-3xs)", marginTop: 8 }}>
        <span>00</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>23</span>
       </div>
      </div>
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "من أين يأتي النطاق" : "Where the catchment comes from"}</div>
+      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "من أين يأتي النطاق" : "Where the catchment comes from"}</div>
       <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "موطن أصل الزوار النهاريين" : "Home-origin of daytime visitors"}</div>
       <div className="col gap14" style={{ marginTop: 18 }}>
        {origins.map((o, i) => (
@@ -121,11 +121,11 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
     <div className="intel-11" style={{ padding: "20px 24px 40px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{ar ? "التوزيع العمري للنطاق" : "Catchment age mix"}</div>
+      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, marginBottom: 4 }}>{ar ? "التوزيع العمري للنطاق" : "Catchment age mix"}</div>
       <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "الزوار النهاريون · يميل لسن العمل المهني" : "Daytime visitors · skews working-age professional"}</div>
       <div className="row gap24 wrap" style={{ marginTop: 18, alignItems: "center" }}>
        <div className="donut" style={{ width: 132, height: 132, background: `conic-gradient(${stops})` }}>
-        <div className="hole"><span className="mono" style={{ fontSize: 18, fontWeight: 500 }}>62%</span><span style={{ fontSize: 10, color: "var(--slate)" }}>{ar ? "بعمر 25–44" : "aged 25–44"}</span></div>
+        <div className="hole"><span className="mono" style={{ fontSize: 18, fontWeight: 500 }}>62%</span><span style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)" }}>{ar ? "بعمر 25–44" : "aged 25–44"}</span></div>
        </div>
        <div className="col gap10 grow">
         {ages.map((a, i) => (
@@ -140,7 +140,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "مزيج الجوار التجاري في النطاق" : "Co-tenancy mix in trade area"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مستأجرون موثّقون ضمن 10 دقائق قيادة" : "Verified occupiers within 10-min drive"}</div></div>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "مزيج الجوار التجاري في النطاق" : "Co-tenancy mix in trade area"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مستأجرون موثّقون ضمن 10 دقائق قيادة" : "Verified occupiers within 10-min drive"}</div></div>
        <span className="muted2"><Icon.store size={18} /></span>
       </div>
       <div className="col gap14" style={{ marginTop: 18 }}>
@@ -165,7 +165,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
        {(ar ? [["إشارات الجوال","بيانات GPS / واي فاي مجهّلة من شركاء الاتصالات السعوديين، زيارات ومكوث ونطاقات تجارية."],["سجلات وزارة العدل","سجلات الصفقات العقارية المنشورة تعاير معايير الأسعار مقابل صفقات حقيقية."],["بيانات الإنفاق","أنماط معاملات مجهّلة من بوابات الدفع تغذّي إمكانات الإيرادات."],["السجلات الحكومية","الهيئة العامة للإحصاء والهيئة العامة للعقار وإيجار للسكان والدخل ونشاط الإيجار والطلب."]] : [["Mobile signals","Anonymised GPS / Wi-Fi from Saudi telecom partners, visits, dwell, trade areas."],["Ministry of Justice records","Published real estate transaction records calibrate price benchmarks against real deals."],["Spend data","Anonymised transaction patterns from payment gateways feed revenue potential."],["Public records","GASTAT, REGA and Ejar for population, income, lease activity and demand."]]).map((d,i)=>(
         <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
          <div style={{ fontSize: 13.5, fontWeight: 700 }}>{d[0]}</div>
-         <div className="muted" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 4 }}>{d[1]}</div>
+         <div className="muted" style={{ fontSize: "var(--fs-xs)", lineHeight: 1.5, marginTop: 4 }}>{d[1]}</div>
         </div>
        ))}
       </div>
@@ -173,7 +173,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       <div className="eyebrow" style={{ margin: "22px 0 10px" }}>{ar ? "تقييم شفّاف · خمس عدسات" : "Transparent score · five lenses"}</div>
       <div className="row gap8 wrap">
        {(ar ? ["حركة المشاة","ملاءمة الديموغرافيا","إمكانات السوق","المنافسة","الوضوح"] : ["Foot traffic","Demographics fit","Market potential","Competition","Visibility"]).map((l,i)=>(
-        <span key={i} className="chip on" style={{ fontSize: 12 }}>{l}</span>
+        <span key={i} className="chip on" style={{ fontSize: "var(--fs-xs)" }}>{l}</span>
        ))}
       </div>
       <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>{ar ? "يُقيَّم كل موقع عبر هذه العدسات الخمس مع إظهار المنطق، لا رقم صندوق أسود أبداً. يعمل للمكاتب والتجزئة والاستخدام المختلط والمستودعات، لا التجزئة فقط." : "Each site is scored across these five lenses with the reasoning shown, never a black-box number. Works across offices, retail, mixed-use and warehouses, not just retail."}</p>

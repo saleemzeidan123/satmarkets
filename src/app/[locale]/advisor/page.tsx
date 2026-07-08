@@ -121,8 +121,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
      <div className="eyebrow" style={{ padding: "4px 12px" }}>{ar ? "ما يمكنني فعله" : "What I can do"}</div>
      {JOBS.map((j, i) => (
       <button key={i} onClick={() => pickJob(j)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, color: "var(--ink)", background: "transparent", border: "none", textAlign: ar ? "right" : "left", padding: "9px 12px", borderRadius: 9, cursor: "pointer", width: "100%" }}>
-       <span style={{ fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "var(--harbor)" }}>{j.icon}</span>{j.label}</span>
-       <span className="mono" style={{ fontSize: 10, color: "var(--slate-2)" }}>{j.sub}</span>
+       <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "var(--harbor)" }}>{j.icon}</span>{j.label}</span>
+       <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--slate-2)" }}>{j.sub}</span>
       </button>
      ))}
     </div>
@@ -144,12 +144,12 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
        <div>
         <div className="eyebrow">{ar ? "أهلاً بك" : "Welcome"}</div>
         <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 4px" }}>{ar ? "كيف أساعدك اليوم؟" : "How can I help you today?"}</h2>
-        <p className="muted" style={{ fontSize: 14, margin: "0 0 18px" }}>{ar ? "اختر مهمة أو اكتب سؤالك ببساطة أدناه. لا حاجة لصيغة معيّنة." : "Pick a job below, or simply type your question. No special format needed."}</p>
+        <p className="muted" style={{ fontSize: "var(--fs-base)", margin: "0 0 18px" }}>{ar ? "اختر مهمة أو اكتب سؤالك ببساطة أدناه. لا حاجة لصيغة معيّنة." : "Pick a job below, or simply type your question. No special format needed."}</p>
         <div className="adv-jobs-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
          {JOBS.map((j, i) => (
           <button key={i} onClick={() => pickJob(j)} className="card pad lift" style={{ textAlign: ar ? "right" : "left", cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }}>
            <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
-           <div style={{ fontSize: 15, fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
+           <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{j.sub}</div>
           </button>
          ))}
@@ -182,7 +182,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--slate)", marginTop: 6 }}>
             <span>{fmt(lo)}</span><span>{(ar ? "الوسيط " : "median ") + fmt(md) + (unitL ? " · " + unitL : "")}</span><span>{fmt(hi)}</span>
            </div>
-           {q0 != null && <div style={{ fontSize: 11, fontWeight: 600, color: col, marginTop: 4 }}>{(ar ? "سعرك " : "your rate ") + fmt(q0)}</div>}
+           {q0 != null && <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 600, color: col, marginTop: 4 }}>{(ar ? "سعرك " : "your rate ") + fmt(q0)}</div>}
           </div>
          );
         })()}
@@ -200,8 +200,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            return (
             <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
-             <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: 11, marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
-             <div style={{ textAlign: ar ? "left" : "right" }}><div className="mono" style={{ fontSize: 15, fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</div></div>
+             <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
+             <div style={{ textAlign: ar ? "left" : "right" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</div></div>
             </Link>
            );
           })}
@@ -217,8 +217,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          <span style={{ flex: 1 }} />
          <button onClick={() => setTool(null)} aria-label={ar ? "إغلاق المحلّل" : "Close analyser"} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 2 }}><XIcon size={15} /></button>
         </div>
-        {!segs && <div className="muted" style={{ fontSize: 13 }}>{ar ? "أحمّل النطاقات المنشورة…" : "Loading the published bands…"}</div>}
-        {segs && segs.length === 0 && <div className="muted" style={{ fontSize: 13 }}>{ar ? "لا تتوفر نطاقات منشورة الآن." : "No published bands available right now."}</div>}
+        {!segs && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? "أحمّل النطاقات المنشورة…" : "Loading the published bands…"}</div>}
+        {segs && segs.length === 0 && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? "لا تتوفر نطاقات منشورة الآن." : "No published bands available right now."}</div>}
         {segs && segs.length > 0 && (
          <div className="col gap10">
           <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{ar ? "نوع المساحة" : "Space type"}
@@ -239,11 +239,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeRow && <div className="mono muted" style={{ fontSize: 11 }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · الوسيط ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period === "Q1 2026" ? "الربع الأول 2026" : activeRow.period}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · median ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period}`}</div>}
+          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · الوسيط ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period === "Q1 2026" ? "الربع الأول 2026" : activeRow.period}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · median ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period}`}</div>}
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeRow || !rent.trim()}>{ar ? "حلّل" : "Analyse"}</button>
           </div>
-          <div className="muted" style={{ fontSize: 11 }}>{ar ? "أقيس أرقامك على النطاقات المنشورة المنسوبة إلى مصادرها فقط. المؤشر يقيّم الأسعار لا الأشخاص. استرشادي وليس نصيحة." : "I grade your numbers against published, attributed bands only. The index grades prices, never people. Indicative, not advice."}</div>
+          <div className="muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? "أقيس أرقامك على النطاقات المنشورة المنسوبة إلى مصادرها فقط. المؤشر يقيّم الأسعار لا الأشخاص. استرشادي وليس نصيحة." : "I grade your numbers against published, attributed bands only. The index grades prices, never people. Indicative, not advice."}</div>
          </div>
         )}
        </div>
@@ -259,7 +259,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
      <div style={{ maxWidth: 760, margin: "0 auto" }}>
       {!busy && (
        <div style={{ marginBottom: 10 }}>
-        <div className="muted" style={{ fontSize: 11, margin: "0 2px 7px" }}>{started ? (ar ? "تابع الاستكشاف" : "Keep exploring") : (ar ? "جرّب أن تسأل" : "Try asking")}</div>
+        <div className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "0 2px 7px" }}>{started ? (ar ? "تابع الاستكشاف" : "Keep exploring") : (ar ? "جرّب أن تسأل" : "Try asking")}</div>
         <div className="row gap8 wrap">
          {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
         </div>
@@ -267,10 +267,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       )}
       <form onSubmit={(e) => { e.preventDefault(); const t = input; setInput(""); send(t); }} className="search focus" style={{ boxShadow: "0 4px 16px rgba(20,24,27,.06)", border: "1px solid var(--azure)", borderRadius: 999, padding: "8px 10px 8px 18px", display: "flex", alignItems: "center", gap: 8 }}>
        <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-       <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={ar ? "اسأل عن الإيجارات، ابحث عن مساحة، حلّل عقداً…" : "Ask about rents, find a space, analyse a lease…"} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)", textAlign: ar ? "right" : "left" }} />
+       <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={ar ? "اسأل عن الإيجارات، ابحث عن مساحة، حلّل عقداً…" : "Ask about rents, find a space, analyse a lease…"} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "var(--fs-base)", color: "var(--ink)", textAlign: ar ? "right" : "left" }} />
        <button type="submit" className="btn primary sm" disabled={busy} aria-label={ar ? "إرسال" : "Send"}><Icon.send size={15} /></button>
       </form>
-      <p className="muted" style={{ fontSize: 11, margin: "8px 2px 0" }}>{ar ? "مبنيٌّ على مؤشر الإيجارات والعروض الموثّقة. مستشار SAT يشرح البيانات ولا يختلقها." : "Grounded in the Rent Index and verified listings. SAT Advisor explains the data, it doesn't invent it."}</p>
+      <p className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "8px 2px 0" }}>{ar ? "مبنيٌّ على مؤشر الإيجارات والعروض الموثّقة. مستشار SAT يشرح البيانات ولا يختلقها." : "Grounded in the Rent Index and verified listings. SAT Advisor explains the data, it doesn't invent it."}</p>
      </div>
     </div>
    </div>
@@ -284,7 +284,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       <div className="eyebrow">{ar ? "المصادر المستخدمة" : "Sources used"}</div>
       <div className="col gap8" style={{ marginTop: 10 }}>
        {[[<Icon.chart key="a" size={14} />, ar ? "مؤشر الإيجارات للربع الأول 2026" : "Rent Index Q1 2026"], [<Icon.shield key="b" size={14} />, ar ? "سجل تراخيص الهيئة العامة للعقار" : "REGA permit registry"], [<Icon.target key="c" size={14} />, ar ? "عروض المنصّة الموثّقة" : "Verified platform listings"]].map((s, i) => (
-        <div key={i} className="row gap8" style={{ fontSize: 12 }}><span style={{ color: "var(--harbor)" }}>{s[0]}</span>{s[1]}</div>
+        <div key={i} className="row gap8" style={{ fontSize: "var(--fs-xs)" }}><span style={{ color: "var(--harbor)" }}>{s[0]}</span>{s[1]}</div>
        ))}
       </div>
      </div>
