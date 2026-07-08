@@ -157,7 +157,14 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
             ))}
           </div>
           <div className="mt-10">
-            <h2 className="font-display text-xl text-charcoal">{T.compare}</h2>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-xl text-charcoal">{T.compare}</h2>
+              {shownL.length >= 2 && (
+                <Link href={`/${locale}/compare?ids=${shownL.slice(0, 4).map((l) => l.id).join(",")}`} className="text-[13px] font-medium hover:underline" style={{ color: "#3A6EA5" }}>
+                  {ar ? "افتح المقارنة الكاملة ←" : "Open full comparison →"}
+                </Link>
+              )}
+            </div>
             <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-white">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
