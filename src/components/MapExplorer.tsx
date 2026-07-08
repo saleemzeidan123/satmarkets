@@ -44,6 +44,15 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
  const [mode, setMode] = useState<Mode>("pins");
  const [zoneCount, setZoneCount] = useState<number | null>(null);
 
+ // mobile synced carousel
+ const [inView, setInView] = useState<MapBuilding[]>([]);
+ const [selId, setSelId] = useState<string | null>(null);
+ const railRef = useRef<HTMLDivElement>(null);
+ const selIdRef = useRef<string | null>(null);
+ const inViewRef = useRef<MapBuilding[]>([]);
+ const programmaticRef = useRef(false);
+ const scrollTimerRef = useRef<any>(null);
+
  const modeRef = useRef<Mode>("pins");
  const activeRef = useRef<string>("all");
  const zonePtsRef = useRef<[number, number][]>([]);
@@ -56,6 +65,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   inZone: ar ? "مبنى في منطقتك" : "buildings in your zone",
   clear: ar ? "مسح" : "Clear",
   loading: ar ? "تحميل الخريطة…" : "Loading map…",
+  swipeHint: ar ? "اسحب البطاقات، تتحرك الخريطة معها" : "Swipe the cards, the map follows",
  };
 
  function buildFC(list: MapBuilding[]) {
@@ -65,6 +75,51 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   })) };
  }
  const filtered = () => (activeRef.current === "all" ? buildings : buildings.filter((b) => b.asset === activeRef.current));
+
+ // recompute the buildings inside the current viewport for the mobile carousel
+ function refreshInView() {
+  const map = mapRef.current;
+  if (!map || modeRef.current !== "pins") { inViewRef.current = []; setInView([]); return; }
+  let bounds: any; try { bounds = map.getBounds(); } catch { return; }
+  const list = filtered().filter((b) => bounds.contains([b.lng, b.lat]));
+  list.sort((a, c) => (c.listings - a.listings) || ((a.band ?? 1e15) - (c.band ?? 1e15)));
+  const capped = list.slice(0, 40);
+  inViewRef.current = capped;
+  setInView(capped);
+  if (selIdRef.current && !capped.some((b) => b.id === selIdRef.current)) selectBuilding(null, false);
+ }
+
+ // select a building: highlight its pin (via the sel source ring) and optionally pan to it
+ function selectBuilding(id: string | null, pan: boolean) {
+  selIdRef.current = id; setSelId(id);
+  const map = mapRef.current;
+  const b = id ? buildings.find((x) => x.id === id) : null;
+  if (map && map.getSource && map.getSource("sel")) {
+   map.getSource("sel").setData({ type: "FeatureCollection", features: b ? [{ type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: {} }] : [] });
+  }
+  if (pan && b && map) { programmaticRef.current = true; map.easeTo({ center: [b.lng, b.lat], duration: 500 }); }
+ }
+
+ // rail scrolled: snap-select the centered card and pan the map to it
+ function onRailScroll() {
+  const rail = railRef.current; if (!rail) return;
+  if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+  scrollTimerRef.current = setTimeout(() => {
+   const cx = rail.scrollLeft + rail.clientWidth / 2;
+   let best: string | null = null, bd = 1e9;
+   rail.querySelectorAll<HTMLElement>("[data-bid]").forEach((el) => {
+    const c = el.offsetLeft + el.offsetWidth / 2; const d = Math.abs(c - cx);
+    if (d < bd) { bd = d; best = el.getAttribute("data-bid"); }
+   });
+   if (best && best !== selIdRef.current) selectBuilding(best, true);
+  }, 90);
+ }
+
+ function scrollRailTo(id: string) {
+  const rail = railRef.current; if (!rail) return;
+  const el = rail.querySelector<HTMLElement>(`[data-bid="${id}"]`);
+  if (el) el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+ }
 
  function recomputeZone() {
   const map = mapRef.current; if (!map || !map.getSource("zone")) return;
@@ -95,6 +150,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     map.addSource("b", { type: "geojson", data: buildFC(buildings), cluster: true, clusterRadius: 46, clusterMaxZoom: 13, generateId: true });
     map.addSource("all", { type: "geojson", data: buildFC(buildings) });
     map.addSource("zone", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+    map.addSource("sel", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
 
     // heat (hidden until heat mode)
     map.addLayer({ id: "heat", type: "heatmap", source: "all", layout: { visibility: "none" }, paint: {
@@ -122,6 +178,11 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
     const colorMatch: any[] = ["match", ["get", "asset"]];
     Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v)); colorMatch.push("#64748B");
+
+    // selected building ring
+    map.addLayer({ id: "pt-sel", type: "circle", source: "sel", paint: {
+     "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 17, 16, 24], "circle-color": "rgba(58,110,165,0.14)",
+     "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" }});
 
     map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
      "circle-color": colorMatch, "circle-opacity": 0.16, "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 18, 16, 26] }});
@@ -151,7 +212,14 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     map.on("click", "pt-hit", (e: any) => {
      if (modeRef.current === "zone") return;
      const p = e.features[0].properties;
-     setSel({ ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), listings: Number(p.listings) || 0 });
+     const b: MapBuilding = { ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), listings: Number(p.listings) || 0 };
+     setSel(b);
+     if (!inViewRef.current.some((x) => x.id === b.id)) {
+      const full = buildings.find((x) => x.id === b.id);
+      if (full) { inViewRef.current = [full, ...inViewRef.current].slice(0, 40); setInView(inViewRef.current); }
+     }
+     selectBuilding(b.id, false);
+     setTimeout(() => scrollRailTo(b.id), 40);
     });
     map.on("click", "cl", (e: any) => {
      const f = map.queryRenderedFeatures(e.point, { layers: ["cl"] })[0];
@@ -167,11 +235,17 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
      recomputeZone();
     });
 
+    // keep the mobile carousel in sync as the user moves the map (skip our own programmatic pans)
+    map.on("moveend", () => {
+     if (programmaticRef.current) { programmaticRef.current = false; return; }
+     refreshInView();
+    });
+
     try {
      const lons = buildings.map((b) => b.lng), lats = buildings.map((b) => b.lat);
      map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 70, maxZoom: 12.5, duration: 0 });
     } catch {}
-    setReady(true); setTimeout(() => { try { map.resize(); } catch {} }, 60);
+    setReady(true); setTimeout(() => { try { map.resize(); } catch {} refreshInView(); }, 120);
    });
   })();
   return () => { cancelled = true; if (ro) ro.disconnect(); if (map) map.remove(); };
@@ -184,19 +258,21 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   map.getSource("b").setData(buildFC(filtered()));
   map.getSource("all").setData(buildFC(filtered()));
   if (modeRef.current === "zone") recomputeZone();
+  else refreshInView();
  }, [active]);
 
  // mode switching
  useEffect(() => {
   modeRef.current = mode;
   const map = mapRef.current; if (!map || !map.getLayer || !map.getLayer("heat")) return;
-  const pinLayers = ["cl-halo", "cl", "cl-count", "pt-glow", "pt", "pt-price", "pt-hit"];
+  const pinLayers = ["cl-halo", "cl", "cl-count", "pt-sel", "pt-glow", "pt", "pt-price", "pt-hit"];
   const showPins = mode !== "heat";
   pinLayers.forEach((id) => { try { map.setLayoutProperty(id, "visibility", showPins ? "visible" : "none"); } catch {} });
   try { map.setLayoutProperty("heat", "visibility", mode === "heat" ? "visible" : "none"); } catch {}
   map.getCanvas().style.cursor = mode === "zone" ? "crosshair" : "";
   if (mode !== "zone") clearZone();
-  if (mode !== "pins") setSel(null);
+  if (mode !== "pins") { setSel(null); selectBuilding(null, false); inViewRef.current = []; setInView([]); }
+  else refreshInView();
  }, [mode]);
 
  const shown = filtered().length;
@@ -204,6 +280,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
  return (
   <div className="relative overflow-hidden rounded-2xl border border-line shadow-card">
+   <style>{`.map-rail::-webkit-scrollbar{display:none}.map-rail{scrollbar-width:none}`}</style>
    <div ref={ref} className="h-[68vh] min-h-[440px] w-full bg-ivory-2" />
 
    {/* loading overlay */}
@@ -246,15 +323,50 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     )}
    </div>
 
-   {/* result count */}
+   {/* result count (desktop; on mobile the carousel implies the set) */}
    {ready && mode !== "zone" && (
-    <div className="pointer-events-none absolute bottom-3 start-3 z-10 rounded-full bg-charcoal/85 px-3 py-1 text-[11px] text-ivory backdrop-blur">{shown} {t.results}</div>
+    <div className="pointer-events-none absolute bottom-3 start-3 z-10 hidden rounded-full bg-charcoal/85 px-3 py-1 text-[11px] text-ivory backdrop-blur sm:block">{shown} {t.results}</div>
    )}
 
-   {/* detail panel */}
+   {/* mobile synced carousel: swipe cards -> map pans, tap a pin -> rail scrolls */}
+   {ready && mode === "pins" && inView.length > 0 && (
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 sm:hidden">
+     <div className="mx-3 mb-1.5 inline-flex rounded-full bg-charcoal/80 px-2.5 py-0.5 text-[10px] text-ivory backdrop-blur">{L.swipeHint}</div>
+     <div ref={railRef} onScroll={onRailScroll} className="map-rail pointer-events-auto flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-3 pb-3" style={{ WebkitOverflowScrolling: "touch" }}>
+      {inView.map((b) => {
+       const on = b.id === selId;
+       return (
+        <article key={b.id} data-bid={b.id}
+         onClick={(e) => { if ((e.target as HTMLElement).closest("a")) return; selectBuilding(b.id, true); scrollRailTo(b.id); }}
+         className="w-[82%] max-w-[320px] shrink-0 snap-center cursor-pointer">
+         <div className={`flex overflow-hidden rounded-2xl border bg-white shadow-lift transition ${on ? "border-signal ring-2 ring-signal/35" : "border-line"}`}>
+          <img src={photoFor(b.asset, b.id)} alt="" className="h-[96px] w-[96px] shrink-0 object-cover" />
+          <div className="min-w-0 flex-1 p-2.5">
+           <div className="truncate font-display text-[14px] leading-tight text-charcoal">{b.name}</div>
+           <div className="mt-0.5 truncate text-[11.5px] text-charcoal/55">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
+           {b.band != null ? (
+            <div className="mt-1 flex items-baseline gap-1">
+             <span className="font-display text-[16px] text-charcoal">{Math.round(b.band).toLocaleString()}</span>
+             <span className="text-[10px] text-charcoal/50">{unitFmt(b.unit, locale)}</span>
+            </div>
+           ) : (<div className="mt-1 text-[11px] text-charcoal/40">{t.noData}</div>)}
+           <div className="mt-1 flex items-center justify-between">
+            <span className="text-[11px] text-charcoal/60">{b.listings} {t.available}</span>
+            <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} →</a>
+           </div>
+          </div>
+         </div>
+        </article>
+       );
+      })}
+     </div>
+    </div>
+   )}
+
+   {/* detail panel (desktop) */}
    {sel && (
-    <div className={`absolute bottom-0 z-20 w-full sm:bottom-3 sm:w-[330px] ${side === "right" ? "sm:right-3" : "sm:left-3"}`}>
-     <div className="overflow-hidden rounded-t-2xl border border-line bg-white shadow-lift sm:rounded-2xl">
+    <div className={`absolute bottom-3 z-20 hidden w-[330px] sm:block ${side === "right" ? "right-3" : "left-3"}`}>
+     <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-lift">
       <div className="relative h-32">
        <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
        <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
