@@ -186,6 +186,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           </div>
          );
         })()}
+        {m.handoffDistrict && (
+         <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600 }}>
+          <Icon.search size={14} />{ar ? `اعرض العروض الموثّقة في ${m.handoffLabel || ""}` : `See verified listings in ${m.handoffLabel || "this district"}`}
+         </Link>
+        )}
         {m.results && m.results.length > 0 && (
          <div className="col gap10">
           {m.results.slice(0, 4).map((l) => {

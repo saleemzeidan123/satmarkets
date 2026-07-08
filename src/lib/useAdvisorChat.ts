@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { addWatch } from "@/lib/watches";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
-export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; median: number; high: number; unit?: string }; quoted?: number | null; }
+export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; median: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; }
 
 /**
  * Shared advisor conversation state: /api/advisor first ({query, history}),
@@ -50,6 +50,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
      const qn = mnum ? parseFloat(mnum[0].replace(/,/g, "")) : NaN;
      extra.band = { low: Number(aj.band.band_low), median: Number(aj.band.median), high: Number(aj.band.band_high), unit: aj.band.unit };
      extra.quoted = isFinite(qn) && qn > 0 ? qn : null;
+     if (aj.band.district_id) { extra.handoffDistrict = String(aj.band.district_id); extra.handoffAsset = aj.band.asset_type || null; extra.handoffLabel = aj.band.district_label || null; }
     }
     setMsgs((m) => [...m, { role: "a", text: aj.message, ...extra }]);
     setBusy(false);
