@@ -5,7 +5,7 @@ import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 
-type SegRow = { district_label: string; district_label_ar: string | null; asset_type: string; segment: string; band_low: string; band_high: string; median: string; unit: string; period: string; source: string };
+type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; median: string; unit: string; period: string; source: string };
 
 const SEG_LABEL: Record<string, [string, string]> = {
  "office|grade_a": ["Office · Grade A", "مكاتب · الفئة A"],
@@ -105,7 +105,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
     ` ${activeRow.period}, published market benchmarks attributed to source (JLL, CBRE, Knight Frank and peers). Indicative, not advice.`;
   }
-  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, median: med, high: hi, unit: activeRow.unit }, quoted: r }]);
+  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, median: med, high: hi, unit: activeRow.unit }, quoted: r, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
  }
 
  const started = msgs.length > 0;
