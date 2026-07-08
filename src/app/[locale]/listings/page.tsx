@@ -193,7 +193,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <input name="q" defaultValue={searchParams.q || ""} placeholder={ar ? "صف ما تحتاجه، مثل: مكتب فئة A مجهّز في العليا بأقل من 1,600، بنحو 300 م²" : "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
       </form>
-      <div style={{ marginTop: 16 }}>
+      <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>

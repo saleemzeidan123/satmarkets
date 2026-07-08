@@ -311,3 +311,8 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   .lst-filterpills>button{flex:0 0 auto;}
   .lst-filterpills>button[style*="auto"]{margin-inline-start:0 !important;}
 }
+
+/* Sticky filter bar on mobile (filters stay put while the list scrolls) */
+@media(max-width:1023px){
+  .lst-filterwrap{position:sticky;top:56px;z-index:30;background:rgba(246,248,251,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding-top:8px;padding-bottom:8px;}
+}
