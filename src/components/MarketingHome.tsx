@@ -79,7 +79,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   popular: "الأكثر طلباً:",
   chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
   micro1: "توثيق المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "مرخّصة من الهيئة العامة للعقار ومتوافقة مع نظام حماية البيانات",
-  stat: [[stats.listings, "عروض موثّقة"], ["100%", "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string,string][],
+  stat: [[stats.listings, "عروض موثّقة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string,string][],
   exEye: "المنصّة",
   exH: "أربع وظائف، في مكان محايد واحد",
   exP: "لا أحد غيرنا في المملكة يجمع الوظائف الأربع معاً. هذا هو جوهر المنصّة.",
