@@ -1,468 +1,218 @@
 "use client";
-
 // src/app/[locale]/ops/page.tsx
-// SAT Markets - Data Operations simulation console (Slice 2, bilingual EN/AR).
-// SELF-CONTAINED. All data below is SYNTHETIC sample data for testing. Never production.
-// Shows: source health, inbound feeds as they arrive, ingestion run log, reconciliation,
-// how it appears on the platform (with click-through lineage), verification gate, thin-sample watch, reports.
+// SAT Markets - Data Operations simulation console (Slice 3, bilingual EN/AR).
+// Adds: role switcher (Viewer/Reviewer/Admin), management actions (approve/reject/hold/force-thin)
+// with a required reason and an in-memory audit trail, and a stale-source alerts panel.
+// All data is SYNTHETIC. Never production.
 
 import { useMemo, useState } from "react";
 
-export const dynamic = "force-dynamic";
-
 type Seg = "blended" | "grade_a" | "grade_b" | "modern";
-
-type IndexRow = {
-  district: string; districtAr: string;
-  asset: string; assetAr: string;
-  segment: Seg; segmentEn: string; segmentAr: string;
-  low: number; median: number; high: number;
-  sufficient: boolean;
-  sourceType: "rega" | "broker";
-  period: string;
-  source: string; sourceAr: string;
-  basis: string; basisAr: string;
-  districtResolved: boolean;
-  tag?: "disagreement" | "restated";
-  tagAr?: string;
+type Row = {
+  district: string; districtAr: string; asset: string; assetAr: string;
+  segment: Seg; segEn: string; segAr: string;
+  low: number; median: number; high: number; sufficient: boolean;
+  src: "rega" | "broker"; period: string; source: string; sourceAr: string;
+  basis: string; basisAr: string; resolved: boolean; note?: string; noteAr?: string;
 };
 
-type Listing = {
-  ref: string; district: string; districtAr: string; asset: string; assetAr: string;
-  deal: string; dealAr: string; nafath: boolean; permit: string | null;
-  deed: "valid" | "not_found" | "pending"; asking: number | null;
-};
-
-type Source = { name: string; nameAr: string; cadence: string; cadenceAr: string; last: string; status: "fresh" | "attention"; note: string; noteAr: string };
-
-type ScenarioKey = "thinDistrict" | "failedDeed" | "brokersDisagree" | "staleRega" | "regaRestatement";
-
-const INDEX: IndexRow[] = [
-  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 1200, median: 1700, high: 2200, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "412 transactions", basisAr: "412 صفقة", districtResolved: true },
-  { district: "Al Malaz", districtAr: "الملز", asset: "Office", assetAr: "مكاتب", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 700, median: 980, high: 1300, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "208 transactions", basisAr: "208 صفقة", districtResolved: true },
-  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 1000, median: 1350, high: 1800, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "151 transactions", basisAr: "151 صفقة", districtResolved: true },
-  { district: "Al Olaya", districtAr: "العليا", asset: "Retail", assetAr: "تجزئة", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 1800, median: 2600, high: 3600, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "96 transactions", basisAr: "96 صفقة", districtResolved: true },
-  { district: "Granada", districtAr: "غرناطة", asset: "Retail", assetAr: "تجزئة", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 1300, median: 1900, high: 2600, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "44 transactions", basisAr: "44 صفقة", districtResolved: true },
-  { district: "An Narjis", districtAr: "النرجس", asset: "Office", assetAr: "مكاتب", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 600, median: 760, high: 980, sufficient: false, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "7 transactions, below threshold", basisAr: "7 صفقات، دون الحد", districtResolved: false },
-  { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "blended", segmentEn: "Blended", segmentAr: "مجمع", low: 180, median: 240, high: 320, sufficient: true, sourceType: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)", basis: "63 transactions", basisAr: "63 صفقة", districtResolved: true },
-  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segmentEn: "Grade A", segmentAr: "الفئة أ", low: 1750, median: 2043, high: 2500, sufficient: true, sourceType: "broker", period: "2026-Q1", source: "Published benchmarks: CBRE, JLL, Knight Frank", sourceAr: "مراجع منشورة: CBRE و JLL و Knight Frank", basis: "3 sources agree within tolerance", basisAr: "3 مصادر متوافقة ضمن الحد", districtResolved: true },
-  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_b", segmentEn: "Grade B", segmentAr: "الفئة ب", low: 1100, median: 1300, high: 1550, sufficient: false, sourceType: "broker", period: "2026-Q1", source: "Published benchmarks: JLL", sourceAr: "مراجع منشورة: JLL", basis: "single source", basisAr: "مصدر واحد", districtResolved: true },
-  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segmentEn: "Grade A", segmentAr: "الفئة أ", low: 1300, median: 1500, high: 1850, sufficient: false, sourceType: "broker", period: "2026-Q1", source: "Published benchmarks: JLL", sourceAr: "مراجع منشورة: JLL", basis: "single source", basisAr: "مصدر واحد", districtResolved: true },
-  { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "modern", segmentEn: "Modern", segmentAr: "حديثة", low: 190, median: 235, high: 300, sufficient: false, sourceType: "broker", period: "2026-Q1", source: "Published benchmarks: CBRE", sourceAr: "مراجع منشورة: CBRE", basis: "single source", basisAr: "مصدر واحد", districtResolved: true },
+const BASE: Row[] = [
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1200, median: 1700, high: 2200, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "412 transactions", basisAr: "412 صفقة", resolved: true },
+  { district: "Al Malaz", districtAr: "الملز", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 700, median: 980, high: 1300, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "208 transactions", basisAr: "208 صفقة", resolved: true },
+  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1000, median: 1350, high: 1800, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "151 transactions", basisAr: "151 صفقة", resolved: true },
+  { district: "Al Olaya", districtAr: "العليا", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1800, median: 2600, high: 3600, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "96 transactions", basisAr: "96 صفقة", resolved: true },
+  { district: "Granada", districtAr: "غرناطة", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1300, median: 1900, high: 2600, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "44 transactions", basisAr: "44 صفقة", resolved: true },
+  { district: "An Narjis", districtAr: "النرجس", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 600, median: 760, high: 980, sufficient: false, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "7 transactions, below threshold", basisAr: "7 صفقات، دون الحد", resolved: false },
+  { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 180, median: 240, high: 320, sufficient: true, src: "rega", period: "2026-06", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "63 transactions", basisAr: "63 صفقة", resolved: true },
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1750, median: 2043, high: 2500, sufficient: true, src: "broker", period: "2026-Q1", source: "Published: CBRE, JLL, Knight Frank", sourceAr: "منشور: CBRE و JLL و Knight Frank", basis: "3 sources agree", basisAr: "3 مصادر متوافقة", resolved: true },
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_b", segEn: "Grade B", segAr: "الفئة ب", low: 1100, median: 1300, high: 1550, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: JLL", sourceAr: "منشور: JLL", basis: "single source", basisAr: "مصدر واحد", resolved: true },
+  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1300, median: 1500, high: 1850, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: JLL", sourceAr: "منشور: JLL", basis: "single source", basisAr: "مصدر واحد", resolved: true },
+  { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "modern", segEn: "Modern", segAr: "حديثة", low: 190, median: 235, high: 300, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: CBRE", sourceAr: "منشور: CBRE", basis: "single source", basisAr: "مصدر واحد", resolved: true },
 ];
 
-const LISTINGS: Listing[] = [
-  { ref: "SAT-1847", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256841", deed: "valid", asking: 1550 },
-  { ref: "SAT-1902", district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256990", deed: "not_found", asking: 205 },
-  { ref: "SAT-1955", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257050", deed: "pending", asking: null },
+type Scn = "thin" | "deed" | "disagree" | "stale" | "restate";
+const SCENARIOS: { id: Scn; en: string; ar: string; expEn: string; expAr: string }[] = [
+  { id: "thin", en: "Thin district", ar: "حي قليل العينة", expEn: "Granada retail drops below threshold and shows Thin sample.", expAr: "تجزئة غرناطة تنخفض دون الحد وتظهر كعينة قليلة." },
+  { id: "deed", en: "Failed deed", ar: "صك غير صالح", expEn: "SAT-1847 deed fails; it moves from Published to Held. 0 published.", expAr: "يفشل صك SAT-1847؛ ينتقل من منشور إلى محجوز. 0 منشور." },
+  { id: "disagree", en: "Brokers disagree", ar: "اختلاف الوسطاء", expEn: "Al Olaya Grade A becomes insufficient and the broker source card turns amber.", expAr: "الفئة أ للعليا تصبح غير كافية وبطاقة مصدر الوسطاء تتحول للكهرماني." },
+  { id: "stale", en: "Stale REGA feed", ar: "تغذية ريجا قديمة", expEn: "REGA is a month late; source health flags it Attention and raises an alert.", expAr: "ريجا متأخرة شهراً؛ حالة المصدر تُعلَّم انتباه وتُصدر تنبيهاً." },
+  { id: "restate", en: "REGA restatement", ar: "تصحيح ريجا", expEn: "REGA restates Al Olaya office median 1,700 to 1,650, tagged restated.", expAr: "ريجا تصحح وسيط مكاتب العليا من 1,700 إلى 1,650، موسوم مُصحَّح." },
 ];
 
-const SOURCES: Source[] = [
-  { name: "REGA / Ejar Rental Index", nameAr: "مؤشر إيجار / الهيئة العامة للعقار", cadence: "Dated, monthly", cadenceAr: "مؤرخ، شهري", last: "2026-06", status: "fresh", note: "7 rows received", noteAr: "7 صفوف مستلمة" },
-  { name: "Broker benchmarks (JLL/CBRE/KF)", nameAr: "مراجع الوسطاء (JLL/CBRE/KF)", cadence: "Dated, quarterly", cadenceAr: "مؤرخ، ربعي", last: "2026-Q1", status: "fresh", note: "4 rows received", noteAr: "4 صفوف مستلمة" },
-  { name: "SPL National Address", nameAr: "العنوان الوطني (سبل)", cadence: "Live API", cadenceAr: "مباشر", last: "live", status: "attention", note: "1 district unresolved (An Narjis)", noteAr: "حي واحد غير محلول (النرجس)" },
-  { name: "Wathq (deeds)", nameAr: "واثق (الصكوك)", cadence: "Live API, per listing", cadenceAr: "مباشر، لكل إعلان", last: "live", status: "attention", note: "1 deed not found", noteAr: "صك واحد غير موجود" },
-  { name: "Nafath (identity)", nameAr: "نفاذ (الهوية)", cadence: "Live OIDC", cadenceAr: "مباشر", last: "live", status: "fresh", note: "all advertisers verified", noteAr: "جميع المعلنين موثّقون" },
-  { name: "REGA advertising permit", nameAr: "رخصة الإعلان (العقار)", cadence: "Live inquiry", cadenceAr: "استعلام مباشر", last: "live", status: "fresh", note: "all permits valid", noteAr: "جميع الرخص سارية" },
-  { name: "GASTAT / SAMA (context)", nameAr: "الإحصاء / ساما (سياق)", cadence: "Dated, monthly", cadenceAr: "مؤرخ، شهري", last: "2026-06", status: "fresh", note: "context only, not index", noteAr: "سياق فقط، ليس المؤشر" },
-  { name: "Foursquare / Mapbox (geo)", nameAr: "Foursquare / Mapbox (جغرافيا)", cadence: "Snapshot / live", cadenceAr: "لقطة / مباشر", last: "2026-06", status: "fresh", note: "POI + isochrones", noteAr: "نقاط اهتمام + عزل زمني" },
-];
+type Role = "viewer" | "reviewer" | "admin";
+const ROLES: Role[] = ["viewer", "reviewer", "admin"];
+type Audit = { ts: string; role: Role; action: string; target: string; reason: string };
 
-function fmt(n: number): string { return n.toLocaleString("en-US"); }
-
-function buildRows(period: string, scenarios: ScenarioKey[]): IndexRow[] {
-  const rows = INDEX.map((row) => ({ ...row }));
-  if (period === "2026-07") {
-    rows.push({
-      district: "An Nakheel",
-      districtAr: "النخيل",
-      asset: "Office",
-      assetAr: "مكاتب",
-      segment: "blended",
-      segmentEn: "Blended",
-      segmentAr: "مجمع",
-      low: 900,
-      median: 1150,
-      high: 1500,
-      sufficient: true,
-      sourceType: "rega",
-      period: "2026-07",
-      source: "REGA Rental Index (Ejar)",
-      sourceAr: "مؤشر إيجار (الهيئة العامة للعقار)",
-      basis: "58 transactions",
-      basisAr: "58 صفقة",
-      districtResolved: true,
-    });
-  }
-
-  if (scenarios.includes("thinDistrict")) {
-    const target = rows.find((row) => row.district === "Granada" && row.asset === "Retail" && row.segment === "blended");
-    if (target) {
-      target.sufficient = false;
-    }
-  }
-
-  if (scenarios.includes("brokersDisagree")) {
-    const target = rows.find((row) => row.district === "Al Olaya" && row.asset === "Office" && row.segment === "grade_a" && row.sourceType === "broker");
-    if (target) {
-      target.sufficient = false;
-      target.tag = "disagreement";
-      target.tagAr = "اختلاف";
-    }
-  }
-
-  if (scenarios.includes("regaRestatement")) {
-    const target = rows.find((row) => row.district === "Al Olaya" && row.asset === "Office" && row.segment === "blended" && row.sourceType === "rega");
-    if (target) {
-      target.median = 1650;
-      target.tag = "restated";
-      target.tagAr = "مُعاد صياغته";
-    }
-  }
-
-  return rows;
-}
-
-function buildListings(scenarios: ScenarioKey[]): Listing[] {
-  const listings = LISTINGS.map((listing) => ({ ...listing }));
-  if (scenarios.includes("failedDeed")) {
-    const target = listings.find((listing) => listing.ref === "SAT-1847");
-    if (target) {
-      target.deed = "not_found";
-    }
-  }
-  return listings;
-}
-
-function buildSources(period: string, scenarios: ScenarioKey[]): Source[] {
-  const sources = SOURCES.map((source) => ({ ...source }));
-  const rega = sources.find((source) => source.name === "REGA / Ejar Rental Index");
-  if (rega) {
-    rega.last = scenarios.includes("staleRega") ? "2026-05" : period;
-    rega.status = scenarios.includes("staleRega") ? "attention" : "fresh";
-    rega.note = scenarios.includes("staleRega") ? `stale, expected ${period}` : "7 rows received";
-    rega.noteAr = scenarios.includes("staleRega") ? `قديم، متوقع ${period}` : "7 صفوف مستلمة";
-  }
-
-  const broker = sources.find((source) => source.name === "Broker benchmarks (JLL/CBRE/KF)");
-  if (broker) {
-    broker.status = scenarios.includes("brokersDisagree") ? "attention" : "fresh";
-    broker.note = scenarios.includes("brokersDisagree") ? "1 broker disagreement" : "4 rows received";
-    broker.noteAr = scenarios.includes("brokersDisagree") ? "اختلاف واحد بين الوسطاء" : "4 صفوف مستلمة";
-  }
-
-  return sources;
-}
+function fmt(n: number) { return n.toLocaleString("en-US"); }
+const keyOf = (r: Row) => r.district + "|" + r.asset + "|" + r.segment;
 
 export default function OpsPage({ params }: { params: { locale: string } }) {
   const ar = params.locale === "ar";
   const t = (en: string, arr: string) => (ar ? arr : en);
-  const [simPeriod, setSimPeriod] = useState("2026-06");
-  const [activeScenarios, setActiveScenarios] = useState<ScenarioKey[]>([]);
+  const [period, setPeriod] = useState("2026-06");
+  const [scn, setScn] = useState<Record<Scn, boolean>>({ thin: false, deed: false, disagree: false, stale: false, restate: false });
+  const toggle = (id: Scn) => setScn((s) => ({ ...s, [id]: !s[id] }));
+  const [role, setRole] = useState<Role>("viewer");
+  const [audit, setAudit] = useState<Audit[]>([]);
+  const [forcedThin, setForcedThin] = useState<Record<string, string>>({});
+  const [listingOv, setListingOv] = useState<Record<string, string>>({});
+  const [acked, setAcked] = useState<Record<string, boolean>>({});
 
-  const rows = useMemo(() => buildRows(simPeriod, activeScenarios), [simPeriod, activeScenarios]);
-  const listings = useMemo(() => buildListings(activeScenarios), [activeScenarios]);
-  const sources = useMemo(() => buildSources(simPeriod, activeScenarios), [simPeriod, activeScenarios]);
+  const can = (a: "review" | "admin") => (a === "review" ? role !== "viewer" : role === "admin");
+  const log = (action: string, target: string, reason: string) => setAudit((l) => [{ ts: new Date().toISOString().slice(0, 19).replace("T", " "), role, action, target, reason }, ...l]);
+  const ask = (label: string) => (typeof window === "undefined" ? "" : window.prompt(label) || "");
 
-  const published = rows.filter((row) => row.sufficient);
-  const thin = rows.filter((row) => !row.sufficient);
-  const publishedListings = listings.filter((listing) => listing.nafath && listing.permit && listing.deed === "valid");
-  const unresolved = rows.filter((row) => !row.districtResolved);
-  const expectedOutcomeText = activeScenarios.length > 0 ? activeScenarios.map((scenario) => scenarioDetails[scenario][ar ? "outcomeAr" : "outcome"]).join(" | ") : "";
+  const index = useMemo(() => {
+    let rows: Row[] = BASE.map((r) => ({ ...r }));
+    if (period === "2026-07") rows.push({ district: "An Nakheel", districtAr: "النخيل", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 900, median: 1150, high: 1500, sufficient: true, src: "rega", period: "2026-07", source: "REGA Rental Index (Ejar)", sourceAr: "مؤشر إيجار", basis: "58 transactions", basisAr: "58 صفقة", resolved: true });
+    if (scn.thin) rows = rows.map((r) => (r.district === "Granada" && r.asset === "Retail" ? { ...r, sufficient: false, basis: "9 transactions, below threshold", basisAr: "9 صفقات، دون الحد" } : r));
+    if (scn.disagree) rows = rows.map((r) => (r.district === "Al Olaya" && r.segment === "grade_a" ? { ...r, sufficient: false, basis: "sources outside tolerance", basisAr: "مصادر خارج الحد", note: "disagreement", noteAr: "اختلاف" } : r));
+    if (scn.restate) rows = rows.map((r) => (r.district === "Al Olaya" && r.asset === "Office" && r.segment === "blended" ? { ...r, median: 1650, note: "restated", noteAr: "مُصحَّح" } : r));
+    rows = rows.map((r) => (forcedThin[keyOf(r)] ? { ...r, sufficient: false, note: "forced thin", noteAr: "أُجبر قليل" } : r));
+    return rows;
+  }, [period, scn, forcedThin]);
 
-  const verdictFor = (listing: Listing): { label: string; labelAr: string; tone: string } | null => {
-    if (listing.asking == null) return null;
-    const band = rows.find((row) => row.district === listing.district && row.asset === listing.asset && row.sufficient && (row.segment === "grade_a" || row.segment === "blended"));
-    if (!band) return null;
-    const delta = Math.round(((listing.asking - band.median) / band.median) * 100);
-    if (delta <= -8) return { label: "Below median (" + delta + "%)", labelAr: "دون الوسيط (" + delta + "%)", tone: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-    if (delta >= 8) return { label: "Above median (+" + delta + "%)", labelAr: "فوق الوسيط (+" + delta + "%)", tone: "text-rose-700 bg-rose-50 border-rose-200" };
-    return { label: "Within band (" + delta + "%)", labelAr: "ضمن النطاق (" + delta + "%)", tone: "text-slate-700 bg-slate-50 border-slate-200" };
+  const listings = useMemo(() => {
+    const deedOk = !scn.deed;
+    return [
+      { ref: "SAT-1847", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256841", deed: deedOk ? "valid" : "not_found", asking: 1550 },
+      { ref: "SAT-1902", district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256990", deed: "not_found", asking: 205 },
+      { ref: "SAT-1955", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257050", deed: "pending", asking: null as number | null },
+    ];
+  }, [scn.deed]);
+
+  const sources = useMemo(() => ([
+    { name: "REGA / Ejar Rental Index", nameAr: "مؤشر إيجار", cad: t("Dated, monthly", "مؤرخ، شهري"), last: scn.stale ? "2026-05" : period, ok: !scn.stale, note: scn.stale ? t("stale, expected " + period, "قديمة، المتوقع " + period) : t("rows received", "صفوف مستلمة") },
+    { name: "Broker benchmarks", nameAr: "مراجع الوسطاء", cad: t("Dated, quarterly", "مؤرخ، ربعي"), last: "2026-Q1", ok: !scn.disagree, note: scn.disagree ? t("disagreement flagged", "اختلاف موسوم") : t("rows received", "صفوف مستلمة") },
+    { name: "SPL National Address", nameAr: "العنوان الوطني (سبل)", cad: t("Live API", "مباشر"), last: "live", ok: true, note: t("1 district unresolved (An Narjis)", "حي غير محلول (النرجس)") },
+    { name: "Wathq (deeds)", nameAr: "واثق (الصكوك)", cad: t("Live, per listing", "مباشر، لكل إعلان"), last: "live", ok: true, note: scn.deed ? t("2 deeds failed", "صكان غير صالحين") : t("1 deed not found", "صك غير موجود") },
+    { name: "Nafath (identity)", nameAr: "نفاذ (الهوية)", cad: t("Live OIDC", "مباشر"), last: "live", ok: true, note: t("all verified", "الكل موثّق") },
+    { name: "REGA advertising permit", nameAr: "رخصة الإعلان", cad: t("Live inquiry", "استعلام مباشر"), last: "live", ok: true, note: t("all valid", "الكل سارٍ") },
+    { name: "GASTAT / SAMA (context)", nameAr: "الإحصاء / ساما", cad: t("Dated, monthly", "مؤرخ، شهري"), last: period, ok: true, note: t("context only", "سياق فقط") },
+    { name: "Foursquare / Mapbox (geo)", nameAr: "Foursquare / Mapbox", cad: t("Snapshot / live", "لقطة / مباشر"), last: period, ok: true, note: t("POI + isochrones", "نقاط + عزل زمني") },
+  ]), [period, scn, ar]);
+
+  const listStatus = (l: { ref: string; nafath: boolean; permit: string | null; deed: string }) => {
+    if (listingOv[l.ref]) return listingOv[l.ref];
+    return l.nafath && !!l.permit && l.deed === "valid" ? "published" : "held";
   };
+  const alerts = sources.filter((s) => !s.ok && !acked[s.name]);
+  const suffCount = index.filter((r) => r.sufficient).length;
+  const pubCount = listings.filter((l) => listStatus(l) === "published").length;
+  const thinList = index.filter((r) => !r.sufficient);
 
-  const toggleScenario = (scenario: ScenarioKey) => {
-    setActiveScenarios((current) => current.includes(scenario) ? current.filter((item) => item !== scenario) : [...current, scenario]);
-  };
+  const doListing = (ref: string, status: string) => { if (!can("review")) return; const reason = ask(t("Reason for " + status + " on " + ref, "سبب " + status + " على " + ref)); if (!reason) return; setListingOv((o) => ({ ...o, [ref]: status })); log(status, ref, reason); };
+  const doForceThin = (r: Row) => { if (!can("review")) return; const reason = ask(t("Reason to force thin", "سبب الإجبار على قليل")); if (!reason) return; setForcedThin((f) => ({ ...f, [keyOf(r)]: reason })); log("force_thin", keyOf(r), reason); };
+  const doAck = (name: string) => { if (!can("review")) return; const reason = ask(t("Acknowledge note", "ملاحظة الإقرار")); if (!reason) return; setAcked((a) => ({ ...a, [name]: true })); log("acknowledge", name, reason); };
 
   const exportCsv = () => {
-    const lines = [
-      "district,asset,segment,source,period,low,high,median,verdict,tag",
-      ...rows.map((row) => [
-        `"${row.district}"`,
-        `"${row.asset}"`,
-        `"${row.segmentEn}"`,
-        `"${row.source}"`,
-        row.period,
-        row.low,
-        row.high,
-        row.sufficient ? row.median : "Thin sample",
-        row.sufficient ? "Sufficient" : "Thin",
-        row.tag ?? "",
-      ].join(",")),
-    ];
-    const csv = lines.join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "reconciliation.csv";
-    link.click();
-    URL.revokeObjectURL(link.href);
+    const head = "district,asset,segment,low,median,high,sufficient,source,period";
+    const body = index.map((r) => [r.district, r.asset, r.segment, r.low, r.median, r.high, r.sufficient, '"' + r.source + '"', r.period].join(",")).join("\n");
+    const blob = new Blob([head + "\n" + body], { type: "text/csv" });
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "sat-reconciliation-" + period + ".csv"; a.click();
   };
 
-  const H = ({ n, en, arr }: { n: string; en: string; arr: string }) => (
-    <div className="mb-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{n}</p>
-      <h2 className="text-lg font-semibold text-slate-900">{t(en, arr)}</h2>
-    </div>
-  );
+  const H = ({ n, en, arr }: { n: string; en: string; arr: string }) => (<div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{n}</p><h2 className="text-lg font-semibold text-slate-900">{t(en, arr)}</h2></div>);
+  const btn = "rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 disabled:opacity-40";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 space-y-10">
-      <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
-        {t("SAMPLE DATA. This is a data-operations simulation. Everything below is synthetic and never reaches production.", "بيانات عيّنة. هذه محاكاة لعمليات البيانات. كل ما يظهر هنا اصطناعي ولا يصل إلى الإنتاج إطلاقاً.")}
-      </div>
+      <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">{t("SAMPLE DATA. Data-operations simulation. Everything below is synthetic and never reaches production.", "بيانات عيّنة. محاكاة عمليات البيانات. كل ما يظهر هنا اصطناعي ولا يصل إلى الإنتاج إطلاقاً.")}</div>
 
       <header>
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t("Data Operations", "عمليات البيانات")}</p>
         <h1 className="text-2xl font-semibold text-slate-900">{t("Ingestion simulation console", "محاكاة استقبال البيانات")}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t("Simulated period: REGA 2026-06 and broker benchmarks 2026-Q1. Follow each source as it arrives, how it reconciles, how it appears on the platform, and why.", "الفترة المحاكاة: ريجا 2026-06 ومراجع الوسطاء 2026-الربع الأول. تابع كل مصدر عند وصوله، وكيف يُوحَّد، وكيف يظهر على المنصة، ولماذا.")}</p>
+        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t("Advance the period, inject scenarios, act on the data as a Reviewer or Admin, and watch the audit trail. Overrides can only make data more conservative, never promote thin data to sufficient.", "قدّم الفترة، واحقن السيناريوهات، وتصرّف على البيانات كمراجع أو مدير، وتابع سجل التدقيق. التجاوزات تجعل البيانات أكثر تحفظاً فقط، ولا ترفع القليل إلى كافٍ أبداً.")}</p>
       </header>
 
       <section>
-        <H n="00" en="Controls" arr="الضوابط" />
-        <div className="rounded-lg border border-slate-200 p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-sm font-medium text-slate-700">{t("Sim period", "فترة المحاكاة")}</span>
-            <div className="flex gap-2">
-              {(["2026-06", "2026-07"] as const).map((period) => (
-                <button
-                  key={period}
-                  type="button"
-                  onClick={() => setSimPeriod(period)}
-                  className={"rounded-full border px-3 py-1.5 text-sm " + (simPeriod === period ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-700")}
-                >
-                  {period}
-                </button>
-              ))}
-            </div>
-            <button type="button" onClick={exportCsv} className="rounded-full border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700">
-              {t("Reconciliation CSV", "تصدير CSV للتوحيد")}
-            </button>
-          </div>
+        <H n="00" en="Controls" arr="التحكم" />
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-500">{t("Role:", "الدور:")}</span>
+          {ROLES.map((r) => (<button key={r} onClick={() => setRole(r)} className={"rounded border px-3 py-1 text-sm " + (role === r ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700")}>{t(r === "viewer" ? "Viewer" : r === "reviewer" ? "Reviewer" : "Admin", r === "viewer" ? "مشاهد" : r === "reviewer" ? "مراجع" : "مدير")}</button>))}
+          <span className="ms-3 text-xs text-slate-500">{t("Sim period:", "الفترة:")}</span>
+          {["2026-06", "2026-07"].map((p) => (<button key={p} onClick={() => setPeriod(p)} className={"rounded border px-3 py-1 text-sm " + (period === p ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700")}>{p}</button>))}
+          <button onClick={exportCsv} className="ms-2 rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">{t("Reconciliation CSV", "توحيد CSV")}</button>
         </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {SCENARIOS.map((s) => (<button key={s.id} onClick={() => toggle(s.id)} title={ar ? s.expAr : s.expEn} className={"rounded-full border px-3 py-1 text-xs " + (scn[s.id] ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-300 text-slate-600")}>{t(s.en, s.ar)}</button>))}
+        </div>
+        {SCENARIOS.some((s) => scn[s.id]) && (<div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900"><p className="mb-1 font-medium">{t("Active scenarios, expected outcome:", "السيناريوهات النشطة، النتيجة المتوقعة:")}</p><ul className="list-disc space-y-0.5 ps-5">{SCENARIOS.filter((s) => scn[s.id]).map((s) => (<li key={s.id}>{t(s.en, s.ar)}: {t(s.expEn, s.expAr)}</li>))}</ul></div>)}
       </section>
 
       <section>
-        <H n="01" en="Scenario injector" arr="حقن السيناريوهات" />
-        <div className="rounded-lg border border-slate-200 p-4">
-          <div className="flex flex-wrap gap-2">
-            {scenarioOptions.map((scenario) => {
-              const active = activeScenarios.includes(scenario.id);
-              return (
-                <button
-                  key={scenario.id}
-                  type="button"
-                  title={t(scenario.outcome, scenario.outcomeAr)}
-                  onClick={() => toggleScenario(scenario.id)}
-                  className={"rounded-full border px-3 py-1.5 text-sm " + (active ? "border-amber-400 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-700")}
-                >
-                  {t(scenario.label, scenario.labelAr)}
-                </button>
-              );
-            })}
-          </div>
-          {activeScenarios.length > 0 && (
-            <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              <p className="font-semibold">{t("Expected outcome", "النتيجة المتوقعة")}</p>
-              <p className="mt-1">{expectedOutcomeText}</p>
-            </div>
-          )}
-        </div>
+        <H n="01" en="Alerts" arr="التنبيهات" />
+        {alerts.length === 0 ? (<p className="text-sm text-slate-500">{t("All sources fresh. No open alerts.", "جميع المصادر حديثة. لا تنبيهات مفتوحة.")}</p>) : (
+          <div className="space-y-2">{alerts.map((s) => (<div key={s.name} className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"><span>{(ar ? s.nameAr : s.name)}: {s.note}</span><button onClick={() => doAck(s.name)} disabled={!can("review")} className={btn}>{t("Acknowledge", "إقرار")}</button></div>))}</div>
+        )}
       </section>
 
       <section>
         <H n="02" en="Source health" arr="حالة المصادر" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {sources.map((source) => (
-            <div key={source.name} className="rounded-lg border border-slate-200 p-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-slate-900">{t(source.name, source.nameAr)}</p>
-                <span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (source.status === "fresh" ? "bg-emerald-500" : "bg-amber-500")} />
-              </div>
-              <p className="mt-1 text-xs text-slate-500">{t(source.cadence, source.cadenceAr)} · {source.last}</p>
-              <p className="mt-1 text-xs text-slate-600">{t(source.note, source.noteAr)}</p>
-            </div>
-          ))}
+          {sources.map((s) => (<div key={s.name} className="rounded-lg border border-slate-200 p-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-medium text-slate-900">{ar ? s.nameAr : s.name}</p><span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (s.ok ? "bg-emerald-500" : "bg-amber-500")} /></div><p className="mt-1 text-xs text-slate-500">{s.cad} · {s.last}</p><p className="mt-1 text-xs text-slate-600">{s.note}</p></div>))}
         </div>
       </section>
 
       <section>
-        <H n="03" en="Inbound feeds (as delivered)" arr="التغذيات الواردة (كما تصل)" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-lg border border-slate-200">
-            <div className="border-b border-slate-100 px-3 py-2 text-sm font-medium text-slate-700">{t("REGA / Ejar rental index - CSV, monthly", "مؤشر إيجار - CSV، شهري")}</div>
-            <pre className="overflow-x-auto px-3 py-2 text-xs leading-5 text-slate-700" dir="ltr">{`district,asset_type,avg_rent,band_low,band_high,transactions,period\nAl Olaya,office,1700,1200,2200,412,${simPeriod}`}</pre>
-          </div>
-          <div className="rounded-lg border border-slate-200">
-            <div className="border-b border-slate-100 px-3 py-2 text-sm font-medium text-slate-700">{t("Broker benchmarks - CSV from PDF, quarterly", "مراجع الوسطاء - CSV من PDF، ربعي")}</div>
-            <pre className="overflow-x-auto px-3 py-2 text-xs leading-5 text-slate-700" dir="ltr">{`district,asset_type,grade,low,median,high,sources,period\nAl Olaya,office,A,1750,2043,2500,"CBRE;JLL;Knight Frank",2026-Q1`}</pre>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <H n="04" en="Ingestion run log" arr="سجل عملية الاستقبال" />
-        <ol className="space-y-1 text-sm text-slate-700">
-          <li>{t("Received: 7 REGA rows + 4 broker rows = 11 index rows.", "المستلم: 7 صفوف ريجا + 4 صفوف وسطاء = 11 صف مؤشر.")}</li>
-          <li>{t("Validated against SAT schema: 11 / 11 valid (enums, unit sar_sqm_year, required fields).", "التحقق مقابل مخطط سات: 11 / 11 صالحة (القيم، الوحدة، الحقول المطلوبة).")}</li>
-          <li>{t("District resolution (SPL): 10 / 11 resolved. Unresolved: An Narjis (queued for crosswalk).", "توحيد الأحياء (سبل): 10 / 11 محلولة. غير محلول: النرجس (بانتظار المطابقة).")}</li>
-          <li>{t("Sufficiency gate: 7 sufficient, 4 thin (flagged, no firm band).", "بوابة الكفاية: 7 كافية، 4 قليلة (موسومة، بلا نطاق مؤكد).")}</li>
-          <li>{t("Listings: 3 received, 1 published, 2 held for verification.", "الإعلانات: 3 مستلمة، 1 منشور، 2 محجوزة للتحقق.")}</li>
-        </ol>
-      </section>
-
-      <section>
-        <H n="05" en="Reconciliation board" arr="لوحة التوحيد" />
-        <p className="mb-2 text-xs text-slate-500">{t("One row per source per district, asset and segment. REGA and broker rows coexist and are never blended into an unattributed number.", "صف لكل مصدر لكل حي وأصل وشريحة. صفوف ريجا والوسطاء تتعايش ولا تُدمج في رقم بلا مصدر.")}</p>
+        <H n="03" en="Reconciliation board" arr="لوحة التوحيد" />
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Source", "المصدر")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th>
-              </tr>
-            </thead>
+            <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th className="px-3 py-2 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
             <tbody>
-              {rows.map((row, index) => (
-                <tr key={index} className="border-t border-slate-100">
-                  <td className="px-3 py-2 text-slate-900">{ar ? row.districtAr : row.district}{!row.districtResolved && <span className="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800">{t("unresolved", "غير محلول")}</span>}</td>
-                  <td className="px-3 py-2 text-slate-600">{t(row.asset, row.assetAr)} · {t(row.segmentEn, row.segmentAr)}</td>
-                  <td className="px-3 py-2 text-slate-600">{t(row.source, row.sourceAr)} · {row.period}</td>
-                  <td className="px-3 py-2 text-slate-600" dir="ltr">{fmt(row.low)}-{fmt(row.high)}</td>
-                  <td className="px-3 py-2 text-slate-900">{row.sufficient ? fmt(row.median) : t("Thin sample", "عينة قليلة")}</td>
-                  <td className="px-3 py-2">
-                    {row.sufficient ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{t("Sufficient", "كافٍ")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Thin", "قليل")}</span>}
-                    {row.tag && (
-                      <span className={"ms-2 rounded border px-2 py-0.5 text-xs " + (row.tag === "restated" || row.tag === "disagreement" ? "border-rose-300 bg-rose-50 text-rose-700" : "")}>{ar ? row.tagAr : row.tag}</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {index.map((r, i) => (<tr key={i} className="border-t border-slate-100">
+                <td className="px-3 py-2 text-slate-900">{ar ? r.districtAr : r.district}{!r.resolved && <span className="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800">{t("unresolved", "غير محلول")}</span>}</td>
+                <td className="px-3 py-2 text-slate-600">{t(r.asset, r.assetAr)} · {t(r.segEn, r.segAr)}</td>
+                <td className="px-3 py-2 text-slate-600">{ar ? r.sourceAr : r.source} · {r.period}{r.note && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{ar ? r.noteAr : r.note}</span>}</td>
+                <td className="px-3 py-2 text-slate-600" dir="ltr">{fmt(r.low)}–{fmt(r.high)}</td>
+                <td className="px-3 py-2 text-slate-900">{r.sufficient ? fmt(r.median) : t("Thin sample", "عينة قليلة")}</td>
+                <td className="px-3 py-2">{r.sufficient ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{t("Sufficient", "كافٍ")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Thin", "قليل")}</span>}</td>
+                <td className="px-3 py-2">{r.sufficient ? <button onClick={() => doForceThin(r)} disabled={!can("review")} className={btn}>{t("Force thin", "إجبار قليل")}</button> : <span className="text-xs text-slate-400">—</span>}</td>
+              </tr>))}
             </tbody>
           </table>
         </div>
       </section>
 
       <section>
-        <H n="06" en="How it appears on the platform (with lineage)" arr="كيف يظهر على المنصة (مع التتبع)" />
-        <p className="mb-2 text-xs text-slate-500">{t("This is the public Rent Index view. Open Why on any row to trace the exact source behind it.", "هذا عرض مؤشر الإيجارات العام. افتح لماذا على أي صف لتتبع المصدر الدقيق خلفه.")}</p>
-        <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
-          {rows.map((row, index) => (
-            <details key={index} className="group px-3 py-2">
-              <summary className="flex cursor-pointer items-center justify-between gap-3 text-sm">
-                <span className="text-slate-900">{ar ? row.districtAr : row.district} · {t(row.asset, row.assetAr)} · {t(row.segmentEn, row.segmentAr)}</span>
-                <span className="flex items-center gap-2">
-                  <span className="text-slate-900">{row.sufficient ? fmt(row.median) + " " + t("SAR/m2/yr", "ريال/م2/سنة") : t("Thin sample", "عينة قليلة")}</span>
-                  <span className="text-xs text-sky-600 group-open:hidden">{t("Why", "لماذا")}</span>
-                </span>
-              </summary>
-              <div className="mt-2 rounded bg-slate-50 p-2 text-xs text-slate-600">
-                <p>{t("Source", "المصدر")}: {t(row.source, row.sourceAr)}</p>
-                <p>{t("Period", "الفترة")}: {row.period}</p>
-                <p>{t("Band", "النطاق")}: <span dir="ltr">{fmt(row.low)}-{fmt(row.high)}</span> · {t("Basis", "الأساس")}: {t(row.basis, row.basisAr)}</p>
-                <p>{row.sufficient ? t("Passed sufficiency gate, shown as a firm band.", "اجتاز بوابة الكفاية، ويظهر كنطاق مؤكد.") : t("Failed sufficiency gate, shown as thin sample, never a firm number.", "لم يجتز بوابة الكفاية، يظهر كعينة قليلة، وليس رقماً مؤكداً.")}</p>
-                {row.tag && <p className="mt-1 font-medium text-rose-700">{ar ? row.tagAr : row.tag}</p>}
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <H n="07" en="Verification gate queue" arr="طابور بوابة التحقق" />
+        <H n="04" en="Verification gate queue" arr="طابور بوابة التحقق" />
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Deed (Wathq)", "الصك (واثق)")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th>
-              </tr>
-            </thead>
+            <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
             <tbody>
-              {listings.map((listing) => {
-                const ok = listing.nafath && !!listing.permit && listing.deed === "valid";
-                const verdict = verdictFor(listing);
-                return (
-                  <tr key={listing.ref} className="border-t border-slate-100">
-                    <td className="px-3 py-2"><span className="font-medium text-slate-900" dir="ltr">{listing.ref}</span><span className="text-slate-500"> · {ar ? listing.districtAr : listing.district} · {t(listing.asset, listing.assetAr)} · {t(listing.deal, listing.dealAr)}</span></td>
-                    <td className="px-3 py-2">{listing.nafath ? "✓" : "✕"}</td>
-                    <td className="px-3 py-2" dir="ltr">{listing.permit ? listing.permit : "-"}</td>
-                    <td className="px-3 py-2">{listing.deed === "valid" ? t("Valid", "سارٍ") : listing.deed === "not_found" ? t("Not found", "غير موجود") : t("Pending", "قيد الانتظار")}</td>
-                    <td className="px-3 py-2">
-                      {ok ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{t("Published", "منشور")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Held for review", "محجوز للمراجعة")}</span>}
-                      {ok && verdict && <span className={"ms-2 rounded border px-2 py-0.5 text-xs " + verdict.tone}>{ar ? verdict.labelAr : verdict.label}</span>}
-                    </td>
-                  </tr>
-                );
-              })}
+              {listings.map((l) => { const st = listStatus(l); return (<tr key={l.ref} className="border-t border-slate-100">
+                <td className="px-3 py-2"><span className="font-medium text-slate-900" dir="ltr">{l.ref}</span><span className="text-slate-500"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span></td>
+                <td className="px-3 py-2">{l.nafath ? "✓" : "✕"}</td>
+                <td className="px-3 py-2" dir="ltr">{l.permit || "—"}</td>
+                <td className="px-3 py-2">{l.deed === "valid" ? t("Valid", "سارٍ") : l.deed === "not_found" ? t("Not found", "غير موجود") : t("Pending", "قيد الانتظار")}</td>
+                <td className="px-3 py-2">{st === "published" || st === "approved" ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{st === "approved" ? t("Approved", "معتمد") : t("Published", "منشور")}</span> : st === "rejected" ? <span className="rounded bg-rose-50 px-2 py-0.5 text-xs text-rose-700">{t("Rejected", "مرفوض")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Held", "محجوز")}</span>}</td>
+                <td className="px-3 py-2"><div className="flex gap-1"><button onClick={() => doListing(l.ref, "approved")} disabled={!can("review")} className={btn}>{t("Approve", "اعتماد")}</button><button onClick={() => doListing(l.ref, "rejected")} disabled={!can("review")} className={btn}>{t("Reject", "رفض")}</button><button onClick={() => doListing(l.ref, "held")} disabled={!can("review")} className={btn}>{t("Hold", "حجز")}</button></div></td>
+              </tr>); })}
             </tbody>
           </table>
         </div>
+        <p className="mt-2 text-xs text-slate-500">{t("Approve requires all gates to actually pass in a real run; here it is a synthetic reviewer action logged to the audit trail.", "الاعتماد يتطلب اجتياز جميع البوابات فعلياً في تشغيل حقيقي؛ هنا هو إجراء مراجع اصطناعي مسجّل في سجل التدقيق.")}</p>
       </section>
 
       <section>
-        <H n="08" en="Thin-sample watch and crosswalk queue" arr="مراقبة العينات القليلة وطابور المطابقة" />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-lg border border-slate-200 p-3">
-            <p className="mb-2 text-sm font-medium text-slate-700">{t("Thin segments (never shown as a firm band)", "الشرائح القليلة (لا تظهر كنطاق مؤكد)")}</p>
-            <ul className="space-y-1 text-sm text-slate-600">
-              {thin.map((row, index) => (
-                <li key={index}>{ar ? row.districtAr : row.district} · {t(row.asset, row.assetAr)} · {t(row.segmentEn, row.segmentAr)} <span className="text-slate-400">- {t(row.basis, row.basisAr)}</span></li>
-              ))}
-            </ul>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-3">
-            <p className="mb-2 text-sm font-medium text-slate-700">{t("Unresolved districts (SPL crosswalk)", "أحياء غير محلولة (مطابقة سبل)")}</p>
-            <ul className="space-y-1 text-sm text-slate-600">
-              {unresolved.map((row, index) => (
-                <li key={index}>{ar ? row.districtAr : row.district} <span className="text-slate-400">- {t("needs a manual crosswalk to a canonical district id", "يحتاج مطابقة يدوية لمعرّف حي معتمد")}</span></li>
-              ))}
-            </ul>
-          </div>
-        </div>
+        <H n="05" en="Audit trail" arr="سجل التدقيق" />
+        {audit.length === 0 ? (<p className="text-sm text-slate-500">{t("No actions yet. Switch to Reviewer or Admin and act on a row.", "لا إجراءات بعد. بدّل إلى مراجع أو مدير وتصرّف على صف.")}</p>) : (
+          <div className="overflow-x-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("Time", "الوقت")}</th><th className="px-3 py-2 text-start font-medium">{t("Role", "الدور")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "الإجراء")}</th><th className="px-3 py-2 text-start font-medium">{t("Target", "الهدف")}</th><th className="px-3 py-2 text-start font-medium">{t("Reason", "السبب")}</th></tr></thead><tbody>{audit.map((a, i) => (<tr key={i} className="border-t border-slate-100"><td className="px-3 py-2 text-slate-600" dir="ltr">{a.ts}</td><td className="px-3 py-2 text-slate-600">{a.role}</td><td className="px-3 py-2 text-slate-900">{a.action}</td><td className="px-3 py-2 text-slate-600" dir="ltr">{a.target}</td><td className="px-3 py-2 text-slate-600">{a.reason}</td></tr>))}</tbody></table></div>
+        )}
       </section>
 
       <section>
-        <H n="09" en="Reports" arr="التقارير" />
+        <H n="06" en="Reports" arr="التقارير" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{published.length}/{rows.length}</p><p className="text-xs text-slate-500">{t("Index cells sufficient", "خلايا المؤشر الكافية")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{publishedListings.length}/{listings.length}</p><p className="text-xs text-slate-500">{t("Listings passing verification", "إعلانات اجتازت التحقق")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{thin.length}</p><p className="text-xs text-slate-500">{t("Reconciliation exceptions", "استثناءات التوحيد")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{unresolved.length}</p><p className="text-xs text-slate-500">{t("Districts to crosswalk", "أحياء للمطابقة")}</p></div>
+          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{suffCount}/{index.length}</p><p className="text-xs text-slate-500">{t("Index cells sufficient", "خلايا كافية")}</p></div>
+          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{pubCount}/{listings.length}</p><p className="text-xs text-slate-500">{t("Listings published", "إعلانات منشورة")}</p></div>
+          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{audit.length}</p><p className="text-xs text-slate-500">{t("Actions logged", "إجراءات مسجّلة")}</p></div>
+          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{alerts.length}</p><p className="text-xs text-slate-500">{t("Open alerts", "تنبيهات مفتوحة")}</p></div>
         </div>
-        <p className="mt-3 text-xs text-slate-500">{t("Slice 2 now includes a sim clock, a scenario injector, CSV export, and live report totals.", "الشريحة 2 تشمل الآن ساعة محاكاة، وحاقن سيناريوهات، وتصدير CSV، ومجاميع التقارير المباشرة.")}</p>
+        <p className="mt-3 text-xs text-slate-500">{t("Next: persist actions and roles to a real store with auth, and wire these views to a synthetic Supabase branch (live reads instead of inlined fixtures). Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: حفظ الإجراءات والأدوار في مخزن حقيقي مع مصادقة، وربط هذه العروض بفرع Supabase اصطناعي (قراءات مباشرة بدل بيانات مضمّنة). يتطلب مفتاح الخدمة.")}</p>
       </section>
 
-      <footer className="border-t border-slate-100 pt-4 text-xs text-slate-400">
-        {t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}
-      </footer>
+      <footer className="border-t border-slate-100 pt-4 text-xs text-slate-400">{t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}</footer>
     </main>
   );
 }
-
-const scenarioOptions: Array<{ id: ScenarioKey; label: string; labelAr: string; outcome: string; outcomeAr: string }> = [
-  { id: "thinDistrict", label: "Thin district", labelAr: "حي رقيق", outcome: "Granada Retail drops below threshold and renders Thin sample.", outcomeAr: "تتراجع Granada Retail دون الحد وتظهر كعينة قليلة." },
-  { id: "failedDeed", label: "Failed deed", labelAr: "صك غير موجود", outcome: "Listing SAT-1847 changes to not_found and moves from Published to Held.", outcomeAr: "يصبح الإعلان SAT-1847 غير موجود ويُحوّل من منشور إلى محجوز." },
-  { id: "brokersDisagree", label: "Brokers disagree", labelAr: "اختلاف بين الوسطاء", outcome: "Al Olaya Grade A becomes insufficient and the broker source card turns amber.", outcomeAr: "تصبح Al Olaya Grade A غير كافية وتتحول بطاقة المصدر الخاصة بالوسطاء إلى اللون العنبر." },
-  { id: "staleRega", label: "Stale REGA feed", labelAr: "تغذية ريجا قديمة", outcome: "The REGA card shows the prior period and turns amber.", outcomeAr: "تظهر بطاقة ريجا الفترة السابقة وتتحول إلى اللون العنبر." },
-  { id: "regaRestatement", label: "REGA restatement", labelAr: "إعادة صياغة ريجا", outcome: "Al Olaya Office Blended median changes from 1700 to 1650 with a restated tag.", outcomeAr: "يتغير وسيط Al Olaya Office Blended من 1700 إلى 1650 مع علامة إعادة صياغة." },
-];
-
-const scenarioDetails: Record<ScenarioKey, { outcome: string; outcomeAr: string }> = scenarioOptions.reduce((acc, item) => ({ ...acc, [item.id]: { outcome: item.outcome, outcomeAr: item.outcomeAr } }), {} as Record<ScenarioKey, { outcome: string; outcomeAr: string }>);
