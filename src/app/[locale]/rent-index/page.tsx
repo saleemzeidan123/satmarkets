@@ -183,18 +183,32 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
 
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "حرارة الإيجار · حسب الحي" : "Rent heat · by district"}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "الأغمق = ريال/م² أعلى · عيّنة توضيحية" : "Darker = higher SAR/m² · illustrative sample"}</div>
-      <div className="map" style={{ height: 176, borderRadius: 10, marginTop: 16, border: "1px solid var(--silver)" }}>
-       <div className="blob" style={{ left: "14%", top: "20%", width: 70, height: 60, background: "rgba(58,110,165,.28)", borderColor: "rgba(58,110,165,.4)" }} />
-       <div className="blob" style={{ left: "46%", top: "16%", width: 60, height: 55, background: "rgba(58,110,165,.42)", borderColor: "rgba(58,110,165,.5)" }} />
-       <div className="blob" style={{ left: "60%", top: "48%", width: 80, height: 64, background: "rgba(58,110,165,.16)", borderColor: "rgba(58,110,165,.3)" }} />
-       <div className="blob" style={{ left: "24%", top: "54%", width: 64, height: 52, background: "rgba(58,110,165,.10)", borderColor: "rgba(58,110,165,.24)" }} />
+      <div style={{ fontSize: 15, fontWeight: 700 }}>Rent heat · by district</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>Darker = higher SAR/m² · illustrative sample</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
+       {(() => {
+        const vals = districts.map((d) => Number(String(d[2]).replace(/[^0-9.]/g, "")) || 0);
+        const pos = vals.filter((v) => v > 0);
+        const mx = Math.max(...pos, 1);
+        const mn = Math.min(...pos, mx);
+        return districts.map((d, i) => {
+         const v = vals[i];
+         const t = v > 0 ? (v - mn) / (mx - mn || 1) : 0;
+         const a = v > 0 ? 0.14 + t * 0.64 : 0;
+         const light = t > 0.55;
+         return (
+          <div key={i} title={String(d[0]) + " · " + String(d[1])} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
+           <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25, color: light ? "#fff" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d[0]}</div>
+           <div className="mono" style={{ fontSize: 13, fontWeight: 700, marginTop: 6, color: light ? "#fff" : "var(--azure-d)" }}>{v > 0 ? d[2] : "—"}</div>
+          </div>
+         );
+        });
+       })()}
       </div>
       <div className="row between" style={{ marginTop: 14 }}>
-       <span className="mono muted" style={{ fontSize: 10 }}>640</span>
+       <span className="mono muted" style={{ fontSize: 10 }}>Lower</span>
        <div style={{ flex: 1, height: 7, margin: "0 10px", borderRadius: 4, background: "linear-gradient(90deg,var(--azure-wash),var(--azure))" }} />
-       <span className="mono muted" style={{ fontSize: 10 }}>2,050</span>
+       <span className="mono muted" style={{ fontSize: 10 }}>Higher</span>
       </div>
      </div>
 
