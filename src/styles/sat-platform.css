@@ -499,3 +499,37 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: 2px;
 }
 .tabbar a:focus-visible { outline: 2px solid var(--azure); outline-offset: -3px; border-radius: 12px; }
+
+/* ===== Arabic RTL typography fix (Fable advisory 2026-07-09, must-fix 1) =====
+   The tracked mono token style (eyebrow/tag/verified/meta/freeze/etc.) was applied
+   unchanged to Arabic strings: letter-spacing broke cursive joining and the mono face
+   lacks Arabic glyphs. Under RTL, use the Arabic UI face and drop spacing/uppercase.
+   Latin/numeric-only tokens keep the mono look via their own dir="ltr"/bdi wrappers. */
+[dir="rtl"] .eyebrow,
+[dir="rtl"] .tag,
+[dir="rtl"] .verified,
+[dir="rtl"] .freeze,
+[dir="rtl"] .bento-eyebrow,
+[dir="rtl"] .chip,
+[dir="rtl"] .listing .meta,
+[dir="rtl"] .listing .price small,
+[dir="rtl"] .map .marea span,
+[dir="rtl"] .foot h5,
+[dir="rtl"] .foot .bottom,
+[dir="rtl"] .dnav .sec,
+[dir="rtl"] .tier .ribbon,
+[dir="rtl"] .matrix tr.grp td,
+[dir="rtl"] .chatmsg .src,
+[dir="rtl"] .lang,
+[dir="rtl"] .tabs .t {
+  font-family: var(--ar);
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* keep genuinely Latin/numeric tokens (codes, m², SAR, FAL number) mono even under RTL */
+[dir="rtl"] .mono[dir="ltr"],
+[dir="rtl"] bdi[dir="ltr"],
+[dir="rtl"] [dir="ltr"] .mono,
+[dir="rtl"] .tnum {
+  font-family: var(--mono);
+}
