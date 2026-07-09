@@ -1,9 +1,10 @@
 "use client";
 // src/app/[locale]/ops/page.tsx
-// SAT Markets - Data Operations simulation console (Slice 4, bilingual EN/AR).
-// Slice 4 adds (Fable 5 review): verdict basis column, override layering + release,
-// blocked approve on failed hard gate, An Narjis crosswalk resolution, richer audit
-// (operator + before/after + CSV + KSA time), published-cell links, AR term fixes.
+// SAT Markets - Data Operations simulation console (Slice 4 + expanded fixtures, bilingual EN/AR).
+// Data expansion (Fable 5 world-class advisory, section 6): more districts, overlapping
+// source cells (REGA + broker on the same grade so reconciliation actually has overlap),
+// a thin gradient (n=7/11/19/27/29), a second unresolved crosswalk (Qurtubah), and a fuller
+// gate queue (expired permit, duplicate-deed pair, Nafath-unverified, pre-rejected).
 // All data is SYNTHETIC. Never production. See ops/layout.tsx for noindex.
 
 import { useMemo, useState } from "react";
@@ -20,25 +21,44 @@ type Row = {
 
 const REGA = "REGA Rental Index (Ejar)";
 const REGA_AR = "مؤشر ريجا للإيجارات (إيجار)";
+const BJLL = "Published: JLL";
+const BJLL_AR = "منشور: JLL";
+const B3 = "Published: CBRE, JLL, Knight Frank";
+const B3_AR = "منشور: CBRE و JLL و Knight Frank";
 
 const BASE: Row[] = [
+  // REGA blended (base signal)
   { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1200, median: 1700, high: 2200, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=412, min 30", basisAr: "ن=412، الحد 30", resolved: true, cell: "al-olaya/office" },
   { district: "Al Malaz", districtAr: "الملز", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 700, median: 980, high: 1300, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=208, min 30", basisAr: "ن=208، الحد 30", resolved: true, cell: "al-malaz/office" },
   { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1000, median: 1350, high: 1800, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=151, min 30", basisAr: "ن=151، الحد 30", resolved: true, cell: "granada/office" },
+  { district: "KAFD", districtAr: "كافد", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 3400, median: 3700, high: 4100, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=88, min 30", basisAr: "ن=88، الحد 30", resolved: true, cell: "kafd/office" },
+  { district: "Al Yasmin", districtAr: "الياسمين", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 950, median: 1150, high: 1450, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=38, min 30", basisAr: "ن=38، الحد 30", resolved: true, cell: "al-yasmin/office" },
   { district: "Al Olaya", districtAr: "العليا", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1800, median: 2600, high: 3600, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=96, min 30", basisAr: "ن=96، الحد 30", resolved: true, cell: "al-olaya/retail" },
   { district: "Granada", districtAr: "غرناطة", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1300, median: 1900, high: 2600, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=44, min 30", basisAr: "ن=44، الحد 30", resolved: true, cell: "granada/retail" },
-  { district: "An Narjis", districtAr: "النرجس", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 600, median: 760, high: 980, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=7, min 30, below threshold", basisAr: "ن=7، الحد 30، دون الحد", resolved: false, cell: "an-narjis/office" },
   { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 180, median: 240, high: 320, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=63, min 30", basisAr: "ن=63، الحد 30", resolved: true, cell: "al-malaz/warehouse" },
-  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1750, median: 2043, high: 2500, sufficient: true, src: "broker", period: "2026-Q1", source: "Published: CBRE, JLL, Knight Frank", sourceAr: "منشور: CBRE و JLL و Knight Frank", basis: "3 sources, min 2", basisAr: "3 مصادر، الحد 2", resolved: true },
-  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_b", segEn: "Grade B", segAr: "الفئة ب", low: 1100, median: 1300, high: 1550, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: JLL", sourceAr: "منشور: JLL", basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
-  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1300, median: 1500, high: 1850, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: JLL", sourceAr: "منشور: JLL", basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
+  // Thin gradient (varied distance below min 30)
+  { district: "Al Malaz", districtAr: "الملز", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1100, median: 1400, high: 1750, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=19, min 30, below threshold", basisAr: "ن=19، الحد 30، دون الحد", resolved: true, cell: "al-malaz/retail" },
+  { district: "As Sulimaniyah", districtAr: "السليمانية", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1700, median: 2100, high: 2600, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=27, min 30, below threshold", basisAr: "ن=27، الحد 30، دون الحد", resolved: true, cell: "as-sulimaniyah/retail" },
+  { district: "Al Yasmin", districtAr: "الياسمين", asset: "Retail", assetAr: "تجزئة", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 1300, median: 1600, high: 2000, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=29, min 30, below threshold", basisAr: "ن=29، الحد 30، دون الحد", resolved: true, cell: "al-yasmin/retail" },
+  // Unresolved crosswalks (two now)
+  { district: "An Narjis", districtAr: "النرجس", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 600, median: 760, high: 980, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=7, min 30, below threshold", basisAr: "ن=7، الحد 30، دون الحد", resolved: false, cell: "an-narjis/office" },
+  { district: "Qurtubah", districtAr: "قرطبة", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 700, median: 900, high: 1150, sufficient: false, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=11, min 30, unresolved crosswalk", basisAr: "ن=11، الحد 30، مطابقة غير محلولة", resolved: false, cell: "qurtubah/office" },
+  // REGA per-grade (so they OVERLAP the broker grade rows below on the same cell)
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1580, median: 1720, high: 1900, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=64, min 30", basisAr: "ن=64، الحد 30", resolved: true, cell: "al-olaya/office-a" },
+  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1350, median: 1480, high: 1700, sufficient: true, src: "rega", period: "2026-06", source: REGA, sourceAr: REGA_AR, basis: "n=42, min 30", basisAr: "ن=42، الحد 30", resolved: true, cell: "granada/office-a" },
+  // Broker overlay (grade level). Overlaps REGA grade rows above: KAFD + Granada agree, Al Olaya disagrees.
+  { district: "KAFD", districtAr: "كافد", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 3500, median: 3800, high: 4200, sufficient: true, src: "broker", period: "2026-Q1", source: B3, sourceAr: B3_AR, basis: "3 sources, min 2", basisAr: "3 مصادر، الحد 2", resolved: true, cell: "kafd/office" },
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1750, median: 2043, high: 2500, sufficient: true, src: "broker", period: "2026-Q1", source: B3, sourceAr: B3_AR, basis: "3 sources, min 2", basisAr: "3 مصادر، الحد 2", resolved: true },
+  { district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", segment: "grade_b", segEn: "Grade B", segAr: "الفئة ب", low: 1100, median: 1300, high: 1550, sufficient: false, src: "broker", period: "2026-Q1", source: BJLL, sourceAr: BJLL_AR, basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
+  { district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1300, median: 1500, high: 1850, sufficient: false, src: "broker", period: "2026-Q1", source: BJLL, sourceAr: BJLL_AR, basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
+  { district: "Al Yasmin", districtAr: "الياسمين", asset: "Office", assetAr: "مكاتب", segment: "grade_a", segEn: "Grade A", segAr: "الفئة أ", low: 1200, median: 1400, high: 1650, sufficient: false, src: "broker", period: "2026-Q1", source: BJLL, sourceAr: BJLL_AR, basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
   { district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", segment: "modern", segEn: "Modern", segAr: "حديثة", low: 190, median: 235, high: 300, sufficient: false, src: "broker", period: "2026-Q1", source: "Published: CBRE", sourceAr: "منشور: CBRE", basis: "1 source, min 2", basisAr: "مصدر واحد، الحد 2", resolved: true },
 ];
 
 type Scn = "thin" | "deed" | "disagree" | "stale" | "restate";
 const SCENARIOS: { id: Scn; en: string; ar: string; expEn: string; expAr: string }[] = [
   { id: "thin", en: "Thin district", ar: "حي قليل العينة", expEn: "Granada retail drops below threshold and shows Thin sample.", expAr: "تجزئة غرناطة تنخفض دون الحد وتظهر كعينة قليلة." },
-  { id: "deed", en: "Failed deed", ar: "صك غير صالح", expEn: "SAT-1847 deed fails; it moves from Published to Held. 0 published.", expAr: "يفشل صك SAT-1847؛ ينتقل من منشور إلى معلّق. 0 منشور." },
+  { id: "deed", en: "Failed deed", ar: "صك غير صالح", expEn: "SAT-1847 deed fails; it moves from Published to Held. published count drops.", expAr: "يفشل صك SAT-1847؛ ينتقل من منشور إلى معلّق. ينخفض عدد المنشور." },
   { id: "disagree", en: "Brokers disagree", ar: "اختلاف الوسطاء", expEn: "Al Olaya Grade A becomes insufficient and the broker source card turns amber.", expAr: "الفئة أ للعليا تصبح غير كافية وبطاقة مصدر الوسطاء تتحول للكهرماني." },
   { id: "stale", en: "Stale REGA feed", ar: "تغذية ريجا قديمة", expEn: "REGA is a month late; source health flags it Attention and raises an alert.", expAr: "ريجا متأخرة شهراً؛ حالة المصدر تُعلَّم انتباه وتُصدر تنبيهاً." },
   { id: "restate", en: "REGA restatement", ar: "تصحيح ريجا", expEn: "REGA restates Al Olaya office median 1,700 to 1,650, tagged restated.", expAr: "ريجا تصحح وسيط مكاتب العليا من 1,700 إلى 1,650، موسوم مُصحَّح." },
@@ -48,8 +68,30 @@ type Role = "viewer" | "reviewer" | "admin";
 const ROLES: Role[] = ["viewer", "reviewer", "admin"];
 type Audit = { ts: string; op: string; role: Role; action: string; target: string; change: string; reason: string };
 
+type Deed = "valid" | "not_found" | "pending" | "duplicate";
+type Listing = {
+  ref: string; district: string; districtAr: string; asset: string; assetAr: string;
+  deal: string; dealAr: string; nafath: boolean; permit: string | null; permitOk?: boolean;
+  deed: Deed; asking: number | null; init?: string; dup?: string;
+};
+
+const LISTINGS: Listing[] = [
+  { ref: "SAT-1847", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256841", deed: "valid", asking: 1550 },
+  { ref: "SAT-1902", district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256990", deed: "not_found", asking: 205 },
+  { ref: "SAT-1955", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257050", deed: "pending", asking: null },
+  { ref: "SAT-2010", district: "Granada", districtAr: "غرناطة", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200257180", deed: "valid", asking: 1320 },
+  { ref: "SAT-2011", district: "KAFD", districtAr: "كافد", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200257205", deed: "valid", asking: 3650 },
+  { ref: "SAT-2044", district: "Al Yasmin", districtAr: "الياسمين", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200255010", permitOk: false, deed: "valid", asking: 1180 },
+  { ref: "SAT-2050", district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200257260", deed: "duplicate", asking: 230, dup: "SAT-2051" },
+  { ref: "SAT-2051", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257261", deed: "duplicate", asking: null, dup: "SAT-2050" },
+  { ref: "SAT-2077", district: "Qurtubah", districtAr: "قرطبة", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: false, permit: "7200257300", deed: "valid", asking: 940 },
+  { ref: "SAT-2088", district: "As Sulimaniyah", districtAr: "السليمانية", asset: "Retail", assetAr: "تجزئة", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200254120", deed: "not_found", asking: 2050, init: "rejected" },
+  { ref: "SAT-2099", district: "Granada", districtAr: "غرناطة", asset: "Retail", assetAr: "تجزئة", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200257355", deed: "valid", asking: 1850 },
+  { ref: "SAT-2101", district: "Al Yasmin", districtAr: "الياسمين", asset: "Retail", assetAr: "تجزئة", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257402", deed: "pending", asking: null },
+];
+
 function fmt(n: number) { return n.toLocaleString("en-US"); }
-const keyOf = (r: Row) => r.district + "|" + r.asset + "|" + r.segment;
+const keyOf = (r: Row) => r.district + "|" + r.asset + "|" + r.segment + "|" + r.src;
 // KSA is UTC+3, no DST.
 const ksaNow = () => new Date(Date.now() + 3 * 3600 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
@@ -74,52 +116,51 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
 
   const index = useMemo(() => {
     let rows: Row[] = BASE.map((r) => ({ ...r }));
-    if (period === "2026-07") rows.push({ district: "An Nakheel", districtAr: "النخيل", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 900, median: 1150, high: 1500, sufficient: true, src: "rega", period: "2026-07", source: REGA, sourceAr: REGA_AR, basis: "n=58, min 30", basisAr: "ن=58، الحد 30", resolved: true, cell: "an-nakheel/office" });
+    if (period === "2026-07") {
+      rows.push({ district: "An Nakheel", districtAr: "النخيل", asset: "Office", assetAr: "مكاتب", segment: "blended", segEn: "Blended", segAr: "مجمع", low: 900, median: 1150, high: 1500, sufficient: true, src: "rega", period: "2026-07", source: REGA, sourceAr: REGA_AR, basis: "n=58, min 30", basisAr: "ن=58، الحد 30", resolved: true, cell: "an-nakheel/office" });
+      // period drift: Al Yasmin retail rose over the threshold (Thin -> Sufficient)
+      rows = rows.map((r) => (r.district === "Al Yasmin" && r.asset === "Retail" ? { ...r, sufficient: true, low: 1400, median: 1700, high: 2100, basis: "n=34, min 30", basisAr: "ن=34، الحد 30" } : r));
+      // overlay aged out: Al Yasmin broker grade A now stale (Sufficient -> Thin)
+      rows = rows.map((r) => (r.district === "Granada" && r.segment === "grade_a" && r.src === "rega" ? { ...r, sufficient: false, basis: "n=24, min 30, below threshold", basisAr: "ن=24، الحد 30، دون الحد" } : r));
+    }
     if (scn.thin) rows = rows.map((r) => (r.district === "Granada" && r.asset === "Retail" ? { ...r, sufficient: false, basis: "n=9, min 30, below threshold", basisAr: "ن=9، الحد 30، دون الحد" } : r));
-    if (scn.disagree) rows = rows.map((r) => (r.district === "Al Olaya" && r.segment === "grade_a" ? { ...r, sufficient: false, basis: "sources outside tolerance", basisAr: "مصادر خارج الحد", note: "disagreement", noteAr: "اختلاف" } : r));
+    if (scn.disagree) rows = rows.map((r) => (r.district === "Al Olaya" && r.segment === "grade_a" ? { ...r, sufficient: false, basis: "sources outside tolerance", basisAr: "مصادر خارج الحد", note: "disagreement", noteAr: "تعارض المصادر" } : r));
     if (scn.restate) rows = rows.map((r) => (r.district === "Al Olaya" && r.asset === "Office" && r.segment === "blended" ? { ...r, median: 1650, note: "restated", noteAr: "مُصحَّح" } : r));
-    // An Narjis crosswalk resolution: matched transactions clear the threshold.
     rows = rows.map((r) => (resolvedOv[keyOf(r)] ? { ...r, resolved: true, sufficient: true, basis: "n=34, min 30, after crosswalk", basisAr: "ن=34، الحد 30، بعد المطابقة" } : r));
-    // Override layer: computed verdict is preserved, override only makes it more conservative.
     rows = rows.map((r) => (forcedThin[keyOf(r)] ? { ...r, computed: r.sufficient, ov: true, sufficient: false, note: "forced thin", noteAr: "أُجبر قليل" } : r));
     return rows;
   }, [period, scn, forcedThin, resolvedOv]);
 
   const listings = useMemo(() => {
-    const deedOk = !scn.deed;
-    return [
-      { ref: "SAT-1847", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256841", deed: deedOk ? "valid" : "not_found", asking: 1550 },
-      { ref: "SAT-1902", district: "Al Malaz", districtAr: "الملز", asset: "Warehouse", assetAr: "مستودعات", deal: "Lease", dealAr: "إيجار", nafath: true, permit: "7200256990", deed: "not_found", asking: 205 },
-      { ref: "SAT-1955", district: "Al Olaya", districtAr: "العليا", asset: "Office", assetAr: "مكاتب", deal: "Sale", dealAr: "بيع", nafath: true, permit: "7200257050", deed: "pending", asking: null as number | null },
-    ];
+    return LISTINGS.map((l) => (scn.deed && l.ref === "SAT-1847" ? { ...l, deed: "not_found" as Deed } : l));
   }, [scn.deed]);
 
   const liveN = t("live", "مباشر");
   const sources = useMemo(() => {
-    const narjisResolved = resolvedOv["An Narjis|Office|blended"];
+    const narjisResolved = resolvedOv["An Narjis|Office|blended|rega"];
     return [
       { name: "REGA / Ejar Rental Index", nameAr: REGA_AR, cad: t("Dated, monthly", "مؤرخ، شهري"), last: scn.stale ? "2026-05" : period, ok: !scn.stale, note: scn.stale ? t("stale, expected " + period, "قديمة، المتوقع " + period) : t("rows received", "صفوف مستلمة") },
-      { name: "Broker benchmarks", nameAr: "مراجع الوسطاء", cad: t("Dated, quarterly", "مؤرخ، ربعي"), last: "2026-Q1", ok: !scn.disagree, note: scn.disagree ? t("disagreement flagged", "اختلاف موسوم") : t("overlay valid 1 quarter", "التراكب صالح ربعاً") },
-      { name: "SPL National Address", nameAr: "العنوان الوطني (سبل)", cad: t("Live API", "واجهة مباشرة"), last: liveN, ok: true, note: narjisResolved ? t("all districts resolved", "كل الأحياء محلولة") : t("1 district unresolved (An Narjis)", "حي غير محلول (النرجس)") },
-      { name: "Wathq (deeds)", nameAr: "واثق (الصكوك)", cad: t("Live, per listing", "مباشر، لكل إعلان"), last: liveN, ok: true, note: scn.deed ? t("2 deeds failed", "صكان غير صالحين") : t("1 deed not found", "صك غير موجود") },
-      { name: "Nafath (identity)", nameAr: "نفاذ (الهوية)", cad: t("Live OIDC", "مباشر OIDC"), last: liveN, ok: true, note: t("all verified", "الكل موثّق") },
-      { name: "REGA advertising permit", nameAr: "رخصة الإعلان", cad: t("Live inquiry", "استعلام مباشر"), last: liveN, ok: true, note: t("all valid", "الكل سارٍ") },
+      { name: "Broker benchmarks", nameAr: "مراجع الوسطاء", cad: t("Dated, quarterly", "مؤرخ، ربعي"), last: "2026-Q1", ok: !scn.disagree, note: scn.disagree ? t("disagreement flagged", "تعارض موسوم") : t("overlay valid 1 quarter", "التراكب صالح ربعاً") },
+      { name: "SPL National Address", nameAr: "العنوان الوطني (سبل)", cad: t("Live API", "واجهة مباشرة"), last: liveN, ok: true, note: narjisResolved ? t("1 district unresolved (Qurtubah)", "حي غير محلول (قرطبة)") : t("2 districts unresolved (An Narjis, Qurtubah)", "حيّان غير محلولين (النرجس، قرطبة)") },
+      { name: "Wathq (deeds)", nameAr: "واثق (الصكوك)", cad: t("Live, per listing", "مباشر، لكل إعلان"), last: liveN, ok: true, note: scn.deed ? t("2 deeds failed", "صكان غير صالحين") : t("1 not found, 1 duplicate", "صك غير موجود، وصك مكرر") },
+      { name: "Nafath (identity)", nameAr: "نفاذ (الهوية)", cad: t("Live OIDC", "مباشر OIDC"), last: liveN, ok: true, note: t("1 unverified (SAT-2077)", "واحد غير موثّق (SAT-2077)") },
+      { name: "REGA advertising permit", nameAr: "رخصة الإعلان", cad: t("Live inquiry", "استعلام مباشر"), last: liveN, ok: true, note: t("1 expired (SAT-2044)", "واحدة منتهية (SAT-2044)") },
       { name: "GASTAT / SAMA (context)", nameAr: "الإحصاء / ساما", cad: t("Dated, monthly", "مؤرخ، شهري"), last: period, ok: true, note: t("context only", "سياق فقط") },
       { name: "Foursquare / Mapbox (geo)", nameAr: "Foursquare / Mapbox", cad: t("Snapshot / live", "لقطة / مباشر"), last: period, ok: true, note: t("POI + isochrones", "نقاط + عزل زمني") },
     ];
   }, [period, scn, ar, resolvedOv]);
 
-  // A hard gate must actually pass for a listing to be publishable.
-  const gatesPass = (l: { nafath: boolean; permit: string | null; deed: string }) => l.nafath && !!l.permit && l.deed === "valid";
-  const listStatus = (l: { ref: string; nafath: boolean; permit: string | null; deed: string }) => {
+  const gatesPass = (l: Listing) => l.nafath && !!l.permit && l.permitOk !== false && l.deed === "valid";
+  const listStatus = (l: Listing) => {
     if (listingOv[l.ref]) return listingOv[l.ref];
+    if (l.init) return l.init;
     return gatesPass(l) ? "published" : "held";
   };
   const alerts = sources.filter((s) => !s.ok && !acked[s.name]);
   const suffCount = index.filter((r) => r.sufficient).length;
   const pubCount = listings.filter((l) => listStatus(l) === "published").length;
 
-  const doListing = (l: { ref: string; nafath: boolean; permit: string | null; deed: string }, status: string) => {
+  const doListing = (l: Listing, status: string) => {
     if (!can("review")) return;
     if (status === "approved" && !gatesPass(l)) return; // asymmetry rule, listing side
     const reason = ask(t("Reason for " + status + " on " + l.ref, "سبب " + status + " على " + l.ref)); if (!reason) return;
@@ -128,7 +169,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
   };
   const doForceThin = (r: Row) => { if (!can("review")) return; const reason = ask(t("Reason to force thin", "سبب الإجبار على قليل")); if (!reason) return; setForcedThin((f) => ({ ...f, [keyOf(r)]: reason })); log("force_thin", keyOf(r), t("sufficient → thin (override)", "كافٍ → قليل (تجاوز)"), reason); };
   const doRelease = (r: Row) => { if (!can("admin")) return; const reason = ask(t("Reason to release override", "سبب رفع التجاوز")); if (!reason) return; setForcedThin((f) => { const n = { ...f }; delete n[keyOf(r)]; return n; }); log("release_override", keyOf(r), t("override → computed", "تجاوز → محسوب"), reason); };
-  const doResolve = (r: Row) => { if (!can("review")) return; const reason = ask(t("District to map An Narjis to (reason)", "الحي لمطابقة النرجس (سبب)")); if (!reason) return; setResolvedOv((o) => ({ ...o, [keyOf(r)]: true })); log("resolve_district", keyOf(r), t("unresolved → resolved", "غير محلول → محلول"), reason); };
+  const doResolve = (r: Row) => { if (!can("review")) return; const reason = ask(t("District to map (reason)", "الحي للمطابقة (سبب)")); if (!reason) return; setResolvedOv((o) => ({ ...o, [keyOf(r)]: true })); log("resolve_district", keyOf(r), t("unresolved → resolved", "غير محلول → محلول"), reason); };
   const doAck = (name: string) => { if (!can("review")) return; const reason = ask(t("Acknowledge note", "ملاحظة الإقرار")); if (!reason) return; setAcked((a) => ({ ...a, [name]: true })); log("acknowledge", name, t("open → acknowledged", "مفتوح → مُقَر"), reason); };
 
   const download = (name: string, text: string) => {
@@ -136,8 +177,8 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
   };
   const exportCsv = () => {
-    const head = "district,asset,segment,low,median,high,sufficient,basis,source,period,synthetic";
-    const body = index.map((r) => [r.district, r.asset, r.segment, r.low, r.median, r.high, r.sufficient, '"' + r.basis + '"', '"' + r.source + '"', r.period, "true"].join(",")).join("\n");
+    const head = "district,asset,segment,source,low,median,high,sufficient,basis,period,synthetic";
+    const body = index.map((r) => [r.district, r.asset, r.segment, r.src, r.low, r.median, r.high, r.sufficient, '"' + r.basis + '"', r.period, "true"].join(",")).join("\n");
     download("sat-reconciliation-" + period + ".csv", head + "\n" + body);
   };
   const exportAudit = () => {
@@ -193,7 +234,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
 
       <section>
         <H n="03" en="Reconciliation board" arr="لوحة مطابقة المصادر" />
-        <p className="mb-2 text-xs text-slate-500">{t("Band is the min-max of source medians. Verdict is computed from the basis, never hand-edited. An override can only make a cell more conservative.", "النطاق هو أدنى-أعلى وسطاء المصادر. الحكم محسوب من الأساس، لا يُحرَّر يدوياً. التجاوز يجعل الخلية أكثر تحفظاً فقط.")}</p>
+        <p className="mb-2 text-xs text-slate-500">{t("One row per source per cell. Where two sources cover the same district and segment they can be compared; a spread beyond tolerance is a disagreement. Verdict is computed from the basis, never hand-edited. An override can only make a cell more conservative.", "صف لكل مصدر لكل خلية. حين يغطي مصدران الحي والشريحة نفسها يمكن مقارنتهما؛ فارق يتجاوز الحد هو تعارض. الحكم محسوب من الأساس، لا يُحرَّر يدوياً. التجاوز يجعل الخلية أكثر تحفظاً فقط.")}</p>
         <div className="overflow-x-auto rounded-lg border border-slate-200">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th className="px-3 py-2 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-3 py-2 text-start font-medium">{t("Basis", "الأساس")}</th><th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
@@ -220,17 +261,17 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
             <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
             <tbody>
               {listings.map((l) => { const st = listStatus(l); const blocked = !gatesPass(l); return (<tr key={l.ref} className="border-t border-slate-100">
-                <td className="px-3 py-2"><span className="font-medium text-slate-900" dir="ltr">{l.ref}</span><span className="text-slate-500"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span></td>
-                <td className="px-3 py-2">{l.nafath ? "✓" : "✕"}</td>
-                <td className="px-3 py-2" dir="ltr">{l.permit || "—"}</td>
-                <td className="px-3 py-2">{l.deed === "valid" ? t("Valid", "سارٍ") : l.deed === "not_found" ? t("Not found", "غير موجود") : t("Pending", "قيد الانتظار")}</td>
+                <td className="px-3 py-2"><span className="font-medium text-slate-900" dir="ltr">{l.ref}</span><span className="text-slate-500"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span>{l.dup && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("duplicate deed", "صك مكرر")}</span>}</td>
+                <td className="px-3 py-2">{l.nafath ? "✓" : <span className="text-rose-600">✕</span>}</td>
+                <td className="px-3 py-2"><span dir="ltr">{l.permit || "—"}</span>{l.permitOk === false && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("expired", "منتهية")}</span>}</td>
+                <td className="px-3 py-2">{l.deed === "valid" ? t("Valid", "سارٍ") : l.deed === "not_found" ? <span className="text-rose-600">{t("Not found", "غير موجود")}</span> : l.deed === "duplicate" ? <span className="text-rose-600">{t("Duplicate", "مكرر")}</span> : t("Pending", "قيد الانتظار")}</td>
                 <td className="px-3 py-2">{st === "published" || st === "approved" ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{st === "approved" ? t("Approved", "معتمد") : t("Published", "منشور")}</span> : st === "rejected" ? <span className="rounded bg-rose-50 px-2 py-0.5 text-xs text-rose-700">{t("Rejected", "مرفوض")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Held", "معلّق")}</span>}</td>
                 <td className="px-3 py-2"><div className="flex flex-wrap items-center gap-1"><button onClick={() => doListing(l, "approved")} disabled={!can("review") || blocked} title={blocked ? t("A hard gate has not passed", "لم تجتز بوابة إلزامية") : ""} className={btn}>{t("Approve", "اعتماد")}</button><button onClick={() => doListing(l, "rejected")} disabled={!can("review")} className={btn}>{t("Reject", "رفض")}</button><button onClick={() => doListing(l, "held")} disabled={!can("review")} className={btn}>{t("Hold", "تعليق")}</button>{blocked && <span className="text-xs text-rose-600">{t("gate failed", "بوابة غير مجتازة")}</span>}</div></td>
               </tr>); })}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-slate-500">{t("Approve is disabled until Nafath, permit, and deed all pass. The asymmetry rule applies here too: a failed gate can never be published.", "الاعتماد معطّل حتى تجتاز نفاذ والرخصة والصك جميعاً. قاعدة عدم التناظر تنطبق هنا أيضاً: البوابة غير المجتازة لا تُنشَر أبداً.")}</p>
+        <p className="mt-2 text-xs text-slate-500">{t("Approve is disabled until Nafath, a valid permit, and the deed all pass. The asymmetry rule applies here too: a failed gate can never be published.", "الاعتماد معطّل حتى تجتاز نفاذ ورخصة سارية والصك جميعاً. قاعدة عدم التناظر تنطبق هنا أيضاً: البوابة غير المجتازة لا تُنشَر أبداً.")}</p>
       </section>
 
       <section>
@@ -244,12 +285,12 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
       <section>
         <H n="06" en="Reports" arr="التقارير" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{suffCount}/{index.length}</p><p className="text-xs text-slate-500">{t("Index cells sufficient", "خلايا كافية")}</p></div>
+          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{suffCount}/{index.length}</p><p className="text-xs text-slate-500">{t("Index rows sufficient", "صفوف كافية")}</p></div>
           <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{pubCount}/{listings.length}</p><p className="text-xs text-slate-500">{t("Listings published", "إعلانات منشورة")}</p></div>
           <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{audit.length}</p><p className="text-xs text-slate-500">{t("Actions logged", "إجراءات مسجّلة")}</p></div>
           <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900">{alerts.length}</p><p className="text-xs text-slate-500">{t("Open alerts", "تنبيهات مفتوحة")}</p></div>
         </div>
-        <p className="mt-3 text-xs text-slate-500">{t("Next: auth + role gate on the route, then an append-only audit table, then override state, then synthetic Supabase tables for live reads. Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: مصادقة وبوابة أدوار على المسار، ثم جدول تدقيق للإضافة فقط، ثم حالة التجاوزات، ثم جداول Supabase اصطناعية للقراءة المباشرة. يتطلب مفتاح الخدمة.")}</p>
+        <p className="mt-3 text-xs text-slate-500">{t("Next: cell-grouped reconciliation, health header + needs-attention worklist, in-page reason drawer, filters. Then auth + append-only audit table + synthetic Supabase branch. Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: مطابقة مجمّعة بالخلية، ترويسة صحة + قائمة عمل، لوحة سبب داخل الصفحة، مرشّحات. ثم مصادقة وجدول تدقيق للإضافة فقط وفرع Supabase اصطناعي. يتطلب مفتاح الخدمة.")}</p>
       </section>
 
       <footer className="border-t border-slate-100 pt-4 text-xs text-slate-400">{t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}</footer>
