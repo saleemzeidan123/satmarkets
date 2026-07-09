@@ -42,8 +42,9 @@ export default async function MarketPage({ params }: { params: { locale: string 
   }
 
   const officeRows = idxRows.filter((r) => r.asset_type === "office" && r.unit === "sar_sqm_year" && r.median != null);
+  const gradeSuffix = (seg: string) => { const m: Record<string, [string, string]> = { grade_a: ["Grade A", "فئة أ"], grade_b: ["Grade B", "فئة ب"], grade_c: ["Grade C", "فئة ج"] }; const g = m[seg]; return g ? " · " + (ar ? g[1] : g[0]) : ""; };
   const bandRows = officeRows
-    .map((r) => ({ label: (ar ? r.district_label_ar : r.district_label) || r.district_label, low: Number(r.band_low ?? r.median), med: Number(r.median), high: Number(r.band_high ?? r.median), seg: r.segment }))
+    .map((r) => ({ label: ((ar ? r.district_label_ar : r.district_label) || r.district_label) + gradeSuffix(r.segment), low: Number(r.band_low ?? r.median), med: Number(r.median), high: Number(r.band_high ?? r.median), seg: r.segment }))
     .sort((a, b) => b.med - a.med)
     .slice(0, 8);
   const bandMin = bandRows.length ? Math.min(...bandRows.map((r) => r.low)) : 0;
@@ -134,7 +135,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
                     <span style={{ position: "absolute", insetInlineStart: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: "rgba(58,110,165,.28)", borderRadius: 7 }} />
                     <span style={{ position: "absolute", insetInlineStart: `calc(${medPos}% - 4px)`, top: 2, width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)" }} />
                   </div>
-                  <span className="mono" style={{ width: 118, flex: "none", fontSize: 11.5, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{nf(r.low)}–{nf(r.high)} · <b style={{ color: "var(--harbor)" }}>{nf(r.med)}</b></span>
+                  <span className="mono" style={{ width: 118, flex: "none", fontSize: 11.5, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{ar ? `${nf(r.low)} إلى ${nf(r.high)}` : `${nf(r.low)}–${nf(r.high)}`} · <b style={{ color: "var(--harbor)" }}>{nf(r.med)}</b></span>
                 </div>
               );
             })}
