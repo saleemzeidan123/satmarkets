@@ -1,21 +1,14 @@
 import { cache } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { PUBLISHED_FALLBACK, type PublishedKpis } from "./published-fallback";
 
-// Single source for the published headline KPIs shown across the marketing
-// surfaces. The fallbacks are the verified, source-attributed Q1 2026 figures;
-// update ONLY here when a new quarter publishes, until every value is a DB row.
-// Today, KAFD Grade A office median is a real row in rent_index_published; the
-// Riyadh aggregate median, YoY and occupancy have no single row yet, so they
-// stay as the attributed fallbacks (Law 3: every figure keeps its source line).
-const FALLBACK = {
-  period: "Q1 2026",
-  gradeAMedian: 2370,        // SAR/m2/yr, Riyadh Grade A office, published aggregate
-  kafdMedian: 3700,          // SAR/m2/yr, KAFD Grade A office, published (real row)
-  gradeAYoyPct: 2.1,         // Riyadh Grade A YoY, published
-  gradeAOccupancyPct: 97.7,  // Riyadh Grade A occupancy, published
-  source: "Published Q1 2026 benchmarks (JLL/CBRE/Knight Frank), attributed",
-};
-export type PublishedKpis = typeof FALLBACK;
+// getPublishedKpis overlays live DB values on the client-safe fallback constants
+// (see ./published-fallback). KAFD Grade A office median is a real row in
+// rent_index_published; the Riyadh aggregate median, YoY and occupancy have no
+// single row yet, so they stay as the attributed fallbacks (Law 3: every figure
+// keeps its source line).
+const FALLBACK = PUBLISHED_FALLBACK;
+export type { PublishedKpis };
 
 export const getPublishedKpis = cache(async (): Promise<PublishedKpis> => {
   try {

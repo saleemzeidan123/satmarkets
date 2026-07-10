@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
+import { PUBLISHED_FALLBACK } from "@/lib/market/published-fallback";
 
 type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; median: string; unit: string; period: string; source: string };
 
@@ -278,8 +279,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    <aside className="advisor-rail-r" style={{ background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto" }}>
     <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{ar ? "لمحة السوق · بيانات عيّنة" : "Market snapshot · sample data"}</div></div>
     <div style={{ padding: 20 }} className="col gap16">
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>2,370</span><span className="l">{ar ? "وسيط الفئة A (منشور)" : "Median Grade A (published)"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>+2.1%</span><span className="l">{ar ? "سنوياً · الفئة A" : "YoY · Grade A"}</span></div></div>
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>97.7%</span><span className="l">{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{ar ? "النطاق النهاري" : "Daytime catchment"}</span></div></div>
+     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>{PUBLISHED_FALLBACK.gradeAMedian.toLocaleString()}</span><span className="l">{ar ? "وسيط الفئة A (منشور)" : "Median Grade A (published)"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>{`+${PUBLISHED_FALLBACK.gradeAYoyPct}%`}</span><span className="l">{ar ? "سنوياً · الفئة A" : "YoY · Grade A"}</span></div></div>
+     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>{`${PUBLISHED_FALLBACK.gradeAOccupancyPct}%`}</span><span className="l">{ar ? "إشغال الفئة A" : "Grade A occupancy"}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{ar ? "النطاق النهاري" : "Daytime catchment"}</span></div></div>
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
       <div className="eyebrow">{ar ? "المصادر المستخدمة" : "Sources used"}</div>
       <div className="col gap8" style={{ marginTop: 10 }}>

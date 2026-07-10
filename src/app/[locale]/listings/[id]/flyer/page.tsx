@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getPublishedKpis } from "@/lib/market/published";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -20,6 +21,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
+  const pub = await getPublishedKpis();
   const sb = getSupabaseServer();
   let l: any = null;
   let idxRows: IndexRow[] = [];
@@ -89,8 +91,8 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           )}
           <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
             {ar
-              ? "معايير الربع الأول 2026 المنشورة (منسوبة): مكاتب الفئة A 2,370 · الفئة B 1,680 ريال/م²·سنة. المصادر: JLL، CBRE، نايت فرانك، ساما. سياق سوقي منسوب إلى مصادره، استرشادي، ليس نصيحة."
-              : "Published Q1 2026 benchmarks (attributed): Grade A offices 2,370 · Grade B 1,680 SAR/m²·yr. Sources: JLL, CBRE, Knight Frank, SAMA. Attributed market context. Indicative, not advice."}
+              ? `معايير الربع الأول 2026 المنشورة (منسوبة): مكاتب الفئة A ${pub.gradeAMedian.toLocaleString()} · الفئة B 1,680 ريال/م²·سنة. المصادر: JLL، CBRE، نايت فرانك، ساما. سياق سوقي منسوب إلى مصادره، استرشادي، ليس نصيحة.`
+              : `Published Q1 2026 benchmarks (attributed): Grade A offices ${pub.gradeAMedian.toLocaleString()} · Grade B 1,680 SAR/m²·yr. Sources: JLL, CBRE, Knight Frank, SAMA. Attributed market context. Indicative, not advice.`}
           </div>
         </div>
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>

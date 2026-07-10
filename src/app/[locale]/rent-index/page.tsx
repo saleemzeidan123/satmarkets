@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getPublishedKpis } from "@/lib/market/published";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import WatchBanner from "@/components/WatchBanner";
 
@@ -18,17 +19,18 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
 export default async function RentIndexPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
+ const pub = await getPublishedKpis();
 
  const MOCK_DISTRICTS: DRow[] = ar ? [
   ["العليا", "مكاتب · الفئة A", "2,400", "1,800–2,900", true],
-  ["كافد", "مكاتب · الفئة A", "3,700", "3,000–4,200", true],
+  ["كافد", "مكاتب · الفئة A", pub.kafdMedian.toLocaleString(), "3,000–4,200", true],
   ["طريق الملك فهد", "مكاتب · الفئة A", "2,100", "1,500–2,700", true],
   ["شمال الرياض (غرناطة · حطين)", "مكاتب · الفئة A", "1,350", "1,000–1,800", true],
   ["العليا", "مكاتب · الفئة B", "1,150", "900–1,400", true],
   ["الحي الدبلوماسي", "مكاتب · الفئة A", "غير متاح", "عينة قليلة", false],
  ] : [
   ["Al Olaya", "Office · Grade A", "2,400", "1,800–2,900", true],
-  ["KAFD", "Office · Grade A", "3,700", "3,000–4,200", true],
+  ["KAFD", "Office · Grade A", pub.kafdMedian.toLocaleString(), "3,000–4,200", true],
   ["King Fahd Road", "Office · Grade A", "2,100", "1,500–2,700", true],
   ["North Riyadh (Granada · Hittin)", "Office · Grade A", "1,350", "1,000–1,800", true],
   ["Al Olaya", "Office · Grade B", "1,150", "900–1,400", true],
@@ -70,14 +72,14 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  const cp = capped.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
  const kpis: [string, string, string, string | null][] = ar ? [
   ["3,630", "كافد الفئة الأولى ريال/م²·سنة", "+5.5% سنوياً", "up"],
-  ["2,370", "الفئة A ريال/م²·سنة", "+2.1% سنوياً", "up"],
+  [pub.gradeAMedian.toLocaleString(), "الفئة A ريال/م²·سنة", `+${pub.gradeAYoyPct}% سنوياً`, "up"],
   ["1,680", "الفئة B ريال/م²·سنة", "+5.1% سنوياً", "up"],
-  ["97.7%", "إشغال الفئة A", "شواغر الفئة الأولى 3.1%", null],
+  [`${pub.gradeAOccupancyPct}%`, "إشغال الفئة A", "شواغر الفئة الأولى 3.1%", null],
  ] : [
   ["3,630", "KAFD prime SAR/m²·yr", "+5.5% YoY", "up"],
-  ["2,370", "Grade A SAR/m²·yr", "+2.1% YoY", "up"],
+  [pub.gradeAMedian.toLocaleString(), "Grade A SAR/m²·yr", `+${pub.gradeAYoyPct}% YoY`, "up"],
   ["1,680", "Grade B SAR/m²·yr", "+5.1% YoY", "up"],
-  ["97.7%", "Grade A occupancy", "prime vacancy 3.1%", null],
+  [`${pub.gradeAOccupancyPct}%`, "Grade A occupancy", "prime vacancy 3.1%", null],
  ];
 
  return (
@@ -126,7 +128,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="side">
        <div className="h"><span className="freeze open"><span className="dot" />{ar ? "مفتوح" : "Open"}</span> {ar ? "جديد وأول إيجار · يحدّد العنوان" : "New & first-lease · sets the headline"}</div>
        <div className="sub">{ar ? "المباني الجديدة وعقود الإيجار الأولى غير متأثرة بالسقف وتُعاد تسعيرها وفق السوق كل مدة." : "New-build and first-time leases are unaffected by the cap and continue to re-price to market each term."}</div>
-       <div className="big" style={{ color: "var(--azure-d)" }}>+2.1% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "سنوياً على الفئة A (منشور)" : "YoY on Grade A (published)"}</span></div>
+       <div className="big" style={{ color: "var(--azure-d)" }}>{`+${pub.gradeAYoyPct}%`} <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "سنوياً على الفئة A (منشور)" : "YoY on Grade A (published)"}</span></div>
       </div>
      </div>
     </div>
