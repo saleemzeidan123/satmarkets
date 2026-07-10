@@ -12,10 +12,10 @@ type Stats = { listings: string; buildings: string; districts: string; verifiedP
 const ASSETS = [
  { v: "office", en: "Office", ar: "مكاتب", icon: <Icon.building size={22} /> },
  { v: "retail", en: "Retail", ar: "تجزئة", icon: <Icon.store size={22} /> },
- { v: "medical", en: "Medical", ar: "طبي", icon: <Icon.activity size={22} /> },
  { v: "warehouse", en: "Warehouse", ar: "مستودعات", icon: <Icon.layers size={22} /> },
- { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
+ { v: "medical", en: "Medical", ar: "طبي", icon: <Icon.activity size={22} /> },
  { v: "land", en: "Land", ar: "أراضٍ", icon: <Icon.ruler size={22} /> },
+ { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
  { v: "serviced", en: "Serviced", ar: "مكاتب مخدومة", icon: <Icon.clock size={22} /> },
  { v: "mixed_use", en: "Mixed use", ar: "متعدد الاستخدامات", icon: <Icon.target size={22} /> },
  { v: "hospitality", en: "Hospitality", ar: "ضيافة", icon: <Icon.star size={22} /> },
@@ -35,6 +35,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const band = bands[bi] || bands[0] || null;
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
+ const [showAll, setShowAll] = useState(false);
  const [sug, setSug] = useState<{ label: string; sub: string; did?: string; verified?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
@@ -71,7 +72,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   h1a: "حيث تجد الأعمال السعودية ",
   h1b: "مساحات تجارية موثّقة",
   sub: "مكاتب ومتاجر وعيادات ومستودعات في الرياض. موثّقة من المالك، مدعومة بالتراخيص، بأسعار تُعتمد للقرار، في منصّة محايدة واحدة.",
-  tabs: [["lease","إيجار"],["buy","شراء"],["req","أدرج طلبك"]] as const,
+  tabs: [["lease","إيجار"],["buy","شراء"]] as const,
   phReq: "ما المساحة التي تبحث عنها؟",
   phStd: "الحي أو المشروع أو المبنى",
   btnReq: "أدرج",
@@ -132,7 +133,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   h1a: "Where Saudi business finds ",
   h1b: "verified commercial space",
   sub: "Offices, retail, medical and warehouses across Riyadh. Owner-verified, permit-backed, decision-grade pricing, one neutral exchange.",
-  tabs: [["lease","Lease"],["buy","Buy"],["req","Post a requirement"]] as const,
+  tabs: [["lease","Lease"],["buy","Buy"]] as const,
   phReq: "What space are you looking for?",
   phStd: "District, project or building",
   btnReq: "Post",
@@ -221,15 +222,19 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
       {deal !== "req" && (
        <div className="hero-assets" style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-        {ASSETS.map((a) => {
+        {(showAll ? ASSETS : ASSETS.slice(0, 5)).map((a) => {
          const on = assetType === a.v;
          return (
-          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, width: 92, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
           </button>
          );
         })}
+        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+         <span style={{ opacity: .85 }}><Icon.grid size={22} /></span>
+         <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{showAll ? (ar ? "أقل" : "Less") : (ar ? "المزيد" : "More")}</span>
+        </button>
        </div>
       )}
       <div ref={sref} style={{ position: "relative" }}>
@@ -254,6 +259,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        </div>
       )}
       </div>
+      <div style={{ textAlign: "center", marginTop: 12 }}>
+       <Link href={L("/post-requirement")} style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{ar ? "لم تجد ما تريد؟ أدرج طلبك" : "Didn't find it? Post a requirement"}</Link>
+      </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
        <Link href={L("/listings?q=KAFD")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
@@ -265,6 +273,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro1}</span>
       <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro2}</span>
       <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro3}</span>
+     </div>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
+      {([
+        [ar ? "أبحث عن مساحة" : "I need a space", L("/listings")],
+        [ar ? "عندي مساحة أعرضها" : "I have a space to list", L("/list")],
+        [ar ? "أنا وسيط مرخّص" : "I am a licensed broker", L("/requirements")],
+        [ar ? "أستثمر" : "I invest", L("/listings?deal=sale")],
+      ] as [string, string][]).map(([label, href], i) => (
+       <Link key={i} href={href} className="card" style={{ padding: "14px 14px", textAlign: "center", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: "var(--fs-sm)" }}>{label}</Link>
+      ))}
      </div>
     </div>
    </div>
