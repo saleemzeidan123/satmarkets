@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE } from "@/lib/site";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -9,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/en/verify", "/ar/verify", "/en/admin", "/ar/admin"],
       },
     ],
-    sitemap: "https://satmarkets-sat-markets.vercel.app/sitemap.xml",
+    sitemap: `${SITE}/sitemap.xml`,
   };
 }

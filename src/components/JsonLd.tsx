@@ -9,7 +9,8 @@ export default function JsonLd({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-export const SITE = "https://satmarkets-sat-markets.vercel.app";
+import { SITE } from "@/lib/site";
+export { SITE };
 
 export const ORG = {
   "@type": "Organization",

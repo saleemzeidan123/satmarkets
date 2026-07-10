@@ -96,7 +96,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>
           <div className="col gap4" style={{ minWidth: 0 }}>
             <span style={{ fontWeight: 600 }}>{ar ? "سات ماركتس · من سات العقارية · رخصة فال 1200025510" : "SAT Markets · Powered by SAT Real Estate · FAL 1200025510"}</span>
-            <span className="mono muted" style={{ fontSize: 11 }}>satmarkets-sat-markets.vercel.app/{locale}/listings/{l.id.slice(0, 8)}…</span>
+            <span className="mono muted" style={{ fontSize: 11 }}>{SITE.replace(/^https?:\/\//, "")}/{locale}/listings/{l.id.slice(0, 8)}…</span>
           </div>
           {qrSvg ? (
             <div className="row gap8" style={{ alignItems: "center", flex: "none" }}>
