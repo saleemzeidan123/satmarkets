@@ -521,7 +521,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 [dir="rtl"] .matrix tr.grp td,
 [dir="rtl"] .chatmsg .src,
 [dir="rtl"] .lang,
-[dir="rtl"] .tabs .t {
+[dir="rtl"] .tabs .t,
+[dir="rtl"] .ph .cap,
+[dir="rtl"] .photo .cap,
+[dir="rtl"] table.dt thead th,
+[dir="rtl"] .plan .room .rl {
   font-family: var(--ar);
   letter-spacing: 0;
   text-transform: none;

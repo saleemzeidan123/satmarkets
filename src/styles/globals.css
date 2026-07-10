@@ -14,6 +14,20 @@ body {
   font-family: "Hanken Grotesk", system-ui, sans-serif;
 }
 [dir="rtl"] { font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; }
+/* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
+[dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
+[dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
+  letter-spacing: 0;
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  text-transform: none;
+}
+[dir="rtl"] .fig { letter-spacing: 0; }
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] .font-display {
+  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  letter-spacing: 0;
+  line-height: 1.4;
+  font-weight: 600;
+}
 h1,h2,h3,.font-display { font-family: "Playfair Display", Georgia, serif; font-weight: 500; letter-spacing: -0.01em; text-wrap: balance; }
 p, li { text-wrap: pretty; }
 ::selection { background: rgba(58,110,165,0.16); }
