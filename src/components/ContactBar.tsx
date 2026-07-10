@@ -12,7 +12,7 @@ type Props = {
   ar: boolean;
 };
 
-export default function ContactBar({ phone, email, channels, refCode, title, url, messageHref, ar }: Props) {
+function buttons({ phone, email, channels, refCode, title, url, messageHref, ar }: Props): ReactNode[] {
   const text = ar
     ? `مرحباً، مهتم بالعرض ${refCode}: ${title}\n${url}`
     : `Hello, I am interested in listing ${refCode}: ${title}\n${url}`;
@@ -29,9 +29,22 @@ export default function ContactBar({ phone, email, channels, refCode, title, url
     btns.push(<a key="email" href={`mailto:${email}?subject=${encodeURIComponent(`${refCode}: ${title}`)}&body=${enc}`} className={`${base} border border-line`}>{ar ? "البريد" : "Email"}</a>);
   if (has("message"))
     btns.push(<a key="msg" href={messageHref} className={`${base} border border-line`}>{ar ? "رسالة عبر سات" : "Message"}</a>);
+  return btns;
+}
+
+// Desktop: the same channels, rendered inline inside the listing's sticky card.
+export function ContactChannels(p: Props) {
+  const btns = buttons(p);
+  if (btns.length === 0) return null;
+  return <div className="flex gap-2">{btns}</div>;
+}
+
+// Mobile only: a fixed bar pinned to the bottom of the viewport.
+export default function ContactBar(p: Props) {
+  const btns = buttons(p);
   if (btns.length === 0) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:z-auto md:mt-3 md:rounded-2xl md:border md:border-line md:p-3 md:shadow-sm" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur md:hidden" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
       <div className="flex gap-2">{btns}</div>
     </div>
   );

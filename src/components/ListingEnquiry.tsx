@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import { ContactChannels } from "@/components/ContactBar";
 
 type Path = "direct_contact" | "representation";
 
@@ -66,10 +67,11 @@ const QUAL_SALE: Q[] = [{ k: "ticket", en: "Ticket", ar: "قيمة الصفقة"
 const QUAL_DEFAULT: Q[] = [Q_ROLE, Q_TIME];
 
 export default function ListingEnquiry({
- listingId, price, lease, unit, type, area, district, locale, permit, assetType, satListed,
+ listingId, price, lease, unit, type, area, district, locale, permit, assetType, satListed, contact,
 }: {
  listingId: string; price: number | null; lease: boolean; unit: string;
  type: string; area: number; district: string; locale: string; permit?: string | null; assetType?: string; satListed?: boolean;
+ contact?: { phone?: string | null; email?: string | null; channels: string[]; refCode: string; title: string; url: string; messageHref: string };
 }) {
  const L = (p: string) => `/${locale}${p}`;
  const ar = locale === "ar";
@@ -203,6 +205,8 @@ export default function ListingEnquiry({
     <span className="verified"><span className="dot" />{ar ? "مالك موثّق" : "Verified owner"}</span>
     {permit && <span className="tag">{ar ? "تصريح " : "Permit "}{permit}</span>}
    </div>
+
+   {contact ? <div className="hidden md:block" style={{ marginTop: 14 }}><ContactChannels {...contact} ar={ar} /></div> : null}
 
    {open === "direct_contact" ? (
     <form onSubmit={(e) => { e.preventDefault(); submit("direct_contact"); }} className="col gap10" style={{ marginTop: 18 }}>
