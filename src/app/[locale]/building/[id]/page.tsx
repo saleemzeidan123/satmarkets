@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
     ? `${name}: مبنى ${type} ${grade} في ${place}. الوحدات المتاحة ونطاق الإيجار الموثّق وذكاء الموقع على سات ماركتس. استرشادي وليس نصيحة.`
     : `${name}: ${grade} ${type} building in ${place}. Available units, verified rent band and location intelligence on SAT Markets. Indicative, not advice.`;
   const url = `${SITE}/${params.locale}/building/${params.id}`;
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
+  return { title, description, alternates: { canonical: url, languages: { en: `${SITE}/en/building/${params.id}`, ar: `${SITE}/ar/building/${params.id}` } }, openGraph: { title, description, url, type: "website" } };
 }
 
 export default async function BuildingPage({ params }: { params: { locale: string; id: string } }) {

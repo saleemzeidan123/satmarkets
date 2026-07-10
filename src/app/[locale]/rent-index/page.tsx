@@ -1,4 +1,5 @@
 import { isLocale } from "@/i18n/config";
+import { pageMeta } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
@@ -9,6 +10,10 @@ import WatchBanner from "@/components/WatchBanner";
 const AZURE = "#3A6EA5";
 
 type DRow = [string, string, string, string, boolean];
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMeta(params.locale, '/rent-index', 'Rent Index | SAT Markets', 'مؤشر الإيجارات | سات ماركتس', 'Riyadh commercial rent bands by district, asset and grade, compiled from published benchmarks and attributed to source. Indicative, not advice.', 'نطاقات إيجار العقار التجاري في الرياض حسب الحي والأصل والفئة، مجمّعة من مراجع منشورة ومنسوبة إلى مصادرها. استرشادي وليس نصيحة.');
+}
 
 export default async function RentIndexPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();

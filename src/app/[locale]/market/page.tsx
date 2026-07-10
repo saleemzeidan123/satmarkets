@@ -16,7 +16,8 @@ export async function generateMetadata({ params }: { params: { locale: string } 
     description: ar
       ? "السوق التجاري في الرياض بنظرة واحدة: نطاقات مؤشر الإيجارات المنشورة والمنسوبة ومؤشرات المنصّة الموثّقة. استرشادي وليس نصيحة."
       : "The Riyadh commercial market at a glance: published, attributed Rent Index bands and verified platform indicators. Indicative, not advice.",
-    alternates: { canonical: `${SITE}/${params.locale}/market` },
+    alternates: { canonical: `${SITE}/${params.locale}/market`, languages: { en: `${SITE}/en/market`, ar: `${SITE}/ar/market` } },
+    openGraph: { title: ar ? "نبض السوق التجاري في الرياض | سات ماركتس" : "Riyadh commercial market pulse | SAT Markets", url: `${SITE}/${params.locale}/market`, type: "website", siteName: "SAT Markets" },
   };
 }
 

@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
     ? `${type} ${grade} في ${dn}، ${l.area_sqm} م²، ${priceStr}. عرض موثّق من المالك على سات ماركتس، مدعوم بمؤشر الإيجارات المنشور. استرشادي وليس نصيحة.`
     : `${grade} ${type} in ${dn}, ${l.area_sqm} m², ${priceStr}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.`;
   const url = `${SITE}/${params.locale}/listings/${params.id}`;
-  return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
+  return { title, description, alternates: { canonical: url, languages: { en: `${SITE}/en/listings/${params.id}`, ar: `${SITE}/ar/listings/${params.id}` } }, openGraph: { title, description, url, type: "website" } };
 }
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {

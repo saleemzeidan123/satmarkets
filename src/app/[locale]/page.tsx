@@ -1,4 +1,5 @@
 import { isLocale } from "@/i18n/config";
+import { pageMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
@@ -11,6 +12,10 @@ function idxSegment(asset: string, grade: string | null): string | null {
   if (asset === "medical") return "clinic";
   if (asset === "serviced") return "serviced";
   return null;
+}
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMeta(params.locale, '', 'SAT Markets | Verified commercial real estate, Saudi Arabia', 'سات ماركتس | مساحات تجارية موثّقة في السعودية', 'The neutral commercial exchange for Riyadh: owner-verified listings, a source-attributed rent index, and AI that never invents a figure.', 'منصة محايدة للعقار التجاري في الرياض: عروض موثّقة من الملّاك، مؤشر إيجارات منسوب إلى مصادره، وذكاء اصطناعي لا يخترع الأرقام.');
 }
 
 export default async function HomePage({ params }: { params: { locale: string } }) {

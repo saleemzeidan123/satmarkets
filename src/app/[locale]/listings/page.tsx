@@ -36,7 +36,7 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
     ? (ar ? `تصفّح المساحات التجارية الموثّقة في ${locLabel} على سات ماركتس، من الملّاك مباشرة ومدعومة بمؤشر الإيجارات المنشور.` : `Browse verified commercial spaces in ${locLabel} on SAT Markets, owner-verified and backed by the published Rent Index.`)
     : (ar ? "تصفّح المساحات التجارية الموثّقة في المملكة، من الملّاك مباشرة، مدعومة بمؤشر الإيجارات." : "Browse verified commercial spaces across Saudi Arabia, owner-verified and backed by the Rent Index.");
   const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
-  return { title, description, alternates: { canonical: `${SITE}/${params.locale}/listings${qs}` } };
+  return { title, description, alternates: { canonical: `${SITE}/${params.locale}/listings${qs}`, languages: { en: `${SITE}/en/listings${qs}`, ar: `${SITE}/ar/listings${qs}` } }, openGraph: { title, description, url: `${SITE}/${params.locale}/listings${qs}`, type: "website", siteName: "SAT Markets" } };
 }
 
 export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {

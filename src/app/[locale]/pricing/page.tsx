@@ -1,8 +1,13 @@
 import { isLocale } from "@/i18n/config";
+import { pageMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 
 type Tier = { nm: string; who: string; price: string; unit: string; feat: boolean; ghost?: boolean; cta: string; pts: string[] };
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMeta(params.locale, '/pricing', 'Pricing | SAT Markets', 'الأسعار | سات ماركتس', 'How SAT Markets works and what it costs. Listing and verification are free; representation is opt-in and clearly priced.', 'كيف تعمل سات ماركتس وكم تكلفتها. الإدراج والتوثيق مجاناً، والتمثيل اختياري وبسعر واضح.');
+}
 
 export default function PricingPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();

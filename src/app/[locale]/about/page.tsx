@@ -1,6 +1,11 @@
 import { isLocale } from "@/i18n/config";
+import { pageMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  return pageMeta(params.locale, '/about', 'About | SAT Markets', 'من نحن | سات ماركتس', 'The neutral, verified commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL 1200025510).', 'منصة العقار التجاري المحايدة والموثّقة في السعودية، مشغّلة من سات العقارية (رخصة فال 1200025510).');
+}
 
 export default function AboutPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
