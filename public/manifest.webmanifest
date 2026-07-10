@@ -1,0 +1,19 @@
+{
+  "name": "SAT Markets",
+  "short_name": "SAT Markets",
+  "description": "Verified commercial real estate exchange for Saudi Arabia. Riyadh-first leasing and sales, a decision-grade rent index, and AI search.",
+  "start_url": "/en",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1C1A15",
+  "theme_color": "#1C1A15",
+  "dir": "auto",
+  "lang": "en",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
