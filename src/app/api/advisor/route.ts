@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { allow } from "@/lib/ratelimit";
+import { unsourcedFigure } from "@/lib/market/guard";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -32,23 +33,7 @@ function srcLabel(s: string, arabic: boolean): string {
 // model output that is not present in the allowed source (the user's own words
 // or a verified band we supplied). Errs safe. The value and watch paths are
 // already data-gated; this fences the chat, ask, and draft paths.
-function unsourcedFigure(text: string, allowed: string): boolean {
-  if (!text) return false;
-  const ascii = (x: string) => (x || "").replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).toLowerCase();
-  const stripNum = (x: string) => x.replace(/[,\s٬]/g, "");
-  const t = ascii(text);
-  const a = stripNum(ascii(allowed));
-  const unit = /(sar|ريال|riyal|halala|\/\s*m²|\/\s*sqm|per\s*sqm|per\s*square|sq\s*m|m²|m2|per\s*year|\/\s*yr|per\s*month|\/\s*mo|percent|%|٪)/i;
-  const numRe = /\d[\d,.٬]*/g;
-  let m: RegExpExecArray | null;
-  while ((m = numRe.exec(t))) {
-    const num = m[0];
-    if (stripNum(num).replace(/\./g, "").length < 2) continue;
-    const ctx = t.slice(Math.max(0, m.index - 20), Math.min(t.length, m.index + num.length + 20));
-    if (unit.test(ctx) && !a.includes(stripNum(num))) return true;
-  }
-  return false;
-}
+// unsourcedFigure lives in src/lib/market/guard.ts (shared with translate + shortlist).
 
 // Single server-side call to DeepSeek (OpenAI-compatible). The key never reaches
 // the browser. Returns message text, or null on any failure so callers fall back.

@@ -142,7 +142,18 @@ export async function POST(req: NextRequest) {
   if (shown.length === 0) {
     message = locale === "ar" ? "لا توجد مساحات موثّقة مطابقة الآن. وسّع الميزانية أو الموقع، أو انشر طلباً وسيصلك ردّ المُلّاك والوسطاء." : "No verified spaces match right now. Widen the budget or location, or post a requirement and let owners and brokers come to you.";
   } else {
-    const prices = shown.map((r: any) => r.asking_rent_sqm).filter((v: any) => v != null).map(Number);
+    const prices = shown
+      .filter((r: any) => {
+        const bh = r.verdict?.band_high != null ? Number(r.verdict.band_high) : null;
+        if (bh != null && r.asking_rent_sqm != null && Number(r.asking_rent_sqm) > bh * 3) {
+          console.warn(`[shortlist] ${r.reference_code || r.id} asking ${r.asking_rent_sqm} exceeds 3x band_high ${bh}; excluded from range`);
+          return false;
+        }
+        return true;
+      })
+      .map((r: any) => r.asking_rent_sqm)
+      .filter((v: any) => v != null)
+      .map(Number);
     const lo = prices.length ? Math.min(...prices).toLocaleString("en-US") : null;
     const hi = prices.length ? Math.max(...prices).toLocaleString("en-US") : null;
     const within = shown.filter((r: any) => r.verdict?.status === "within" || r.verdict?.status === "below").length;

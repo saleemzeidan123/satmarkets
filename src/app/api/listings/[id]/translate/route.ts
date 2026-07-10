@@ -15,6 +15,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
 import { allow } from "@/lib/ratelimit";
+import { unsourcedFigure } from "@/lib/market/guard";
 
 export const runtime = "nodejs";
 
@@ -66,10 +67,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // Title
   if (listing.title_en && (force || hashSource(listing.title_en) !== listing.title_ar_src_hash)) {
     const r = await translateToArabic(listing.title_en, { tier });
-    update.title_ar = r.arabic;
-    update.title_ar_src_hash = r.srcHash;
-    model = r.model;
-    touched = true;
+    if (unsourcedFigure(r.arabic, listing.title_en)) {
+      console.warn(`[translate] unsourced figure in title of ${id}; keeping source`);
+    } else {
+      update.title_ar = r.arabic;
+      update.title_ar_src_hash = r.srcHash;
+      model = r.model;
+      touched = true;
+    }
   }
 
   // Description (longer copy; default to the chosen tier)
@@ -78,10 +83,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     (force || hashSource(listing.description_en) !== listing.description_ar_src_hash)
   ) {
     const r = await translateToArabic(listing.description_en, { tier });
-    update.description_ar = r.arabic;
-    update.description_ar_src_hash = r.srcHash;
-    model = r.model;
-    touched = true;
+    if (unsourcedFigure(r.arabic, listing.description_en)) {
+      console.warn(`[translate] unsourced figure in description of ${id}; keeping source`);
+    } else {
+      update.description_ar = r.arabic;
+      update.description_ar_src_hash = r.srcHash;
+      model = r.model;
+      touched = true;
+    }
   }
 
   if (!touched) {
