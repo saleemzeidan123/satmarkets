@@ -8,6 +8,7 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
+import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
 import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
 
@@ -208,6 +209,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
         </div>
         <div>
           <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} />
+          <ContactBar phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>
     </div>

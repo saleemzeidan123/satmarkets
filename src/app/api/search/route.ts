@@ -76,6 +76,25 @@ export async function POST(req: NextRequest) {
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ results: [], parsed: {}, clarify: false });
 
+  // WO-8 reference-code fast path: a SATM code query resolves straight to its
+  // listing via one indexed lookup, before any parsing.
+  {
+    const qs = raw.trim().toUpperCase().replace(/\s+/g, "");
+    const m = qs.match(/^SAT[M]?-?([0-9A-Z]{4,10})$/);
+    if (m) {
+      const code = `SATM-${m[1]}`;
+      const { data: byRef } = await supabase
+        .from("listings")
+        .select("*, districts(name_en, name_ar, city)")
+        .eq("status", "published")
+        .ilike("reference_code", code)
+        .limit(1);
+      if (byRef && byRef.length) {
+        return NextResponse.json({ parsed: { reference: byRef[0].reference_code }, clarify: false, byReference: true, count: byRef.length, results: byRef });
+      }
+    }
+  }
+
   // Smart parse first (DeepSeek, Arabic + nuance), rules parser as the fallback.
   const ai = await llmParse(raw);
   const parsed = ai || rulesParse(raw);

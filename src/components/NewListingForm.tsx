@@ -13,9 +13,11 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
   const [f, setF] = useState({
     title_en: "", asset_type: "office", deal_type: "lease", district_id: districts[0]?.id || "",
     area_sqm: "", price: "", description_en: "",
+    contact_phone: "", contact_email: "",
     lister_type: "owner_direct", video_url: "", floorplan_url: "", authorization_doc_url: "",
   });
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const [ch, setCh] = useState({ whatsapp: true, call: true, email: false, message: true });
   const assets = ["office","retail","medical","showroom","warehouse","serviced","education","land","gas_station","entertainment","wedding_hall","worker_housing","self_storage","hospitality","mixed_use"];
   const isBroker = f.lister_type === "broker_authorized";
 
@@ -30,6 +32,8 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       asking_rent_sqm: f.deal_type === "lease" ? Number(f.price) : null,
       sale_price: f.deal_type === "sale" ? Number(f.price) : null,
       description_en: f.description_en || null,
+      contact_phone: f.contact_phone || null, contact_email: f.contact_email || null,
+      contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
       lister_type: f.lister_type,
       video_url: f.video_url || null, floorplan_url: f.floorplan_url || null,
       authorization_doc_url: isBroker ? f.authorization_doc_url : null,
@@ -68,6 +72,20 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
         <input placeholder="Video tour URL (YouTube or .mp4, optional)" value={f.video_url} onChange={(e)=>set("video_url",e.target.value)} className={inp} />
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
+      </div>
+
+      <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">
+        <div className="text-[12px] font-medium text-charcoal/70">How viewers reach you</div>
+        <input placeholder="Contact phone (WhatsApp and calls)" value={f.contact_phone} onChange={(e)=>set("contact_phone",e.target.value)} className={inp} />
+        <input placeholder="Contact email (optional)" value={f.contact_email} onChange={(e)=>set("contact_email",e.target.value)} className={inp} />
+        <div className="flex flex-wrap gap-3 text-[13px]">
+          {(([["whatsapp","WhatsApp"],["call","Call"],["email","Email"],["message","Message on SAT"]]) as [string,string][]).map(([k,lab])=>(
+            <label key={k} className="flex items-center gap-1.5">
+              <input type="checkbox" checked={(ch as Record<string,boolean>)[k]} onChange={(e)=>setCh((p)=>({ ...p, [k]: e.target.checked }))} /> {lab}
+            </label>
+          ))}
+        </div>
+        <p className="text-[11px] text-charcoal/45">You choose how viewers reach you. The on-platform message keeps enquiries tracked by SAT.</p>
       </div>
 
       <button disabled={busy} className="rounded bg-signal px-4 py-2 text-white">{busy ? "Saving..." : "Save as draft"}</button>

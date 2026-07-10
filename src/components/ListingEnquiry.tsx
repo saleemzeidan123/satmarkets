@@ -86,8 +86,7 @@ export default function ListingEnquiry({
  const [vDone, setVDone] = useState(false);
  const [vErr, setVErr] = useState("");
  const [qual, setQual] = useState<Record<string, string>>({});
- const questions: Q[] = !lease ? QUAL_SALE : (QUAL[assetType || ""] || QUAL_DEFAULT);
- const qualComplete = questions.every((q) => qual[q.k]);
+ const questions: Q[] = (!lease ? QUAL_SALE : (QUAL[assetType || ""] || QUAL_DEFAULT)).slice(0, 2);
 
  useEffect(() => {
   try {
@@ -127,7 +126,7 @@ export default function ListingEnquiry({
  }, [locale]);
 
  async function submitViewing() {
-  if (!slot || !name.trim() || !email.trim() || !qualComplete) return;
+  if (!slot || !name.trim() || !email.trim()) return;
   setVBusy(true); setVErr("");
   try {
    const res = await fetch("/api/viewings", {
@@ -240,7 +239,7 @@ export default function ListingEnquiry({
        </div>
        {slot && (
         <div className="col gap8" style={{ marginTop: 10 }}>
-         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{ar ? "ثلاث إجابات سريعة ليعرف المعلن أن الزيارة تستحق وقته." : "Three quick answers so the lister knows the visit is worth their time."}</div>
+         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{ar ? "إجابتان سريعتان اختياريتان ليعرف المعلن أن الزيارة تستحق وقته." : "Two quick, optional answers so the lister knows the visit is worth their time."}</div>
          {questions.map((q) => (
           <div key={q.k}>
            <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</div>
@@ -254,7 +253,7 @@ export default function ListingEnquiry({
          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "اسمك" : "Your name"} style={fld} />
          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Work email"} type="email" style={fld} />
          {vErr ? <div style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
-         <button type="button" disabled={vBusy || !name.trim() || !email.trim() || !qualComplete} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() || !qualComplete ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
+         <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
         </div>
        )}
       </>
