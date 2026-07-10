@@ -287,7 +287,7 @@ export default function FindPage() {
                 <div className="text-sm font-semibold text-slate-900">{ar ? r.title_ar || r.title_en : r.title_en}</div>
                 <div className="mt-0.5 text-xs text-slate-500">
                   {r.reference_code}
-                  {r.area_sqm != null && <> · {n(r.area_sqm)} m²</>}
+                  {r.area_sqm != null && <> · <bdi dir="ltr">{n(r.area_sqm)} m²</bdi></>}
                   {r.asking_rent_sqm != null && <> · {n(r.asking_rent_sqm)} {ar ? "ريال/م²" : "SAR/m²"}</>}
                 </div>
               </div>

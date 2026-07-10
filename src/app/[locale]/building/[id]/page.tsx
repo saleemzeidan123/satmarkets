@@ -97,7 +97,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         ...(b.district_id ? [{ "@type": "ListItem", position: 3, name: ar ? (b.district_label_ar || b.district_label) : b.district_label, item: `${SITE}/${locale}/listings?district=${b.district_id}` }] : []),
         { "@type": "ListItem", position: b.district_id ? 4 : 3, name, item: `${SITE}/${locale}/building/${b.id}` },
       ] }} />
-      <Link href={`/${locale}/map`} className="text-[13px] text-charcoal/55 hover:text-charcoal">← {T.back}</Link>
+      <Link href={`/${locale}/map`} className="text-[13px] text-charcoal/55 hover:text-charcoal">{ar ? "→" : "←"} {T.back}</Link>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="relative h-52 sm:h-60">
@@ -194,7 +194,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تقرير المنطقة" : "Area report"} →</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح المعروض" : "Browse this use"} →</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} →</Link></div>
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تقرير المنطقة" : "Area report"} {ar ? "←" : "→"}</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح المعروض" : "Browse this use"} {ar ? "←" : "→"}</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} {ar ? "←" : "→"}</Link></div>
       <p className="mt-6 text-xs text-charcoal/40">{T.note}</p>
     </section>
   );

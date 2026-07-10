@@ -90,7 +90,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
-        <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{"←"} {ar ? "العروض" : "LISTINGS"} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
+        <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {ar ? "العروض" : "LISTINGS"} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "ملف PDF" : "Flyer / PDF"}</Link><SaveButton id={l.id} locale={locale} /><span className="chip"><Icon.arrow size={15} /> {ar ? "مشاركة" : "Share"}</span></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
@@ -104,7 +104,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
-            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span>{l.area_sqm} m²</span>
+            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
           </div>
           <JsonLd data={{
             "@type": "RealEstateListing",
@@ -197,7 +197,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
                         <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (ar ? "عند الطلب" : "On request")}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? (s.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
                         <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? s.title_ar : s.title_en) || s.reference_code}</div>
-                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · {s.area_sqm} m²</div>
+                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · <bdi dir="ltr">{s.area_sqm} m²</bdi></div>
                       </div>
                     </Link>
                   );

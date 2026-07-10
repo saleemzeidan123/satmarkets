@@ -129,7 +129,7 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
              return (
               <Link key={l.id} href={`/${loc}/listings/${l.id}`} onClick={() => setOpen(false)} className="row gap10" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 10, padding: 9, textDecoration: "none", color: "inherit" }}>
                <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={15} /></span>
-               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{assetLabel(l.asset_type, loc)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
+               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{assetLabel(l.asset_type, loc)} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{dn ? " · " + dn : ""}</div></div>
                <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</div></div>
               </Link>
              );

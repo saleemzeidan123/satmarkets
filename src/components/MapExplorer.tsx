@@ -353,7 +353,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
            ) : (<div className="mt-1 text-[11px] text-charcoal/40">{t.noData}</div>)}
            <div className="mt-1 flex items-center justify-between">
             <span className="text-[11px] text-charcoal/60">{b.listings} {t.available}</span>
-            <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} →</a>
+            <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
            </div>
           </div>
          </div>
@@ -381,13 +381,13 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
          <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{t.rentBand}</div>
          <div className="mt-0.5 flex items-baseline gap-2">
           <span className="font-display text-2xl text-charcoal">{Math.round(sel.band).toLocaleString()}</span>
-          <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + "–" + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
+          <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + (locale === "ar" ? " إلى " : "–") + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
          </div>
         </div>
        ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/45">{t.noData}</div>)}
        <div className="mt-3 flex items-center justify-between">
         <span className="text-[12.5px] text-charcoal/60">{sel.listings} {t.available}</span>
-        <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-signal hover:underline">{t.viewListings} →</a>
+        <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-signal hover:underline">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
        </div>
       </div>
      </div>

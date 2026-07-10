@@ -20,7 +20,7 @@ export default function RentBand({ row, labels, locale }: {
       <div className="mt-2 flex items-baseline gap-3">
         <div className="font-display text-3xl text-charcoal">{Math.round(row.median).toLocaleString()}</div>
         <div className="text-xs text-charcoal/55">
-          {row.band_low != null ? `${row.band_low.toLocaleString()}–${row.band_high!.toLocaleString()} · ` : ""}{unitLabel(row.unit, locale)}
+          {row.band_low != null ? (locale === "ar" ? `${row.band_low.toLocaleString()} إلى ${row.band_high!.toLocaleString()} · ` : `${row.band_low.toLocaleString()}–${row.band_high!.toLocaleString()} · `) : ""}{unitLabel(row.unit, locale)}
         </div>
       </div>
       <div className="mt-1 text-[11px] text-charcoal/40">{labels.median}</div>

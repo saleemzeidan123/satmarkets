@@ -193,7 +193,7 @@ export default function ListingEnquiry({
    <div className="row between" style={{ alignItems: "flex-start" }}>
     <div>
      <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : (ar ? "عند الطلب" : "On request")}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {price != null ? unit : ""}</small></div>
-     <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{type} · {area} m² · {district}</div>
+     <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{type} · <bdi dir="ltr">{area} m²</bdi> · {district}</div>
     </div>
     <button onClick={toggleSave} aria-label={saved ? (ar ? "محفوظ" : "Saved") : (ar ? "حفظ" : "Save")} className="chip" style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : "var(--silver)", color: saved ? "var(--harbor)" : "var(--slate)" }}>
      <Icon.heart size={15} /> {saved ? (ar ? "محفوظ" : "Saved") : (ar ? "حفظ" : "Save")}

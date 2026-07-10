@@ -66,7 +66,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
     ? (l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString()} ${ar ? "ريال/م²·سنة" : "SAR/m²·yr"}` : (ar ? "عند الطلب" : "On request"))
     : (l.sale_price != null ? `${Number(l.sale_price).toLocaleString()} ${ar ? "ريال" : "SAR"}` : (ar ? "عند الطلب" : "On request"));
   const totalCell = (l: any) => (l.deal_type === "lease" && l.asking_rent_sqm != null && l.area_sqm != null)
-    ? `${Number(l.asking_rent_sqm * l.area_sqm).toLocaleString()} ${ar ? "ريال/سنة" : "SAR/yr"}` : "—";
+    ? `${Number(l.asking_rent_sqm * l.area_sqm).toLocaleString()} ${ar ? "ريال/سنة" : "SAR/yr"}` : "–";
 
   // best value = most below its district median (lease with a verdict)
   let bestIdx = -1, bestDelta = Infinity;
@@ -113,7 +113,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
               <HeaderRow label={ar ? "النوع" : "Type"} render={(l) => <span>{assetLabel(l.asset_type, locale)}</span>} />
               <HeaderRow label={ar ? "السعر" : "Price"} render={(l) => <span className="mono" style={{ fontWeight: 500 }}>{priceCell(l)}</span>} />
               <HeaderRow label={ar ? "الإجمالي · سنة" : "Total · yr"} render={(l) => <span className="mono">{totalCell(l)}</span>} />
-              <HeaderRow label={ar ? "المساحة" : "Net area"} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "—"}</span>} />
+              <HeaderRow label={ar ? "المساحة" : "Net area"} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "–"}</span>} />
               <HeaderRow label={ar ? "الفئة" : "Grade"} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : "N/A"}</span>} />
               <HeaderRow label={ar ? "التجهيز" : "Fit-out"} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
               <HeaderRow label={ar ? "مقابل وسيط الحي" : "vs district median"} render={(l, i) => {
@@ -125,7 +125,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--green)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{ar ? "الأفضل قيمة" : "BEST VALUE"}</span>}</>;
               }} />
               <HeaderRow label={ar ? "الحي" : "District"} render={(l) => <span>{dn(l)}</span>} />
-              <HeaderRow label={ar ? "المالك" : "Owner"} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{ar ? "موثّق" : "Verified"}</span> : <span className="muted">—</span>} />
+              <HeaderRow label={ar ? "المالك" : "Owner"} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{ar ? "موثّق" : "Verified"}</span> : <span className="muted">–</span>} />
 
               <div style={{ display: "grid", gridTemplateColumns: GRID, borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
                 <div style={{ padding: 16, borderRight: "1px solid var(--silver)" }} />
