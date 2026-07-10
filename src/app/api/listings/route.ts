@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
+  if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ listings: [], note: "supabase not configured" });
   const { searchParams } = new URL(req.url);

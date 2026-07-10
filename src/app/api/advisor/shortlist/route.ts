@@ -6,6 +6,7 @@
 // Read-only over published listings + the Rent Index. No auth, no AI cost.
 
 import { NextRequest, NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -58,6 +59,7 @@ function fitScore(l: any, b: Brief, verdictStatus: string): number {
 }
 
 export async function POST(req: NextRequest) {
+  if (!allow("advisor-shortlist", req, 5)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   let b: Brief;
   try {
     b = await req.json();

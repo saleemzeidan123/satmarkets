@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 // Public, already-published index rows (sufficient segments only), used by the
@@ -6,7 +7,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 // only, nothing computed or estimated here.
 export const revalidate = 1800;
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!allow("index-segments", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
  const sb = getSupabaseServer();
  if (!sb) return NextResponse.json({ segments: [] });
  const { data } = await sb

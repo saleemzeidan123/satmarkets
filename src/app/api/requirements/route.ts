@@ -6,7 +6,8 @@ const ASSETS = ["office","retail","warehouse","medical","showroom","serviced","e
 const DEALS = ["lease","sale"];
 
 // GET: the public requirements board (no contact info)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
  const sb = getSupabaseServer();
  if (!sb) return NextResponse.json({ requirements: MOCK });
  const { data: reqs } = await sb.from("requirements_public").select("*").order("created_at", { ascending: false }).limit(50);
