@@ -12,20 +12,22 @@ import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
 import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
 import { getListingById } from "@/lib/queries/listings";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const dict = getDictionary(loc);
   const ar = loc === "ar";
   const l: any = await getListingById(params.id);
-  if (!l) return { title: ar ? "العرض غير موجود | سات ماركتس" : "Listing not found | SAT Markets" };
+  if (!l) return { title: dict.ld.notFoundTitle };
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
   const type = assetLabel(l.asset_type, loc);
   const grade = gradeLabel(l.building_grade, loc);
   const t0 = (ar ? l.title_ar : l.title_en) || l.reference_code;
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
-  const priceStr = price != null ? `${Number(price).toLocaleString("en-US")} ${lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}` : (ar ? "عند الطلب" : "On request");
+  const priceStr = price != null ? `${Number(price).toLocaleString("en-US")} ${lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}` : (dict.ld.onRequest);
   const inDn = String(t0).includes(dn) ? "" : (ar ? ` في ${dn}` : ` in ${dn}`);
   const title = ar ? `${t0}، ${type}${inDn} | سات ماركتس` : `${t0}, ${type}${inDn} | SAT Markets`;
   const description = ar
@@ -38,9 +40,10 @@ export async function generateMetadata({ params }: { params: { locale: string; i
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale; const ar = locale === "ar";
+  const dict = getDictionary(locale as "en" | "ar");
   const sb = getSupabaseServer();
   const l: any = await getListingById(params.id);
-  if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{params.locale === "ar" ? "العرض غير موجود." : "Listing not found."}</div>;
+  if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
   const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : "الرياض";
   const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (ar ? "الرياض" : "Riyadh");
@@ -90,16 +93,16 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
         <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {ar ? "العروض" : "LISTINGS"} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
-        <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "ملف PDF" : "Flyer / PDF"}</Link><SaveButton id={l.id} locale={locale} /><span className="chip"><Icon.arrow size={15} /> {ar ? "مشاركة" : "Share"}</span></div>
+        <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /><span className="chip"><Icon.arrow size={15} /> {dict.ld.share}</span></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
-          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[<Verified key="v" text={ar ? "مالك موثّق" : "Verified owner"} />, <span key="f" className="freeze open"><span className="dot" />{ar ? "مفتوح · تأجير أول" : "Open · first-lease"}</span>]} />
+          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[<Verified key="v" text={dict.ld.verifiedOwner} />, <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
             <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
-            <span className="tag">{ar ? "متاح الآن" : "Available now"}</span>
+            <span className="tag">{dict.ld.availableNow}</span>
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
@@ -122,13 +125,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             { "@type": "ListItem", position: l.district_id ? 4 : 3, name: title, item: `${SITE}/${locale}/listings/${l.id}` },
           ] }} />
           <div className="tabs" style={{ marginTop: 22 }}>
-            <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "نظرة عامة" : "Overview"}</a>
-            <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> {ar ? "ذكاء الموقع" : "Location intelligence"}</a>
-            <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> {ar ? "الاستثمار" : "Investment"}</Link>
-            <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> {ar ? "إيجارات مقارنة" : "Comparable rents"}</a>
+            <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.overview}</a>
+            <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> {dict.ld.locationIntel}</a>
+            <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> {dict.ld.investment}</Link>
+            <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> {dict.ld.comparableRents}</a>
           </div>
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
-            {[[ar ? "المساحة" : "Area", `${l.area_sqm} m²`], [ar ? "الفئة" : "Grade", gradeLabel(l.building_grade, locale)], [ar ? "التجهيز" : "Fit-out", fitoutLabel(l.fitout_condition, locale)], [lease ? (ar ? "المطلوب" : "Asking") : (ar ? "السعر" : "Price"), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (ar ? "عند الطلب" : "On request")]].map((s, i) => (
+            {[[dict.ld.area, `${l.area_sqm} m²`], [dict.ld.grade, gradeLabel(l.building_grade, locale)], [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)]].map((s, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
                 <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
                 <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
@@ -137,7 +140,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           </div>
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
           <div id="comps" className="card pad" style={{ scrollMarginTop: 80, marginTop: 22, background: "var(--cool)", boxShadow: "none" }}>
-            <div className="eyebrow">{ar ? "مسعّر في سياقه · مؤشر الإيجارات" : "Priced in context · Rent Index"}</div>
+            <div className="eyebrow">{dict.ld.pricedInContext}</div>
             {band ? (
               <>
                 <div style={{ position: "relative", height: 76, marginTop: 26 }}>
@@ -145,39 +148,39 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                   <div style={{ position: "absolute", top: 46, height: 8, borderRadius: 6, left: band.pctLo + "%", width: (band.pctHi - band.pctLo) + "%", background: "rgba(58,110,165,.20)", border: "1px solid rgba(58,110,165,.45)" }} />
                   <div style={{ position: "absolute", top: 40, left: band.pctMed + "%", width: 2, height: 20, marginLeft: -1, background: "#3A6EA5" }} />
                   <span className="mono" style={{ position: "absolute", top: 62, left: band.pctLo + "%", transform: "translateX(-50%)", fontSize: 10, color: "var(--slate-2)", whiteSpace: "nowrap" }}>{Math.round(band.lo).toLocaleString()}</span>
-                  <span className="mono" style={{ position: "absolute", top: 62, left: band.pctMed + "%", transform: "translateX(-50%)", fontSize: 10.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{ar ? "الوسيط" : "median"} {Math.round(band.med).toLocaleString()}</span>
+                  <span className="mono" style={{ position: "absolute", top: 62, left: band.pctMed + "%", transform: "translateX(-50%)", fontSize: 10.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{dict.ld.median} {Math.round(band.med).toLocaleString()}</span>
                   <span className="mono" style={{ position: "absolute", top: 62, left: band.pctHi + "%", transform: "translateX(-50%)", fontSize: 10, color: "var(--slate-2)", whiteSpace: "nowrap" }}>{Math.round(band.hi).toLocaleString()}</span>
                   <div style={{ position: "absolute", top: 4, left: band.pctAsk + "%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: band.color, whiteSpace: "nowrap" }}>{Math.round(band.ask).toLocaleString()}</span>
-                    <span style={{ fontSize: 9.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{ar ? "هذا العرض" : "this space"}</span>
+                    <span style={{ fontSize: 9.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{dict.ld.thisSpace}</span>
                     <span style={{ width: 13, height: 13, borderRadius: 999, background: band.color, border: "2.5px solid #fff", boxShadow: "var(--sh-1)", marginTop: 3 }} />
                   </div>
                 </div>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, marginTop: 18, color: "var(--ink)", maxWidth: 560 }}>{ar ? verdict.line_ar : verdict.line_en}</p>
               </>
             ) : (
-              <p className="muted" style={{ fontSize: 14, marginTop: 12, lineHeight: 1.6, maxWidth: 460 }}>{lease ? (ar ? "لا يوجد نطاق منشور كافٍ لهذه المساحة بعد. يمكن للمستشار تقدير السياق السوقي." : "No sufficient published band for this space yet. The advisor can estimate the market context.") : (ar ? "مؤشر الإيجارات يقيس الإيجار للمتر سنوياً؛ سياق سعر البيع متاح عبر المستشار." : "The Rent Index tracks lease rent per m² per year; sale-price context is available via the advisor.")} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{ar ? "اسأل المستشار ←" : "Ask the advisor →"}</Link></p>
+              <p className="muted" style={{ fontSize: 14, marginTop: 12, lineHeight: 1.6, maxWidth: 460 }}>{lease ? (dict.ld.noBandLease) : (dict.ld.noBandSale)} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{dict.ld.askAdvisor}</Link></p>
             )}
-            <div className="muted" style={{ fontSize: 11, marginTop: 16 }}>{ar ? "النطاقات من مؤشر إيجارات سات المنشور. استرشادي وليس نصيحة." : "Bands from the SAT published Rent Index. Indicative, not advice."}</div>
+            <div className="muted" style={{ fontSize: 11, marginTop: 16 }}>{dict.ld.bandsDisclaimer}</div>
           </div>
           <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} dealType={l.deal_type} price={price != null ? Number(price) : null} areaSqm={l.area_sqm ?? null} />
           <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
-            <div className="modhead"><Icon.target size={18} /><span className="ttl">{ar ? "ذكاء الموقع" : "Location intelligence"}</span><span className="grow" /><span className="tag">{ar ? "عيّنة" : "sample"}</span></div>
+            <div className="modhead"><Icon.target size={18} /><span className="ttl">{dict.ld.locationIntel}</span><span className="grow" /><span className="tag">{dict.ld.sample}</span></div>
             <div className="satmkt-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
               <div className="map" style={{ height: 200, borderRadius: 11, border: "1px solid var(--silver)", position: "relative" }}>
                 <div className="iso r3" style={{ left: "50%", top: "52%", width: 180, height: 180 }} />
                 <div className="iso r2" style={{ left: "50%", top: "52%", width: 120, height: 120 }} />
                 <div className="iso r1" style={{ left: "50%", top: "52%", width: 66, height: 66 }} />
                 <div className="isodot" style={{ left: "50%", top: "52%" }} />
-                <span className="tag" style={{ position: "absolute", insetInlineStart: 12, top: 12 }}>{ar ? "زمن القيادة · 5 / 10 / 15 دقيقة" : "Drive-time · 5 / 10 / 15 min"}</span>
+                <span className="tag" style={{ position: "absolute", insetInlineStart: 12, top: 12 }}>{dict.ld.driveTime}</span>
               </div>
               <div className="col" style={{ gap: 18 }}>
                 <div className="row gap20">
-                  <div className="kpi"><span className="v tnum">412k</span><span className="l">{ar ? "السكان النهاريون" : "Daytime population"}</span></div>
-                  <div className="kpi"><span className="v tnum">+18%</span><span className="l">{ar ? "الحركة مقابل متوسط الحي" : "Footfall vs district avg"}</span></div>
+                  <div className="kpi"><span className="v tnum">412k</span><span className="l">{dict.ld.daytimePopulation}</span></div>
+                  <div className="kpi"><span className="v tnum">+18%</span><span className="l">{dict.ld.footfallVsDistrict}</span></div>
                 </div>
                 <div>
-                  <div className="muted" style={{ fontSize: 11.5, marginBottom: 8 }}>{ar ? "حركة أيام الأسبوع بالساعة" : "Weekday footfall by hour"}</div>
+                  <div className="muted" style={{ fontSize: 11.5, marginBottom: 8 }}>{dict.ld.weekdayFootfall}</div>
                   <div className="hours">{hours.map((h, i) => <div key={i} className={"h" + (h >= 16 ? " pk" : "")} style={{ height: (h / 18 * 100) + "%" }} />)}</div>
                 </div>
               </div>
@@ -185,7 +188,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           </div>
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
-              <div className="modhead"><Icon.building size={18} /><span className="ttl">{ar ? "مساحات مشابهة" : "Similar spaces"}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{ar ? "عرض الكل ←" : "See all →"}</Link></div>
+              <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 14, marginTop: 14 }}>
                 {similar.map((s: any) => {
                   const sdn = s.districts ? (ar ? s.districts.name_ar : s.districts.name_en) : dn;
@@ -194,7 +197,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                     <Link key={s.id} href={L(`/listings/${s.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (ar ? "عند الطلب" : "On request")}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? (s.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (dict.ld.onRequest)}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? (s.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
                         <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? s.title_ar : s.title_en) || s.reference_code}</div>
                         <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · <bdi dir="ltr">{s.area_sqm} m²</bdi></div>
                       </div>

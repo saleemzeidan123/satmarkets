@@ -174,5 +174,38 @@
       "Al Olaya",
       "2nd Industrial"
     ]
+  },
+  "ld": {
+    "notFound": "Listing not found.",
+    "notFoundTitle": "Listing not found | SAT Markets",
+    "onRequest": "On request",
+    "flyerPdf": "Flyer / PDF",
+    "share": "Share",
+    "verifiedOwner": "Verified owner",
+    "openFirstLease": "Open · first-lease",
+    "availableNow": "Available now",
+    "overview": "Overview",
+    "locationIntel": "Location intelligence",
+    "investment": "Investment",
+    "comparableRents": "Comparable rents",
+    "area": "Area",
+    "grade": "Grade",
+    "fitout": "Fit-out",
+    "asking": "Asking",
+    "price": "Price",
+    "pricedInContext": "Priced in context · Rent Index",
+    "median": "median",
+    "thisSpace": "this space",
+    "noBandLease": "No sufficient published band for this space yet. The advisor can estimate the market context.",
+    "noBandSale": "The Rent Index tracks lease rent per m² per year; sale-price context is available via the advisor.",
+    "askAdvisor": "Ask the advisor →",
+    "bandsDisclaimer": "Bands from the SAT published Rent Index. Indicative, not advice.",
+    "sample": "sample",
+    "driveTime": "Drive-time · 5 / 10 / 15 min",
+    "daytimePopulation": "Daytime population",
+    "footfallVsDistrict": "Footfall vs district avg",
+    "weekdayFootfall": "Weekday footfall by hour",
+    "similarSpaces": "Similar spaces",
+    "seeAll": "See all →"
   }
 }
