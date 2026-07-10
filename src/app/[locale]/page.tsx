@@ -7,6 +7,8 @@ import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 
+export const revalidate = 600;
+
 function idxSegment(asset: string, grade: string | null): string | null {
   if (asset === "office") return grade === "a" || grade === "a_plus" ? "grade_a" : grade === "b" || grade === "c" ? "grade_b" : null;
   if (asset === "medical") return "clinic";

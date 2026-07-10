@@ -8,6 +8,7 @@ import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { getBuildingById } from "@/lib/queries/listings";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
@@ -17,9 +18,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const ar = loc === "ar";
-  const sb = getSupabaseServer();
-  let b: any = null;
-  if (sb) { const { data } = await sb.from("buildings").select("name_en,name_ar,district_label,district_label_ar,city,grade,asset_type").eq("id", params.id).maybeSingle(); b = data; }
+  const b: any = await getBuildingById(params.id);
   if (!b) return { title: ar ? "المبنى غير موجود | سات ماركتس" : "Building not found | SAT Markets" };
   const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (ar ? "مبنى" : "Building");
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
@@ -39,7 +38,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   const dict = getDictionary(locale);
   const sb = getSupabaseServer();
   if (!sb) notFound();
-  const { data: b } = await sb.from("buildings").select("*").eq("id", params.id).maybeSingle();
+  const b: any = await getBuildingById(params.id);
   if (!b) notFound();
   const [{ data: units }, { data: rentRows }, { data: briefs }] = await Promise.all([
     sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("building_id", b.id).eq("status", "published").order("created_at", { ascending: false }),

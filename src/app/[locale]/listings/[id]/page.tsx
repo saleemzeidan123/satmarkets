@@ -11,14 +11,13 @@ import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
 import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
+import { getListingById } from "@/lib/queries/listings";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const ar = loc === "ar";
-  const sb = getSupabaseServer();
-  let l: any = null;
-  if (sb) { const { data } = await sb.from("listings").select("title_en,title_ar,reference_code,asset_type,building_grade,deal_type,area_sqm,asking_rent_sqm,sale_price,districts(name_en,name_ar,city)").eq("id", params.id).single(); l = data; }
+  const l: any = await getListingById(params.id);
   if (!l) return { title: ar ? "العرض غير موجود | سات ماركتس" : "Listing not found | SAT Markets" };
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
   const type = assetLabel(l.asset_type, loc);
@@ -40,8 +39,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale; const ar = locale === "ar";
   const sb = getSupabaseServer();
-  let l: any = null;
-  if (sb) { const { data } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("id", params.id).single(); l = data; }
+  const l: any = await getListingById(params.id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{params.locale === "ar" ? "العرض غير موجود." : "Listing not found."}</div>;
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
   const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : "الرياض";

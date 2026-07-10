@@ -6,6 +6,8 @@ import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel } from "@/lib
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
+
+export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
