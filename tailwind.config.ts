@@ -20,10 +20,10 @@ const config: Config = {
         gold: "#3A6EA5", "gold-soft": "#6E92EE", "gold-deep": "#2C557F"
       },
       fontFamily: {
-        display: ["Playfair Display", "Georgia", "serif"],
-        sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
-        arabic: ["IBM Plex Sans Arabic", "system-ui", "sans-serif"],
-        mono: ["IBM Plex Mono", "ui-monospace", "monospace"]
+        display: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        arabic: ["var(--font-ar)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"]
       },
       boxShadow: {
         "sh-1": "0 2px 8px rgba(20,24,27,.05)",

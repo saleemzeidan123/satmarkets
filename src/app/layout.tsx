@@ -3,6 +3,12 @@ import "@/styles/sat-platform.css";
 import "@/styles/footer.css";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
+import { Playfair_Display, Hanken_Grotesk, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+
+const serif = Playfair_Display({ subsets: ["latin"], weight: ["500", "600", "700"], display: "swap", variable: "--font-serif" });
+const sans = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-sans" });
+const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mono" });
+const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-ar" });
 
 export const metadata = {
   title: "SAT Markets | Verified commercial real estate, Saudi Arabia",
@@ -20,12 +26,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const locale = headers().get("x-locale") === "ar" ? "ar" : "en";
   const dir = locale === "ar" ? "rtl" : "ltr";
   return (
-    <html lang={locale} dir={dir}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet" />
-      </head>
+    <html lang={locale} dir={dir} className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}>
       <body>{children}</body>
     </html>
   );

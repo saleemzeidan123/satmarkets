@@ -45,8 +45,8 @@ export function Logo({ size = 28, rev = false, lg = false, base, lit }: { size?:
     <div className="logo">
       <svg viewBox="0 0 100 100" width={Math.round(s * 1.04)} height={Math.round(s * 1.04)} style={{ flex: "none", display: "block" }}>{buildParcel(markBase, blue, "tr")}</svg>
       <div className="wm" style={{ lineHeight: 1.0 }}>
-        <span className="s1" style={{ fontFamily: '"Playfair Display",Georgia,serif', fontWeight: 800, fontSize: fontPx, color: blue, letterSpacing: ".01em" }}>SAT</span>
-        <span className="s2" style={{ fontFamily: '"Playfair Display",Georgia,serif', fontWeight: 800, fontSize: fontPx, textTransform: "uppercase", color: rev ? "var(--cool)" : "var(--ink)", letterSpacing: ".01em" }}>MARKETS</span>
+        <span className="s1" style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontWeight: 800, fontSize: fontPx, color: blue, letterSpacing: ".01em" }}>SAT</span>
+        <span className="s2" style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontWeight: 800, fontSize: fontPx, textTransform: "uppercase", color: rev ? "var(--cool)" : "var(--ink)", letterSpacing: ".01em" }}>MARKETS</span>
       </div>
     </div>
   );

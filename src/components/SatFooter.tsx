@@ -30,8 +30,8 @@ function SatLogo({ size = 30, rev = true }: { size?: number; rev?: boolean }) {
     <span style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.2) }}>
       <SatMark size={size} base={rev ? COOL : INK} lit={HARBOR} />
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1 }}>
-        <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", color: HARBOR }}>SAT</span>
-        <span style={{ fontFamily: "'Playfair Display',Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", textTransform: "uppercase", color: rev ? COOL : INK }}>MARKETS</span>
+        <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", color: HARBOR }}>SAT</span>
+        <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", textTransform: "uppercase", color: rev ? COOL : INK }}>MARKETS</span>
       </span>
     </span>
   );

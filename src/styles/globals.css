@@ -11,24 +11,24 @@ body {
     radial-gradient(820px 460px at -8% 2%, rgba(58,110,165,0.04), transparent 55%),
     #F6F8FB;
   color: #1C1A15;
-  font-family: "Hanken Grotesk", system-ui, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
 }
-[dir="rtl"] { font-family: "IBM Plex Sans Arabic", system-ui, sans-serif; }
+[dir="rtl"] { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
   letter-spacing: 0;
-  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  font-family: var(--font-ar), system-ui, sans-serif;
   text-transform: none;
 }
 [dir="rtl"] .fig { letter-spacing: 0; }
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] .font-display {
-  font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+  font-family: var(--font-ar), system-ui, sans-serif;
   letter-spacing: 0;
   line-height: 1.4;
   font-weight: 600;
 }
-h1,h2,h3,.font-display { font-family: "Playfair Display", Georgia, serif; font-weight: 500; letter-spacing: -0.01em; text-wrap: balance; }
+h1,h2,h3,.font-display { font-family: var(--font-serif), Georgia, serif; font-weight: 500; letter-spacing: -0.01em; text-wrap: balance; }
 p, li { text-wrap: pretty; }
 ::selection { background: rgba(58,110,165,0.16); }
 a { transition: color .18s ease; }
@@ -76,7 +76,7 @@ a { transition: color .18s ease; }
 .divider-gold { height:2px; width:46px; background: linear-gradient(90deg,#3A6EA5, transparent); border-radius: 2px; }
 
 /* ---- figures: terminal-style tabular numerals + live signal ---- */
-.fig { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.fig { font-family: var(--font-mono), ui-monospace, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 @keyframes livepulse { 0%{ box-shadow:0 0 0 0 rgba(58,110,165,0.5); } 70%{ box-shadow:0 0 0 5px rgba(58,110,165,0); } 100%{ box-shadow:0 0 0 0 rgba(58,110,165,0); } }
 .live-dot { display:inline-block; width:7px; height:7px; border-radius:999px; background:#3A6EA5; animation: livepulse 2.2s infinite; }
@@ -294,7 +294,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 
 
 /* ---- Skip-to-content link (a11y): visually hidden until keyboard focus ---- */
-.skip-link{position:fixed;top:8px;left:8px;z-index:200;background:var(--harbor,#3A6EA5);color:#fff;padding:10px 16px;border-radius:8px;font:600 13.5px "Hanken Grotesk",system-ui,sans-serif;text-decoration:none;transform:translateY(-160%);transition:transform .18s ease;}
+.skip-link{position:fixed;top:8px;left:8px;z-index:200;background:var(--harbor,#3A6EA5);color:#fff;padding:10px 16px;border-radius:8px;font:600 13.5px var(--font-sans),system-ui,sans-serif;text-decoration:none;transform:translateY(-160%);transition:transform .18s ease;}
 .skip-link:focus{transform:translateY(0);outline:2px solid #fff;outline-offset:2px;}
 [dir="rtl"] .skip-link{left:auto;right:8px;}
 #main:focus{outline:none;}
