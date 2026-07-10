@@ -31,7 +31,7 @@ export default function ContactBar({ phone, email, channels, refCode, title, url
     btns.push(<a key="msg" href={messageHref} className={`${base} border border-line`}>{ar ? "رسالة عبر سات" : "Message"}</a>);
   if (btns.length === 0) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur sm:sticky sm:bottom-4 sm:mx-auto sm:max-w-md sm:rounded-2xl sm:border sm:shadow-lg" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 p-3 backdrop-blur md:static md:z-auto md:mt-3 md:rounded-2xl md:border md:border-line md:p-3 md:shadow-sm" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
       <div className="flex gap-2">{btns}</div>
     </div>
   );

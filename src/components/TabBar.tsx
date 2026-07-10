@@ -25,7 +25,7 @@ export default function TabBar({ locale }: { locale: string }) {
   const tabs = [
     { href: `/${locale}`, label: ar ? "الرئيسية" : "Home", ic: IC.home, exact: true, badge: 0 },
     { href: `/${locale}/listings`, label: ar ? "استكشف" : "Explore", ic: IC.explore, exact: false, badge: 0 },
-    { href: `/${locale}/find`, label: ar ? "اطلب" : "Post", ic: IC.post, exact: false, badge: 0 },
+    { href: `/${locale}/post-requirement`, label: ar ? "اطلب" : "Post", ic: IC.post, exact: false, badge: 0 },
     { href: `/${locale}/rent-index`, label: ar ? "المؤشر" : "Index", ic: IC.index, exact: false, badge: 0 },
     { href: `/${locale}/saved`, label: ar ? "المحفوظة" : "Saved", ic: IC.saved, exact: false, badge: saved },
   ];

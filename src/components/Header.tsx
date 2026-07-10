@@ -35,15 +35,16 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   }, [open]);
 
   const ar = locale === "ar";
-  const nav = [
-    { href: `/${locale}/map`, label: (dict.nav as any).map ?? "Map" },
-    { href: `/${locale}/area`, label: (dict.nav as any).areas ?? "Location Intelligence" },
-    { href: `/${locale}/listings`, label: dict.nav.listings },
-    { href: `/${locale}/advisor`, label: ar ? "المستشار الذكي" : "AI Advisor" },
-    { href: `/${locale}/find`, label: ar ? "اعثر على مساحتك" : "Find your space" },
+  const primaryNav = [
+    { href: `/${locale}/listings`, label: (dict.nav as any).explore ?? (ar ? "استكشف" : "Explore") },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
-    { href: `/${locale}/pricing`, label: ar ? "الأسعار" : "Pricing" },
+    { href: `/${locale}/advisor`, label: (dict.nav as any).advisor ?? (ar ? "المستشار" : "Advisor") },
+    { href: `/${locale}/requirements`, label: dict.nav.requirements },
+  ];
+  const nav = [
     { href: `/${locale}/about`, label: dict.nav.about },
+    { href: `/${locale}/pricing`, label: ar ? "الأسعار" : "Pricing" },
+    { href: `/${locale}/brokers`, label: ar ? "الوسطاء" : "Brokers" },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = ar ? "تسجيل الدخول" : "Sign in";
@@ -59,6 +60,14 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
+
+        <nav className="hidden md:flex items-center gap-0.5" aria-label={ar ? "التنقل الرئيسي" : "Primary"}>
+          {primaryNav.map((n) => (
+            <Link key={n.href} href={n.href} className={`rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors hover:bg-ivory-2 ${active(n.href) ? "text-harbor font-semibold" : "text-charcoal/75"}`}>
+              {n.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
@@ -104,7 +113,6 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                     <span>{savedLabel}</span>
                     {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
                   </Link>
-                  <Link href={`/${locale}/dashboard`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{dashLabel}</Link>
                   <Link href={`/${locale}/login`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{signInLabel}</Link>
                 </div>
 

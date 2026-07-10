@@ -255,7 +255,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 @media(prefers-reduced-motion:reduce){.job-card,.job-card::after,.jc-ic,.jc-arrow{transition:none;}.job-card:hover{transform:none;}}
 
 /* ---- Floating SAT Advisor widget ---- */
-.advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(74px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
+.advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(82px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
 @media(min-width:1024px){.advfab{bottom:22px;inset-inline-end:22px;}}
 .advfab:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(20,24,28,.36);}
 .advfab:active{transform:scale(.93);}
