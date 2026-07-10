@@ -27,7 +27,7 @@ const ASSETS = [
  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null } }) {
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { gradeAYoyPct: number; gradeAOccupancyPct: number; gradeAMedian: number; kafdMedian: number; period: string; source: string } }) {
  const router = useRouter();
  const ar = locale === "ar";
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
@@ -98,7 +98,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   bandH: "طبقة التسعير خلف كل قرار",
   bandP1: "معايير الربع الأول 2026 المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو حدّد نطاقاً، أو قيّم عقد إيجار. موثّقة المصدر، لا تقديرات.",
   bandBtn: "استكشف مؤشر الإيجارات",
-  bandStat: [["+2.1%", "الفئة A بالرياض، سنوياً (منشور)"], ["2,370", "وسيط الفئة A ريال/م²·سنة"], ["97.7%", "إشغال الفئة A"]] as [string,string][],
+  bandStat: ["الفئة A بالرياض، سنوياً (منشور)", "وسيط الفئة A ريال/م²·سنة", "إشغال الفئة A"] as string[],
   flowEye: "كيف تسير الصفقة",
   flowH: "التمثيل دائماً خيارك الصريح",
   pathATag: "المسار أ، مجاني",
@@ -159,7 +159,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   bandH: "The pricing layer behind every decision",
   bandP1: "Published Q1 2026 benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.",
   bandBtn: "Explore the Rent Index",
-  bandStat: [["+2.1%", "Riyadh Grade A, YoY (published)"], ["2,370", "Grade A median SAR/m²·yr"], ["97.7%", "Grade A occupancy"]] as [string,string][],
+  bandStat: ["Riyadh Grade A, YoY (published)", "Grade A median SAR/m²·yr", "Grade A occupancy"] as string[],
   flowEye: "How a deal flows",
   flowH: "Representation is always your explicit choice",
   pathATag: "Path A, Free",
@@ -395,14 +395,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{ar ? "الوسيط، ريال/م²·سنة" : "median SAR/m²·yr"}</span>
        </div>
        <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${band.low.toLocaleString()} إلى ${band.high.toLocaleString()}` : `Published band: ${band.low.toLocaleString()} to ${band.high.toLocaleString()}`}</div>
-       <div style={{ color: "#34d399", fontSize: "var(--fs-sm)", fontWeight: 600, marginTop: 8 }}>{T.bandStat[0][0]} · {T.bandStat[0][1]}</div>
+       <div style={{ color: "#34d399", fontSize: "var(--fs-sm)", fontWeight: 600, marginTop: 8 }}>{`+${kpis.gradeAYoyPct}%`} · {T.bandStat[0]}</div>
        <svg viewBox="0 0 480 110" width="100%" style={{ marginTop: 16, display: "block" }} preserveAspectRatio="none" aria-hidden="true">
         <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18 L480 110 L0 110 Z" fill="rgba(52,211,153,.12)" />
         <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         <circle cx="480" cy="18" r="4" fill="#34d399" />
        </svg>
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{ar ? "إشغال الفئة A بالرياض" : "Riyadh Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{T.bandStat[2][0]}</span>
+        <span>{ar ? "إشغال الفئة A بالرياض" : "Riyadh Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{`${kpis.gradeAOccupancyPct}%`}</span>
        </div>
       </div>}
      </div>

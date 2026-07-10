@@ -6,6 +6,7 @@ import { assetLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
+import { getPublishedKpis } from "@/lib/market/published";
 
 export const revalidate = 600;
 
@@ -25,6 +26,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const locale = params.locale;
   const ar = locale === "ar";
   const sb = getSupabaseServer();
+  const kpis = await getPublishedKpis();
 
   let rows: Listing[] = [];
   let listings = 0, districts = 0, buildings = 0, verified = 0;
@@ -91,5 +93,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
     verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : "100%",
   };
 
-  return <MarketingHome locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;
+  return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;
 }
