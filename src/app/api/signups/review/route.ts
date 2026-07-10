@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { authed } from "@/lib/adminauth";
+import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -14,9 +16,10 @@ export async function POST(req: NextRequest) {
   if (!token || !url || !serviceKey) {
     return NextResponse.json({ ok: false, error: "Review not configured" }, { status: 503 });
   }
-  let body: { id?: string; status?: string; notes?: string; key?: string } = {};
+  if (!allow("signups-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  if (!authed(req, token)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  let body: { id?: string; status?: string; notes?: string } = {};
   try { body = await req.json(); } catch {}
-  if (body?.key !== token) return NextResponse.json({ ok: false, error: "Not authorized" }, { status: 401 });
   if (!body.id || !(STATUSES as readonly string[]).includes(String(body.status))) {
     return NextResponse.json({ ok: false, error: "id and a valid status are required" }, { status: 400 });
   }
@@ -25,6 +28,6 @@ export async function POST(req: NextRequest) {
     status: body.status,
     notes: body.notes ? String(body.notes).slice(0, 500) : null,
   }).eq("id", body.id);
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+  if (error) { console.error("[signups-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
   return NextResponse.json({ ok: true });
 }

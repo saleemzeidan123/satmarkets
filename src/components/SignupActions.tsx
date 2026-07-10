@@ -14,8 +14,8 @@ export default function SignupActions({ id, token, status }: { id: string; token
     try {
       const res = await fetch("/api/signups/review", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id, status: next, notes, key: token }),
+        headers: { "content-type": "application/json", authorization: "Bearer " + token },
+        body: JSON.stringify({ id, status: next, notes }),
       });
       const j = await res.json().catch(() => ({}));
       if (j?.ok) { location.reload(); } else { setMsg(j?.error || "error"); setBusy(false); }

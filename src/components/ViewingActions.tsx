@@ -9,8 +9,8 @@ export default function ViewingActions({ id, token, status }: { id: string; toke
     try {
       const res = await fetch("/api/viewings/review", {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ id, status: next, key: token }),
+        headers: { "content-type": "application/json", authorization: "Bearer " + token },
+        body: JSON.stringify({ id, status: next }),
       });
       const j = await res.json().catch(() => ({}));
       if (j?.ok) { location.reload(); } else { setMsg(j?.error || "error"); setBusy(false); }

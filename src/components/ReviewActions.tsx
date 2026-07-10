@@ -14,8 +14,8 @@ export default function ReviewActions({ id, token }: { id: string; token: string
     try {
       const res = await fetch(`/api/listings/${id}/review`, {
         method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action, reason, key: token }),
+        headers: { "content-type": "application/json", authorization: "Bearer " + token },
+        body: JSON.stringify({ action, reason }),
       });
       const j = await res.json().catch(() => ({}));
       if (j?.ok) { location.reload(); } else { setMsg(j?.error || "error"); setBusy(false); }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient, ingestRentBase, type RegaRow } from "@/lib/ingest/rentBasePipeline";
+import { authed } from "@/lib/adminauth";
+import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,8 +14,8 @@ export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
 
-  const auth = req.headers.get("authorization") || "";
-  if (auth !== `Bearer ${secret}`) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  if (!allow("cron-ingest-rega", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  if (!authed(req, secret)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
   const sb = getServiceClient();
   if (!sb) return NextResponse.json({ ok: false, error: "no_service_client" }, { status: 503 });
@@ -47,7 +49,8 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
-    return NextResponse.json({ ok: false, error: String(e) }, { status: 500 });
+    console.error("[cron-ingest-rega]", e);
+    return NextResponse.json({ ok: false, error: "ingest_failed" }, { status: 500 });
   }
 }
 
