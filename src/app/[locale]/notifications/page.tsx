@@ -4,6 +4,7 @@ import { Icon } from "@/components/satkit";
 
 type Note = [(p: { size?: number }) => JSX.Element, string, string, string, string, boolean];
 
+import SampleBanner from "@/components/SampleBanner";
 export default function NotificationsPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
@@ -20,6 +21,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
    [Icon.flag, "a", ar ? "ترخيص على وشك الانتهاء" : "Permit expiring", ar ? "ترخيص الإعلان لمتجر التحلية ينتهي خلال 30 يوماً." : "Advertising permit for Tahlia retail expires in 30 days.", ar ? "منذ 3 أيام" : "3 days", false],
   ]],
  ];
+ const unread = groups.reduce((n, g) => n + g[1].filter((x) => x[5]).length, 0);
  const tone: Record<string, [string, string]> = {
   g: ["#E7F3EC", "var(--green)"], a: ["var(--azure-wash)", "var(--azure-d)"],
   h: ["#EAF0F7", "var(--harbor)"], "": ["var(--cool)", "var(--slate)"],
@@ -34,8 +36,9 @@ export default function NotificationsPage({ params }: { params: { locale: string
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 48px" }}>
+    <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14, marginBottom: 22 }}>
-     <div><div className="eyebrow">{ar ? "الإشعارات" : "Notifications"}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "أنت على اطّلاع بكل جديد" : "You’re caught up"}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{ar ? "3 غير مقروءة" : "3 unread"}</div></div>
+     <div><div className="eyebrow">{ar ? "الإشعارات" : "Notifications"}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "أنت على اطّلاع بكل جديد" : "You’re caught up"}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{ar ? `${unread} غير مقروءة` : `${unread} unread`}</div></div>
      <div className="row gap8 wrap"><span className="btn secondary sm">{ar ? "تعليم الكل كمقروء" : "Mark all read"}</span><span className="btn secondary sm"><Icon.gear size={14} /> {ar ? "التفضيلات" : "Preferences"}</span></div>
     </div>
     <div className="notif-grid">

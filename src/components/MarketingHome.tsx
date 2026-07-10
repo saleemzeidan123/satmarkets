@@ -397,7 +397,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <p className="muted" style={{ fontSize: "var(--fs-md)", maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
      <div>
-      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 11, 2, 3]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 8, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
+      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 11, 2]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
        <div key={gi} style={{ marginTop: gi === 0 ? 36 : 30 }}>
         <div className="row gap10" style={{ alignItems: "center", marginBottom: 14 }}>
          <span className="eyebrow">{gt}</span>

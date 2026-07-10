@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "@/components/PrintButton";
 
+import SampleBanner from "@/components/SampleBanner";
 export default function TermSheetPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
@@ -28,6 +29,7 @@ export default function TermSheetPage({ params }: { params: { locale: string } }
     : ["Owner shares the Ejar lease draft", "Both parties sign in Ejar directly", "Deposit paid and keys handed over"];
   return (
     <div style={{ maxWidth: 780, margin: "0 auto", padding: "28px 24px 56px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <SampleBanner ar={ar} />
       <div className="row between wrap no-print" style={{ marginBottom: 18, gap: 10 }}>
         <Link href={`/${locale}/deal`} className="chip" style={{ textDecoration: "none" }}>{ar ? "→ غرفة الصفقة" : "← Deal room"}</Link>
         <PrintButton label={ar ? "طباعة / حفظ PDF" : "Print / save PDF"} />

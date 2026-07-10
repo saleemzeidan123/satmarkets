@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 
+import SampleBanner from "@/components/SampleBanner";
 export default function DocsPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
@@ -22,6 +23,7 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
  ];
  return (
   <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--cool)" }}>
+   <SampleBanner ar={ar} />
    {/* top bar */}
    <div className="row between wrap" style={{ padding: "13px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 12, flex: "none" }}>
     <div className="row gap12" style={{ alignItems: "center" }}>

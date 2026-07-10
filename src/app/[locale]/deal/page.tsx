@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 
+import SampleBanner from "@/components/SampleBanner";
 export default function DealPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
@@ -41,6 +42,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
  return (
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "26px 24px 48px", maxWidth: 1080, margin: "0 auto" }}>
+    <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
      <div><div className="eyebrow">{ar ? "غرفة الصفقة · SR-20418" : "Deal room · SR-20418"}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "مكتب فئة A، برج العليا" : "Grade A Office, Olaya Tower"}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{ar ? "شركة أبراج العليا · 320 م² · العليا" : "Olaya Towers Co. · 320 m² · Al Olaya"}</div></div>
      <span className="freeze open lg"><span className="dot" />{ar ? "مفتوح · أول إيجار" : "Open · first-lease"}</span>

@@ -9,6 +9,7 @@ const fmtN = (v: number) => Math.round(v).toLocaleString("en-US");
 function npv(rate: number, flows: number[]) { return flows.reduce((s, f, i) => s + f / Math.pow(1 + rate, i), 0); }
 function irr(flows: number[]) { let lo = -0.9, hi = 1.5; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (npv(m, flows) > 0) lo = m; else hi = m; } return (lo + hi) / 2; }
 
+import SampleBanner from "@/components/SampleBanner";
 export default function InvestPage({ params }: { params: { locale: string } }) {
  const ar = params.locale === "ar";
  const [price, setPrice] = useState(64800000);
@@ -107,6 +108,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
+    <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{ar ? "تحليل الاستثمار · الربع الأول 2026" : "Investment underwriting · Q1 2026"}</div>

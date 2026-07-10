@@ -4,6 +4,7 @@ import { Icon, Photo, Verified } from "@/components/satkit";
 
 interface Msg { role: "u" | "a"; text: string; }
 
+import SampleBanner from "@/components/SampleBanner";
 export default function MessagesPage({ params }: { params: { locale: string } }) {
  const ar = params.locale === "ar";
  const convs: [string, string, string, string, boolean, string][] = [
@@ -12,6 +13,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
   ["SA", ar ? "مستشار سات" : "SAT Advisor", ar ? "3 تطابقات موثّقة في العليا." : "3 verified matches in Al Olaya.", ar ? "منذ 3 ساعات" : "3h", false, "var(--azure)"],
   ["TH", ar ? "تحلية القابضة" : "Tahlia Holdings", ar ? "سأرسل الكتيّب قريباً." : "I'll send the brochure shortly.", ar ? "الثلاثاء" : "Tue", false, "var(--harbor)"],
  ];
+ const unread = convs.filter((c) => c[4]).length;
  const days = ar ? ["ن", "ث", "ر", "خ", "ج", "س", "ح"] : ["M", "T", "W", "T", "F", "S", "S"];
  const dates = [10, 11, 12, 13, 14, 15, 16];
  const slots: [string, string][] = [["09:00", "av"], ["10:00", "on"], ["11:30", "av"], ["13:00", "off"], ["15:00", "av"], ["16:30", "av"]];
@@ -43,7 +45,8 @@ export default function MessagesPage({ params }: { params: { locale: string } })
  return (
   <div className={"dash msg-dash pane-" + pane}>
    <aside className="msg-list" style={{ width: 330, flex: "none", background: "var(--paper)", borderRight: "1px solid var(--silver)", display: "flex", flexDirection: "column" }}>
-    <div className="dtopbar" style={{ padding: "16px 18px" }}><div><h1 style={{ fontSize: 17 }}>{ar ? "الرسائل" : "Messages"}</h1><div className="sub">{ar ? "2 غير مقروءة" : "2 unread"}</div></div><span style={{ flex: 1 }} /><span className="muted2"><Icon.edit size={18} /></span></div>
+    <SampleBanner ar={ar} />
+    <div className="dtopbar" style={{ padding: "16px 18px" }}><div><h1 style={{ fontSize: 17 }}>{ar ? "الرسائل" : "Messages"}</h1><div className="sub">{ar ? `${unread} غير مقروءة` : `${unread} unread`}</div></div><span style={{ flex: 1 }} /><span className="muted2"><Icon.edit size={18} /></span></div>
     <div style={{ padding: "0 16px 12px" }}><div className="dsearch" style={{ minWidth: 0 }}><Icon.search size={15} /> {ar ? "بحث…" : "Search…"}</div></div>
     <div style={{ flex: 1, overflowY: "auto" }}>
      {convs.map((c, i) => (
