@@ -35,7 +35,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const band = bands[bi] || bands[0] || null;
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
- const [showAll, setShowAll] = useState(false);
  const [sug, setSug] = useState<{ label: string; sub: string; did?: string; verified?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
@@ -221,20 +220,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        ))}
       </div>
       {deal !== "req" && (
-       <div className="hero-assets" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-        {(showAll ? ASSETS : ASSETS.slice(0, 5)).map((a) => {
+       <div className="hero-assets" style={{ display: "flex", flexWrap: "nowrap", gap: 7, marginBottom: 16, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
+        {ASSETS.map((a) => {
          const on = assetType === a.v;
          return (
-          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: showAll ? "0 0 calc(20% - 4.8px)" : "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 82, scrollSnapAlign: "start", padding: "12px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
           </button>
          );
         })}
-        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: showAll ? "0 0 calc(20% - 4.8px)" : "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
-         <span style={{ opacity: .85 }}><Icon.grid size={22} /></span>
-         <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{showAll ? (ar ? "أقل" : "Less") : (ar ? "المزيد" : "More")}</span>
-        </button>
        </div>
       )}
       <div ref={sref} style={{ position: "relative" }}>

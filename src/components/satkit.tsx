@@ -36,7 +36,7 @@ export function Mark({ size = 28, base, lit, litPos, style }: { size?: number; b
   );
 }
 
-export function Logo({ size = 28, rev = false, lg = false, base, lit }: { size?: number; rev?: boolean; lg?: boolean; base?: string; lit?: string }) {
+export function Logo({ size = 28, rev = false, lg = false, base, lit, sub }: { size?: number; rev?: boolean; lg?: boolean; base?: string; lit?: string; sub?: string }) {
   const blue = lit || HARBOR;
   const s = lg ? size * 1.12 : size;
   const fontPx = s * 0.48;
@@ -47,6 +47,7 @@ export function Logo({ size = 28, rev = false, lg = false, base, lit }: { size?:
       <div className="wm" style={{ lineHeight: 1.0 }}>
         <span className="s1" style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontWeight: 800, fontSize: fontPx, color: blue, letterSpacing: ".01em" }}>SAT</span>
         <span className="s2" style={{ fontFamily: 'var(--font-serif),Georgia,serif', fontWeight: 800, fontSize: fontPx, textTransform: "uppercase", color: rev ? "var(--cool)" : "var(--ink)", letterSpacing: ".01em" }}>MARKETS</span>
+        {sub ? <span className="s3" style={{ fontFamily: 'var(--font-sans),system-ui,sans-serif', fontWeight: 600, fontSize: Math.max(8, Math.round(fontPx * 0.34)), textTransform: "uppercase", letterSpacing: ".16em", color: rev ? "rgba(255,255,255,.7)" : "var(--harbor)", marginTop: 3 }}>{sub}</span> : null}
       </div>
     </div>
   );

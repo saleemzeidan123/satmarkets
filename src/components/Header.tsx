@@ -59,11 +59,11 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-        <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
+        <Link href={`/${locale}`} className="flex items-center"><Logo size={34} sub="Commercial exchange" /></Link>
 
         <nav className="hidden md:flex items-center gap-0.5" aria-label={dict.nav.primaryNav}>
           {primaryNav.map((n) => (
-            <Link key={n.href} href={n.href} className={`rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors hover:bg-ivory-2 ${active(n.href) ? "text-harbor font-semibold" : "text-charcoal/75"}`}>
+            <Link key={n.href} href={n.href} className={`rounded-lg px-3 py-2 text-[13.5px] transition-colors ${active(n.href) ? "bg-ivory-2 text-charcoal font-semibold" : "text-charcoal/70 font-medium hover:bg-ivory-2 hover:text-charcoal"}`}>
               {n.label}
             </Link>
           ))}
@@ -82,7 +82,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
               aria-label={menuLabel}
               aria-expanded={open}
               onClick={() => setOpen((v) => !v)}
-              className={`inline-flex h-9 items-center gap-2 rounded-lg border border-line px-2.5 text-charcoal/75 transition-colors hover:bg-ivory-2 ${open ? "bg-ivory-2" : ""}`}
+              className={`inline-flex h-9 items-center gap-2 rounded-lg border border-line px-2.5 text-charcoal/80 transition-colors hover:border-charcoal/25 hover:bg-ivory-2 ${open ? "border-charcoal/25 bg-ivory-2" : ""}`}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 {open ? <><path d="M6 6l12 12"/><path d="M18 6l-12 12"/></> : <><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></>}
