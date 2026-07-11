@@ -1,0 +1,26 @@
+{
+  "simTag": "world-v1",
+  "note": "12 deterministic simulation personas for SAT Markets QA. Arabic-real names and roles. Consumed by scripts/seed-world.mjs. No real people.",
+  "owners": [
+    { "key": "owner_kafd_reit", "name_en": "Faisal Al-Dossary", "name_ar": "فيصل الدوسري", "role": "Institutional owner (KAFD REIT)", "district": "KAFD", "phone": "+966500000101", "channels": ["phone", "message"] },
+    { "key": "owner_hittin_dev", "name_en": "Norah Al-Qahtani", "name_ar": "نورة القحطاني", "role": "North Riyadh developer (Hittin)", "district": "North Riyadh (Granada · Hittin)", "phone": "+966500000102", "channels": ["whatsapp", "message"] },
+    { "key": "owner_olaya_family", "name_en": "Abdulrahman Al-Rajhi", "name_ar": "عبدالرحمن الراجحي", "role": "Family-office owner (Al Olaya)", "district": "Al Olaya", "phone": "+966500000103", "channels": ["phone", "email", "message"] },
+    { "key": "owner_warehouse_2nd", "name_en": "Sultan Al-Harbi", "name_ar": "سلطان الحربي", "role": "Industrial owner (2nd Industrial)", "district": "King Fahd Road", "phone": "+966500000104", "channels": ["whatsapp"] }
+  ],
+  "brokers": [
+    { "key": "broker_sat_licensed", "name_en": "Maha Al-Otaibi", "name_ar": "مها العتيبي", "role": "REGA-licensed broker (SAT mandate)", "fal": "1200025510", "phone": "+966500000201", "channels": ["phone", "message"] },
+    { "key": "broker_independent", "name_en": "Khalid Al-Ghamdi", "name_ar": "خالد الغامدي", "role": "Independent licensed broker", "fal": "1200099887", "phone": "+966500000202", "channels": ["whatsapp", "message"] }
+  ],
+  "occupiers": [
+    { "key": "occ_rhq", "name_en": "Layla Al-Subaie", "name_ar": "ليلى السبيعي", "role": "Regional HQ real-estate lead", "need": "Grade A office, KAFD, 800-1200 sqm", "phone": "+966500000301" },
+    { "key": "occ_clinic", "name_en": "Yousef Al-Shammari", "name_ar": "يوسف الشمري", "role": "Healthcare group (clinic fit-out)", "need": "Medical, North Riyadh, ~400 sqm", "phone": "+966500000302" },
+    { "key": "occ_retail", "name_en": "Reem Al-Zahrani", "name_ar": "ريم الزهراني", "role": "F&B franchise expansion", "need": "Street-front retail, Tahlia, 150-300 sqm", "phone": "+966500000303" },
+    { "key": "occ_startup", "name_en": "Omar Al-Mutairi", "name_ar": "عمر المطيري", "role": "Startup ops (serviced)", "need": "Serviced office, Granada, 10-20 seats", "phone": "+966500000304" }
+  ],
+  "investor": [
+    { "key": "inv_private", "name_en": "Bandar Al-Faisal", "name_ar": "بندر الفيصل", "role": "Private investor (sale-side)", "need": "Income office asset, Riyadh, <30M SAR", "phone": "+966500000401" }
+  ],
+  "reviewer": [
+    { "key": "rev_arabic", "name_en": "Sara Al-Anazi", "name_ar": "سارة العنزي", "role": "Native Arabic reviewer (taste loop)", "phone": "+966500000501" }
+  ]
+}
