@@ -6,6 +6,7 @@ const LOCALES = ["en", "ar"] as const;
 const AR_DISTRICT = "d2222222-2222-2222-2222-222222222222"; // Al Olaya (known seed id)
 
 async function firstListingHref(page: Page): Promise<string> {
+  await page.waitForLoadState("networkidle").catch(() => {});
   const hrefs = await page.$$eval('a[href*="/listings/"]', (els) =>
     els.map((e) => e.getAttribute("href") || "").filter((h) => /\/listings\/[0-9a-f-]{36}/.test(h))
   );
