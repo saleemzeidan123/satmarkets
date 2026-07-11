@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, MarkPin } from "@/components/satkit";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { getDictionary } from "@/i18n/getDictionary";
 
 function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string; dir?: string }) {
  return (
@@ -27,6 +28,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
 export default function AreaPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
+ const ap = getDictionary(params.locale === "ar" ? "ar" : "en").area;
  const hours = [4, 5, 7, 11, 18, 26, 30, 28, 24, 20, 22, 27, 31, 29, 25, 23, 28, 33, 30, 21, 14, 9, 6, 4];
  const origins: [string, number, string][] = ar ? [
   ["حطين · الملقا", 34, ""], ["ممر كافد", 27, ""], ["الحي الدبلوماسي", 19, "h2"],
@@ -45,21 +47,21 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
  return (
   <div style={{ background: "var(--cool)" }}>
    <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-    { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${params.locale}` },
-    { "@type": "ListItem", position: 2, name: ar ? "ذكاء الموقع" : "Location Intelligence", item: `${SITE}/${params.locale}/area` },
+    { "@type": "ListItem", position: 1, name: ap.crumbHome, item: `${SITE}/${params.locale}` },
+    { "@type": "ListItem", position: 2, name: ap.crumbLI, item: `${SITE}/${params.locale}/area` },
    ] }} />
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ar ? "ذكاء الموقع · الربع الأول 2026" : "Location Intelligence · Q1 2026"}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "نطاق العليا التجاري" : "Al Olaya trade area"}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "الحركة والنطاق والجوار التجاري. أرقام تمثيلية، ويجري ربط مصادر الحركة والإنفاق والديموغرافيا السعودية المباشرة." : "Footfall, catchment & co-tenancy. Representative figures, live Saudi mobility, spend and demographic sources are being onboarded."}</div>
+      <div className="eyebrow">{ap.eyebrow}</div>
+      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ap.h1}</h1>
+      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ap.intro}</div>
      </div>
      <div className="row gap10 wrap">
-      <span className="chip">{ar ? "زمن القيادة 10 دقائق" : "Drive-time 10 min"} <Icon.chevd size={14} /></span>
-      <span className="chip">{ar ? "أيام الأسبوع" : "Weekday"} <Icon.chevd size={14} /></span>
-      <span className="btn secondary"><Icon.download size={15} /> {ar ? "تصدير" : "Export"}</span>
-      <span className="btn primary"><Icon.spark size={15} /> {ar ? "اسأل الذكاء" : "Ask AI"}</span>
+      <span className="chip">{ap.driveTime10} <Icon.chevd size={14} /></span>
+      <span className="chip">{ap.weekday} <Icon.chevd size={14} /></span>
+      <span className="btn secondary"><Icon.download size={15} /> {ap.export}</span>
+      <span className="btn primary"><Icon.spark size={15} /> {ap.askAi}</span>
      </div>
     </div>
 
@@ -73,32 +75,32 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
        <div className="iso r2" style={{ left: "52%", top: "50%", width: 220, height: 200 }} />
        <div className="iso r1" style={{ left: "52%", top: "50%", width: 116, height: 108 }} />
        <div className="isodot" style={{ left: "52%", top: "50%" }} />
-       <MarkPin featured price={ar ? "الموقع" : "Subject"} style={{ left: "52%", top: "50%" }} />
+       <MarkPin featured price={ap.subject} style={{ left: "52%", top: "50%" }} />
        {comp.map((p, i) => (
         <span key={i} style={{ position: "absolute", left: p[0], top: p[1], width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", transform: "translate(-50%,-50%)", boxShadow: "0 0 0 3px rgba(58,110,165,.18)" }} />
        ))}
        <div className="card" style={{ position: "absolute", left: 16, bottom: 16, padding: "11px 14px", boxShadow: "var(--sh-2)" }}>
         <div className="row gap16">
-         <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(58,110,165,.35)", border: "1.5px solid rgba(58,110,165,.55)", display: "inline-block" }} /> {ar ? "النطاق التجاري" : "Trade area"}</span>
-         <span className="lgd"><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", display: "inline-block" }} /> {ar ? "مستأجرون مماثلون" : "Comparable occupiers"}</span>
+         <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(58,110,165,.35)", border: "1.5px solid rgba(58,110,165,.55)", display: "inline-block" }} /> {ap.tradeArea}</span>
+         <span className="lgd"><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", display: "inline-block" }} /> {ap.comparableOccupiers}</span>
         </div>
        </div>
-       <div className="tag" style={{ position: "absolute", right: 16, top: 16 }}>{ar ? "زمن القيادة 5 / 10 / 15 دقيقة" : "5 / 10 / 15 min drive-time"}</div>
+       <div className="tag" style={{ position: "absolute", right: 16, top: 16 }}>{ap.driveTimeRange}</div>
       </div>
      </div>
 
      <div className="col gap16">
-      <div className="row gap16 wrap"><IntelStat v="412k" l={ar ? "السكان النهاريون" : "Daytime population"} delta={ar ? "+18% مقابل متوسط الحي" : "+18% vs district avg"} dir="up" /><IntelStat v="168k" l={ar ? "السكان المقيمون" : "Resident population"} delta={ar ? "ضمن 10 دقائق" : "within 10-min"} /></div>
-      <div className="row gap16 wrap"><IntelStat v="138" l={ar ? "مؤشر الحركة (المدينة = 100)" : "Footfall index (city = 100)"} delta={ar ? "+6 ربعياً" : "+6 QoQ"} dir="up" /><IntelStat v={ar ? "47 دقيقة" : "47 min"} l={ar ? "وسيط مدة المكوث" : "Median dwell time"} delta={ar ? "+4 دقائق سنوياً" : "+4 min YoY"} dir="up" /></div>
-      <div className="row gap16 wrap"><IntelStat v="3.2×" l={ar ? "تكرار الزيارة / شهر" : "Visit frequency / month"} delta={ar ? "الزوار المتكررون 58%" : "repeat visitors 58%"} /><IntelStat v="124" l={ar ? "مؤشر وسيط الدخل" : "Median income index"} delta={ar ? "نطاق الربع الأعلى" : "top-quartile catchment"} dir="up" /></div>
+      <div className="row gap16 wrap"><IntelStat v="412k" l={ap.daytimePop} delta={ap.vsDistrict} dir="up" /><IntelStat v="168k" l={ap.residentPop} delta={ap.within10} /></div>
+      <div className="row gap16 wrap"><IntelStat v="138" l={ap.footfallIndex} delta={ap.qoq6} dir="up" /><IntelStat v={ap.dwell47} l={ap.medianDwell} delta={ap.min4yoy} dir="up" /></div>
+      <div className="row gap16 wrap"><IntelStat v="3.2×" l={ap.visitFreq} delta={ap.repeat58} /><IntelStat v="124" l={ap.medianIncome} delta={ap.topQuartile} dir="up" /></div>
      </div>
     </div>
 
     <div className="intel-2" style={{ padding: "20px 24px 0" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "إيقاع الحركة، أيام الأسبوع" : "Footfall rhythm, weekday"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مؤشر بالساعة · الذروة 12–14 و18–19" : "Hourly index · peaks 12–14h & 18–19h"}</div></div>
-       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ar ? "العليا" : "Olaya"}</span>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.footfallRhythm}</div><div className="muted" style={{ fontSize: 12.5 }}>{ap.hourlyIndex}</div></div>
+       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ap.olaya}</span>
       </div>
       <div className="hours" style={{ height: 150, marginTop: 20, gap: 4 }}>
        {hours.map((h, i) => <div key={i} className={"h" + (h >= 30 ? " pk" : "")} style={{ height: (h / 33 * 100) + "%" }} />)}
@@ -109,8 +111,8 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
      </div>
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "من أين يأتي النطاق" : "Where the catchment comes from"}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "موطن أصل الزوار النهاريين" : "Home-origin of daytime visitors"}</div>
+      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.catchmentFrom}</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>{ap.catchmentFromSub}</div>
       <div className="col gap14" style={{ marginTop: 18 }}>
        {origins.map((o, i) => (
         <div key={i} className="hrow"><span className="nm">{o[0]}</span><span className="hbar"><i className={o[2]} style={{ width: o[1] + "%" }} /></span><span className="pc">{o[1]}%</span></div>
@@ -121,11 +123,11 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
     <div className="intel-11" style={{ padding: "20px 24px 40px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, marginBottom: 4 }}>{ar ? "التوزيع العمري للنطاق" : "Catchment age mix"}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "الزوار النهاريون · يميل لسن العمل المهني" : "Daytime visitors · skews working-age professional"}</div>
+      <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, marginBottom: 4 }}>{ap.ageMix}</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>{ap.ageMixSub}</div>
       <div className="row gap24 wrap" style={{ marginTop: 18, alignItems: "center" }}>
        <div className="donut" style={{ width: 132, height: 132, background: `conic-gradient(${stops})` }}>
-        <div className="hole"><span className="mono" style={{ fontSize: 18, fontWeight: 500 }}>62%</span><span style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)" }}>{ar ? "بعمر 25–44" : "aged 25–44"}</span></div>
+        <div className="hole"><span className="mono" style={{ fontSize: 18, fontWeight: 500 }}>62%</span><span style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)" }}>{ap.aged2544}</span></div>
        </div>
        <div className="col gap10 grow">
         {ages.map((a, i) => (
@@ -140,7 +142,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ar ? "مزيج الجوار التجاري في النطاق" : "Co-tenancy mix in trade area"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مستأجرون موثّقون ضمن 10 دقائق قيادة" : "Verified occupiers within 10-min drive"}</div></div>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.coTenancy}</div><div className="muted" style={{ fontSize: 12.5 }}>{ap.coTenancySub}</div></div>
        <span className="muted2"><Icon.store size={18} /></span>
       </div>
       <div className="col gap14" style={{ marginTop: 18 }}>
@@ -150,16 +152,16 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       </div>
       <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "مزيج المستأجرين مستمد من عروض SAT الموثّقة (مباشرة). أرقام الحركة والمكوث والإنفاق هنا عينات تمثيلية، وشراكات البيانات السعودية المباشرة خلفها موضّحة أدناه." : "Occupier mix is drawn from verified SAT listings (live). Mobility, dwell and spend figures shown here are representative samples, the live Saudi data partnerships behind them are described below."}</span>
+       <span className="muted" style={{ fontSize: 12.5 }}>{ap.coTenancyNote}</span>
       </div>
      </div>
     </div>
 
     <div style={{ padding: "8px 24px 48px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div className="eyebrow">{ar ? "كيف تبني SAT ذكاء الموقع" : "How SAT builds location intelligence"}</div>
-      <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 6px" }}>{ar ? "مبني للمملكة العربية السعودية، لأن لا لوحة عالمية تغطيها" : "Built for Saudi Arabia, because no global panel covers it"}</h2>
-      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>{ar ? "تتوقّف Placer.ai وPassBy وGini عند الولايات المتحدة وأوروبا. لاختيار مواقع موثوق على مستوى السوق في المملكة، تجمع SAT محلياً وتقيّم بشفافية، لتدافع عن كل قرار." : "Placer.ai, PassBy and Gini stop at the US and Europe. For reliable, market-wide site selection in the Kingdom, SAT sources locally and scores transparently, so you can defend every decision."}</p>
+      <div className="eyebrow">{ap.howTitle}</div>
+      <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 6px" }}>{ap.howH}</h2>
+      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>
        {(ar ? [["إشارات الجوال","بيانات GPS / واي فاي مجهّلة من شركاء الاتصالات السعوديين، زيارات ومكوث ونطاقات تجارية."],["سجلات وزارة العدل","سجلات الصفقات العقارية المنشورة تعاير معايير الأسعار مقابل صفقات حقيقية."],["بيانات الإنفاق","أنماط معاملات مجهّلة من بوابات الدفع تغذّي إمكانات الإيرادات."],["السجلات الحكومية","الهيئة العامة للإحصاء والهيئة العامة للعقار وإيجار للسكان والدخل ونشاط الإيجار والطلب."]] : [["Mobile signals","Anonymised GPS / Wi-Fi from Saudi telecom partners, visits, dwell, trade areas."],["Ministry of Justice records","Published real estate transaction records calibrate price benchmarks against real deals."],["Spend data","Anonymised transaction patterns from payment gateways feed revenue potential."],["Public records","GASTAT, REGA and Ejar for population, income, lease activity and demand."]]).map((d,i)=>(
@@ -170,17 +172,17 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
        ))}
       </div>
 
-      <div className="eyebrow" style={{ margin: "22px 0 10px" }}>{ar ? "تقييم شفّاف · خمس عدسات" : "Transparent score · five lenses"}</div>
+      <div className="eyebrow" style={{ margin: "22px 0 10px" }}>{ap.scoreTitle}</div>
       <div className="row gap8 wrap">
        {(ar ? ["حركة المشاة","ملاءمة الديموغرافيا","إمكانات السوق","المنافسة","الوضوح"] : ["Foot traffic","Demographics fit","Market potential","Competition","Visibility"]).map((l,i)=>(
         <span key={i} className="chip on" style={{ fontSize: "var(--fs-xs)" }}>{l}</span>
        ))}
       </div>
-      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>{ar ? "يُقيَّم كل موقع عبر هذه العدسات الخمس مع إظهار المنطق، لا رقم صندوق أسود أبداً. يعمل للمكاتب والتجزئة والاستخدام المختلط والمستودعات، لا التجزئة فقط." : "Each site is scored across these five lenses with the reasoning shown, never a black-box number. Works across offices, retail, mixed-use and warehouses, not just retail."}</p>
+      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>{ap.scoreBody}</p>
 
       <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)", alignItems: "flex-start" }}>
        <span style={{ color: "var(--harbor)", marginTop: 1 }}><Icon.shield size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{ar ? "متوافق مع نظام حماية البيانات: تُعامَل بيانات الموقع كبيانات حسّاسة، مجهّلة ومجمّعة، مستضافة داخل المملكة، ومسجّلة لدى سدايا. لا مستشعرات ميدانية ولا صور شخصية، أبداً." : "PDPL-native: location data is treated as sensitive, anonymised and aggregated, hosted in the Kingdom, registered with SDAIA. No on-site sensors and no personal images, ever."}</span>
+       <span className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{ap.pdplNote}</span>
       </div>
      </div>
     </div>
