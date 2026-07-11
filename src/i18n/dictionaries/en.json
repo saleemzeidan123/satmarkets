@@ -1137,5 +1137,23 @@
     "skip": "Skip to content",
     "notice": "Rent Index Q1 2026 is live. Published Riyadh benchmarks, attributed to source.",
     "explore": "Explore →"
+  },
+  "advisorWidget": {
+    "chip1": "How does 3,500 SAR/m² compare for a Grade A office in KAFD?",
+    "chip2": "Fitted Grade A office in Granada, around 300 m²",
+    "chip3": "Retail with high footfall on Tahlia",
+    "chip4": "Compare Al Olaya vs Granada offices",
+    "openAdvisor": "Open SAT Advisor",
+    "advisorTitle": "SAT Advisor",
+    "beta": "Beta",
+    "newChat": "New",
+    "fullPage": "Full page",
+    "close": "Close",
+    "welcome": "Welcome. Ask about rents, find a space, or value a lease. I answer from the verified index only.",
+    "na": "n/a",
+    "searching": "Searching the verified index…",
+    "placeholder": "Ask about rents, find a space…",
+    "send": "Send",
+    "footer": "Grounded in the Rent Index and verified listings. It explains the data, it doesn't invent it."
   }
 }
