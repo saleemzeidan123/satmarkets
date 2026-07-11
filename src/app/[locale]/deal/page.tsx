@@ -2,50 +2,39 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import { getDictionary } from "@/i18n/getDictionary";
 
 import SampleBanner from "@/components/SampleBanner";
 export default function DealPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
- const steps: [string, string][] = ar
-  ? [["استفسار", "done"], ["معاينة", "done"], ["عرض", "done"], ["عقد", "on"], ["تسليم", ""]]
-  : [["Enquiry", "done"], ["Viewing", "done"], ["Offer", "done"], ["Contract", "on"], ["Handover", ""]];
- const terms: [string, string, string][] = ar ? [
-  ["الإيجار السنوي", "464,000 ريال", "1,450/م² · 320 م²"],
-  ["المدة", "5 سنوات", "شهران مجاناً"],
-  ["التصعيد", "مفتوح · إعادة تسعير عند التجديد", "خارج التجميد"],
-  ["التأمين", "5% · 23,200 ريال", "يُدفع مباشرة للمالك"],
-  ["تسجيل إيجار", "بواسطة المالك / الوسيط", "عقد إيجار قياسي"],
- ] : [
-  ["Annual rent", "464,000 SAR", "1,450/m² · 320 m²"],
-  ["Term", "5 years", "2 months rent-free"],
-  ["Escalation", "Open · re-price at renewal", "Not under the freeze"],
-  ["Deposit", "5% · 23,200 SAR", "Paid direct to landlord"],
-  ["Ejar registration", "By landlord / broker", "Standard Ejar lease"],
+ const d = getDictionary(params.locale).deal;
+ const steps: [string, string][] = [
+  [d.stepEnquiry, "done"], [d.stepViewing, "done"], [d.stepOffer, "done"], [d.stepContract, "on"], [d.stepHandover, ""],
  ];
- const parties: [string, string, string][] = ar ? [
-  ["أنت · شركة آكمي", "مستأجر", "you"],
-  ["شركة أبراج العليا", "مالك موثّق · يردّ خلال ساعتين", "owner"],
- ] : [
-  ["You · Acme Co.", "Occupier", "you"],
-  ["Olaya Towers Co.", "Verified owner · responds in 2h", "owner"],
+ const terms: [string, string, string][] = [
+  [d.term1Label, d.term1Val, d.term1Sub],
+  [d.term2Label, d.term2Val, d.term2Sub],
+  [d.term3Label, d.term3Val, d.term3Sub],
+  [d.term4Label, d.term4Val, d.term4Sub],
+  [d.term5Label, d.term5Val, d.term5Sub],
  ];
- const next: [string, string, boolean][] = ar ? [
-  ["يشارك المالك مسودة عقد إيجار", "تُرسل إلى بريدك وهنا", true],
-  ["يوقّع الطرفان في إيجار", "مباشرة بينك وبين المالك/الوسيط", false],
-  ["دفع التأمين وتسليم المفاتيح", "نُعلّم الصفقة مكتملة", false],
- ] : [
-  ["Owner shares the Ejar lease draft", "Sent to your email and here", true],
-  ["Both parties sign in Ejar", "Directly between you and the owner/broker", false],
-  ["Deposit paid & keys handed over", "We mark the deal complete", false],
+ const parties: [string, string, string][] = [
+  [d.party1Name, d.party1Role, "you"],
+  [d.party2Name, d.party2Role, "owner"],
+ ];
+ const next: [string, string, boolean][] = [
+  [d.next1Title, d.next1Sub, true],
+  [d.next2Title, d.next2Sub, false],
+  [d.next3Title, d.next3Sub, false],
  ];
  return (
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "26px 24px 48px", maxWidth: 1080, margin: "0 auto" }}>
     <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
-     <div><div className="eyebrow">{ar ? "غرفة الصفقة · SR-20418" : "Deal room · SR-20418"}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "مكتب فئة A، برج العليا" : "Grade A Office, Olaya Tower"}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{ar ? "شركة أبراج العليا · 320 م² · العليا" : "Olaya Towers Co. · 320 m² · Al Olaya"}</div></div>
-     <span className="freeze open lg"><span className="dot" />{ar ? "مفتوح · أول إيجار" : "Open · first-lease"}</span>
+     <div><div className="eyebrow">{d.dealRoom}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{d.title}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{d.subtitle}</div></div>
+     <span className="freeze open lg"><span className="dot" />{d.freezeTag}</span>
     </div>
 
     <div className="card pad" style={{ marginTop: 22, boxShadow: "var(--sh-1)", overflowX: "auto" }}>
@@ -61,9 +50,9 @@ export default function DealPage({ params }: { params: { locale: string } }) {
 
     <div className="deal-grid" style={{ marginTop: 18 }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div className="row between"><span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ar ? "الشروط المتفق عليها" : "Agreed terms"}</span><span className="mono muted" style={{ fontSize: 11 }}>{ar ? "من عرضك المقبول" : "From your accepted offer"}</span></div>
-      <div style={{ fontSize: 17, fontWeight: 700, margin: "14px 0 4px" }}>{ar ? "شروط صفقتك" : "Your deal terms"}</div>
-      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>{ar ? "هذه الشروط التي اتفقت عليها أنت والمالك. يُوقّع عقد إيجار نفسه مباشرة بينك وبين المالك/الوسيط، وتُبقي SAT الطرفين على اطّلاع وتتابع المراحل." : "These are the terms you and the owner agreed. The Ejar lease itself is signed directly between you and the owner/broker, SAT keeps both sides on the same page and tracks the milestones."}</p>
+      <div className="row between"><span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{d.agreedTerms}</span><span className="mono muted" style={{ fontSize: 11 }}>{d.fromOffer}</span></div>
+      <div style={{ fontSize: 17, fontWeight: 700, margin: "14px 0 4px" }}>{d.yourTerms}</div>
+      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>{d.termsIntro}</p>
       <div className="col gap10" style={{ marginTop: 16 }}>
        {terms.map((r, i) => (
         <div key={i} className="row between" style={{ padding: "11px 0", borderTop: i ? "1px solid var(--silver)" : 0 }}>
@@ -73,14 +62,14 @@ export default function DealPage({ params }: { params: { locale: string } }) {
        ))}
       </div>
       <div className="row gap10" style={{ marginTop: 16 }}>
-       <Link href={`/${params.locale}/deal/termsheet`} className="btn secondary grow center" style={{ textDecoration: "none" }}><Icon.download size={14} /> {ar ? "تنزيل ورقة الشروط" : "Download term sheet"}</Link>
-       <span className="btn primary grow center">{ar ? "راسل المالك" : "Message the owner"} <Icon.arrow size={15} /></span>
+       <Link href={`/${params.locale}/deal/termsheet`} className="btn secondary grow center" style={{ textDecoration: "none" }}><Icon.download size={14} /> {d.downloadTermSheet}</Link>
+       <span className="btn primary grow center">{d.messageOwner} <Icon.arrow size={15} /></span>
       </div>
      </div>
 
      <div className="col gap18">
       <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-       <div className="eyebrow" style={{ marginBottom: 12 }}>{ar ? "الأطراف" : "Parties"}</div>
+       <div className="eyebrow" style={{ marginBottom: 12 }}>{d.parties}</div>
        {parties.map((p, i) => (
         <div key={i} className="row gap10" style={{ padding: "10px 0", borderTop: i ? "1px solid var(--silver)" : 0, alignItems: "center" }}>
          <span style={{ width: 30, height: 30, borderRadius: 8, background: p[2] === "owner" ? "var(--azure-wash)" : "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center", color: p[2] === "owner" ? "var(--azure-d)" : "var(--slate)" }}>{p[2] === "owner" ? <Icon.shield size={15} /> : <Icon.user size={15} />}</span>
@@ -89,7 +78,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
        ))}
       </div>
       <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-       <div className="row gap8" style={{ marginBottom: 10 }}><span style={{ color: "var(--azure-d)" }}><Icon.shield size={16} /></span><span style={{ fontSize: 13.5, fontWeight: 700 }}>{ar ? "ما الخطوة التالية" : "What happens next"}</span></div>
+       <div className="row gap8" style={{ marginBottom: 10 }}><span style={{ color: "var(--azure-d)" }}><Icon.shield size={16} /></span><span style={{ fontSize: 13.5, fontWeight: 700 }}>{d.whatNext}</span></div>
        <div className="col gap0">
         {next.map((n, i) => (
          <div key={i} className="row gap10" style={{ padding: "10px 0", borderTop: i ? "1px solid var(--silver)" : 0, alignItems: "flex-start" }}>
@@ -98,7 +87,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
          </div>
         ))}
        </div>
-       <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.55, margin: "12px 0 0", paddingTop: 10, borderTop: "1px solid var(--silver)" }}>{ar ? "يُدار عقد إيجار والتأمين والتسجيل مباشرة بينك وبين المالك أو وسيطه المرخّص. لا توقّع SAT ولا تحتفظ بالأموال، بل نتحقّق من الأطراف ونتابع الصفقة." : "The Ejar contract, deposit and registration are handled directly between you and the owner or their licensed broker. SAT does not sign or hold funds, we verify the parties and track the deal."}</p>
+       <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.55, margin: "12px 0 0", paddingTop: 10, borderTop: "1px solid var(--silver)" }}>{d.disclaimer}</p>
       </div>
      </div>
     </div>
