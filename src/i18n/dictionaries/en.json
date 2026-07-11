@@ -1013,7 +1013,11 @@
     "verifiedSpaces": "verified spaces",
     "officeMedianPre": "Office median ",
     "officeMedianSuf": " SAR/m²·yr",
-    "footer": "Medians come from the Rent Index, platform sample, sufficient segments only. Indicative, not advice."
+    "footer": "Medians come from the Rent Index, platform sample, sufficient segments only. Indicative, not advice.",
+    "metaTitle": "Commercial locations across Saudi Arabia | SAT Markets",
+    "crumbHome": "Home",
+    "crumbLocations": "Locations",
+    "itemListName": "Commercial locations in Saudi Arabia"
   },
   "enquiry": {
     "errSend": "Could not send the request. Please try again.",

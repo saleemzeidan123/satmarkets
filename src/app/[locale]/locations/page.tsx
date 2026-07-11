@@ -14,13 +14,14 @@ const KIND_ORDER = ["district", "development", "area"];
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
   const ar = params.locale === "ar";
+  const d = getDictionary(params.locale === "ar" ? "ar" : "en").locations;
   return {
-    title: ar ? "المواقع التجارية في المملكة | سات ماركتس" : "Commercial locations across Saudi Arabia | SAT Markets",
+    title: d.metaTitle,
     description: ar
       ? "الأحياء والمشاريع والمناطق التجارية التي تغطيها سات ماركتس، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تكفي البيانات."
       : "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index median where the data is sufficient.",
     alternates: { canonical: `${SITE}/${params.locale}/locations`, languages: { en: `${SITE}/en/locations`, ar: `${SITE}/ar/locations` } },
-    openGraph: { title: ar ? "المواقع التجارية في المملكة | سات ماركتس" : "Commercial locations across Saudi Arabia | SAT Markets", url: `${SITE}/${params.locale}/locations`, type: "website", siteName: "SAT Markets" },
+    openGraph: { title: d.metaTitle, url: `${SITE}/${params.locale}/locations`, type: "website", siteName: "SAT Markets" },
   };
 }
 
@@ -51,10 +52,10 @@ export default async function LocationsPage({ params }: { params: { locale: stri
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
-        { "@type": "ListItem", position: 2, name: ar ? "المواقع" : "Locations", item: `${SITE}/${locale}/locations` },
+        { "@type": "ListItem", position: 1, name: d.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: d.crumbLocations, item: `${SITE}/${locale}/locations` },
       ] }} />
-      <JsonLd data={{ "@type": "ItemList", name: ar ? "المواقع التجارية في السعودية" : "Commercial locations in Saudi Arabia", numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${(ar ? l.name_ar : l.name_en) || l.name_en}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
+      <JsonLd data={{ "@type": "ItemList", name: d.itemListName, numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${(ar ? l.name_ar : l.name_en) || l.name_en}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
       <div className="eyebrow">{d.directory}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{d.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{d.intro}</p>
