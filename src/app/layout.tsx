@@ -3,12 +3,13 @@ import "@/styles/sat-platform.css";
 import "@/styles/footer.css";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
-import { Playfair_Display, Hanken_Grotesk, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { Playfair_Display, Hanken_Grotesk, IBM_Plex_Mono, IBM_Plex_Sans_Arabic, Cairo } from "next/font/google";
 
 const serif = Playfair_Display({ subsets: ["latin"], weight: ["500", "600", "700"], display: "swap", variable: "--font-serif" });
 const sans = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mono" });
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-ar" });
+const cairo = Cairo({ subsets: ["arabic"], weight: ["600", "700"], display: "swap", variable: "--font-ar-head" });
 
 export const metadata = {
   title: "SAT Markets | Verified commercial real estate, Saudi Arabia",
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const locale = headers().get("x-locale") === "ar" ? "ar" : "en";
   const dir = locale === "ar" ? "rtl" : "ltr";
   return (
-    <html lang={locale} dir={dir} className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}>
+    <html lang={locale} dir={dir} className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable} ${cairo.variable}`}>
       <body>{children}</body>
     </html>
   );

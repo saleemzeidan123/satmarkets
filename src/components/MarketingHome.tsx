@@ -204,14 +204,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
 
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(11,15,21,.82) 0%, rgba(11,15,21,.55) 44%, rgba(11,15,21,.9) 100%), url('/hero-kafd.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
+   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(9,13,19,.9) 0%, rgba(9,13,19,.74) 42%, rgba(9,13,19,.94) 100%), url('/hero-kafd.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
     <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
      <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
       <span className="mono" style={{ fontSize: "var(--fs-2xs)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>{T.eyebrow}</span>
      </div>
-     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.05, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820 }}>
-      {T.h1a}<span style={{ color: "#9DBBD6" }}>{T.h1b}</span>
+     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
+      {T.h1a}<span style={{ color: "#C4DAF2", textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>{T.h1b}</span>
      </h1>
      <p style={{ fontSize: "var(--fs-lg)", lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>{T.sub}</p>
      <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
@@ -221,17 +221,17 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        ))}
       </div>
       {deal !== "req" && (
-       <div className="hero-assets" style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+       <div className="hero-assets" style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
         {(showAll ? ASSETS : ASSETS.slice(0, 5)).map((a) => {
          const on = assetType === a.v;
          return (
-          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: showAll ? "0 0 calc(20% - 4.8px)" : "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
           </button>
          );
         })}
-        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: showAll ? "0 0 calc(20% - 4.8px)" : "1 1 0", minWidth: 0, padding: "12px 6px", borderRadius: 12, cursor: "pointer", border: "1px solid rgba(255,255,255,.12)", background: "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
          <span style={{ opacity: .85 }}><Icon.grid size={22} /></span>
          <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{showAll ? (ar ? "أقل" : "Less") : (ar ? "المزيد" : "More")}</span>
         </button>

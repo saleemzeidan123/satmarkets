@@ -22,8 +22,8 @@ body {
   text-transform: none;
 }
 [dir="rtl"] .fig { letter-spacing: 0; }
-[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] .font-display {
-  font-family: var(--font-ar), system-ui, sans-serif;
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] .font-display, [dir="rtl"] .serif {
+  font-family: var(--font-ar-head), var(--font-ar), system-ui, sans-serif;
   letter-spacing: 0;
   line-height: 1.4;
   font-weight: 600;
