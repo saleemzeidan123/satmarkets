@@ -71,7 +71,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
-          <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
+          <Link href={`/${locale}/dashboard`} className="btn-ink px-3.5 py-2 text-[13px] font-medium">
             <span className="sm:hidden">{dict.nav.list}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
