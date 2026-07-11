@@ -36,32 +36,32 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
   const ar = locale === "ar";
   const primaryNav = [
-    { href: `/${locale}/listings`, label: (dict.nav as any).explore ?? (ar ? "استكشف" : "Explore") },
+    { href: `/${locale}/listings`, label: dict.nav.explore },
     { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
-    { href: `/${locale}/advisor`, label: (dict.nav as any).advisor ?? (ar ? "المستشار" : "Advisor") },
+    { href: `/${locale}/advisor`, label: dict.nav.advisor },
     { href: `/${locale}/requirements`, label: dict.nav.requirements },
   ];
   const nav = [
     { href: `/${locale}/about`, label: dict.nav.about },
-    { href: `/${locale}/pricing`, label: ar ? "الأسعار" : "Pricing" },
-    { href: `/${locale}/brokers`, label: ar ? "الوسطاء" : "Brokers" },
+    { href: `/${locale}/pricing`, label: dict.nav.pricing },
+    { href: `/${locale}/brokers`, label: dict.nav.brokers },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
-  const signInLabel = ar ? "تسجيل الدخول" : "Sign in";
-  const menuLabel = ar ? "القائمة" : "Menu";
-  const browseLabel = ar ? "تصفّح" : "Browse";
-  const accountLabel = ar ? "الحساب" : "Account";
-  const savedLabel = ar ? "المحفوظة" : "Saved";
-  const dashLabel = ar ? "لوحة التحكم" : "Owner dashboard";
-  const welcomeTitle = ar ? "أهلاً بك في سوق سات" : "Welcome to SAT Markets";
-  const welcomeSub = ar ? "ذكاء العقارات التجارية في السعودية" : "Commercial real-estate intelligence";
+  const signInLabel = dict.nav.signIn;
+  const menuLabel = dict.nav.menu;
+  const browseLabel = dict.nav.browse;
+  const accountLabel = dict.nav.account;
+  const savedLabel = dict.nav.saved;
+  const dashLabel = dict.nav.dashboard;
+  const welcomeTitle = dict.nav.welcomeTitle;
+  const welcomeSub = dict.nav.welcomeSub;
 
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
         <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
 
-        <nav className="hidden md:flex items-center gap-0.5" aria-label={ar ? "التنقل الرئيسي" : "Primary"}>
+        <nav className="hidden md:flex items-center gap-0.5" aria-label={dict.nav.primaryNav}>
           {primaryNav.map((n) => (
             <Link key={n.href} href={n.href} className={`rounded-lg px-3 py-2 text-[13.5px] font-medium transition-colors hover:bg-ivory-2 ${active(n.href) ? "text-harbor font-semibold" : "text-charcoal/75"}`}>
               {n.label}
@@ -72,7 +72,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
           <Link href={`/${locale}/dashboard`} className="btn-gold px-3.5 py-2 text-[13px] font-medium">
-            <span className="sm:hidden">{ar ? "أدرج" : "List"}</span>
+            <span className="sm:hidden">{dict.nav.list}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
 
@@ -117,7 +117,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 </div>
 
                 <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:hidden">
-                  <span className="text-[12px] text-charcoal/55">{ar ? "اللغة" : "Language"}</span>
+                  <span className="text-[12px] text-charcoal/55">{dict.nav.language}</span>
                   <LanguageSwitch locale={locale} />
                 </div>
               </div>

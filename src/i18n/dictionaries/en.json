@@ -9,7 +9,20 @@
     "listSpace": "List your space",
     "map": "Map",
     "develop": "Develop",
-    "areas": "Location Intelligence"
+    "areas": "Location Intelligence",
+    "pricing": "Pricing",
+    "brokers": "Brokers",
+    "signIn": "Sign in",
+    "menu": "Menu",
+    "browse": "Browse",
+    "account": "Account",
+    "saved": "Saved",
+    "dashboard": "Owner dashboard",
+    "welcomeTitle": "Welcome to SAT Markets",
+    "welcomeSub": "Commercial real-estate intelligence",
+    "primaryNav": "Primary",
+    "list": "List",
+    "language": "Language"
   },
   "hero": {
     "eyebrow": "Saudi Arabia · REGA-native commercial exchange",
