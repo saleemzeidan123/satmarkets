@@ -47,7 +47,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    const max = el.scrollWidth - el.clientWidth;
    if (max <= 1) { setAtStart(true); setAtEnd(true); return; }
    const pos = Math.abs(el.scrollLeft);
-   setAtStart(pos < 2); setAtEnd(pos > max - 2);
+   setAtStart(pos <= 4); setAtEnd(pos >= max - 4);
   };
   const onWheel = (e: WheelEvent) => { if (el.scrollWidth <= el.clientWidth) return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; el.scrollBy({ left: (ar ? -1 : 1) * e.deltaY * 1.4 }); e.preventDefault(); };
   update();
