@@ -84,6 +84,7 @@ export default function ListingEnquiry({
  const [busy, setBusy] = useState(false);
  const [done, setDone] = useState<Path | null>(null);
  const [saved, setSaved] = useState(false);
+ const [err, setErr] = useState("");
  const [slot, setSlot] = useState<string | null>(null);
  const [slots, setSlots] = useState<{ iso: string; label: string }[]>([]);
  const [vBusy, setVBusy] = useState(false);
@@ -154,9 +155,9 @@ export default function ListingEnquiry({
 
  async function submit(path: Path) {
   if (path === "direct_contact" && (!name.trim() || !email.trim())) return;
-  setBusy(true);
+  setBusy(true); setErr("");
   try {
-   await fetch("/api/leads", {
+   const res = await fetch("/api/leads", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
@@ -165,9 +166,11 @@ export default function ListingEnquiry({
      message: msg || (path === "representation" ? "Requested SAT representation from listing." : null),
     }),
    });
-   setDone(path); setOpen(null);
+   const j = await res.json().catch(() => ({}));
+   if (res.ok && !j.error) { setDone(path); setOpen(null); }
+   else { setErr(t.errSend); }
   } catch {
-   setDone(path); setOpen(null);
+   setErr(t.errSend);
   } finally { setBusy(false); }
  }
 
@@ -225,6 +228,7 @@ export default function ListingEnquiry({
     </div>
    )}
 
+   {err && <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 10 }}>{err}</p>}
    {open !== "direct_contact" && (
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
