@@ -13,23 +13,24 @@ export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: stri
  */
 export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
  const ar = locale === "ar";
+ const key = storageKey ? `${storageKey}:${locale}` : undefined;
  const [msgs, setMsgs] = useState<Msg[]>([]);
  const [busy, setBusy] = useState(false);
- const [hydrated, setHydrated] = useState(!storageKey);
+ const [hydrated, setHydrated] = useState(!key);
 
  useEffect(() => {
-  if (!storageKey) return;
+  if (!key) return;
   try {
-   const s = JSON.parse(sessionStorage.getItem(storageKey) || "[]");
+   const s = JSON.parse(sessionStorage.getItem(key) || "[]");
    if (Array.isArray(s) && s.length) setMsgs(s);
   } catch {}
   setHydrated(true);
- }, [storageKey]);
+ }, [key]);
 
  useEffect(() => {
-  if (!storageKey || !hydrated) return;
-  try { sessionStorage.setItem(storageKey, JSON.stringify(msgs.slice(-30))); } catch {}
- }, [msgs, storageKey, hydrated]);
+  if (!key || !hydrated) return;
+  try { sessionStorage.setItem(key, JSON.stringify(msgs.slice(-30))); } catch {}
+ }, [msgs, key, hydrated]);
 
  async function send(text: string) {
   const q = text.trim();
@@ -82,7 +83,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
 
  function reset() {
   setMsgs([]);
-  if (storageKey) try { sessionStorage.removeItem(storageKey); } catch {}
+  if (key) try { sessionStorage.removeItem(key); } catch {}
  }
 
  return { msgs, setMsgs, busy, send, reset };

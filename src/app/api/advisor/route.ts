@@ -12,12 +12,24 @@ const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
 // Cluster-aware examples per the owner market briefing (2026-07-03): Riyadh is
 // polycentric, so examples rotate across clusters instead of defaulting to Al Olaya.
 // Every entry here is backed by a sufficient published index segment today.
-const EX_EN = ["a KAFD office", "a Granada office", "a retail unit in Hittin", "an Al Olaya office"];
-const EX_AR = ["\u0645\u0643\u062a\u0628 \u0641\u064a \u0643\u0627\u0641\u062f", "\u0645\u0643\u062a\u0628 \u0641\u064a \u063a\u0631\u0646\u0627\u0637\u0629", "\u0645\u062d\u0644 \u062a\u062c\u0632\u0626\u0629 \u0641\u064a \u062d\u0637\u064a\u0646", "\u0645\u0643\u062a\u0628 \u0641\u064a \u0627\u0644\u0639\u0644\u064a\u0627"];
-function examplePair(arabic: boolean): string {
-  const list = arabic ? EX_AR : EX_EN;
+const EXAMPLES = [
+  { keys: ["kafd", "كافد"], en: "a KAFD office", ar: "مكتب في كافد" },
+  { keys: ["granada", "غرناطة"], en: "a Granada office", ar: "مكتب في غرناطة" },
+  { keys: ["hittin", "حطين"], en: "a retail unit in Hittin", ar: "محل تجزئة في حطين" },
+  { keys: ["olaya", "al olaya", "العليا"], en: "an Al Olaya office", ar: "مكتب في العليا" },
+];
+// Exclude the segment the user just asked about, so a thin-sample answer never
+// suggests the query that just failed (advisor UX advisory 2026-07-11).
+function examplePair(arabic: boolean, exclude?: string | null): string {
+  let pool = EXAMPLES;
+  if (exclude) {
+    const ex = String(exclude).toLowerCase();
+    const filtered = EXAMPLES.filter((e) => !e.keys.some((k) => ex.includes(k) || k.includes(ex)));
+    if (filtered.length >= 2) pool = filtered;
+  }
+  const list = pool.map((e) => (arabic ? e.ar : e.en));
   const i = Math.floor(Math.random() * list.length);
-  return `${list[i]}${arabic ? " \u0623\u0648 " : " or "}${list[(i + 1) % list.length]}`;
+  return `${list[i]}${arabic ? " أو " : " or "}${list[(i + 1) % list.length]}`;
 }
 
 // Owner posture (recorded 2026-07-02): the Rent Index is compiled from published,
@@ -146,7 +158,7 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true)}، أو تصفّح العروض الموثّقة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false)}, or browse the verified listings.` });
+      return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}، أو تصفّح العروض الموثّقة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false, intent?.district)}, or browse the verified listings.` });
     }
     const seg = band.segment ? ` ${band.segment}` : "";
     const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, median ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${srcLabel(band.source, arq)}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the median. If they gave no figure, just describe the current band plainly. Two to four sentences. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;
@@ -170,7 +182,7 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "watch", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لا أستطيع تثبيت خط أساس. جرّب موقعاً آخر، مثلاً ${examplePair(true)}.` : `I do not have published Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example ${examplePair(false)}.` });
+      return NextResponse.json({ mode: "watch", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لا أستطيع تثبيت خط أساس. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}.` : `I do not have published Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example ${examplePair(false, intent?.district)}.` });
     }
     const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
     const seg = band.segment ? ` ${band.segment}` : "";
