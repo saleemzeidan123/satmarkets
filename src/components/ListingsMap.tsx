@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { getDictionary } from "@/i18n/getDictionary";
 
 // Split-view map for /listings. District bubbles carry the count of spaces in
 // the current filter, positioned at the district centroid (honest district-level
@@ -21,6 +22,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
   locale: "en" | "ar"; bubbles: DistrictBubble[]; pins: ExactPin[]; baseParams: string; initialBbox?: number[];
 }) {
   const ar = locale === "ar";
+  const t2 = getDictionary(ar ? "ar" : "en").listingsMap;
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
@@ -73,9 +75,9 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         const p = f.properties;
         const t = String(p.title).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const pr = p.price ? String(p.price).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:#14181B;line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:#14181B;margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:#3A6EA5;text-decoration:none">${ar ? "عرض القائمة \u2190" : "View listing \u2192"}</a>`).addTo(m);
+        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:#14181B;line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:#14181B;margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:#3A6EA5;text-decoration:none">${t2.viewListing}</a>`).addTo(m);
       });
-      m.on("mouseenter", "d-c", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${ar ? "مساحة، انقر للتصفية" : "spaces, click to filter"}</div>`).addTo(m); });
+      m.on("mouseenter", "d-c", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
       m.on("mouseleave", "d-c", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
       m.on("mouseenter", "p-c", (e: any) => {
         m.getCanvas().style.cursor = "pointer";
@@ -141,17 +143,17 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         <div ref={ref} style={{ position: "absolute", inset: 0 }} />
         {status !== "ready" && (
           <div aria-live="polite" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, background: "var(--cool)", color: "var(--slate)", pointerEvents: "none", padding: 20, textAlign: "center" }}>
-            <span className="mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--slate-2)" }}>{status === "error" ? (ar ? "الخريطة غير متاحة" : "Map unavailable") : (ar ? "يحمّل الخريطة" : "Loading map")}</span>
-            <span style={{ fontSize: 12.5, maxWidth: 240 }}>{status === "error" ? (ar ? "تصفّح القائمة، وستعود الخريطة قريباً." : "Browse the list, the map will return shortly.") : (ar ? "لحظة." : "One moment.")}</span>
+            <span className="mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--slate-2)" }}>{status === "error" ? t2.mapUnavailable : t2.loadingMap}</span>
+            <span style={{ fontSize: 12.5, maxWidth: 240 }}>{status === "error" ? t2.browseList : t2.oneMoment}</span>
           </div>
         )}
         {moved && (
-          <button type="button" onClick={() => { const m = mapRef.current; if (!m) return; const b = m.getBounds(); const sp = new URLSearchParams(baseParams); sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(",")); window.location.href = `/${locale}/listings?${sp.toString()}`; }} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "#fff", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600 }}>{ar ? "ابحث في هذه المنطقة" : "Search this area"}</button>
+          <button type="button" onClick={() => { const m = mapRef.current; if (!m) return; const b = m.getBounds(); const sp = new URLSearchParams(baseParams); sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(",")); window.location.href = `/${locale}/listings?${sp.toString()}`; }} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "#fff", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600 }}>{t2.searchArea}</button>
         )}
-        <button type="button" className="btn primary lst-map-close" onClick={() => setOpen(false)}>{ar ? "إغلاق الخريطة" : "Close map"}</button>
-        <span className="tag" style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.92)" }}>{ar ? "فقاعات على مستوى الموقع، ونقاط خضراء لمبانٍ محددة" : "Location-level bubbles, green dots are exact buildings"}</span>
+        <button type="button" className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
+        <span className="tag" style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.92)" }}>{t2.bubblesHint}</span>
       </div>
-      <button type="button" className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{ar ? "عرض الخريطة" : "Show map"}</button>
+      <button type="button" className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{t2.showMap}</button>
     </>
   );
 }

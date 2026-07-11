@@ -1055,5 +1055,17 @@
     "ratingPre": "Overall location rating in ",
     "ratingSuf": " (sample)",
     "scoreNote": "The score is built from the lenses above with sourced inputs per asset type, never a black-box number. Figures shown are representative samples until the named Saudi data sources on the Location Intelligence page come online. Anything without sufficient data routes to the advisor. Indicative, not advice."
+  },
+  "listingsMap": {
+    "viewListing": "View listing →",
+    "spacesClick": "spaces, click to filter",
+    "mapUnavailable": "Map unavailable",
+    "loadingMap": "Loading map",
+    "browseList": "Browse the list, the map will return shortly.",
+    "oneMoment": "One moment.",
+    "searchArea": "Search this area",
+    "closeMap": "Close map",
+    "bubblesHint": "Location-level bubbles, green dots are exact buildings",
+    "showMap": "Show map"
   }
 }
