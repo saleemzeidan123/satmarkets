@@ -12,6 +12,7 @@ import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { getDictionary } from "@/i18n/getDictionary";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const GRADES = ["a_plus", "a", "b", "c"];
@@ -21,6 +22,7 @@ type SP = { asset?: string; deal?: string; q?: string; district?: string; city?:
 
 export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const dict = getDictionary(loc);
   const ar = loc === "ar";
   let locLabel = "";
   if (searchParams.district) {
@@ -33,10 +35,10 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   const what = [asset, deal].filter(Boolean).join(" ").trim();
   const title = locLabel
     ? (ar ? `${what || "مساحات تجارية"} في ${locLabel} | سات ماركتس` : `${what || "Commercial spaces"} in ${locLabel} | SAT Markets`)
-    : (ar ? "مساحات تجارية موثّقة في السعودية | سات ماركتس" : "Verified commercial spaces in Saudi Arabia | SAT Markets");
+    : (dict.listings.metaTitle);
   const description = locLabel
     ? (ar ? `تصفّح المساحات التجارية الموثّقة في ${locLabel} على سات ماركتس، من الملّاك مباشرة ومدعومة بمؤشر الإيجارات المنشور.` : `Browse verified commercial spaces in ${locLabel} on SAT Markets, owner-verified and backed by the published Rent Index.`)
-    : (ar ? "تصفّح المساحات التجارية الموثّقة في المملكة، من الملّاك مباشرة، مدعومة بمؤشر الإيجارات." : "Browse verified commercial spaces across Saudi Arabia, owner-verified and backed by the Rent Index.");
+    : (dict.listings.metaDesc);
   const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
   return { title, description, alternates: { canonical: `${SITE}/${params.locale}/listings${qs}`, languages: { en: `${SITE}/en/listings${qs}`, ar: `${SITE}/ar/listings${qs}` } }, openGraph: { title, description, url: `${SITE}/${params.locale}/listings${qs}`, type: "website", siteName: "SAT Markets" } };
 }
@@ -45,6 +47,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
+  const dict = getDictionary(locale as "en" | "ar");
   const t = (en: string, arr: string) => (ar ? arr : en);
   const list = (k?: string) => (k ? k.split(",").filter(Boolean) : []);
   const sb = getSupabaseServer();
@@ -171,7 +174,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     ? [{ value: "new", label: "الأحدث" }, { value: "rent", label: "السعر من الأقل" }, { value: "rent_desc", label: "السعر من الأعلى" }, { value: "size", label: "المساحة من الأصغر" }, { value: "size_desc", label: "المساحة من الأكبر" }, { value: "best", label: "الأفضل مطابقة" }]
     : [{ value: "new", label: "Newest" }, { value: "rent", label: "Price, low to high" }, { value: "rent_desc", label: "Price, high to low" }, { value: "size", label: "Size, small to large" }, { value: "size_desc", label: "Size, large to small" }, { value: "best", label: "Best match" }];
 
-  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (ar ? "كل المساحات" : "All spaces");
+  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (dict.listings.allSpaces);
 
   const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
   const crumbLoc = distLoc ? (ar ? (distLoc.ar || distLoc.en) : distLoc.en) : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""));
@@ -185,15 +188,15 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       ] }} />
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
-          <div className="eyebrow">{ar ? "المنصّة" : "The exchange"}</div>
-          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{ar ? "مساحات موثّقة في المملكة" : "Verified spaces across the Kingdom"}</h1>
+          <div className="eyebrow">{dict.listings.exchange}</div>
+          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dict.listings.h1}</h1>
         </div>
-        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {ar ? "عرض على الخريطة" : "View on map"}</Link>
+        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dict.listings.viewOnMap}</Link>
       </div>
       <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <input name="q" defaultValue={searchParams.q || ""} placeholder={ar ? "صف ما تحتاجه، مثل: مكتب فئة A مجهّز في العليا بأقل من 1,600، بنحو 300 م²" : "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²"} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
-        <button type="submit" className="btn primary">{ar ? "بحث" : "Search"}</button>
+        <input name="q" defaultValue={searchParams.q || ""} placeholder={dict.listings.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
+        <button type="submit" className="btn primary">{dict.listings.search}</button>
       </form>
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
@@ -201,8 +204,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
         <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {ar ? "ضمن منطقة الخريطة" : "in this map area"} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{ar ? "مسح" : "clear"}</Link></> : null}</div>
         <div className="row gap8 wrap">
-          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "المساحات" : "Properties"}</Link>
-          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{ar ? "رؤى المؤشر" : "Insights"}</Link>
+          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.properties}</Link>
+          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.insights}</Link>
         </div>
       </div>
       <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={saveLabel} />
@@ -211,35 +214,35 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       {insightsView ? (
         <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
           <div className="row between" style={{ padding: "14px 18px", borderBottom: "1px solid var(--silver)" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{ar ? "شرائح المؤشر للتصفية الحالية · عيّنة المنصّة" : "Index cut for this filter · platform sample"}</div>
-            <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{ar ? "المؤشر الكامل" : "Full index"}</Link>
+            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dict.listings.indexCut}</div>
+            <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{dict.listings.fullIndex}</Link>
           </div>
           {idx.length === 0 ? (
-            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{ar ? "لا توجد شرائح مؤشر لهذه التصفية. ما لا يحمل بيانات كافية يُوجَّه إلى المستشار." : "No index segments for this filter. Anything without sufficient data routes to the advisor."}</p>
+            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{dict.listings.noSegments}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 520 }}>
-                <thead><tr><th>{ar ? "الموقع" : "Location"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق" : "Band"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th></tr></thead>
+                <thead><tr><th>{dict.listings.colLocation}</th><th>{dict.listings.colAsset}</th><th style={{ textAlign: "right" }}>{dict.listings.colMedian}</th><th style={{ textAlign: "right" }}>{dict.listings.colBand}</th><th style={{ textAlign: "right" }}>{dict.listings.colData}</th></tr></thead>
                 <tbody>
                   {idx.map((r: any, i: number) => (
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + (SEGL[r.segment] || r.segment) : ""}</td>
-                      <td className="num mono">{r.sufficient && r.median != null ? Number(r.median).toLocaleString("en-US") : (ar ? "غير متاح" : "n/a")}</td>
-                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}` : (ar ? "عيّنة قليلة" : "Thin sample")}</td>
-                      <td className="num">{r.sufficient ? <span className="statusdot ok">{ar ? "كافٍ" : "Sufficient"}</span> : <span className="statusdot pend">{ar ? "قليل" : "Thin"}</span>}</td>
+                      <td className="num mono">{r.sufficient && r.median != null ? Number(r.median).toLocaleString("en-US") : (dict.listings.na)}</td>
+                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}` : (dict.listings.thinSample)}</td>
+                      <td className="num">{r.sufficient ? <span className="statusdot ok">{dict.listings.sufficient}</span> : <span className="statusdot pend">{dict.listings.thin}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. النطاقات المنشورة المنسوبة على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published bands live on the Rent Index page."}</div>
+          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{dict.listings.sampleDisclaimer}</div>
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p className="muted" style={{ margin: 0 }}>{bbox ? (ar ? "لا توجد مساحات موثّقة في منطقة الخريطة هذه. جرّب تصغير التكبير أو مسح منطقة الخريطة." : "No verified spaces in this map area. Try zooming out, or clear the map area.") : (ar ? "لا توجد مساحات مطابقة. جرّب توسيع عوامل التصفية أو مسح الكل." : "No matching spaces. Try widening your filters, or clear them all.")}</p>
-          <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (ar ? "مسح منطقة الخريطة" : "Clear the map area") : (ar ? "مسح كل عوامل التصفية" : "Clear all filters")}</Link>
+          <p className="muted" style={{ margin: 0 }}>{bbox ? (dict.listings.emptyMapArea) : (dict.listings.emptyNoMatch)}</p>
+          <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dict.listings.clearMapArea) : (dict.listings.clearAllFilters)}</Link>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
@@ -249,9 +252,9 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed ? [<Verified key="v" text={ar ? "موثّق من المالك" : "Verified owner"} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
                 <div className="body">
-                  <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (ar ? "عند الطلب" : "On request")}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
+                  <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                   {(() => {
                     if (l.deal_type !== "lease" || l.asking_rent_sqm == null || !l.district_id) return null;
                     const v = marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade));
@@ -259,7 +262,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     const a = Math.abs(v.deltaPct);
                     const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (ar ? "ضمن نطاق المؤشر" : "Within index band");
                     const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
-                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={ar ? "مقابل مؤشر الإيجارات، عيّنة المنصّة. استرشادي وليس نصيحة." : "Vs the Rent Index, platform sample. Indicative, not advice."}>{txt}</div>;
+                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={dict.listings.vsIndexTitle}>{txt}</div>;
                   })()}
                   <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                   <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
