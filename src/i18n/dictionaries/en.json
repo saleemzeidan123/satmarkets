@@ -1164,5 +1164,11 @@
     "fullDir": "Full directory",
     "project": "project",
     "noLocations": "No locations in this city yet"
+  },
+  "findPage": {
+    "assetNeeds": "Asset-specific needs",
+    "needsNote": "These needs are attached to your brief for SAT's advisor. Ranking today uses verified size, grade and budget.",
+    "sarSqm": "SAR/m²",
+    "yieldWord": "yield"
   }
 }

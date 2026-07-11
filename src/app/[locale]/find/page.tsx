@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { getDictionary } from "@/i18n/getDictionary";
 
 type Verdict = {
   status: "below" | "within" | "above" | "na";
@@ -111,6 +112,7 @@ function n(v: number | null): string {
 
 export default function FindPage() {
   const ar = usePathname().startsWith("/ar");
+  const t = getDictionary(ar ? "ar" : "en").findPage;
   const [assetType, setAssetType] = useState("office");
   const [dealType, setDealType] = useState("lease");
   const [grade, setGrade] = useState("");
@@ -252,7 +254,7 @@ export default function FindPage() {
         </label>
         {(NEEDS[assetType] || []).length > 0 && (
           <div className="col-span-2 sm:col-span-3">
-            <div className="text-xs text-slate-500">{ar ? "احتياجات خاصة بالنوع" : "Asset-specific needs"}</div>
+            <div className="text-xs text-slate-500">{t.assetNeeds}</div>
             <div className="mt-2 flex flex-wrap gap-2">
               {(NEEDS[assetType] || []).map((n) => {
                 const on = needs.includes(n.v);
@@ -263,7 +265,7 @@ export default function FindPage() {
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{ar ? "تُرفق هذه الاحتياجات بطلبك ليعمل عليها مستشار سات. الترتيب اليوم يعتمد على المساحة والفئة والميزانية الموثّقة." : "These needs are attached to your brief for SAT's advisor. Ranking today uses verified size, grade and budget."}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{t.needsNote}</p>
           </div>
         )}
         <div className="col-span-2 sm:col-span-3">
@@ -288,13 +290,13 @@ export default function FindPage() {
                 <div className="mt-0.5 text-xs text-slate-500">
                   {r.reference_code}
                   {r.area_sqm != null && <> · <bdi dir="ltr">{n(r.area_sqm)} m²</bdi></>}
-                  {r.asking_rent_sqm != null && <> · {n(r.asking_rent_sqm)} {ar ? "ريال/م²" : "SAR/m²"}</>}
+                  {r.asking_rent_sqm != null && <> · {n(r.asking_rent_sqm)} {t.sarSqm}</>}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
                 {r.underwrite && r.underwrite.status === "ok" ? (
                   <span className="inline-block rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                    ~{r.underwrite.grossYieldPct}% {ar ? "عائد" : "yield"}
+                    ~{r.underwrite.grossYieldPct}% {t.yieldWord}
                   </span>
                 ) : (
                   chip(r.verdict)
