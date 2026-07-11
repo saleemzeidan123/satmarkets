@@ -1155,5 +1155,14 @@
     "placeholder": "Ask about rents, find a space…",
     "send": "Send",
     "footer": "Grounded in the Rent Index and verified listings. It explains the data, it doesn't invent it."
+  },
+  "locationFilter": {
+    "clearLocation": "Clear location",
+    "searchPlaceholder": "Find a location in any Saudi city",
+    "searchLabel": "Find a location",
+    "projectSuffix": " · project",
+    "fullDir": "Full directory",
+    "project": "project",
+    "noLocations": "No locations in this city yet"
   }
 }
