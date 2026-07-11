@@ -1176,5 +1176,13 @@
     "downWord": "down",
     "beyondPre": "beyond your ",
     "beyondSuf": "% mark"
+  },
+  "signupPage": {
+    "hero": "The verified commercial exchange for Saudi Arabia.",
+    "byFamily": "by SAT Real Estate",
+    "createAccount": "Create your account",
+    "pickRole": "Pick your role; the rest takes two minutes.",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in"
   }
 }
