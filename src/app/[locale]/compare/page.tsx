@@ -6,6 +6,7 @@ import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import { getDictionary } from "@/i18n/getDictionary";
 
 type SP = { ids?: string };
 
@@ -17,6 +18,7 @@ export async function generateMetadata({ params }: { params: { locale: string } 
 export default async function ComparePage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale; const ar = locale === "ar";
+  const cp = getDictionary(locale === "ar" ? "ar" : "en").compare;
   const L = (p: string) => `/${locale}${p}`;
   const ids = (searchParams.ids || "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);
 
@@ -42,20 +44,20 @@ export default async function ComparePage({ params, searchParams }: { params: { 
     });
   }
 
-  const dn = (l: any) => l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
-  const cty = (l: any) => l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (ar ? "الرياض" : "Riyadh");
+  const dn = (l: any) => l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (cp.riyadh);
+  const cty = (l: any) => l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (cp.riyadh);
 
   // Empty / invalid state: guide to the shortlist, no fabricated demo
   if (!items.length) {
     return (
       <div style={{ background: "var(--cool)", minHeight: "60vh" }}>
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
-          <div className="eyebrow">{ar ? "قارن جنباً إلى جنب" : "Compare side by side"}</div>
-          <h1 className="serif" style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{ar ? "قارن المساحات، بأسعار في سياقها" : "Compare spaces, priced in context"}</h1>
-          <p className="muted" style={{ fontSize: 15, lineHeight: 1.6, margin: "14px auto 0", maxWidth: 520 }}>{ar ? "احفظ المساحات في قائمتك المختصرة ثم قارنها جنباً إلى جنب مع موقعها من مؤشر الإيجارات، أو تصفّح العروض للبدء." : "Save spaces to your shortlist, then compare them side by side against the Rent Index, or browse listings to start."}</p>
+          <div className="eyebrow">{cp.eyebrowSaved}</div>
+          <h1 className="serif" style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{cp.emptyTitle}</h1>
+          <p className="muted" style={{ fontSize: 15, lineHeight: 1.6, margin: "14px auto 0", maxWidth: 520 }}>{cp.emptyBody}</p>
           <div className="row gap10" style={{ justifyContent: "center", marginTop: 22 }}>
-            <Link href={L("/listings")} className="btn primary" style={{ textDecoration: "none" }}>{ar ? "تصفّح العروض" : "Browse listings"}</Link>
-            <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {ar ? "قائمتي المختصرة" : "My shortlist"}</Link>
+            <Link href={L("/listings")} className="btn primary" style={{ textDecoration: "none" }}>{cp.browseListings}</Link>
+            <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {cp.myShortlist}</Link>
           </div>
         </div>
       </div>
@@ -63,10 +65,10 @@ export default async function ComparePage({ params, searchParams }: { params: { 
   }
 
   const priceCell = (l: any) => l.deal_type === "lease"
-    ? (l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString()} ${ar ? "ريال/م²·سنة" : "SAR/m²·yr"}` : (ar ? "عند الطلب" : "On request"))
-    : (l.sale_price != null ? `${Number(l.sale_price).toLocaleString()} ${ar ? "ريال" : "SAR"}` : (ar ? "عند الطلب" : "On request"));
+    ? (l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString()} ${cp.sarSqmYr}` : (cp.onRequest))
+    : (l.sale_price != null ? `${Number(l.sale_price).toLocaleString()} ${cp.sar}` : (cp.onRequest));
   const totalCell = (l: any) => (l.deal_type === "lease" && l.asking_rent_sqm != null && l.area_sqm != null)
-    ? `${Number(l.asking_rent_sqm * l.area_sqm).toLocaleString()} ${ar ? "ريال/سنة" : "SAR/yr"}` : "–";
+    ? `${Number(l.asking_rent_sqm * l.area_sqm).toLocaleString()} ${cp.sarYr}` : "–";
 
   // best value = most below its district median (lease with a verdict)
   let bestIdx = -1, bestDelta = Infinity;
@@ -88,9 +90,9 @@ export default async function ComparePage({ params, searchParams }: { params: { 
         <div className="row between wrap" style={{ padding: "22px 24px 18px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
           <div>
             <div className="eyebrow">{ar ? `قارن · ${items.length} مساحات` : `Compare · ${items.length} space${items.length === 1 ? "" : "s"}`}</div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "جنباً إلى جنب، بأسعار في سياقها" : "Side by side, priced in context"}</h1>
+            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{cp.sideBySide}</h1>
           </div>
-          <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {ar ? "قائمتي المختصرة" : "My shortlist"}</Link>
+          <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {cp.myShortlist}</Link>
         </div>
 
         <div style={{ padding: "24px 24px 44px" }}>
@@ -101,37 +103,37 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 {items.map((l, i) => (
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
-                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={((l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? [<Verified key="v" text={ar ? "موثّق" : "Verified"} />] : [])} />
+                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={((l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? [<Verified key="v" text={cp.verified} />] : [])} />
                       <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                      <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{ar ? "، " : ", "}{cty(l)}</div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>
                   </div>
                 ))}
               </div>
 
-              <HeaderRow label={ar ? "الصفقة" : "Deal"} render={(l) => <span>{dealLabel(l.deal_type, locale)}</span>} />
-              <HeaderRow label={ar ? "النوع" : "Type"} render={(l) => <span>{assetLabel(l.asset_type, locale)}</span>} />
-              <HeaderRow label={ar ? "السعر" : "Price"} render={(l) => <span className="mono" style={{ fontWeight: 500 }}>{priceCell(l)}</span>} />
-              <HeaderRow label={ar ? "الإجمالي · سنة" : "Total · yr"} render={(l) => <span className="mono">{totalCell(l)}</span>} />
-              <HeaderRow label={ar ? "المساحة" : "Net area"} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "–"}</span>} />
-              <HeaderRow label={ar ? "الفئة" : "Grade"} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : "N/A"}</span>} />
-              <HeaderRow label={ar ? "التجهيز" : "Fit-out"} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
-              <HeaderRow label={ar ? "مقابل وسيط الحي" : "vs district median"} render={(l, i) => {
+              <HeaderRow label={cp.deal} render={(l) => <span>{dealLabel(l.deal_type, locale)}</span>} />
+              <HeaderRow label={cp.type} render={(l) => <span>{assetLabel(l.asset_type, locale)}</span>} />
+              <HeaderRow label={cp.price} render={(l) => <span className="mono" style={{ fontWeight: 500 }}>{priceCell(l)}</span>} />
+              <HeaderRow label={cp.totalYr} render={(l) => <span className="mono">{totalCell(l)}</span>} />
+              <HeaderRow label={cp.netArea} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "–"}</span>} />
+              <HeaderRow label={cp.grade} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : "N/A"}</span>} />
+              <HeaderRow label={cp.fitout} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
+              <HeaderRow label={cp.vsDistrictMedian} render={(l, i) => {
                 const v = l.__verdict;
-                if (!v || v.status === "na" || v.deltaPct == null) return <span className="muted" style={{ fontSize: 12.5 }}>{l.deal_type === "sale" ? (ar ? "المؤشر للإيجار" : "index is lease") : (ar ? "لا مؤشر كافٍ" : "no sufficient index")}</span>;
+                if (!v || v.status === "na" || v.deltaPct == null) return <span className="muted" style={{ fontSize: 12.5 }}>{l.deal_type === "sale" ? (cp.indexLease) : (cp.noSuffIndex)}</span>;
                 const a = Math.abs(v.deltaPct);
-                const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (ar ? "ضمن النطاق" : "within band");
+                const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (cp.withinBand);
                 const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "#3A6EA5";
-                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--green)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{ar ? "الأفضل قيمة" : "BEST VALUE"}</span>}</>;
+                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--green)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
               }} />
-              <HeaderRow label={ar ? "الحي" : "District"} render={(l) => <span>{dn(l)}</span>} />
-              <HeaderRow label={ar ? "المالك" : "Owner"} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{ar ? "موثّق" : "Verified"}</span> : <span className="muted">–</span>} />
+              <HeaderRow label={cp.district} render={(l) => <span>{dn(l)}</span>} />
+              <HeaderRow label={cp.owner} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{cp.verified}</span> : <span className="muted">–</span>} />
 
               <div style={{ display: "grid", gridTemplateColumns: GRID, borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
                 <div style={{ padding: 16, borderRight: "1px solid var(--silver)" }} />
                 {items.map((l, i) => (
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none" }}>
-                    <Link href={L(`/listings/${l.id}`)} className="btn primary sm" style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}>{ar ? "عرض وتواصل" : "View & contact"}</Link>
+                    <Link href={L(`/listings/${l.id}`)} className="btn primary sm" style={{ width: "100%", justifyContent: "center", textDecoration: "none" }}>{cp.viewContact}</Link>
                   </div>
                 ))}
               </div>
@@ -140,7 +142,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
 
           <div className="row gap10" style={{ marginTop: 16 }}>
             <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>
-            <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "السعر والمساحة والفئة من بيانات العرض الموثّقة. \"مقابل وسيط الحي\" من مؤشر إيجارات سات المنشور. استرشادي وليس نصيحة." : "Price, area and grade are from verified listing data. \"vs district median\" is from the SAT published Rent Index. Indicative, not advice."}</span>
+            <span className="muted" style={{ fontSize: 12.5 }}>{cp.note}</span>
           </div>
         </div>
       </div>
