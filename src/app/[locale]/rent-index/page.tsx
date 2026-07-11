@@ -7,6 +7,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import WatchBanner from "@/components/WatchBanner";
+import { getDictionary } from "@/i18n/getDictionary";
 
 const AZURE = "#3A6EA5";
 
@@ -19,6 +20,7 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
 export default async function RentIndexPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
+ const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;
  const pub = await getPublishedKpis();
 
  const MOCK_DISTRICTS: DRow[] = ar ? [
@@ -56,8 +58,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
    if (data && data.length) {
     districts = data.map((r: any): DRow => {
      const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment ? " · " + (SEG[r.segment] || r.segment) : ""}`;
-     const median = r.sufficient && r.median != null ? nf(Number(r.median)) : (ar ? "غير متاح" : "n/a");
-     const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}–${nf(Number(r.band_high))}` : (ar ? "عينة قليلة" : "Thin sample");
+     const median = r.sufficient && r.median != null ? nf(Number(r.median)) : (ri.na);
+     const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}–${nf(Number(r.band_high))}` : (ri.thinSample);
      return [ar ? (r.district_label_ar || r.district_label) : r.district_label, asset, median, band, !!r.sufficient];
     });
    }
@@ -99,16 +101,16 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ar ? "مؤشر الإيجارات · الربع الأول 2026" : "Rent Index · Q1 2026"}</div>
-      <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "إيجارات الرياض التجارية" : "Riyadh commercial rents"}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ar ? "الربع الأول 2026 · معايير سوق منشورة منسوبة إلى مصادرها · معاينة المنصّة على بيانات عيّنة" : "Q1 2026 · published market benchmarks, attributed to source · platform preview on sample data"}</div>
+      <div className="eyebrow">{ri.eyebrow}</div>
+      <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
+      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ri.intro}</div>
      </div>
      <div className="row gap10 wrap">
-      <span className="seg"><span className="on">{ar ? "الكل" : "All"}</span><span>{ar ? "مفتوح" : "Open"}</span><span>{ar ? "مسقوف" : "Capped"}</span></span>
-      <span className="chip">{ar ? "مكاتب" : "Office"} <Icon.chevd size={14} /></span>
-      <Link href={`/${params.locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{ar ? "نبض السوق" : "Market pulse"}</Link>
-      <span className="btn secondary"><Icon.download size={15} /> {ar ? "تصدير" : "Export"}</span>
-      <span className="btn primary"><Icon.spark size={15} /> {ar ? "اسأل الذكاء" : "Ask AI"}</span>
+      <span className="seg"><span className="on">{ri.all}</span><span>{ri.open}</span><span>{ri.capped}</span></span>
+      <span className="chip">{ri.office} <Icon.chevd size={14} /></span>
+      <Link href={`/${params.locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{ri.marketPulse}</Link>
+      <span className="btn secondary"><Icon.download size={15} /> {ri.export}</span>
+      <span className="btn primary"><Icon.spark size={15} /> {ri.askAi}</span>
      </div>
     </div>
 
@@ -121,14 +123,14 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     <div style={{ padding: "22px 24px 0" }}>
      <div className="bifur">
       <div className="side">
-       <div className="h"><span className="freeze capped"><span className="dot" />{ar ? "مسقوف" : "Capped"}</span> {ar ? "عقود قائمة · مجمّدة عند التوقيع" : "Existing leases · frozen at signature"}</div>
-       <div className="sub">{ar ? "تُثبّت التجديدات داخل النطاق العمراني للرياض على آخر إيجار مُسجّل في إيجار لمدة خمس سنوات بموجب قرار سبتمبر 2025." : "Renewals inside Riyadh’s urban boundary are held at their last Ejar rent for five years under the Sept-2025 decree."}</div>
-       <div className="big" style={{ color: "var(--amber)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "حركة على المخزون المسقوف" : "movement on capped stock"}</span></div>
+       <div className="h"><span className="freeze capped"><span className="dot" />{ri.capped}</span> {ri.cappedExisting}</div>
+       <div className="sub">{ri.cappedBody}</div>
+       <div className="big" style={{ color: "var(--amber)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.cappedMovement}</span></div>
       </div>
       <div className="side">
-       <div className="h"><span className="freeze open"><span className="dot" />{ar ? "مفتوح" : "Open"}</span> {ar ? "جديد وأول إيجار · يحدّد العنوان" : "New & first-lease · sets the headline"}</div>
-       <div className="sub">{ar ? "المباني الجديدة وعقود الإيجار الأولى غير متأثرة بالسقف وتُعاد تسعيرها وفق السوق كل مدة." : "New-build and first-time leases are unaffected by the cap and continue to re-price to market each term."}</div>
-       <div className="big" style={{ color: "var(--azure-d)" }}>{`+${pub.gradeAYoyPct}%`} <span style={{ fontSize: 13, color: "var(--slate)" }}>{ar ? "سنوياً على الفئة A (منشور)" : "YoY on Grade A (published)"}</span></div>
+       <div className="h"><span className="freeze open"><span className="dot" />{ri.open}</span> {ri.openNew}</div>
+       <div className="sub">{ri.openBody}</div>
+       <div className="big" style={{ color: "var(--azure-d)" }}>{`+${pub.gradeAYoyPct}%`} <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.yoyGradeA}</span></div>
       </div>
      </div>
     </div>
@@ -148,28 +150,28 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     </div>
 
     <div style={{ padding: "12px 24px 0" }}>
-     <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "معايير الربع الأول 2026 المنشورة. المصادر: JLL الربع الأول 2026، CBRE الربع الأول 2026، نايت فرانك، ساما. سياق سوقي منسوب إلى مصدره، استرشادي، ليس نصيحة." : "Published Q1 2026 benchmarks. Sources: JLL Q1 2026, CBRE Q1 2026, Knight Frank, SAMA. Attributed market context. Indicative, not advice."}</span>
+     <span className="muted" style={{ fontSize: 12.5 }}>{ri.benchNote}</span>
     </div>
 
     {/* main grid */}
     <div className="rent-grid">
      {/* published bands, attributed (Layer 1) */}
      <div className="card pad" style={{ gridColumn: "1 / -1", boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "النطاقات المنشورة · الربع الأول 2026 (منسوبة)" : "Published bands · Q1 2026 (attributed)"}</div>
-      <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ar ? "قارن تطويراً بتطوير وحياً بحي، لا عبر الفئات. ما لا يحمل مصدراً مُسمّى يُوجَّه إلى المستشار." : "Compare development with development, district with district, never across tiers. Anything without a named source routes to the advisor."}</div>
+      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.bandsTitle}</div>
+      <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ri.bandsSub}</div>
       <div className="col gap8" style={{ marginTop: 14, fontSize: 13.5 }}>
-       <div><strong>{ar ? "التطويرات:" : "Developments:"}</strong> {ar ? "كافد 3,400 إلى 3,800 (موثّق) · وادي ليسن 3,000 إلى 4,000 (موثّق) · البقية بانتظار بيانات موثّقة" : "KAFD 3,400 to 3,800 (verified) · Laysen Valley 3,000 to 4,000 (verified) · others pending verified data"}</div>
-       <div><strong>{ar ? "الأحياء:" : "Districts:"}</strong> {ar ? "العليا 2,200 إلى 3,200 (موثّق) · حطين والصحافة 1,800 إلى 2,600 (موثّق) · البقية بانتظار بيانات موثّقة" : "Al Olaya 2,200 to 3,200 (verified) · Hittin and Sahafa 1,800 to 2,600 (verified) · others pending verified data"}</div>
-       <div><strong>{ar ? "الشوارع:" : "Streets:"}</strong> {ar ? "شارع التحلية، تجزئة: 2,500 إلى 4,000، الوسيط 3,200 (موثّق) · البقية بانتظار بيانات موثّقة" : "Tahlia Street, retail: 2,500 to 4,000, median 3,200 (verified) · others pending verified data"}</div>
+       <div><strong>{ri.developments}</strong> {ri.developmentsData}</div>
+       <div><strong>{ri.districtsLabel}</strong> {ri.districtsData}</div>
+       <div><strong>{ri.streets}</strong> {ri.streetsData}</div>
       </div>
      </div>
      {/* trend chart */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
-       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "مؤشر إيجار المكاتب، العليا" : "Office rent index, Al Olaya"}</div><div className="muted" style={{ fontSize: 12.5 }}>{ar ? "مُعاد إلى 100 · مفتوح مقابل مسقوف · عيّنة توضيحية قبل الإطلاق" : "Rebased to 100 · open vs capped · illustrative pre-launch sample"}</div></div>
+       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ri.chartTitle}</div><div className="muted" style={{ fontSize: 12.5 }}>{ri.chartSub}</div></div>
        <div className="col gap8">
-        <span className="lgd"><span className="sw" /> {ar ? "مفتوح (أول إيجار)" : "Open (first-lease)"}</span>
-        <span className="lgd"><span className="sw dash" /> {ar ? "مسقوف (مجمّد)" : "Capped (frozen)"}</span>
+        <span className="lgd"><span className="sw" /> {ri.legendOpen}</span>
+        <span className="lgd"><span className="sw dash" /> {ri.legendCapped}</span>
        </div>
       </div>
       <div style={{ position: "relative", height: 210, marginTop: 18 }}>
@@ -181,7 +183,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
         <polyline points={cp} fill="none" stroke="#B7791F" strokeWidth="1.6" strokeDasharray="3 2.5" vectorEffect="non-scaling-stroke" />
         <defs><linearGradient id="gop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={AZURE} /><stop offset="1" stopColor={AZURE} stopOpacity="0" /></linearGradient></defs>
        </svg>
-       <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 11, color: "var(--amber)", letterSpacing: ".04em" }}>{ar ? "قرار سبتمبر 2025" : "SEP-25 DECREE"}</div>
+       <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 11, color: "var(--amber)", letterSpacing: ".04em" }}>{ri.decree}</div>
       </div>
       <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}>
        <span>Q1&apos;25</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q1&apos;26</span>
@@ -222,12 +224,12 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      {/* district table */}
      <div className="card" style={{ gridColumn: "1 / -1", overflow: "hidden", boxShadow: "var(--sh-1)" }}>
       <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{ar ? "معايير الأحياء · عيّنة المنصّة" : "District benchmarks · platform sample"}</div>
-       <span className="chip" style={{ borderColor: "var(--silver)" }}>{ar ? "ترتيب: الحركة السنوية" : "Sort: YoY movement"} <Icon.chevd size={14} /></span>
+       <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.tableTitle}</div>
+       <span className="chip" style={{ borderColor: "var(--silver)" }}>{ri.sortYoY} <Icon.chevd size={14} /></span>
       </div>
       <div style={{ overflowX: "auto" }}>
        <table className="dt" style={{ minWidth: 640 }}>
-        <thead><tr><th>{ar ? "الموقع" : "Location"}</th><th>{ar ? "الأصل" : "Asset"}</th><th style={{ textAlign: "right" }}>{ar ? "الوسيط ريال/م²" : "Median SAR/m²"}</th><th style={{ textAlign: "right" }}>{ar ? "النطاق (ريال/م²)" : "Band (SAR/m²)"}</th><th style={{ textAlign: "right" }}>{ar ? "البيانات" : "Data"}</th><th style={{ textAlign: "right" }}>{ar ? "المصدر" : "Source"}</th></tr></thead>
+        <thead><tr><th>{ri.thLocation}</th><th>{ri.thAsset}</th><th style={{ textAlign: "right" }}>{ri.thMedian}</th><th style={{ textAlign: "right" }}>{ri.thBand}</th><th style={{ textAlign: "right" }}>{ri.thData}</th><th style={{ textAlign: "right" }}>{ri.thSource}</th></tr></thead>
         <tbody>
          {districts.map((d, i) => (
           <tr key={i}>
@@ -235,8 +237,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
            <td className="muted">{d[1]}</td>
            <td className="num mono" style={{ fontWeight: 500 }}>{d[2]}</td>
            <td className="num mono muted">{d[3]}</td>
-           <td className="num">{d[4] ? <span className="statusdot ok">{ar ? "كافٍ" : "Sufficient"}</span> : <span className="statusdot pend">{ar ? "قليل" : "Thin"}</span>}</td>
-           <td className="num"><span className="statusdot pend">{ar ? "عيّنة" : "Sample"}</span></td>
+           <td className="num">{d[4] ? <span className="statusdot ok">{ri.sufficient}</span> : <span className="statusdot pend">{ri.thin}</span>}</td>
+           <td className="num"><span className="statusdot pend">{ri.sample}</span></td>
           </tr>
          ))}
         </tbody>
@@ -244,7 +246,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       </div>
       <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح آلية المؤشر. عند الإطلاق تُحسب الوسطاء والنطاقات من صفقات مُقفلة موثّقة فقط، وتُوسَم العينات القليلة بدلاً من عرضها، فالمؤشر لا يطبع رقماً لا يستطيع الوقوف خلفه." : "Pre-launch sample data illustrating the index mechanism. At launch, medians and bands are computed from verified closed transactions only, and thin samples are marked rather than shown. The index never prints a number it cannot stand behind."}</span>
+       <span className="muted" style={{ fontSize: 12.5 }}>{ri.tableNote}</span>
       </div>
      </div>
     </div>
