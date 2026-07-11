@@ -1,4 +1,5 @@
 "use client";
+import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -14,6 +15,7 @@ const IC = {
 
 export default function TabBar({ locale }: { locale: string }) {
   const ar = locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").chrome;
   const pathname = usePathname() || "";
   const [saved, setSaved] = useState(0);
   useEffect(() => {
@@ -23,15 +25,15 @@ export default function TabBar({ locale }: { locale: string }) {
     return () => { window.removeEventListener("focus", read); window.removeEventListener("storage", read); };
   }, [pathname]);
   const tabs = [
-    { href: `/${locale}`, label: ar ? "الرئيسية" : "Home", ic: IC.home, exact: true, badge: 0 },
-    { href: `/${locale}/listings`, label: ar ? "استكشف" : "Explore", ic: IC.explore, exact: false, badge: 0 },
-    { href: `/${locale}/post-requirement`, label: ar ? "اطلب" : "Post", ic: IC.post, exact: false, badge: 0 },
-    { href: `/${locale}/rent-index`, label: ar ? "المؤشر" : "Index", ic: IC.index, exact: false, badge: 0 },
-    { href: `/${locale}/saved`, label: ar ? "المحفوظة" : "Saved", ic: IC.saved, exact: false, badge: saved },
+    { href: `/${locale}`, label: t.tabHome, ic: IC.home, exact: true, badge: 0 },
+    { href: `/${locale}/listings`, label: t.tabExplore, ic: IC.explore, exact: false, badge: 0 },
+    { href: `/${locale}/post-requirement`, label: t.tabPost, ic: IC.post, exact: false, badge: 0 },
+    { href: `/${locale}/rent-index`, label: t.tabIndex, ic: IC.index, exact: false, badge: 0 },
+    { href: `/${locale}/saved`, label: t.tabSaved, ic: IC.saved, exact: false, badge: saved },
   ];
   const on = (t: (typeof tabs)[number]) => (t.exact ? pathname === t.href : pathname === t.href || pathname.startsWith(t.href + "/"));
   return (
-    <nav className="tabbar" aria-label={ar ? "التنقل السفلي" : "Bottom navigation"}>
+    <nav className="tabbar" aria-label={t.bottomNav}>
       {tabs.map((t) => (
         <Link key={t.href} href={t.href} className={on(t) ? "on" : ""} aria-current={on(t) ? "page" : undefined}>
           <span className="tb-ic">{t.ic}{t.badge > 0 ? <span className="tb-badge fig">{t.badge}</span> : null}</span>

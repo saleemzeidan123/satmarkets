@@ -1,4 +1,5 @@
 "use client";
+import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
 import { getWatches, markSeen, removeWatch, watchKey, type Watch } from "@/lib/watches";
 
@@ -22,6 +23,7 @@ interface Move { w: Watch; label: string; from: number; to: number; period: stri
 
 export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
   const ar = locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").chrome;
   const [moves, setMoves] = useState<Move[]>([]);
   const [segs, setSegs] = useState<Seg[] | null>(null);
   const [watches, setWatches] = useState<Watch[]>([]);
@@ -75,9 +77,9 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
       <div className="row gap8" style={{ alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div className="row gap8" style={{ alignItems: "center" }}>
           <span aria-hidden style={{ color: "var(--azure-d, #2C5578)", fontSize: 15 }}>◔</span>
-          <strong style={{ fontSize: 14 }}>{ar ? "تحرّك في نطاق تتابعه" : "A segment you watch has moved"}</strong>
+          <strong style={{ fontSize: 14 }}>{t.segmentMoved}</strong>
         </div>
-        <button type="button" onClick={dismissAll} className="chip" style={{ height: 30, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, border: "1px solid var(--silver-2, #D6DCE2)", background: "var(--paper, #fff)", color: "var(--ink)" }}>{ar ? "تم، فهمت" : "Got it"}</button>
+        <button type="button" onClick={dismissAll} className="chip" style={{ height: 30, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, border: "1px solid var(--silver-2, #D6DCE2)", background: "var(--paper, #fff)", color: "var(--ink)" }}>{t.gotIt}</button>
       </div>
       <div className="col gap8">
         {moves.map((m) => {
@@ -94,12 +96,12 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
                 {line}
                 {m.beyond ? <span style={{ marginInlineStart: 6, fontWeight: 600, color: "var(--azure-d, #2C5578)" }}>{ar ? `تجاوز حدّك ${m.w.thresholdPct}%` : `beyond your ${m.w.thresholdPct}% mark`}</span> : null}
               </div>
-              <button type="button" onClick={() => stop(m.w.id)} style={{ flex: "none", background: "transparent", border: "none", color: "var(--slate-2, #6B7480)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>{ar ? "إيقاف" : "Stop"}</button>
+              <button type="button" onClick={() => stop(m.w.id)} style={{ flex: "none", background: "transparent", border: "none", color: "var(--slate-2, #6B7480)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>{t.stop}</button>
             </div>
           );
         })}
       </div>
-      <div className="muted" style={{ fontSize: 10.5, marginTop: 8 }}>{ar ? "مؤشر الإيجارات، معايير منشورة منسوبة إلى مصادرها. استرشادي وليس نصيحة." : "Rent Index, published benchmarks attributed to source. Indicative, not advice."}</div>
+      <div className="muted" style={{ fontSize: 10.5, marginTop: 8 }}>{t.watchDisclaimer}</div>
     </div>
   );
 }

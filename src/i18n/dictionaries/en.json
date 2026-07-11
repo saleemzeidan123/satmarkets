@@ -207,5 +207,27 @@
     "weekdayFootfall": "Weekday footfall by hour",
     "similarSpaces": "Similar spaces",
     "seeAll": "See all →"
+  },
+  "chrome": {
+    "tabHome": "Home",
+    "tabExplore": "Explore",
+    "tabPost": "Post",
+    "tabIndex": "Index",
+    "tabSaved": "Saved",
+    "bottomNav": "Bottom navigation",
+    "call": "Call",
+    "email": "Email",
+    "message": "Message",
+    "saved": "Saved",
+    "save": "Save",
+    "searchSaved": "Search saved ✓",
+    "saveThisSearch": "Save this search",
+    "remove": "Remove",
+    "savedOnDevice": "saved on this device",
+    "segmentMoved": "A segment you watch has moved",
+    "gotIt": "Got it",
+    "stop": "Stop",
+    "watchDisclaimer": "Rent Index, published benchmarks attributed to source. Indicative, not advice.",
+    "sampleData": "Sample data for platform testing. Not real market activity."
   }
 }

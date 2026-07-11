@@ -1,4 +1,5 @@
 "use client";
+import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
 
 // Device-local saved searches (localStorage). Works signed-out; moves to the
@@ -13,6 +14,7 @@ function read(): Saved[] {
 
 export default function SaveSearch({ locale, qs, label }: { locale: "en" | "ar"; qs: string; label: string }) {
   const ar = locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").chrome;
   const [saved, setSaved] = useState<Saved[]>([]);
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setSaved(read()); setMounted(true); }, []);
@@ -32,15 +34,15 @@ export default function SaveSearch({ locale, qs, label }: { locale: "en" | "ar";
   return (
     <div className="row gap8 wrap" style={{ marginTop: 10, alignItems: "center" }}>
       <button type="button" className={exists ? "chip on" : "chip"} onClick={save} style={{ cursor: exists ? "default" : "pointer" }}>
-        {exists ? (ar ? "تم حفظ البحث ✓" : "Search saved ✓") : (ar ? "حفظ هذا البحث" : "Save this search")}
+        {exists ? (t.searchSaved) : (t.saveThisSearch)}
       </button>
       {saved.map((s) => (
         <span key={s.qs} className="tag" style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
           <a href={`/${locale}/listings${s.qs ? `?${s.qs}` : ""}`} style={{ textDecoration: "none", color: "inherit" }}>{s.name}</a>
-          <button type="button" onClick={() => remove(s.qs)} aria-label={ar ? "حذف" : "Remove"} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--slate)", padding: 0 }}>✕</button>
+          <button type="button" onClick={() => remove(s.qs)} aria-label={t.remove} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--slate)", padding: 0 }}>✕</button>
         </span>
       ))}
-      {saved.length > 0 && <span className="muted" style={{ fontSize: 11 }}>{ar ? "محفوظة على هذا الجهاز" : "saved on this device"}</span>}
+      {saved.length > 0 && <span className="muted" style={{ fontSize: 11 }}>{t.savedOnDevice}</span>}
     </div>
   );
 }
