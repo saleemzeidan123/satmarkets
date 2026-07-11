@@ -853,7 +853,11 @@
     "perYear": "SAR/sqm/yr",
     "areaReport": "Area report",
     "browseUse": "Browse this use",
-    "rentIndexLink": "Rent index"
+    "rentIndexLink": "Rent index",
+    "metaNotFound": "Building not found | SAT Markets",
+    "fallbackName": "Building",
+    "crumbHome": "Home",
+    "crumbListings": "Listings"
   },
   "docs": {
     "sheet1": "Floor plate · L18",

@@ -18,9 +18,10 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const ar = loc === "ar";
+  const dict = getDictionary(loc);
   const b: any = await getBuildingById(params.id);
-  if (!b) return { title: ar ? "المبنى غير موجود | سات ماركتس" : "Building not found | SAT Markets" };
-  const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (ar ? "مبنى" : "Building");
+  if (!b) return { title: dict.building.metaNotFound };
+  const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (dict.building.fallbackName);
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
   const grade = gradeLabel(b.grade, loc);
   const type = assetLabel(b.asset_type, loc);
@@ -73,8 +74,8 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   return (
     <section>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
-        { "@type": "ListItem", position: 2, name: ar ? "العروض" : "Listings", item: `${SITE}/${locale}/listings` },
+        { "@type": "ListItem", position: 1, name: dict.building.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: dict.building.crumbListings, item: `${SITE}/${locale}/listings` },
         ...(b.district_id ? [{ "@type": "ListItem", position: 3, name: ar ? (b.district_label_ar || b.district_label) : b.district_label, item: `${SITE}/${locale}/listings?district=${b.district_id}` }] : []),
         { "@type": "ListItem", position: b.district_id ? 4 : 3, name, item: `${SITE}/${locale}/building/${b.id}` },
       ] }} />

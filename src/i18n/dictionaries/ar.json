@@ -853,7 +853,11 @@
     "perYear": "ريال/م²/سنة",
     "areaReport": "تقرير المنطقة",
     "browseUse": "تصفّح المعروض",
-    "rentIndexLink": "مؤشر الإيجار"
+    "rentIndexLink": "مؤشر الإيجار",
+    "metaNotFound": "المبنى غير موجود | سات ماركتس",
+    "fallbackName": "مبنى",
+    "crumbHome": "الرئيسية",
+    "crumbListings": "العروض"
   },
   "docs": {
     "sheet1": "مخطط الدور · L18",
