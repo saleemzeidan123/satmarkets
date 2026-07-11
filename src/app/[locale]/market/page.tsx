@@ -6,18 +6,18 @@ import { assetLabel } from "@/lib/labels";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export const revalidate = 1800;
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
   const ar = params.locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").marketPage;
   return {
-    title: ar ? "نبض السوق التجاري في الرياض | سات ماركتس" : "Riyadh commercial market pulse | SAT Markets",
-    description: ar
-      ? "السوق التجاري في الرياض بنظرة واحدة: نطاقات مؤشر الإيجارات المنشورة والمنسوبة ومؤشرات المنصّة الموثّقة. استرشادي وليس نصيحة."
-      : "The Riyadh commercial market at a glance: published, attributed Rent Index bands and verified platform indicators. Indicative, not advice.",
+    title: t.metaTitle,
+    description: t.metaDesc,
     alternates: { canonical: `${SITE}/${params.locale}/market`, languages: { en: `${SITE}/en/market`, ar: `${SITE}/ar/market` } },
-    openGraph: { title: ar ? "نبض السوق التجاري في الرياض | سات ماركتس" : "Riyadh commercial market pulse | SAT Markets", url: `${SITE}/${params.locale}/market`, type: "website", siteName: "SAT Markets" },
+    openGraph: { title: t.metaTitle, url: `${SITE}/${params.locale}/market`, type: "website", siteName: "SAT Markets" },
   };
 }
 
@@ -25,6 +25,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").marketPage;
   const sb = getSupabaseServer();
   const nf = (n: number) => n.toLocaleString("en-US");
 
@@ -75,10 +76,10 @@ export default async function MarketPage({ params }: { params: { locale: string 
   const period = idxRows.length ? idxRows[0].period : null;
 
   const tiles: [string, string][] = [
-    [nf(listings.length), ar ? "مساحة موثّقة معروضة" : "verified spaces live"],
-    [nf(locCount), ar ? "موقعاً مُغطى" : "locations covered"],
-    [nf(idxRows.length), ar ? "شريحة مؤشر ببيانات كافية" : "index segments with sufficient data"],
-    [medOffice != null ? nf(medOffice) : (ar ? "غير متاح" : "n/a"), ar ? "وسيط إيجار المكاتب ريال/م²·سنة" : "median office rent SAR/m²·yr"],
+    [nf(listings.length), t.kpiSpaces],
+    [nf(locCount), t.kpiLocations],
+    [nf(idxRows.length), t.kpiSegments],
+    [medOffice != null ? nf(medOffice) : (t.kpiNa), t.kpiMedianOffice],
   ];
 
   const disc = [
@@ -90,8 +91,8 @@ export default async function MarketPage({ params }: { params: { locale: string 
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
-        { "@type": "ListItem", position: 2, name: ar ? "نبض السوق" : "Market pulse", item: `${SITE}/${locale}/market` },
+        { "@type": "ListItem", position: 1, name: t.home, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: t.eyebrow, item: `${SITE}/${locale}/market` },
       ] }} />
       <JsonLd data={{
         "@type": "Dataset",
@@ -103,9 +104,9 @@ export default async function MarketPage({ params }: { params: { locale: string 
         isBasedOn: ["JLL published research", "CBRE published research", "Knight Frank published research", "SAMA published data"],
         spatialCoverage: "Riyadh, Saudi Arabia",
       }} />
-      <div className="eyebrow">{ar ? "نبض السوق" : "Market pulse"}</div>
-      <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ar ? "السوق التجاري في الرياض، بنظرة واحدة" : "The Riyadh commercial market, at a glance"}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{ar ? "كل رقم في هذه الصفحة من بيانات المنصّة الموثّقة أو من مؤشر الإيجارات، عيّنة المنصّة. لا تقديرات ولا أرقام بلا مصدر." : "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers."}</p>
+      <div className="eyebrow">{t.eyebrow}</div>
+      <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{t.h1}</h1>
+      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{t.intro}</p>
 
       <div style={{ marginTop: 22 }}><WatchBanner locale={params.locale as "en" | "ar"} /></div>
 
@@ -121,8 +122,8 @@ export default async function MarketPage({ params }: { params: { locale: string 
       {bandRows.length > 0 && (
         <section className="card" style={{ marginTop: 26, padding: "22px 24px" }}>
           <div className="row between wrap" style={{ alignItems: "baseline", gap: 10 }}>
-            <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{ar ? "نطاقات إيجار المكاتب حسب الموقع" : "Office rent bands by location"}</h2>
-            <span className="mono muted" style={{ fontSize: 11.5 }}>{(period || "") + (ar ? " · ريال/م²·سنة" : " · SAR/m²·yr")}</span>
+            <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.bandsTitle}</h2>
+            <span className="mono muted" style={{ fontSize: 11.5 }}>{(period || "") + t.bandsUnit}</span>
           </div>
           <div style={{ marginTop: 18 }}>
             {bandRows.map((r, i) => {
@@ -141,13 +142,13 @@ export default async function MarketPage({ params }: { params: { locale: string 
               );
             })}
           </div>
-          <div className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>{ar ? "الشريط هو نطاق المؤشر، والنقطة هي الوسيط. شرائح ذات بيانات كافية فقط." : "The bar is the index band, the dot is the median. Sufficient segments only."}</div>
+          <div className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>{t.bandsCaption}</div>
         </section>
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 18, marginTop: 18 }}>
         <section className="card" style={{ padding: "22px 24px" }}>
-          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{ar ? "المعروض حسب نوع الأصل" : "Supply by asset type"}</h2>
+          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.supplyTitle}</h2>
           <div style={{ marginTop: 16 }}>
             {assetMix.map(([a, n], i) => (
               <div key={i} className="row gap10" style={{ alignItems: "center", padding: "6px 0" }}>
@@ -160,7 +161,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
             ))}
           </div>
           <div className="row gap10" style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--silver)", alignItems: "center" }}>
-            <span className="muted" style={{ fontSize: 12.5, flex: "none" }}>{ar ? "الصفقات:" : "Deals:"}</span>
+            <span className="muted" style={{ fontSize: 12.5, flex: "none" }}>{t.dealsLabel}</span>
             <div style={{ flex: 1, height: 10, borderRadius: 5, overflow: "hidden", display: "flex" }}>
               <span style={{ width: `${listings.length ? (leaseN / listings.length) * 100 : 50}%`, background: "var(--harbor)" }} />
               <span style={{ flex: 1, background: "rgba(58,110,165,.25)" }} />
@@ -170,7 +171,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
         </section>
 
         <section className="card" style={{ padding: "22px 24px" }}>
-          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{ar ? "انضباط التسعير" : "Pricing discipline"}</h2>
+          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.pricingTitle}</h2>
           <p className="muted" style={{ fontSize: 12.5, marginTop: 6, lineHeight: 1.55 }}>{ar ? `من بين ${nf(graded)} عرض إيجار له شريحة مؤشر كافية، هكذا تقع الأسعار المطلوبة مقابل نطاق المؤشر.` : `Of ${nf(graded)} lease listings with a sufficient index segment, this is where asking rents sit against their band.`}</p>
           <div style={{ marginTop: 14 }}>
             {disc.map((d, i) => (
@@ -185,16 +186,16 @@ export default async function MarketPage({ params }: { params: { locale: string 
               </div>
             ))}
           </div>
-          <p className="muted" style={{ fontSize: 11.5, marginTop: 12, lineHeight: 1.55 }}>{ar ? "المؤشر يقيّم الأسعار لا الأشخاص. استرشادي وليس نصيحة." : "The index grades prices, never people. Indicative, not advice."}</p>
+          <p className="muted" style={{ fontSize: 11.5, marginTop: 12, lineHeight: 1.55 }}>{t.pricingNote}</p>
         </section>
       </div>
 
       <div className="row gap10 wrap" style={{ marginTop: 26 }}>
-        <Link href={`/${locale}/listings`} className="btn primary" style={{ textDecoration: "none" }}>{ar ? "تصفّح المساحات الموثّقة" : "Browse verified spaces"}</Link>
-        <Link href={`/${locale}/rent-index`} className="btn secondary" style={{ textDecoration: "none" }}>{ar ? "مؤشر الإيجارات الكامل" : "The full Rent Index"}</Link>
-        <Link href={`/${locale}/locations`} className="btn ghost" style={{ textDecoration: "none" }}>{ar ? "دليل المواقع" : "Locations directory"}</Link>
+        <Link href={`/${locale}/listings`} className="btn primary" style={{ textDecoration: "none" }}>{t.ctaBrowse}</Link>
+        <Link href={`/${locale}/rent-index`} className="btn secondary" style={{ textDecoration: "none" }}>{t.ctaIndex}</Link>
+        <Link href={`/${locale}/locations`} className="btn ghost" style={{ textDecoration: "none" }}>{t.ctaLocations}</Link>
       </div>
-      <p className="muted" style={{ marginTop: 22, fontSize: "var(--fs-xs)" }}>{ar ? "بيانات عيّنة قبل الإطلاق تُوضّح الآلية. المعايير المنشورة المنسوبة إلى مصادرها على صفحة المؤشر." : "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."}</p>
+      <p className="muted" style={{ marginTop: 22, fontSize: "var(--fs-xs)" }}>{t.sampleNote}</p>
     </div>
   );
 }

@@ -1184,5 +1184,29 @@
     "pickRole": "Pick your role; the rest takes two minutes.",
     "haveAccount": "Already have an account?",
     "signIn": "Sign in"
+  },
+  "marketPage": {
+    "metaTitle": "Riyadh commercial market pulse | SAT Markets",
+    "metaDesc": "The Riyadh commercial market at a glance: published, attributed Rent Index bands and verified platform indicators. Indicative, not advice.",
+    "home": "Home",
+    "eyebrow": "Market pulse",
+    "h1": "The Riyadh commercial market, at a glance",
+    "intro": "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers.",
+    "kpiSpaces": "verified spaces live",
+    "kpiLocations": "locations covered",
+    "kpiSegments": "index segments with sufficient data",
+    "kpiNa": "n/a",
+    "kpiMedianOffice": "median office rent SAR/m²·yr",
+    "bandsTitle": "Office rent bands by location",
+    "bandsUnit": " · SAR/m²·yr",
+    "bandsCaption": "The bar is the index band, the dot is the median. Sufficient segments only.",
+    "supplyTitle": "Supply by asset type",
+    "dealsLabel": "Deals:",
+    "pricingTitle": "Pricing discipline",
+    "pricingNote": "The index grades prices, never people. Indicative, not advice.",
+    "ctaBrowse": "Browse verified spaces",
+    "ctaIndex": "The full Rent Index",
+    "ctaLocations": "Locations directory",
+    "sampleNote": "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."
   }
 }
