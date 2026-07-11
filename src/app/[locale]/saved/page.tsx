@@ -60,24 +60,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const folderNames = Array.from(new Set(Object.values(folders))).sort();
   const shownL = activeFolder === null ? listings : listings.filter((l) => (folders[l.id] || "") === activeFolder);
 
-  const T = {
-    title: ar ? "المحفوظة" : "Saved",
-    sub: ar ? "قائمتك المختصرة, قارن جنباً إلى جنب." : "Your shortlist, compare side by side.",
-    empty: ar ? "لا شيء محفوظ بعد. اضغط على ♥ في أي قائمة لإضافتها هنا." : "Nothing saved yet. Tap the heart on any listing to add it here.",
-    browse: ar ? "تصفّح القوائم" : "Browse listings",
-    clear: ar ? "مسح الكل" : "Clear all",
-    loading: ar ? "جارٍ تحميل قائمتك…" : "Loading your shortlist…",
-    compare: ar ? "مقارنة" : "Compare",
-    fAll: ar ? "الكل" : "All",
-    fNew: ar ? "مجلد جديد…" : "New folder…",
-    fNone: ar ? "بدون مجلد" : "No folder",
-    fPrompt: ar ? "اسم المجلد" : "Folder name",
-    fDevice: ar ? "المجلدات محفوظة على هذا الجهاز" : "Folders are saved on this device",
-    deal: ar ? "الصفقة" : "Deal", type: ar ? "النوع" : "Type", price: ar ? "الإيجار / السعر" : "Rent / price",
-    size: ar ? "المساحة" : "Size", grade: ar ? "التصنيف" : "Grade", district: ar ? "الموقع" : "Location",
-    perYear: ar ? "ريال/م²/سنة" : "SAR/sqm/yr", sar: ar ? "ريال" : "SAR", onReq: ar ? "عند الطلب" : "On request",
-    vsIdx: ar ? "مقابل المؤشر" : "vs index",
-  };
+  const T = dict.saved;
 
   const priceOf = (l: Listing) => {
     const lease = l.deal_type === "lease";
@@ -92,7 +75,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     const down = c.now < c.was;
     return (
       <span className="fig block text-[11px] font-semibold" style={{ color: down ? "#1F8A5B" : "#8A5A1F" }}>
-        {ar ? `كان ${c.was.toLocaleString("en-US")} · ${down ? "انخفض" : "ارتفع"} ${Math.abs(pct)}%` : `was ${c.was.toLocaleString("en-US")} · ${down ? "down" : "up"} ${Math.abs(pct)}%`}
+        {`${T.wasWord} ${c.was.toLocaleString("en-US")} · ${down ? T.downWord : T.upWord} ${Math.abs(pct)}%`}
       </span>
     );
   };
@@ -161,7 +144,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
               <h2 className="font-display text-xl text-charcoal">{T.compare}</h2>
               {shownL.length >= 2 && (
                 <Link href={`/${locale}/compare?ids=${shownL.slice(0, 4).map((l) => l.id).join(",")}`} className="text-[13px] font-medium hover:underline" style={{ color: "#3A6EA5" }}>
-                  {ar ? "افتح المقارنة الكاملة ←" : "Open full comparison →"}
+                  {T.openCompare}
                 </Link>
               )}
             </div>
@@ -177,7 +160,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.deal}>{shownL.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
-                  <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{ar ? "لا مؤشر كافٍ" : "No sufficient index"}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (ar ? "ضمن النطاق" : "Within band"); const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "#3A6EA5"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
+                  <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{T.noIndex}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? `${T.belowPre}${a}${T.belowSuf}` : v.status === "above" ? `${T.abovePre}${a}${T.aboveSuf}` : T.withinBand; const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "#3A6EA5"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
                   <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
                   <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
