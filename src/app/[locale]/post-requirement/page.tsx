@@ -2,10 +2,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export default function PostRequirementPage({ params }: { params: { locale: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
  const ar = locale === "ar";
+ const pr = getDictionary(locale).postReq;
  const DISTRICTS: [string, string][] = ar ? [
   ["العليا", "d2222222-2222-2222-2222-222222222222"],
   ["كافد", "d1111111-1111-1111-1111-111111111111"],
@@ -59,7 +61,7 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
    const j = await r.json();
    if (j.error) { setErr(j.error); setBusy(false); return; }
    setDone({ ref: j.ref, match: j.match, notified: j.notified || [], id: j.id || "" });
-  } catch { setErr(ar ? "حدث ما قاطع الإرسال. حاول مرة أخرى." : "Something interrupted the submission. Please try again."); }
+  } catch { setErr(pr.submitError); }
   setBusy(false);
  }
 
@@ -70,11 +72,11 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
      <div className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
       <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--green)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
       <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
-      <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{ar ? "السوق يعمل لصالحك الآن" : "The market is now working for you"}</h1>
-      <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{ar ? "تم إدراج طلبك في منصّة SAT. أبلغنا من يمكنهم تلبيته، وسترى هنا متى أبدى أحد اهتماماً، وتبقى بيانات تواصلك خاصة حتى تردّ." : "Your requirement is posted to the SAT exchange. We’ve notified the people who can fill it, and you’ll see here whenever someone shows interest, your contact details stay private until you reply."}</p>
+      <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
+      <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, margin: "22px 0" }}>
-       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}><div className="tnum" style={{ fontSize: 26, fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div><div className="muted" style={{ fontSize: 12 }}>{ar ? "مساحات موثّقة تطابق اليوم" : "verified spaces match today"}</div></div>
-       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}><div className="tnum" style={{ fontSize: 26, fontWeight: 600 }}>3</div><div className="muted" style={{ fontSize: 12 }}>{ar ? "جهات أُبلغت" : "audiences notified"}</div></div>
+       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}><div className="tnum" style={{ fontSize: 26, fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div><div className="muted" style={{ fontSize: 12 }}>{pr.matchToday}</div></div>
+       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}><div className="tnum" style={{ fontSize: 26, fontWeight: 600 }}>3</div><div className="muted" style={{ fontSize: 12 }}>{pr.audiencesNotified}</div></div>
       </div>
       <div className="col gap8" style={{ textAlign: ar ? "right" : "left", maxWidth: 420, margin: "0 auto 22px" }}>
        {done.notified.map((n, i) => (
@@ -82,8 +84,8 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
        ))}
       </div>
       <div className="row gap10" style={{ justifyContent: "center" }}>
-       <Link href={`/${locale}/requirements/${done.id}`} className="btn primary lg">{ar ? "اعرض طلبك" : "View your requirement"} <Icon.arrow size={16} /></Link>
-       <Link href={`/${locale}/requirements`} className="btn secondary">{ar ? "كل الطلبات" : "All requirements"}</Link>
+       <Link href={`/${locale}/requirements/${done.id}`} className="btn primary lg">{pr.viewReq} <Icon.arrow size={16} /></Link>
+       <Link href={`/${locale}/requirements`} className="btn secondary">{pr.allReqs}</Link>
       </div>
      </div>
     </div>
@@ -94,63 +96,63 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ padding: "36px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
-    <div className="eyebrow">{ar ? "أدرج طلباً" : "Post a requirement"}</div>
-    <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{ar ? "أخبر السوق بما تحتاجه" : "Tell the market what you need"}</h1>
-    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, lineHeight: 1.6 }}>{ar ? "أدرج طلبك فيأتيك المُلّاك والوسطاء وSAT الموثّقون بالمساحة المطابقة. عكس البحث." : "Post your requirement and verified owners, brokers and SAT bring matching space to you. The reverse of searching."}</p>
+    <div className="eyebrow">{pr.postReqTitle}</div>
+    <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{pr.tellMarket}</h1>
+    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, lineHeight: 1.6 }}>{pr.intro}</p>
 
     <div className="card" style={{ marginTop: 30, padding: 0, overflow: "hidden" }}>
      <div className="row gap10" style={{ padding: "16px 24px", borderBottom: "1px solid var(--silver)", background: "var(--cool)" }}>
       <span style={{ color: "var(--harbor)" }}><Icon.doc size={18} /></span>
-      <div style={{ fontSize: 14, fontWeight: 600 }}>{ar ? "طلب جديد" : "New requirement"}</div>
-      <span style={{ flex: 1 }} /><span className="tag">{ar ? "مسودة" : "Draft"}</span>
+      <div style={{ fontSize: 14, fontWeight: 600 }}>{pr.newReq}</div>
+      <span style={{ flex: 1 }} /><span className="tag">{pr.draft}</span>
      </div>
      <div className="req-grid" style={{ padding: 28 }}>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{ar ? "عمّا تبحث؟" : "What are you looking for?"}</label>
-       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={ar ? "مثال: مقر إقليمي، مكاتب فئة A، العليا أو كافد" : "e.g. Regional HQ office, Grade A, Olaya or KAFD"} style={{ ...inp, textAlign: ar ? "right" : "left" }} />
+       <label>{pr.lookingFor}</label>
+       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={pr.lookingForPh} style={{ ...inp, textAlign: ar ? "right" : "left" }} />
       </div>
       <div className="field">
-       <label>{ar ? "نوع الأصل" : "Asset type"}</label>
+       <label>{pr.assetType}</label>
        <div className="row gap8 wrap">{ASSETS.map((a) => <button key={a} className={"chip" + (asset === a ? " on" : "")} style={chip} onClick={() => setAsset(a)}>{assetLbl(a)}</button>)}</div>
       </div>
       <div className="field">
-       <label>{ar ? "نوع الصفقة" : "Transaction"}</label>
-       <div className="seg" style={{ alignSelf: "flex-start" }}>{["lease", "sale"].map((d) => <span key={d} className={deal === d ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setDeal(d)}>{d === "lease" ? (ar ? "إيجار" : "Lease") : (ar ? "شراء" : "Buy")}</span>)}</div>
+       <label>{pr.transaction}</label>
+       <div className="seg" style={{ alignSelf: "flex-start" }}>{["lease", "sale"].map((d) => <span key={d} className={deal === d ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setDeal(d)}>{d === "lease" ? (pr.lease) : (pr.buy)}</span>)}</div>
       </div>
       <div className="field">
-       <label>{ar ? "نطاق المساحة (م²)" : "Size range (m²)"}</label>
-       <div className="row gap10"><input className="input grow" value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} style={inp} /><span className="muted">{ar ? "إلى" : "to"}</span><input className="input grow" value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} style={inp} /></div>
+       <label>{pr.sizeRange}</label>
+       <div className="row gap10"><input className="input grow" value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} style={inp} /><span className="muted">{pr.to}</span><input className="input grow" value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} style={inp} /></div>
       </div>
       <div className="field">
-       <label>{ar ? "سقف الميزانية (ريال/م²·سنة)" : "Budget ceiling (SAR/m²·yr)"}</label>
+       <label>{pr.budgetCeiling}</label>
        <input className="input" value={budget} onChange={(e) => setBudget(e.target.value)} style={inp} />
       </div>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{ar ? "الأحياء المفضّلة" : "Preferred districts"}</label>
+       <label>{pr.preferredDistricts}</label>
        <div className="row gap8 wrap">{DISTRICTS.map(([d]) => <button key={d} className={"chip" + (districts.includes(d) ? " on" : "")} style={chip} onClick={() => toggle(districts, setDistricts, d)}>{d}</button>)}</div>
       </div>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{ar ? "متطلبات أساسية" : "Must-haves"} <span className="hint">{ar ? "(اختياري)" : "(optional)"}</span></label>
+       <label>{pr.mustHaves} <span className="hint">{pr.optional}</span></label>
        <div className="row gap8 wrap">{MUSTS.map((m) => <button key={m} className={"chip" + (musts.includes(m) ? " on" : "")} style={chip} onClick={() => toggle(musts, setMusts, m)}>{m}</button>)}</div>
       </div>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{ar ? "موعد الانتقال" : "Move-in timeline"}</label>
+       <label>{pr.moveIn}</label>
        <div className="seg" style={{ alignSelf: "flex-start" }}>{TIMELINES.map((t) => <span key={t} className={timeline === t ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTimeline(t)}>{t}</span>)}</div>
       </div>
-      <div className="field"><label>{ar ? "اسمك" : "Your name"}</label><input className="input" value={cName} onChange={(e) => setCName(e.target.value)} placeholder={ar ? "الاسم الكامل" : "Full name"} style={{ ...inp, textAlign: ar ? "right" : "left" }} /></div>
-      <div className="field"><label>{ar ? "البريد الإلكتروني" : "Email"}</label><input className="input" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="you@company.com" style={inp} /></div>
-      <div className="field" style={{ gridColumn: "1 / -1" }}><label>{ar ? "الهاتف" : "Phone"} <span className="hint">{ar ? "(اختياري)" : "(optional)"}</span></label><input className="input" value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="+966…" style={inp} /></div>
+      <div className="field"><label>{pr.yourName}</label><input className="input" value={cName} onChange={(e) => setCName(e.target.value)} placeholder={pr.fullNamePh} style={{ ...inp, textAlign: ar ? "right" : "left" }} /></div>
+      <div className="field"><label>{pr.email}</label><input className="input" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="you@company.com" style={inp} /></div>
+      <div className="field" style={{ gridColumn: "1 / -1" }}><label>{pr.phone} <span className="hint">{pr.optional}</span></label><input className="input" value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="+966…" style={inp} /></div>
      </div>
      <div className="row between wrap" style={{ padding: "18px 28px", borderTop: "1px solid var(--silver)", background: "var(--azure-wash)", gap: 10 }}>
-      <div className="row gap10"><span style={{ color: "var(--azure-d)" }}><Icon.spark size={18} /></span><div style={{ fontSize: 13.5 }}>{ar ? "يُرسَل إلى المُلّاك والوسطاء الموثّقين ومكتب SAT." : "Posts to verified owners, brokers and the SAT desk."}</div></div>
-      <span className="mono muted" style={{ fontSize: 11.5 }}>{ar ? "متوافق مع نظام حماية البيانات" : "PDPL-compliant"}</span>
+      <div className="row gap10"><span style={{ color: "var(--azure-d)" }}><Icon.spark size={18} /></span><div style={{ fontSize: 13.5 }}>{pr.postsToNote}</div></div>
+      <span className="mono muted" style={{ fontSize: 11.5 }}>{pr.pdplCompliant}</span>
      </div>
     </div>
 
     {err && <div className="card pad" style={{ marginTop: 16, borderColor: "var(--red)", color: "var(--red)", fontSize: 13 }}>{err}</div>}
     <div className="row between wrap" style={{ marginTop: 26, gap: 12 }}>
-     <span className="muted" style={{ fontSize: 12.5 }}>{ar ? "ظاهر للمُلّاك والوسطاء وSAT الموثّقين · تبقى هويتك خاصة حتى تردّ." : "Visible to verified owners, brokers & SAT · your identity stays private until you respond."}</span>
-     <button className="btn primary lg" onClick={submit} disabled={busy}>{busy ? (ar ? "جارٍ الإدراج…" : "Posting…") : (ar ? "أدرج الطلب" : "Post requirement")} <Icon.arrow size={16} /></button>
+     <span className="muted" style={{ fontSize: 12.5 }}>{pr.privacyNote}</span>
+     <button className="btn primary lg" onClick={submit} disabled={busy}>{busy ? (pr.posting) : (pr.postReqBtn)} <Icon.arrow size={16} /></button>
     </div>
    </div>
   </div>
