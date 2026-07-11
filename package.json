@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/market/verdict.test.ts",
+    "test": "tsx --test src/lib/market/verdict.test.ts src/lib/market/guard.test.ts",
     "smoke": "node scripts/smoke.mjs",
     "ar-lint": "node scripts/ar-lint.mjs",
     "e2e": "playwright test",
