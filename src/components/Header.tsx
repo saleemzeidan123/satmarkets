@@ -59,7 +59,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   return (
     <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
       <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-        <Link href={`/${locale}`} className="flex items-center"><Logo size={34} sub="Commercial exchange" /></Link>
+        <Link href={`/${locale}`} className="flex items-center"><Logo size={34} /></Link>
 
         <nav className="hidden md:flex items-center gap-0.5" aria-label={dict.nav.primaryNav}>
           {primaryNav.map((n) => (
