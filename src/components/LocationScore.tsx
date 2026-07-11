@@ -1,4 +1,5 @@
 import { Icon } from "@/components/satkit";
+import { getDictionary } from "@/i18n/getDictionary";
 
 // SAT Location Score v2: per-asset intelligence templates plus an investor
 // overlay on sale listings. Owner-directed redesign (2026-07-02): each asset
@@ -276,31 +277,30 @@ function Stars({ n, size = 15 }: { n: number; size?: number }) {
 
 export function InvestorPanel({ ar, price, areaSqm }: { ar: boolean; price: number | null; areaSqm: number | null }) {
   const psm = price != null && areaSqm ? Math.round(price / areaSqm) : null;
+  const L = getDictionary(ar ? "ar" : "en").locationScore;
   return (
     <div className="card pad" style={{ marginTop: 18, boxShadow: "none" }}>
       <div className="modhead">
         <Icon.coins size={18} />
-        <span className="ttl">{ar ? "نظرة المستثمر" : "Investor view"}</span>
+        <span className="ttl">{L.investorView}</span>
         <span className="grow" />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 4 }}>
         <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", padding: 14 }}>
-          <div className="muted" style={{ fontSize: 11 }}>{ar ? "السعر المطلوب" : "Asking price"}</div>
-          <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 6 }}>{price != null ? `${Number(price).toLocaleString("en-US")} ${ar ? "ريال" : "SAR"}` : (ar ? "عند الطلب" : "On request")}</div>
+          <div className="muted" style={{ fontSize: 11 }}>{L.askingPrice}</div>
+          <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 6 }}>{price != null ? `${Number(price).toLocaleString("en-US")} ${L.sar}` : L.onRequest}</div>
         </div>
         <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", padding: 14 }}>
-          <div className="muted" style={{ fontSize: 11 }}>{ar ? "السعر لكل م²" : "Price per m²"}</div>
-          <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 6 }}>{psm != null ? `${psm.toLocaleString("en-US")}` : (ar ? "غير متاح" : "n/a")}</div>
+          <div className="muted" style={{ fontSize: 11 }}>{L.pricePerSqm}</div>
+          <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 6 }}>{psm != null ? `${psm.toLocaleString("en-US")}` : L.na}</div>
         </div>
         <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", padding: 14 }}>
-          <div className="muted" style={{ fontSize: 11 }}>{ar ? "العائد والإيجارات السارية" : "Yield and passing income"}</div>
-          <div style={{ fontSize: 12.5, marginTop: 6 }}>{ar ? "يُحسب فقط من جدول إيجارات موثّق. اطلبه عبر سات." : "Computed only from a verified tenancy schedule. Request it via SAT."}</div>
+          <div className="muted" style={{ fontSize: 11 }}>{L.yieldTitle}</div>
+          <div style={{ fontSize: 12.5, marginTop: 6 }}>{L.yieldBody}</div>
         </div>
       </div>
       <p className="muted" style={{ fontSize: 12, lineHeight: 1.65, marginTop: 14, marginBottom: 0 }}>
-        {ar
-          ? "تنبيه نظام السقف: العقود القائمة داخل النطاق العمراني للرياض مثبّتة لخمس سنوات بموجب قرار سبتمبر 2025، وكون الإيجارات السارية مسقوفة أو مفتوحة يؤثر جوهرياً على القيمة. سياق سوقي استرشادي، ليس نصيحة استثمارية."
-          : "Rent-cap note: existing leases inside Riyadh's urban boundary are held for five years under the Sept-2025 decree; whether in-place leases are capped or open materially affects value. Indicative market context, not investment advice."}
+        {L.rentCapNote}
       </p>
     </div>
   );
@@ -310,6 +310,7 @@ export default function LocationScore({ ar, district, assetType, dealType, price
   ar: boolean; district: string; assetType: string; dealType?: string; price?: number | null; areaSqm?: number | null;
 }) {
   const t = INTEL[assetType];
+  const L = getDictionary(ar ? "ar" : "en").locationScore;
   const investor = dealType === "sale";
   if (!t && !investor) return null;
   return (
@@ -318,15 +319,15 @@ export default function LocationScore({ ar, district, assetType, dealType, price
         <div className="card pad" style={{ marginTop: 18, boxShadow: "none" }}>
           <div className="modhead">
             <Icon.target size={18} />
-            <span className="ttl">{ar ? "درجة الموقع من سات" : "SAT Location Score"}</span>
+            <span className="ttl">{L.scoreTitle}</span>
             <span className="grow" />
-            <span className="tag">{ar ? "عيّنة" : "sample"}</span>
+            <span className="tag">{L.sample}</span>
           </div>
           <div className="row gap16 wrap" style={{ alignItems: "center", marginTop: 4 }}>
             <span className="mono" style={{ fontSize: 34, fontWeight: 500 }}>4.2</span>
             <div className="col" style={{ gap: 4 }}>
               <Stars n={4.2} size={17} />
-              <span className="muted" style={{ fontSize: 12 }}>{ar ? `تقييم عام للموقع في ${district} (عيّنة)` : `Overall location rating in ${district} (sample)`}</span>
+              <span className="muted" style={{ fontSize: 12 }}>{`${L.ratingPre}${district}${L.ratingSuf}`}</span>
             </div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 18 }}>
@@ -355,9 +356,7 @@ export default function LocationScore({ ar, district, assetType, dealType, price
           </div>
           {t.note && <p className="muted" style={{ fontSize: 12, lineHeight: 1.65, marginTop: 12, marginBottom: 0 }}>{ar ? t.note[1] : t.note[0]}</p>}
           <p className="muted" style={{ fontSize: 12, lineHeight: 1.65, marginTop: t.note ? 8 : 12, marginBottom: 0 }}>
-            {ar
-              ? "تُبنى الدرجة من العدسات أعلاه بمدخلات مُسندة المصدر لكل نوع أصل، لا رقم صندوق أسود. الأرقام المعروضة عيّنات تمثيلية حتى تفعيل مصادر البيانات السعودية المسماة في صفحة ذكاء الموقع. ما لا يحمل بيانات كافية يُوجَّه إلى المستشار. استرشادي، ليس نصيحة."
-              : "The score is built from the lenses above with sourced inputs per asset type, never a black-box number. Figures shown are representative samples until the named Saudi data sources on the Location Intelligence page come online. Anything without sufficient data routes to the advisor. Indicative, not advice."}
+{L.scoreNote}
           </p>
         </div>
       )}

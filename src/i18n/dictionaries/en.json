@@ -1039,5 +1039,21 @@
     "clear": "Clear",
     "loading": "Loading map…",
     "swipeHint": "Swipe the cards, the map follows"
+  },
+  "locationScore": {
+    "investorView": "Investor view",
+    "askingPrice": "Asking price",
+    "sar": "SAR",
+    "onRequest": "On request",
+    "pricePerSqm": "Price per m²",
+    "na": "n/a",
+    "yieldTitle": "Yield and passing income",
+    "yieldBody": "Computed only from a verified tenancy schedule. Request it via SAT.",
+    "rentCapNote": "Rent-cap note: existing leases inside Riyadh's urban boundary are held for five years under the Sept-2025 decree; whether in-place leases are capped or open materially affects value. Indicative market context, not investment advice.",
+    "scoreTitle": "SAT Location Score",
+    "sample": "sample",
+    "ratingPre": "Overall location rating in ",
+    "ratingSuf": " (sample)",
+    "scoreNote": "The score is built from the lenses above with sourced inputs per asset type, never a black-box number. Figures shown are representative samples until the named Saudi data sources on the Location Intelligence page come online. Anything without sufficient data routes to the advisor. Indicative, not advice."
   }
 }
