@@ -38,6 +38,18 @@ export async function middleware(req: NextRequest) {
     });
     await supabase.auth.getUser();
   }
+  // Preview containment (Codex MKT-P0-06/07): noindex the whole non-production
+  // host, and always noindex prototype/account routes even on production, until
+  // authentication and route classification land.
+  const host = (req.headers.get("host") || "").toLowerCase();
+  const isProdHost = host === "satmarkets.sa" || host === "www.satmarkets.sa";
+  const PRIVATE_PREFIXES = ["/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved"];
+  const isPrivate = PRIVATE_PREFIXES.some(
+    (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
+  );
+  if (!isProdHost || isPrivate) {
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
   return res;
 }
 

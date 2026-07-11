@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { SITE } from "@/lib/site";
-const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/find", "/advisor", "/compare", "/invest", "/pricing", "/about", "/requirements", "/post-requirement", "/deal", "/locations", "/market", "/brokers"];
+const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/advisor", "/compare", "/pricing", "/about", "/requirements", "/locations", "/market", "/brokers"];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
