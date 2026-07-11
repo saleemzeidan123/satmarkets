@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { ContactChannels } from "@/components/ContactBar";
+import { getDictionary } from "@/i18n/getDictionary";
 
 type Path = "direct_contact" | "representation";
 
@@ -75,6 +76,7 @@ export default function ListingEnquiry({
 }) {
  const L = (p: string) => `/${locale}${p}`;
  const ar = locale === "ar";
+ const t = getDictionary(ar ? "ar" : "en").enquiry;
  const [open, setOpen] = useState<Path | null>(null);
  const [name, setName] = useState("");
  const [email, setEmail] = useState("");
@@ -144,9 +146,9 @@ export default function ListingEnquiry({
     }),
    });
    const j = await res.json().catch(() => ({}));
-   if (res.ok && !j.error) { setVDone(true); } else { setVErr(ar ? "تعذر إرسال الطلب. حاول مرة أخرى." : "Could not send the request. Please try again."); }
+   if (res.ok && !j.error) { setVDone(true); } else { setVErr(t.errSend); }
   } catch {
-   setVErr(ar ? "تعذر إرسال الطلب. حاول مرة أخرى." : "Could not send the request. Please try again.");
+   setVErr(t.errSend);
   } finally { setVBusy(false); }
  }
 
@@ -174,16 +176,16 @@ export default function ListingEnquiry({
   return (
    <div className="card pad" style={{ position: "sticky", top: 90 }}>
     <div className="row gap8" style={{ color: "var(--green)", marginBottom: 10 }}>
-     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{rep ? (ar ? "طُلب التمثيل" : "Representation requested") : (ar ? "أُرسل طلبك" : "Enquiry sent")}</span>
+     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{rep ? t.repRequested : t.enquirySent}</span>
     </div>
     <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>
      {rep
-      ? (ar ? "سيتواصل معك مستشار سات لترتيب التفويض. لا يوقَّع شيء قبل موافقتك." : "A SAT advisor will reach out to set up your mandate. Nothing is signed until you approve it.")
-      : (ar ? "وصل طلبك إلى المعلن الموثّق. تابع المحادثة داخل المنصة، وسات تتتبّع كل مرحلة حتى التسليم." : "The verified lister has your enquiry. You can keep the conversation on-platform, SAT tracks every milestone to handover.")}
+      ? t.repBody
+      : t.enquiryBody}
     </p>
     <div className="col gap10" style={{ marginTop: 16 }}>
-     <Link href={L("/messages")} className="btn primary" style={{ justifyContent: "center", textDecoration: "none" }}><Icon.send size={15} /> {ar ? "افتح المحادثة" : "Open the conversation"}</Link>
-     <Link href={L("/deal")} className="btn secondary" style={{ justifyContent: "center", textDecoration: "none" }}>{ar ? "تتبّع الصفقة" : "Track this deal"}</Link>
+     <Link href={L("/messages")} className="btn primary" style={{ justifyContent: "center", textDecoration: "none" }}><Icon.send size={15} /> {t.openConversation}</Link>
+     <Link href={L("/deal")} className="btn secondary" style={{ justifyContent: "center", textDecoration: "none" }}>{t.trackDeal}</Link>
     </div>
    </div>
   );
@@ -193,46 +195,46 @@ export default function ListingEnquiry({
   <div className="card pad" style={{ position: "sticky", top: 90 }}>
    <div className="row between" style={{ alignItems: "flex-start" }}>
     <div>
-     <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : (ar ? "عند الطلب" : "On request")}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {price != null ? unit : ""}</small></div>
+     <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : t.onRequest}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {price != null ? unit : ""}</small></div>
      <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{type} · <bdi dir="ltr">{area} m²</bdi> · {district}</div>
     </div>
-    <button onClick={toggleSave} aria-label={saved ? (ar ? "محفوظ" : "Saved") : (ar ? "حفظ" : "Save")} className="chip" style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : "var(--silver)", color: saved ? "var(--harbor)" : "var(--slate)" }}>
-     <Icon.heart size={15} /> {saved ? (ar ? "محفوظ" : "Saved") : (ar ? "حفظ" : "Save")}
+    <button onClick={toggleSave} aria-label={saved ? t.saved : t.save} className="chip" style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : "var(--silver)", color: saved ? "var(--harbor)" : "var(--slate)" }}>
+     <Icon.heart size={15} /> {saved ? t.saved : t.save}
     </button>
    </div>
 
    <div className="row gap8 wrap" style={{ marginTop: 14 }}>
-    <span className="verified"><span className="dot" />{ar ? "مالك موثّق" : "Verified owner"}</span>
-    {permit && <span className="tag">{ar ? "تصريح " : "Permit "}{permit}</span>}
+    <span className="verified"><span className="dot" />{t.verifiedOwner}</span>
+    {permit && <span className="tag">{t.permit}{permit}</span>}
    </div>
 
    {contact ? <div className="hidden md:block" style={{ marginTop: 14 }}><ContactChannels {...contact} ar={ar} /></div> : null}
 
    {open === "direct_contact" ? (
     <form onSubmit={(e) => { e.preventDefault(); submit("direct_contact"); }} className="col gap10" style={{ marginTop: 18 }}>
-     <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "اسمك" : "Your name"} style={fld} />
-     <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Work email"} type="email" style={fld} />
+     <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
+     <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
      <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={ar ? `أنا مهتم بهذه المساحة (${type}) في ${district}...` : `I'm interested in this ${type.toLowerCase()} in ${district}...`} rows={3} style={{ ...fld, resize: "vertical" }} />
-     <button type="submit" disabled={busy || !name.trim() || !email.trim()} className="btn primary" style={{ justifyContent: "center", opacity: busy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{busy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "أرسل الطلب" : "Send enquiry")}</button>
-     <button type="button" onClick={() => setOpen(null)} className="btn ghost" style={{ justifyContent: "center" }}>{ar ? "إلغاء" : "Cancel"}</button>
+     <button type="submit" disabled={busy || !name.trim() || !email.trim()} className="btn primary" style={{ justifyContent: "center", opacity: busy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{busy ? t.sending : t.sendEnquiry}</button>
+     <button type="button" onClick={() => setOpen(null)} className="btn ghost" style={{ justifyContent: "center" }}>{t.cancel}</button>
     </form>
    ) : (
     <div className="col gap10" style={{ marginTop: 18 }}>
-     <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center" }}><Icon.send size={15} /> {ar ? "تواصل مع المعلن" : "Contact the lister"}</button>
-     <button onClick={() => submit("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center" }}>{ar ? "اطلب تمثيل سات" : "Request SAT representation"}</button>
+     <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center" }}><Icon.send size={15} /> {t.contactLister}</button>
+     <button onClick={() => submit("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center" }}>{t.requestRep}</button>
     </div>
    )}
 
    {open !== "direct_contact" && (
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 700 }}>{ar ? "احجز معاينة" : "Book a viewing"}</span>
-      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#1F8A5B" }}>{satListed ? (ar ? "تستضيفها سات" : "SAT HOSTS") : (ar ? "يؤكدها المُعلن" : "LISTER CONFIRMS")}</span>
+      <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>
+      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#1F8A5B" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
      </div>
      {vDone ? (
       <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>
        <span style={{ color: "var(--green)", flex: "none", marginTop: 1 }}><Icon.check size={16} /></span>
-       <span style={{ lineHeight: 1.55 }}>{satListed ? (ar ? "طُلبت المعاينة. سات تستضيف الزيارة وتؤكد الموعد وتراسلك بالبريد." : "Viewing requested. SAT hosts the visit, confirms the slot and emails you.") : (ar ? "طُلبت المعاينة. يؤكد المُعلن الموعد وتصلك رسالة بالتأكيد." : "Viewing requested. The lister confirms the slot and you get a confirmation email.")}</span>
+       <span style={{ lineHeight: 1.55 }}>{satListed ? t.vDoneSat : t.vDoneLister}</span>
       </div>
      ) : (
       <>
@@ -243,7 +245,7 @@ export default function ListingEnquiry({
        </div>
        {slot && (
         <div className="col gap8" style={{ marginTop: 10 }}>
-         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{ar ? "إجابتان سريعتان اختياريتان ليعرف المعلن أن الزيارة تستحق وقته." : "Two quick, optional answers so the lister knows the visit is worth their time."}</div>
+         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{t.twoQuick}</div>
          {questions.map((q) => (
           <div key={q.k}>
            <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</div>
@@ -254,10 +256,10 @@ export default function ListingEnquiry({
            </div>
           </div>
          ))}
-         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={ar ? "اسمك" : "Your name"} style={fld} />
-         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={ar ? "البريد الإلكتروني" : "Work email"} type="email" style={fld} />
+         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
+         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
          {vErr ? <div style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
-         <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? (ar ? "جارٍ الإرسال..." : "Sending...") : (ar ? "اطلب هذا الموعد" : "Request this slot")}</button>
+         <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? t.sending : t.requestSlot}</button>
         </div>
        )}
       </>
@@ -265,7 +267,7 @@ export default function ListingEnquiry({
     </div>
    )}
 
-   <div className="muted" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.6 }}>{ar ? "التواصل مع المعلن مجاني ومباشر. التمثيل خيار صريح تختاره بنفسك، ولا عمولة مفترضة أبداً." : "Free to contact the lister directly. Representation is an explicit, opt-in choice, never an assumed commission."}</div>
+   <div className="muted" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.6 }}>{t.footer}</div>
   </div>
  );
 }
