@@ -1218,5 +1218,25 @@
     "ctaIndex": "The full Rent Index",
     "ctaLocations": "Locations directory",
     "sampleNote": "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."
+  },
+  "flyer": {
+    "riyadh": "Riyadh",
+    "backToListing": "Back to listing",
+    "printSave": "Print / save PDF",
+    "propertyFlyer": "Property flyer",
+    "verifiedOwner": "Verified owner",
+    "lease": "Lease",
+    "sale": "Sale",
+    "area": "Area",
+    "grade": "Grade",
+    "fitout": "Fit-out",
+    "askingRent": "Asking rent",
+    "askingPrice": "Asking price",
+    "onRequest": "On request",
+    "pricedInContext": "Priced in context",
+    "platformSample": "platform sample",
+    "footer": "SAT Markets · Powered by SAT Real Estate · FAL 1200025510",
+    "scanHint": "Scan to open the live listing",
+    "qrAria": "QR code to the live listing"
   }
 }
