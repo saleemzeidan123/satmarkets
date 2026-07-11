@@ -61,25 +61,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? "، " + cityLabel(b.city, locale) : ""}`;
   const grade = gradeLabel(b.grade, locale);
 
-  const T = {
-    back: ar ? "العودة إلى الخريطة" : "Back to map", profile: ar ? "ملف المبنى" : "Building profile",
-    overview: ar ? "نظرة عامة" : "Overview", units: ar ? "وحدات متاحة" : "Available units",
-    grade: ar ? "التصنيف" : "Grade", rentBand: ar ? "نطاق الإيجار الموثّق" : "Verified rent band",
-    noBand: ar ? "لا نطاق إيجار موثّق لهذا الاستخدام بعد." : "No verified rent band for this use yet.",
-    visitors: ar ? "زوّار / أسبوع" : "Weekly visitors", dwell: ar ? "متوسط المكوث" : "Avg dwell", min: ar ? "د" : "min",
-    catch15: ar ? "نطاق 15 دقيقة" : "15-min catchment", demand: ar ? "طلبات نشطة" : "Active briefs",
-    movement: ar ? "الحركة" : "Movement", footfall: ar ? "حركة الزوّار · أسبوعي" : "Visitor footfall · weekly",
-    hourly: ar ? "النمط خلال اليوم" : "Pattern through the day", prayer: ar ? "انخفاضات أوقات الصلاة" : "prayer-time dips",
-    catchSec: ar ? "نطاق الجذب والسكان" : "Catchment & population", catchment: ar ? "سكان ضمن زمن القيادة" : "Population within drive-time",
-    min5: ar ? "5 دقائق" : "5 min", min10: ar ? "10 دقائق" : "10 min", min15: ar ? "15 دقيقة" : "15 min",
-    demo: ar ? "لمحة سكانية" : "Demographics", workingAge: ar ? "نسبة في سن العمل" : "Working-age share",
-    daytime: ar ? "مؤشر السكان النهاري" : "Daytime population", spend: ar ? "مؤشر الإنفاق" : "Spend index",
-    unitsSec: ar ? "الوحدات المتاحة في هذا المبنى" : "Available units in this building",
-    noUnits: ar ? "لا توجد وحدات متاحة حالياً في هذا المبنى." : "No available units listed in this building yet.",
-    sample: ar ? "عيّنة" : "Sample", verified: ar ? "موثق" : "Verified", live: ar ? "مباشر · عيّنة" : "live · sample",
-    note: ar ? "أرقام حركة الزوّار والسكان إرشادية وستُستبدل ببيانات حركة حقيقية عبر شريك." : "Footfall and population figures are indicative and will be replaced by real movement data via a partner.",
-    perYear: ar ? "ريال/م²/سنة" : "SAR/sqm/yr",
-  };
+  const T = dict.building;
 
   const maxWeekly = Math.max(...weekly), maxHour = Math.max(...hours);
   const days = ar ? ["أحد","إثن","ثلا","أرب","خمي","جمع","سبت","أحد"] : ["Su","Mo","Tu","We","Th","Fr","Sa","Su"];
@@ -193,7 +175,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         </div>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تقرير المنطقة" : "Area report"} {ar ? "←" : "→"}</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "تصفّح المعروض" : "Browse this use"} {ar ? "←" : "→"}</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{ar ? "مؤشر الإيجار" : "Rent index"} {ar ? "←" : "→"}</Link></div>
+      <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.areaReport} {ar ? "←" : "→"}</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.browseUse} {ar ? "←" : "→"}</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.rentIndexLink} {ar ? "←" : "→"}</Link></div>
       <p className="mt-6 text-xs text-charcoal/40">{T.note}</p>
     </section>
   );
