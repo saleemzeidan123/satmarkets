@@ -100,7 +100,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return "N/A"; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
 
   return (
-    <section>
+    <section className="mx-auto max-w-[1360px] px-6 pt-7 pb-16">
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="eyebrow">{T.title}</div>
