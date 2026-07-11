@@ -1101,5 +1101,29 @@
     "wasWord": "was",
     "downWord": "down",
     "upWord": "up"
+  },
+  "brokers": {
+    "falLabel": "FAL licence",
+    "falBody": "The FAL number is checked against the REGA register before any storefront goes live.",
+    "idLabel": "Identity and authorization",
+    "idBody": "Broker identity and listing authorizations are verified before publishing.",
+    "perfLabel": "Performance in the open",
+    "perfBody": "Response time and coverage show on the storefront, from real activity, never self-declared.",
+    "eyebrow": "Broker storefronts",
+    "title": "A verified storefront for every licensed broker",
+    "intro": "A public page under your name, your licence and your verified listings. Storefronts activate with real accounts; what you see below is a sample illustrating the mechanism.",
+    "sampleTag": "Sample storefront",
+    "sampleName": "Northern Gate Realty · sample",
+    "falAppears": "The FAL number appears here once verified against the REGA register",
+    "respondsIn": "Responds in 2h",
+    "coverage": "Coverage: Al Olaya, Hittin, KAFD",
+    "officeRetail": "Office and retail",
+    "illustration": "The listings above are real platform listings attached for illustration only; they do not yet belong to a specific broker.",
+    "signupCta": "Sign up as a licensed broker",
+    "seeReqs": "See open requirements",
+    "footer": "Real storefronts open with account launch. Verification first, always.",
+    "sqmUnit": "m²",
+    "rentUnit": "SAR/m²·yr",
+    "onRequest": "On request"
   }
 }
