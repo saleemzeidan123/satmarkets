@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
 import Reveal from "@/components/Reveal";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
@@ -30,6 +31,7 @@ const ASSETS = [
 export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { gradeAYoyPct: number; gradeAOccupancyPct: number; gradeAMedian: number; kafdMedian: number; period: string; source: string } }) {
  const router = useRouter();
  const ar = locale === "ar";
+ const H = getDictionary(ar ? "ar" : "en").home;
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [bi, setBi] = useState(0);
  const band = bands[bi] || bands[0] || null;
@@ -217,9 +219,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
  const f0 = featured[0];
  const rest = featured.slice(1);
- const vtxt = ar ? "موثّق من المالك" : "Verified owner";
+ const vtxt = H.verifiedOwner;
  const idxBar = (f: FeaturedListing) => f.idx ? (
-  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (ar ? "ضمن نطاق المؤشر" : "Within the Rent Index band") : f.idx.v === "below" ? (ar ? "أقل من نطاق المؤشر" : "Below the index band") : (ar ? "أعلى من نطاق المؤشر" : "Above the index band")}</div></div>
+  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (H.idxWithin) : f.idx.v === "below" ? (H.idxBelow) : (H.idxAbove)}</div></div>
  ) : null;
 
  return (
@@ -276,7 +278,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
           style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "#fff", color: "var(--ink)", fontSize: "var(--fs-base)", fontFamily: "var(--sans)", textAlign: "inherit" }}>
           <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 600 }}>{o.label}</span>
-          {o.verified ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--green)", border: "1px solid var(--green-line)", background: "var(--green-wash)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{ar ? "موثّق" : "verified"}</span> : null}
+          {o.verified ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--green)", border: "1px solid var(--green-line)", background: "var(--green-wash)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{H.verifiedShort}</span> : null}
           {o.sub ? <span className="muted" style={{ fontSize: "var(--fs-xs)" }}>{o.sub}</span> : null}
          </button>
         ))}
@@ -284,7 +286,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       )}
       </div>
       <div style={{ textAlign: "center", marginTop: 12 }}>
-       <Link href={L("/post-requirement")} style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{ar ? "لم تجد ما تريد؟ أدرج طلبك" : "Didn't find it? Post a requirement"}</Link>
+       <Link href={L("/post-requirement")} style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{H.postReqPrompt}</Link>
       </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
@@ -300,10 +302,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      </div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
       {([
-        [ar ? "أبحث عن مساحة" : "I need a space", L("/listings")],
-        [ar ? "عندي مساحة أعرضها" : "I have a space to list", L("/list")],
-        [ar ? "أنا وسيط مرخّص" : "I am a licensed broker", L("/requirements")],
-        [ar ? "أستثمر" : "I invest", L("/listings?deal=sale")],
+        [H.personaNeed, L("/listings")],
+        [H.personaHave, L("/list")],
+        [H.personaBroker, L("/requirements")],
+        [H.personaInvest, L("/listings?deal=sale")],
       ] as [string, string][]).map(([label, href], i) => (
        <Link key={i} href={href} className="card" style={{ padding: "14px 14px", textAlign: "center", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: "var(--fs-sm)" }}>{label}</Link>
       ))}
@@ -335,7 +337,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: "var(--fs-xs)", color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
         {idxBar(f0)}
-        <span style={{ marginTop: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{ar ? "اعرض التفاصيل" : "View listing"} <Icon.arrow size={16} /></span>
+        <span style={{ marginTop: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{H.viewListing} <Icon.arrow size={16} /></span>
        </div>
       </Link>
       <div className="snap-row" style={{ marginTop: 18 }}>
@@ -365,10 +367,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        {T.cards.map((c, i) => {
         const I = cardIcons[i] as (p: { size?: number }) => JSX.Element;
         const st: [string, string] | null =
-         i === 0 ? [stats.listings, ar ? "مساحة موثّقة، مباشرة الآن" : "verified spaces live now"]
-         : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), ar ? "طلبات مفتوحة أمام السوق" : "open requirements on the board"] : null)
-         : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), ar ? "شريحة مؤشر ببيانات كافية" : "index segments with sufficient data"] : null)
-         : ["FAL 1200025510", ar ? "مرخّصة من الهيئة، بتفويض صريح فقط" : "REGA-licensed, opt-in only"];
+         i === 0 ? [stats.listings, H.statSpacesLive]
+         : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), H.statOpenReqs] : null)
+         : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), H.statSegments] : null)
+         : ["FAL 1200025510", H.statLicensed];
         return (
          <Reveal key={i} delay={i * 90}>
           <Link href={L(c[2])} className="job-card">
@@ -411,12 +413,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
       {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (ar ? "، مكاتب الفئة A" : ", Grade A office")}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
+        <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{ar ? "الربع الأول 2026" : band.period}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
         <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{band.median.toLocaleString()}</span>
-        <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{ar ? "الوسيط، ريال/م²·سنة" : "median SAR/m²·yr"}</span>
+        <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{H.medianUnit}</span>
        </div>
        <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${band.low.toLocaleString()} إلى ${band.high.toLocaleString()}` : `Published band: ${band.low.toLocaleString()} to ${band.high.toLocaleString()}`}</div>
        <div style={{ color: "#34d399", fontSize: "var(--fs-sm)", fontWeight: 600, marginTop: 8 }}>{`+${kpis.gradeAYoyPct}%`} · {T.bandStat[0]}</div>
@@ -426,7 +428,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <circle cx="480" cy="18" r="4" fill="#34d399" />
        </svg>
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{ar ? "إشغال الفئة A بالرياض" : "Riyadh Grade A occupancy"}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{`${kpis.gradeAOccupancyPct}%`}</span>
+        <span>{H.occupancyLabel}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{`${kpis.gradeAOccupancyPct}%`}</span>
        </div>
       </div>}
      </div>
@@ -439,7 +441,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <p className="muted" style={{ fontSize: "var(--fs-md)", maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
      <div>
-      {([[ar ? "اكتشف" : "Discover", [0, 5, 9, 4]], [ar ? "قرّر بالأرقام" : "Decide with data", [1, 11, 2]], [ar ? "نفّذ بثقة" : "Transact with trust", [6, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
+      {([[H.tabDiscover, [0, 5, 9, 4]], [H.tabDecide, [1, 11, 2]], [H.tabTransact, [6, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
        <div key={gi} style={{ marginTop: gi === 0 ? 36 : 30 }}>
         <div className="row gap10" style={{ alignItems: "center", marginBottom: 14 }}>
          <span className="eyebrow">{gt}</span>
@@ -483,7 +485,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <p style={{ fontSize: "var(--fs-input)", color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
       <div className="row gap12 center wrap">
        <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
-       <Link href={L("/find")} className="btn lg" style={{ background: "#fff", color: "var(--ink)", textDecoration: "none" }}>{ar ? "اعثر على مساحتك" : "Find your space"}</Link>
+       <Link href={L("/find")} className="btn lg" style={{ background: "#fff", color: "var(--ink)", textDecoration: "none" }}>{H.findSpace}</Link>
        <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
      </div>
