@@ -982,5 +982,23 @@
     "results": "buildings",
     "close": "Close",
     "clusterUnit": "buildings"
+  },
+  "locations": {
+    "directory": "The directory",
+    "title": "Commercial locations across the Kingdom",
+    "intro": "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index median where the data is sufficient.",
+    "marketPulse": "Market pulse",
+    "kDistrict": "Districts",
+    "kDistrictSub": "Established commercial districts.",
+    "kDevelopment": "Developments and destinations",
+    "kDevelopmentSub": "Master-planned projects, for example KAFD by PIF. A development is not a district.",
+    "kArea": "Areas",
+    "kAreaSub": "Broader commercial areas.",
+    "projectSuffix": " · project",
+    "verifiedSpace": "verified space",
+    "verifiedSpaces": "verified spaces",
+    "officeMedianPre": "Office median ",
+    "officeMedianSuf": " SAR/m²·yr",
+    "footer": "Medians come from the Rent Index, platform sample, sufficient segments only. Indicative, not advice."
   }
 }
