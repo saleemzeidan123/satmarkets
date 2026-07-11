@@ -1170,5 +1170,11 @@
     "needsNote": "These needs are attached to your brief for SAT's advisor. Ranking today uses verified size, grade and budget.",
     "sarSqm": "SAR/m²",
     "yieldWord": "yield"
+  },
+  "watchBanner": {
+    "upWord": "up",
+    "downWord": "down",
+    "beyondPre": "beyond your ",
+    "beyondSuf": "% mark"
   }
 }

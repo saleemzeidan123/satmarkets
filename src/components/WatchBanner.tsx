@@ -24,6 +24,7 @@ interface Move { w: Watch; label: string; from: number; to: number; period: stri
 export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").chrome;
+  const wb = getDictionary(ar ? "ar" : "en").watchBanner;
   const [moves, setMoves] = useState<Move[]>([]);
   const [segs, setSegs] = useState<Seg[] | null>(null);
   const [watches, setWatches] = useState<Watch[]>([]);
@@ -85,7 +86,7 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
         {moves.map((m) => {
           const up = m.to > m.from;
           const arrow = up ? "▲" : "▼";
-          const dir = ar ? (up ? "ارتفع" : "انخفض") : (up ? "up" : "down");
+          const dir = up ? wb.upWord : wb.downWord;
           const line = ar
             ? `${m.label}: تحرّك الوسيط المنشور من ${nf(m.from)} إلى ${nf(m.to)} (${m.period})، ${dir} ${Math.abs(m.pct)}%.`
             : `${m.label}: published median moved from ${nf(m.from)} to ${nf(m.to)} (${m.period}), ${dir} ${Math.abs(m.pct)}%.`;
@@ -94,7 +95,7 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
                 <span style={{ color: up ? "#1F8A5B" : "#C0492F", marginInlineEnd: 6, fontSize: 11 }}>{arrow}</span>
                 {line}
-                {m.beyond ? <span style={{ marginInlineStart: 6, fontWeight: 600, color: "var(--azure-d, #2C5578)" }}>{ar ? `تجاوز حدّك ${m.w.thresholdPct}%` : `beyond your ${m.w.thresholdPct}% mark`}</span> : null}
+                {m.beyond ? <span style={{ marginInlineStart: 6, fontWeight: 600, color: "var(--azure-d, #2C5578)" }}>{`${wb.beyondPre}${m.w.thresholdPct}${wb.beyondSuf}`}</span> : null}
               </div>
               <button type="button" onClick={() => stop(m.w.id)} style={{ flex: "none", background: "transparent", border: "none", color: "var(--slate-2, #6B7480)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>{t.stop}</button>
             </div>
