@@ -38,6 +38,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const [sug, setSug] = useState<{ label: string; sub: string; did?: string; verified?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
+ const assetRef = useRef<HTMLDivElement>(null);
+ useEffect(() => {
+  const el = assetRef.current; if (!el) return;
+  const onWheel = (e: WheelEvent) => { if (el.scrollWidth <= el.clientWidth) return; if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { el.scrollLeft += e.deltaY; e.preventDefault(); } };
+  el.addEventListener("wheel", onWheel, { passive: false });
+  return () => el.removeEventListener("wheel", onWheel);
+ }, [deal]);
  useEffect(() => {
   const onDoc = (e: MouseEvent) => { if (sref.current && !sref.current.contains(e.target as Node)) setSopen(false); };
   document.addEventListener("mousedown", onDoc);
@@ -220,16 +227,24 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        ))}
       </div>
       {deal !== "req" && (
-       <div className="hero-assets" style={{ display: "flex", flexWrap: "nowrap", gap: 7, marginBottom: 16, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
-        {ASSETS.map((a) => {
-         const on = assetType === a.v;
-         return (
-          <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 82, scrollSnapAlign: "start", padding: "12px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
-           <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
-           <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
-          </button>
-         );
-        })}
+       <div style={{ position: "relative", marginBottom: 16 }}>
+        <button type="button" aria-label="Scroll asset types" onClick={() => assetRef.current?.scrollBy({ left: -260, behavior: "smooth" })} className="asset-arrow" style={{ insetInlineStart: -6 }}>
+         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <div ref={assetRef} className="hero-assets" style={{ display: "flex", flexWrap: "nowrap", gap: 7, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
+         {ASSETS.map((a) => {
+          const on = assetType === a.v;
+          return (
+           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 82, scrollSnapAlign: "start", padding: "12px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
+            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
+           </button>
+          );
+         })}
+        </div>
+        <button type="button" aria-label="Scroll asset types" onClick={() => assetRef.current?.scrollBy({ left: 260, behavior: "smooth" })} className="asset-arrow" style={{ insetInlineEnd: -6 }}>
+         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
        </div>
       )}
       <div ref={sref} style={{ position: "relative" }}>

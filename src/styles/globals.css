@@ -44,6 +44,9 @@ a { transition: color .18s ease; }
 .btn-ink:active { transform: translateY(1px); }
 .hero-assets{ scrollbar-width:none; -ms-overflow-style:none; }
 .hero-assets::-webkit-scrollbar{ display:none; }
+.asset-arrow{ position:absolute; top:50%; transform:translateY(-50%); z-index:3; width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.22); background:rgba(13,18,26,.92); color:#fff; cursor:pointer; }
+.asset-arrow:hover{ background:rgba(13,18,26,1); }
+@media (max-width:640px){ .asset-arrow{ display:none; } }
 [dir="rtl"]{ --fs-cap:10px; --fs-3xs:11px; --fs-2xs:12px; --fs-xs:13px; --fs-sm:14px; --fs-base:15px; }
 .btn-ghost { border:1px solid rgba(28,33,38,0.16); border-radius:10px; transition: background .18s ease, border-color .18s ease; }
 .btn-ghost:hover { background: rgba(28,33,38,0.03); border-color: rgba(28,33,38,0.28); }
