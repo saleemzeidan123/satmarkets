@@ -99,6 +99,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       mapRef.current = map; map.on("dragend", () => setMoved(true)); map.on("zoomend", () => setMoved(true));
       ro = new ResizeObserver(() => { try { map.resize(); } catch {} });
       ro.observe(ref.current);
+      if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(() => { try { map.resize(); } catch {} });
       [80, 300, 900, 2000].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
 
       const onReady = () => {
@@ -108,6 +109,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         try { addData(map); wire(map, maplibregl); if (initialBbox && initialBbox.length === 4) { try { map.fitBounds([[initialBbox[0], initialBbox[1]], [initialBbox[2], initialBbox[3]]], { padding: 34, duration: 0, maxZoom: 14 }); } catch {} } } catch {}
       };
       map.on("load", onReady);
+      map.on("idle", onReady);
 
       const swapToFallback = () => {
         if (triedFallback || ready || cancelled) return;
