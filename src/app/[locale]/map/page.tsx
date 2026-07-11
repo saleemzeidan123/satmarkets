@@ -44,11 +44,11 @@ export default async function MapPage({ params }: { params: { locale: string } }
 
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
-      <a href={`/${locale}/listings`} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-charcoal/60 transition hover:text-charcoal">{ar ? "العودة إلى القوائم" : "← Back to listings"}</a>
-      <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{ar ? "خريطة الذكاء العقاري" : "Commercial intelligence map"}</div>
-      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{ar ? "المباني التجارية في السعودية" : "Saudi commercial buildings"}</h1>
+      <a href={`/${locale}/listings`} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-charcoal/60 transition hover:text-charcoal">{dict.map.back}</a>
+      <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{dict.map.eyebrow}</div>
+      <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{dict.map.title}</h1>
       <p className="mt-2 max-w-2xl text-[15px] intel-muted">
-        {ar ? "كل مبنى عنصر قابل للنقر مع ملف ذكاء: النوع، التصنيف، نطاق الإيجار الموثق، والمساحات المتاحة. انقر أي مبنى لعرض نطاق الإيجار الموثق والتصنيف والمساحات المتاحة." : "Every building is a clickable object with an intelligence profile: asset class, grade, the verified rent band, and available space. Click any building for its verified rent band, grade and available space."}
+        {dict.map.desc}
       </p>
       <div className="mt-5">
         <MapExplorer
@@ -57,19 +57,19 @@ export default async function MapPage({ params }: { params: { locale: string } }
           assetOrder={ASSET_ORDER}
           assetLabels={assetLabels}
           t={{
-            all: ar ? "الكل" : "All",
-            available: ar ? "قائمة متاحة" : "available",
-            viewListings: ar ? "عرض القوائم" : "View listings",
-            rentBand: ar ? "نطاق الإيجار" : "Rent band",
+            all: dict.map.all,
+            available: dict.map.available,
+            viewListings: dict.map.viewListings,
+            rentBand: dict.map.rentBand,
             size: dict.ui.area, grade: dict.ui.grade,
             sqm: dict.common.sqm, noData: dict.ui.notEnough,
-            results: ar ? "مبنى" : "buildings", close: ar ? "إغلاق" : "Close",
-            clusterUnit: ar ? "مبنى" : "buildings",
+            results: dict.map.results, close: dict.map.close,
+            clusterUnit: dict.map.clusterUnit,
           }}
         />
       </div>
       <p className="mt-3 text-xs intel-faint">
-        {ar ? "بيانات المباني والإيجارات الموثقة من مؤشر الإيجارات. خرائط مجانية مفتوحة المصدر." : "Verified building and rent data from the verified index. Free, open-source map tiles."}
+        {dict.map.footer}
       </p>
     </section>
   );

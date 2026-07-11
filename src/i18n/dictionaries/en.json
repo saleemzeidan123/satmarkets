@@ -968,5 +968,19 @@
     "parties": "Parties",
     "whatNext": "What happens next",
     "disclaimer": "The Ejar contract, deposit and registration are handled directly between you and the owner or their licensed broker. SAT does not sign or hold funds, we verify the parties and track the deal."
+  },
+  "map": {
+    "back": "← Back to listings",
+    "eyebrow": "Commercial intelligence map",
+    "title": "Saudi commercial buildings",
+    "desc": "Every building is a clickable object with an intelligence profile: asset class, grade, the verified rent band, and available space. Click any building for its verified rent band, grade and available space.",
+    "footer": "Verified building and rent data from the verified index. Free, open-source map tiles.",
+    "all": "All",
+    "available": "available",
+    "viewListings": "View listings",
+    "rentBand": "Rent band",
+    "results": "buildings",
+    "close": "Close",
+    "clusterUnit": "buildings"
   }
 }
