@@ -1125,5 +1125,17 @@
     "sqmUnit": "m²",
     "rentUnit": "SAR/m²·yr",
     "onRequest": "On request"
+  },
+  "layout": {
+    "couplet": "The space is yours. So are the numbers.",
+    "family": "By SAT Real Estate",
+    "signIn": "Sign in",
+    "colMarket": "Marketplace",
+    "saved": "Saved",
+    "colIntel": "Intelligence",
+    "colCompany": "Company",
+    "skip": "Skip to content",
+    "notice": "Rent Index Q1 2026 is live. Published Riyadh benchmarks, attributed to source.",
+    "explore": "Explore →"
   }
 }
