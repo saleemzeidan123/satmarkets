@@ -391,5 +391,86 @@
         "486M"
       ]
     ]
+  },
+  "hbu": {
+    "eyebrow": "Investment underwriting · Q1 2026",
+    "assetTitle": "Grade A Office Floor, Olaya Tower",
+    "assetSub": "320 m² · Al Olaya · underwritten on verified comparable transactions",
+    "exportModel": "Export model",
+    "askAi": "Ask AI to underwrite",
+    "scenario": "Scenario",
+    "scenarioBaseCase": "Base case",
+    "acqPrice": "Acquisition price (SAR)",
+    "sarUnit": "SAR",
+    "leaseTerm": "Lease term",
+    "yr3": "3 yr",
+    "yr5": "5 yr",
+    "yr10": "10 yr",
+    "rentEscalation": "Rent escalation",
+    "openReprice": "Open · re-price",
+    "cappedFrozen": "Capped · frozen",
+    "freezeHint": "Capped reflects the Sept-2025 Riyadh 5-yr freeze on existing leases.",
+    "stabOccupancy": "Stabilised occupancy",
+    "exitCapRate": "Exit cap rate",
+    "leverage": "Leverage (LTV)",
+    "goingInYieldLbl": "Going-in yield",
+    "yieldOnCost": "Yield-on-cost (yr 5)",
+    "runFull": "Run full model",
+    "noiProjection": "NOI projection · 7-year hold",
+    "noiProjectionSub": "Indexed to 100 at acquisition · open vs capped escalation",
+    "openLegend": "Open · re-prices to market",
+    "cappedLegend": "Capped · frozen yrs 1-5",
+    "yAxis": "Y",
+    "upsideA": "If this asset is a new first-lease it is ",
+    "upsideBold": "unaffected by the freeze",
+    "upsideB": " and re-prices every term, that gap is the underwriting upside.",
+    "compsTitle": "Comparable transactions",
+    "last6mo": "Last 6 months",
+    "thAsset": "Asset",
+    "thDate": "Date",
+    "thSarM2": "SAR/m²",
+    "thCapRate": "Cap rate",
+    "thPrice": "Price",
+    "thSource": "Source",
+    "compsNote": "Comps drawn only from verified SAT-advised transactions, no asking prices, no scraped figures.",
+    "kValue": "Indicative value, SAR",
+    "netInitYield": "Net initial yield",
+    "nVsDistrict": "+0.2 vs district",
+    "kNoi": "Stabilised NOI, SAR/yr",
+    "irr5": "5-yr levered IRR",
+    "nBaseCase": "base case",
+    "equityMult": "Equity multiple",
+    "nOverHold": "over hold",
+    "nAssumed": "assumed",
+    "comps": [
+      [
+        "Olaya Tower · whole floor",
+        "Apr 2026",
+        "1,440",
+        "6.6%",
+        "202M"
+      ],
+      [
+        "Al Akaria Plaza · 2 floors",
+        "Feb 2026",
+        "1,210",
+        "7.1%",
+        "318M"
+      ],
+      [
+        "Tahlia Gate · office",
+        "Jan 2026",
+        "1,520",
+        "6.4%",
+        "141M"
+      ],
+      [
+        "Granada Oasis · tower",
+        "Dec 2025",
+        "1,060",
+        "7.6%",
+        "486M"
+      ]
+    ]
   }
 }
