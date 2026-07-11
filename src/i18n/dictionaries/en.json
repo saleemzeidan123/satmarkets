@@ -277,7 +277,13 @@
     "clearAllFilters": "Clear all filters",
     "verifiedOwner": "Verified owner",
     "onRequest": "On request",
-    "vsIndexTitle": "Vs the Rent Index, platform sample. Indicative, not advice."
+    "vsIndexTitle": "Vs the Rent Index, platform sample. Indicative, not advice.",
+    "riyadh": "Riyadh",
+    "crumbHome": "Home",
+    "crumbListings": "Listings",
+    "mapArea": "in this map area",
+    "clearArea": "clear",
+    "withinBand": "Within index band"
   },
   "pricing": {
     "na": "n/a",

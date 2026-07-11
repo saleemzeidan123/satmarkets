@@ -164,7 +164,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const SEGL: Record<string, string> = ar
     ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street_front: "واجهة شارع", mall_inline: "داخل مول", clinic: "عيادة" }
     : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street_front: "Street front", mall_inline: "Mall inline", clinic: "Clinic" };
-  const rcity = ar ? "الرياض" : "Riyadh";
+  const rcity = dict.listings.riyadh;
   const kindFor = (a: string) => a;
 
   const assets = ASSETS.map((a) => ({ value: a, label: assetLabel(a, locale) }));
@@ -182,8 +182,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
-        { "@type": "ListItem", position: 2, name: ar ? "المساحات" : "Listings", item: `${SITE}/${locale}/listings` },
+        { "@type": "ListItem", position: 1, name: dict.listings.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: dict.listings.crumbListings, item: `${SITE}/${locale}/listings` },
         ...(crumbLoc ? [{ "@type": "ListItem", position: 3, name: crumbLoc, item: `${SITE}/${locale}/listings${crumbQs}` }] : []),
       ] }} />
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
@@ -202,7 +202,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
-        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {ar ? "ضمن منطقة الخريطة" : "in this map area"} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{ar ? "مسح" : "clear"}</Link></> : null}</div>
+        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض موثّق` : `${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات موثّقة في ${searchParams.place} بعد` : ` · no verified spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {dict.listings.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dict.listings.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
           <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.properties}</Link>
           <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.insights}</Link>
@@ -260,7 +260,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     const v = marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade));
                     if (v.status === "na" || v.deltaPct == null) return null;
                     const a = Math.abs(v.deltaPct);
-                    const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (ar ? "ضمن نطاق المؤشر" : "Within index band");
+                    const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (dict.listings.withinBand);
                     const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
                     return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={dict.listings.vsIndexTitle}>{txt}</div>;
                   })()}
