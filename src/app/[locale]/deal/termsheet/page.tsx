@@ -4,10 +4,12 @@ import Link from "next/link";
 import PrintButton from "@/components/PrintButton";
 
 import SampleBanner from "@/components/SampleBanner";
+import { getDictionary } from "@/i18n/getDictionary";
 export default function TermSheetPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
+  const t = getDictionary(ar ? "ar" : "en").termsheet;
   const terms: [string, string, string][] = ar ? [
     ["الإيجار السنوي", "464,000 ريال", "1,450/م² · 320 م²"],
     ["المدة", "5 سنوات", "شهران مجاناً"],
@@ -31,15 +33,15 @@ export default function TermSheetPage({ params }: { params: { locale: string } }
     <div style={{ maxWidth: 780, margin: "0 auto", padding: "28px 24px 56px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <SampleBanner ar={ar} />
       <div className="row between wrap no-print" style={{ marginBottom: 18, gap: 10 }}>
-        <Link href={`/${locale}/deal`} className="chip" style={{ textDecoration: "none" }}>{ar ? "→ غرفة الصفقة" : "← Deal room"}</Link>
-        <PrintButton label={ar ? "طباعة / حفظ PDF" : "Print / save PDF"} />
+        <Link href={`/${locale}/deal`} className="chip" style={{ textDecoration: "none" }}>{t.dealRoomLink}</Link>
+        <PrintButton label={t.printSave} />
       </div>
       <div className="card" style={{ padding: "30px 34px" }}>
         <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
           <div>
-            <div className="eyebrow">{ar ? "ورقة الشروط · SR-20418" : "Term sheet · SR-20418"}</div>
-            <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: "10px 0 2px" }}>{ar ? "مكتب فئة A، برج العليا" : "Grade A Office, Olaya Tower"}</h1>
-            <div className="muted" style={{ fontSize: 12.5 }}>{ar ? "320 م² · العليا، الرياض" : "320 m² · Al Olaya, Riyadh"}</div>
+            <div className="eyebrow">{t.termSheetRef}</div>
+            <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: "10px 0 2px" }}>{t.propertyTitle}</h1>
+            <div className="muted" style={{ fontSize: 12.5 }}>{t.propertySub}</div>
           </div>
           <div className="mono muted" style={{ fontSize: 11, textAlign: ar ? "left" : "right" }}>SAT MARKETS<br />{new Date().toISOString().slice(0, 10)}</div>
         </div>
@@ -56,7 +58,7 @@ export default function TermSheetPage({ params }: { params: { locale: string } }
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 22, marginTop: 22 }}>
           <div>
-            <div className="eyebrow" style={{ fontSize: 10.5 }}>{ar ? "الأطراف" : "Parties"}</div>
+            <div className="eyebrow" style={{ fontSize: 10.5 }}>{t.parties}</div>
             {parties.map((p, i) => (
               <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--silver)" }}>
                 <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p[0]}</div>
@@ -65,7 +67,7 @@ export default function TermSheetPage({ params }: { params: { locale: string } }
             ))}
           </div>
           <div>
-            <div className="eyebrow" style={{ fontSize: 10.5 }}>{ar ? "الخطوات التالية" : "What happens next"}</div>
+            <div className="eyebrow" style={{ fontSize: 10.5 }}>{t.whatNext}</div>
             {next.map((n, i) => (
               <div key={i} className="row gap8" style={{ padding: "8px 0", borderBottom: "1px solid var(--silver)", alignItems: "baseline" }}>
                 <span className="mono" style={{ fontSize: 11, color: "var(--harbor)" }}>{i + 1}</span>

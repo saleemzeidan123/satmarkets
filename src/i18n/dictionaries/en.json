@@ -1246,5 +1246,14 @@
     "footer": "SAT Markets · Powered by SAT Real Estate · FAL 1200025510",
     "scanHint": "Scan to open the live listing",
     "qrAria": "QR code to the live listing"
+  },
+  "termsheet": {
+    "dealRoomLink": "← Deal room",
+    "printSave": "Print / save PDF",
+    "termSheetRef": "Term sheet · SR-20418",
+    "propertyTitle": "Grade A Office, Olaya Tower",
+    "propertySub": "320 m² · Al Olaya, Riyadh",
+    "parties": "Parties",
+    "whatNext": "What happens next"
   }
 }
