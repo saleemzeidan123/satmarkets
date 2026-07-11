@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const ar = loc === "ar";
   const l: any = await getListingById(params.id);
   if (!l) return { title: dict.ld.notFoundTitle };
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
+  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
   const type = assetLabel(l.asset_type, loc);
   const grade = gradeLabel(l.building_grade, loc);
   const t0 = (ar ? l.title_ar : l.title_en) || l.reference_code;
@@ -44,9 +44,9 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const sb = getSupabaseServer();
   const l: any = await getListingById(params.id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (ar ? "الرياض" : "Riyadh");
+  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
   const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : "الرياض";
-  const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (ar ? "الرياض" : "Riyadh");
+  const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (dict.ld.riyadh);
   const cityEn = l.districts && l.districts.city ? cityLabel(l.districts.city, "en") : "Riyadh";
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";
@@ -92,7 +92,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   return (
     <div style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
-        <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {ar ? "العروض" : "LISTINGS"} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
+        <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /><span className="chip"><Icon.arrow size={15} /> {dict.ld.share}</span></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
@@ -119,8 +119,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             address: { "@type": "PostalAddress", streetAddress: String(dn), addressLocality: cityEn, addressCountry: "SA" },
           }} />
           <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-            { "@type": "ListItem", position: 1, name: ar ? "الرئيسية" : "Home", item: `${SITE}/${locale}` },
-            { "@type": "ListItem", position: 2, name: ar ? "العروض" : "Listings", item: `${SITE}/${locale}/listings` },
+            { "@type": "ListItem", position: 1, name: dict.ld.crumbHome, item: `${SITE}/${locale}` },
+            { "@type": "ListItem", position: 2, name: dict.ld.crumbListings, item: `${SITE}/${locale}/listings` },
             ...(l.district_id ? [{ "@type": "ListItem", position: 3, name: String(dn), item: `${SITE}/${locale}/listings?district=${l.district_id}` }] : []),
             { "@type": "ListItem", position: l.district_id ? 4 : 3, name: title, item: `${SITE}/${locale}/listings/${l.id}` },
           ] }} />

@@ -219,7 +219,11 @@
     "footfallVsDistrict": "Footfall vs district avg",
     "weekdayFootfall": "Weekday footfall by hour",
     "similarSpaces": "Similar spaces",
-    "seeAll": "See all →"
+    "seeAll": "See all →",
+    "riyadh": "Riyadh",
+    "crumbHome": "Home",
+    "crumbListings": "Listings",
+    "crumbListingsUpper": "LISTINGS"
   },
   "chrome": {
     "tabHome": "Home",
