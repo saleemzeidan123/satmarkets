@@ -39,12 +39,26 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
  const assetRef = useRef<HTMLDivElement>(null);
+ const [atStart, setAtStart] = useState(true);
+ const [atEnd, setAtEnd] = useState(false);
  useEffect(() => {
   const el = assetRef.current; if (!el) return;
-  const onWheel = (e: WheelEvent) => { if (el.scrollWidth <= el.clientWidth) return; if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { el.scrollLeft += e.deltaY; e.preventDefault(); } };
+  const update = () => {
+   const max = el.scrollWidth - el.clientWidth;
+   if (max <= 1) { setAtStart(true); setAtEnd(true); return; }
+   const pos = Math.abs(el.scrollLeft);
+   setAtStart(pos < 2); setAtEnd(pos > max - 2);
+  };
+  const onWheel = (e: WheelEvent) => { if (el.scrollWidth <= el.clientWidth) return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; el.scrollBy({ left: (ar ? -1 : 1) * e.deltaY * 1.4 }); e.preventDefault(); };
+  update();
+  el.addEventListener("scroll", update, { passive: true });
   el.addEventListener("wheel", onWheel, { passive: false });
-  return () => el.removeEventListener("wheel", onWheel);
- }, [deal]);
+  const ro = new ResizeObserver(update); ro.observe(el);
+  return () => { el.removeEventListener("scroll", update); el.removeEventListener("wheel", onWheel); ro.disconnect(); };
+ }, [deal, ar]);
+ const page = (d: number) => { const el = assetRef.current; if (!el) return; const amount = Math.round(el.clientWidth * 0.7); el.scrollBy({ left: (ar ? -d : d) * amount, behavior: "smooth" }); };
+ const fadeLogical = !atStart && !atEnd ? "both" : atStart && !atEnd ? "end" : atEnd && !atStart ? "start" : "none";
+ const fadePhysical = !ar ? fadeLogical : fadeLogical === "end" ? "start" : fadeLogical === "start" ? "end" : fadeLogical;
  useEffect(() => {
   const onDoc = (e: MouseEvent) => { if (sref.current && !sref.current.contains(e.target as Node)) setSopen(false); };
   document.addEventListener("mousedown", onDoc);
@@ -227,22 +241,22 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        ))}
       </div>
       {deal !== "req" && (
-       <div style={{ position: "relative", marginBottom: 16 }}>
-        <button type="button" aria-label="Scroll asset types" onClick={() => assetRef.current?.scrollBy({ left: -260, behavior: "smooth" })} className="asset-arrow" style={{ insetInlineStart: -6 }}>
+       <div className="asset-slider" style={{ marginBottom: 16 }}>
+        <button type="button" aria-label="Previous asset types" onClick={() => page(-1)} className="asset-arrow" data-hidden={atStart} tabIndex={atStart ? -1 : 0}>
          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
-        <div ref={assetRef} className="hero-assets" style={{ display: "flex", flexWrap: "nowrap", gap: 7, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
+        <div ref={assetRef} className="hero-assets" data-fade={fadePhysical} style={{ display: "flex", flexWrap: "nowrap", gap: 8, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
          {ASSETS.map((a) => {
           const on = assetType === a.v;
           return (
-           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 82, scrollSnapAlign: "start", padding: "12px 8px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(255,255,255,.5)" : "rgba(255,255,255,.12)"), background: on ? "rgba(255,255,255,.16)" : "rgba(255,255,255,.04)", color: "#fff", transition: "all .12s ease" }}>
-            <span style={{ opacity: on ? 1 : .85 }}>{a.icon}</span>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, color: "rgba(255,255,255,.92)" }}>{ar ? a.ar : a.en}</span>
+           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(58,110,165,.24)" : "rgba(255,255,255,.045)", color: "#fff", boxShadow: on ? "0 0 0 1px rgba(58,110,165,.35), 0 6px 16px -8px rgba(58,110,165,.5)" : "none", transition: "background .15s, border-color .15s" }}>
+            <span style={{ opacity: on ? 1 : .82 }}>{a.icon}</span>
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, whiteSpace: "nowrap", color: on ? "#fff" : "rgba(255,255,255,.82)" }}>{ar ? a.ar : a.en}</span>
            </button>
           );
          })}
         </div>
-        <button type="button" aria-label="Scroll asset types" onClick={() => assetRef.current?.scrollBy({ left: 260, behavior: "smooth" })} className="asset-arrow" style={{ insetInlineEnd: -6 }}>
+        <button type="button" aria-label="Next asset types" onClick={() => page(1)} className="asset-arrow" data-hidden={atEnd} tabIndex={atEnd ? -1 : 0}>
          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
         </button>
        </div>

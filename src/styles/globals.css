@@ -44,9 +44,16 @@ a { transition: color .18s ease; }
 .btn-ink:active { transform: translateY(1px); }
 .hero-assets{ scrollbar-width:none; -ms-overflow-style:none; }
 .hero-assets::-webkit-scrollbar{ display:none; }
-.asset-arrow{ position:absolute; top:50%; transform:translateY(-50%); z-index:3; width:30px; height:30px; border-radius:999px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.22); background:rgba(13,18,26,.92); color:#fff; cursor:pointer; }
-.asset-arrow:hover{ background:rgba(13,18,26,1); }
-@media (max-width:640px){ .asset-arrow{ display:none; } }
+.asset-slider{ display:grid; grid-template-columns:34px 1fr 34px; align-items:center; gap:8px; }
+.hero-assets[data-fade="both"]{ -webkit-mask-image:linear-gradient(to right,transparent 0,#000 30px,#000 calc(100% - 30px),transparent 100%); mask-image:linear-gradient(to right,transparent 0,#000 30px,#000 calc(100% - 30px),transparent 100%); }
+.hero-assets[data-fade="end"]{ -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 30px),transparent 100%); mask-image:linear-gradient(to right,#000 calc(100% - 30px),transparent 100%); }
+.hero-assets[data-fade="start"]{ -webkit-mask-image:linear-gradient(to right,transparent 0,#000 30px); mask-image:linear-gradient(to right,transparent 0,#000 30px); }
+.asset-arrow{ width:34px; height:34px; border-radius:999px; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:rgba(255,255,255,.85); cursor:pointer; transition:background .15s, border-color .15s, opacity .2s; }
+.asset-arrow:hover{ background:rgba(58,110,165,.35); border-color:#3A6EA5; color:#fff; }
+.asset-arrow:active{ background:rgba(44,85,127,.5); }
+.asset-arrow[data-hidden="true"]{ opacity:0; pointer-events:none; }
+[dir="rtl"] .asset-arrow svg{ transform:scaleX(-1); }
+@media (max-width:640px){ .asset-slider{ grid-template-columns:1fr; } .asset-arrow{ display:none; } }
 [dir="rtl"]{ --fs-cap:10px; --fs-3xs:11px; --fs-2xs:12px; --fs-xs:13px; --fs-sm:14px; --fs-base:15px; }
 .btn-ghost { border:1px solid rgba(28,33,38,0.16); border-radius:10px; transition: background .18s ease, border-color .18s ease; }
 .btn-ghost:hover { background: rgba(28,33,38,0.03); border-color: rgba(28,33,38,0.28); }
@@ -196,7 +203,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .hero-assets{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;justify-content:flex-start;padding:2px;}
 .hero-assets::-webkit-scrollbar{display:none;}
 .hero-assets>*{flex:none;scroll-snap-align:start;}
-@media(min-width:1024px){.hero-assets{flex-wrap:wrap;overflow:visible;justify-content:center;}}
+/* asset row is always a horizontal slider (arrows + fade); no desktop wrap */
 
 /* ---- Brand mark language: the SAT 2x2 mark (one Harbor-lit quadrant) woven through the UI ---- */
 /* Every eyebrow kicker carries the mark: the brand thread across the whole site. */
