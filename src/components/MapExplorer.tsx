@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
@@ -57,16 +58,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
  const activeRef = useRef<string>("all");
  const zonePtsRef = useRef<[number, number][]>([]);
 
- const L = {
-  pins: ar ? "القوائم" : "Listings",
-  heat: ar ? "كثافة المعروض" : "Supply heat",
-  zone: ar ? "ارسم منطقة" : "Draw a zone",
-  drawHint: ar ? "انقر على الخريطة لرسم منطقة، سنحسب المباني داخلها." : "Click the map to outline an area, we count the buildings inside.",
-  inZone: ar ? "مبنى في منطقتك" : "buildings in your zone",
-  clear: ar ? "مسح" : "Clear",
-  loading: ar ? "تحميل الخريطة…" : "Loading map…",
-  swipeHint: ar ? "اسحب البطاقات، تتحرك الخريطة معها" : "Swipe the cards, the map follows",
- };
+ const L = getDictionary(locale).mapExplorer;
 
  function buildFC(list: MapBuilding[]) {
   return { type: "FeatureCollection", features: list.map((b) => ({

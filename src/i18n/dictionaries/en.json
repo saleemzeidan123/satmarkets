@@ -1029,5 +1029,15 @@
     "twoQuick": "Two quick, optional answers so the lister knows the visit is worth their time.",
     "requestSlot": "Request this slot",
     "footer": "Free to contact the lister directly. Representation is an explicit, opt-in choice, never an assumed commission."
+  },
+  "mapExplorer": {
+    "pins": "Listings",
+    "heat": "Supply heat",
+    "zone": "Draw a zone",
+    "drawHint": "Click the map to outline an area, we count the buildings inside.",
+    "inZone": "buildings in your zone",
+    "clear": "Clear",
+    "loading": "Loading map…",
+    "swipeHint": "Swipe the cards, the map follows"
   }
 }
