@@ -1,3 +1,4 @@
+import { getDictionary } from "@/i18n/getDictionary";
 import { isLocale } from "@/i18n/config";
 import { pageMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
@@ -10,6 +11,7 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
 export default function AboutPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
+ const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
  const c = ar ? {
   eyebrow: "عن المنصة",
   title: "المرجع الموثوق لبيانات العقارات التجارية في الخليج.",
@@ -70,7 +72,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
        </div>
       ))}
      </div>
-     <p className="mt-4 text-[12px] leading-relaxed text-charcoal/45">{ar ? "نفاذ: الهوية الرقمية الوطنية · ريقا: الهيئة العامة للعقار · إيجار: منصة العقود الإيجارية · فال: ترخيص الوساطة العقارية" : "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence"}</p>
+     <p className="mt-4 text-[12px] leading-relaxed text-charcoal/45">{dict.about.acronyms}</p>
     </div>
    </Reveal>
    <p className="mt-10 text-sm text-charcoal/50">{c.foot}</p>

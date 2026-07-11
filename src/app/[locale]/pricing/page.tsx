@@ -1,3 +1,4 @@
+import { getDictionary } from "@/i18n/getDictionary";
 import { isLocale } from "@/i18n/config";
 import { pageMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
@@ -12,6 +13,7 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
 export default function PricingPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
+ const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
  const tiers: Tier[] = ar ? [
   { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "باقتك الحالية",
    pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، وسطاء الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
@@ -75,20 +77,20 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   ["Support", "Community", "Email", "Priority", "Manager", "SLA + manager"],
  ];
  const heads = ar ? ["مستكشف", "مبتدئ", "احترافي", "وكالة", "مؤسسات"] : ["Explorer", "Starter", "Professional", "Agency", "Enterprise"];
- const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : v === "no" ? <span className="no">{ar ? "غير متاح" : "n/a"}</span> : <span className="tnum">{v}</span>;
+ const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : v === "no" ? <span className="no">{dict.pricing.na}</span> : <span className="tnum">{v}</span>;
  return (
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg,var(--cool),var(--paper))" }}>
-    <div className="eyebrow">{ar ? "العضوية" : "Membership"}</div>
-    <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{ar ? "باقات تتوسّع مع طريقة استخدامك للمنصّة" : "Plans that scale with how you use the exchange"}</h1>
-    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>{ar ? "كل فئة تشمل العروض الموثّقة ومؤشر الإيجارات. الفئات الأعلى ترفع حدودك وعروضك وعملاءك وبياناتك ومقاعدك." : "Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats."}</p>
-    <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">{ar ? "شهري" : "Monthly"}</span><span>{ar ? "سنوي · وفّر شهرين" : "Annual · save 2 months"}</span></div>
+    <div className="eyebrow">{dict.pricing.membership}</div>
+    <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{dict.pricing.h1}</h1>
+    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>{dict.pricing.sub}</p>
+    <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">{dict.pricing.monthly}</span><span>{dict.pricing.annual}</span></div>
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     <div className="tier-grid" style={{ padding: "14px 24px 8px" }}>
      {tiers.map((t, i) => (
       <div key={i} className={"tier" + (t.feat ? " feat" : "")}>
-       {t.feat && <span className="ribbon">{ar ? "الأكثر شيوعاً" : "Most popular"}</span>}
+       {t.feat && <span className="ribbon">{dict.pricing.mostPopular}</span>}
        <div className="nm">{t.nm}</div>
        <div className="who">{t.who}</div>
        <div className="price">{t.price}{t.unit && <small> {t.unit}</small>}</div>
@@ -100,10 +102,10 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
       </div>
      ))}
     </div>
-    <p className="muted" style={{ textAlign: "center", fontSize: 12, margin: "10px 0 0" }}>{ar ? "الأسعار لا تشمل ضريبة القيمة المضافة 15% · فواتير ضريبية متوافقة مع هيئة الزكاة والضريبة والجمارك · ألغِ في أي وقت" : "Prices exclude 15% VAT · ZATCA-compliant tax invoices · cancel anytime"}</p>
+    <p className="muted" style={{ textAlign: "center", fontSize: 12, margin: "10px 0 0" }}>{dict.pricing.vatNote}</p>
 
     <div style={{ padding: "36px 24px 48px" }}>
-     <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{ar ? "قارن كل الحدود" : "Compare every limit"}</h2>
+     <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{dict.pricing.compareLimits}</h2>
      <div className="card" style={{ overflow: "hidden", boxShadow: "none" }}>
       <div style={{ overflowX: "auto" }}>
        <table className="matrix">

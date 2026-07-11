@@ -274,5 +274,31 @@
     "verifiedOwner": "Verified owner",
     "onRequest": "On request",
     "vsIndexTitle": "Vs the Rent Index, platform sample. Indicative, not advice."
+  },
+  "pricing": {
+    "na": "n/a",
+    "membership": "Membership",
+    "h1": "Plans that scale with how you use the exchange",
+    "sub": "Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats.",
+    "monthly": "Monthly",
+    "annual": "Annual · save 2 months",
+    "mostPopular": "Most popular",
+    "vatNote": "Prices exclude 15% VAT · ZATCA-compliant tax invoices · cancel anytime",
+    "compareLimits": "Compare every limit"
+  },
+  "req": {
+    "openReqs": "Open requirements",
+    "h1": "Verified occupiers looking for space",
+    "sub": "The reverse of a listing. If you are an owner or broker with a match, register interest, the occupier sees who responded and chooses who to talk to.",
+    "postReq": "Post a requirement",
+    "loading": "Loading requirements…",
+    "lease": "Lease",
+    "buy": "Buy",
+    "upTo": "up to",
+    "noInterest": "No interest yet",
+    "viewRespond": "View & respond →"
+  },
+  "about": {
+    "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence"
   }
 }
