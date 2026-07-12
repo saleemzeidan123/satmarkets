@@ -64,7 +64,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
         <div className="muted" style={{ fontSize: 11 }}>{s[0]}</div>
         {/* bdi keeps "320 m2" from rendering as "m2 320" once the paragraph
             direction is RTL: the number and its unit are one LTR run. */}
-        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}><bdi dir="ltr">{s[1]}</bdi></div>
+        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}><bdi>{s[1]}</bdi></div>
        </div>
       ))}
      </div>

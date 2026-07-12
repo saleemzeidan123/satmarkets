@@ -134,7 +134,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
             <td>
              <div className="row gap10">
               <Photo kind={l.asset} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
-              <div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.title}</div><div className="mono muted" style={{ fontSize: 11 }}><bdi dir="ltr">{l.place} · {l.rent}</bdi></div></div>
+              <div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.title}</div><div className="mono muted" style={{ fontSize: 11 }}><bdi>{l.place} · {l.rent}</bdi></div></div>
              </div>
             </td>
             <td className="num mono">{l.views != null ? l.views.toLocaleString("en-US") : na}</td>
@@ -173,7 +173,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
         {matches.length === 0 ? <div className="muted" style={{ padding: "16px 20px", fontSize: 12.5 }}>{db.noOpenReq}</div> : matches.map((r, i) => (
          <div key={i} className="lead-item">
           <span className="queue-ic"><Icon.doc size={16} /></span>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi dir="ltr">{r.spec}</bdi></div></div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
           <Link href={`/${lp}/requirements`} className="btn secondary sm">{db.pitch}</Link>
          </div>
         ))}
