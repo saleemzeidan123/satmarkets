@@ -17,7 +17,7 @@ import { SITE } from "@/lib/site";
 //    declared page for a user whose language matches neither. English is the
 //    primary locale, so it takes x-default.
 
-const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/advisor", "/compare", "/pricing", "/about", "/requirements", "/locations", "/market", "/brokers"];
+const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/advisor", "/compare", "/pricing", "/about", "/neutrality", "/requirements", "/locations", "/market", "/brokers"];
 
 // Routes whose content is driven by the listing set, so the newest listing
 // timestamp is a truthful lastmod for them. Everything else is editorial and
