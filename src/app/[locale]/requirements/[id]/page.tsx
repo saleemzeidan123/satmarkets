@@ -6,7 +6,8 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 
 interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
-interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; }
+interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; mine?: boolean; }
+interface Summary { total: number; owners: number; brokers: number; }
 
 export default function RequirementDetail({ params }: { params: { locale: string; id: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
@@ -14,6 +15,8 @@ export default function RequirementDetail({ params }: { params: { locale: string
  const t = getDictionary(locale).reqDetail;
  const [req, setReq] = useState<Req | null>(null);
  const [ints, setInts] = useState<Interest[]>([]);
+ const [summary, setSummary] = useState<Summary>({ total: 0, owners: 0, brokers: 0 });
+ const [identitiesVisible, setIdentitiesVisible] = useState(false);
  const [loading, setLoading] = useState(true);
  const [show, setShow] = useState(false);
  const [msg, setMsg] = useState("");
@@ -21,7 +24,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
  const [err, setErr] = useState<string | null>(null);
  const [needAuth, setNeedAuth] = useState(false);
 
- const load = () => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setLoading(false); }).catch(() => setLoading(false));
+ const load = () => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setSummary(j.summary || { total: 0, owners: 0, brokers: 0 }); setIdentitiesVisible(!!j.identitiesVisible); setLoading(false); }).catch(() => setLoading(false));
  useEffect(() => { load(); }, []);
 
  async function register() {
@@ -73,7 +76,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
 
     <div className="card pad" style={{ marginTop: 18, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
-      <div style={{ fontSize: 16, fontWeight: 700 }}>{t.interestedH} {ints.length ? `· ${ints.length}` : ""}</div>
+      <div style={{ fontSize: 16, fontWeight: 700 }}>{t.interestedH} {summary.total ? `· ${summary.total}` : ""}</div>
       <button className="btn primary sm" onClick={() => setShow(!show)}><Icon.plus size={14} /> {t.haveSpace}</button>
      </div>
      <p className="muted" style={{ fontSize: 12.5, margin: "0 0 14px" }}>{t.interestedP}</p>
@@ -94,8 +97,30 @@ export default function RequirementDetail({ params }: { params: { locale: string
       </div>
      )}
 
-     {ints.length === 0 ? (
+     {summary.total === 0 ? (
       <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: 13 }}>{t.none}</div>
+     ) : !identitiesVisible ? (
+      // OD-003: the public sees how much interest there is, never who.
+      <div className="col gap10">
+       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
+        <div style={{ fontSize: 15, fontWeight: 700 }}>
+         <bdi>{summary.total}</bdi> {summary.total === 1 ? t.interestedOne : t.interestedCount}
+        </div>
+        <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
+         <bdi>{summary.owners}</bdi> {t.ownersB} · <bdi>{summary.brokers}</bdi> {t.brokersB}
+        </div>
+        <div className="muted" style={{ fontSize: 12, marginTop: 10, lineHeight: 1.6 }}>{t.hiddenNote}</div>
+       </div>
+       {ints.filter((i) => i.mine).map((it) => (
+        <div key={it.id} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
+         <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.shield size={16} /></span>
+         <div className="grow">
+          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{t.yours}</span></div>
+          {it.message && <div className="muted" style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
+         </div>
+        </div>
+       ))}
+      </div>
      ) : (
       <div className="col gap10">
        {ints.map((it) => (

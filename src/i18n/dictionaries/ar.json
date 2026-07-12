@@ -1337,6 +1337,12 @@
     "broker": "وسيط",
     "owner": "مالك",
     "reply": "رد",
-    "rangeTo": "إلى"
+    "rangeTo": "إلى",
+    "interestedCount": "جهات مهتمة",
+    "interestedOne": "جهة مهتمة",
+    "hiddenNote": "تفاصيل المستجيبين ظاهرة للمستأجر صاحب الطلب فقط، ولا تُعرض للعموم.",
+    "ownersB": "ملّاك",
+    "brokersB": "وسطاء",
+    "yours": "ردّك"
   }
 }

@@ -1337,6 +1337,12 @@
     "broker": "Broker",
     "owner": "Owner",
     "reply": "Reply",
-    "rangeTo": "to"
+    "rangeTo": "to",
+    "interestedCount": "parties interested",
+    "interestedOne": "party interested",
+    "hiddenNote": "Respondent details are visible to the occupier who posted this requirement. They are not shown publicly.",
+    "ownersB": "owners",
+    "brokersB": "brokers",
+    "yours": "Your response"
   }
 }
