@@ -34,3 +34,31 @@ test("empty text is never unsourced", () => {
 test("partial-digit fabrication (200 not vouched by 12,000)", () => {
   assert.equal(unsourcedFigure("yield around 200 per sqm", "band 12,000 per sqm"), true);
 });
+
+// SM-P1-003b: the guard must be sign-aware. A source that says footfall rose 18%
+// must not vouch for a claim that it fell 18%.
+test("a sourced +18% does not vouch for a fabricated -18%", () => {
+  assert.equal(unsourcedFigure("footfall index -18%", "footfall +18% yoy"), true);
+});
+test("a sourced +18% does not vouch for a worded decline of 18%", () => {
+  assert.equal(unsourcedFigure("the rent index declined 18%", "rent index +18% yoy"), true);
+  assert.equal(unsourcedFigure("rent index 18% down", "rent index +18% yoy"), true);
+});
+test("a sourced decline is vouched by an equivalent worded decline", () => {
+  assert.equal(unsourcedFigure("the rent index fell 18%", "rent index -18% yoy"), false);
+  assert.equal(unsourcedFigure("rent index -18%", "rent index declined 18% yoy"), false);
+});
+test("plus sign and no sign are the same positive value", () => {
+  assert.equal(unsourcedFigure("rent index +18%", "rent index 18% yoy"), false);
+  assert.equal(unsourcedFigure("rent index 18%", "rent index +18% yoy"), false);
+});
+test("a range dash is not read as a negative sign", () => {
+  assert.equal(unsourcedFigure("asking 4,200 SAR", "rent band 2,000-4,200 SAR"), false);
+});
+test("polarity is not applied to levels, only to percentages", () => {
+  assert.equal(unsourcedFigure("median rent 2,500 SAR", "rents came down from 3,000 to 2,500 SAR"), false);
+});
+test("Arabic worded decline is sign-aware", () => {
+  assert.equal(unsourcedFigure("مؤشر الإيجار انخفض 18%", "rent index +18% yoy"), true);
+  assert.equal(unsourcedFigure("مؤشر الإيجار انخفض 18%", "rent index -18% yoy"), false);
+});
