@@ -75,7 +75,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  });
  // Arabic parity: prefer the Arabic title on /ar, and keep the number+unit run
  // LTR so "320 m2" does not render as "m2 320" inside an RTL paragraph.
- const matches = briefs.map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + " to " + (b.size_max_sqm || "?") + (db.m2) }));
+ const matches = briefs.map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + (db.m2) }));
 
  const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean; href?: string }[] = [
   { label: db.navOverview, icon: Icon.grid, href: `/${lp}/dashboard` },

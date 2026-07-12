@@ -330,7 +330,8 @@
     "upTo": "up to",
     "noInterest": "No interest yet",
     "viewRespond": "View & respond →",
-    "sampleTag": "Sample"
+    "sampleTag": "Sample",
+    "rangeTo": "to"
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence"
@@ -1335,6 +1336,7 @@
     "anOwner": "A verified owner",
     "broker": "Broker",
     "owner": "Owner",
-    "reply": "Reply"
+    "reply": "Reply",
+    "rangeTo": "to"
   }
 }

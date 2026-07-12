@@ -114,7 +114,31 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             url: `${SITE}/${locale}/listings/${l.id}`,
             inLanguage: ar ? "ar" : "en",
             provider: { "@type": "Organization", name: "SAT Markets", url: SITE },
-            ...(price != null ? { offers: { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: lease ? "Asking rent, SAR per square metre per year" : "Asking sale price, SAR" } } : {}),
+            // SM-P1-004: a lease price here is SAR per square metre PER YEAR, not a
+            // total. Emitting it as a flat offers.price told Google (and any other
+            // consumer) that a 2,600 SAR/m2/yr office costs 2,600 SAR. A rate needs
+            // UnitPriceSpecification with the unit and the billing period; only an
+            // outright sale price is a plain price.
+            ...(price != null
+              ? {
+                  offers: lease
+                    ? {
+                        "@type": "Offer",
+                        priceCurrency: "SAR",
+                        priceSpecification: {
+                          "@type": "UnitPriceSpecification",
+                          price: Number(price),
+                          priceCurrency: "SAR",
+                          unitCode: "MTK",              // square metre
+                          unitText: "SAR per square metre per year",
+                          billingDuration: 1,
+                          billingIncrement: 1,
+                          referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "ANN" },
+                        },
+                      }
+                    : { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: "Asking sale price, SAR" },
+                }
+              : {}),
             ...(l.area_sqm ? { floorSize: { "@type": "QuantitativeValue", value: l.area_sqm, unitCode: "MTK" } } : {}),
             address: { "@type": "PostalAddress", streetAddress: String(dn), addressLocality: cityEn, addressCountry: "SA" },
           }} />

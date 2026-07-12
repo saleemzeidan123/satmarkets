@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
-import { assetLabel } from "@/lib/labels";
+import { assetLabel, cityLabel } from "@/lib/labels";
 
 interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
 interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; }
@@ -53,10 +53,10 @@ export default function RequirementDetail({ params }: { params: { locale: string
       <span className="mono muted" style={{ fontSize: 11 }}>{req.ref}</span>
      </div>
      <h1 style={{ fontSize: 23, fontWeight: 700, letterSpacing: "-.02em", margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
-     <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + req.city : ""}</div>
+     <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
       {([
-        [t.size, `${req.sizeMin} to ${req.sizeMax} ${t.sqm}`],
+        [t.size, `${req.sizeMin} ${t.rangeTo} ${req.sizeMax} ${t.sqm}`],
         [t.budget, `${Number(req.budget).toLocaleString("en-US")} ${req.deal === "lease" ? t.sarSqmYr : t.sar}`],
         [t.timeline, req.timeline || t.na],
       ] as [string, string][]).map((s, i) => (
