@@ -90,6 +90,13 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
      </div>
 
      <div className="col gap16">
+      {/* P1-05 / Fable #16: these are illustrative figures, not sourced market
+          data. Label the whole cluster unmistakably so no number here reads as
+          a real analytic until a licensed mobility/spend source is wired in. */}
+      <div className="row between" style={{ alignItems: "center" }}>
+       <span className="eyebrow">{ap.signalsLabel}</span>
+       <span className="tag" style={{ color: "#92400E", background: "#FFFBEB", borderColor: "#FCD34D" }}>{ap.sampleTag}</span>
+      </div>
       <div className="row gap16 wrap"><IntelStat v="412k" l={ap.daytimePop} delta={ap.vsDistrict} dir="up" /><IntelStat v="168k" l={ap.residentPop} delta={ap.within10} /></div>
       <div className="row gap16 wrap"><IntelStat v="138" l={ap.footfallIndex} delta={ap.qoq6} dir="up" /><IntelStat v={ap.dwell47} l={ap.medianDwell} delta={ap.min4yoy} dir="up" /></div>
       <div className="row gap16 wrap"><IntelStat v="3.2×" l={ap.visitFreq} delta={ap.repeat58} /><IntelStat v="124" l={ap.medianIncome} delta={ap.topQuartile} dir="up" /></div>
