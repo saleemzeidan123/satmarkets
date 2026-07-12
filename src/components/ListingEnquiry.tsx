@@ -85,6 +85,7 @@ export default function ListingEnquiry({
  const [done, setDone] = useState<Path | null>(null);
  const [saved, setSaved] = useState(false);
  const [err, setErr] = useState("");
+ const [consent, setConsent] = useState(false);
  const [slot, setSlot] = useState<string | null>(null);
  const [slots, setSlots] = useState<{ iso: string; label: string }[]>([]);
  const [vBusy, setVBusy] = useState(false);
@@ -154,7 +155,8 @@ export default function ListingEnquiry({
  }
 
  async function submit(path: Path) {
-  if (path === "direct_contact" && (!name.trim() || !email.trim())) return;
+  if (!name.trim() || !email.trim()) { setErr(t.errContactRequired); return; }
+  if (path === "representation" && !consent) { setErr(t.errConsentRequired); return; }
   setBusy(true); setErr("");
   try {
    const res = await fetch("/api/leads", {
@@ -162,8 +164,9 @@ export default function ListingEnquiry({
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
      listing_id: listingId, path,
-     contact_name: name || null, contact_email: email || null,
+     contact_name: name, contact_email: email,
      message: msg || (path === "representation" ? "Requested SAT representation from listing." : null),
+     consent: path === "representation" ? consent : false,
     }),
    });
    const j = await res.json().catch(() => ({}));
@@ -213,23 +216,29 @@ export default function ListingEnquiry({
 
    {contact ? <div className="hidden md:block" style={{ marginTop: 14 }}><ContactChannels {...contact} ar={ar} /></div> : null}
 
-   {open === "direct_contact" ? (
-    <form onSubmit={(e) => { e.preventDefault(); submit("direct_contact"); }} className="col gap10" style={{ marginTop: 18 }}>
+   {open ? (
+    <form onSubmit={(e) => { e.preventDefault(); submit(open); }} className="col gap10" style={{ marginTop: 18 }}>
      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
      <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={ar ? `أنا مهتم بهذه المساحة (${type}) في ${district}...` : `I'm interested in this ${type.toLowerCase()} in ${district}...`} rows={3} style={{ ...fld, resize: "vertical" }} />
-     <button type="submit" disabled={busy || !name.trim() || !email.trim()} className="btn primary" style={{ justifyContent: "center", opacity: busy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{busy ? t.sending : t.sendEnquiry}</button>
-     <button type="button" onClick={() => setOpen(null)} className="btn ghost" style={{ justifyContent: "center" }}>{t.cancel}</button>
+     {open === "representation" && (
+      <label className="row gap8" style={{ alignItems: "flex-start", fontSize: 12.5, lineHeight: 1.5, color: "var(--slate)" }}>
+       <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, flex: "none" }} />
+       <span>{t.repConsent}</span>
+      </label>
+     )}
+     <button type="submit" disabled={busy || !name.trim() || !email.trim() || (open === "representation" && !consent)} className="btn primary" style={{ justifyContent: "center", minHeight: 44, opacity: busy || !name.trim() || !email.trim() || (open === "representation" && !consent) ? 0.6 : 1 }}>{busy ? t.sending : (open === "representation" ? t.requestRep : t.sendEnquiry)}</button>
+     <button type="button" onClick={() => { setOpen(null); setErr(""); }} className="btn ghost" style={{ justifyContent: "center", minHeight: 44 }}>{t.cancel}</button>
     </form>
    ) : (
     <div className="col gap10" style={{ marginTop: 18 }}>
-     <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center" }}><Icon.send size={15} /> {t.contactLister}</button>
-     <button onClick={() => submit("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center" }}>{t.requestRep}</button>
+     <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center", minHeight: 44 }}><Icon.send size={15} /> {t.contactLister}</button>
+     <button onClick={() => setOpen("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center", minHeight: 44 }}>{t.requestRep}</button>
     </div>
    )}
 
    {err && <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 10 }}>{err}</p>}
-   {open !== "direct_contact" && (
+   {!open && (
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
       <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>

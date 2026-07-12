@@ -1068,7 +1068,10 @@
     "vDoneLister": "Viewing requested. The lister confirms the slot and you get a confirmation email.",
     "twoQuick": "Two quick, optional answers so the lister knows the visit is worth their time.",
     "requestSlot": "Request this slot",
-    "footer": "Free to contact the lister directly. Representation is an explicit, opt-in choice, never an assumed commission."
+    "footer": "Free to contact the lister directly. Representation is an explicit, opt-in choice, never an assumed commission.",
+    "repConsent": "I understand SAT Real Estate would act as my representative under an explicit mandate, and I agree to be contacted about it.",
+    "errContactRequired": "Your name and a valid work email are required.",
+    "errConsentRequired": "Please confirm the representation mandate to continue."
   },
   "mapExplorer": {
     "pins": "Listings",
