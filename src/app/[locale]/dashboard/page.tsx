@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth/session";
 import { Icon, Logo, Photo } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -18,42 +19,40 @@ function KCard({ icon: I, tone, v, l, delta, dir }: { icon: (p: { size?: number 
  );
 }
 function ago(d: string, ar: boolean) { const s = (Date.now() - new Date(d).getTime()) / 1000; if (s < 3600) { const n = Math.max(1, Math.round(s / 60)); return ar ? `منذ ${n} د` : n + "m ago"; } if (s < 86400) { const n = Math.round(s / 3600); return ar ? `منذ ${n} س` : n + "h ago"; } const n = Math.round(s / 86400); return ar ? `منذ ${n} ي` : n + "d ago"; }
-function pseudo(id: string, base: number, span: number) { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0; return base + (h % span); }
 const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-export default async function DashboardPage({ params, searchParams }: { params: { locale: string }; searchParams?: { as?: string } }) {
+export default async function DashboardPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const lp = params.locale;
  const ar = lp === "ar";
  const db = getDictionary(lp === "ar" ? "ar" : "en").dashboard;
- const PERSONAS = ar ? [
-  { slug: "landlord", id: "b1111111-1111-1111-1111-111111111111", name: "شركة النخيل القابضة", role: "مالك، مباشر" },
-  { slug: "broker", id: "b2222222-2222-2222-2222-222222222222", name: "وسطاء الرياض برايم", role: "وسيط، مفوّض" },
-  { slug: "lister", id: "b3333333-3333-3333-3333-333333333333", name: "تمكين للتطوير", role: "مطوّر، مُدرِج" },
- ] : [
-  { slug: "landlord", id: "b1111111-1111-1111-1111-111111111111", name: "Al Nakheel Holding", role: "Owner, direct" },
-  { slug: "broker", id: "b2222222-2222-2222-2222-222222222222", name: "Riyadh Prime Brokers", role: "Broker, authorized" },
-  { slug: "lister", id: "b3333333-3333-3333-3333-333333333333", name: "Tamkeen Developments", role: "Developer, lister" },
- ];
- const asSlug = String((searchParams && searchParams.as) || "").toLowerCase();
- const persona = PERSONAS.find((pp) => pp.slug === asSlug || pp.id === asSlug) || null;
- const acctName = persona ? persona.name : (db.acctNameFallback);
- const acctRole = persona ? persona.role : (db.acctRoleFallback);
+ const su = await getSessionUser();
+ if (!su) redirect(`/${lp}/login`);
+ if (!su.accountId) redirect(`/${lp}`);
+ const accountId = su.accountId;
+ let acctName = su.email || (db.acctNameFallback);
+ let acctRole = db.acctRoleFallback;
  const rcity = db.riyadh;
  const na = db.na;
 
  const sb = getSupabaseServer();
  let pub: any[] = [], leadRows: any[] = [], briefs: any[] = [], districts: any[] = [], pubCount = 0;
  if (sb) {
-  const [a, b, c, d, e] = await Promise.all([
-   (persona ? sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").eq("account_id", persona.id).limit(50) : sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").limit(12)),
+  const [a, b, c, d, e, f] = await Promise.all([
+   sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").eq("account_id", accountId).limit(50),
    sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(20),
    sb.from("tenant_briefs").select("id,title,asset_type,size_min_sqm,size_max_sqm,district_id,city,ref_code").eq("status", "open").limit(6),
    sb.from("districts").select("id,name_en,name_ar"),
-   (persona ? sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published").eq("account_id", persona.id) : sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published")),
+   sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published").eq("account_id", accountId),
+   sb.from("accounts").select("name_en,name_ar,type,verification_status").eq("id", accountId).maybeSingle(),
   ]);
   pub = a.data || []; leadRows = b.data || []; briefs = c.data || []; districts = d.data || []; pubCount = e.count || pub.length;
-  if (persona) leadRows = leadRows.filter((l: any) => pub.some((x: any) => x.id === l.listing_id));
+  leadRows = leadRows.filter((l: any) => pub.some((x: any) => x.id === l.listing_id));
+  const acct: any = f.data;
+  if (acct) {
+   acctName = (ar ? acct.name_ar : acct.name_en) || acct.name_en || acctName;
+   acctRole = acct.type === "sat" ? (ar ? "فريق سات" : "SAT team") : (acct.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner"));
+  }
  }
  const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
  const titleById = new Map(pub.map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
@@ -66,7 +65,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   return {
    title: (ar ? l.title_ar : l.title_en) || l.title_en, place: (dmap.get(l.district_id) || rcity) + " · " + (l.area_sqm ? l.area_sqm + (db.m2) : na),
    asset: l.asset_type, rent: rent ? Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? (db.sarSqm) : (db.sar)) : (db.onRequest),
-   views: pseudo(l.id, 900, 4200), saves: pseudo(l.id + "s", 12, 180), enq: enq.get(l.id) || 0,
+   views: null as number | null, saves: null as number | null, enq: enq.get(l.id) || 0,
   };
  });
  const leads = leadRows.slice(0, 5).map((l: any) => {
@@ -74,8 +73,6 @@ export default async function DashboardPage({ params, searchParams }: { params: 
   return { ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || (db.verifiedListing), time: ago(l.created_at, ar), status: "new" };
  });
  const matches = briefs.map((b: any) => ({ title: b.title || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + "–" + (b.size_max_sqm || "?") + (db.m2) }));
- const totalViews = listings.reduce((a, l) => a + l.views, 0);
- const views = [42, 50, 47, 58, 64, 60, 72, 80, 76, 88, 95, 104];
 
  const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean; href?: string }[] = [
   { label: db.navOverview, icon: Icon.grid, href: `/${lp}/dashboard` },
@@ -114,15 +111,10 @@ export default async function DashboardPage({ params, searchParams }: { params: 
      <span style={{ color: "var(--slate)", position: "relative" }}><Icon.bell size={19} /><span style={{ position: "absolute", top: -2, right: -2, width: 7, height: 7, borderRadius: "50%", background: "var(--red)" }} /></span>
      <Link href={`/${params.locale}/list`} className="btn primary"><Icon.plus size={16} /> {db.listSpace}</Link>
     </div>
-    <div className="row gap8 wrap" style={{ padding: "12px 0 0", alignItems: "center" }}>
-     <span className="mono" style={{ fontSize: 11, color: "var(--slate)", textTransform: "uppercase", letterSpacing: ".06em" }}>{db.viewAs}</span>
-     <a href={`/${lp}/dashboard`} className="tag" style={!persona ? { borderColor: "var(--harbor)", color: "var(--harbor)", textDecoration: "none" } : { textDecoration: "none" }}>{db.all}</a>
-     {PERSONAS.map((pp) => (<a key={pp.slug} href={`/${lp}/dashboard?as=${pp.slug}`} className="tag" style={persona && persona.slug === pp.slug ? { borderColor: "var(--harbor)", color: "var(--harbor)", textDecoration: "none" } : { textDecoration: "none" }}>{pp.name}</a>))}
-    </div>
     <div className="dbody">
      <div className="kgrid">
       <KCard icon={Icon.building} tone="h" v={String(pubCount)} l={db.kActiveListings} />
-      <KCard icon={Icon.eye} v={totalViews.toLocaleString("en-US")} l={db.kTotalViews} delta="+18%" dir="up" />
+      <KCard icon={Icon.eye} v={na} l={db.kTotalViews} />
       <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} delta={repCount ? "+" + repCount + (db.repSuffix) : undefined} dir="up" />
       <KCard icon={Icon.target} tone="a" v={String(matches.length)} l={db.kOpenReq} />
      </div>
@@ -142,8 +134,8 @@ export default async function DashboardPage({ params, searchParams }: { params: 
               <div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.title}</div><div className="mono muted" style={{ fontSize: 11 }}>{l.place} · {l.rent}</div></div>
              </div>
             </td>
-            <td className="num mono">{l.views.toLocaleString("en-US")}</td>
-            <td className="num mono">{l.saves}</td>
+            <td className="num mono">{l.views != null ? l.views.toLocaleString("en-US") : na}</td>
+            <td className="num mono">{l.saves != null ? l.saves : na}</td>
             <td className="num mono" style={{ fontWeight: 600, color: l.enq ? "var(--ink)" : "var(--slate-2)" }}>{l.enq || na}</td>
             <td className="num"><span className="statusdot ok">{db.statusLive}</span></td>
            </tr>
@@ -170,12 +162,7 @@ export default async function DashboardPage({ params, searchParams }: { params: 
      <div className="dash-2col">
       <div className="dpanel">
        <div className="ph"><span className="t">{db.viewsEnq}</span><span style={{ flex: 1 }} /><span className="lgd"><span className="sw" /> {db.thViews}</span></div>
-       <div style={{ padding: "22px 20px 16px" }}>
-        <div className="bars" style={{ height: 150, gap: 8 }}>
-         {views.map((h, i) => <div key={i} className={"b" + (i >= 10 ? " hi" : "")} style={{ height: (h / 104 * 100) + "%" }} />)}
-        </div>
-        <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}><span>{db.jan}</span><span>{db.jun}</span><span>{db.dec}</span></div>
-       </div>
+       <div className="muted" style={{ padding: "24px 20px", fontSize: 12.5 }}>{ar ? "تتوفر تحليلات الأداء بعد الإطلاق" : "Performance analytics available after launch"}</div>
       </div>
       <div className="dpanel">
        <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span><span className="t">{db.navReqMatches}</span></div>
