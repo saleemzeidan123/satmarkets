@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 
-interface Req { sample?: boolean; id: string; ref: string; title: string; asset: string; deal: string; district: string; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; interest: number; }
+interface Req { sample?: boolean; id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; interest: number; }
 
 export default function RequirementsBoard({ params }: { params: { locale: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
@@ -40,10 +40,10 @@ export default function RequirementsBoard({ params }: { params: { locale: string
           <span className="mono muted" style={{ fontSize: 11 }}>{r.ref}</span>
          </span>
         </div>
-        <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", letterSpacing: "-.01em", lineHeight: 1.3 }}>{r.title}</div>
+        <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", letterSpacing: "-.01em", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
         <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
-         <div className="row gap6"><Icon.pin size={14} /> {r.district}{r.city && r.district !== r.city ? ", " + r.city : ""}</div>
-         <div className="row gap6"><Icon.layers size={14} /> {r.sizeMin}–{r.sizeMax} {ar ? "م²" : "m²"} · {dict.req.upTo} {Number(r.budget).toLocaleString()} {r.deal === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</div>
+         <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + r.city : ""}</div>
+         <div className="row gap6"><Icon.layers size={14} /> <bdi dir="ltr">{r.sizeMin} to {r.sizeMax} {ar ? "م²" : "m²"}</bdi> · {dict.req.upTo} <bdi dir="ltr">{Number(r.budget).toLocaleString("en-US")} {r.deal === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</bdi></div>
          <div className="row gap6"><Icon.clock size={14} /> {r.timeline}</div>
         </div>
         {r.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 10 }}>{r.mustHaves.slice(0, 4).map((m, i) => <span key={i} className="chip" style={{ fontSize: 11 }}>{m}</span>)}</div> : null}

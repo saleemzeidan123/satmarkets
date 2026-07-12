@@ -80,7 +80,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     );
   };
   const pxCount = Object.keys(px).length;
-  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return "N/A"; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
+  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return dict.common.na; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
 
   return (
     <section className="mx-auto max-w-[1360px] px-6 pt-7 pb-16">
@@ -161,8 +161,8 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
                   <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{T.noIndex}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? `${T.belowPre}${a}${T.belowSuf}` : v.status === "above" ? `${T.abovePre}${a}${T.aboveSuf}` : T.withinBand; const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "#3A6EA5"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
-                  <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString() : "N/A"}</span> {dict.common.sqm}</Cell>)}</Row>
-                  <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : "N/A"}</Cell>)}</Row>
+                  <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString("en-US") : dict.common.na}</span> {dict.common.sqm}</Cell>)}</Row>
+                  <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : dict.common.na}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
                 </tbody>
               </table>

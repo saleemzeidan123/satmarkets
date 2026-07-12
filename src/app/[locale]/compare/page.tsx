@@ -116,7 +116,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
               <HeaderRow label={cp.price} render={(l) => <span className="mono" style={{ fontWeight: 500 }}>{priceCell(l)}</span>} />
               <HeaderRow label={cp.totalYr} render={(l) => <span className="mono">{totalCell(l)}</span>} />
               <HeaderRow label={cp.netArea} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "–"}</span>} />
-              <HeaderRow label={cp.grade} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : "N/A"}</span>} />
+              <HeaderRow label={cp.grade} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : getDictionary(locale).common.na}</span>} />
               <HeaderRow label={cp.fitout} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
               <HeaderRow label={cp.vsDistrictMedian} render={(l, i) => {
                 const v = l.__verdict;

@@ -23,8 +23,10 @@ export async function GET(req: NextRequest) {
  const counts = new Map<string, number>();
  (ints ?? []).forEach((i: any) => counts.set(i.brief_id, (counts.get(i.brief_id) ?? 0) + 1));
  const requirements = (reqs ?? []).map((r: any) => ({
-  id: r.id, ref: r.ref_code, title: r.title, asset: r.asset_type, deal: r.deal_type,
-  district: dmap.get(r.district_id)?.name_en ?? r.city ?? "", city: r.city ?? "",
+  id: r.id, ref: r.ref_code, title: r.title, titleAr: r.title_ar ?? null, asset: r.asset_type, deal: r.deal_type,
+  district: dmap.get(r.district_id)?.name_en ?? r.city ?? "",
+  districtAr: dmap.get(r.district_id)?.name_ar ?? dmap.get(r.district_id)?.name_en ?? r.city ?? "",
+  city: r.city ?? "",
   sizeMin: r.size_min_sqm, sizeMax: r.size_max_sqm, budget: r.budget_sqm_max,
   timeline: r.timeline, mustHaves: r.must_haves ?? [], createdAt: r.created_at,
   interest: counts.get(r.id) ?? 0,

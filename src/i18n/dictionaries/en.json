@@ -60,7 +60,8 @@
   "common": {
     "poweredBy": "SAT Markets, verified commercial real estate intelligence",
     "sqm": "sqm",
-    "perSqm": "SAR / sqm"
+    "perSqm": "SAR / sqm",
+    "na": "n/a"
   },
   "search": {
     "title": "AI search",
@@ -1303,5 +1304,37 @@
     "errEnterEmail": "Enter your email first, then request a link.",
     "signOut": "Sign out",
     "metaTitle": "Sign in | SAT Markets"
+  },
+  "reqDetail": {
+    "back": "All requirements",
+    "loading": "Loading requirement",
+    "notFound": "Requirement not found.",
+    "backLink": "Back to all requirements",
+    "lease": "Lease",
+    "buy": "Buy",
+    "size": "Size",
+    "budget": "Budget",
+    "timeline": "Timeline",
+    "na": "n/a",
+    "sarSqmYr": "SAR/m²·yr",
+    "sar": "SAR",
+    "sqm": "m²",
+    "interestedH": "Who is interested",
+    "haveSpace": "I have space for this",
+    "interestedP": "Owners and brokers who can fill this requirement appear here. The occupier chooses who to talk to.",
+    "appearAs": "You appear as your verified account. Only verified owners and brokers can register interest.",
+    "placeholder": "What you have that matches (size, district, fit-out)",
+    "signIn": "Sign in",
+    "cancel": "Cancel",
+    "registering": "Registering",
+    "register": "Register interest",
+    "errRegister": "Could not register interest.",
+    "errSignIn": "Sign in to register interest.",
+    "none": "No interest yet, verified owners and brokers were notified. Responses will appear here.",
+    "aBroker": "A SAT broker",
+    "anOwner": "A verified owner",
+    "broker": "Broker",
+    "owner": "Owner",
+    "reply": "Reply"
   }
 }

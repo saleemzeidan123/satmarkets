@@ -2,12 +2,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import { getDictionary } from "@/i18n/getDictionary";
+import { assetLabel } from "@/lib/labels";
 
-interface Req { id: string; ref: string; title: string; asset: string; deal: string; district: string; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
+interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
 interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; }
 
 export default function RequirementDetail({ params }: { params: { locale: string; id: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
+ const ar = locale === "ar";
+ const t = getDictionary(locale).reqDetail;
  const [req, setReq] = useState<Req | null>(null);
  const [ints, setInts] = useState<Interest[]>([]);
  const [loading, setLoading] = useState(true);
@@ -27,32 +31,41 @@ export default function RequirementDetail({ params }: { params: { locale: string
    // verified account. We only send what the user actually wrote.
    const res = await fetch(`/api/requirements/${params.id}/interest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: msg }) });
    const j = await res.json().catch(() => ({}));
-   if (res.status === 401) { setNeedAuth(true); setErr(j.error || "Sign in to register interest."); setBusy(false); return; }
-   if (!res.ok || j.error) { setErr(j.error || "Could not register interest."); setBusy(false); return; }
+   if (res.status === 401) { setNeedAuth(true); setErr(j.error || t.errSignIn); setBusy(false); return; }
+   if (!res.ok || j.error) { setErr(j.error || t.errRegister); setBusy(false); return; }
    setMsg(""); setShow(false); setBusy(false);
    load();
   } catch {
-   setErr("Could not register interest."); setBusy(false);
+   setErr(t.errRegister); setBusy(false);
   }
  }
 
- if (loading) return <div style={{ padding: 48, textAlign: "center" }} className="muted">Loading requirement…</div>;
- if (!req) return <div style={{ padding: 48, textAlign: "center" }} className="muted">Requirement not found. <Link href={`/${locale}/requirements`} style={{ color: "var(--azure-d)" }}>Back to all requirements →</Link></div>;
+ if (loading) return <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.loading}…</div>;
+ if (!req) return <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.notFound} <Link href={`/${locale}/requirements`} style={{ color: "var(--azure-d)" }}>{t.backLink} {ar ? "←" : "→"}</Link></div>;
 
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ padding: "26px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
-    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: 13, color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> All requirements</Link>
+    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: 13, color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
     <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center" }}>
-      <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{req.asset[0].toUpperCase() + req.asset.slice(1)} · {req.deal === "lease" ? "Lease" : "Buy"}</span>
+      <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(req.asset, locale)} · {req.deal === "lease" ? t.lease : t.buy}</span>
       <span className="mono muted" style={{ fontSize: 11 }}>{req.ref}</span>
      </div>
-     <h1 style={{ fontSize: 23, fontWeight: 700, letterSpacing: "-.02em", margin: "12px 0 4px" }}>{req.title}</h1>
-     <div className="muted" style={{ fontSize: 13.5 }}>{req.district}{req.city && req.district !== req.city ? ", " + req.city : ""}</div>
+     <h1 style={{ fontSize: 23, fontWeight: 700, letterSpacing: "-.02em", margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
+     <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + req.city : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
-      {[["Size", `${req.sizeMin}–${req.sizeMax} m²`], ["Budget", `${Number(req.budget).toLocaleString()} ${req.deal === "lease" ? "SAR/m²·yr" : "SAR"}`], ["Timeline", req.timeline || "n/a"]].map((s, i) => (
-       <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}><div className="muted" style={{ fontSize: 11 }}>{s[0]}</div><div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}>{s[1]}</div></div>
+      {([
+        [t.size, `${req.sizeMin} to ${req.sizeMax} ${t.sqm}`],
+        [t.budget, `${Number(req.budget).toLocaleString("en-US")} ${req.deal === "lease" ? t.sarSqmYr : t.sar}`],
+        [t.timeline, req.timeline || t.na],
+      ] as [string, string][]).map((s, i) => (
+       <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
+        <div className="muted" style={{ fontSize: 11 }}>{s[0]}</div>
+        {/* bdi keeps "320 m2" from rendering as "m2 320" once the paragraph
+            direction is RTL: the number and its unit are one LTR run. */}
+        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}><bdi dir="ltr">{s[1]}</bdi></div>
+       </div>
       ))}
      </div>
      {req.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 14 }}>{req.mustHaves.map((m, i) => <span key={i} className="chip on" style={{ fontSize: 11.5 }}>{m}</span>)}</div> : null}
@@ -60,39 +73,39 @@ export default function RequirementDetail({ params }: { params: { locale: string
 
     <div className="card pad" style={{ marginTop: 18, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
-      <div style={{ fontSize: 16, fontWeight: 700 }}>Who&apos;s interested {ints.length ? `· ${ints.length}` : ""}</div>
-      <button className="btn primary sm" onClick={() => setShow(!show)}><Icon.plus size={14} /> I have space for this</button>
+      <div style={{ fontSize: 16, fontWeight: 700 }}>{t.interestedH} {ints.length ? `· ${ints.length}` : ""}</div>
+      <button className="btn primary sm" onClick={() => setShow(!show)}><Icon.plus size={14} /> {t.haveSpace}</button>
      </div>
-     <p className="muted" style={{ fontSize: 12.5, margin: "0 0 14px" }}>Owners and brokers who can fill this requirement appear here. The occupier chooses who to talk to.</p>
+     <p className="muted" style={{ fontSize: 12.5, margin: "0 0 14px" }}>{t.interestedP}</p>
 
      {show && (
       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", marginBottom: 14 }}>
-       <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>You appear as your verified account. Only verified owners and brokers can register interest.</p>
-       <textarea className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="What you have that matches (size, district, fit-out)…" style={{ ...inp, minHeight: 64, resize: "vertical" }} />
+       <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>{t.appearAs}</p>
+       <textarea className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={`${t.placeholder}…`} style={{ ...inp, minHeight: 64, resize: "vertical" }} />
        {err && (
         <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 8 }}>
-         {err}{needAuth ? <> <Link href={`/${locale}/login`} style={{ color: "var(--azure-d)", fontWeight: 600 }}>Sign in</Link></> : null}
+         {err}{needAuth ? <> <Link href={`/${locale}/login`} style={{ color: "var(--azure-d)", fontWeight: 600 }}>{t.signIn}</Link></> : null}
         </p>
        )}
        <div className="row gap10" style={{ marginTop: 10, justifyContent: "flex-end" }}>
-        <button className="btn secondary sm" onClick={() => setShow(false)}>Cancel</button>
-        <button className="btn primary sm" onClick={register} disabled={busy}>{busy ? "Registering…" : "Register interest"}</button>
+        <button className="btn secondary sm" onClick={() => setShow(false)}>{t.cancel}</button>
+        <button className="btn primary sm" onClick={register} disabled={busy}>{busy ? `${t.registering}…` : t.register}</button>
        </div>
       </div>
      )}
 
      {ints.length === 0 ? (
-      <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: 13 }}>No interest yet, verified owners and brokers were notified. Responses will appear here.</div>
+      <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: 13 }}>{t.none}</div>
      ) : (
       <div className="col gap10">
        {ints.map((it) => (
         <div key={it.id} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}>{it.type === "broker" ? <Icon.user size={16} /> : <Icon.shield size={16} />}</span>
          <div className="grow">
-          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name || (it.type === "broker" ? "A SAT broker" : "A verified owner")}</span><span className="tag" style={{ fontSize: 10 }}>{it.type === "broker" ? "Broker" : "Owner"}</span></div>
+          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name || (it.type === "broker" ? t.aBroker : t.anOwner)}</span><span className="tag" style={{ fontSize: 10 }}>{it.type === "broker" ? t.broker : t.owner}</span></div>
           {it.message && <div className="muted" style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
          </div>
-         <span className="btn secondary sm">Reply</span>
+         <span className="btn secondary sm">{t.reply}</span>
         </div>
        ))}
       </div>
