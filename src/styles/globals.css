@@ -192,11 +192,15 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 /* ---- Slice 3: listing detail grid collapses on mobile; map chips become a one-line rail ---- */
 @media(max-width:920px){.satmkt-2col{grid-template-columns:minmax(0,1fr)!important;}.satmkt-2col>*{min-width:0;}}
 
-/* ---- QA: comfortable tap targets on touch layouts ---- */
+/* ---- QA: comfortable tap targets on touch layouts (>=44px, WCAG 2.5.5) ---- */
 @media(max-width:1024px){
-  .chip{padding:9px 14px;font-size:13px;min-height:36px;}
+  .chip{padding:11px 14px;font-size:13px;min-height:44px;}
   .tag{padding:5px 10px;}
   .tabs .t{padding:14px 16px;min-height:44px;}
+  /* Interactive buttons must clear 44px on touch; base padding leaves them ~34px. */
+  .btn, .btn.sm{min-height:44px;}
+  /* Icon-only affordances that carry an action. */
+  .icon-btn, .iconbtn, button.icononly, .fab{min-height:44px;min-width:44px;}
 }
 
 /* ---- Hero asset tiles: swipeable one-line rail on mobile, centered wrap on desktop ---- */
