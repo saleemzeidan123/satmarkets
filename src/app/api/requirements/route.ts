@@ -35,39 +35,123 @@ export async function GET(req: NextRequest) {
  return NextResponse.json({ requirements: PREVIEW ? MOCK : [], sample: PREVIEW });
 }
 
-// POST: create a requirement, notify the three audiences, return match count
+// POST: create a requirement.
+//
+// SM-P0-005. What was wrong:
+//   - When Supabase was unavailable it returned ok:true with a made-up
+//     "match: 12". The user was told twelve verified spaces matched their brief
+//     when nothing had been stored and nothing had been counted.
+//   - The ref code was "R-" + Math.random() in this file: not unique, and
+//     chosen by the caller's process rather than the system of record.
+//   - Raw Postgres error.message was returned to the browser.
+//   - Validation was two enum checks. Sizes, budget, title, contact and notes
+//     were passed through untouched.
+//   - The brief and its notification rows were separate inserts, so a brief
+//     could exist with nobody notified.
+//
+// Now: strict validation, DB-issued sequential ref, one transactional RPC,
+// sanitized errors, and a 503 rather than a comforting lie.
+const TIMELINES = ["ASAP", "Q1", "Q2", "Q3", "Q4", "Flexible", "Immediate"];
+const num = (v: unknown): number | null => {
+ if (v === null || v === undefined || v === "") return null;
+ const n = Number(v);
+ return Number.isFinite(n) ? n : NaN;
+};
+
 export async function POST(req: NextRequest) {
-  if (!allow("requirements", req, 8)) return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
- const b = await req.json();
- if (!ASSETS.includes(b.asset_type) || !DEALS.includes(b.deal_type)) {
-  return NextResponse.json({ error: "invalid asset or deal type" }, { status: 400 });
+ if (!allow("requirements", req, 8)) return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+
+ let b: any;
+ try { b = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
+
+ if (!ASSETS.includes(b?.asset_type) || !DEALS.includes(b?.deal_type)) {
+  return NextResponse.json({ error: "Choose a valid asset type and deal type." }, { status: 400 });
  }
- const ref = "R-" + Math.floor(20000 + Math.random() * 79999);
+
+ const title = String(b.title ?? "").trim();
+ if (title.length > 160) return NextResponse.json({ error: "Title is too long." }, { status: 400 });
+
+ const sizeMin = num(b.size_min), sizeMax = num(b.size_max), budget = num(b.budget);
+ if ([sizeMin, sizeMax, budget].some((n) => Number.isNaN(n))) {
+  return NextResponse.json({ error: "Size and budget must be numbers." }, { status: 400 });
+ }
+ for (const [v, label] of [[sizeMin, "size"], [sizeMax, "size"], [budget, "budget"]] as [number | null, string][]) {
+  if (v !== null && (v < 0 || v > 10_000_000)) return NextResponse.json({ error: `That ${label} is out of range.` }, { status: 400 });
+ }
+ if (sizeMin !== null && sizeMax !== null && sizeMin > sizeMax) {
+  return NextResponse.json({ error: "Minimum size cannot exceed maximum size." }, { status: 400 });
+ }
+
+ const timeline = b.timeline ? String(b.timeline).trim() : "";
+ if (timeline && !TIMELINES.includes(timeline)) return NextResponse.json({ error: "Choose a valid timeline." }, { status: 400 });
+
+ const mustHaves = Array.isArray(b.must_haves)
+  ? b.must_haves.filter((m: unknown) => typeof m === "string" && m.length <= 60).slice(0, 12)
+  : [];
+
+ const notes = String(b.notes ?? "").trim();
+ if (notes.length > 2000) return NextResponse.json({ error: "Notes are too long." }, { status: 400 });
+
+ const email = String(b.contact_email ?? "").trim();
+ if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 200)) {
+  return NextResponse.json({ error: "Enter a valid work email." }, { status: 400 });
+ }
+ const contactName = String(b.contact_name ?? "").trim().slice(0, 120);
+ const contactPhone = String(b.contact_phone ?? "").trim().slice(0, 40);
+
+ const districtId = b.district_id ? String(b.district_id) : "";
+ if (districtId && !/^[0-9a-f-]{36}$/i.test(districtId)) {
+  return NextResponse.json({ error: "Unknown district." }, { status: 400 });
+ }
+
  const sb = getSupabaseServer();
- if (!sb) {
-  return NextResponse.json({ ok: true, ref, match: 12, notified: NOTIFIED, stored: false });
+ // No storage means no requirement and no match count. Say so.
+ if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+
+ // create_requirement() inserts the brief AND its notification rows in one
+ // transaction, and the ref code comes from a database sequence.
+ const { data, error } = await sb.rpc("create_requirement", {
+  payload: {
+   title: title || `${b.asset_type} requirement`,
+   asset_type: b.asset_type,
+   deal_type: b.deal_type,
+   district_id: districtId,
+   city: b.city ? String(b.city).slice(0, 80) : "Riyadh",
+   size_min_sqm: sizeMin,
+   size_max_sqm: sizeMax,
+   budget_sqm_max: budget,
+   timeline,
+   must_haves: mustHaves,
+   notes,
+   contact_name: contactName,
+   contact_email: email,
+   contact_phone: contactPhone,
+  },
+ });
+
+ if (error) {
+  console.error("create_requirement failed", error);
+  return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
  }
- const row = {
-  title: b.title || `${b.asset_type} requirement`, asset_type: b.asset_type, deal_type: b.deal_type,
-  district_id: b.district_id || null, city: b.city || "Riyadh",
-  size_min_sqm: b.size_min ?? null, size_max_sqm: b.size_max ?? null, budget_sqm_max: b.budget ?? null,
-  timeline: b.timeline || null, must_haves: b.must_haves ?? [], notes: b.notes || null,
-  contact_name: b.contact_name || null, contact_email: b.contact_email || null, contact_phone: b.contact_phone || null,
-  ref_code: ref, status: "open",
- };
- const { data: ins, error } = await sb.from("tenant_briefs").insert(row).select("id").single();
- if (error) return NextResponse.json({ error: error.message }, { status: 500 });
- const id = ins?.id;
- if (id) {
-  await sb.from("requirement_notifications").insert(
-   ["broker","landlord","sat"].map((a) => ({ brief_id: id, audience: a }))
-  );
+
+ const row = Array.isArray(data) ? data[0] : data;
+ const id: string | undefined = row?.id;
+ const ref: string | undefined = row?.ref_code;
+ if (!id || !ref) return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
+
+ // A real count of published listings that match. Never a placeholder.
+ let match = 0;
+ try {
+  let q = sb.from("listings").select("id", { count: "exact", head: true })
+   .eq("status", "published").eq("asset_type", b.asset_type).eq("deal_type", b.deal_type);
+  if (districtId) q = q.eq("district_id", districtId);
+  const { count } = await q;
+  match = count ?? 0;
+ } catch {
+  match = 0;
  }
- // real match count from verified listings
- let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published").eq("asset_type", b.asset_type).eq("deal_type", b.deal_type);
- if (b.district_id) q = q.eq("district_id", b.district_id);
- const { count } = await q;
- return NextResponse.json({ ok: true, id, ref, match: count ?? 0, notified: NOTIFIED, stored: true });
+
+ return NextResponse.json({ ok: true, id, ref, match, notified: NOTIFIED, stored: true });
 }
 
 const NOTIFIED = ["SAT broker network", "Verified landlords in your locations", "SAT requirements desk"];
