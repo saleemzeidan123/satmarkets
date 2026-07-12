@@ -328,7 +328,8 @@
     "buy": "Buy",
     "upTo": "up to",
     "noInterest": "No interest yet",
-    "viewRespond": "View & respond →"
+    "viewRespond": "View & respond →",
+    "sampleTag": "Sample"
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence"
@@ -1179,7 +1180,8 @@
     "colCompany": "Company",
     "skip": "Skip to content",
     "notice": "Rent Index Q1 2026 is live. Published Riyadh benchmarks, attributed to source.",
-    "explore": "Explore →"
+    "explore": "Explore →",
+    "preview": "Preview environment. Listings, requirements and figures shown here are sample data for testing, not live market inventory."
   },
   "advisorWidget": {
     "chip1": "How does 3,500 SAR/m² compare for a Grade A office in KAFD?",

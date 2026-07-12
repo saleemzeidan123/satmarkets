@@ -86,11 +86,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
     };
   });
 
+  // Law 3: a stat is either a counted value or it is absent. No invented
+  // fallbacks ("60+", "15", "100%") that would read as real market figures
+  // when the database is empty or unreachable.
   const stats = {
-    listings: listings > 0 ? `${listings}` : "Verified",
-    buildings: buildings > 0 ? `${buildings}+` : "60+",
-    districts: districts > 0 ? `${districts}` : "15",
-    verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : "100%",
+    listings: listings > 0 ? `${listings}` : null,
+    buildings: buildings > 0 ? `${buildings}` : null,
+    districts: districts > 0 ? `${districts}` : null,
+    verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : null,
   };
 
   return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;

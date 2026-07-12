@@ -9,7 +9,13 @@ const DEALS = ["lease","sale"];
 export async function GET(req: NextRequest) {
   if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
  const sb = getSupabaseServer();
- if (!sb) return NextResponse.json({ requirements: MOCK });
+ // Sample requirements exist only to exercise the board in the preview build.
+ // In production they are never served: an empty board is the honest answer,
+ // and a missing database is a 503, not a silent fixture list (SM-P0-006).
+ if (!sb) {
+  if (!PREVIEW) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+  return NextResponse.json({ requirements: MOCK, sample: true });
+ }
  const { data: reqs } = await sb.from("requirements_public").select("*").order("created_at", { ascending: false }).limit(50);
  const { data: ints } = await sb.from("requirement_interests").select("brief_id");
  const { data: dists } = await sb.from("districts").select("id,name_en,name_ar,city");
@@ -23,7 +29,8 @@ export async function GET(req: NextRequest) {
   timeline: r.timeline, mustHaves: r.must_haves ?? [], createdAt: r.created_at,
   interest: counts.get(r.id) ?? 0,
  }));
- return NextResponse.json({ requirements: requirements.length ? requirements : MOCK });
+ if (requirements.length) return NextResponse.json({ requirements, sample: false });
+ return NextResponse.json({ requirements: PREVIEW ? MOCK : [], sample: PREVIEW });
 }
 
 // POST: create a requirement, notify the three audiences, return match count
@@ -62,8 +69,11 @@ export async function POST(req: NextRequest) {
 }
 
 const NOTIFIED = ["SAT broker network", "Verified landlords in your locations", "SAT requirements desk"];
+// Preview-only. Set SITE_ENV=production (or NEXT_PUBLIC_SITE_ENV=production) to
+// switch every sample fallback off.
+const PREVIEW = (process.env.SITE_ENV ?? process.env.NEXT_PUBLIC_SITE_ENV) !== "production";
 const MOCK = [
- { id: "m1", ref: "R-20418", title: "Regional HQ office, Grade A, KAFD", asset: "office", deal: "lease", district: "KAFD", city: "Riyadh", sizeMin: 500, sizeMax: 1200, budget: 3000, timeline: "Q3", mustHaves: ["Fitted","Parking","Metro nearby"], interest: 1 },
- { id: "m2", ref: "R-20420", title: "Fitted office, regional team, Al Olaya", asset: "office", deal: "lease", district: "Al Olaya", city: "Riyadh", sizeMin: 300, sizeMax: 700, budget: 2700, timeline: "Q4", mustHaves: ["Fitted","Raised floor"], interest: 0 },
- { id: "m3", ref: "R-20421", title: "Logistics warehouse, 2nd Industrial", asset: "warehouse", deal: "lease", district: "2nd Industrial", city: "Riyadh", sizeMin: 2000, sizeMax: 5000, budget: 320, timeline: "Q3", mustHaves: ["Dock doors","Heavy power"], interest: 0 },
+ { sample: true, id: "m1", ref: "SAMPLE-20418", title: "Regional HQ office, Grade A, KAFD", asset: "office", deal: "lease", district: "KAFD", city: "Riyadh", sizeMin: 500, sizeMax: 1200, budget: 3000, timeline: "Q3", mustHaves: ["Fitted","Parking","Metro nearby"], interest: 1 },
+ { sample: true, id: "m2", ref: "SAMPLE-20420", title: "Fitted office, regional team, Al Olaya", asset: "office", deal: "lease", district: "Al Olaya", city: "Riyadh", sizeMin: 300, sizeMax: 700, budget: 2700, timeline: "Q4", mustHaves: ["Fitted","Raised floor"], interest: 0 },
+ { sample: true, id: "m3", ref: "SAMPLE-20421", title: "Logistics warehouse, 2nd Industrial", asset: "warehouse", deal: "lease", district: "2nd Industrial", city: "Riyadh", sizeMin: 2000, sizeMax: 5000, budget: 320, timeline: "Q3", mustHaves: ["Dock doors","Heavy power"], interest: 0 },
 ];

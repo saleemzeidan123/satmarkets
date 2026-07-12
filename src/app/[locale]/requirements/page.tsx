@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 
-interface Req { id: string; ref: string; title: string; asset: string; deal: string; district: string; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; interest: number; }
+interface Req { sample?: boolean; id: string; ref: string; title: string; asset: string; deal: string; district: string; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; interest: number; }
 
 export default function RequirementsBoard({ params }: { params: { locale: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
@@ -35,7 +35,10 @@ export default function RequirementsBoard({ params }: { params: { locale: string
        <Link key={r.id} href={`/${locale}/requirements/${r.id}`} className="card pad lift" style={{ boxShadow: "var(--sh-1)", textDecoration: "none", color: "inherit", display: "block" }}>
         <div className="row between" style={{ alignItems: "center" }}>
          <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ar ? (ASSET_L[r.asset] || r.asset) : r.asset[0].toUpperCase() + r.asset.slice(1)} · {r.deal === "lease" ? (dict.req.lease) : (dict.req.buy)}</span>
-         <span className="mono muted" style={{ fontSize: 11 }}>{r.ref}</span>
+         <span className="row gap6" style={{ alignItems: "center" }}>
+          {r.sample ? <span className="tag" style={{ color: "#92400E", background: "#FFFBEB", borderColor: "#FCD34D", fontSize: 10.5 }}>{dict.req.sampleTag}</span> : null}
+          <span className="mono muted" style={{ fontSize: 11 }}>{r.ref}</span>
+         </span>
         </div>
         <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", letterSpacing: "-.01em", lineHeight: 1.3 }}>{r.title}</div>
         <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>

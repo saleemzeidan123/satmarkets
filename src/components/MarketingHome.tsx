@@ -8,7 +8,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
-type Stats = { listings: string; buildings: string; districts: string; verifiedPct: string };
+type Stats = { listings: string | null; buildings: string | null; districts: string | null; verifiedPct: string | null };
 
 const ASSETS = [
  { v: "office", en: "Office", ar: "مكاتب", icon: <Icon.building size={22} /> },
@@ -102,7 +102,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   popular: "الأكثر طلباً:",
   chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
   micro1: "توثيق المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "مرخّصة من الهيئة العامة للعقار ومتوافقة مع نظام حماية البيانات",
-  stat: [[stats.listings, "عروض موثّقة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string,string][],
+  stat: [[stats.listings, "عروض موثّقة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], ["1", "منصّة محايدة"]] as [string | null, string][],
   exEye: "المنصّة",
   exH: "أربع وظائف، في مكان محايد واحد",
   exP: "لا أحد غيرنا في المملكة يجمع الوظائف الأربع معاً. هذا هو جوهر المنصّة.",
@@ -163,7 +163,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   popular: "Popular:",
   chip1: "Office, KAFD", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
   micro1: "Owners verified before listing", micro2: "No assumed commission", micro3: "REGA-licensed & PDPL-compliant",
-  stat: [[stats.listings, "Verified listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string,string][],
+  stat: [[stats.listings, "Verified listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], ["1", "Neutral exchange"]] as [string | null, string][],
   exEye: "The exchange",
   exH: "Four jobs, one neutral place",
   exP: "No one else in the Kingdom brings all four together. That is the exchange.",
@@ -314,7 +314,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    </div>
 
    <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
-    {T.stat.map((x, i) => (
+    {T.stat.filter((x) => x[0]).map((x, i) => (
      <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
       <div className="mono tnum" style={{ fontSize: 28, fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
       <div className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 4 }}>{x[1]}</div>
@@ -367,7 +367,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        {T.cards.map((c, i) => {
         const I = cardIcons[i] as (p: { size?: number }) => JSX.Element;
         const st: [string, string] | null =
-         i === 0 ? [stats.listings, H.statSpacesLive]
+         i === 0 ? (stats.listings ? [stats.listings, H.statSpacesLive] : null)
          : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), H.statOpenReqs] : null)
          : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), H.statSegments] : null)
          : ["FAL 1200025510", H.statLicensed];
