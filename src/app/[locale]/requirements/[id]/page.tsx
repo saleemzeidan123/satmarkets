@@ -12,19 +12,28 @@ export default function RequirementDetail({ params }: { params: { locale: string
  const [ints, setInts] = useState<Interest[]>([]);
  const [loading, setLoading] = useState(true);
  const [show, setShow] = useState(false);
- const [ptype, setPtype] = useState("landlord");
- const [org, setOrg] = useState("");
  const [msg, setMsg] = useState("");
  const [busy, setBusy] = useState(false);
+ const [err, setErr] = useState<string | null>(null);
+ const [needAuth, setNeedAuth] = useState(false);
 
  const load = () => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setLoading(false); }).catch(() => setLoading(false));
  useEffect(() => { load(); }, []);
 
  async function register() {
-  setBusy(true);
-  await fetch(`/api/requirements/${params.id}/interest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ party_type: ptype, org, party_name: org || undefined, message: msg }) });
-  setOrg(""); setMsg(""); setShow(false); setBusy(false);
-  load();
+  setBusy(true); setErr(null); setNeedAuth(false);
+  try {
+   // Identity (owner vs broker, name, org) is derived server-side from the
+   // verified account. We only send what the user actually wrote.
+   const res = await fetch(`/api/requirements/${params.id}/interest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: msg }) });
+   const j = await res.json().catch(() => ({}));
+   if (res.status === 401) { setNeedAuth(true); setErr(j.error || "Sign in to register interest."); setBusy(false); return; }
+   if (!res.ok || j.error) { setErr(j.error || "Could not register interest."); setBusy(false); return; }
+   setMsg(""); setShow(false); setBusy(false);
+   load();
+  } catch {
+   setErr("Could not register interest."); setBusy(false);
+  }
  }
 
  if (loading) return <div style={{ padding: 48, textAlign: "center" }} className="muted">Loading requirement…</div>;
@@ -58,11 +67,13 @@ export default function RequirementDetail({ params }: { params: { locale: string
 
      {show && (
       <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", marginBottom: 14 }}>
-       <div className="row gap10 wrap" style={{ marginBottom: 10 }}>
-        <div className="seg">{["landlord", "broker"].map((t) => <span key={t} className={ptype === t ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setPtype(t)}>{t === "landlord" ? "Owner" : "Broker"}</span>)}</div>
-        <input className="input grow" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Your company" style={inp} />
-       </div>
+       <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>You appear as your verified account. Only verified owners and brokers can register interest.</p>
        <textarea className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="What you have that matches (size, district, fit-out)…" style={{ ...inp, minHeight: 64, resize: "vertical" }} />
+       {err && (
+        <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 8 }}>
+         {err}{needAuth ? <> <Link href={`/${locale}/login`} style={{ color: "var(--azure-d)", fontWeight: 600 }}>Sign in</Link></> : null}
+        </p>
+       )}
        <div className="row gap10" style={{ marginTop: 10, justifyContent: "flex-end" }}>
         <button className="btn secondary sm" onClick={() => setShow(false)}>Cancel</button>
         <button className="btn primary sm" onClick={register} disabled={busy}>{busy ? "Registering…" : "Register interest"}</button>

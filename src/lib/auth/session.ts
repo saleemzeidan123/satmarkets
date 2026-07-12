@@ -7,6 +7,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 // routes and derive identity instead of the ?as= query hack.
 export type SessionUser = {
   authId: string;
+  userId: string | null;
   email: string | null;
   accountId: string | null;
   isSat: boolean;
@@ -19,12 +20,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     data: { user },
   } = await sb.auth.getUser();
   if (!user) return null;
-  const [acct, sat] = await Promise.all([
+  const [acct, sat, uid] = await Promise.all([
     sb.rpc("app_account_id"),
     sb.rpc("app_is_sat"),
+    sb.rpc("app_user_id"),
   ]);
   return {
     authId: user.id,
+    userId: (uid.data as string | null) ?? null,
     email: user.email ?? null,
     accountId: (acct.data as string | null) ?? null,
     isSat: sat.data === true,
