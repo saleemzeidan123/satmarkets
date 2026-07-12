@@ -2,6 +2,7 @@ import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
+import SignOutButton from "@/components/SignOutButton";
 import { Icon, Logo, Photo } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -100,7 +101,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
     <div className="me">
      <span className="avatar" style={{ background: "var(--harbor)" }}>{acctName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
      <div><div className="nm">{acctName}</div><div className="rl">{acctRole}</div></div>
-     <span style={{ marginLeft: "auto", color: "#6B7480" }}><Icon.logout size={17} /></span>
+     <SignOutButton locale={lp} label={getDictionary(lp === "ar" ? "ar" : "en").login.signOut} />
     </div>
    </aside>
    <div className="dmain">

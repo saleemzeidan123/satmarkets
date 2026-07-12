@@ -1277,5 +1277,26 @@
     "propertySub": "320 m² · Al Olaya, Riyadh",
     "parties": "Parties",
     "whatNext": "What happens next"
+  },
+  "login": {
+    "eyebrow": "Sign in to SAT Markets",
+    "heading": "Welcome back",
+    "sub": "Sign in with your email and password. Occupiers can browse and enquire without an account.",
+    "emailPh": "you@company.com",
+    "passwordPh": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "or": "or",
+    "magicLink": "Email me a secure sign-in link",
+    "nafathNote": "Nafath national-ID sign-in for owners and brokers arrives before launch.",
+    "createAccount": "Create an account",
+    "checkEmail": "Check your email",
+    "checkEmailBody": "We sent a secure sign-in link to",
+    "yourInbox": "your inbox",
+    "backToSignIn": "Back to sign in",
+    "errNotConfigured": "Sign-in is not configured on this environment yet.",
+    "errEnterEmail": "Enter your email first, then request a link.",
+    "signOut": "Sign out",
+    "metaTitle": "Sign in | SAT Markets"
   }
 }
