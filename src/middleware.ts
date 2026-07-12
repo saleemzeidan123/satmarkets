@@ -43,7 +43,9 @@ export async function middleware(req: NextRequest) {
   // authentication and route classification land.
   const host = (req.headers.get("host") || "").toLowerCase();
   const isProdHost = host === "satmarkets.sa" || host === "www.satmarkets.sa";
-  const PRIVATE_PREFIXES = ["/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved"];
+  // Prototype/account routes stay noindexed even on the production host until they
+  // are real. /signup and /compare are prototype surfaces too (Codex MKT-P0-06).
+  const PRIVATE_PREFIXES = ["/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare"];
   const isPrivate = PRIVATE_PREFIXES.some(
     (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
   );
