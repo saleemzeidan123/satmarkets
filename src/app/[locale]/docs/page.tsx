@@ -30,7 +30,7 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
    <div className="row between wrap" style={{ padding: "13px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 12, flex: "none" }}>
     <div className="row gap12" style={{ alignItems: "center" }}>
      <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={17} /></span></span>
-     <div><div style={{ fontSize: 15, fontWeight: 700 }}>{d.buildingName}</div><div className="mono muted" style={{ fontSize: 11 }}>{d.plansSub}</div></div>
+     <div><h1 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{d.buildingName}</h1><div className="mono muted" style={{ fontSize: 11 }}>{d.plansSub}</div></div>
     </div>
     <div className="row gap8 wrap">
      <span className="ftype"><span className="ext">DWG</span> floor-plate-L18.dwg</span>

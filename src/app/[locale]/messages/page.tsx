@@ -68,7 +68,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     <div className="dtopbar">
      <button className="msg-back" aria-label={mg.backInbox} onClick={() => setPane("list")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", padding: 4, marginInlineStart: -4 }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={20} /></span></button>
      <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
-     <div><h1 style={{ fontSize: 16 }}>{mg.c1Name}</h1><div className="sub"><Verified text={mg.verifiedOwner} /> · {mg.respondsIn}</div></div>
+     <div><h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{mg.c1Name}</h2><div className="sub"><Verified text={mg.verifiedOwner} /> · {mg.respondsIn}</div></div>
      <span style={{ flex: 1 }} />
      <span className="btn secondary sm"><Icon.eye size={14} /> {mg.viewListing}</span>
      <span className="btn primary sm"><Icon.coins size={14} /> {mg.makeOffer}</span>
