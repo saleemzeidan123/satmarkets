@@ -549,7 +549,8 @@
     "unitSar": "SAR/m²·yr",
     "alOlaya": "Al Olaya",
     "back": "Back",
-    "continuePricing": "Continue to pricing"
+    "continuePricing": "Continue to pricing",
+    "pricePlaceholder": "Your price"
   },
   "dashboard": {
     "acctNameFallback": "Olaya Towers",

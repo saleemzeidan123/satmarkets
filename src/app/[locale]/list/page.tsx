@@ -93,7 +93,7 @@ export default function ListPage({ params }: { params: { locale: string } }) {
      <div className="row gap14 wrap" style={{ marginTop: 14 }}>
       <Ph label={lp.gradeAOffice} h={84} style={{ width: 130, borderRadius: 9 }} badges={[<Verified key="v" text="V" />]} />
       <div style={{ flex: 1, minWidth: 200 }}>
-       <div className="price" style={{ fontSize: 16 }}>1,450 <small>{lp.unitSar}</small></div>
+       <div className="price muted" style={{ fontSize: 16 }}>{lp.pricePlaceholder} <small>{lp.unitSar}</small></div>
        <div className="ttl">{lp.fTitlePh}</div>
        <div className="meta"><span>{lp.alOlaya}</span><i /><span>320 m²</span><i /><span>{lp.fitted}</span></div>
       </div>

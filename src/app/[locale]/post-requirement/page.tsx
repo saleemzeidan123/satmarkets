@@ -33,9 +33,9 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
  const [title, setTitle] = useState("");
  const [asset, setAsset] = useState("office");
  const [deal, setDeal] = useState("lease");
- const [sizeMin, setSizeMin] = useState("300");
- const [sizeMax, setSizeMax] = useState("600");
- const [budget, setBudget] = useState("1600");
+ const [sizeMin, setSizeMin] = useState("");
+ const [sizeMax, setSizeMax] = useState("");
+ const [budget, setBudget] = useState("");
  const [districts, setDistricts] = useState<string[]>([DISTRICTS[0][0]]);
  const [musts, setMusts] = useState<string[]>([MUSTS[0]]);
  const [timeline, setTimeline] = useState(TIMELINES[1]);

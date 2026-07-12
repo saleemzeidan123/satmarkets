@@ -79,10 +79,6 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         <div className="foot-brand">
           <SatLogo size={30} />
           <p>{t("Saudi Arabia's commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.")}</p>
-          <div className="stores">
-            <a className="store">{FIcon.phone(18)}<span><span className="ec">Download on the</span><span className="nm">App Store</span></span></a>
-            <a className="store">{FIcon.phone(18)}<span><span className="ec">Get it on</span><span className="nm">Google Play</span></span></a>
-          </div>
         </div>
         {FOOT_COLS.map(([title, links]) => (
           <div className="foot-col" key={title}>

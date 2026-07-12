@@ -549,7 +549,8 @@
     "unitSar": "ريال/م²·سنة",
     "alOlaya": "العليا",
     "back": "رجوع",
-    "continuePricing": "المتابعة إلى التسعير"
+    "continuePricing": "المتابعة إلى التسعير",
+    "pricePlaceholder": "سعرك"
   },
   "dashboard": {
     "acctNameFallback": "أبراج العليا",
