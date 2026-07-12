@@ -119,7 +119,7 @@ export default function SignupFlow({ locale }: Props) {
           {role === "owner" && field(t("Can you provide the title deed or an authorization?", "هل يمكنك تقديم الصك أو تفويض؟"), sel("docs", [["yes", t("Yes", "نعم")], ["help", t("I need help with this", "أحتاج مساعدة في ذلك")]]))}
           {role === "broker" && field(t("FAL licence number", "رقم رخصة فال"), (
             <><input className="input fig" inputMode="numeric" placeholder={t("Digits only", "أرقام فقط")} value={d.fal || ""} onChange={(e) => setD((p) => ({ ...p, fal: e.target.value.replace(/[^\d]/g, "") }))} />
-            {!falOk && (d.fal || "").length > 0 ? <div style={{ fontSize: 12, color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{t("We verify it against the REGA register before your account opens.", "نتحقق منها في سجل الهيئة العامة للعقار قبل فتح حسابك.")}</div>}</>
+            {!falOk && (d.fal || "").length > 0 ? <div style={{ fontSize: 12, color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{t("SAT reviews it before your account opens. Automated checks against the REGA register arrive before launch.", "تراجعه سات قبل فتح حسابك. التحقق الآلي مقابل سجل الهيئة العامة للعقار يصل قبل الإطلاق.")}</div>}</>
           ))}
           {role === "investor" && field(t("Ticket size", "حجم الاستثمار"), sel("ticket", [["u5", t("Under SAR 5M", "أقل من 5 ملايين ريال")], ["5_50", t("SAR 5-50M", "5-50 مليون ريال")], ["o50", t("Over SAR 50M", "أكثر من 50 مليون ريال")]]))}
           {role === "investor" && field(t("Focus", "التركيز"), (
@@ -143,7 +143,7 @@ export default function SignupFlow({ locale }: Props) {
             <button type="button" className="btn secondary" onClick={() => setStep(1)}>{t("Back", "رجوع")}</button>
             <button type="button" className="btn primary grow" style={{ justifyContent: "center", opacity: step2Ok && !busy ? 1 : 0.5 }} disabled={!step2Ok || busy} onClick={submit}>{busy ? t("Sending...", "جارٍ الإرسال...") : t("Request my account", "اطلب حسابي")}</button>
           </div>
-          <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, margin: 0 }}>{t("By continuing you agree to the Terms and the PDPL privacy policy. Every account is verified by SAT before it opens; no unverified account can list.", "بمتابعتك توافق على الشروط وسياسة الخصوصية وفق نظام حماية البيانات. كل حساب يوثّقه فريق سات قبل فتحه، ولا يمكن لحساب غير موثّق أن يعرض.")}</p>
+          <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, margin: 0 }}>{t("By continuing you agree to the Terms and the privacy policy. Every account is reviewed by SAT before it opens; no unverified account can list.", "بمتابعتك توافق على الشروط وسياسة الخصوصية. تراجع سات كل حساب قبل فتحه، ولا يمكن لحساب غير موثّق أن يعرض.")}</p>
         </div>
       )}
     </div>

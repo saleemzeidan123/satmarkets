@@ -25,7 +25,7 @@
     "language": "Language"
   },
   "hero": {
-    "eyebrow": "Saudi Arabia · REGA-native commercial exchange",
+    "eyebrow": "Saudi Arabia · Commercial real estate exchange",
     "title": "The Kingdom's home for verified commercial space",
     "subtitle": "Verified listings, decision-grade rent data, and location intelligence for commercial real estate across Saudi Arabia, live now in Riyadh, expanding Kingdom-wide.",
     "searchPlaceholder": "Office, Al Olaya, up to 1,000 sqm",
@@ -51,7 +51,7 @@
     "floorplan": "Floor plan",
     "documents": "Documents",
     "trustTitle": "Why you can trust this listing",
-    "trustBody": "Every listing is verified before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are permit-backed and structured, not classifieds.",
+    "trustBody": "Every listing is verified by SAT before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are structured, not classifieds.",
     "rentCheckTitle": "Asking vs verified band",
     "rentInLine": "In line with the market band",
     "rentAbove": "above the verified band",
@@ -120,7 +120,7 @@
     "title": "Why SAT Markets",
     "sub": "The four things no Saudi portal combines, and that no global platform localises for the Kingdom.",
     "p1t": "Verified supply",
-    "p1d": "Owner-direct listings, permit-backed, verified before they publish. Not a classifieds dump.",
+    "p1d": "Owner-direct listings, verified by SAT before they publish. Not a classifieds dump.",
     "p2t": "Decision-grade data",
     "p2d": "The Rent Index: published Riyadh rent benchmarks by location and asset, attributed to source.",
     "p3t": "AI search, grounded",
@@ -171,7 +171,7 @@
     "invC": "Explore the map",
     "chips": [
       "Verified, owner-direct",
-      "REGA-native",
+      "Riyadh, commercial only",
       "Lease & sale",
       "English / Arabic"
     ],
@@ -202,7 +202,7 @@
     "statSpacesLive": "verified spaces live now",
     "statOpenReqs": "open requirements on the board",
     "statSegments": "index segments with sufficient data",
-    "statLicensed": "REGA-licensed, opt-in only",
+    "statLicensed": "Advertising licence · representation is opt-in",
     "gradeAOfficeSuffix": ", Grade A office",
     "medianUnit": "median SAR/m²·yr",
     "occupancyLabel": "Riyadh Grade A occupancy",
@@ -316,7 +316,7 @@
     "monthly": "Monthly",
     "annual": "Annual · save 2 months",
     "mostPopular": "Most popular",
-    "vatNote": "Prices exclude 15% VAT · ZATCA-compliant tax invoices · cancel anytime",
+    "vatNote": "Prices exclude 15% VAT · cancel anytime",
     "compareLimits": "Compare every limit"
   },
   "req": {
@@ -637,7 +637,7 @@
     "daytimeCatchment": "Daytime catchment",
     "sourcesUsed": "Sources used",
     "sourceRentIndex": "Rent Index Q1 2026",
-    "sourceRega": "REGA permit registry",
+    "sourceRega": "SAT verification records",
     "sourceListings": "Verified platform listings"
   },
   "area": {
@@ -683,7 +683,7 @@
     "howBody": "Placer.ai, PassBy and Gini stop at the US and Europe. For reliable, market-wide site selection in the Kingdom, SAT sources locally and scores transparently, so you can defend every decision.",
     "scoreTitle": "Transparent score · five lenses",
     "scoreBody": "Each site is scored across these five lenses with the reasoning shown, never a black-box number. Works across offices, retail, mixed-use and warehouses, not just retail.",
-    "pdplNote": "PDPL-native: location data is treated as sensitive, anonymised and aggregated, hosted in the Kingdom, registered with SDAIA. No on-site sensors and no personal images, ever."
+    "pdplNote": "Location data is treated as sensitive: anonymised and aggregated. No on-site sensors and no personal images, ever."
   },
   "rentIndex": {
     "na": "n/a",
@@ -762,7 +762,7 @@
     "email": "Email",
     "phone": "Phone",
     "postsToNote": "Posts to verified owners, brokers and the SAT desk.",
-    "pdplCompliant": "PDPL-compliant",
+    "pdplCompliant": "Your details stay private",
     "privacyNote": "Visible to verified owners, brokers & SAT · your identity stays private until you respond.",
     "posting": "Posting…",
     "postReqBtn": "Post requirement"
@@ -1150,9 +1150,9 @@
   },
   "brokers": {
     "falLabel": "FAL licence",
-    "falBody": "The FAL number is checked against the REGA register before any storefront goes live.",
+    "falBody": "At launch, the FAL number will be checked against the REGA register before a storefront goes live.",
     "idLabel": "Identity and authorization",
-    "idBody": "Broker identity and listing authorizations are verified before publishing.",
+    "idBody": "At launch, broker identity and listing authorization are checked by SAT before publishing.",
     "perfLabel": "Performance in the open",
     "perfBody": "Response time and coverage show on the storefront, from real activity, never self-declared.",
     "eyebrow": "Broker storefronts",
@@ -1160,7 +1160,7 @@
     "intro": "A public page under your name, your licence and your verified listings. Storefronts activate with real accounts; what you see below is a sample illustrating the mechanism.",
     "sampleTag": "Sample storefront",
     "sampleName": "Northern Gate Realty · sample",
-    "falAppears": "The FAL number appears here once verified against the REGA register",
+    "falAppears": "The FAL number appears here once SAT has checked it against the REGA register",
     "respondsIn": "Responds in 2h",
     "coverage": "Coverage: Al Olaya, Hittin, KAFD",
     "officeRetail": "Office and retail",
