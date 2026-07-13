@@ -764,10 +764,10 @@
     "email": "Email",
     "phone": "Phone",
     "postsToNote": "Posts to verified owners, brokers and the SAT desk.",
-    "pdplCompliant": "Your details stay private",
     "privacyNote": "Visible to verified owners, brokers & SAT · your identity stays private until you respond.",
     "posting": "Posting…",
-    "postReqBtn": "Post requirement"
+    "postReqBtn": "Post requirement",
+    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with verified owners and licensed brokers so they can respond to me. I can withdraw this at any time."
   },
   "compare": {
     "riyadh": "Riyadh",

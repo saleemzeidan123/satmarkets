@@ -351,3 +351,10 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 @media(max-width:1023px){
   .lst-filterwrap{position:sticky;top:56px;z-index:30;background:rgba(246,248,251,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding-top:8px;padding-bottom:8px;}
 }
+
+/* Visually-hidden but focusable. The /post-requirement deal-type and timeline
+   selectors were <span onClick>, i.e. invisible to a keyboard and to a screen
+   reader. They are real radios now; this hides the input without hiding it from
+   assistive tech, and the .seg label keeps the original look. */
+.sronly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
+.seg label:focus-within{outline:2px solid var(--azure);outline-offset:2px;border-radius:7px;}

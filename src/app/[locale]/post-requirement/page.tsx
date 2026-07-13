@@ -43,6 +43,7 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
  const [cEmail, setCEmail] = useState("");
  const [cPhone, setCPhone] = useState("");
  const [busy, setBusy] = useState(false);
+ const [consent, setConsent] = useState(false);
  const [done, setDone] = useState<null | { ref: string; match: number; notified: string[]; id: string }>(null);
  const [err, setErr] = useState("");
 
@@ -100,6 +101,13 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
     <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{pr.tellMarket}</h1>
     <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, lineHeight: 1.6 }}>{pr.intro}</p>
 
+    {/* Codex P1-02. This was a div of unassociated <label>s, <span onClick> pseudo
+        radios and a submit button that lived outside any form, and it collected a
+        name, an email and a phone number, personal data under the PDPL, while
+        displaying a "PDPL compliant" badge and capturing no consent at all. It is now
+        a real form: labels tied to inputs by id, radios that are radios, and an
+        explicit consent checkbox that must be ticked before anything is sent. */}
+    <form onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate={false}>
     <div className="card" style={{ marginTop: 30, padding: 0, overflow: "hidden" }}>
      <div className="row gap10" style={{ padding: "16px 24px", borderBottom: "1px solid var(--silver)", background: "var(--cool)" }}>
       <span style={{ color: "var(--harbor)" }}><Icon.doc size={18} /></span>
@@ -108,52 +116,98 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
      </div>
      <div className="req-grid" style={{ padding: 28 }}>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{pr.lookingFor}</label>
-       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={pr.lookingForPh} style={{ ...inp, textAlign: ar ? "right" : "left" }} />
+       <label htmlFor="pr-title">{pr.lookingFor}</label>
+       <input id="pr-title" name="title" required className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={pr.lookingForPh} style={{ ...inp, textAlign: ar ? "right" : "left" }} />
+      </div>
+
+      <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+       <legend style={{ padding: 0 }}>{pr.assetType}</legend>
+       <div className="row gap8 wrap" role="group">{ASSETS.map((a) => (
+        <button key={a} type="button" aria-pressed={asset === a} className={"chip" + (asset === a ? " on" : "")} style={chip} onClick={() => setAsset(a)}>{assetLbl(a)}</button>
+       ))}</div>
+      </fieldset>
+
+      <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+       <legend style={{ padding: 0 }}>{pr.transaction}</legend>
+       <div className="seg" style={{ alignSelf: "flex-start" }}>{["lease", "sale"].map((d) => (
+        <label key={d} className={deal === d ? "on" : ""} style={{ cursor: "pointer" }}>
+         <input type="radio" name="deal" value={d} checked={deal === d} onChange={() => setDeal(d)} className="sronly" />
+         {d === "lease" ? (pr.lease) : (pr.buy)}
+        </label>
+       ))}</div>
+      </fieldset>
+
+      <div className="field">
+       <label htmlFor="pr-size-min">{pr.sizeRange}</label>
+       <div className="row gap10">
+        <input id="pr-size-min" name="sizeMin" inputMode="numeric" className="input grow" value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} style={inp} aria-label={pr.sizeRange} />
+        <span className="muted">{pr.to}</span>
+        <input id="pr-size-max" name="sizeMax" inputMode="numeric" className="input grow" value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} style={inp} aria-label={pr.sizeRange} />
+       </div>
+      </div>
+
+      <div className="field">
+       <label htmlFor="pr-budget">{pr.budgetCeiling}</label>
+       <input id="pr-budget" name="budget" inputMode="numeric" className="input" value={budget} onChange={(e) => setBudget(e.target.value)} style={inp} />
+      </div>
+
+      <fieldset className="field" style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0 }}>
+       <legend style={{ padding: 0 }}>{pr.preferredDistricts}</legend>
+       <div className="row gap8 wrap" role="group">{DISTRICTS.map(([d]) => (
+        <button key={d} type="button" aria-pressed={districts.includes(d)} className={"chip" + (districts.includes(d) ? " on" : "")} style={chip} onClick={() => toggle(districts, setDistricts, d)}>{d}</button>
+       ))}</div>
+      </fieldset>
+
+      <fieldset className="field" style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0 }}>
+       <legend style={{ padding: 0 }}>{pr.mustHaves} <span className="hint">{pr.optional}</span></legend>
+       <div className="row gap8 wrap" role="group">{MUSTS.map((m) => (
+        <button key={m} type="button" aria-pressed={musts.includes(m)} className={"chip" + (musts.includes(m) ? " on" : "")} style={chip} onClick={() => toggle(musts, setMusts, m)}>{m}</button>
+       ))}</div>
+      </fieldset>
+
+      <fieldset className="field" style={{ gridColumn: "1 / -1", border: 0, padding: 0, margin: 0 }}>
+       <legend style={{ padding: 0 }}>{pr.moveIn}</legend>
+       <div className="seg" style={{ alignSelf: "flex-start" }}>{TIMELINES.map((t) => (
+        <label key={t} className={timeline === t ? "on" : ""} style={{ cursor: "pointer" }}>
+         <input type="radio" name="timeline" value={t} checked={timeline === t} onChange={() => setTimeline(t)} className="sronly" />
+         {t}
+        </label>
+       ))}</div>
+      </fieldset>
+
+      <div className="field">
+       <label htmlFor="pr-name">{pr.yourName}</label>
+       <input id="pr-name" name="name" required autoComplete="name" className="input" value={cName} onChange={(e) => setCName(e.target.value)} placeholder={pr.fullNamePh} style={{ ...inp, textAlign: ar ? "right" : "left" }} />
       </div>
       <div className="field">
-       <label>{pr.assetType}</label>
-       <div className="row gap8 wrap">{ASSETS.map((a) => <button key={a} className={"chip" + (asset === a ? " on" : "")} style={chip} onClick={() => setAsset(a)}>{assetLbl(a)}</button>)}</div>
-      </div>
-      <div className="field">
-       <label>{pr.transaction}</label>
-       <div className="seg" style={{ alignSelf: "flex-start" }}>{["lease", "sale"].map((d) => <span key={d} className={deal === d ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setDeal(d)}>{d === "lease" ? (pr.lease) : (pr.buy)}</span>)}</div>
-      </div>
-      <div className="field">
-       <label>{pr.sizeRange}</label>
-       <div className="row gap10"><input className="input grow" value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} style={inp} /><span className="muted">{pr.to}</span><input className="input grow" value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} style={inp} /></div>
-      </div>
-      <div className="field">
-       <label>{pr.budgetCeiling}</label>
-       <input className="input" value={budget} onChange={(e) => setBudget(e.target.value)} style={inp} />
+       <label htmlFor="pr-email">{pr.email}</label>
+       <input id="pr-email" name="email" type="email" required autoComplete="email" inputMode="email" className="input" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="you@company.com" style={inp} />
       </div>
       <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{pr.preferredDistricts}</label>
-       <div className="row gap8 wrap">{DISTRICTS.map(([d]) => <button key={d} className={"chip" + (districts.includes(d) ? " on" : "")} style={chip} onClick={() => toggle(districts, setDistricts, d)}>{d}</button>)}</div>
+       <label htmlFor="pr-phone">{pr.phone} <span className="hint">{pr.optional}</span></label>
+       <input id="pr-phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" className="input" value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="+966…" style={inp} />
       </div>
-      <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{pr.mustHaves} <span className="hint">{pr.optional}</span></label>
-       <div className="row gap8 wrap">{MUSTS.map((m) => <button key={m} className={"chip" + (musts.includes(m) ? " on" : "")} style={chip} onClick={() => toggle(musts, setMusts, m)}>{m}</button>)}</div>
-      </div>
-      <div className="field" style={{ gridColumn: "1 / -1" }}>
-       <label>{pr.moveIn}</label>
-       <div className="seg" style={{ alignSelf: "flex-start" }}>{TIMELINES.map((t) => <span key={t} className={timeline === t ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTimeline(t)}>{t}</span>)}</div>
-      </div>
-      <div className="field"><label>{pr.yourName}</label><input className="input" value={cName} onChange={(e) => setCName(e.target.value)} placeholder={pr.fullNamePh} style={{ ...inp, textAlign: ar ? "right" : "left" }} /></div>
-      <div className="field"><label>{pr.email}</label><input className="input" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="you@company.com" style={inp} /></div>
-      <div className="field" style={{ gridColumn: "1 / -1" }}><label>{pr.phone} <span className="hint">{pr.optional}</span></label><input className="input" value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="+966…" style={inp} /></div>
      </div>
-     <div className="row between wrap" style={{ padding: "18px 28px", borderTop: "1px solid var(--silver)", background: "var(--azure-wash)", gap: 10 }}>
-      <div className="row gap10"><span style={{ color: "var(--azure-d)" }}><Icon.spark size={18} /></span><div style={{ fontSize: 13.5 }}>{pr.postsToNote}</div></div>
-      <span className="mono muted" style={{ fontSize: 11.5 }}>{pr.pdplCompliant}</span>
+
+     <div style={{ padding: "18px 28px", borderTop: "1px solid var(--silver)", background: "var(--azure-wash)" }}>
+      <div className="row gap10" style={{ marginBottom: 12 }}>
+       <span style={{ color: "var(--azure-d)" }}><Icon.spark size={18} /></span>
+       <div style={{ fontSize: 13.5 }}>{pr.postsToNote}</div>
+      </div>
+      {/* Real consent, not a badge asserting it. */}
+      <label htmlFor="pr-consent" className="row gap10" style={{ alignItems: "flex-start", cursor: "pointer" }}>
+       <input id="pr-consent" name="consent" type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, width: 16, height: 16, flex: "none" }} />
+       <span style={{ fontSize: 13, lineHeight: 1.6 }}>{pr.consentLabel}</span>
+      </label>
      </div>
     </div>
 
-    {err && <div className="card pad" style={{ marginTop: 16, borderColor: "var(--red)", color: "var(--red)", fontSize: 13 }}>{err}</div>}
+    {err && <div className="card pad" style={{ marginTop: 16, borderColor: "var(--red)", color: "var(--red)", fontSize: 13 }} role="alert">{err}</div>}
     <div className="row between wrap" style={{ marginTop: 26, gap: 12 }}>
      <span className="muted" style={{ fontSize: 12.5 }}>{pr.privacyNote}</span>
-     <button className="btn primary lg" onClick={submit} disabled={busy}>{busy ? (pr.posting) : (pr.postReqBtn)} <Icon.arrow size={16} /></button>
+     <button type="submit" className="btn primary lg" disabled={busy || !consent}>{busy ? (pr.posting) : (pr.postReqBtn)} <Icon.arrow size={16} /></button>
     </div>
+    </form>
    </div>
   </div>
  );
