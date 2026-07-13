@@ -5,7 +5,16 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
-import ListingsMap, { type DistrictBubble, type ExactPin } from "@/components/ListingsMap";
+import dynamic from "next/dynamic";
+import type { DistrictBubble, ExactPin } from "@/components/ListingsMap";
+
+// maplibre-gl is ~800KB and the map is below the fold on mobile. Statically importing
+// it put the whole thing (plus its CSS) in the initial bundle for /listings and blocked
+// hydration. It now loads on the client, after paint, behind a skeleton.
+const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
+  ssr: false,
+  loading: () => <div className="mapskel" aria-hidden />,
+});
 
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";

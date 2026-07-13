@@ -718,11 +718,6 @@
     "districtsData": "Al Olaya 2,200 to 3,200 (verified) · Hittin and Sahafa 1,800 to 2,600 (verified) · others pending verified data",
     "streets": "Streets:",
     "streetsData": "Tahlia Street, retail: 2,500 to 4,000, median 3,200 (verified) · others pending verified data",
-    "chartTitle": "Office rent index, Al Olaya",
-    "chartSub": "Rebased to 100 · open vs capped · illustrative pre-launch sample",
-    "legendOpen": "Open (first-lease)",
-    "legendCapped": "Capped (frozen)",
-    "decree": "SEP-25 DECREE",
     "tableTitle": "District benchmarks · platform sample",
     "sortYoY": "Sort: YoY movement",
     "thLocation": "Location",
@@ -734,7 +729,9 @@
     "sufficient": "Sufficient",
     "thin": "Thin",
     "sample": "Sample",
-    "tableNote": "Pre-launch sample data illustrating the index mechanism. At launch, medians and bands are computed from verified closed transactions only, and thin samples are marked rather than shown. The index never prints a number it cannot stand behind."
+    "tableNote": "Pre-launch sample data illustrating the index mechanism. At launch, medians and bands are computed from verified closed transactions only, and thin samples are marked rather than shown. The index never prints a number it cannot stand behind.",
+    "trendT": "Rent trend over time",
+    "trendB": "We do not publish a rent trend yet. A trend needs several quarters of our own verified transactions to stand behind, and we have one quarter. Publishing a line before then would be drawing a shape, not reporting a market. It appears here when the history is real."
   },
   "postReq": {
     "submitError": "Something interrupted the submission. Please try again.",

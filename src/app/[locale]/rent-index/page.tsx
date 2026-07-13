@@ -67,11 +67,6 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  } catch {
   districts = MOCK_DISTRICTS;
  }
- const open = [40, 44, 42, 50, 56, 54, 62, 68, 70, 76, 80, 86];
- const capped = [40, 44, 42, 50, 56, 54, 62, 65, 65, 65, 65, 65];
- const freezeX = (8 / 11) * 100;
- const op = open.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
- const cp = capped.map((v, i) => `${(i / 11) * 100},${100 - v}`).join(" ");
  const kpis: [string, string, string, string | null][] = ar ? [
   ["3,630", "كافد الفئة الأولى ريال/م²·سنة", "+5.5% سنوياً", "up"],
   [pub.gradeAMedian.toLocaleString(), "الفئة A ريال/م²·سنة", `+${pub.gradeAYoyPct}% سنوياً`, "up"],
@@ -165,29 +160,14 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
        <div><strong>{ri.streets}</strong> {ri.streetsData}</div>
       </div>
      </div>
-     {/* trend chart */}
+     {/* The trend chart plotted a hardcoded twelve-quarter series
+         ([40,44,42,50,56,54,62,68,70,76,80,86]) as if it were a rent trend, on the one
+         page whose entire premise is that every figure is cited to its source. There is
+         no time series behind it, and it rendered blank besides. It is gone until we
+         have real history. */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
-       <div><div style={{ fontSize: 15, fontWeight: 700 }}>{ri.chartTitle}</div><div className="muted" style={{ fontSize: 12.5 }}>{ri.chartSub}</div></div>
-       <div className="col gap8">
-        <span className="lgd"><span className="sw" /> {ri.legendOpen}</span>
-        <span className="lgd"><span className="sw dash" /> {ri.legendCapped}</span>
-       </div>
-      </div>
-      <div style={{ position: "relative", height: 210, marginTop: 18 }}>
-       <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ width: "100%", height: "100%" }}>
-        {[0, 25, 50, 75, 100].map((y) => <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="#EAEEF3" strokeWidth="0.5" />)}
-        <line x1={freezeX} y1="0" x2={freezeX} y2="100" stroke="#ECDCB6" strokeWidth="0.8" strokeDasharray="2 2" />
-        <polygon points={`0,100 ${op} 100,100`} fill="url(#gop)" opacity="0.12" />
-        <polyline points={op} fill="none" stroke={AZURE} strokeWidth="1.7" vectorEffect="non-scaling-stroke" />
-        <polyline points={cp} fill="none" stroke="#B7791F" strokeWidth="1.6" strokeDasharray="3 2.5" vectorEffect="non-scaling-stroke" />
-        <defs><linearGradient id="gop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor={AZURE} /><stop offset="1" stopColor={AZURE} stopOpacity="0" /></linearGradient></defs>
-       </svg>
-       <div className="mono" style={{ position: "absolute", left: `calc(${freezeX}% + 6px)`, top: 6, fontSize: 11, color: "var(--amber)", letterSpacing: ".04em" }}>{ri.decree}</div>
-      </div>
-      <div className="row between mono muted" style={{ fontSize: 10, marginTop: 8 }}>
-       <span>Q1&apos;25</span><span>Q2</span><span>Q3</span><span>Q4</span><span>Q1&apos;26</span>
-      </div>
+      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.trendT}</div>
+      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 6, marginBottom: 0, maxWidth: 560 }}>{ri.trendB}</p>
      </div>
 
      {/* heat map */}

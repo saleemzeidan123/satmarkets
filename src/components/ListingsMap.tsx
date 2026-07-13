@@ -95,7 +95,11 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
     import("maplibre-gl").then((mod) => {
       if (cancelled || !ref.current) return;
       const maplibregl = (mod as any).default ?? mod;
-      try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
+      // Only Arabic needs the RTL text plugin. English users were paying a blocking
+      // third-party round trip to unpkg for a plugin they never use.
+      if (locale === "ar") {
+        try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
+      }
       map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [46.68, 24.71], zoom: 9.2, minZoom: 4.8, maxZoom: 16 });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       mapRef.current = map; map.on("dragend", () => setMoved(true)); map.on("zoomend", () => setMoved(true));
