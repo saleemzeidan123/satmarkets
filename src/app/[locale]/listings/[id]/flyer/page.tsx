@@ -93,8 +93,8 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           )}
           <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
             {ar
-              ? `معايير الربع الأول 2026 المنشورة (منسوبة): مكاتب الفئة A ${pub.gradeAMedian.toLocaleString()} · الفئة B 1,680 ريال/م²·سنة. المصادر: JLL، CBRE، نايت فرانك، ساما. سياق سوقي منسوب إلى مصادره، استرشادي، ليس نصيحة.`
-              : `Published Q1 2026 benchmarks (attributed): Grade A offices ${pub.gradeAMedian.toLocaleString()} · Grade B 1,680 SAR/m²·yr. Sources: JLL, CBRE, Knight Frank, SAMA. Attributed market context. Indicative, not advice.`}
+              ? `أرقام عيّنة تجريبية لهيكل معايير الربع الأول 2026: مكاتب الفئة A ${pub.gradeAMedian.toLocaleString()} · الفئة B 1,680 ريال/م²·سنة. تُنسب المصادر المسمّاة عند الإطلاق حين تكون الأرقام حقيقية. سياق استرشادي، ليس نصيحة.`
+              : `Preview sample figures for the Q1 2026 benchmark structure: Grade A offices ${pub.gradeAMedian.toLocaleString()} · Grade B 1,680 SAR/m²·yr. Named sources attach at launch, when the figures are real. Indicative, not advice.`}
           </div>
         </div>
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>

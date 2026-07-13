@@ -8,6 +8,6 @@ export const PUBLISHED_FALLBACK = {
   kafdMedian: 3700,          // SAR/m2/yr, KAFD Grade A office, published (real row)
   gradeAYoyPct: 2.1,         // Riyadh Grade A YoY, published
   gradeAOccupancyPct: 97.7,  // Riyadh Grade A occupancy, published
-  source: "Published Q1 2026 benchmarks (JLL/CBRE/Knight Frank), attributed",
+  source: "Preview sample benchmarks. Named sources attach at launch, when the figures are real.",
 };
 export type PublishedKpis = typeof PUBLISHED_FALLBACK;
