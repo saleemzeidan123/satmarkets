@@ -726,7 +726,7 @@
     "trendT": "Rent trend over time",
     "trendB": "We do not publish a rent trend yet. A trend needs several quarters of our own verified transactions to stand behind, and we have one quarter. Publishing a line before then would be drawing a shape, not reporting a market. It appears here when the history is real.",
     "heatT": "Rent heat, by district",
-    "heatSubReal": "Darker is a higher median, in SAR/m²·yr. Districts with too thin a sample are left blank rather than guessed.",
+    "heatSubReal": "Darker is a higher average, in SAR/m²·yr. Districts with too thin a sample are left blank rather than guessed.",
     "heatSubSample": "Preview sample figures. Darker is a higher median. Real district medians appear here at launch.",
     "heatLow": "Lower",
     "heatHigh": "Higher"

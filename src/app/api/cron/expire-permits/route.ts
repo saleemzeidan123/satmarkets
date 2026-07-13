@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 // came down and why.
 //
 // The distinction matters. A cron job is a promise. A read policy is a fact.
-export async function POST(req: NextRequest) {
+async function run(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
   if (!authed(req, secret)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
@@ -49,7 +49,18 @@ export async function POST(req: NextRequest) {
   });
 }
 
-export async function GET() {
+// Vercel's scheduler issues a GET, with Authorization: Bearer $CRON_SECRET.
+// The first version of this route only did the work on POST, so the cron would
+// have called it every hour, been handed a cheerful health probe, and withdrawn
+// nothing. A scheduled job that reports success without doing anything is worse
+// than no job at all.
+//
+// So: an authenticated GET runs the takedown. An unauthenticated GET is the probe,
+// and it leaks nothing.
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  if (secret && authed(req, secret)) return run(req);
+
   return NextResponse.json({
     ok: true,
     endpoint: "expire-permits",
@@ -57,4 +68,9 @@ export async function GET() {
     note:
       "Housekeeping only. Expired advertisements are already unservable at the database read policy; this route archives them and writes the takedown trail.",
   });
+}
+
+// Kept so the takedown can also be triggered by hand.
+export async function POST(req: NextRequest) {
+  return run(req);
 }
