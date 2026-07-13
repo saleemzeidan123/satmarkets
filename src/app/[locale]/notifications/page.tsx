@@ -63,6 +63,10 @@ export default function NotificationsPage({ params }: { params: { locale: string
      <div className="dpanel" style={{ alignSelf: "flex-start" }}>
       <div className="ph"><span className="t">{d.howNotified}</span></div>
       <div style={{ padding: "6px 20px 16px" }}>
+       <div className="row gap10" style={{ alignItems: "center", paddingBottom: 8, marginBottom: 4, borderBottom: "1px solid var(--silver)" }}>
+        <span className="grow" />
+        {chans.map((l, i) => <span key={i} className="mono muted" style={{ fontSize: 9.5, width: 30, textAlign: "center", lineHeight: 1.25 }}>{l}</span>)}
+       </div>
        {prefs.map((r, i) => (
         <div key={i} className="urow" style={{ display: "flex", alignItems: "center", gap: 10 }}>
          <span className="grow" style={{ fontSize: 13 }}>{r[0]}</span>
@@ -71,9 +75,6 @@ export default function NotificationsPage({ params }: { params: { locale: string
          ))}
         </div>
        ))}
-       <div className="row gap14" style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--silver)", justifyContent: "flex-end" }}>
-        {chans.map((l, i) => <span key={i} className="mono muted" style={{ fontSize: 9.5, width: 30, textAlign: "center" }}>{l}</span>)}
-       </div>
       </div>
      </div>
     </div>
