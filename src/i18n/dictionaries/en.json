@@ -731,7 +731,12 @@
     "sample": "Sample",
     "tableNote": "Pre-launch sample data illustrating the index mechanism. At launch, medians and bands are computed from verified closed transactions only, and thin samples are marked rather than shown. The index never prints a number it cannot stand behind.",
     "trendT": "Rent trend over time",
-    "trendB": "We do not publish a rent trend yet. A trend needs several quarters of our own verified transactions to stand behind, and we have one quarter. Publishing a line before then would be drawing a shape, not reporting a market. It appears here when the history is real."
+    "trendB": "We do not publish a rent trend yet. A trend needs several quarters of our own verified transactions to stand behind, and we have one quarter. Publishing a line before then would be drawing a shape, not reporting a market. It appears here when the history is real.",
+    "heatT": "Rent heat, by district",
+    "heatSubReal": "Darker is a higher median, in SAR/m²·yr. Districts with too thin a sample are left blank rather than guessed.",
+    "heatSubSample": "Preview sample figures. Darker is a higher median. Real district medians appear here at launch.",
+    "heatLow": "Lower",
+    "heatHigh": "Higher"
   },
   "postReq": {
     "submitError": "Something interrupted the submission. Please try again.",
@@ -842,7 +847,12 @@
     "send": "Send",
     "dealProgress": "Deal progress",
     "appointSat": "Appoint SAT to represent me",
-    "appointNote": "Keep it on-platform, SAT verifies both parties and tracks every milestone. The Ejar contract is signed directly with the owner or their licensed broker."
+    "appointNote": "Keep it on-platform, SAT verifies both parties and tracks every milestone. The Ejar contract is signed directly with the owner or their licensed broker.",
+    "c2m1": "The whole floor is available from March. 1,200 m2, fitted, with parking for eighteen.",
+    "c2m2": "Understood. Could you send the floor plan and the service charge breakdown?",
+    "c3m1": "I found 3 verified matches in Al Olaya inside your size and budget. Open the shortlist to compare them against the Rent Index.",
+    "c4m1": "Thanks for the enquiry. I will send the brochure shortly.",
+    "c4m2": "Perfect, no rush. We are looking at a Q2 move."
   },
   "building": {
     "back": "Back to map",

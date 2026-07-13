@@ -47,6 +47,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   : { office: "Office", retail: "Retail", warehouse: "Warehouse", serviced: "Serviced", medical: "Medical", showroom: "Showroom", land: "Land" };
  const nf = (n: number) => n.toLocaleString("en-US");
  let districts: DRow[] = MOCK_DISTRICTS;
+ let fromDb = false;
  try {
   const supabase = getSupabaseServer();
   if (supabase) {
@@ -56,6 +57,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     .order("sort_order", { ascending: true })
     .limit(14);
    if (data && data.length) {
+    fromDb = true;
     districts = data.map((r: any): DRow => {
      const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment ? " · " + (SEG[r.segment] || r.segment) : ""}`;
      const median = r.sufficient && r.median != null ? nf(Number(r.median)) : (ri.na);
@@ -66,6 +68,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   }
  } catch {
   districts = MOCK_DISTRICTS;
+  fromDb = false;
  }
  const kpis: [string, string, string, string | null][] = ar ? [
   ["3,630", "كافد الفئة الأولى ريال/م²·سنة", "+5.5% سنوياً", "up"],
@@ -172,8 +175,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
 
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>Rent heat · by district</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>Darker = higher SAR/m² · illustrative sample</div>
+      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.heatT}</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>{fromDb ? ri.heatSubReal : ri.heatSubSample}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
        {(() => {
         const vals = districts.map((d) => Number(String(d[2]).replace(/[^0-9.]/g, "")) || 0);
@@ -195,9 +198,9 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
        })()}
       </div>
       <div className="row between" style={{ marginTop: 14 }}>
-       <span className="mono muted" style={{ fontSize: 10 }}>Lower</span>
+       <span className="mono muted" style={{ fontSize: 10 }}>{ri.heatLow}</span>
        <div style={{ flex: 1, height: 7, margin: "0 10px", borderRadius: 4, background: "linear-gradient(90deg,var(--azure-wash),var(--azure))" }} />
-       <span className="mono muted" style={{ fontSize: 10 }}>Higher</span>
+       <span className="mono muted" style={{ fontSize: 10 }}>{ri.heatHigh}</span>
       </div>
      </div>
 

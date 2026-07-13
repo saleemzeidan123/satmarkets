@@ -26,12 +26,23 @@ export default function MessagesPage({ params }: { params: { locale: string } })
   [mg.tlContract, "", ""],
   [mg.tlHandover, "", ""],
  ];
- const [msgs, setMsgs] = useState<Msg[]>([
-  { role: "a", text: mg.msg1 },
-  { role: "u", text: mg.msg2 },
-  { role: "a", text: mg.msg3 },
- ]);
+ // Each conversation now has its own thread. Selecting a row actually selects it.
+ const threads: Msg[][] = [
+  [{ role: "a", text: mg.msg1 }, { role: "u", text: mg.msg2 }, { role: "a", text: mg.msg3 }],
+  [{ role: "a", text: mg.c2m1 }, { role: "u", text: mg.c2m2 }],
+  [{ role: "a", text: mg.c3m1 }],
+  [{ role: "a", text: mg.c4m1 }, { role: "u", text: mg.c4m2 }],
+ ];
+ const [active, setActive] = useState(0);
+ const [msgs, setMsgs] = useState<Msg[]>(threads[0]);
  const [input, setInput] = useState("");
+
+ function openConv(i: number) {
+  setActive(i);
+  setMsgs(threads[i]);
+  setInput("");
+  setPane("thread");
+ }
  // On phones only one pane fits, start in the inbox, open a thread on tap.
  const [pane, setPane] = useState<"list" | "thread">("list");
  const ref = useRef<HTMLDivElement>(null);
@@ -52,7 +63,16 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     <div style={{ padding: "0 16px 12px" }}><div className="dsearch" style={{ minWidth: 0 }}><Icon.search size={15} /> {mg.searchPh}</div></div>
     <div style={{ flex: 1, overflowY: "auto" }}>
      {convs.map((c, i) => (
-      <div key={i} className={"conv" + (i === 0 ? " on" : "")} style={{ cursor: "pointer" }} onClick={() => setPane("thread")}>
+      <div
+       key={i}
+       role="button"
+       tabIndex={0}
+       aria-current={i === active ? "true" : undefined}
+       className={"conv" + (i === active ? " on" : "")}
+       style={{ cursor: "pointer" }}
+       onClick={() => openConv(i)}
+       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openConv(i); } }}
+      >
        <span className="avatar" style={{ background: c[5] }}>{c[0]}</span>
        <div className="grow" style={{ minWidth: 0 }}>
         <div className="row between"><span style={{ fontSize: 13.5, fontWeight: 600 }}>{c[1]}</span><span className="mono muted" style={{ fontSize: 10 }}>{c[3]}</span></div>
@@ -68,7 +88,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     <div className="dtopbar">
      <button className="msg-back" aria-label={mg.backInbox} onClick={() => setPane("list")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", padding: 4, marginInlineStart: -4 }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={20} /></span></button>
      <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
-     <div><h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{mg.c1Name}</h2><div className="sub"><Verified text={mg.verifiedOwner} /></div></div>
+     <div><h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{convs[active][1]}</h2><div className="sub"><Verified text={mg.verifiedOwner} /></div></div>
      <span style={{ flex: 1 }} />
      <span className="btn secondary sm"><Icon.eye size={14} /> {mg.viewListing}</span>
      <span className="btn primary sm"><Icon.coins size={14} /> {mg.makeOffer}</span>
