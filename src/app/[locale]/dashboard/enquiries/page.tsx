@@ -44,11 +44,20 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   // SAT sees all. We do not filter again here, we just render what we are allowed.
   const [{ data: leads }, { data: mine }] = await Promise.all([
     sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(200),
-    sb.from("listings").select("id,title_en,title_ar").eq("account_id", su.accountId),
+    sb.from("listings").select("id").eq("account_id", su.accountId),
   ]);
 
-  const titleOf = new Map((mine || []).map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
-  const rows = (leads || []).filter((l: any) => su.isSat || (l.listing_id && titleOf.has(l.listing_id)));
+  const mineIds = new Set((mine || []).map((x: any) => x.id));
+  const rows = (leads || []).filter((l: any) => su.isSat || (l.listing_id && mineIds.has(l.listing_id)));
+
+  // Resolve titles for the listings actually referenced by the rows we can see. This
+  // used to look only at the session's own listings, so a SAT operator, who is allowed
+  // to see every lead, got a blank Listing column on every row.
+  const ids = Array.from(new Set(rows.map((l: any) => l.listing_id).filter(Boolean)));
+  const { data: refd } = ids.length
+    ? await sb.from("listings").select("id,title_en,title_ar").in("id", ids)
+    : { data: [] as any[] };
+  const titleOf = new Map((refd || []).map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
 
   const stamp = (d: string) =>
     new Date(d).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-GB", {

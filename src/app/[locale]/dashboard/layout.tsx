@@ -46,10 +46,17 @@ export default async function DashboardLayout({
         ? (ar ? "فريق سات" : "SAT team")
         : a.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner");
     }
-    const ids = (mine.data || []).map((x: any) => x.id);
-    if (ids.length) {
-      const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids);
+    // SAT is allowed to see every lead, so its badge must count every lead. An owner
+    // counts only leads on their own listings. The badge has to agree with the page.
+    if (su.isSat) {
+      const { count } = await sb.from("leads").select("id", { count: "exact", head: true });
       leadCount = count || 0;
+    } else {
+      const ids = (mine.data || []).map((x: any) => x.id);
+      if (ids.length) {
+        const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids);
+        leadCount = count || 0;
+      }
     }
     reqCount = briefs.count || 0;
   }
