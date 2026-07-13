@@ -17,7 +17,7 @@ const COLORS: Record<string, string> = {
 };
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
 const unitFmt = (u: string | null, l: string) =>
- u === "sar_desk_month" ? (l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo") : (l === "ar" ? "ريال/م²/سنة" : "SAR/sqm/yr");
+ u === "sar_desk_month" ? (l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo") : (l === "ar" ? "ريال/م²/سنة" : "SAR/m²·yr");
 
 type Mode = "pins" | "heat" | "zone";
 

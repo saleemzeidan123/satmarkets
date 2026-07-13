@@ -56,7 +56,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       </select>
       <div className="flex gap-3">
         <input required type="number" placeholder="Area (sqm)" value={f.area_sqm} onChange={(e)=>set("area_sqm",e.target.value)} className={inp+" flex-1"} />
-        <input required type="number" placeholder={f.deal_type==="lease" ? "Asking (SAR/sqm/yr)" : "Sale price (SAR)"} value={f.price} onChange={(e)=>set("price",e.target.value)} className={inp+" flex-1"} />
+        <input required type="number" placeholder={f.deal_type==="lease" ? "Asking (SAR/m²·yr)" : "Sale price (SAR)"} value={f.price} onChange={(e)=>set("price",e.target.value)} className={inp+" flex-1"} />
       </div>
       <textarea placeholder="Description" value={f.description_en} onChange={(e)=>set("description_en",e.target.value)} className={inp} rows={3} />
 

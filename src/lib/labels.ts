@@ -30,7 +30,7 @@ const SEGMENT: Record<string,[string,string]> = {
   mall_inline:["Mall in-line","داخل المول"], listing:["Listing-derived","من القوائم"]
 };
 const UNIT: Record<string,[string,string]> = {
-  sar_sqm_year:["SAR / sqm / yr","ريال / م² / سنة"], sar_desk_month:["SAR / desk / mo","ريال / مكتب / شهر"]
+  sar_sqm_year:["SAR / m² / yr","ريال / م² / سنة"], sar_desk_month:["SAR / desk / mo","ريال / مكتب / شهر"]
 };
 export const segmentLabel = (t: string | null | undefined, l: L) => (t ? (SEGMENT[t]?.[idx(l)] ?? t) : "");
 export const unitLabel = (t: string, l: L) => (UNIT[t]?.[idx(l)]) ?? t;
