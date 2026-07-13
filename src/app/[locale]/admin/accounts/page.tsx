@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
+import VerifyAccount from "@/components/VerifyAccount";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +20,36 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
     thName: "الحساب", thType: "النوع", thCr: "السجل التجاري", thListings: "عروض", thStatus: "التوثيق", thWhen: "أُنشئ",
     empty: "لا حسابات.", verified: "موثّق", pending: "بانتظار التوثيق", noCr: "لا يوجد",
     types: { sat: "سات", owner: "مالك", broker: "وسيط" } as Record<string, string>,
-    note: "التوثيق يُقرَّر خارج المنصّة حالياً. أداة الاعتماد داخل اللوحة لم تُبنَ بعد.",
+    thAction: "القرار",
+    verify: "توثيق", reject: "رفض", revoke: "سحب التوثيق",
+    basis: "على أي أساس؟",
+    basisPh: "ما الذي تحقّقت منه، ومقابل أي مصدر؟ مثال: طابق رقم السجل التجاري 1010111222 مع السجل التجاري باسم الشركة نفسه.",
+    cancel: "إلغاء", save: "تسجيل القرار", saving: "جارٍ الحفظ", minBasis: "اذكر الأساس في جملة على الأقل.",
+    ledgerT: "سجلّ قرارات التوثيق",
+    ledgerEmpty: "لا قرارات مسجّلة بعد. كل قرار توثيق يُسجَّل هنا باسم من اتخذه ووقته وأساسه، ولا يمكن تعديله أو حذفه.",
+    lWho: "من", lWhat: "القرار", lBasis: "الأساس", lWhen: "الوقت",
+    note: "شارة \"موثّق\" تأتي من قرار بشري مسجّل. والسجلّ أدناه غير قابل للتعديل أو الحذف.",
   } : {
     title: "Accounts", sub: "Every account on the platform",
     thName: "Account", thType: "Type", thCr: "CR number", thListings: "Listings", thStatus: "Verification", thWhen: "Created",
     empty: "No accounts.", verified: "Verified", pending: "Awaiting verification", noCr: "None on file",
     types: { sat: "SAT", owner: "Owner", broker: "Broker" } as Record<string, string>,
-    note: "Verification is decided outside the platform today. The in-console approval tool is not built yet.",
+    thAction: "Decision",
+    verify: "Verify", reject: "Reject", revoke: "Revoke",
+    basis: "On what basis?",
+    basisPh: "What did you check, and against what? e.g. CR 1010111222 matched against the commercial register under the same legal name.",
+    cancel: "Cancel", save: "Record decision", saving: "Saving", minBasis: "State the basis, at least a sentence.",
+    ledgerT: "Verification decision log",
+    ledgerEmpty: "No decisions recorded yet. Every verification is written here with who made it, when, and on what basis. The log cannot be edited or deleted.",
+    lWho: "Who", lWhat: "Decision", lBasis: "Basis", lWhen: "When",
+    note: "A verified badge comes from a recorded human decision. The log below cannot be edited or deleted, by anyone.",
   };
 
-  const [{ data: accounts }, { data: listings }, sq] = await Promise.all([
+  const [{ data: accounts }, { data: listings }, sq, { data: events }] = await Promise.all([
     sb.from("accounts").select("id,type,name_en,name_ar,legal_name,cr_number,verification_status,created_at").order("created_at", { ascending: false }),
     sb.from("listings").select("id,account_id").eq("status", "published"),
     sb.from("signup_requests").select("id", { count: "exact", head: true }).eq("status", "new"),
+    sb.from("verification_events").select("id,account_id,from_status,to_status,actor_email,basis,created_at").order("created_at", { ascending: false }).limit(50),
   ]);
 
   const counts = new Map<string, number>();
@@ -58,6 +76,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                   <th style={{ textAlign: "right" }}>{t.thListings}</th>
                   <th>{t.thStatus}</th>
                   <th style={{ textAlign: "right" }}>{t.thWhen}</th>
+                  <th style={{ textAlign: "right" }}>{t.thAction}</th>
                 </tr>
               </thead>
               <tbody>
@@ -75,6 +94,14 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                       <td className="num mono" style={{ fontWeight: 600 }}>{counts.get(a.id) || 0}</td>
                       <td><span className={"statusdot " + (ok ? "ok" : "pend")} style={{ fontSize: 12 }}>{ok ? t.verified : t.pending}</span></td>
                       <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(a.created_at, ar)}</td>
+                      <td className="num">
+                        <VerifyAccount
+                          accountId={a.id}
+                          status={a.verification_status}
+                          locale={lp}
+                          t={{ verify: t.verify, reject: t.reject, revoke: t.revoke, basis: t.basis, basisPh: t.basisPh, cancel: t.cancel, save: t.save, saving: t.saving, minBasis: t.minBasis }}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
@@ -83,6 +110,44 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
           </div>
         )}
         <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
+      </div>
+
+      {/* The ledger behind the badge. Append-only: no update and no delete policy
+          exists on this table, so a recorded decision cannot be rewritten or erased,
+          not even by SAT. */}
+      <div className="dpanel" style={{ marginTop: 18 }}>
+        <div className="ph">
+          <span style={{ color: "var(--harbor)" }}><Icon.shield size={17} /></span>
+          <span className="t">{t.ledgerT}</span>
+          <span style={{ flex: 1 }} />
+          <span className="muted" style={{ fontSize: 11.5 }}>{(events || []).length}</span>
+        </div>
+        {!events || events.length === 0 ? (
+          <div className="muted" style={{ padding: "22px 20px 24px", fontSize: 12.5, lineHeight: 1.7, maxWidth: 560 }}>{t.ledgerEmpty}</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="dt" style={{ minWidth: 700 }}>
+              <thead><tr><th>{t.lWho}</th><th>{t.lWhat}</th><th>{t.lBasis}</th><th style={{ textAlign: "right" }}>{t.lWhen}</th></tr></thead>
+              <tbody>
+                {events.map((e: any) => {
+                  const acct = rows.find((x: any) => x.id === e.account_id);
+                  const nm = acct ? ((ar ? acct.name_ar : acct.name_en) || acct.name_en) : e.account_id;
+                  return (
+                    <tr key={e.id}>
+                      <td>
+                        <div style={{ fontWeight: 600, fontSize: 12.5 }}>{e.actor_email || ""}</div>
+                        <div className="muted" style={{ fontSize: 11.5 }}>{nm}</div>
+                      </td>
+                      <td className="mono" style={{ fontSize: 11.5 }}>{e.from_status} {ar ? "←" : "→"} <strong>{e.to_status}</strong></td>
+                      <td className="muted" style={{ fontSize: 12, lineHeight: 1.6, maxWidth: 320 }}>{e.basis}</td>
+                      <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(e.created_at, ar)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </AdminShell>
   );
