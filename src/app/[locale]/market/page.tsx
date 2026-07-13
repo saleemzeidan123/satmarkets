@@ -99,9 +99,9 @@ export default async function MarketPage({ params }: { params: { locale: string 
         name: `Riyadh Commercial Market Pulse${period ? ", " + period : ""}`,
         url: `${SITE}/${locale}/market`,
         inLanguage: ["ar", "en"],
-        description: "Published, attributed Saudi commercial rent benchmarks and verified platform indicators for Riyadh, compiled by SAT Markets. Indicative market context, not advice; SAT does not originate these figures.",
+        description: "Commercial rent indicators for Riyadh derived from the REGA Rental Index (Ejar), compiled by SAT Markets. Figures are averages of registered rental contracts. Indicative market context, not advice.",
         creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
-        isBasedOn: ["JLL published research", "CBRE published research", "Knight Frank published research", "SAMA published data"],
+        isBasedOn: ["REGA Rental Index (Ejar), registered rental contracts"],
         spatialCoverage: "Riyadh, Saudi Arabia",
       }} />
       <div className="eyebrow">{t.eyebrow}</div>

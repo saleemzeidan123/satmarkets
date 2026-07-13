@@ -14,7 +14,7 @@ const AZURE = "#3A6EA5";
 type DRow = [string, string, string, string, boolean];
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '/rent-index', 'Rent Index | SAT Markets', 'مؤشر الإيجارات | سات ماركتس', 'Riyadh commercial rent bands by district, asset and grade, compiled from published benchmarks and attributed to source. Indicative, not advice.', 'نطاقات إيجار العقار التجاري في الرياض حسب الحي والأصل والفئة، مجمّعة من مراجع منشورة ومنسوبة إلى مصادرها. استرشادي وليس نصيحة.');
+  return pageMeta(params.locale, '/rent-index', 'Rent Index | SAT Markets', 'مؤشر الإيجارات | سات ماركتس', 'Saudi commercial rent figures by district and asset type, derived from the REGA Rental Index (Ejar). Averages of registered contracts, with honest blanks where the sample is too thin. Indicative, not advice.', 'أرقام إيجار العقار التجاري في السعودية حسب الحي ونوع الأصل، مستمدّة من المؤشر الإيجاري (إيجار). متوسطات العقود المسجّلة، مع ترك الخلايا فارغة بصدق حين تقلّ العيّنة. استرشادي وليس نصيحة.');
 }
 
 export default async function RentIndexPage({ params }: { params: { locale: string } }) {
@@ -23,22 +23,6 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;
  const pub = await getPublishedKpis();
 
- const MOCK_DISTRICTS: DRow[] = ar ? [
-  ["العليا", "مكاتب · الفئة A", "2,400", "1,800–2,900", true],
-  ["كافد", "مكاتب · الفئة A", pub.kafdMedian.toLocaleString(), "3,000–4,200", true],
-  ["طريق الملك فهد", "مكاتب · الفئة A", "2,100", "1,500–2,700", true],
-  ["شمال الرياض (غرناطة · حطين)", "مكاتب · الفئة A", "1,350", "1,000–1,800", true],
-  ["العليا", "مكاتب · الفئة B", "1,150", "900–1,400", true],
-  ["الحي الدبلوماسي", "مكاتب · الفئة A", "غير متاح", "عينة قليلة", false],
- ] : [
-  ["Al Olaya", "Office · Grade A", "2,400", "1,800–2,900", true],
-  ["KAFD", "Office · Grade A", pub.kafdMedian.toLocaleString(), "3,000–4,200", true],
-  ["King Fahd Road", "Office · Grade A", "2,100", "1,500–2,700", true],
-  ["North Riyadh (Granada · Hittin)", "Office · Grade A", "1,350", "1,000–1,800", true],
-  ["Al Olaya", "Office · Grade B", "1,150", "900–1,400", true],
-  ["Diplomatic Quarter", "Office · Grade A", "n/a", "Thin sample", false],
- ];
-
  const SEG: Record<string, string> = ar
   ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street: "شارع تجزئة", prime: "مميّز", clinic: "عيادات", street_front: "واجهة شارع", mall_inline: "داخل مول", modern: "حديثة", older: "أقدم", blended: "مجمّع" }
   : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street: "street", prime: "prime", clinic: "Clinic", street_front: "Street front", mall_inline: "Mall inline", modern: "Modern", older: "Older", blended: "Blended" };
@@ -46,53 +30,60 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
   ? { office: "مكاتب", retail: "تجزئة", warehouse: "مستودعات", serviced: "مفروشة", medical: "طبي", showroom: "معارض", land: "أراضٍ" }
   : { office: "Office", retail: "Retail", warehouse: "Warehouse", serviced: "Serviced", medical: "Medical", showroom: "Showroom", land: "Land" };
  const nf = (n: number) => n.toLocaleString("en-US");
- let districts: DRow[] = MOCK_DISTRICTS;
- let fromDb = false;
+
+ // There is no mock table any more. The Rent Index shows what the pipeline
+ // produced from a source file, or it shows nothing. A district with too few
+ // registered transactions is a blank row, not a quieter guess.
+ let districts: DRow[] = [];
  try {
   const supabase = getSupabaseServer();
   if (supabase) {
    const { data } = await supabase
     .from("rent_index_published")
-    .select("district_label, district_label_ar, asset_type, segment, median, band_low, band_high, sufficient, sort_order")
+    .select("district_label, district_label_ar, asset_type, segment, median, band_low, band_high, sufficient, stat_kind, sort_order")
     .order("sort_order", { ascending: true })
-    .limit(14);
-   if (data && data.length) {
-    fromDb = true;
-    districts = data.map((r: any): DRow => {
-     const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment ? " · " + (SEG[r.segment] || r.segment) : ""}`;
-     const median = r.sufficient && r.median != null ? nf(Number(r.median)) : (ri.na);
-     const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}–${nf(Number(r.band_high))}` : (ri.thinSample);
-     return [ar ? (r.district_label_ar || r.district_label) : r.district_label, asset, median, band, !!r.sufficient];
-    });
-   }
+    .limit(40);
+   districts = (data ?? []).map((r: any): DRow => {
+    const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment && r.segment !== "all" ? " \u00b7 " + (SEG[r.segment] || r.segment) : ""}`;
+    const figure = r.sufficient && r.median != null ? nf(Number(r.median)) : (ri.na);
+    const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}\u2013${nf(Number(r.band_high))}` : (ri.thinSample);
+    return [ar ? (r.district_label_ar || r.district_label) : r.district_label, asset, figure, band, !!r.sufficient];
+   });
   }
  } catch {
-  districts = MOCK_DISTRICTS;
-  fromDb = false;
+  districts = [];
  }
- const kpis: [string, string, string, string | null][] = ar ? [
-  ["3,630", "كافد الفئة الأولى ريال/م²·سنة", "+5.5% سنوياً", "up"],
-  [pub.gradeAMedian.toLocaleString(), "الفئة A ريال/م²·سنة", `+${pub.gradeAYoyPct}% سنوياً`, "up"],
-  ["1,680", "الفئة B ريال/م²·سنة", "+5.1% سنوياً", "up"],
-  [`${pub.gradeAOccupancyPct}%`, "إشغال الفئة A", "شواغر الفئة الأولى 3.1%", null],
- ] : [
-  ["3,630", "KAFD prime SAR/m²·yr", "+5.5% YoY", "up"],
-  [pub.gradeAMedian.toLocaleString(), "Grade A SAR/m²·yr", `+${pub.gradeAYoyPct}% YoY`, "up"],
-  ["1,680", "Grade B SAR/m²·yr", "+5.1% YoY", "up"],
-  [`${pub.gradeAOccupancyPct}%`, "Grade A occupancy", "prime vacancy 3.1%", null],
+
+ // Only what the index can actually evidence. Where a figure has no cell behind
+ // it, we show a dash. The old row led with "3,630 KAFD prime", which is JLL's
+ // published figure, and an occupancy percentage taken from broker research that
+ // we have no licence to republish.
+ const dash = "\u2014";
+ const kpis: [string, string, string, string | null][] = [
+  [pub.officeRent != null ? nf(pub.officeRent) : dash,
+   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0645\u0643\u0627\u062a\u0628 \u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629" : "Office, SAR/m\u00b2\u00b7yr",
+   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0642\u0648\u062f \u0627\u0644\u0645\u0633\u062c\u0651\u0644\u0629" : "average of registered contracts", null],
+  [pub.retailRent != null ? nf(pub.retailRent) : dash,
+   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u062a\u062c\u0632\u0626\u0629 \u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629" : "Retail, SAR/m\u00b2\u00b7yr",
+   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0642\u0648\u062f \u0627\u0644\u0645\u0633\u062c\u0651\u0644\u0629" : "average of registered contracts", null],
+  [String(pub.cells),
+   ar ? "\u062e\u0644\u0627\u064a\u0627 \u0645\u0646\u0634\u0648\u0631\u0629" : "Published cells",
+   ar ? "\u0627\u062c\u062a\u0627\u0632\u062a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0639\u064a\u0646\u0629" : "cleared the sample rule", null],
+  [String(pub.districts),
+   ar ? "\u0623\u062d\u064a\u0627\u0621 \u0645\u063a\u0637\u0651\u0627\u0629" : "Districts covered",
+   pub.period ?? dash, null],
  ];
 
  return (
   <div style={{ background: "var(--cool)" }}>
    <JsonLd data={{
     "@type": "Dataset",
-    name: "Riyadh Commercial Rent Index, Q1 2026",
+    name: "Saudi Commercial Rent Index",
     url: `${SITE}/${params.locale}/rent-index`,
     inLanguage: ["ar", "en"],
-    description: "A comparison of published Saudi commercial rent benchmarks for Q1 2026, compiled and attributed by SAT Markets. Sources: JLL Q1 2026, CBRE Q1 2026, Knight Frank, SAMA. Indicative market context, not advice; SAT does not originate these figures.",
+    description: "Commercial rent figures derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Cells that do not clear a minimum transaction count are shown blank rather than estimated. Indicative market context, not advice.",
     creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
-    isBasedOn: ["JLL Q1 2026 published research", "CBRE Q1 2026 published research", "Knight Frank published research", "SAMA published data"],
-    temporalCoverage: "2026-01/2026-03",
+    isBasedOn: ["REGA Rental Index (Ejar), registered rental contracts"],
     spatialCoverage: "Riyadh, Saudi Arabia",
    }} />
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
@@ -128,7 +119,6 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="side">
        <div className="h"><span className="freeze open"><span className="dot" />{ri.open}</span> {ri.openNew}</div>
        <div className="sub">{ri.openBody}</div>
-       <div className="big" style={{ color: "var(--azure-d)" }}>{`+${pub.gradeAYoyPct}%`} <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.yoyGradeA}</span></div>
       </div>
      </div>
     </div>
@@ -176,7 +166,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.heatT}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{fromDb ? ri.heatSubReal : ri.heatSubSample}</div>
+      <div className="muted" style={{ fontSize: 12.5 }}>{ri.heatSubReal}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
        {(() => {
         const vals = districts.map((d) => Number(String(d[2]).replace(/[^0-9.]/g, "")) || 0);

@@ -5,7 +5,6 @@ import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { getDictionary } from "@/i18n/getDictionary";
-import { PUBLISHED_FALLBACK } from "@/lib/market/published-fallback";
 
 type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; median: string; unit: string; period: string; source: string };
 
@@ -100,13 +99,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    const dAr = r === med ? "عند الوسيط تماماً" : r < med ? `أقل من الوسيط بنحو ${dm}%` : `أعلى من الوسيط بنحو ${dm}%`;
    text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، الوسيط ${fmt(med)})، ${dAr}.` +
     (annual ? ` عند ${fmt(sz)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
-    ` ${activeRow.period === "Q1 2026" ? "الربع الأول 2026" : activeRow.period}، معايير سوق منشورة منسوبة إلى مصادرها (JLL وCBRE ونايت فرانك ونظراؤها). استرشادي وليس نصيحة.`;
+    ` ${activeRow.period}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
   } else {
    const vEn = v === "within" ? "sits within the published band" : v === "below" ? "sits below the published band" : "sits above the published band";
    const dEn = r === med ? "exactly at the median" : r < med ? `about ${dm}% below the median` : `about ${dm}% above the median`;
    text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, median ${fmt(med)}), ${dEn}.` +
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
-    ` ${activeRow.period}, published market benchmarks attributed to source (JLL, CBRE, Knight Frank and peers). Indicative, not advice.`;
+    ` ${activeRow.period}, REGA Rental Index (Ejar): average of registered rental contracts. Indicative, not advice.`;
   }
   setMsgs((m) => [...m, { role: "a", text, band: { low: lo, median: med, high: hi, unit: activeRow.unit }, quoted: r, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
  }
@@ -281,8 +280,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    <aside className="advisor-rail-r" style={{ background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto" }}>
     <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{av.marketSnapshot}</div></div>
     <div style={{ padding: 20 }} className="col gap16">
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>{PUBLISHED_FALLBACK.gradeAMedian.toLocaleString()}</span><span className="l">{av.medianGradeA}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20, color: "var(--green)" }}>{`+${PUBLISHED_FALLBACK.gradeAYoyPct}%`}</span><span className="l">{av.yoyGradeA}</span></div></div>
-     <div className="row gap16"><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>{`${PUBLISHED_FALLBACK.gradeAOccupancyPct}%`}</span><span className="l">{av.gradeAOccupancy}</span></div><div className="kpi"><span className="v tnum" style={{ fontSize: 20 }}>412k</span><span className="l">{av.daytimeCatchment}</span></div></div>
+     <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
+      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65 }}>
+       {ar
+        ? "تُستمد أرقام المؤشر من المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. اسأل عن حيّ ونوع أصل وسيعرض المستشار النطاق مع مصدره."
+        : "Index figures come from the REGA Rental Index (Ejar): averages of registered rental contracts. Ask about a district and an asset type and the Advisor will show the band with its source."}
+      </div>
+     </div>
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
       <div className="eyebrow">{av.sourcesUsed}</div>
       <div className="col gap8" style={{ marginTop: 10 }}>

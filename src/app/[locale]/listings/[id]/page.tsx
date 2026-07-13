@@ -14,6 +14,7 @@ import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
 import { getListingById } from "@/lib/queries/listings";
 import { getDictionary } from "@/i18n/getDictionary";
 import { ownerVerified } from "@/lib/gate";
+import AdPermit from "@/components/AdPermit";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -109,6 +110,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
           </div>
+
+          {/* The advertising licence and its expiry, displayed as the REGA marketing
+              rules require. It used to be a small grey tag with no expiry beside it. */}
+          <AdPermit listing={l as any} ar={ar} />
           <JsonLd data={{
             "@type": "RealEstateListing",
             name: title,

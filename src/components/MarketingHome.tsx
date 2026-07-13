@@ -28,7 +28,7 @@ const ASSETS = [
  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { gradeAYoyPct: number; gradeAOccupancyPct: number; gradeAMedian: number; kafdMedian: number; period: string; source: string } }) {
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
  const router = useRouter();
  const ar = locale === "ar";
  const H = getDictionary(ar ? "ar" : "en").home;
@@ -421,14 +421,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{H.medianUnit}</span>
        </div>
        <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${band.low.toLocaleString()} إلى ${band.high.toLocaleString()}` : `Published band: ${band.low.toLocaleString()} to ${band.high.toLocaleString()}`}</div>
-       <div style={{ color: "#34d399", fontSize: "var(--fs-sm)", fontWeight: 600, marginTop: 8 }}>{`+${kpis.gradeAYoyPct}%`} · {T.bandStat[0]}</div>
-       <svg viewBox="0 0 480 110" width="100%" style={{ marginTop: 16, display: "block" }} preserveAspectRatio="none" aria-hidden="true">
-        <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18 L480 110 L0 110 Z" fill="rgba(52,211,153,.12)" />
-        <path d="M0 86 L60 80 L120 84 L180 64 L240 68 L300 46 L360 50 L420 28 L480 18" fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="480" cy="18" r="4" fill="#34d399" />
-       </svg>
+       {/* A year-on-year figure and a rising curve used to sit here. The curve was
+           nine hand-placed coordinates in an SVG path, drawn to look like a trend.
+           Year-on-year needs two periods of the same series and we have one, so
+           neither is shown. */}
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{H.occupancyLabel}</span><span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{`${kpis.gradeAOccupancyPct}%`}</span>
+        <span>{kpis.source || (ar ? "\u0627\u0644\u0645\u0635\u062f\u0631" : "Source")}</span>
+        <span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : "\u2014"}</span>
        </div>
       </div>}
      </div>
