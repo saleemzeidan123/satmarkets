@@ -34,9 +34,21 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const su = await getSessionUser();
   let canSeeIdentities = false;
   if (su) {
-    if (su.isSat) {
-      canSeeIdentities = true;
-    } else if (su.userId) {
+    // Neutrality commitment 03 (/neutrality): "SAT's brokerage arm gets no earlier
+    // or privileged access to leads, requirements, or index data than any other
+    // verified participant."
+    //
+    // SAT used to get canSeeIdentities here purely for being SAT, which meant the
+    // operator (who also runs a licensed brokerage) could read every competing
+    // owner's name, org and verbatim pitch on every open requirement, and reply to
+    // them. That is the precise data advantage the published commitment forbids, so
+    // it is gone. Only the occupier who created the brief sees who is interested;
+    // they are the one choosing who to talk to. Everyone else, SAT included, sees
+    // the aggregate count and their own entry.
+    //
+    // If SAT ever needs identities for moderation, that belongs in the gated /admin
+    // console with an audit trail, not on the product page next to a Reply button.
+    if (su.userId) {
       const { data: owner } = await sb
         .from("tenant_briefs")
         .select("created_by")

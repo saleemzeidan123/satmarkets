@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
+import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { Logo } from "@/components/satkit";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
@@ -10,6 +11,17 @@ import type { Dictionary } from "@/i18n/getDictionary";
 export default function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
+  // The account menu used to offer "Sign in" to people who were already signed in.
+  // Resolve the real session and show them where their account actually is.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    const sb = getSupabaseBrowser();
+    if (!sb) { setSignedIn(false); return; }
+    let alive = true;
+    sb.auth.getUser().then(({ data }) => { if (alive) setSignedIn(!!data.user); }).catch(() => { if (alive) setSignedIn(false); });
+    const { data: sub } = sb.auth.onAuthStateChange((_e, sess) => setSignedIn(!!sess?.user));
+    return () => { alive = false; sub?.subscription?.unsubscribe(); };
+  }, []);
   const [saved, setSaved] = useState(0);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -113,7 +125,11 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                     <span>{savedLabel}</span>
                     {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
                   </Link>
-                  <Link href={`/${locale}/login`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{signInLabel}</Link>
+                  {signedIn ? (
+                    <Link href={`/${locale}/dashboard`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{dict.dashboard.navOverview}</Link>
+                  ) : (
+                    <Link href={`/${locale}/login`} className="block rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">{signInLabel}</Link>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:hidden">
