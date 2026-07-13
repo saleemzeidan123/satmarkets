@@ -214,7 +214,7 @@ export default function ListingEnquiry({
     {permit && <span className="tag">{t.permit}{permit}</span>}
    </div>
 
-   {contact ? <div className="hidden md:block" style={{ marginTop: 14 }}><ContactChannels {...contact} ar={ar} /></div> : null}
+   {contact ? <div className="hidden md:block" style={{ marginTop: 14 }}><ContactChannels {...contact} listingId={listingId} ar={ar} /></div> : null}
 
    {open ? (
     <form onSubmit={(e) => { e.preventDefault(); submit(open); }} className="col gap10" style={{ marginTop: 18 }}>

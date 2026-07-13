@@ -1,6 +1,7 @@
 "use client";
 import { getDictionary } from "@/i18n/getDictionary";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 type Props = {
   phone?: string | null;
@@ -10,10 +11,11 @@ type Props = {
   title: string;
   url: string;
   messageHref: string;
+  listingId: string;
   ar: boolean;
 };
 
-function buttons({ phone, email, channels, refCode, title, url, messageHref, ar }: Props): ReactNode[] {
+function buttons({ phone, email, channels, refCode, title, url, messageHref, listingId, ar }: Props): ReactNode[] {
   const t = getDictionary(ar ? "ar" : "en").chrome;
   const text = ar
     ? `مرحباً، مهتم بالعرض ${refCode}: ${title}\n${url}`
@@ -29,9 +31,53 @@ function buttons({ phone, email, channels, refCode, title, url, messageHref, ar 
     btns.push(<a key="call" href={`tel:${phone}`} className={`${base} border border-line`}>{t.call}</a>);
   if (has("email") && email)
     btns.push(<a key="email" href={`mailto:${email}?subject=${encodeURIComponent(`${refCode}: ${title}`)}&body=${enc}`} className={`${base} border border-line`}>{t.email}</a>);
+  // This used to be a link to the inbox. It opened no conversation, because there
+  // were no conversations: the inbox was four hardcoded strings and the message box
+  // faked a reply from the owner after 900ms. Now it opens a real thread with this
+  // listing's lister, or tells you to sign in, which is the truth.
   if (has("message"))
-    btns.push(<a key="msg" href={messageHref} className={`${base} border border-line`}>{t.message}</a>);
+    btns.push(<MessageLister key="msg" listingId={listingId} messageHref={messageHref} ar={ar} className={`${base} border border-line`} />);
   return btns;
+}
+
+function MessageLister({ listingId, messageHref, ar, className }: { listingId: string; messageHref: string; ar: boolean; className: string }) {
+  const t = getDictionary(ar ? "ar" : "en").chrome;
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function open() {
+    setBusy(true); setErr(null);
+    try {
+      const res = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ listing_id: listingId }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        // Say what is actually required, rather than opening an empty inbox.
+        router.push(messageHref.replace("/messages", "/login"));
+        return;
+      }
+      if (!res.ok || !j.conversation_id) {
+        setErr(ar ? "تعذّر فتح المحادثة." : "Could not open the conversation.");
+        setBusy(false);
+        return;
+      }
+      router.push(`${messageHref}?c=${j.conversation_id}`);
+    } catch {
+      setErr(ar ? "تعذّر فتح المحادثة." : "Could not open the conversation.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button type="button" onClick={open} disabled={busy} className={className}>
+      {busy ? (ar ? "جارٍ" : "Opening") : t.message}
+      {err && <span className="sr-only">{err}</span>}
+    </button>
+  );
 }
 
 // Desktop: the same channels, rendered inline inside the listing's sticky card.
