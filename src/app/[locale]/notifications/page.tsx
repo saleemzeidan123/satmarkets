@@ -40,7 +40,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 48px" }}>
     <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14, marginBottom: 22 }}>
-     <div><div className="eyebrow">{d.title}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{d.caughtUp}</h1><div className="muted" style={{ fontSize: 13.5, marginTop: 5 }}>{unread} {d.unread}</div></div>
+     <div><div className="eyebrow">{d.title}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{unread > 0 ? `${unread} ${d.unread}` : d.caughtUp}</h1></div>
      <div className="row gap8 wrap"><span className="btn secondary sm">{d.markAllRead}</span><span className="btn secondary sm"><Icon.gear size={14} /> {d.preferences}</span></div>
     </div>
     <div className="notif-grid">

@@ -19,6 +19,15 @@ function KCard({ icon: I, tone, v, l, delta, dir }: { icon: (p: { size?: number 
   </div>
  );
 }
+function EmptyState({ title, body, cta, href }: { title: string; body: string; cta?: string; href?: string }) {
+ return (
+  <div style={{ padding: "22px 20px 24px" }}>
+   <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{title}</div>
+   <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 380 }}>{body}</div>
+   {cta && href && <Link href={href} className="btn secondary sm" style={{ marginTop: 12 }}>{cta}</Link>}
+  </div>
+ );
+}
 function ago(d: string, ar: boolean) { const s = (Date.now() - new Date(d).getTime()) / 1000; if (s < 3600) { const n = Math.max(1, Math.round(s / 60)); return ar ? `منذ ${n} د` : n + "m ago"; } if (s < 86400) { const n = Math.round(s / 3600); return ar ? `منذ ${n} س` : n + "h ago"; } const n = Math.round(s / 86400); return ar ? `منذ ${n} ي` : n + "d ago"; }
 const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
@@ -55,13 +64,39 @@ export default async function DashboardPage({ params }: { params: { locale: stri
    acctRole = acct.type === "sat" ? (ar ? "فريق سات" : "SAT team") : (acct.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner"));
   }
  }
+ // Honest states, written as content rather than as an apology.
+ const es = ar ? {
+  enqT: "لا استفسارات بعد",
+  enqB: "عندما يتواصل مستأجر بشأن أحد عروضك، سيظهر هنا مع بيانات التواصل وسجل المحادثة.",
+  enqC: "اعرض عروضك",
+  reqT: "لا طلبات مطابقة الآن",
+  reqB: "عندما يُدرج مستأجر طلباً يطابق نوع أصولك وموقعك، سيظهر هنا لتتقدّم إليه.",
+  reqC: "تصفّح كل الطلبات",
+  lstT: "لا عروض منشورة",
+  lstB: "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض.",
+  lstC: "أدرج مساحة",
+  perf: "الأداء",
+  perfNote: "لم نبدأ بعد بقياس المشاهدات والحفظ. سيظهر ذلك بعد الإطلاق.",
+ } : {
+  enqT: "No enquiries yet",
+  enqB: "When an occupier gets in touch about one of your listings, it appears here with their contact details and the conversation so far.",
+  enqC: "View your listings",
+  reqT: "No matching requirements right now",
+  reqB: "When an occupier posts a requirement that matches your asset type and location, it appears here for you to pitch.",
+  reqC: "Browse all requirements",
+  lstT: "No published listings",
+  lstB: "List your first space and it starts reaching occupiers searching in Riyadh.",
+  lstC: "List a space",
+  perf: "Performance",
+  perfNote: "We are not measuring views or saves yet. That starts at launch.",
+ };
  const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
  const titleById = new Map(pub.map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
  const enq = new Map<string, number>();
  leadRows.forEach((l: any) => { if (l.listing_id) enq.set(l.listing_id, (enq.get(l.listing_id) || 0) + 1); });
  const repCount = leadRows.filter((l: any) => l.path === "representation").length;
 
- const listings = pub.slice(0, 5).map((l: any) => {
+ const listings = pub.map((l: any) => {
   const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
   return {
    title: (ar ? l.title_ar : l.title_en) || l.title_en, place: (dmap.get(l.district_id) || rcity) + " · " + (l.area_sqm ? l.area_sqm + (db.m2) : na),
@@ -77,15 +112,17 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  // LTR so "320 m2" does not render as "m2 320" inside an RTL paragraph.
  const matches = briefs.map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + (db.m2) }));
 
+ // Every nav item must go somewhere real. "Performance" and "Settings" used to
+ // href back to /dashboard (a self-loop) and /settings is not built, so both were
+ // painted doors. They are gone until the pages exist. Do not add a nav item here
+ // without a destination.
  const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean; href?: string }[] = [
   { label: db.navOverview, icon: Icon.grid, href: `/${lp}/dashboard` },
   { label: db.navMyListings, icon: Icon.building, href: `/${lp}/listings` },
   { label: db.navEnquiries, icon: Icon.inbox, badge: String(leadRows.length), href: `/${lp}/messages` },
   { label: db.navReqMatches, icon: Icon.target, badge: String(matches.length), href: `/${lp}/requirements` },
-  { label: db.navPerformance, icon: Icon.chart, href: `/${lp}/dashboard` },
   { label: db.navAccount, sec: true },
   { label: db.navBilling, icon: Icon.coins, href: `/${lp}/pricing` },
-  { label: db.navSettings, icon: Icon.gear, href: `/${lp}/dashboard` },
  ];
  return (
   <div className="dash">
@@ -110,24 +147,61 @@ export default async function DashboardPage({ params }: { params: { locale: stri
     <div className="dtopbar">
      <div><h1>{ar ? `مرحباً بعودتك، ${acctName}` : `Welcome back, ${acctName}`}</h1><div className="sub">{ar ? `${pubCount} عرض نشط · ${leadRows.length} استفسار` : `${pubCount} active listings · ${leadRows.length} enquiries`}</div></div>
      <span style={{ flex: 1 }} />
-     <span className="dsearch"><Icon.search size={16} /> {db.searchPh}</span>
-     <span style={{ color: "var(--slate)", position: "relative" }}><Icon.bell size={19} /><span style={{ position: "absolute", top: -2, right: -2, width: 7, height: 7, borderRadius: "50%", background: "var(--red)" }} /></span>
+     {/* The search box accepted no input and the bell carried a permanent unread
+         dot that did nothing. Both removed rather than faked. */}
      <Link href={`/${params.locale}/list`} className="btn primary"><Icon.plus size={16} /> {db.listSpace}</Link>
     </div>
     <div className="dbody">
      <div className="kgrid">
-      <KCard icon={Icon.building} tone="h" v={String(pubCount)} l={db.kActiveListings} />
-      <KCard icon={Icon.eye} v={na} l={db.kTotalViews} />
       <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} delta={repCount ? "+" + repCount + (db.repSuffix) : undefined} dir="up" />
       <KCard icon={Icon.target} tone="a" v={String(matches.length)} l={db.kOpenReq} />
+      <KCard icon={Icon.building} tone="h" v={String(pubCount)} l={db.kActiveListings} />
      </div>
 
+     {/* Activity leads. An owner signs in to ask "did anything happen?", so the two
+         panels that can answer that (enquiries, requirement matches) come first.
+         Inventory is reference, and sits below. */}
      <div className="dash-2col">
       <div className="dpanel">
-       <div className="ph"><span className="t">{db.perfTitle}</span><span style={{ flex: 1 }} /><span className="chip" style={{ borderColor: "var(--silver)" }}>{db.last30} <Icon.chevd size={13} /></span></div>
+       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/messages`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+       {leads.length === 0
+        ? <EmptyState title={es.enqT} body={es.enqB} cta={es.enqC} href={`/${lp}/listings`} />
+        : leads.map((l, i) => (
+         <div key={i} className="lead-item">
+          <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{l.name}</div><div className="muted" style={{ fontSize: 11.5 }}>{l.listing}</div></div>
+          <div style={{ textAlign: ar ? "left" : "right" }}>
+           <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
+           <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>
+          </div>
+         </div>
+        ))}
+      </div>
+
+      <div className="dpanel">
+       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span><span className="t">{db.navReqMatches}</span></div>
+       <div style={{ padding: matches.length ? "6px 0" : 0 }}>
+        {matches.length === 0
+         ? <EmptyState title={es.reqT} body={es.reqB} cta={es.reqC} href={`/${lp}/requirements`} />
+         : matches.map((r, i) => (
+          <div key={i} className="lead-item">
+           <span className="queue-ic"><Icon.doc size={16} /></span>
+           <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
+           <Link href={`/${lp}/requirements`} className="btn secondary sm">{db.pitch}</Link>
+          </div>
+         ))}
+       </div>
+      </div>
+     </div>
+
+     {/* Inventory. Views and saves columns are gone: nothing measures them yet, and a
+         column of "n/a" set in display mono reads as a metric. It is not one. */}
+     <div className="dpanel" style={{ marginTop: 18 }}>
+      <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} /><span className="muted" style={{ fontSize: 11.5 }}>{es.perfNote}</span></div>
+      {listings.length === 0 ? <EmptyState title={es.lstT} body={es.lstB} cta={es.lstC} href={`/${lp}/list`} /> : (
        <div style={{ overflowX: "auto" }}>
-        <table className="dt" style={{ minWidth: 520 }}>
-         <thead><tr><th>{db.thListing}</th><th style={{ textAlign: "right" }}>{db.thViews}</th><th style={{ textAlign: "right" }}>{db.thSaves}</th><th style={{ textAlign: "right" }}>{db.navEnquiries}</th><th style={{ textAlign: "right" }}>{db.thStatus}</th></tr></thead>
+        <table className="dt" style={{ minWidth: 460 }}>
+         <thead><tr><th>{db.thListing}</th><th style={{ textAlign: "right" }}>{db.navEnquiries}</th><th style={{ textAlign: "right" }}>{db.thStatus}</th></tr></thead>
          <tbody>
           {listings.map((l, i) => (
            <tr key={i}>
@@ -137,48 +211,14 @@ export default async function DashboardPage({ params }: { params: { locale: stri
               <div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.title}</div><div className="mono muted" style={{ fontSize: 11 }}><bdi>{l.place} · {l.rent}</bdi></div></div>
              </div>
             </td>
-            <td className="num mono">{l.views != null ? l.views.toLocaleString("en-US") : na}</td>
-            <td className="num mono">{l.saves != null ? l.saves : na}</td>
-            <td className="num mono" style={{ fontWeight: 600, color: l.enq ? "var(--ink)" : "var(--slate-2)" }}>{l.enq || na}</td>
+            <td className="num mono" style={{ fontWeight: 600, color: l.enq ? "var(--ink)" : "var(--slate-2)" }}>{l.enq}</td>
             <td className="num"><span className="statusdot ok">{db.statusLive}</span></td>
            </tr>
           ))}
          </tbody>
         </table>
        </div>
-      </div>
-      <div className="dpanel">
-       <div className="ph"><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} /><Link href={`/${lp}/messages`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link></div>
-       {leads.length === 0 ? <div className="muted" style={{ padding: "16px 20px", fontSize: 12.5 }}>{db.noEnq}</div> : leads.map((l, i) => (
-        <div key={i} className="lead-item">
-         <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
-         <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{l.name}</div><div className="muted" style={{ fontSize: 11.5 }}>{l.listing}</div></div>
-         <div style={{ textAlign: ar ? "left" : "right" }}>
-          <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
-          <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>
-         </div>
-        </div>
-       ))}
-      </div>
-     </div>
-
-     <div className="dash-2col">
-      <div className="dpanel">
-       <div className="ph"><span className="t">{db.viewsEnq}</span><span style={{ flex: 1 }} /><span className="lgd"><span className="sw" /> {db.thViews}</span></div>
-       <div className="muted" style={{ padding: "24px 20px", fontSize: 12.5 }}>{ar ? "تتوفر تحليلات الأداء بعد الإطلاق" : "Performance analytics available after launch"}</div>
-      </div>
-      <div className="dpanel">
-       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span><span className="t">{db.navReqMatches}</span></div>
-       <div style={{ padding: "6px 0" }}>
-        {matches.length === 0 ? <div className="muted" style={{ padding: "16px 20px", fontSize: 12.5 }}>{db.noOpenReq}</div> : matches.map((r, i) => (
-         <div key={i} className="lead-item">
-          <span className="queue-ic"><Icon.doc size={16} /></span>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
-          <Link href={`/${lp}/requirements`} className="btn secondary sm">{db.pitch}</Link>
-         </div>
-        ))}
-       </div>
-      </div>
+      )}
      </div>
     </div>
    </div>

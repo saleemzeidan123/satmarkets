@@ -54,7 +54,6 @@ export default async function BrokersPage({ params }: { params: { locale: string
           </div>
         </div>
         <div className="row gap8 wrap" style={{ marginTop: 14 }}>
-          <span className="chip">{b.respondsIn}</span>
           <span className="chip">{b.coverage}</span>
           <span className="chip">{b.officeRetail}</span>
         </div>

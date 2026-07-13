@@ -317,7 +317,8 @@
     "annual": "Annual · save 2 months",
     "mostPopular": "Most popular",
     "vatNote": "Prices exclude 15% VAT · cancel anytime",
-    "compareLimits": "Compare every limit"
+    "compareLimits": "Compare every limit",
+    "explorerCta": "Free to browse"
   },
   "req": {
     "openReqs": "Open requirements",
@@ -515,8 +516,8 @@
     "eyebrow": "For owners",
     "h1": "List your space on the verified exchange",
     "intro": "Owners are verified before listing. No assumed commission, you choose whether to appoint SAT later.",
-    "avgTimeLabel": "AVG. TIME TO VERIFIED",
-    "avgTimeValue": "~36 hours",
+    "avgTimeLabel": "BEFORE IT GOES LIVE",
+    "avgTimeValue": "Every listing is checked",
     "stepAsset": "Asset",
     "stepDetails": "Details & media",
     "stepPricing": "Pricing",
@@ -550,7 +551,8 @@
     "alOlaya": "Al Olaya",
     "back": "Back",
     "continuePricing": "Continue to pricing",
-    "pricePlaceholder": "Your price"
+    "pricePlaceholder": "Your price",
+    "avgTimeNote": "We confirm you hold the right to market the space before it publishes. We do not quote a turnaround time we have not measured."
   },
   "dashboard": {
     "acctNameFallback": "Olaya Towers",

@@ -26,6 +26,7 @@ export default function ListPage({ params }: { params: { locale: string } }) {
      <div style={{ marginTop: 36, padding: "16px 18px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 11 }}>
       <div className="mono" style={{ fontSize: 11, color: "#8A93A0", letterSpacing: ".06em" }}>{lp.avgTimeLabel}</div>
       <div className="mono tnum" style={{ fontSize: 22, fontWeight: 500, color: "#fff", marginTop: 6 }}>{lp.avgTimeValue}</div>
+      <div style={{ fontSize: 12, lineHeight: 1.6, color: "#AEB6C0", marginTop: 8 }}>{lp.avgTimeNote}</div>
      </div>
     </div>
    </div>

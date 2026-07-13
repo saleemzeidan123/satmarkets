@@ -15,7 +15,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
  const ar = params.locale === "ar";
  const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
  const tiers: Tier[] = ar ? [
-  { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "باقتك الحالية",
+  { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "تصفّح مجاناً",
    pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، وسطاء الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
   { nm: "مبتدئ", who: "ملاك أفراد في البداية", price: "299", unit: "ريال/شهر", feat: false, cta: "اختر مبتدئ",
    pts: ["<b>5</b> قوائم نشطة", "<b>1</b> تمييز مميّز / شهر", "<b>50</b> كشف تواصل / شهر", "مؤشر الإيجارات الكامل + تنبيهات", "<b>100</b> استفسار ذكاء / شهر"] },
@@ -26,7 +26,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   { nm: "مؤسسات", who: "مطوّرون وصناديق ومؤسسات", price: "مخصّص", unit: "", feat: false, ghost: true, cta: "تحدّث للمبيعات",
    pts: ["<b>بلا حدود</b> قوائم ومقاعد", "بيانات كاملة وموجزات برمجية", "دخول موحّد وأدوار مخصّصة", "تقارير محفظة مجدولة", "مدير مخصّص + اتفاقية مستوى خدمة"] },
  ] : [
-  { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Current plan",
+  { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Free to browse",
    pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district medians", "<b>10</b> AI Advisor queries / mo"] },
   { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
    pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
