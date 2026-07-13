@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon, Mark, Ph, Verified, HARBOR } from "@/components/satkit";
@@ -96,14 +97,18 @@ export default function ListPage({ params }: { params: { locale: string } }) {
       <div style={{ flex: 1, minWidth: 200 }}>
        <div className="price muted" style={{ fontSize: 16 }}>{lp.pricePlaceholder} <small>{lp.unitSar}</small></div>
        <div className="ttl">{lp.fTitlePh}</div>
-       <div className="meta"><span>{lp.alOlaya}</span><i /><span>320 m²</span><i /><span>{lp.fitted}</span></div>
+       <div className="meta"><span>{lp.alOlaya}</span><span aria-hidden>{" · "}</span><span>320 m²</span><span aria-hidden>{" · "}</span><span>{lp.fitted}</span></div>
       </div>
      </div>
     </div>
 
+    {/* These were <span>s: the wizard could never advance, so steps 3 and 4 were
+        unreachable and nothing could ever be published from here. The working
+        listing form lives at /dashboard/new and had nothing linking to it. This
+        now hands off to the form that actually saves. */}
     <div className="row gap12 between wrap" style={{ marginTop: 30, maxWidth: 720 }}>
-     <span className="btn secondary"><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={15} /></span> {lp.back}</span>
-     <span className="btn primary lg">{lp.continuePricing} <Icon.arrow size={16} /></span>
+     <Link href={`/${params.locale}`} className="btn secondary"><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={15} /></span> {lp.back}</Link>
+     <Link href={`/${params.locale}/dashboard/new`} className="btn primary lg">{lp.continuePricing} <Icon.arrow size={16} /></Link>
     </div>
    </div>
   </div>
