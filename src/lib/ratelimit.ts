@@ -25,3 +25,59 @@ export function allow(name: string, req: Request, limit = 15, windowMs = 60000):
   }
   return true;
 }
+
+// ---------------------------------------------------------------------------
+// Durable, cross-instance limiter (Codex P1-10).
+//
+// `allow()` above is per-instance. On serverless that is close to decorative: every
+// cold start gets an empty bucket, so a fan-out of concurrent lambdas each grant the
+// full quota, and an attacker paying for model calls simply forces new instances.
+//
+// `allowShared()` uses an Upstash/Vercel-KV REST endpoint when one is configured, so
+// the window is shared across every instance. If no store is configured it degrades
+// to the in-memory limiter rather than failing open entirely, and says so in the
+// return value, so the caller (and we) never mistake "no store" for "protected".
+// ---------------------------------------------------------------------------
+
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || "";
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || "";
+
+export function limiterIsDurable(): boolean {
+  return Boolean(KV_URL && KV_TOKEN);
+}
+
+export async function allowShared(
+  name: string,
+  req: Request,
+  limit = 15,
+  windowSec = 60
+): Promise<{ ok: boolean; durable: boolean }> {
+  if (!limiterIsDurable()) {
+    return { ok: allow(name, req, limit, windowSec * 1000), durable: false };
+  }
+  const key = `rl:${name}:${clientIp(req)}`;
+  try {
+    // INCR then EXPIRE on first hit: one shared counter per IP per window.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(`${KV_URL}/pipeline`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KV_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify([["INCR", key], ["EXPIRE", key, String(windowSec), "NX"]]),
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    clearTimeout(timer);
+    if (!res.ok) return { ok: allow(name, req, limit, windowSec * 1000), durable: false };
+    const j: any = await res.json();
+    const count = Number(j?.[0]?.result ?? 0);
+    if (!Number.isFinite(count) || count <= 0) {
+      return { ok: allow(name, req, limit, windowSec * 1000), durable: false };
+    }
+    return { ok: count <= limit, durable: true };
+  } catch {
+    // The store is unreachable. Fall back to the local window rather than opening
+    // the endpoint entirely; a degraded limit beats no limit on a paid model proxy.
+    return { ok: allow(name, req, limit, windowSec * 1000), durable: false };
+  }
+}

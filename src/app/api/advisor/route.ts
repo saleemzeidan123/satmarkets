@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
@@ -59,6 +59,10 @@ async function callProvider(baseUrl: string, k: string, mdl: string, messages: a
       body: JSON.stringify({
         model: mdl,
         temperature: json ? 0 : 0.4,
+        // Anthropic requires max_tokens, and an unbounded completion on a public
+        // endpoint is a cost and latency hole regardless of provider. Classification
+        // is a few tokens of JSON; prose replies are a sentence or two by design.
+        max_tokens: json ? 300 : 700,
         ...(json ? { response_format: { type: "json_object" } } : {}),
         messages,
       }),
@@ -90,6 +94,23 @@ async function llm(messages: any[], json: boolean): Promise<string | null> {
   return null;
 }
 
+
+// response_format is honoured by the primary provider but not by Anthropic's
+// OpenAI-compatibility layer, so on failover the model may wrap its JSON in a code
+// fence or lead with a sentence. Pull the first balanced object out rather than
+// letting JSON.parse throw and collapsing every intent to {}.
+function parseJsonLoose(text: string | null): any {
+  if (!text) return {};
+  const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+  try { return JSON.parse(t); } catch { /* fall through */ }
+  const i = t.indexOf("{");
+  const j = t.lastIndexOf("}");
+  if (i >= 0 && j > i) {
+    try { return JSON.parse(t.slice(i, j + 1)); } catch { /* give up */ }
+  }
+  return {};
+}
+
 const CLASSIFY = `Classify a message to a Saudi commercial real estate assistant into one intent. Respond strict JSON only with keys:
 - mode: "chat" (a greeting, small talk, or asking what you can do, or a general question not tied to a specific space or figure), "search" (they want to find or browse actual spaces or listings), "draft" (they want listing copy written for a space they own or represent), "value" (they ask whether a rent or price is fair, or about current rent levels for a district and asset type), or "watch" (they want a standing alert when rents in a district or asset move).
 - district: the Saudi district or city they mention, or null.
@@ -103,7 +124,10 @@ const chatSys = (ctx: string, arabic: boolean) => `You are SAT Advisor, a warm, 
 const askSys = (arabic: boolean) => `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. ${arabic ? "Ask in Modern Standard Arabic with Western numerals." : "Ask in British English. Do not use Arabic."} No em dashes.`;
 
 export async function POST(req: NextRequest) {
-  if (!allow("advisor", req)) return NextResponse.json({ mode: "search" }, { status: 429 });
+  // Durable across instances when a KV store is configured; degrades to the local
+  // window when it is not, and never silently opens the endpoint.
+  const gate = await allowShared("advisor", req, 15, 60);
+  if (!gate.ok) return NextResponse.json({ mode: "search" }, { status: 429 });
   const { query, history } = (await req.json()) as { query?: string; history?: { role: string; text: string }[] };
   const raw = (query || "").trim().slice(0, 2000);
   const hist = (Array.isArray(history) ? history : []).slice(-6).filter((h: any) => h && (h.role === "user" || h.role === "assistant") && h.text).map((h: any) => ({ role: h.role as "user" | "assistant", content: String(h.text).slice(0, 600) }));
@@ -113,7 +137,7 @@ export async function POST(req: NextRequest) {
   const greeting = /^(hey+|hi+|hello+|hala|halla|salam+|salaam|marhaba|\u0647\u0644\u0627|\u0645\u0631\u062d\u0628\u0627?|\u0627\u0644\u0633\u0644\u0627\u0645( \u0639\u0644\u064a\u0643\u0645)?|good (morning|evening|afternoon)|yo|sup)[\s!.\u061f?]*$/i.test(raw) || raw.length < 4;
   const cText = greeting ? null : await llm([{ role: "system", content: CLASSIFY }, { role: "user", content: raw }], true);
   let intent: any = {};
-  try { intent = cText ? JSON.parse(cText) : {}; } catch { intent = {}; }
+  intent = parseJsonLoose(cText);
   const mode = greeting ? "chat" : ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
 
   const supabase = getSupabaseServer();
