@@ -15,7 +15,9 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
     area_sqm: "", price: "", description_en: "",
     contact_phone: "", contact_email: "",
     lister_type: "owner_direct", video_url: "", floorplan_url: "", authorization_doc_url: "",
+    ad_permit_no: "", ad_permit_expires_at: "",
   });
+  const [rightToMarket, setRightToMarket] = useState(false);
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const [ch, setCh] = useState({ whatsapp: true, call: true, email: false, message: true });
   const assets = ["office","retail","medical","showroom","warehouse","serviced","education","land","gas_station","entertainment","wedding_hall","worker_housing","self_storage","hospitality","mixed_use"];
@@ -24,6 +26,26 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null);
     if (isBroker && !f.authorization_doc_url.trim()) { setError("Brokers must provide an authorization-to-market document URL."); return; }
+    // The advertising licence is not paperwork we collect later. Without it the
+    // listing cannot publish at all: the database refuses. Asking for it here, at
+    // the point of listing, is the difference between a draft that can go live and
+    // a draft that never will.
+    if (!/^\d{10}$/.test(f.ad_permit_no.trim())) {
+      setError("Enter the 10 digit real estate advertising licence number. A listing cannot publish without one.");
+      return;
+    }
+    if (!f.ad_permit_expires_at) {
+      setError("Enter the date the advertising licence expires. The advertisement is withdrawn automatically on that date.");
+      return;
+    }
+    if (new Date(f.ad_permit_expires_at) <= new Date()) {
+      setError("That licence has already expired.");
+      return;
+    }
+    if (!rightToMarket) {
+      setError("Confirm you have the right to market this property.");
+      return;
+    }
     setBusy(true);
     const sb = getSupabaseBrowser(); if (!sb) return;
     const { data, error } = await sb.from("listings").insert({
@@ -37,6 +59,9 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       lister_type: f.lister_type,
       video_url: f.video_url || null, floorplan_url: f.floorplan_url || null,
       authorization_doc_url: isBroker ? f.authorization_doc_url : null,
+      ad_permit_no: f.ad_permit_no.trim(),
+      ad_permit_expires_at: f.ad_permit_expires_at,
+      right_to_market_confirmed: rightToMarket,
       status: "draft"
     }).select("id").single();
     if (error) { setError(error.message); setBusy(false); }
@@ -72,6 +97,38 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
         <input placeholder="Video tour URL (YouTube or .mp4, optional)" value={f.video_url} onChange={(e)=>set("video_url",e.target.value)} className={inp} />
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
+      </div>
+
+      <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">
+        <div className="text-[12px] font-medium text-charcoal/70">Real estate advertising licence</div>
+        <div className="flex gap-3">
+          <input
+            required
+            inputMode="numeric"
+            pattern="\\d{10}"
+            placeholder="Licence number (10 digits)"
+            value={f.ad_permit_no}
+            onChange={(e)=>set("ad_permit_no", e.target.value.replace(/\D/g, "").slice(0,10))}
+            className={inp+" flex-1 font-mono"}
+          />
+          <input
+            required
+            type="date"
+            aria-label="Licence expiry date"
+            value={f.ad_permit_expires_at}
+            onChange={(e)=>set("ad_permit_expires_at", e.target.value)}
+            className={inp+" flex-1"}
+          />
+        </div>
+        <label className="flex items-start gap-2 text-[13px]">
+          <input type="checkbox" checked={rightToMarket} onChange={(e)=>setRightToMarket(e.target.checked)} className="mt-0.5" />
+          <span>I confirm I have the right to market this property.</span>
+        </label>
+        <p className="text-[11px] text-charcoal/45">
+          The licence number and its expiry are shown on the advertisement, as the real
+          estate marketing rules require, and the advertisement is withdrawn automatically
+          when the licence expires. A listing cannot publish without a valid licence.
+        </p>
       </div>
 
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">

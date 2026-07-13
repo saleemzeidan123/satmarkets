@@ -12,7 +12,9 @@
     "smoke": "node scripts/smoke.mjs",
     "ar-lint": "node scripts/ar-lint.mjs",
     "e2e": "playwright test",
-    "seed:world": "node scripts/seed-world.mjs"
+    "seed:world": "node scripts/seed-world.mjs",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "seed:demo:dry": "node scripts/seed-demo.mjs --dry"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
