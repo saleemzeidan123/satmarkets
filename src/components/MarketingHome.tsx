@@ -134,7 +134,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   oneH: "كل ما يحتاجه السوق، في مكان واحد",
   oneP: "الاكتشاف، وبيانات تُعتمد للقرار، والذكاء الاصطناعي، والصفقة كاملة، للمستأجرين والمُلّاك والوسطاء والمستثمرين.",
   feats: [
-   ["عروض موثّقة + خريطة", "عروض مدقّقة بالتراخيص ورخصة فال على خريطة مباشرة للرياض."],
+   ["عروض وخريطة", "عروض مباشرة من الملاك على خريطة حيّة للرياض، ولكل عرض حالة توثيقه ظاهرة عليه."],
    ["مؤشر الإيجارات", "إيجارات تُعتمد للقرار، مع تمييز العقود المسقوفة والمفتوحة."],
    ["ذكاء الموقع", "الحركة والنطاق والجوار التجاري. موثّقة المصدر، لا مُقدّرة."],
    ["تحليل الاستثمار", "العائد وصافي الدخل التشغيلي والسيناريوهات على مقارنات موثّقة."],
@@ -195,7 +195,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   oneH: "Everything the market needs, in one place",
   oneP: "Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.",
   feats: [
-   ["Verified listings + map", "Permit and FAL-checked stock on a live Riyadh map."],
+   ["Listings + map", "Owner-direct stock on a live Riyadh map, each listing showing its own verification state."],
    ["Rent Index", "Decision-grade rents with the capped/open freeze lens."],
    ["Location Intelligence", "Footfall, catchment and co-tenancy. Sourced, not modelled."],
    ["Investment underwriting", "Yield, NOI and scenarios on verified comps."],

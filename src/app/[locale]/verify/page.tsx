@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import ReviewActions from "@/components/ReviewActions";
+import { permitOf } from "@/lib/gate";
 
 export const dynamic = "force-dynamic";
 
@@ -9,6 +10,7 @@ type Row = {
   is_sat_listed: boolean | null; ownership_verified: boolean | null; authorization_verified: boolean | null;
   verification_method: string | null; verified_at: string | null; authorization_doc_url: string | null;
   ad_permit_number: string | null;
+  ad_permit_no?: string | null;
   accounts: { type: string | null; verification_status: string | null; name_en: string | null } | null;
 };
 
@@ -34,7 +36,7 @@ export default async function VerifyQueue({ searchParams }: { searchParams: { ke
   }
   const { data } = await sb
     .from("listings")
-    .select("id, reference_code, title_en, status, is_sat_listed, ownership_verified, authorization_verified, verification_method, verified_at, authorization_doc_url, ad_permit_number, accounts(type, verification_status, name_en)")
+    .select("id, reference_code, title_en, status, is_sat_listed, ownership_verified, authorization_verified, verification_method, verified_at, authorization_doc_url, ad_permit_number, ad_permit_no, accounts(type, verification_status, name_en)")
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as unknown as Row[];
@@ -64,7 +66,7 @@ export default async function VerifyQueue({ searchParams }: { searchParams: { ke
                 <td style={td}>{r.verification_method || "-"}</td>
                 <td style={td}>{r.verified_at ? new Date(r.verified_at).toISOString().slice(0, 10) : "-"}</td>
                 <td style={td}>{r.authorization_doc_url ? <a href={r.authorization_doc_url} style={{ color: "#2E5FE0" }}>view</a> : "-"}</td>
-                <td style={td}>{r.ad_permit_number || "-"}</td>
+                <td style={td}>{permitOf(r) || "-"}</td>
                 <td style={td}><ReviewActions id={r.id} token={token} /></td>
               </tr>
             ))}

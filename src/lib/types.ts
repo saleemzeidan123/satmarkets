@@ -23,6 +23,13 @@ export interface Listing {
   sale_price: number | null;
   status: string;
   is_sat_listed: boolean;
+  // Verification state. A badge may only be drawn from these, never from is_sat_listed.
+  ownership_verified?: boolean | null;
+  authorization_verified?: boolean | null;
+  right_to_market_confirmed?: boolean | null;
+  ad_permit_no?: string | null;
+  ad_permit_number?: string | null;
+  ad_permit_expires_at?: string | null;
   created_at?: string;
   districts?: DistrictRef | null;
 }

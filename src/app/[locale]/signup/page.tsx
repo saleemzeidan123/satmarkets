@@ -11,8 +11,8 @@ export default function SignupPage({ params }: { params: { locale: string } }) {
  const ar = locale === "ar";
  const t = getDictionary(ar ? "ar" : "en").signupPage;
  const bullets = ar
-  ? ["كل مالك موثّق وكل عرض مفحوص التصاريح", "مؤشر إيجارات وذكاء موقع بمستوى القرار", "الصفقة من أولها إلى آخرها في مكان واحد"]
-  : ["Every owner verified, every listing permit-checked", "Decision-grade Rent Index & Location Intelligence", "The full deal, end to end, in one place"];
+  ? ["لكل عرض حالة توثيق ظاهرة، لا شارة على كل شيء", "مؤشر إيجارات وذكاء موقع بمستوى القرار", "الصفقة من أولها إلى آخرها في مكان واحد"]
+  : ["Every listing shows its real verification state", "Decision-grade Rent Index & Location Intelligence", "The full deal, end to end, in one place"];
  return (
   <div className="auth-split">
    <div className="auth-brand">

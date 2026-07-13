@@ -6,6 +6,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { Icon, Photo } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
+import { gateFailures, gateReasonsText } from "@/lib/gate";
 
 // The owner's own inventory, with controls. "My listings" in the dashboard nav used
 // to send owners to the PUBLIC explore page, where their listings appeared as
@@ -31,19 +32,21 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     emptyT: "لا عروض بعد", emptyB: "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض.", emptyC: "أدرج مساحة",
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ",
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string,string>,
-    view: "اعرض", note: "الإيقاف المؤقّت يزيل العرض من السوق فوراً. ويمكنك إعادته في أي وقت.",
+    view: "اعرض", note: "الإيقاف المؤقّت يزيل العرض من السوق فوراً. وإعادة النشر تخضع لبوابة النشر نفسها: لا يعود العرض إلى السوق بلا تصريح إعلان ساري.",
+    cannot: "تعذّرت إعادة النشر:",
   } : {
     title: "My listings", sub: "You control what is on the market",
     thListing: "Listing", thEnq: "Enquiries", thStatus: "Status", thAction: "",
     emptyT: "No listings yet", emptyB: "List your first space and it starts reaching occupiers searching in Riyadh.", emptyC: "List a space",
     pause: "Pause", resume: "Republish", working: "Working",
     st: { published: "Published", archived: "Paused", draft: "Draft", pending_review: "In review", approved: "Approved", rejected: "Rejected" } as Record<string,string>,
-    view: "View", note: "Pausing takes the listing off the market immediately. You can put it back at any time.",
+    view: "View", note: "Pausing takes the listing off the market immediately. Republishing goes through the same publish gate as any other listing: nothing returns to the market without a valid advertising permit.",
+    cannot: "Cannot republish:",
   };
 
   const [{ data: listings }, { data: leads }, { data: districts }] = await Promise.all([
-    sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id")
-      .eq("account_id", su.accountId).order("created_at", { ascending: false }),
+    sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at")
+      .eq("account_id", su.accountId).order("created_at", { ascending: false }).order("id", { ascending: true }),
     sb.from("leads").select("id,listing_id"),
     sb.from("districts").select("id,name_en,name_ar"),
   ]);
@@ -87,6 +90,9 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                   const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
                   const live = l.status === "published";
                   const n = enq.get(l.id) || 0;
+                  // Why this listing cannot go back on the market, in the owner's language.
+                  const fails = l.status === "archived" ? gateFailures(l) : [];
+                  const blocked = fails.length ? gateReasonsText(fails, ar) : null;
                   return (
                     <tr key={l.id}>
                       <td>
@@ -103,7 +109,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                       <td className="num mono" style={{ fontWeight: 600, color: n ? "var(--ink)" : "var(--slate-2)" }}>{n}</td>
                       <td><span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12 }}>{t.st[l.status] || l.status}</span></td>
                       <td className="num">
-                        <ListingStatusToggle id={l.id} status={l.status} t={{ pause: t.pause, resume: t.resume, working: t.working }} />
+                        <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
                       </td>
                     </tr>
                   );

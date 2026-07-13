@@ -20,6 +20,10 @@ export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+// A listing being SAT's own stock is not a verification of anything. It used to
+// light the "Verified owner" badge all by itself, which handed our own inventory a
+// trust mark it had not earned, on the platform that publishes /neutrality.
+import { ownerVerified } from "@/lib/gate";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 
@@ -261,7 +265,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>]} />
                 <div className="body">
                   <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                   {(() => {

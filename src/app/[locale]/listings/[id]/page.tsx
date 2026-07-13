@@ -13,6 +13,7 @@ import SaveButton from "@/components/SaveButton";
 import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
 import { getListingById } from "@/lib/queries/listings";
 import { getDictionary } from "@/i18n/getDictionary";
+import { ownerVerified } from "@/lib/gate";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -97,7 +98,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
-          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[<Verified key="v" text={dict.ld.verifiedOwner} />, <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>

@@ -5,6 +5,7 @@ import type { Locale } from "@/i18n/config";
 import { photoFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, cityLabel, dealLabel } from "@/lib/labels";
 import SaveHeart from "@/components/SaveHeart";
+import { passesGate } from "@/lib/gate";
 
 export default function ListingCard({ listing, locale, sqm, ui }: {
   listing: Listing; locale: Locale; sqm: string; ui: any;
@@ -14,6 +15,7 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
   const dn = d ? (locale === "ar" ? d.name_ar : d.name_en) : "";
   const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
   const lease = listing.deal_type === "lease";
+  const verified = passesGate(listing);
   const price = lease ? listing.asking_rent_sqm : listing.sale_price;
   return (
     <Link href={`/${locale}/listings/${listing.id}`} className="card group relative block overflow-hidden">
@@ -34,10 +36,18 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <h3 className="font-display text-[17px] leading-snug text-charcoal line-clamp-1">{title}</h3>
         <div className="mt-1 text-[13px] text-charcoal/55">{place}{place ? " · " : ""}<bdi dir="ltr">{listing.area_sqm} {sqm}</bdi>{listing.building_grade !== "n_a" ? " · " + gradeLabel(listing.building_grade, locale) : ""}</div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-          <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/50">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E9488" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-            {ui.verifiedListing}
-          </span>
+          {/* This tick used to be unconditional. It now says what is true of THIS listing. */}
+          {verified ? (
+            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/50">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E9488" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              {ui.verifiedListing}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/40">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>
+              {ui.verificationIncomplete}
+            </span>
+          )}
           <span className="text-[12px] text-charcoal/40 transition group-hover:text-signal">{ui.view} {locale === "ar" ? "←" : "→"}</span>
         </div>
       </div>

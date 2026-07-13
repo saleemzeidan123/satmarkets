@@ -7,6 +7,7 @@ import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { getDictionary } from "@/i18n/getDictionary";
+import { ownerVerified } from "@/lib/gate";
 
 type SP = { ids?: string };
 
@@ -103,7 +104,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 {items.map((l, i) => (
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
-                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={((l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? [<Verified key="v" text={cp.verified} />] : [])} />
+                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={(ownerVerified(l) ? [<Verified key="v" text={cp.verified} />] : [])} />
                       <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                       <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>
