@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
@@ -73,6 +74,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (updErr) {
     return NextResponse.json({ error: "Decision recorded but the status did not change. Try again." }, { status: 500 });
   }
+
+  // Without this the console kept showing the old status until a hard reload:
+  // router.refresh() alone does not evict the cached RSC payload for the segment.
+  // A verification tool that appears not to have worked is a tool people click twice.
+  revalidatePath("/en/admin/accounts");
+  revalidatePath("/ar/admin/accounts");
+  revalidatePath("/en/admin");
+  revalidatePath("/ar/admin");
 
   return NextResponse.json({ ok: true, from, to });
 }
