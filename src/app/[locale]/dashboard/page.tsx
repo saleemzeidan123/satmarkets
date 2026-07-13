@@ -2,8 +2,7 @@ import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
-import SignOutButton from "@/components/SignOutButton";
-import { Icon, Logo, Photo } from "@/components/satkit";
+import { Icon, Photo } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 
@@ -106,52 +105,14 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  });
  const leads = leadRows.slice(0, 5).map((l: any) => {
   const nm = l.contact_name || (l.path === "representation" ? (db.repRequest) : (db.directEnquiry));
-  return { ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || (db.verifiedListing), time: ago(l.created_at, ar), status: "new" };
+  return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || (db.verifiedListing), time: ago(l.created_at, ar), status: "new" };
  });
  // Arabic parity: prefer the Arabic title on /ar, and keep the number+unit run
  // LTR so "320 m2" does not render as "m2 320" inside an RTL paragraph.
  const matches = briefs.map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + (db.m2) }));
 
- // Every nav item must go somewhere real. "Performance" and "Settings" used to
- // href back to /dashboard (a self-loop) and /settings is not built, so both were
- // painted doors. They are gone until the pages exist. Do not add a nav item here
- // without a destination.
- const nav: { label: string; icon?: (p: { size?: number }) => JSX.Element; badge?: string; warn?: boolean; sec?: boolean; href?: string }[] = [
-  { label: db.navOverview, icon: Icon.grid, href: `/${lp}/dashboard` },
-  { label: db.navMyListings, icon: Icon.building, href: `/${lp}/listings` },
-  { label: db.navEnquiries, icon: Icon.inbox, badge: String(leadRows.length), href: `/${lp}/messages` },
-  { label: db.navReqMatches, icon: Icon.target, badge: String(matches.length), href: `/${lp}/requirements` },
-  { label: db.navAccount, sec: true },
-  { label: db.navBilling, icon: Icon.coins, href: `/${lp}/pricing` },
- ];
  return (
-  <div className="dash">
-   <aside className="dside">
-    <div className="brand"><Link href={`/${params.locale}`} aria-label="Home"><Logo size={26} rev /></Link></div>
-    <div className="dnav">
-     {nav.map((n, i) => n.sec
-      ? <div key={i} className="sec">{n.label}</div>
-      : <Link key={i} href={n.href || `/${params.locale}/dashboard`} className={i === 0 ? "on" : ""}>
-        <span className="ic">{n.icon && n.icon({ size: 18 })}</span>
-        <span>{n.label}</span>
-        {n.badge && <span className={"badge" + (n.warn ? " warn" : "")}>{n.badge}</span>}
-       </Link>)}
-    </div>
-    <div className="me">
-     <span className="avatar" style={{ background: "var(--harbor)" }}>{acctName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
-     <div><div className="nm">{acctName}</div><div className="rl">{acctRole}</div></div>
-     <SignOutButton locale={lp} label={getDictionary(lp === "ar" ? "ar" : "en").login.signOut} />
-    </div>
-   </aside>
-   <div className="dmain">
-    <div className="dtopbar">
-     <div><h1>{ar ? `مرحباً بعودتك، ${acctName}` : `Welcome back, ${acctName}`}</h1><div className="sub">{ar ? `${pubCount} عرض نشط · ${leadRows.length} استفسار` : `${pubCount} active listings · ${leadRows.length} enquiries`}</div></div>
-     <span style={{ flex: 1 }} />
-     {/* The search box accepted no input and the bell carried a permanent unread
-         dot that did nothing. Both removed rather than faked. */}
-     <Link href={`/${params.locale}/list`} className="btn primary"><Icon.plus size={16} /> {db.listSpace}</Link>
-    </div>
-    <div className="dbody">
+  <>
      <div className="kgrid">
       <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} delta={repCount ? "+" + repCount + (db.repSuffix) : undefined} dir="up" />
       <KCard icon={Icon.target} tone="a" v={String(matches.length)} l={db.kOpenReq} />
@@ -163,18 +124,18 @@ export default async function DashboardPage({ params }: { params: { locale: stri
          Inventory is reference, and sits below. */}
      <div className="dash-2col">
       <div className="dpanel">
-       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/messages`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/dashboard/enquiries`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
        {leads.length === 0
         ? <EmptyState title={es.enqT} body={es.enqB} cta={es.enqC} href={`/${lp}/listings`} />
         : leads.map((l, i) => (
-         <div key={i} className="lead-item">
+         <Link key={l.id} href={`/${lp}/dashboard/enquiries/${l.id}`} className="lead-item" style={{ color: "inherit" }}>
           <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
           <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{l.name}</div><div className="muted" style={{ fontSize: 11.5 }}>{l.listing}</div></div>
           <div style={{ textAlign: ar ? "left" : "right" }}>
            <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
            <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>
           </div>
-         </div>
+         </Link>
         ))}
       </div>
 
@@ -197,7 +158,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
      {/* Inventory. Views and saves columns are gone: nothing measures them yet, and a
          column of "n/a" set in display mono reads as a metric. It is not one. */}
      <div className="dpanel" style={{ marginTop: 18 }}>
-      <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} /><span className="muted" style={{ fontSize: 11.5 }}>{es.perfNote}</span></div>
+      <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} /><Link href={`/${lp}/dashboard/listings`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link></div>
       {listings.length === 0 ? <EmptyState title={es.lstT} body={es.lstB} cta={es.lstC} href={`/${lp}/list`} /> : (
        <div style={{ overflowX: "auto" }}>
         <table className="dt" style={{ minWidth: 460 }}>
@@ -220,8 +181,6 @@ export default async function DashboardPage({ params }: { params: { locale: stri
        </div>
       )}
      </div>
-    </div>
-   </div>
-  </div>
+  </>
  );
 }

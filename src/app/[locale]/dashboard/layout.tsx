@@ -1,0 +1,93 @@
+import Link from "next/link";
+import { isLocale } from "@/i18n/config";
+import { notFound, redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth/session";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { getDictionary } from "@/i18n/getDictionary";
+import SignOutButton from "@/components/SignOutButton";
+import DashNav from "@/components/DashNav";
+import { Icon, Logo } from "@/components/satkit";
+
+// One shell for every owner page. The dashboard used to render its own sidebar
+// inline, so any sub-page (listings, enquiries) would have landed the owner in a
+// bare document with no navigation and no way back. The rail lives here now, and
+// every nav item goes somewhere real.
+export const dynamic = "force-dynamic";
+
+export default async function DashboardLayout({
+  children, params,
+}: { children: React.ReactNode; params: { locale: string } }) {
+  if (!isLocale(params.locale)) notFound();
+  const lp = params.locale;
+  const ar = lp === "ar";
+  const dict = getDictionary(ar ? "ar" : "en");
+  const db = dict.dashboard;
+
+  const su = await getSessionUser();
+  if (!su) redirect(`/${lp}/login`);
+  if (!su.accountId) redirect(`/${lp}`);
+  const sb = getSupabaseServer();
+
+  let acctName = su.email || db.acctNameFallback;
+  let acctRole = db.acctRoleFallback;
+  let leadCount = 0;
+  let reqCount = 0;
+
+  if (sb) {
+    const [{ data: acct }, mine, briefs] = await Promise.all([
+      sb.from("accounts").select("name_en,name_ar,type,verification_status").eq("id", su.accountId).maybeSingle(),
+      sb.from("listings").select("id").eq("account_id", su.accountId),
+      sb.from("tenant_briefs").select("id", { count: "exact", head: true }).eq("status", "open"),
+    ]);
+    if (acct) {
+      const a: any = acct;
+      acctName = (ar ? a.name_ar : a.name_en) || a.name_en || acctName;
+      acctRole = a.type === "sat"
+        ? (ar ? "فريق سات" : "SAT team")
+        : a.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner");
+    }
+    const ids = (mine.data || []).map((x: any) => x.id);
+    if (ids.length) {
+      const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids);
+      leadCount = count || 0;
+    }
+    reqCount = briefs.count || 0;
+  }
+
+  const initials = acctName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+  return (
+    <div className="dash">
+      <aside className="dside">
+        <div className="brand"><Link href={`/${lp}`} aria-label="SAT Markets"><Logo size={26} rev /></Link></div>
+        <DashNav
+          locale={lp}
+          items={[
+            { key: "overview", label: db.navOverview, href: `/${lp}/dashboard` },
+            { key: "listings", label: db.navMyListings, href: `/${lp}/dashboard/listings` },
+            { key: "enquiries", label: db.navEnquiries, href: `/${lp}/dashboard/enquiries`, badge: leadCount || undefined },
+            { key: "requirements", label: db.navReqMatches, href: `/${lp}/requirements`, badge: reqCount || undefined },
+            { key: "account", label: db.navAccount, section: true },
+            { key: "billing", label: db.navBilling, href: `/${lp}/pricing` },
+          ]}
+        />
+        <div className="me">
+          <span className="avatar" style={{ background: "var(--harbor)" }}>{initials}</span>
+          <div><div className="nm">{acctName}</div><div className="rl">{acctRole}</div></div>
+          <SignOutButton locale={lp} label={dict.login.signOut} />
+        </div>
+      </aside>
+      <div className="dmain">
+        <div className="dtopbar">
+          <div>
+            <h1>{acctName}</h1>
+            <div className="sub">{acctRole}</div>
+          </div>
+          <span style={{ flex: 1 }} />
+          <Link href={`/${lp}/list`} className="btn primary"><Icon.plus size={16} /> {db.listSpace}</Link>
+        </div>
+        <div className="dbody">{children}</div>
+      </div>
+    </div>
+  );
+}

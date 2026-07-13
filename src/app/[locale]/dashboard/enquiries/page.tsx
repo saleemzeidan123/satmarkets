@@ -1,0 +1,112 @@
+import Link from "next/link";
+import { isLocale } from "@/i18n/config";
+import { notFound, redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/auth/session";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { Icon } from "@/components/satkit";
+
+// Every enquiry on the owner's own listings. The dashboard showed the five most
+// recent and then had nowhere to send you.
+export const dynamic = "force-dynamic";
+
+const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+export default async function EnquiriesPage({ params }: { params: { locale: string } }) {
+  if (!isLocale(params.locale)) notFound();
+  const lp = params.locale;
+  const ar = lp === "ar";
+
+  const su = await getSessionUser();
+  if (!su) redirect(`/${lp}/login`);
+  if (!su.accountId) redirect(`/${lp}`);
+  const sb = getSupabaseServer();
+  if (!sb) notFound();
+
+  const t = ar ? {
+    title: "الاستفسارات", sub: "من تواصل بشأن مساحاتك",
+    thWho: "المستفسر", thListing: "العرض", thPath: "المسار", thWhen: "وصل",
+    direct: "تواصل مباشر", rep: "طلب تمثيل",
+    emptyT: "لا استفسارات بعد",
+    emptyB: "عندما يتواصل مستأجر بشأن أحد عروضك، سيظهر هنا برسالته وبيانات تواصله.",
+    emptyC: "اعرض عروضي",
+    anon: "استفسار",
+  } : {
+    title: "Enquiries", sub: "Who has been in touch about your spaces",
+    thWho: "Enquirer", thListing: "Listing", thPath: "Path", thWhen: "Received",
+    direct: "Direct contact", rep: "Representation",
+    emptyT: "No enquiries yet",
+    emptyB: "When an occupier gets in touch about one of your listings, it appears here with their message and contact details.",
+    emptyC: "View my listings",
+    anon: "Enquiry",
+  };
+
+  // RLS ("owner read own listing leads") already scopes this to the owner's listings;
+  // SAT sees all. We do not filter again here, we just render what we are allowed.
+  const [{ data: leads }, { data: mine }] = await Promise.all([
+    sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(200),
+    sb.from("listings").select("id,title_en,title_ar").eq("account_id", su.accountId),
+  ]);
+
+  const titleOf = new Map((mine || []).map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
+  const rows = (leads || []).filter((l: any) => su.isSat || (l.listing_id && titleOf.has(l.listing_id)));
+
+  const stamp = (d: string) =>
+    new Date(d).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-GB", {
+      day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Riyadh",
+    });
+
+  return (
+    <div>
+      <div style={{ marginBottom: 18 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+        <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>{t.sub}</div>
+      </div>
+
+      <div className="dpanel">
+        <div className="ph">
+          <span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span>
+          <span className="t">{t.title}</span>
+          <span style={{ flex: 1 }} />
+          <span className="muted" style={{ fontSize: 11.5 }}>{rows.length}</span>
+        </div>
+
+        {rows.length === 0 ? (
+          <div style={{ padding: "24px 20px 28px" }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.emptyT}</div>
+            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 400 }}>{t.emptyB}</div>
+            <Link href={`/${lp}/dashboard/listings`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.emptyC}</Link>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table className="dt" style={{ minWidth: 640 }}>
+              <thead>
+                <tr>
+                  <th>{t.thWho}</th><th>{t.thListing}</th><th>{t.thPath}</th>
+                  <th style={{ textAlign: "right" }}>{t.thWhen}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((l: any) => {
+                  const nm = l.contact_name || t.anon;
+                  return (
+                    <tr key={l.id}>
+                      <td>
+                        <Link href={`/${lp}/dashboard/enquiries/${l.id}`} className="row gap10" style={{ color: "inherit" }}>
+                          <span className="avatar" style={{ background: "var(--harbor)", flex: "none" }}>{initials(nm)}</span>
+                          <span style={{ fontWeight: 600, fontSize: 13 }}>{nm}</span>
+                        </Link>
+                      </td>
+                      <td className="muted" style={{ fontSize: 12.5 }}>{titleOf.get(l.listing_id) || ""}</td>
+                      <td className="muted" style={{ fontSize: 12.5 }}>{l.path === "representation" ? t.rep : t.direct}</td>
+                      <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(l.created_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
