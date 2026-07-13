@@ -20,6 +20,15 @@ export const dynamic = "force-dynamic";
 // came down and why.
 //
 // The distinction matters. A cron job is a promise. A read policy is a fact.
+//
+// Cadence: DAILY, not hourly. Not a preference, a plan limit. Vercel's Hobby plan
+// rejects any cron that would run more than once a day, and it does not reject it
+// quietly: it fails the whole deployment. An hourly schedule here once left two
+// commits sitting on main, unbuilt, while the site served the previous build.
+// Daily is safe here precisely because of the paragraph above: the lapsed listing
+// is already unservable the moment its licence expires. This job only tidies the
+// row and writes the audit entry, and a few hours' delay in doing so costs nothing.
+// If the cadence ever needs to be hourly, that is a Pro-plan change, not a code one.
 async function run(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
