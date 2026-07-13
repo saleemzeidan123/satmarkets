@@ -33,6 +33,14 @@ export default function MessagesPage({ params }: { params: { locale: string } })
   [{ role: "a", text: mg.c3m1 }],
   [{ role: "a", text: mg.c4m1 }, { role: "u", text: mg.c4m2 }],
  ];
+ // Each thread is about its own listing. This was hardwired to conversation 1, so
+ // every thread claimed to be about the Olaya Tower floor.
+ const subjects: [string, string][] = [
+  [mg.listingTitle, mg.listingSpec],
+  [mg.s2Title, mg.s2Spec],
+  [mg.s3Title, mg.s3Spec],
+  [mg.s4Title, mg.s4Spec],
+ ];
  const [active, setActive] = useState(0);
  const [msgs, setMsgs] = useState<Msg[]>(threads[0]);
  const [input, setInput] = useState("");
@@ -87,7 +95,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
    <div className="dmain" style={{ display: "flex", flexDirection: "column", background: "var(--cool)" }}>
     <div className="dtopbar">
      <button className="msg-back" aria-label={mg.backInbox} onClick={() => setPane("list")} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", padding: 4, marginInlineStart: -4 }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={20} /></span></button>
-     <span className="avatar" style={{ background: "var(--harbor)" }}>OT</span>
+     <span className="avatar" style={{ background: convs[active][5] }}>{convs[active][0]}</span>
      <div><h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{convs[active][1]}</h2><div className="sub"><Verified text={mg.verifiedOwner} /></div></div>
      <span style={{ flex: 1 }} />
      <span className="btn secondary sm"><Icon.eye size={14} /> {mg.viewListing}</span>
@@ -95,7 +103,7 @@ export default function MessagesPage({ params }: { params: { locale: string } })
     </div>
     <div className="row gap12" style={{ padding: "12px 24px", background: "var(--paper)", borderBottom: "1px solid var(--silver)" }}>
      <Photo kind="office" h={44} style={{ width: 60, borderRadius: 8, flex: "none" }} badges={[<Verified key="v" text="V" />]} />
-     <div className="grow"><div style={{ fontSize: 13, fontWeight: 600 }}>{mg.listingTitle}</div><div className="mono muted" style={{ fontSize: 11 }}>{mg.listingSpec}</div></div>
+     <div className="grow"><div style={{ fontSize: 13, fontWeight: 600 }}>{subjects[active][0]}</div><div className="mono muted" style={{ fontSize: 11 }}>{subjects[active][1]}</div></div>
      <span className="freeze open"><span className="dot" />{mg.open}</span>
     </div>
     <div ref={ref} style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>

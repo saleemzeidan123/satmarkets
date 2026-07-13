@@ -848,11 +848,17 @@
     "dealProgress": "Deal progress",
     "appointSat": "Appoint SAT to represent me",
     "appointNote": "Keep it on-platform, SAT verifies both parties and tracks every milestone. The Ejar contract is signed directly with the owner or their licensed broker.",
-    "c2m1": "The whole floor is available from March. 1,200 m2, fitted, with parking for eighteen.",
+    "c2m1": "The whole floor is available from March. 1,200 m², fitted, with parking for eighteen.",
     "c2m2": "Understood. Could you send the floor plan and the service charge breakdown?",
     "c3m1": "I found 3 verified matches in Al Olaya inside your size and budget. Open the shortlist to compare them against the Rent Index.",
     "c4m1": "Thanks for the enquiry. I will send the brochure shortly.",
-    "c4m2": "Perfect, no rush. We are looking at a Q2 move."
+    "c4m2": "Perfect, no rush. We are looking at a Q2 move.",
+    "s2Title": "Full Floor, KAFD",
+    "s2Spec": "3,700 SAR/m²·yr · 1,200 m² · KAFD",
+    "s3Title": "Shortlist, Al Olaya",
+    "s3Spec": "3 verified matches · Al Olaya",
+    "s4Title": "Retail Unit, Tahlia",
+    "s4Spec": "2,600 SAR/m²·yr · 180 m² · Al Tahlia"
   },
   "building": {
     "back": "Back to map",
