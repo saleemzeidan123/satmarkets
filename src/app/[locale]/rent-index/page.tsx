@@ -90,7 +90,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ri.eyebrow}</div>
+      <div className="eyebrow">{ri.eyebrow}{pub.period ? " \u00b7 " + pub.period : ""}</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ri.intro}</div>
      </div>
@@ -143,16 +143,13 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
 
     {/* main grid */}
     <div className="rent-grid">
-     {/* published bands, attributed (Layer 1) */}
-     <div className="card pad" style={{ gridColumn: "1 / -1", boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.bandsTitle}</div>
-      <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ri.bandsSub}</div>
-      <div className="col gap8" style={{ marginTop: 14, fontSize: 13.5 }}>
-       <div><strong>{ri.developments}</strong> {ri.developmentsData}</div>
-       <div><strong>{ri.districtsLabel}</strong> {ri.districtsData}</div>
-       <div><strong>{ri.streets}</strong> {ri.streetsData}</div>
-      </div>
-     </div>
+     {/* A card here read "Published bands, Q1 2026 (attributed)" and listed KAFD
+         3,400 to 3,800 (verified), Al Olaya 2,200 to 3,200 (verified), Tahlia Street
+         2,500 to 4,000 (verified). Every one of those numbers was a string in a
+         dictionary file. They sat directly above a line admitting that "named sources
+         are attached at launch, when the figures are real", so the page called the
+         same figures verified and fake in adjacent paragraphs. The table below is the
+         index: computed from source, or blank. */}
      {/* The trend chart plotted a hardcoded twelve-quarter series
          ([40,44,42,50,56,54,62,68,70,76,80,86]) as if it were a rent trend, on the one
          page whose entire premise is that every figure is cited to its source. There is
