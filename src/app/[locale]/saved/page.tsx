@@ -80,7 +80,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     );
   };
   const pxCount = Object.keys(px).length;
-  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return dict.common.na; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? "، " + cityLabel(d.city, locale) : ""}`; };
+  const distOf = (l: Listing) => { const d: any = (l as any).districts; if (!d) return dict.common.na; const n = ar ? d.name_ar : d.name_en; return `${n}${d.city ? (ar ? "، " : ", ") + cityLabel(d.city, locale) : ""}`; };
 
   return (
     <section className="mx-auto max-w-[1360px] px-6 pt-7 pb-16">

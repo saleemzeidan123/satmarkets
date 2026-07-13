@@ -1,4 +1,5 @@
 import Link from "next/link";
+import LanguageSwitch from "@/components/LanguageSwitch";
 
 const HARBOR = "#3A6EA5", INK = "#14181B", COOL = "#F6F8FB";
 
@@ -92,10 +93,12 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
           {FOOT_TRUST.map((b) => <span className="tpill" key={b}><span className="d" />{t(b)}</span>)}
         </div>
         <div className="foot-end">
-          <span className="langtog"><span className="on">EN</span><span>العربية</span></span>
-          <a className="soc">{FIcon.user(16)}</a>
-          <a className="soc">{FIcon.msg(16)}</a>
-          <a className="soc">{FIcon.mail(16)}</a>
+          {/* The language toggle was two <span>s: it looked like a switcher and did
+              nothing. It is now a real pair of locale links. The three social icons
+              were <a> tags with no href, so they rendered as empty grey boxes that
+              went nowhere. They stay out until the accounts exist. */}
+          <LanguageSwitch locale={locale === "ar" ? "ar" : "en"} />
+          <Link className="soc" href={L("/contact")} aria-label={t("Contact")}>{FIcon.mail(16)}</Link>
         </div>
       </div>
       <div className="bottom">
