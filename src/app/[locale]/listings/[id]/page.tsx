@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
+import { listedSince, listedLabel } from "@/lib/listedSince";
 import LocationScore from "@/components/LocationScore";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { Photo, Verified, Icon } from "@/components/satkit";
@@ -107,10 +108,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
             <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
             <span className="tag">{dict.ld.availableNow}</span>
+            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
+            {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
 
           {/* The advertising licence and its expiry, displayed as the REGA marketing

@@ -243,7 +243,8 @@
     "riyadh": "Riyadh",
     "crumbHome": "Home",
     "crumbListings": "Listings",
-    "crumbListingsUpper": "LISTINGS"
+    "crumbListingsUpper": "LISTINGS",
+    "newBadge": "New"
   },
   "chrome": {
     "tabHome": "Home",
@@ -304,7 +305,8 @@
     "crumbListings": "Listings",
     "mapArea": "in this map area",
     "clearArea": "clear",
-    "withinBand": "Within index band"
+    "withinBand": "Within index band",
+    "newBadge": "New"
   },
   "pricing": {
     "na": "n/a",

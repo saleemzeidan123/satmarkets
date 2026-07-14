@@ -243,7 +243,8 @@
     "riyadh": "الرياض",
     "crumbHome": "الرئيسية",
     "crumbListings": "العروض",
-    "crumbListingsUpper": "العروض"
+    "crumbListingsUpper": "العروض",
+    "newBadge": "جديد"
   },
   "chrome": {
     "tabHome": "الرئيسية",
@@ -304,7 +305,8 @@
     "crumbListings": "المساحات",
     "mapArea": "ضمن منطقة الخريطة",
     "clearArea": "مسح",
-    "withinBand": "ضمن نطاق المؤشر"
+    "withinBand": "ضمن نطاق المؤشر",
+    "newBadge": "جديد"
   },
   "pricing": {
     "na": "غير متاح",
