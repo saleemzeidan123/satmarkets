@@ -5,7 +5,19 @@ import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
-const STATUSES = ["contacted", "verified", "rejected"] as const;
+// The lifecycle is: new -> contacted -> approved -> provisioned -> verified/rejected.
+//
+// "approved" MUST be here. It was not, and that single omission bricked onboarding a
+// second time: the provision endpoint refuses to act on anyone who is not approved,
+// and this route is the only way SAT can approve. So SAT could not approve, therefore
+// could not provision, therefore could not let a single person in. PR-AT taught the
+// database and the provision route about "approved" and forgot to tell the one route
+// that has to set it.
+//
+// "provisioned" is deliberately NOT settable here. It is not a decision anyone makes;
+// it is a fact recorded by the provisioning endpoint once an account actually exists.
+// A status you can assert by hand is a status that can lie.
+const STATUSES = ["contacted", "approved", "verified", "rejected"] as const;
 
 // Privileged status updates for signup requests. Same gate as listing review:
 // ADMIN_REVIEW_TOKEN + service role, never exposed to the client bundle.

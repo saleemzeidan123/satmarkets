@@ -99,7 +99,14 @@ const LISTINGS = [
 async function main() {
   log(`\nSeeding the demo world through the front doors.  base=${BASE}  dry=${DRY}\n`);
 
-  const { data: districts } = await svc.from("districts").select("id,name_en,city").eq("city", "Riyadh").limit(8);
+  // Never destructure `data` alone from a Supabase call. The first version of this line
+  // did, and when the service key was invalid the client returned {data:null,error:401}
+  // and this script announced "Reference data is missing" -- sending us to look at the
+  // seed data while the actual fault was the credential. An error you throw away comes
+  // back as a lie about something else.
+  const { data: districts, error: dErr } = await svc
+    .from("districts").select("id,name_en,city").eq("city", "Riyadh").limit(8);
+  if (dErr) throw new Error(`Could not read districts: ${dErr.message} (${dErr.hint ?? "no hint"})`);
   if (!districts?.length) throw new Error("No Riyadh districts. Reference data is missing.");
 
   const made = [];
