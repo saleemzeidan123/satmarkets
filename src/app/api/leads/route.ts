@@ -41,24 +41,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
   }
 
-  const { data, error } = await supabase
-    .from("leads")
-    .insert({
-      listing_id: body.listing_id ?? null,
-      path: body.path,
-      contact_name: name.slice(0, 120),
-      contact_email: email.slice(0, 200),
-      contact_phone: body.contact_phone ? String(body.contact_phone).slice(0, 40) : null,
-      message: body.message ? String(body.message).slice(0, 2000) : null,
-      consent: isRep,
-      consent_at: isRep ? new Date().toISOString() : null,
-    })
-    .select("id")
-    .single();
+  // NO .select() AFTER THE INSERT. Not a style preference. It is the fix.
+  //
+  // This route runs on the ANON key, so an enquiry from a member of the public inserts
+  // as role `anon`. The leads table is deliberately WRITE-ONLY for the public: anyone
+  // may put an enquiry in, and nobody but the owner of the listing or SAT may take one
+  // out. There is therefore no SELECT policy for anon, on purpose, so a stranger cannot
+  // read back other people's enquiries or enumerate who is interested in what.
+  //
+  // `.select("id").single()` asks PostgREST to RETURN the inserted row, which requires
+  // exactly the SELECT permission we have deliberately withheld. So the row was written,
+  // the read-back came up empty, .single() turned that into an error, and this route
+  // answered 500: "Could not save the enquiry." The enquiry had been saved.
+  //
+  // Nothing reads the id. An insert with no error IS the success.
+  const { error } = await supabase.from("leads").insert({
+    listing_id: body.listing_id ?? null,
+    path: body.path,
+    contact_name: name.slice(0, 120),
+    contact_email: email.slice(0, 200),
+    contact_phone: body.contact_phone ? String(body.contact_phone).slice(0, 40) : null,
+    message: body.message ? String(body.message).slice(0, 2000) : null,
+    consent: isRep,
+    consent_at: isRep ? new Date().toISOString() : null,
+  });
 
   if (error) {
     console.error("leads insert failed:", error.message);
     return NextResponse.json({ error: "Could not save the enquiry. Please try again." }, { status: 500 });
   }
-  return NextResponse.json({ ok: true, id: data?.id ?? null });
+  return NextResponse.json({ ok: true });
 }
