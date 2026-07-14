@@ -107,10 +107,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   exH: "أربع وظائف، في مكان محايد واحد",
   exP: "لا أحد غيرنا في المملكة يجمع الوظائف الأربع معاً. هذا هو جوهر المنصّة.",
   cards: [
-   ["عروض موثّقة", "مباشرة من المالك الموثّق، أو من SAT بموجب تفويض. لا عروض وسطاء غير موثّقة.", "/listings"],
+   ["عروض موثّقة", "مباشرة من المالك الموثّق أو من وسيط مرخّص. كل إعلان يُراجع قبل نشره.", "/listings"],
    ["الطلبات", "يدرج المستأجرون ما يحتاجونه، فيأتيهم العرض المناسب.", "/post-requirement"],
    ["مؤشر الإيجارات", "أسعار تُعتمد للقرار وبيانات النطاق. كل رقم موثّق المصدر.", "/rent-index"],
-   ["التمثيل", "خيار صريح بالاختيار. ولا عمولة مدمجة في أي عرض.", "/dashboard"],
+   ["المستشار الذكي", "بحث وتقييم بالمحادثة، مستند إلى مؤشر الإيجارات.", "/advisor"],
   ] as [string,string,string][],
   ftEye: "مختارة، الرياض",
   ftH: "مساحات موثّقة، بأسعار في سياقها",
@@ -122,14 +122,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   bandBtn: "استكشف مؤشر الإيجارات",
   bandStat: ["الفئة A بالرياض، سنوياً (منشور)", "وسيط الفئة A ريال/م²·سنة", "إشغال الفئة A"] as string[],
   flowEye: "كيف تسير الصفقة",
-  flowH: "التمثيل دائماً خيارك الصريح",
-  pathATag: "المسار أ، مجاني",
-  pathATitle: "تواصل مع المُدرِج مباشرة",
-  pathADesc: "خدمة ذاتية ومجانية. لا تفويض، لا رسوم، لا عمولة مفترضة. هكذا تعمل غالبية المنصّة.",
-  pathBTag: "المسار ب، اختياري",
-  pathBTitle: "وكّل SAT العقارية لتمثيلك",
-  pathBDesc: "تفويض صريح عندما تريد وسطاء SAT العقارية المرخّصين إلى جانبك. شروط واضحة، يُتفق عليها قبل أي رسوم.",
-  pathBLink: "تحدّث إلى SAT العقارية ←",
+  flowH: "مسار واحد. تتعامل مع المعلن مباشرة.",
+  flowBody: "تواصل مع المعلن مباشرة. مجاناً، ودون تفويض، ودون عمولة. سات ماركتس ليست طرفاً في الصفقة ولا تأخذ منها أي نسبة.",
+  flowNote: "شركة سات العقارية مرخّصة للوساطة بشكل منفصل، وتنشر إعلاناتها هنا كأي وسيط آخر. وحين يكون الإعلان لها، يُذكر ذلك بوضوح.",
   oneEye: "منصّة واحدة",
   oneH: "كل ما يحتاجه السوق، في مكان واحد",
   oneP: "الاكتشاف، وبيانات تُعتمد للقرار، والذكاء الاصطناعي، والصفقة كاملة، للمستأجرين والمُلّاك والوسطاء والمستثمرين.",
@@ -168,10 +163,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   exH: "Four jobs, one neutral place",
   exP: "No one else in the Kingdom brings all four together. That is the exchange.",
   cards: [
-   ["Verified listings", "Direct from the verified owner, or SAT under mandate. No unverified broker listings.", "/listings"],
+   ["Verified listings", "Direct from the verified owner or a licensed broker. Every listing is checked before it goes live.", "/listings"],
    ["Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
    ["Rent Index", "Decision-grade pricing and catchment data. Every figure sourced.", "/rent-index"],
-   ["Representation", "An explicit, opt-in choice. Never a commission baked into a listing.", "/dashboard"],
+   ["AI Advisor", "Conversational search and valuation, grounded in the Rent Index.", "/advisor"],
   ] as [string,string,string][],
   ftEye: "Featured, Riyadh",
   ftH: "Verified spaces, priced in context",
@@ -183,14 +178,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   bandBtn: "Explore the Rent Index",
   bandStat: ["Riyadh Grade A, YoY (published)", "Grade A median SAR/m²·yr", "Grade A occupancy"] as string[],
   flowEye: "How a deal flows",
-  flowH: "Representation is always your explicit choice",
-  pathATag: "Path A, Free",
-  pathATitle: "Contact the lister directly",
-  pathADesc: "Self-serve and free. No mandate, no fee, no assumed commission. Most of the exchange runs this way.",
-  pathBTag: "Path B, Opt-in",
-  pathBTitle: "Appoint SAT Real Estate to represent you",
-  pathBDesc: "An explicit mandate when you want SAT Real Estate's licensed brokers at the table. Clear terms, agreed before any fee applies.",
-  pathBLink: "Talk to SAT Real Estate →",
+  flowH: "One path. You deal with the lister.",
+  flowBody: "Contact the lister directly. It is free, there is no mandate and no commission. SAT Markets is not a party to the transaction and takes no cut of it.",
+  flowNote: "SAT Real Estate is separately licensed as a brokerage and lists here like any other broker. Where a listing is ours, it says so.",
   oneEye: "One exchange",
   oneH: "Everything the market needs, in one place",
   oneP: "Discovery, decision-grade data, AI and the full deal, for occupiers, owners, brokers and investors.",
@@ -370,7 +360,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          i === 0 ? (stats.listings ? [stats.listings, H.statSpacesLive] : null)
          : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), H.statOpenReqs] : null)
          : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), H.statSegments] : null)
-         : ["FAL 1200025510", H.statLicensed];
+         : null;
         return (
          <Reveal key={i} delay={i * 90}>
           <Link href={L(c[2])} className="job-card">
@@ -463,18 +453,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
     <div style={{ padding: "clamp(44px,7vw,64px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
      <div className="eyebrow" style={{ textAlign: "center" }}>{T.flowEye}</div>
      <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>{T.flowH}</h2>
-     <div className="row gap20 wrap" style={{ maxWidth: 940, margin: "0 auto", alignItems: "stretch" }}>
-      <div className="card pad grow" style={{ minWidth: 280 }}>
-       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{T.pathATag}</span>
-       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>{T.pathATitle}</div>
-       <div className="muted" style={{ fontSize: "var(--fs-base)", lineHeight: 1.6 }}>{T.pathADesc}</div>
+     <div style={{ maxWidth: 720, margin: "0 auto" }}>
+      <div className="card pad" style={{ textAlign: "center" }}>
+       <div style={{ fontSize: "var(--fs-lg)", lineHeight: 1.65 }}>{T.flowBody}</div>
+       <div className="muted" style={{ fontSize: "var(--fs-base)", lineHeight: 1.6, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>{T.flowNote}</div>
       </div>
-      <a href="https://satestate.com/contact" target="_blank" rel="noopener noreferrer" className="card pad grow lift" style={{ borderColor: "var(--harbor)", minWidth: 280, textDecoration: "none", color: "inherit", display: "block" }}>
-       <span className="tag" style={{ color: "var(--harbor)", background: "rgba(58,110,165,.08)", borderColor: "rgba(58,110,165,.3)" }}>{T.pathBTag}</span>
-       <div style={{ fontSize: 19, fontWeight: 600, margin: "14px 0 8px" }}>{T.pathBTitle}</div>
-       <div className="muted" style={{ fontSize: "var(--fs-base)", lineHeight: 1.6 }}>{T.pathBDesc}</div>
-       <div style={{ marginTop: 12, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--harbor)" }}>{T.pathBLink}</div>
-      </a>
      </div>
     </div>
 

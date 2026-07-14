@@ -86,7 +86,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       <textarea placeholder="Description" value={f.description_en} onChange={(e)=>set("description_en",e.target.value)} className={inp} rows={3} />
 
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">
-        <div className="text-[12px] font-medium text-charcoal/70">Representation &amp; media</div>
+        <div className="text-[12px] font-medium text-charcoal/70">Who is listing, and media</div>
         <select value={f.lister_type} onChange={(e)=>set("lister_type",e.target.value)} className={inp}>
           <option value="owner_direct">I am the owner (owner-direct)</option>
           <option value="broker_authorized">I am a broker authorized by the owner</option>
