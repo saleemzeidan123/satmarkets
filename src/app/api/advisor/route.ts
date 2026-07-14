@@ -220,10 +220,25 @@ export async function POST(req: NextRequest) {
     const baseline = arq
       ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، الوسيط ${band.median}، للفترة ${band.period}`
       : `${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}, for ${band.period}`;
+    // WE CANNOT ALERT ANYONE, SO WE DO NOT SAY WE WILL.
+    //
+    // This used to answer: "I am watching X for you. When the index next updates, I
+    // will flag any move of more than N percent."
+    //
+    // We cannot. The row we just wrote carries no contact_email and no user id -- look
+    // at the insert above, it sets neither -- and there is no job anywhere in this
+    // codebase that reads market_watches and notifies a human being. So the sentence
+    // was a promise the platform has no means of keeping, made to someone who would
+    // then stop checking the index because they believed we were watching it for them.
+    //
+    // The watch IS recorded, and that is genuinely useful: it tells SAT which bands
+    // people care about. So we keep the write and describe it accurately. When there is
+    // a notifier and a way to reach the person, this copy can promise a notification,
+    // and not one minute before.
     const message = saved
       ? (arq
-        ? `تم. أراقب لك ${band.district_label} ${band.asset_type}${seg}. خط الأساس هو نطاق المؤشر الحالي، ${baseline}. عند التحديث القادم للمؤشر سأنبهك لأي حركة تتجاوز ${threshold} بالمئة. المصدر ${srcLabel(band.source, true)}.`
-        : `Done. I am watching ${band.district_label} ${band.asset_type}${seg} for you. The baseline is the current Rent Index band, ${baseline}. When the index next updates, I will flag any move of more than ${threshold} percent. Source ${srcLabel(band.source, false)}.`)
+        ? `سجّلت اهتمامك بـ ${band.district_label} ${band.asset_type}${seg}. خط الأساس هو نطاق المؤشر الحالي، ${baseline}. لا يمكنني إشعارك تلقائياً بعد، لذا راجع مؤشر الإيجارات عند تحديثه. المصدر ${srcLabel(band.source, true)}.`
+        : `Noted: ${band.district_label} ${band.asset_type}${seg}. The baseline is the current Rent Index band, ${baseline}. I cannot alert you automatically yet, so check the Rent Index when it next updates. Source ${srcLabel(band.source, false)}.`)
       : (arq
         ? `تعذر حفظ المراقبة الآن، لكن نطاق المؤشر الحالي لـ ${band.district_label} ${band.asset_type}${seg} هو ${baseline}. المصدر ${srcLabel(band.source, true)}.`
         : `I could not save the watch just now, but the current Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${srcLabel(band.source, false)}.`);
