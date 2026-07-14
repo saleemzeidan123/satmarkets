@@ -101,20 +101,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not create the account." }, { status: 500 });
   }
 
-  // 2. The identity. We invite; we never set or see a password.
+  // 2. The identity.
+  //
+  // For a real person: we INVITE. We never set or see a password. That is the whole
+  // point, and it is not negotiable.
+  //
+  // For a demo persona: we cannot invite, because there is nobody to invite. Supabase
+  // rejects the address outright (400: Email address "x@demo.satmarkets.test" is
+  // invalid), and even a deliverable address would run into the built-in mailer's rate
+  // limit of a couple of sends an hour. So a demo identity is created directly, with
+  // no email, and the response SAYS SO rather than reporting an invitation that was
+  // never sent.
+  //
+  // Note what decides this: `r.is_demo`, read from the signup request in the database.
+  // NOT a flag in the request body. A caller cannot ask to skip the invitation, because
+  // "let me in without an invitation" is exactly the thing an attacker would ask for.
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
-  const { data: invited, error: inviteErr } = await sb.auth.admin.inviteUserByEmail(
-    String(r.email),
-    { redirectTo: site ? `${site}/en/login` : undefined }
-  );
+  const isDemo = !!r.is_demo;
+
+  const { data: invited, error: inviteErr } = isDemo
+    ? await sb.auth.admin.createUser({ email: String(r.email), email_confirm: true })
+    : await sb.auth.admin.inviteUserByEmail(String(r.email), {
+        redirectTo: site ? `${site}/en/login` : undefined,
+      });
 
   if (inviteErr || !invited?.user) {
     // Do not leave a half-built account behind. A partial provision is worse than
     // none, because it looks finished.
     await sb.from("accounts").delete().eq("id", acct.id);
-    console.error("[provision] invite", inviteErr);
+    console.error("[provision] identity", inviteErr);
     return NextResponse.json(
-      { error: "Could not send the invitation. The account was not created." },
+      {
+        error: isDemo
+          ? "Could not create the demo identity. The account was not created."
+          : "Could not send the invitation. The account was not created.",
+      },
       { status: 500 }
     );
   }
@@ -150,7 +171,10 @@ export async function POST(req: NextRequest) {
     ok: true,
     account_id: acct.id,
     auth_user_id: invited.user.id,
-    invited: r.email,
-    note: "Account created unverified and an invitation sent. Verification is a separate decision with its own ledger.",
+    email: r.email,
+    invitation_sent: !isDemo,
+    note: isDemo
+      ? "DEMO account. No invitation was sent, because there is nobody to invite. Created unverified."
+      : "Account created unverified and an invitation sent. Verification is a separate decision with its own ledger.",
   });
 }
