@@ -15,8 +15,11 @@ import { getDictionary } from "@/i18n/getDictionary";
 export interface DistrictBubble { id: string; name: string; lat: number; lng: number; count: number }
 export interface ExactPin { id: string; title: string; lat: number; lng: number; price: string }
 
-const PRIMARY_STYLE = "https://tiles.openfreemap.org/styles/positron";
-const FALLBACK_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+// Basemap. Carto positron is primary because it actually renders under maplibre 4.7.1.
+// OpenFreeMap positron fetches its tiles (200) but paints nothing and never reaches
+// isStyleLoaded(), so "load" and "idle" never fire. Kept only as a last-resort fallback.
+const PRIMARY_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
+const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 export default function ListingsMap({ locale, bubbles, pins, baseParams, initialBbox }: {
   locale: "en" | "ar"; bubbles: DistrictBubble[]; pins: ExactPin[]; baseParams: string; initialBbox?: number[];
@@ -114,6 +117,10 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         [60, 400].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
         try { addData(map); wire(map, maplibregl); if (initialBbox && initialBbox.length === 4) { try { map.fitBounds([[initialBbox[0], initialBbox[1]], [initialBbox[2], initialBbox[3]]], { padding: 34, duration: 0, maxZoom: 14 }); } catch {} } } catch {}
       };
+      // style.load is the only event that reliably fires here (~70 to 100ms). load and
+      // idle never fire under maplibre 4.7.1, which is why the panel used to sit on
+      // "Loading map" for the full 6s until the fallback timer swapped the style.
+      map.on("style.load", onReady);
       map.on("load", onReady);
       map.on("idle", onReady);
 
@@ -127,6 +134,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       };
 
       const failTimer = setTimeout(swapToFallback, 6000);
+      map.on("style.load", () => clearTimeout(failTimer));
       map.on("load", () => clearTimeout(failTimer));
       map.on("error", () => { if (ready || cancelled) return; if (!triedFallback) swapToFallback(); else setStatus("error"); });
     }).catch(() => { if (!cancelled) setStatus("error"); });

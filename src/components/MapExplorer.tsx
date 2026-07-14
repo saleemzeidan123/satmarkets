@@ -133,13 +133,15 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
    const maplibregl = (await import("maplibre-gl")).default;
    try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
    if (cancelled || !ref.current) return;
-   map = new maplibregl.Map({ container: ref.current, style: "https://tiles.openfreemap.org/styles/positron",
+   map = new maplibregl.Map({ container: ref.current, style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
     center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17 });
    mapRef.current = map;
    ro = new ResizeObserver(() => { try { map.resize(); } catch {} }); if (ref.current) ro.observe(ref.current);
    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
 
-   map.on("load", () => {
+   // style.load, not load. Under maplibre 4.7.1 "load" never fires, so every source,
+   // layer and setReady(true) below was unreachable and /map spun forever.
+   map.on("style.load", () => {
     map.addSource("b", { type: "geojson", data: buildFC(buildings), cluster: true, clusterRadius: 46, clusterMaxZoom: 13, generateId: true });
     map.addSource("all", { type: "geojson", data: buildFC(buildings) });
     map.addSource("zone", { type: "geojson", data: { type: "FeatureCollection", features: [] } });

@@ -32,6 +32,25 @@ function examplePair(arabic: boolean, exclude?: string | null): string {
   return `${list[i]}${arabic ? " أو " : " or "}${list[(i + 1) % list.length]}`;
 }
 
+// Resolve a district name the classifier extracted (which comes back in whatever
+// language the user typed, e.g. "العليا") to a canonical district id, matching on
+// both the English and Arabic names. Without this, an Arabic district name is
+// ilike-matched against the English-only district_label, never matches, and the
+// Advisor falsely tells Arabic users there is no data for a district that has data.
+async function resolveDistrictId(supabase: any, name?: string | null): Promise<string | null> {
+  if (!supabase || !name) return null;
+  const n = String(name).trim();
+  if (!n) return null;
+  try {
+    const { data } = await supabase
+      .from("districts")
+      .select("id, name_en, name_ar")
+      .or(`name_en.ilike.%${n}%,name_ar.ilike.%${n}%`)
+      .limit(1);
+    return data && data[0] ? data[0].id : null;
+  } catch { return null; }
+}
+
 // The Rent Index is derived from the REGA Rental Index (Ejar): averages of
 // registered rental contracts. It used to say the figures came from JLL, CBRE and
 // Knight Frank. They did not, and all three forbid republication of their research
@@ -177,9 +196,13 @@ export async function POST(req: NextRequest) {
     }
     let band: any = null;
     if (supabase) {
+      const did = await resolveDistrictId(supabase, intent?.district);
       let q = supabase.from("rent_index_published").select("period, district_label, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
       if (intent?.asset) q = q.eq("asset_type", intent.asset);
-      if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
+      // Prefer an exact district_id match (language-independent); fall back to a
+      // label ilike only when the name did not resolve to a known district.
+      if (did) q = q.eq("district_id", did);
+      else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
       const { data } = await q;
       band = data && data[0] ? data[0] : null;
     }
@@ -201,9 +224,11 @@ export async function POST(req: NextRequest) {
     }
     let band: any = null;
     if (supabase) {
+      const did = await resolveDistrictId(supabase, intent?.district);
       let q = supabase.from("rent_index_published").select("period, district_label, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
       if (intent?.asset) q = q.eq("asset_type", intent.asset);
-      if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
+      if (did) q = q.eq("district_id", did);
+      else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
       const { data } = await q;
       band = data && data[0] ? data[0] : null;
     }

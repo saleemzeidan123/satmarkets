@@ -22,8 +22,12 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
   if (!key) return;
   try {
    const s = JSON.parse(sessionStorage.getItem(key) || "[]");
-   if (Array.isArray(s) && s.length) setMsgs(s);
-  } catch {}
+   // Authoritative for the current key. The key is locale-scoped, so on a
+   // language switch this loads that locale's thread, and crucially resets to
+   // empty when it has none, instead of leaving the previous language's
+   // messages on screen (advisor UX advisory 2026-07-11).
+   setMsgs(Array.isArray(s) ? s : []);
+  } catch { setMsgs([]); }
   setHydrated(true);
  }, [key]);
 
