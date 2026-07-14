@@ -50,11 +50,11 @@ export default function NeutralityPage({ params }: { params: { locale: string } 
           "We disclose this plainly: SAT Markets is operated by SAT Real Estate, a licensed real estate company (FAL 1200025510), and SAT Real Estate also has a licensed brokerage arm. We run the exchange so that operating it gives SAT no advantage as a broker. Neutrality here is not a slogan; it is a set of commitments you can check.",
         commitmentsTitle: "The neutrality commitments",
         commitments: [
-          ["No ranking preference", "Owner-direct listings are never pushed below listings that SAT represents. Ranking applies the same rules to everyone."],
-          ["No assumed commission", "SAT representation is opt-in only, under a separate written mandate. The default path is direct, free contact between the parties."],
+          ["No ranking preference", "SAT Real Estate publishes its own listings here, as any licensed broker does. They are marked as ours, they sit in the same ranking, and they get no placement, badge or feature another broker cannot get."],
+          ["We do not act for anyone", "SAT Markets does not represent tenants, buyers, owners or brokers. There is one path off a listing and it goes to the lister. We removed the representation service entirely rather than run an exchange that competes with the people listing on it."],
           ["No data advantage", "SAT's brokerage arm gets no earlier or privileged access to leads, requirements, or index data than any other verified participant."],
           ["Verification is authority-decided", "A “verified” badge comes from an authoritative record match or a human reviewer, never from SAT choosing to favour itself."],
-          ["We report on it", "We intend to publish, each quarter, what share of deals involved SAT representation, so the balance is visible to everyone. (Planned.)"],
+          ["We report on it", "We intend to publish, each quarter, what share of listings and deals were SAT Real Estate's own, so the balance is visible to everyone and not merely asserted. (Planned.)"],
         ],
         whyTitle: "Why one entity, for now",
         whyBody:

@@ -40,7 +40,7 @@ export default async function EnquiryPage({ params }: { params: { locale: string
     back: "Enquiries", eyebrow: "Enquiry",
     about: "About", message: "Message", noMessage: "The enquirer left no message.",
     contact: "Contact", email: "Email", phone: "Phone", noPhone: "Not given",
-    path: "Path", direct: "Direct contact", rep: "Asked for SAT representation",
+    path: "Path", direct: "Direct contact", rep: "Asked for SAT representation (service discontinued)",
     received: "Received", consent: "Consent",
     consentYes: "The enquirer agreed to share their details with you.",
     consentNo: "No consent is recorded against this enquiry.",

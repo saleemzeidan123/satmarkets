@@ -11,7 +11,8 @@ import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
 import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
-import { getListingById } from "@/lib/queries/listings";
+import { getListingById, getLister } from "@/lib/queries/listings";
+import ListerBadge from "@/components/ListerBadge";
 import { getDictionary } from "@/i18n/getDictionary";
 import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
@@ -45,6 +46,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const dict = getDictionary(locale as "en" | "ar");
   const sb = getSupabaseServer();
   const l: any = await getListingById(params.id);
+  const lister = await getLister(l?.account_id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
   const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : "الرياض";
@@ -240,6 +242,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
         </div>
         <div>
           <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
+          <ListerBadge lister={lister} ar={ar} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>

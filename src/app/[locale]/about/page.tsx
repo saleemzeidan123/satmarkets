@@ -32,7 +32,7 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
  } : {
   eyebrow: "About",
   title: "The verified data authority for Saudi commercial real estate.",
-  intro: "SAT Markets is an independent, neutral commercial real estate intelligence, leasing, and sales platform, starting in Riyadh. We combine verified, owner-direct listings, tenant representation, a compliant viewing workflow, a decision-grade rent index, and a building-level intelligence map in one platform, delivered English-first with a full Arabic mirror and AI search grounded in verified data.",
+  intro: "SAT Markets is an independent, neutral commercial real estate intelligence, leasing, and sales platform, starting in Riyadh. We combine verified listings from owners and licensed brokers, a compliant viewing workflow, a decision-grade rent index, and a building-level intelligence map in one platform, delivered English-first with a full Arabic mirror and AI search grounded in verified data.",
   cards: [["Neutral by design","Open to every owner and occupier. Platform-originated stock never silently outranks owner-direct listings."],
       ["Checked, not classifieds","Owners are verified before a listing publishes, and no listing enters the market without an advertising permit on file. Every listing shows its own verification state; the badge is never decoration."],
       ["A real data moat","A commercial rent index: median rents by district and space type, minimum sample counts, and honest blanks where data is missing."],

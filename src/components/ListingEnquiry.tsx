@@ -5,7 +5,18 @@ import { Icon } from "@/components/satkit";
 import { ContactChannels } from "@/components/ContactBar";
 import { getDictionary } from "@/i18n/getDictionary";
 
-type Path = "direct_contact" | "representation";
+// SAT Markets does not act for anyone. There is one path off a listing and it goes to
+// the lister, not to us.
+//
+// There used to be a second button here: "Request SAT representation". On a platform
+// whose whole proposition is neutrality, that button sat on a broker's own listing and
+// offered the visitor a different agent -- the platform's. A broker reading it sees the
+// referee holding out a shirt. You cannot run the market and compete in it.
+//
+// The `representation` value stays in the leads.path enum so the existing rows and any
+// history survive. Nothing new can be created with it: the API refuses it and the RLS
+// policy will not accept it.
+type Path = "direct_contact";
 
 type QOpt = { v: string; en: string; ar: string };
 type Q = { k: string; en: string; ar: string; opts: QOpt[] };
@@ -85,7 +96,6 @@ export default function ListingEnquiry({
  const [done, setDone] = useState<Path | null>(null);
  const [saved, setSaved] = useState(false);
  const [err, setErr] = useState("");
- const [consent, setConsent] = useState(false);
  const [slot, setSlot] = useState<string | null>(null);
  const [slots, setSlots] = useState<{ iso: string; label: string }[]>([]);
  const [vBusy, setVBusy] = useState(false);
@@ -156,7 +166,6 @@ export default function ListingEnquiry({
 
  async function submit(path: Path) {
   if (!name.trim() || !email.trim()) { setErr(t.errContactRequired); return; }
-  if (path === "representation" && !consent) { setErr(t.errConsentRequired); return; }
   setBusy(true); setErr("");
   try {
    const res = await fetch("/api/leads", {
@@ -165,8 +174,8 @@ export default function ListingEnquiry({
     body: JSON.stringify({
      listing_id: listingId, path,
      contact_name: name, contact_email: email,
-     message: msg || (path === "representation" ? "Requested SAT representation from listing." : null),
-     consent: path === "representation" ? consent : false,
+     message: msg || null,
+     consent: false,
     }),
    });
    const j = await res.json().catch(() => ({}));
@@ -178,16 +187,13 @@ export default function ListingEnquiry({
  }
 
  if (done) {
-  const rep = done === "representation";
   return (
    <div className="card pad" style={{ position: "sticky", top: 90 }}>
     <div className="row gap8" style={{ color: "var(--green)", marginBottom: 10 }}>
-     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{rep ? t.repRequested : t.enquirySent}</span>
+     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{t.enquirySent}</span>
     </div>
     <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>
-     {rep
-      ? t.repBody
-      : t.enquiryBody}
+     {t.enquiryBody}
     </p>
     <div className="col gap10" style={{ marginTop: 16 }}>
      <Link href={L("/messages")} className="btn primary" style={{ justifyContent: "center", textDecoration: "none" }}><Icon.send size={15} /> {t.openConversation}</Link>
@@ -221,19 +227,12 @@ export default function ListingEnquiry({
      <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
      <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
      <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={ar ? `أنا مهتم بهذه المساحة (${type}) في ${district}...` : `I'm interested in this ${type.toLowerCase()} in ${district}...`} rows={3} style={{ ...fld, resize: "vertical" }} />
-     {open === "representation" && (
-      <label className="row gap8" style={{ alignItems: "flex-start", fontSize: 12.5, lineHeight: 1.5, color: "var(--slate)" }}>
-       <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2, width: 18, height: 18, flex: "none" }} />
-       <span>{t.repConsent}</span>
-      </label>
-     )}
-     <button type="submit" disabled={busy || !name.trim() || !email.trim() || (open === "representation" && !consent)} className="btn primary" style={{ justifyContent: "center", minHeight: 44, opacity: busy || !name.trim() || !email.trim() || (open === "representation" && !consent) ? 0.6 : 1 }}>{busy ? t.sending : (open === "representation" ? t.requestRep : t.sendEnquiry)}</button>
+     <button type="submit" disabled={busy || !name.trim() || !email.trim()} className="btn primary" style={{ justifyContent: "center", minHeight: 44, opacity: busy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{busy ? t.sending : t.sendEnquiry}</button>
      <button type="button" onClick={() => { setOpen(null); setErr(""); }} className="btn ghost" style={{ justifyContent: "center", minHeight: 44 }}>{t.cancel}</button>
     </form>
    ) : (
     <div className="col gap10" style={{ marginTop: 18 }}>
      <button onClick={() => setOpen("direct_contact")} className="btn primary" style={{ justifyContent: "center", minHeight: 44 }}><Icon.send size={15} /> {t.contactLister}</button>
-     <button onClick={() => setOpen("representation")} disabled={busy} className="btn secondary" style={{ justifyContent: "center", minHeight: 44 }}>{t.requestRep}</button>
     </div>
    )}
 

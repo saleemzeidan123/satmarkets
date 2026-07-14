@@ -93,7 +93,6 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  const titleById = new Map(pub.map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
  const enq = new Map<string, number>();
  leadRows.forEach((l: any) => { if (l.listing_id) enq.set(l.listing_id, (enq.get(l.listing_id) || 0) + 1); });
- const repCount = leadRows.filter((l: any) => l.path === "representation").length;
 
  const listings = pub.map((l: any) => {
   const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
@@ -104,7 +103,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   };
  });
  const leads = leadRows.slice(0, 5).map((l: any) => {
-  const nm = l.contact_name || (l.path === "representation" ? (db.repRequest) : (db.directEnquiry));
+  const nm = l.contact_name || db.directEnquiry;
   return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || (db.verifiedListing), time: ago(l.created_at, ar), status: "new" };
  });
  // Arabic parity: prefer the Arabic title on /ar, and keep the number+unit run
@@ -114,7 +113,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  return (
   <>
      <div className="kgrid">
-      <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} delta={repCount ? "+" + repCount + (db.repSuffix) : undefined} dir="up" />
+      <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} dir="up" />
       <KCard icon={Icon.target} tone="a" v={String(matches.length)} l={db.kOpenReq} />
       <KCard icon={Icon.building} tone="h" v={String(pubCount)} l={db.kActiveListings} />
      </div>

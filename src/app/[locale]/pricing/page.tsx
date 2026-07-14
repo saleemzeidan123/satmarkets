@@ -7,7 +7,7 @@ import { Icon } from "@/components/satkit";
 type Tier = { nm: string; who: string; price: string; unit: string; feat: boolean; ghost?: boolean; cta: string; pts: string[] };
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '/pricing', 'Pricing | SAT Markets', 'الأسعار | سات ماركتس', 'How SAT Markets works and what it costs. Listing and verification are free; representation is opt-in and clearly priced.', 'كيف تعمل سات ماركتس وكم تكلفتها. الإدراج والتوثيق مجاناً، والتمثيل اختياري وبسعر واضح.');
+  return pageMeta(params.locale, '/pricing', 'Pricing | SAT Markets', 'الأسعار | سات ماركتس', 'How SAT Markets works and what it costs. Listing and verification are free. SAT Markets does not act for buyers or tenants and takes no commission.', 'كيف تعمل سات ماركتس وكم تكلفتها. الإدراج والتوثيق مجاناً. لا تعمل سات ماركتس وكيلاً عن أي طرف ولا تتقاضى عمولة.');
 }
 
 export default function PricingPage({ params }: { params: { locale: string } }) {
@@ -31,7 +31,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
    pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
   { nm: "Professional", who: "Active owners & solo brokers", price: "899", unit: "SAR/mo", feat: true, cta: "Choose Professional",
-   pts: ["<b>25</b> active listings", "<b>5</b> featured boosts / mo", "Unlimited reveals & leads", "Location Intelligence, <b>10</b>/mo", "<b>5</b> seats · representation mandates"] },
+   pts: ["<b>25</b> active listings", "<b>5</b> featured boosts / mo", "Unlimited reveals & leads", "Location Intelligence, <b>10</b>/mo", "<b>5</b> seats"] },
   { nm: "Agency", who: "Brokerages & multi-agent teams", price: "2,900", unit: "SAR/mo", feat: false, cta: "Choose Agency",
    pts: ["<b>150</b> active listings", "<b>30</b> featured / mo", "Location Intelligence, <b>50</b>/mo", "<b>15</b> seats · lead routing", "API, <b>25k</b> calls / mo"] },
   { nm: "Enterprise", who: "Developers, REITs & institutions", price: "Custom", unit: "", feat: false, ghost: true, cta: "Talk to sales",
@@ -72,7 +72,6 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   ["Report export", "no", "yes", "yes", "yes", "yes"],
   ["grp", "Team, API & support"],
   ["Team seats", "1", "2", "5", "15", "∞"],
-  ["Representation mandates", "no", "no", "yes", "yes", "yes"],
   ["API access", "no", "no", "no", "25k/mo", "Custom"],
   ["Support", "Community", "Email", "Priority", "Manager", "SLA + manager"],
  ];

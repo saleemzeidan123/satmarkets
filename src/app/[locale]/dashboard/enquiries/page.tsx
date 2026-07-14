@@ -33,7 +33,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   } : {
     title: "Enquiries", sub: "Who has been in touch about your spaces",
     thWho: "Enquirer", thListing: "Listing", thPath: "Path", thWhen: "Received",
-    direct: "Direct contact", rep: "Representation",
+    direct: "Direct contact", rep: "Representation (discontinued)",
     emptyT: "No enquiries yet",
     emptyB: "When an occupier gets in touch about one of your listings, it appears here with their message and contact details.",
     emptyC: "View my listings",
