@@ -78,3 +78,19 @@ test("marketVerdict without a band falls back to the median edges", () => {
   // low = high = median = 2400, asking == low, so classified below
   assert.equal(marketVerdict(2400, row({ band_low: null, band_high: null })).status, "below");
 });
+
+import { isSqmYear } from "./verdict";
+
+test("isSqmYear accepts every per-sqm-per-year label variant", () => {
+  assert.equal(isSqmYear("sar_sqm_year"), true);
+  assert.equal(isSqmYear("SAR/m2/yr"), true);
+  assert.equal(isSqmYear("sar_sqm_yr"), true);
+  assert.equal(isSqmYear("SAR / m² / year"), true);
+});
+
+test("isSqmYear rejects non per-sqm-per-year units and blanks", () => {
+  assert.equal(isSqmYear("sar_desk_month"), false);
+  assert.equal(isSqmYear("sar_sqm_month"), false);
+  assert.equal(isSqmYear(null), false);
+  assert.equal(isSqmYear(""), false);
+});

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
-import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -43,7 +43,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
     locCount = count ?? 0;
   }
 
-  const officeRows = idxRows.filter((r) => r.asset_type === "office" && r.unit === "sar_sqm_year" && r.median != null);
+  const officeRows = idxRows.filter((r) => r.asset_type === "office" && isSqmYear(r.unit) && r.median != null);
   const gradeSuffix = (seg: string) => { const m: Record<string, [string, string]> = { grade_a: ["Grade A", "فئة أ"], grade_b: ["Grade B", "فئة ب"], grade_c: ["Grade C", "فئة ج"] }; const g = m[seg]; return g ? " · " + (ar ? g[1] : g[0]) : ""; };
   const bandRows = officeRows
     .map((r) => ({ label: ((ar ? r.district_label_ar : r.district_label) || r.district_label) + gradeSuffix(r.segment), low: Number(r.band_low ?? r.median), med: Number(r.median), high: Number(r.band_high ?? r.median), seg: r.segment }))

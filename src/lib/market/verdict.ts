@@ -89,6 +89,18 @@ function num(n: number): string {
   return n.toLocaleString("en-US");
 }
 
+// Rent Index rows arrive with the unit labelled inconsistently across sources:
+// the seed uses "SAR/m2/yr", the ingest pipeline writes "sar_sqm_yr", and older
+// rows used "sar_sqm_year". They all mean SAR per square metre per year. Matching on
+// one exact string silently dropped every row when a re-seed changed the label, which
+// zeroed the value-vs-index verdict across listings, market and the detail band. We
+// normalise instead: any per-square-metre-per-year label matches, and rate units like
+// per-desk-per-month correctly do not.
+export function isSqmYear(unit: string | null | undefined): boolean {
+  const n = String(unit || "").toLowerCase().replace(/\u00b2/g, "2").replace(/[^a-z0-9]/g, "");
+  return /(sqm|m2)/.test(n) && /(yr|year)/.test(n);
+}
+
 /** Pick the best index row for a listing from candidate rows of its district. */
 export function pickIndexRow(
   rows: IndexRow[],
@@ -96,7 +108,7 @@ export function pickIndexRow(
   grade?: string | null,
 ): IndexRow | null {
   const cands = rows.filter(
-    (r) => r.asset_type === assetType && r.unit === "sar_sqm_year" && r.median != null,
+    (r) => r.asset_type === assetType && isSqmYear(r.unit) && r.median != null,
   );
   if (cands.length === 0) return null;
   for (const seg of preferredSegments(assetType, grade)) {
