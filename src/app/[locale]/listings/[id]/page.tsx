@@ -135,6 +135,20 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
             {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
+          {/* Honest verification stamp (roadmap Q8): shows the real date the owner was
+              checked, only when we actually have it. No invented expiry or re-verify
+              deadline, because there is no re-verification process to back one yet. */}
+          {ownerVerified(l as any) && (l as any).verified_at ? (() => {
+            const dt = new Date((l as any).verified_at);
+            const dtxt = isFinite(dt.getTime()) ? dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }) : null;
+            return dtxt ? (
+              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "#1F8A5B", fontSize: 12.5 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                <span style={{ fontWeight: 600 }}>{dict.ld.verifiedOwner}</span>
+                <span className="mono" style={{ color: "var(--slate)", fontWeight: 400 }}>· {dict.ld.checkedOn} <bdi dir="ltr">{dtxt}</bdi></span>
+              </div>
+            ) : null;
+          })() : null}
 
           {/* The advertising licence and its expiry, displayed as the REGA marketing
               rules require. It used to be a small grey tag with no expiry beside it. */}
@@ -172,6 +186,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               : {}),
             ...(l.area_sqm ? { floorSize: { "@type": "QuantitativeValue", value: l.area_sqm, unitCode: "MTK" } } : {}),
             address: { "@type": "PostalAddress", streetAddress: String(dn), addressLocality: cityEn, addressCountry: "SA" },
+            ...((l as any).published_at || (l as any).created_at ? { datePosted: (l as any).published_at || (l as any).created_at } : {}),
           }} />
           <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
             { "@type": "ListItem", position: 1, name: dict.ld.crumbHome, item: `${SITE}/${locale}` },
