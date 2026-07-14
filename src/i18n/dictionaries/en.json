@@ -244,7 +244,11 @@
     "crumbHome": "Home",
     "crumbListings": "Listings",
     "crumbListingsUpper": "LISTINGS",
-    "newBadge": "New"
+    "newBadge": "New",
+    "updatedWord": "Updated",
+    "sourceStrip": "REGA Rental Index (Ejar), averages of registered contracts. Indicative, not advice.",
+    "thinChip": "Thin sample, not a firm band",
+    "thinBody": "Too few registered rental contracts here yet to publish a firm band. The figure would be a guess, so we do not show one."
   },
   "chrome": {
     "tabHome": "Home",

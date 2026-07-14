@@ -78,6 +78,26 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     return { lo, hi, med, ask, pctLo: pct(lo), pctHi: pct(hi), pctMed: pct(med), pctAsk: pct(ask), color };
   })() : null;
 
+  // Thin-sample detection (roadmap Q7): a segment for this district+asset exists in
+  // the index but has not cleared the sufficiency bar, so no firm band is published.
+  // We say that out loud rather than showing the generic empty state, and never fill
+  // the gap with a guess.
+  let thin = false;
+  let thinPeriod: string | null = null;
+  if (sb && l.district_id && lease && !band) {
+    const { data: anyrows } = await sb
+      .from("rent_index_published")
+      .select("period, sufficient")
+      .eq("district_id", l.district_id)
+      .eq("asset_type", l.asset_type);
+    const rows = (anyrows ?? []) as any[];
+    if (rows.length > 0 && !rows.some((r) => r.sufficient)) {
+      thin = true;
+      thinPeriod = rows[0]?.period ?? null;
+    }
+  }
+  const freshPeriod = (verdict && verdict.period) || thinPeriod || null;
+
   // Similar verified spaces: same district first, then fall back to the same asset type
   let similar: any[] = [];
   if (sb) {
@@ -193,10 +213,20 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 </div>
                 <p style={{ fontSize: 13.5, lineHeight: 1.6, marginTop: 18, color: "var(--ink)", maxWidth: 560 }}>{ar ? verdict.line_ar : verdict.line_en}</p>
               </>
+            ) : thin ? (
+              <div style={{ marginTop: 12 }}>
+                <span className="tag" style={{ background: "#FBEBD6", color: "#8A5A1F", borderColor: "#EBD3B0", fontWeight: 600 }}>{dict.ld.thinChip}</span>
+                <p className="muted" style={{ fontSize: 13.5, marginTop: 10, lineHeight: 1.6, maxWidth: 480 }}>{dict.ld.thinBody} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{dict.ld.askAdvisor}</Link></p>
+              </div>
             ) : (
               <p className="muted" style={{ fontSize: 14, marginTop: 12, lineHeight: 1.6, maxWidth: 460 }}>{lease ? (dict.ld.noBandLease) : (dict.ld.noBandSale)} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{dict.ld.askAdvisor}</Link></p>
             )}
-            <div className="muted" style={{ fontSize: 11, marginTop: 16 }}>{dict.ld.bandsDisclaimer}</div>
+            {/* Freshness + source strip (roadmap Q1). Period comes from the matched
+                index row; the source is always the REGA Rental Index, never a research
+                house whose figures we may not republish. */}
+            <div className="muted mono" style={{ fontSize: 10.5, marginTop: 16, letterSpacing: ".01em", lineHeight: 1.6 }}>
+              {freshPeriod ? <><span>{dict.ld.updatedWord} {freshPeriod}</span><span style={{ margin: "0 6px" }}>·</span></> : null}{dict.ld.sourceStrip}
+            </div>
           </div>
           <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} dealType={l.deal_type} price={price != null ? Number(price) : null} areaSqm={l.area_sqm ?? null} />
           <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
