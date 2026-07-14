@@ -31,6 +31,7 @@ export default async function DashboardLayout({
   let acctName = su.email || db.acctNameFallback;
   let acctRole = db.acctRoleFallback;
   let leadCount = 0;
+  let viewingCount = 0;
   let reqCount = 0;
 
   if (sb) {
@@ -56,6 +57,15 @@ export default async function DashboardLayout({
       if (ids.length) {
         const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids);
         leadCount = count || 0;
+        // Only the ones still awaiting a decision. A badge that counts viewings the
+        // lister has already answered is a badge that never goes away, and a badge that
+        // never goes away is one people stop reading.
+        const { count: vc } = await sb
+          .from("viewings")
+          .select("id", { count: "exact", head: true })
+          .in("listing_id", ids)
+          .eq("status", "requested");
+        viewingCount = vc || 0;
       }
     }
     reqCount = briefs.count || 0;
@@ -73,6 +83,7 @@ export default async function DashboardLayout({
             { key: "overview", label: db.navOverview, href: `/${lp}/dashboard` },
             { key: "listings", label: db.navMyListings, href: `/${lp}/dashboard/listings` },
             { key: "enquiries", label: db.navEnquiries, href: `/${lp}/dashboard/enquiries`, badge: leadCount || undefined },
+            { key: "viewings", label: db.navViewings, href: `/${lp}/dashboard/viewings`, badge: viewingCount || undefined },
             { key: "requirements", label: db.navReqMatches, href: `/${lp}/requirements`, badge: reqCount || undefined },
             { key: "account", label: db.navAccount, section: true },
             { key: "billing", label: db.navBilling, href: `/${lp}/pricing` },

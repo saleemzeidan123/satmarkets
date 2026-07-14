@@ -600,7 +600,8 @@
     "jun": "Jun",
     "dec": "Dec",
     "noOpenReq": "No open requirements right now.",
-    "pitch": "Pitch"
+    "pitch": "Pitch",
+    "navViewings": "Viewings"
   },
   "advisor": {
     "newBadge": "New",
