@@ -140,18 +140,45 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3. Link them.
-  const { error: userErr } = await sb.from("users").insert({
-    account_id: acct.id,
-    email: String(r.email),
-    full_name: r.full_name ? String(r.full_name).slice(0, 120) : null,
-    phone: r.phone ? String(r.phone).slice(0, 40) : null,
-    role: accountType === "owner" || accountType === "broker" ? "lister" : "occupier",
-    auth_user_id: invited.user.id,
-    is_demo: !!r.is_demo,
-  });
+  // 3. Link them. UPSERT, not INSERT, and the distinction is the whole ballgame.
+  //
+  // There is a trigger on auth.users called on_auth_user_created. The moment step 2
+  // creates the identity -- by invitation or directly -- that trigger has ALREADY
+  // written the public.users row:
+  //
+  //   insert into public.users (auth_user_id, email, role) values (new.id, new.email, 'occupier')
+  //
+  // This route used to INSERT the same email straight afterwards, collide with
+  // users_email_key, and roll the whole provision back with "Could not link the user".
+  // Which means provisioning could never have completed. Not for a demo persona, not
+  // for a real lister. Even with a working mailer, the invitation would have created
+  // the auth user, the trigger would have created the row, and this line would have
+  // destroyed everything it just built. The email failure was standing in front of it.
+  //
+  // So we adopt the row the trigger made rather than fight it, and we correct the two
+  // things the trigger cannot know: which account this person belongs to, and that an
+  // owner or a broker is a LISTER, not an occupier. The trigger defaults everyone to
+  // occupier because at auth time nobody has told it otherwise. This is where we tell it.
+  const listerRole = accountType === "owner" || accountType === "broker" ? "owner_admin" : "occupier";
+
+  const { error: userErr } = await sb.from("users").upsert(
+    {
+      account_id: acct.id,
+      email: String(r.email),
+      full_name: r.full_name ? String(r.full_name).slice(0, 120) : null,
+      phone: r.phone ? String(r.phone).slice(0, 40) : null,
+      role: listerRole,
+      auth_user_id: invited.user.id,
+      is_demo: isDemo,
+    },
+    { onConflict: "email" }
+  );
 
   if (userErr) {
+    // Take the trigger's row with us. Deleting the auth user alone leaves an orphan
+    // users row behind (auth_user_id is nullable), which then blocks every future
+    // attempt at the same email. A rollback that leaves debris is not a rollback.
+    await sb.from("users").delete().eq("email", String(r.email));
     await sb.auth.admin.deleteUser(invited.user.id);
     await sb.from("accounts").delete().eq("id", acct.id);
     console.error("[provision] user", userErr);
