@@ -15,6 +15,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
 import { allow } from "@/lib/ratelimit";
+import { getSessionUser } from "@/lib/auth/session";
 import { unsourcedFigure } from "@/lib/market/guard";
 
 export const runtime = "nodejs";
@@ -38,6 +39,31 @@ function sbServer() {
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!allow("translate", req, 10)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+
+  // YOU MUST BE SIGNED IN, AND IT IS CHECKED BEFORE WE SPEND ANYTHING.
+  //
+  // This route was public. Anyone on the internet could POST to it with any published
+  // listing id and cause two calls to a paid translation model, over and over, up to
+  // the rate limit, from as many IPs as they cared to use. Nobody had to log in to
+  // spend our money.
+  //
+  // Worse, it then LIED. The update runs under the caller's own RLS, and an anonymous
+  // caller matches no row in "owner manage own listings", so the UPDATE touched zero
+  // rows -- and Postgres does not call that an error. `upErr` was null. So the route
+  // answered {"status":"translated"} having translated nothing and written nothing.
+  // Verified live: it returned "translated", and title_ar was unchanged.
+  //
+  // RLS was doing its job the whole time; it stopped the write. What it cannot do is
+  // stop us paying a model before we ever get to the write. An authorisation check
+  // that happens after the expensive part is not an authorisation check.
+  const su = await getSessionUser();
+  if (!su) {
+    return NextResponse.json(
+      { error: "Sign in to translate a listing." },
+      { status: 401 }
+    );
+  }
+
   const id = params.id;
   let body: { force?: boolean; tier?: Tier } = {};
   try {
@@ -101,9 +127,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   update.ar_translated_at = new Date().toISOString();
   update.ar_translation_model = model;
 
-  const { error: upErr } = await sb.from("listings").update(update).eq("id", id);
+  // Count the rows. An UPDATE that matches nothing is not an error in Postgres, it is
+  // simply an update of nothing, so `upErr` stays null and the old code called that a
+  // success. If RLS declined to let this caller touch this listing, we say so.
+  const { data: updated, error: upErr } = await sb
+    .from("listings")
+    .update(update)
+    .eq("id", id)
+    .select("id");
+
   if (upErr) {
     return NextResponse.json({ error: upErr.message }, { status: 500 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json(
+      { error: "You cannot edit this listing." },
+      { status: 403 }
+    );
   }
 
   return NextResponse.json({ status: "translated", id, model, fields: Object.keys(update) });
