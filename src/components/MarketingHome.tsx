@@ -28,14 +28,6 @@ const ASSETS = [
  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
-// Homepage hierarchy reset (design plan Phase 2): the hero exposed all 15 asset
-// types, an overload. Show four priority types plus All types; the rest stay on
-// the full /listings filter. All types (v: "") clears the asset filter.
-const HERO_ASSETS = [
- { v: "", en: "All types", ar: "كل الأنواع", icon: <Icon.grid size={22} /> },
- ...ASSETS.slice(0, 4),
-];
-
 export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
  const router = useRouter();
  const ar = locale === "ar";
@@ -246,7 +238,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
         </button>
         <div ref={assetRef} className="hero-assets" data-fade={fadePhysical} style={{ display: "flex", flexWrap: "nowrap", gap: 8, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
-         {HERO_ASSETS.map((a) => {
+         {ASSETS.map((a) => {
           const on = assetType === a.v;
           return (
            <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(58,110,165,.24)" : "rgba(255,255,255,.045)", color: "#fff", boxShadow: on ? "0 0 0 1px rgba(58,110,165,.35), 0 6px 16px -8px rgba(58,110,165,.5)" : "none", transition: "background .15s, border-color .15s" }}>
