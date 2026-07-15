@@ -407,10 +407,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{band.period}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
-        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{band.median.toLocaleString()}</span>
+        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{Math.round(band.median).toLocaleString()}</span>
         <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{H.medianUnit}</span>
        </div>
-       <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${band.low.toLocaleString()} إلى ${band.high.toLocaleString()}` : `Published band: ${band.low.toLocaleString()} to ${band.high.toLocaleString()}`}</div>
+       <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${Math.round(band.low).toLocaleString()} إلى ${Math.round(band.high).toLocaleString()}` : `Published band: ${Math.round(band.low).toLocaleString()} to ${Math.round(band.high).toLocaleString()}`}</div>
        {/* A year-on-year figure and a rising curve used to sit here. The curve was
            nine hand-placed coordinates in an SVG path, drawn to look like a trend.
            Year-on-year needs two periods of the same series and we have one, so
