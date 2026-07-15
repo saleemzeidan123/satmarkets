@@ -268,19 +268,30 @@ export default async function ListingsPage({ params, searchParams }: { params: {
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
                 <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
                 <div className="body">
-                  <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                   {(() => {
-                    if (l.deal_type !== "lease" || l.asking_rent_sqm == null || !l.district_id) return null;
-                    const v = marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade));
-                    if (v.status === "na" || v.deltaPct == null) return null;
-                    const a = Math.abs(v.deltaPct);
-                    const txt = v.status === "below" ? (ar ? `أقل من متوسط المؤشر بنحو ${a}%` : `~${a}% below index average`) : v.status === "above" ? (ar ? `أعلى من متوسط المؤشر بنحو ${a}%` : `~${a}% above index average`) : (dict.listings.withinBand);
-                    const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
-                    return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={dict.listings.vsIndexTitle}>{txt}</div>;
+                    const vv = (l.deal_type === "lease" && l.asking_rent_sqm != null && l.district_id) ? marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade)) : null;
+                    const vShow = vv && vv.status !== "na" && vv.deltaPct != null ? vv : null;
+                    let chip: React.ReactNode = null, srcLine: React.ReactNode = null;
+                    if (vShow) {
+                      const a = Math.abs(vShow.deltaPct as number);
+                      const txt = vShow.status === "below" ? (ar ? `أقل بنحو ${a}%` : `${a}% below avg`) : vShow.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `${a}% above avg`) : (dict.listings.withinBand);
+                      const bg = vShow.status === "below" ? "#E7F4ED" : vShow.status === "above" ? "#FAEEDA" : "var(--azure-wash)";
+                      const fg = vShow.status === "below" ? "#1B7A50" : vShow.status === "above" ? "#B7791F" : "var(--harbor)";
+                      chip = <span className="mono" style={{ background: bg, color: fg, fontSize: 10.5, fontWeight: 600, padding: "3px 8px", borderRadius: 6, whiteSpace: "nowrap" }} title={dict.listings.vsIndexTitle}>{txt}</span>;
+                      srcLine = <div className="mono muted" style={{ marginTop: 9, fontSize: 10, borderInlineStart: "2px solid var(--harbor)", paddingInlineStart: 7, letterSpacing: ".02em" }}>{ar ? "المؤشر الإيجاري (إيجار) · 2026-Q2" : "REGA Rental Index (Ejar) · 2026-Q2"}</div>;
+                    }
+                    const ls = listedSince((l as any).created_at);
+                    return (<>
+                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                        <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
+                        {chip}
+                      </div>
+                      <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                      <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
+                      {srcLine}
+                      {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
+                    </>);
                   })()}
-                  <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                  <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span><i /><span>{type}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
-                  {(() => { const ls = listedSince((l as any).created_at); return ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null; })()}
                 </div>
               </Link>
             );
