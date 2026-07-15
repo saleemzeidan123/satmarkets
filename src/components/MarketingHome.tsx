@@ -450,16 +450,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      </div>
     </div>
 
-    <div style={{ padding: "clamp(44px,7vw,64px) clamp(20px,5vw,40px) clamp(40px,8vw,64px)" }}>
-     <div className="eyebrow" style={{ textAlign: "center" }}>{T.flowEye}</div>
-     <h2 className="serif" style={{ fontSize: "clamp(24px,5vw,32px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 34px", textAlign: "center" }}>{T.flowH}</h2>
-     <div style={{ maxWidth: 720, margin: "0 auto" }}>
-      <div className="card pad" style={{ textAlign: "center" }}>
-       <div style={{ fontSize: "var(--fs-lg)", lineHeight: 1.65 }}>{T.flowBody}</div>
-       
-      </div>
-     </div>
-    </div>
 
     <div style={{ padding: "8px 24px 64px" }}>
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
