@@ -69,6 +69,7 @@ const SEG_LABEL_EN: Record<string, string> = {
   school: "education",
   hotel: "hospitality",
   blended: "blended market",
+  all: "all segments",
 };
 const SEG_LABEL_AR: Record<string, string> = {
   grade_a: "المكاتب من الفئة A",
@@ -83,6 +84,7 @@ const SEG_LABEL_AR: Record<string, string> = {
   school: "التعليم",
   hotel: "الضيافة",
   blended: "السوق المجمّع",
+  all: "جميع الشرائح",
 };
 
 function num(n: number): string {

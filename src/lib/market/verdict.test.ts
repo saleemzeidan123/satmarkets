@@ -120,3 +120,13 @@ test("verdict copy says average, never median (within band)", () => {
   assert.doesNotMatch(v.line_en, /median/);
   assert.doesNotMatch(v.line_ar, /وسيط/);
 });
+
+// Codex remediation batch 5: rent_index_published rows use segment 'all', which
+// had no SEG_LABEL entry, so the raw English word "all" leaked into the Arabic
+// verdict line (a bilingual-parity break). Guard both directions.
+test("segment 'all' resolves to a real bilingual label, no English leak in Arabic", () => {
+  const v = marketVerdict(3000, row({ segment: "all" }));
+  assert.match(v.line_en, /all segments/);
+  assert.match(v.line_ar, /جميع الشرائح/);
+  assert.doesNotMatch(v.line_ar, /\ball\b/);
+});
