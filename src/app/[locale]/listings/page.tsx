@@ -282,8 +282,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     }
                     const ls = listedSince((l as any).created_at);
                     return (<>
-                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                        <div className="price">{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
+                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap", rowGap: 4 }}>
+                        <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                         {chip}
                       </div>
                       <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
