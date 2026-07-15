@@ -125,8 +125,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
-            <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
-            <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
+            {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
+            {l.fitout_condition && l.fitout_condition !== "n_a" ? <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
             <span className="tag">{dict.ld.availableNow}</span>
             {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
           </div>
@@ -201,7 +201,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> {dict.ld.comparableRents}</a>
           </div>
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
-            {[[dict.ld.area, `${l.area_sqm} m²`], [dict.ld.grade, gradeLabel(l.building_grade, locale)], [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)]].map((s, i) => (
+            {([[dict.ld.area, `${l.area_sqm} m²`], (l.building_grade && l.building_grade !== "n_a" ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null), (l.fitout_condition && l.fitout_condition !== "n_a" ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null), [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)]].filter(Boolean) as [string, string][]).map((s, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
                 <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
                 <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
@@ -288,7 +288,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             </div>
           )}
         </div>
-        <div>
+        <div className="ld-side">
           <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
           <ListerBadge lister={lister} ar={ar} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />

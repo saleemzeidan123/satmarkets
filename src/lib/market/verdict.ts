@@ -88,7 +88,7 @@ const SEG_LABEL_AR: Record<string, string> = {
 };
 
 function num(n: number): string {
-  return n.toLocaleString("en-US");
+  return Math.round(n).toLocaleString("en-US");
 }
 
 // Rent Index rows arrive with the unit labelled inconsistently across sources:
