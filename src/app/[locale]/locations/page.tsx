@@ -1,4 +1,5 @@
 import { isLocale } from "@/i18n/config";
+import { isSqmYear } from "@/lib/market/verdict";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -36,12 +37,12 @@ export default async function LocationsPage({ params }: { params: { locale: stri
     const [{ data: ds }, { data: ls }, { data: idx }] = await Promise.all([
       sb.from("districts").select("id,city,name_en,name_ar,kind"),
       sb.from("listings").select("district_id").eq("status", "published").limit(1000),
-      sb.from("rent_index_published").select("district_id,asset_type,median,sufficient,unit").eq("sufficient", true).eq("asset_type", "office").eq("unit", "sar_sqm_year"),
+      sb.from("rent_index_published").select("district_id,asset_type,median,sufficient,unit").eq("sufficient", true).eq("asset_type", "office"),
     ]);
     const counts = new Map<string, number>();
     (ls ?? []).forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
     const med = new Map<string, number>();
-    (idx ?? []).forEach((r: any) => { if (r.median != null && !med.has(r.district_id)) med.set(r.district_id, Number(r.median)); });
+    (idx ?? []).forEach((r: any) => { if (r.median != null && isSqmYear(r.unit) && !med.has(r.district_id)) med.set(r.district_id, Number(r.median)); });
     locs = (ds ?? []).map((d: any) => ({ id: d.id, city: d.city, name_en: d.name_en, name_ar: d.name_ar, kind: d.kind || "district", count: counts.get(d.id) ?? 0, officeMedian: med.get(d.id) ?? null }));
   }
   const KIND_T: Record<string, [string, string]> = {
