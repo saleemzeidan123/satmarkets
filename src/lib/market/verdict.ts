@@ -161,14 +161,14 @@ export function marketVerdict(
 
   let verdictEn: string, verdictAr: string;
   if (status === "below") {
-    verdictEn = `about ${absD}% below the ${row.period} median for ${segEn} in ${dist} (${bandEn}). Strong value.`;
-    verdictAr = `أقل بنحو ${absD}% من وسيط ${row.period} لـ${segAr} في ${distAr} (${bandAr}). قيمة ممتازة.`;
+    verdictEn = `about ${absD}% below the ${row.period} average for ${segEn} in ${dist} (${bandEn}). Strong value.`;
+    verdictAr = `أقل بنحو ${absD}% من متوسط ${row.period} لـ${segAr} في ${distAr} (${bandAr}). قيمة ممتازة.`;
   } else if (status === "above") {
-    verdictEn = `about ${absD}% above the ${row.period} median for ${segEn} in ${dist} (${bandEn}). Priced above market.`;
-    verdictAr = `أعلى بنحو ${absD}% من وسيط ${row.period} لـ${segAr} في ${distAr} (${bandAr}). سعر أعلى من السوق.`;
+    verdictEn = `about ${absD}% above the ${row.period} average for ${segEn} in ${dist} (${bandEn}). Priced above market.`;
+    verdictAr = `أعلى بنحو ${absD}% من متوسط ${row.period} لـ${segAr} في ${distAr} (${bandAr}). سعر أعلى من السوق.`;
   } else {
-    const rel = deltaPct < 0 ? `${absD}% below median` : deltaPct > 0 ? `${absD}% above median` : "at the median";
-    const relAr = deltaPct < 0 ? `أقل بـ${absD}% من الوسيط` : deltaPct > 0 ? `أعلى بـ${absD}% من الوسيط` : "عند الوسيط";
+    const rel = deltaPct < 0 ? `${absD}% below average` : deltaPct > 0 ? `${absD}% above average` : "at the average";
+    const relAr = deltaPct < 0 ? `أقل بـ${absD}% من المتوسط` : deltaPct > 0 ? `أعلى بـ${absD}% من المتوسط` : "عند المتوسط";
     verdictEn = `within the ${row.period} market range for ${segEn} in ${dist} (${rel}, ${bandEn}). Fairly priced.`;
     verdictAr = `ضمن نطاق ${row.period} لـ${segAr} في ${distAr} (${relAr}، ${bandAr}). سعر عادل.`;
   }

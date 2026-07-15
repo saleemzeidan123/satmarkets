@@ -169,7 +169,7 @@ html, body { overflow-x: clip; }
 @media(min-width:1024px){.tabbar{display:none;}}
 main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 @media(min-width:1024px){main.has-tabbar{padding-bottom:0;}}
-@media(max-width:640px){.topnotice{display:none!important;}}
+@media(max-width:640px){.topnotice:not(.preview-notice){display:none!important;}}
 @media(hover:none){
   .card:active,.listing:active,.feat-card:active,.home-lead:active,.home-job:active{transform:scale(.984);transition:transform .12s ease;}
   .btn-gold:active,.btn-ghost:active,.btn:active,.chip:active{transform:scale(.95);transition:transform .1s ease;}

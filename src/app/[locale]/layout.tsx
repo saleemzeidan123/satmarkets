@@ -52,7 +52,7 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       <JsonLd data={ORG} />
       <ChromeGate header={<>
       {PREVIEW ? (
-      <div role="status" className="topnotice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFBEB", color: "#78350F", borderBottom: "1px solid #FCD34D", padding: "8px 24px", fontSize: 12.5, lineHeight: 1.5, flexWrap: "wrap", textAlign: "center" }}>
+      <div role="status" className="topnotice preview-notice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFBEB", color: "#78350F", borderBottom: "1px solid #FCD34D", padding: "8px 24px", fontSize: 12.5, lineHeight: 1.5, flexWrap: "wrap", textAlign: "center" }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2" style={{ flex: "none" }}><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
         <span style={{ fontWeight: 600 }}>{dict.layout.preview}</span>
       </div>

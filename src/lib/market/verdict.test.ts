@@ -94,3 +94,29 @@ test("isSqmYear rejects non per-sqm-per-year units and blanks", () => {
   assert.equal(isSqmYear(null), false);
   assert.equal(isSqmYear(""), false);
 });
+
+// ---- Codex remediation Batch 2: the Rent Index publishes AVERAGES (stat_kind
+// 'average'), so the verdict copy must say "average"/"متوسط", never
+// "median"/"وسيط". Guards against a silent regression to median wording. ----
+test("verdict copy says average, never median (below band)", () => {
+  const v = marketVerdict(1500, row());
+  assert.equal(v.status, "below");
+  assert.match(v.line_en, /average/);
+  assert.doesNotMatch(v.line_en, /median/);
+  assert.match(v.line_ar, /متوسط/);
+  assert.doesNotMatch(v.line_ar, /وسيط/);
+});
+test("verdict copy says average, never median (above band)", () => {
+  const v = marketVerdict(3500, row());
+  assert.equal(v.status, "above");
+  assert.match(v.line_en, /average/);
+  assert.doesNotMatch(v.line_en, /median/);
+  assert.doesNotMatch(v.line_ar, /وسيط/);
+});
+test("verdict copy says average, never median (within band)", () => {
+  const v = marketVerdict(2400, row());
+  assert.equal(v.status, "within");
+  assert.match(v.line_en, /average/);
+  assert.doesNotMatch(v.line_en, /median/);
+  assert.doesNotMatch(v.line_ar, /وسيط/);
+});

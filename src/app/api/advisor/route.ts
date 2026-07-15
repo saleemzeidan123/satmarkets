@@ -210,11 +210,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}، أو تصفّح العروض الموثّقة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false, intent?.district)}, or browse the verified listings.` });
     }
     const seg = band.segment ? ` ${band.segment}` : "";
-    const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, median ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${srcLabel(band.source, arq)}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the median. If they gave no figure, just describe the current band plainly. Two to four sentences. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;
+    const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, average ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${srcLabel(band.source, arq)}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the average. If they gave no figure, just describe the current band plainly. Two to four sentences. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;
     const msg = await llm([{ role: "system", content: sys }, { role: "user", content: raw }], false);
     const fallback = arq
-      ? `\u0645\u0624\u0634\u0631 \u0633\u0627\u062a \u0644\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a ${band.period}\u060c ${band.district_label} ${band.asset_type}${seg}: \u0645\u0646 ${band.band_low} \u0625\u0644\u0649 ${band.band_high} ${band.unit}\u060c \u0627\u0644\u0648\u0633\u064a\u0637 ${band.median}. \u0627\u0644\u0645\u0635\u062f\u0631 ${srcLabel(band.source, true)}.`
-      : `Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}. Source ${srcLabel(band.source, false)}.`;
+      ? `\u0645\u0624\u0634\u0631 \u0633\u0627\u062a \u0644\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a ${band.period}\u060c ${band.district_label} ${band.asset_type}${seg}: \u0645\u0646 ${band.band_low} \u0625\u0644\u0649 ${band.band_high} ${band.unit}\u060c \u0627\u0644\u0645\u062a\u0648\u0633\u0637 ${band.median}. \u0627\u0644\u0645\u0635\u062f\u0631 ${srcLabel(band.source, true)}.`
+      : `Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}. Source ${srcLabel(band.source, false)}.`;
     return NextResponse.json({ mode: "value", message: msg || fallback, band });
   }
 
@@ -243,8 +243,8 @@ export async function POST(req: NextRequest) {
       saved = !error;
     }
     const baseline = arq
-      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، الوسيط ${band.median}، للفترة ${band.period}`
-      : `${band.band_low} to ${band.band_high} ${band.unit}, median ${band.median}, for ${band.period}`;
+      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، المتوسط ${band.median}، للفترة ${band.period}`
+      : `${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}, for ${band.period}`;
     // WE CANNOT ALERT ANYONE, SO WE DO NOT SAY WE WILL.
     //
     // This used to answer: "I am watching X for you. When the index next updates, I

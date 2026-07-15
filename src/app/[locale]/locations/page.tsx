@@ -19,8 +19,8 @@ export async function generateMetadata({ params }: { params: { locale: string } 
   return {
     title: d.metaTitle,
     description: ar
-      ? "الأحياء والمشاريع والمناطق التجارية التي تغطيها سات ماركتس، مع عدد المساحات الموثّقة ووسيط مؤشر الإيجارات للمكاتب حيث تكفي البيانات."
-      : "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index median where the data is sufficient.",
+      ? "الأحياء والمشاريع والمناطق التجارية التي تغطيها سات ماركتس، مع عدد المساحات الموثّقة ومتوسط مؤشر الإيجارات للمكاتب حيث تكفي البيانات."
+      : "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index average where the data is sufficient.",
     alternates: { canonical: `${SITE}/${params.locale}/locations`, languages: { en: `${SITE}/en/locations`, ar: `${SITE}/ar/locations` } },
     openGraph: { title: d.metaTitle, url: `${SITE}/${params.locale}/locations`, type: "website", siteName: "SAT Markets" },
   };

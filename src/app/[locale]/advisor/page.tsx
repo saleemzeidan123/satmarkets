@@ -96,14 +96,14 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   let text: string;
   if (ar) {
    const vAr = v === "within" ? "يقع ضمن النطاق المنشور" : v === "below" ? "يقع تحت النطاق المنشور" : "يقع فوق النطاق المنشور";
-   const dAr = r === med ? "عند الوسيط تماماً" : r < med ? `أقل من الوسيط بنحو ${dm}%` : `أعلى من الوسيط بنحو ${dm}%`;
-   text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، الوسيط ${fmt(med)})، ${dAr}.` +
+   const dAr = r === med ? "عند المتوسط تماماً" : r < med ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
+   text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، المتوسط ${fmt(med)})، ${dAr}.` +
     (annual ? ` عند ${fmt(sz)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
     ` ${activeRow.period}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
   } else {
    const vEn = v === "within" ? "sits within the published band" : v === "below" ? "sits below the published band" : "sits above the published band";
-   const dEn = r === med ? "exactly at the median" : r < med ? `about ${dm}% below the median` : `about ${dm}% above the median`;
-   text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, median ${fmt(med)}), ${dEn}.` +
+   const dEn = r === med ? "exactly at the average" : r < med ? `about ${dm}% below the average` : `about ${dm}% above the average`;
+   text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, average ${fmt(med)}), ${dEn}.` +
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
     ` ${activeRow.period}, REGA Rental Index (Ejar): average of registered rental contracts. Indicative, not advice.`;
   }
@@ -241,7 +241,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · الوسيط ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period === "Q1 2026" ? "الربع الأول 2026" : activeRow.period}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · median ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period}`}</div>}
+          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · المتوسط ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period === "Q1 2026" ? "الربع الأول 2026" : activeRow.period}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · average ${Number(activeRow.median).toLocaleString("en-US")} · ${activeRow.period}`}</div>}
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeRow || !rent.trim()}>{av.analyse}</button>
           </div>

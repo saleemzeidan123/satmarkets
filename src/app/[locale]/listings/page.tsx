@@ -274,7 +274,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     const v = marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade));
                     if (v.status === "na" || v.deltaPct == null) return null;
                     const a = Math.abs(v.deltaPct);
-                    const txt = v.status === "below" ? (ar ? `أقل من وسيط المؤشر بنحو ${a}%` : `~${a}% below index median`) : v.status === "above" ? (ar ? `أعلى من وسيط المؤشر بنحو ${a}%` : `~${a}% above index median`) : (dict.listings.withinBand);
+                    const txt = v.status === "below" ? (ar ? `أقل من متوسط المؤشر بنحو ${a}%` : `~${a}% below index average`) : v.status === "above" ? (ar ? `أعلى من متوسط المؤشر بنحو ${a}%` : `~${a}% above index average`) : (dict.listings.withinBand);
                     const col = v.status === "below" ? "#1F8A5B" : v.status === "above" ? "#8A5A1F" : "var(--harbor)";
                     return <div className="mono" style={{ marginTop: 4, fontSize: 11, fontWeight: 600, color: col }} title={dict.listings.vsIndexTitle}>{txt}</div>;
                   })()}

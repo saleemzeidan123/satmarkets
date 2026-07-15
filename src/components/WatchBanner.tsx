@@ -88,8 +88,8 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
           const arrow = up ? "▲" : "▼";
           const dir = up ? wb.upWord : wb.downWord;
           const line = ar
-            ? `${m.label}: تحرّك الوسيط المنشور من ${nf(m.from)} إلى ${nf(m.to)} (${m.period})، ${dir} ${Math.abs(m.pct)}%.`
-            : `${m.label}: published median moved from ${nf(m.from)} to ${nf(m.to)} (${m.period}), ${dir} ${Math.abs(m.pct)}%.`;
+            ? `${m.label}: تحرّك المتوسط المنشور من ${nf(m.from)} إلى ${nf(m.to)} (${m.period})، ${dir} ${Math.abs(m.pct)}%.`
+            : `${m.label}: published average moved from ${nf(m.from)} to ${nf(m.to)} (${m.period}), ${dir} ${Math.abs(m.pct)}%.`;
           return (
             <div key={m.w.id} className="row gap8" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
