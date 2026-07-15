@@ -38,18 +38,19 @@ export async function middleware(req: NextRequest) {
     });
     await supabase.auth.getUser();
   }
-  // Preview containment (Codex MKT-P0-06/07): noindex the whole non-production
-  // host, and always noindex prototype/account routes even on production, until
-  // authentication and route classification land.
-  const host = (req.headers.get("host") || "").toLowerCase();
-  const isProdHost = host === "satmarkets.sa" || host === "www.satmarkets.sa";
+  // Preview containment (Codex indexing safety): the entire site is noindexed
+  // until the operator explicitly opts in via ALLOW_INDEX, because everything is
+  // pre-launch sample data. Connecting the real domain must not auto-index it;
+  // indexing is a deliberate switch, not a side effect of DNS. Prototype and
+  // account routes stay noindexed regardless of the flag.
+  const allowIndex = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
   // Prototype/account routes stay noindexed even on the production host until they
   // are real. /signup and /compare are prototype surfaces too (Codex MKT-P0-06).
   const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare"];
   const isPrivate = PRIVATE_PREFIXES.some(
     (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
   );
-  if (!isProdHost || isPrivate) {
+  if (!allowIndex || isPrivate) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
   return res;

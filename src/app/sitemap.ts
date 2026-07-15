@@ -24,6 +24,12 @@ const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/advisor", "/c
 // gets no lastmod rather than a fabricated one.
 const LISTING_DRIVEN = new Set(["", "/listings", "/map", "/locations", "/market", "/brokers"]);
 
+// Indexing safety (Codex): do not emit per-listing or per-building detail URLs
+// while the catalogue is pre-launch sample data. Those pages are noindexed by
+// the middleware, so listing them here only points crawlers at throwaway URLs.
+// Gated on the same ALLOW_INDEX switch that controls indexability.
+const ALLOW_INDEX = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
+
 const langs = (path: string) => ({
   en: `${SITE}/en${path}`,
   ar: `${SITE}/ar${path}`,
@@ -73,7 +79,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  for (const l of listings) {
+  if (ALLOW_INDEX) for (const l of listings) {
     const stamp = l.updated_at || l.created_at;
     for (const loc of ["en", "ar"]) {
       entries.push({
@@ -86,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  for (const b of buildings) {
+  if (ALLOW_INDEX) for (const b of buildings) {
     for (const loc of ["en", "ar"]) {
       entries.push({
         url: `${SITE}/${loc}/building/${b.id}`,
