@@ -1080,7 +1080,7 @@
     "vDoneLister": "Viewing requested. The lister confirms the slot and you get a confirmation email.",
     "twoQuick": "Two quick, optional answers so the lister knows the visit is worth their time.",
     "requestSlot": "Request this slot",
-    "footer": "Free to contact the lister directly. SAT Markets does not act for buyers or tenants, and takes no commission.",
+    "footer": "Free to contact the lister directly. SAT Markets does not act for buyers or tenants and takes no cut of the deal; any brokerage fee is set by the lister.",
     "errContactRequired": "Your name and a valid work email are required."
   },
   "mapExplorer": {
