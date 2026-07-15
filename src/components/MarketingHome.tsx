@@ -456,7 +456,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      <div style={{ maxWidth: 720, margin: "0 auto" }}>
       <div className="card pad" style={{ textAlign: "center" }}>
        <div style={{ fontSize: "var(--fs-lg)", lineHeight: 1.65 }}>{T.flowBody}</div>
-       <div className="muted" style={{ fontSize: "var(--fs-base)", lineHeight: 1.6, marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--line)" }}>{T.flowNote}</div>
+       
       </div>
      </div>
     </div>
