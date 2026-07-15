@@ -124,9 +124,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ftH: "مساحات موثّقة، بأسعار في سياقها",
   ftBrowse: "تصفّح كل العروض",
   unit: " ريال/م²·سنة",
-  bandEye: "مؤشر الإيجارات، الربع الأول 2026",
+  bandEye: "مؤشر الإيجارات",
   bandH: "طبقة التسعير خلف كل قرار",
-  bandP1: "معايير الربع الأول 2026 المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو حدّد نطاقاً، أو قيّم عقد إيجار. موثّقة المصدر، لا تقديرات.",
+  bandP1: "المعايير المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو حدّد نطاقاً، أو قيّم عقد إيجار. موثّقة المصدر، لا تقديرات.",
   bandBtn: "استكشف مؤشر الإيجارات",
   bandStat: ["الفئة A بالرياض، سنوياً (منشور)", "متوسط الفئة A ريال/م²·سنة", "إشغال الفئة A"] as string[],
   flowEye: "كيف تسير الصفقة",
@@ -180,9 +180,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ftH: "Verified spaces, priced in context",
   ftBrowse: "Browse all listings",
   unit: " SAR/m²·yr",
-  bandEye: "Rent Index, Q1 2026",
+  bandEye: "Rent Index",
   bandH: "The pricing layer behind every decision",
-  bandP1: "Published Q1 2026 benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.",
+  bandP1: "Published benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent, size a catchment, or value a lease. Sourced, never estimated.",
   bandBtn: "Explore the Rent Index",
   bandStat: ["Riyadh Grade A, YoY (published)", "Grade A average SAR/m²·yr", "Grade A occupancy"] as string[],
   flowEye: "How a deal flows",
@@ -399,7 +399,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .3 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.05fr)", gap: 48, alignItems: "center" }}>
       <div>
-       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}</div>
+       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}{kpis.period ? (ar ? "، " : ", ") + kpis.period : ""}</div>
        <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
        <p style={{ fontSize: "var(--fs-input)", lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
        <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
@@ -412,7 +412,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
         <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{ar ? "الربع الأول 2026" : band.period}</span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{band.period}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
         <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{band.median.toLocaleString()}</span>
