@@ -78,7 +78,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
     else if (results.length) note = `${results.length} verified ${results.length === 1 ? "match" : "matches"}, owner-verified and deduplicated.`;
     else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
    }
-   setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? "مؤشر الإيجارات للربع الأول 2026 · معايير منشورة منسوبة إلى مصادرها" : "Rent Index Q1 2026 · published benchmarks, attributed to source" }]);
+   setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? "مؤشر الإيجارات للربع الثاني 2026 · معايير منشورة منسوبة إلى مصادرها" : "Rent Index Q2 2026 · published benchmarks, attributed to source" }]);
   } catch {
    setMsgs((m) => [...m, { role: "a", text: ar ? "حدث ما قاطع البحث. حاول مرة أخرى." : "Something interrupted the search. Please try again." }]);
   }

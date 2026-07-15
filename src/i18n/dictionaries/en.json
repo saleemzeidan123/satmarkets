@@ -345,7 +345,7 @@
   "invest": {
     "na": "n/a",
     "assetTitle": "Grade A Office Floor, Olaya Tower",
-    "csvSub": "Indicative underwriting, Q1 2026, off verified comps, indicative not advice",
+    "csvSub": "Indicative underwriting, Q2 2026, off verified comps, indicative not advice",
     "csvInputs": "Inputs",
     "csvAcqPrice": "Acquisition price (SAR)",
     "csvTerm": "Term (yr)",
@@ -360,7 +360,7 @@
     "irr5": "5-yr levered IRR",
     "equityMult": "Equity multiple",
     "csvNoiByYear": "NOI by year",
-    "eyebrow": "Investment underwriting · Q1 2026",
+    "eyebrow": "Investment underwriting · Q2 2026",
     "assetSub": "320 m² · Al Olaya · underwritten on verified comparable transactions",
     "exportModel": "Export model",
     "askAi": "Ask AI to underwrite",
@@ -434,7 +434,7 @@
     ]
   },
   "hbu": {
-    "eyebrow": "Investment underwriting · Q1 2026",
+    "eyebrow": "Investment underwriting · Q2 2026",
     "assetTitle": "Grade A Office Floor, Olaya Tower",
     "assetSub": "320 m² · Al Olaya · underwritten on verified comparable transactions",
     "exportModel": "Export model",
@@ -643,14 +643,14 @@
     "gradeAOccupancy": "Grade A occupancy",
     "daytimeCatchment": "Daytime catchment",
     "sourcesUsed": "Sources used",
-    "sourceRentIndex": "Rent Index Q1 2026",
+    "sourceRentIndex": "Rent Index Q2 2026",
     "sourceRega": "SAT verification records",
     "sourceListings": "Verified platform listings"
   },
   "area": {
     "crumbHome": "Home",
     "crumbLI": "Location Intelligence",
-    "eyebrow": "Location Intelligence · Q1 2026",
+    "eyebrow": "Location Intelligence · Q2 2026",
     "h1": "Al Olaya trade area",
     "intro": "Footfall, catchment & co-tenancy. Representative figures, live Saudi mobility, spend and demographic sources are being onboarded.",
     "driveTime10": "Drive-time 10 min",
@@ -1187,7 +1187,7 @@
     "colIntel": "Intelligence",
     "colCompany": "Company",
     "skip": "Skip to content",
-    "notice": "Rent Index Q1 2026 is live. Published Riyadh benchmarks, attributed to source.",
+    "notice": "Rent Index Q2 2026 is live. Published Riyadh benchmarks, attributed to source.",
     "explore": "Explore →",
     "preview": "Preview environment. Listings, requirements and figures shown here are sample data for testing, not live market inventory."
   },
