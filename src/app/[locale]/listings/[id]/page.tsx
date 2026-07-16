@@ -11,7 +11,6 @@ import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
-import { pickIndexRow, marketVerdict } from "@/lib/market/verdict";
 import { getListingById, getLister } from "@/lib/queries/listings";
 import ListerBadge from "@/components/ListerBadge";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -50,7 +49,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const lister = await getLister(l?.account_id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
-  const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : "الرياض";
   const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (dict.ld.riyadh);
   const cityEn = l.districts && l.districts.city ? cityLabel(l.districts.city, "en") : "Riyadh";
   const type = assetLabel(l.asset_type, locale);
@@ -61,42 +59,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const hours = [3, 2, 4, 7, 11, 15, 17, 18, 16, 17, 15, 9, 5];
   const L = (p: string) => `/${locale}${p}`;
 
-  // Rent Index context, grounded in the published bands (same engine as the listings cards and compare page)
-  let verdict: any = null;
-  if (sb && l.district_id) {
-    const { data: irows } = await sb.from("rent_index_published").select("asset_type,segment,unit,band_low,median,band_high,period,sufficient,district_label,district_label_ar").eq("district_id", l.district_id).eq("sufficient", true);
-    const row = pickIndexRow((irows ?? []) as any, l.asset_type, l.building_grade);
-    verdict = marketVerdict(lease ? (l.asking_rent_sqm ?? null) : null, row, String(dn), String(dnAr));
-  }
-  const band = verdict && verdict.status !== "na" && verdict.median != null && verdict.band_low != null && verdict.band_high != null && lease && l.asking_rent_sqm != null ? (() => {
-    const lo = Number(verdict.band_low), hi = Number(verdict.band_high), med = Number(verdict.median), ask = Number(l.asking_rent_sqm);
-    const dmin = Math.min(lo, ask), dmax = Math.max(hi, ask);
-    const pad = (dmax - dmin) * 0.14 || Math.max(1, dmax * 0.1);
-    const a = dmin - pad, b = dmax + pad;
-    const pct = (v: number) => Math.max(2, Math.min(98, ((v - a) / (b - a)) * 100));
-    const color = verdict.status === "below" ? "#1F8A5B" : verdict.status === "above" ? "#8A5A1F" : "#3A6EA5";
-    return { lo, hi, med, ask, pctLo: pct(lo), pctHi: pct(hi), pctMed: pct(med), pctAsk: pct(ask), color };
-  })() : null;
-
-  // Thin-sample detection (roadmap Q7): a segment for this district+asset exists in
-  // the index but has not cleared the sufficiency bar, so no firm band is published.
-  // We say that out loud rather than showing the generic empty state, and never fill
-  // the gap with a guess.
-  let thin = false;
-  let thinPeriod: string | null = null;
-  if (sb && l.district_id && lease && !band) {
-    const { data: anyrows } = await sb
-      .from("rent_index_published")
-      .select("period, sufficient")
-      .eq("district_id", l.district_id)
-      .eq("asset_type", l.asset_type);
-    const rows = (anyrows ?? []) as any[];
-    if (rows.length > 0 && !rows.some((r) => r.sufficient)) {
-      thin = true;
-      thinPeriod = rows[0]?.period ?? null;
-    }
-  }
-  const freshPeriod = (verdict && verdict.period) || thinPeriod || null;
 
   // Similar verified spaces: same district first, then fall back to the same asset type
   let similar: any[] = [];
@@ -198,7 +160,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.overview}</a>
             <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> {dict.ld.locationIntel}</a>
             <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> {dict.ld.investment}</Link>
-            <a href="#comps" className="t" style={{ textDecoration: "none" }}><Icon.chart size={15} /> {dict.ld.comparableRents}</a>
           </div>
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
             {([[dict.ld.area, `${l.area_sqm} m²`], (l.building_grade && l.building_grade !== "n_a" ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null), (l.fitout_condition && l.fitout_condition !== "n_a" ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null), [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)]].filter(Boolean) as [string, string][]).map((s, i) => (
@@ -209,40 +170,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             ))}
           </div>
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
-          <div id="comps" className="card pad" style={{ scrollMarginTop: 80, marginTop: 22, background: "var(--cool)", boxShadow: "none" }}>
-            <div className="eyebrow">{dict.ld.pricedInContext}</div>
-            {band ? (
-              <>
-                <div style={{ position: "relative", height: 76, marginTop: 26 }}>
-                  <div style={{ position: "absolute", left: "0%", right: "0%", top: 46, height: 8, borderRadius: 6, background: "var(--silver)" }} />
-                  <div style={{ position: "absolute", top: 46, height: 8, borderRadius: 6, left: band.pctLo + "%", width: (band.pctHi - band.pctLo) + "%", background: "rgba(58,110,165,.20)", border: "1px solid rgba(58,110,165,.45)" }} />
-                  <div style={{ position: "absolute", top: 40, left: band.pctMed + "%", width: 2, height: 20, marginLeft: -1, background: "#3A6EA5" }} />
-                  <span className="mono" style={{ position: "absolute", top: 62, left: band.pctLo + "%", transform: "translateX(-50%)", fontSize: 10, color: "var(--slate-2)", whiteSpace: "nowrap" }}>{Math.round(band.lo).toLocaleString()}</span>
-                  <span className="mono" style={{ position: "absolute", top: 62, left: band.pctMed + "%", transform: "translateX(-50%)", fontSize: 10.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{dict.ld.median} {Math.round(band.med).toLocaleString()}</span>
-                  <span className="mono" style={{ position: "absolute", top: 62, left: band.pctHi + "%", transform: "translateX(-50%)", fontSize: 10, color: "var(--slate-2)", whiteSpace: "nowrap" }}>{Math.round(band.hi).toLocaleString()}</span>
-                  <div style={{ position: "absolute", top: 4, left: band.pctAsk + "%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: band.color, whiteSpace: "nowrap" }}>{Math.round(band.ask).toLocaleString()}</span>
-                    <span style={{ fontSize: 9.5, color: "var(--slate)", whiteSpace: "nowrap" }}>{dict.ld.thisSpace}</span>
-                    <span style={{ width: 13, height: 13, borderRadius: 999, background: band.color, border: "2.5px solid #fff", boxShadow: "var(--sh-1)", marginTop: 3 }} />
-                  </div>
-                </div>
-                <p style={{ fontSize: 13.5, lineHeight: 1.6, marginTop: 18, color: "var(--ink)", maxWidth: 560 }}>{ar ? verdict.line_ar : verdict.line_en}</p>
-              </>
-            ) : thin ? (
-              <div style={{ marginTop: 12 }}>
-                <span className="tag" style={{ background: "#FBEBD6", color: "#8A5A1F", borderColor: "#EBD3B0", fontWeight: 600 }}>{dict.ld.thinChip}</span>
-                <p className="muted" style={{ fontSize: 13.5, marginTop: 10, lineHeight: 1.6, maxWidth: 480 }}>{dict.ld.thinBody} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{dict.ld.askAdvisor}</Link></p>
-              </div>
-            ) : (
-              <p className="muted" style={{ fontSize: 14, marginTop: 12, lineHeight: 1.6, maxWidth: 460 }}>{lease ? (dict.ld.noBandLease) : (dict.ld.noBandSale)} <Link href={L("/advisor")} style={{ color: "var(--harbor)", fontWeight: 600, textDecoration: "none" }}>{dict.ld.askAdvisor}</Link></p>
-            )}
-            {/* Freshness + source strip (roadmap Q1). Period comes from the matched
-                index row; the source is always the REGA Rental Index, never a research
-                house whose figures we may not republish. */}
-            <div className="muted mono" style={{ fontSize: 10.5, marginTop: 16, letterSpacing: ".01em", lineHeight: 1.6 }}>
-              {freshPeriod ? <><span>{dict.ld.updatedWord} {freshPeriod}</span><span style={{ margin: "0 6px" }}>·</span></> : null}{dict.ld.sourceStrip}
-            </div>
-          </div>
           <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} dealType={l.deal_type} price={price != null ? Number(price) : null} areaSqm={l.area_sqm ?? null} />
           <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
             <div className="modhead"><Icon.target size={18} /><span className="ttl">{dict.ld.locationIntel}</span><span className="grow" /><span className="tag">{dict.ld.sample}</span></div>

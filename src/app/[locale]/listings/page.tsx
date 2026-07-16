@@ -19,7 +19,7 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
-import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
+import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
@@ -269,26 +269,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                 <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
                 <div className="body">
                   {(() => {
-                    const vv = (l.deal_type === "lease" && l.asking_rent_sqm != null && l.district_id) ? marketVerdict(l.asking_rent_sqm, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade)) : null;
-                    const vShow = vv && vv.status !== "na" && vv.deltaPct != null ? vv : null;
-                    let chip: React.ReactNode = null, srcLine: React.ReactNode = null;
-                    if (vShow) {
-                      const a = Math.abs(vShow.deltaPct as number);
-                      const txt = vShow.status === "below" ? (ar ? `أقل بنحو ${a}%` : `${a}% below avg`) : vShow.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `${a}% above avg`) : (dict.listings.withinBand);
-                      const bg = vShow.status === "below" ? "#E7F4ED" : vShow.status === "above" ? "#FAEEDA" : "var(--azure-wash)";
-                      const fg = vShow.status === "below" ? "#1B7A50" : vShow.status === "above" ? "#B7791F" : "var(--harbor)";
-                      chip = <span className="mono" style={{ background: bg, color: fg, fontSize: 10.5, fontWeight: 600, padding: "3px 8px", borderRadius: 6, whiteSpace: "nowrap" }} title={dict.listings.vsIndexTitle}>{txt}</span>;
-                      srcLine = <div className="mono muted" style={{ marginTop: 9, fontSize: 10, borderInlineStart: "2px solid var(--harbor)", paddingInlineStart: 7, letterSpacing: ".02em" }}>{ar ? "المؤشر الإيجاري (إيجار) · 2026-Q2" : "REGA Rental Index (Ejar) · 2026-Q2"}</div>;
-                    }
                     const ls = listedSince((l as any).created_at);
                     return (<>
-                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, flexWrap: "wrap", rowGap: 4 }}>
-                        <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
-                        {chip}
-                      </div>
+                      <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
                       <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                       <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
-                      {srcLine}
                       {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
                     </>);
                   })()}
