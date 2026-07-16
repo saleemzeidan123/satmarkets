@@ -4,7 +4,6 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listedSince, listedLabel } from "@/lib/listedSince";
-import LocationScore from "@/components/LocationScore";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
@@ -56,7 +55,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const price = lease ? l.asking_rent_sqm : l.sale_price;
   const title = (ar ? l.title_ar : l.title_en) || l.reference_code;
   const kindFor = (a: string) => a;
-  const hours = [3, 2, 4, 7, 11, 15, 17, 18, 16, 17, 15, 9, 5];
   const L = (p: string) => `/${locale}${p}`;
 
 
@@ -158,7 +156,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           ] }} />
           <div className="tabs" style={{ marginTop: 22 }}>
             <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.overview}</a>
-            <a href="#loc" className="t" style={{ textDecoration: "none" }}><Icon.target size={15} /> {dict.ld.locationIntel}</a>
             <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> {dict.ld.investment}</Link>
           </div>
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
@@ -170,28 +167,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             ))}
           </div>
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
-          <LocationScore ar={ar} district={String(dn)} assetType={l.asset_type} dealType={l.deal_type} price={price != null ? Number(price) : null} areaSqm={l.area_sqm ?? null} />
-          <div id="loc" className="card pad" style={{ scrollMarginTop: 80, marginTop: 18, boxShadow: "none" }}>
-            <div className="modhead"><Icon.target size={18} /><span className="ttl">{dict.ld.locationIntel}</span><span className="grow" /><span className="tag">{dict.ld.sample}</span></div>
-            <div className="satmkt-2col" style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 20, alignItems: "center" }}>
-              <div className="map" style={{ height: 200, borderRadius: 11, border: "1px solid var(--silver)", position: "relative" }}>
-                <div className="iso r3" style={{ left: "50%", top: "52%", width: 180, height: 180 }} />
-                <div className="iso r2" style={{ left: "50%", top: "52%", width: 120, height: 120 }} />
-                <div className="iso r1" style={{ left: "50%", top: "52%", width: 66, height: 66 }} />
-                <div className="isodot" style={{ left: "50%", top: "52%" }} />
-                <span className="tag" style={{ position: "absolute", insetInlineStart: 12, top: 12 }}>{dict.ld.driveTime}</span>
-              </div>
-              <div className="col" style={{ gap: 18 }}>
-                <div className="row gap20">
-                  <div className="kpi"><span className="v tnum">412k</span><span className="l">{dict.ld.daytimePopulation}</span></div>
-                  <div className="kpi"><span className="v tnum">+18%</span><span className="l">{dict.ld.footfallVsDistrict}</span></div>
-                </div>
-                <div>
-                  <div className="muted" style={{ fontSize: 11.5, marginBottom: 8 }}>{dict.ld.weekdayFootfall}</div>
-                  <div className="hours">{hours.map((h, i) => <div key={i} className={"h" + (h >= 16 ? " pk" : "")} style={{ height: (h / 18 * 100) + "%" }} />)}</div>
-                </div>
-              </div>
-            </div>
+          <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+            <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 620 }}>{dict.ld.locNote}</div>
           </div>
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
