@@ -205,6 +205,35 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           {(() => {
             const T = (dict as any).ld;
             const num = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+            const rows: [string, string][] = [];
+            if (l.clear_height_m != null) rows.push([T.clearHeight, num(l.clear_height_m) + (ar ? " م" : " m")]);
+            if (l.loading_docks != null) {
+              const d = Number(l.loading_docks);
+              const ratio = l.area_sqm && d > 0 ? ` · 1 ${ar ? "لكل" : "per"} ${num(Math.round(Number(l.area_sqm) / d))} ${ar ? "م²" : "m²"}` : "";
+              rows.push([T.loadingDocks, `${num(d)}${ratio}`]);
+            }
+            if (l.power_kva != null) rows.push([T.power, num(l.power_kva) + " kVA"]);
+            if (l.parking_ratio != null) rows.push([T.parking, `1 ${ar ? "موقف / " : "space / "}${num(l.parking_ratio)} ${ar ? "م²" : "m²"}`]);
+            if (l.civil_defense_approved) rows.push([T.civilDefense, ar ? "معتمد" : "Approved"]);
+            if (rows.length === 0) return null;
+            return (
+              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{T.spaceTitle}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                  {rows.map((r, i) => (
+                    <div key={i}>
+                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
+                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
+              </div>
+            );
+          })()}
+          {(() => {
+            const T = (dict as any).ld;
+            const num = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
             const termFmt = (m: number) => (m % 12 === 0 ? `${num(m / 12)} ${m / 12 === 1 ? (ar ? "سنة" : "year") : (ar ? "سنوات" : "years")}` : `${num(m)} ${ar ? "شهراً" : "months"}`);
             const vatFmt = (v: string) => (v === "inclusive" ? (ar ? "شامل الضريبة" : "Inclusive") : (ar ? "غير شامل الضريبة" : "Exclusive"));
             const rows: [string, string][] = [];

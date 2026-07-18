@@ -259,7 +259,13 @@
     "breakOption": "Break option",
     "vat": "VAT",
     "pricePerSqm": "Price per m²",
-    "statedByLister": "Terms stated by the lister"
+    "statedByLister": "Terms stated by the lister",
+    "spaceTitle": "The space",
+    "clearHeight": "Clear height",
+    "loadingDocks": "Loading docks",
+    "power": "Power",
+    "parking": "Parking",
+    "civilDefense": "Civil Defense"
   },
   "chrome": {
     "tabHome": "Home",

@@ -259,7 +259,13 @@
     "breakOption": "خيار الإنهاء",
     "vat": "ضريبة القيمة المضافة",
     "pricePerSqm": "السعر لكل م²",
-    "statedByLister": "شروط كما ذكرها المُعلن"
+    "statedByLister": "شروط كما ذكرها المُعلن",
+    "spaceTitle": "المساحة",
+    "clearHeight": "الارتفاع الصافي",
+    "loadingDocks": "أرصفة التحميل",
+    "power": "القدرة الكهربائية",
+    "parking": "مواقف السيارات",
+    "civilDefense": "الدفاع المدني"
   },
   "chrome": {
     "tabHome": "الرئيسية",
