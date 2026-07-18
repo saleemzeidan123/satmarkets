@@ -1374,6 +1374,9 @@
     "rail": "Nearest high-speed rail",
     "lessRail": "High-speed rail proximity has little bearing on a logistics or storage site.",
     "thisSpace": "This space",
-    "metroDot": "Metro station"
+    "metroDot": "Metro station",
+    "srcMetro": "Metro: Riyadh Metro network, RCRC Open Data.",
+    "srcRail": "High-speed rail: Haramain stations, OpenStreetMap.",
+    "srcComputed": "Distances computed by SAT Markets."
   }
 }

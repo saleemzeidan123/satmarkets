@@ -172,7 +172,7 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
         </div>
       )}
       <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{d.ld.locNote}</div>
-      <div className="mono muted" style={{ fontSize: 10.5, marginTop: 8 }}>{t.sourceLine}</div>
+      <div className="mono muted" style={{ fontSize: 10.5, marginTop: 8 }}>{[metro ? t.srcMetro : null, rail ? t.srcRail : null, t.srcComputed].filter(Boolean).join(" ")}</div>
     </div>
   );
 }
