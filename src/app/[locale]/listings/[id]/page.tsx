@@ -23,6 +23,7 @@ import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
 import { getSessionUser } from "@/lib/auth/session";
 import { documentLabel } from "@/lib/documentKinds";
+import { videoEmbed } from "@/lib/videoEmbed";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -429,6 +430,24 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           )}
+          {(() => {
+            const v = videoEmbed(l.video_url);
+            if (!v) return null;
+            return (
+              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{ar ? "جولة بالفيديو" : "Video tour"}</div>
+                {v.kind === "youtube" || v.kind === "vimeo" ? (
+                  <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: 10, overflow: "hidden" }}>
+                    <iframe src={v.embedUrl} title={ar ? "جولة بالفيديو" : "Video tour"} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
+                  </div>
+                ) : v.kind === "file" ? (
+                  <video controls preload="none" src={v.src} style={{ width: "100%", borderRadius: 10, maxHeight: 440, background: "#000" }} />
+                ) : (
+                  <a href={v.href} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}>{ar ? "مشاهدة الفيديو" : "Watch the video tour"}</a>
+                )}
+              </div>
+            );
+          })()}
           {canSeeDocs && ownerDocs.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--line)" }}>
               <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "مستندات التحقق (خاصة)" : "Verification documents (private)"}</div>
