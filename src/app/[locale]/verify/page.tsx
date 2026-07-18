@@ -40,7 +40,10 @@ export default async function VerifyQueue() {
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb
     .from("listings")
-    .select("id, reference_code, title_en, status, is_sat_listed, ownership_verified, authorization_verified, verification_method, verified_at, authorization_doc_url, ad_permit_number, ad_permit_no, accounts(type, verification_status, name_en)")
+    // Disambiguate the accounts embed: listings has TWO FKs to accounts
+    // (account_id and verified_by), so the relationship must be named or PostgREST
+    // errors the whole query and returns nothing.
+    .select("id, reference_code, title_en, status, is_sat_listed, ownership_verified, authorization_verified, verification_method, verified_at, authorization_doc_url, ad_permit_number, ad_permit_no, accounts!listings_account_id_fkey(type, verification_status, name_en)")
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as unknown as Row[];

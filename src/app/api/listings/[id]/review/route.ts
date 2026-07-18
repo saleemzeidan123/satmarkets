@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       authorization_verified: true,
       verification_method: "manual_review",
       verified_at: new Date().toISOString(),
-      verified_by: su.userId,
+      verified_by: su.accountId, // FK references accounts, so record the reviewing SAT account
     }).eq("id", params.id);
     if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
     return NextResponse.json({ ok: true });
