@@ -30,7 +30,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
     title_en: "", asset_type: "office", deal_type: "lease",
     area_sqm: "", price: "", description_en: "",
     contact_phone: "", contact_email: "",
-    lister_type: "owner_direct", video_url: "", floorplan_url: "", authorization_doc_url: "",
+    lister_type: "owner_direct", video_url: "", floorplan_url: "",
     ad_permit_no: "", ad_permit_expires_at: "",
   });
   const [rightToMarket, setRightToMarket] = useState(false);
@@ -55,7 +55,10 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null);
-    if (isBroker && !f.authorization_doc_url.trim()) { setError("Brokers must provide an authorization-to-market document URL."); return; }
+    if (isBroker && !docFiles.some((_, i) => docKinds[i] === "authorization")) {
+      setError("As a broker, upload your authorization-to-market document in the Verification documents section below (set its type to Authorization to market).");
+      return;
+    }
     if (!/^\d{10}$/.test(f.ad_permit_no.trim())) {
       setError("Enter the 10 digit real estate advertising licence number. A listing cannot publish without one.");
       return;
@@ -94,7 +97,6 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
         lister_type: f.lister_type,
         video_url: f.video_url, floorplan_url: f.floorplan_url,
-        authorization_doc_url: isBroker ? f.authorization_doc_url : null,
         ad_permit_no: f.ad_permit_no.trim(), ad_permit_expires_at: f.ad_permit_expires_at,
         right_to_market_confirmed: rightToMarket,
         attributes: attrs,
@@ -241,7 +243,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
           <option value="broker_authorized">I am a broker authorized by the owner</option>
         </select>
         {isBroker && (
-          <input placeholder="Authorization-to-market document URL (required)" value={f.authorization_doc_url} onChange={(e)=>set("authorization_doc_url",e.target.value)} className={inp} />
+          <p className="text-[11px] text-charcoal/60">{ar ? "بصفتك وسيطاً، ارفع تفويض التسويق في قسم مستندات التحقق أدناه (واختر نوعه: تفويض بالتسويق)." : "As a broker, upload your authorization-to-market document in the Verification documents section below (set its type to Authorization to market)."}</p>
         )}
         <div>
           <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "روابط الصور (رابط في كل سطر)" : "Photo URLs (one per line)"}</label>

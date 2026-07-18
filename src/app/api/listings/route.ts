@@ -72,11 +72,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
   }
 
+  // A broker's authorization-to-market is now uploaded as a PRIVATE verification
+  // document (kind=authorization) via /api/listings/[id]/documents, not stored as a
+  // raw URL here. SAT confirms it before the listing publishes. No authorization_doc_url
+  // is written anymore, closing the old raw-URL path.
   const lister_type = body.lister_type === "broker_authorized" ? "broker_authorized" : "owner_direct";
-  const authorization_doc_url = lister_type === "broker_authorized" ? String(body.authorization_doc_url ?? "").trim() : null;
-  if (lister_type === "broker_authorized" && !authorization_doc_url) {
-    return NextResponse.json({ error: "Brokers must provide an authorization-to-market document URL." }, { status: 400 });
-  }
 
   // Per-asset registry attributes, validated and split into typed columns vs jsonb.
   const { attributes, columns, errors } = coerceAndValidateAttributes(asset_type, (body.attributes as Record<string, unknown>) ?? {});
@@ -113,7 +113,6 @@ export async function POST(req: NextRequest) {
       lister_type,
       video_url: (body.video_url as string) || null,
       floorplan_url: (body.floorplan_url as string) || null,
-      authorization_doc_url,
       ad_permit_no,
       ad_permit_expires_at,
       right_to_market_confirmed: true,

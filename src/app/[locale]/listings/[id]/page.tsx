@@ -21,6 +21,8 @@ import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@
 import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
+import { getSessionUser } from "@/lib/auth/session";
+import { documentLabel } from "@/lib/documentKinds";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -122,6 +124,19 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       else if (m.kind === "brochure") brochures.push({ url, label });
     }
   }
+  // Private verification documents, visible ONLY to the listing's owner or a SAT
+  // reviewer. A buyer never sees this block. Each link goes through the session
+  // gated download route (which re-checks owner or SAT), never a raw storage URL.
+  let ownerDocs: { id: string; kind: string; name: string | null }[] = [];
+  const su = await getSessionUser();
+  const canSeeDocs = !!su && (su.accountId === l.account_id || su.isSat);
+  if (sb && canSeeDocs) {
+    const { data: docs } = await sb.from("listing_documents")
+      .select("id, kind, original_name").eq("listing_id", l.id).is("deleted_at", null).order("created_at");
+    ownerDocs = ((docs ?? []) as { id: string; kind: string; original_name: string | null }[])
+      .map((d) => ({ id: d.id, kind: d.kind, name: d.original_name }));
+  }
+
   let locFactsProps: any = null;
   if (sb && originLL) {
     const { data: anch } = await sb.from("map_anchors").select("kind,name_en,name_ar,line,lat,lng").eq("city", cityEn).in("kind", ["metro", "airport", "rail"]);
@@ -401,6 +416,17 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
                 {brochures.map((b, i) => (
                   <a key={i} href={b.url} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "تحميل الكتيّب (PDF)" : "Download brochure (PDF)"}{b.label ? ` · ${b.label}` : ""}</a>
+                ))}
+              </div>
+            </div>
+          )}
+          {canSeeDocs && ownerDocs.length > 0 && (
+            <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--line)" }}>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "مستندات التحقق (خاصة)" : "Verification documents (private)"}</div>
+              <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ar ? "مرئية لك ولفريق سات فقط، لا تظهر للمستأجرين أو المشترين." : "Visible only to you and the SAT team, never to viewers."}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
+                {ownerDocs.map((d) => (
+                  <a key={d.id} href={`/api/documents/${d.id}/download`} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {documentLabel(d.kind, ar)}{d.name ? ` · ${d.name}` : ""}</a>
                 ))}
               </div>
             </div>

@@ -71,7 +71,7 @@ export default async function VerifyQueue() {
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#3A6EA5" }}>SAT Markets, internal</div>
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: 30, margin: "6px 0 4px" }}>Verification review queue</h1>
       <p style={{ color: "#5B6470", margin: "0 0 4px" }}>{total} listings, {verified} verified, {toReview} need review. Verification is recorded against the listing; no status is asserted that the data does not carry.</p>
-      <p style={{ color: "#5B6470", fontSize: 12, margin: "0 0 20px" }}>Approve and reject require a server-side privileged path (service-role key and admin gate), which is the next step. This is the read-only worklist.</p>
+      <p style={{ color: "#5B6470", fontSize: 12, margin: "0 0 20px" }}>Approve and reject act on the listing immediately, gated on your SAT session. Document links open the private file through a short-lived, download-only signed URL.</p>
       <div style={{ overflowX: "auto", border: "1px solid #E9EDF1", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["Ref","Title","Account","Acct status","Status","Owner","Auth","Method","Verified at","Doc","Ad permit","Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
