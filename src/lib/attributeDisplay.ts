@@ -62,6 +62,31 @@ export function formatFieldValue(field: AssetField, value: unknown, ar: boolean)
   }
 }
 
+// Rows for the "compliance" section. Unlike the space rows, these include
+// column-backed values (for example a boolean stored as a typed column), because
+// there is no existing hand-built compliance block. `civil_defense_approved` is
+// excluded because it is already shown under The space, and unavailable (not yet
+// wired) fields are skipped rather than faked.
+export function complianceRows(
+  assetType: string,
+  listing: Record<string, unknown> | null | undefined,
+  ar: boolean,
+): [string, string][] {
+  if (!listing) return [];
+  const attributes = (listing.attributes as Record<string, unknown> | undefined) ?? {};
+  const rows: [string, string][] = [];
+  for (const f of fieldsFor(assetType)) {
+    if (f.section !== "compliance") continue;
+    if (f.available === false) continue;
+    if (f.key === "civil_defense_approved") continue; // shown under The space
+    const raw = f.column && listing[f.column] != null ? listing[f.column] : attributes[f.key];
+    const formatted = formatFieldValue(f, raw, ar);
+    if (formatted === null) continue;
+    rows.push([ar ? f.label_ar : f.label_en, formatted]);
+  }
+  return rows;
+}
+
 // Rows for the "space" section drawn from a listing's attributes. Column-backed
 // fields are skipped (handled by the existing column blocks). Returns
 // [label, value] pairs in registry order, each already formatted.

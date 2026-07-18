@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { formatFieldValue, spaceAttributeRows } from "./attributeDisplay";
+import { formatFieldValue, spaceAttributeRows, complianceRows } from "./attributeDisplay";
 import { fieldsFor, type AssetField } from "./assetFields";
 
 const field = (over: Partial<AssetField>): AssetField => ({
@@ -45,6 +45,22 @@ test("warehouse sprinkler enum resolves to a proper label", () => {
   const sprinkler = fieldsFor("warehouse").find((f) => f.key === "sprinkler_type")!;
   assert.equal(formatFieldValue(sprinkler, "esfr", false), "ESFR");
   assert.equal(formatFieldValue(sprinkler, "wet", true), "رطب");
+});
+
+test("compliance rows include attribute values but exclude civil defense (shown in space)", () => {
+  const office = complianceRows("office", { attributes: { ejar_registered: true, rhq_ready: true } }, false);
+  const labels = office.map((r) => r[0]);
+  assert.ok(labels.includes("Ejar registration"));
+  assert.ok(labels.includes("RHQ-ready"));
+  const wh = complianceRows("warehouse", { civil_defense_approved: true, attributes: { ejar_registered: true } }, false);
+  const whLabels = wh.map((r) => r[0]);
+  assert.ok(whLabels.includes("Ejar registration"));
+  assert.ok(!whLabels.includes("Civil Defense"), "civil defense stays in The space, not compliance");
+});
+
+test("compliance skips unavailable (unwired) fields like zoning", () => {
+  const office = complianceRows("office", { attributes: { zoning_balady: "Commercial" } }, false);
+  assert.ok(!office.map((r) => r[0]).includes("Zoning"), "unavailable zoning must not render even if present");
 });
 
 test("space rows skip column-backed and unavailable fields, keep attribute fields", () => {

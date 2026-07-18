@@ -18,7 +18,7 @@ import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
-import { spaceAttributeRows } from "@/lib/attributeDisplay";
+import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -292,6 +292,26 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                   ))}
                 </div>
                 <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
+              </div>
+            );
+          })()}
+          {(() => {
+            // Compliance and permits (registry-driven, Phase 1). Civil Defense is
+            // excluded here because it already shows under The space.
+            const rows = complianceRows(l.asset_type, l, ar);
+            if (rows.length === 0) return null;
+            return (
+              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "الامتثال والتصاريح" : "Compliance and permits"}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                  {rows.map((r, i) => (
+                    <div key={i}>
+                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
+                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{(dict as any).ld.statedGeneric}</div>
               </div>
             );
           })()}
