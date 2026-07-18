@@ -265,7 +265,8 @@
     "loadingDocks": "أرصفة التحميل",
     "power": "القدرة الكهربائية",
     "parking": "مواقف السيارات",
-    "civilDefense": "الدفاع المدني"
+    "civilDefense": "الدفاع المدني",
+    "statedGeneric": "كما ذكرها المُعلن"
   },
   "chrome": {
     "tabHome": "الرئيسية",

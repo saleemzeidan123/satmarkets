@@ -280,7 +280,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                     </div>
                   ))}
                 </div>
-                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
+                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedGeneric}</div>
               </div>
             );
           })()}

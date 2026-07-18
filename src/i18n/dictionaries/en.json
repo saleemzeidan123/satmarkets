@@ -265,7 +265,8 @@
     "loadingDocks": "Loading docks",
     "power": "Power",
     "parking": "Parking",
-    "civilDefense": "Civil Defense"
+    "civilDefense": "Civil Defense",
+    "statedGeneric": "Stated by the lister"
   },
   "chrome": {
     "tabHome": "Home",
