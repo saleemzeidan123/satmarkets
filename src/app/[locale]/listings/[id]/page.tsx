@@ -132,17 +132,23 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
             {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
-          {/* Honest verification stamp (roadmap Q8): shows the real date the owner was
-              checked, only when we actually have it. No invented expiry or re-verify
-              deadline, because there is no re-verification process to back one yet. */}
+          {/* Honest verification freshness (Q8 + decay). Shows the real check date; once
+              the check is a year or older the badge desaturates and we append the check's
+              AGE as a plain fact ("over a year ago"). We still assert NO expiry / valid-until,
+              because there is no re-verification cadence to back such a promise (Law 3). */}
           {ownerVerified(l as any) && (l as any).verified_at ? (() => {
             const dt = new Date((l as any).verified_at);
             const dtxt = isFinite(dt.getTime()) ? dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }) : null;
+            const vt = Date.parse((l as any).verified_at);
+            const months = Number.isFinite(vt) ? Math.max(0, Math.floor((Date.now() - vt) / 2629800000)) : 0;
+            const stale = months >= 12;
+            const yrs = Math.floor(months / 12);
+            const ageTxt = !stale ? null : (yrs >= 2 ? (ar ? `أكثر من ${yrs} سنوات` : `over ${yrs} years ago`) : (ar ? "أكثر من سنة" : "over a year ago"));
             return dtxt ? (
-              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "#1F8A5B", fontSize: 12.5 }}>
+              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: stale ? "var(--slate)" : "#1F8A5B", fontSize: 12.5 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
                 <span style={{ fontWeight: 600 }}>{dict.ld.verifiedOwner}</span>
-                <span className="mono" style={{ color: "var(--slate)", fontWeight: 400 }}>· {dict.ld.checkedOn} <bdi dir="ltr">{dtxt}</bdi></span>
+                <span className="mono" style={{ color: "var(--slate)", fontWeight: 400 }}>· {dict.ld.checkedOn} <bdi dir="ltr">{dtxt}</bdi>{ageTxt ? ` · ${ageTxt}` : ""}</span>
               </div>
             ) : null;
           })() : null}
