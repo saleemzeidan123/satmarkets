@@ -98,7 +98,7 @@ test("attributes stays sparse: only keys with real values appear", () => {
 });
 
 test("an asset type with no registry yields empty result, no crash", () => {
-  const r = coerceAndValidateAttributes("land", { anything: "x" });
+  const r = coerceAndValidateAttributes("not_a_real_asset_type", { anything: "x" });
   assert.deepEqual(r.attributes, {});
   assert.deepEqual(r.columns, {});
   assert.deepEqual(r.errors, []);

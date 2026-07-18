@@ -14,11 +14,11 @@ const SECTIONS: DisplaySection[] = [
 ];
 const TIERS = ["entered", "verified", "computed", "sourced"];
 
-test("Phase 1 families are present, other types report no registry yet", () => {
-  for (const t of ["office", "warehouse", "retail"]) assert.ok(hasRegistry(t), `${t} should have a registry`);
-  assert.equal(hasRegistry("land"), false);
+test("every listable asset type has a registry; unknown types report none", () => {
+  const listable = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage", "hospitality", "mixed_use"];
+  for (const t of listable) assert.ok(hasRegistry(t), `${t} should have a registry`);
   assert.equal(hasRegistry("nonsense"), false);
-  assert.deepEqual(fieldsFor("land"), []);
+  assert.deepEqual(fieldsFor("nonsense"), []);
 });
 
 test("every field is well-formed and uses a valid section and tier", () => {
@@ -78,5 +78,36 @@ test("warehouse and office both surface commercial terms", () => {
   for (const t of ["warehouse", "office", "retail"]) {
     const commercial = sectionFieldsFor(t, "commercial");
     assert.ok(commercial.some((f) => f.key === "asking_rent_sqm"), `${t} should show asking rent`);
+  }
+});
+
+test("every enum field declares its allowed values and a label for each", () => {
+  for (const [assetType, fields] of Object.entries(ASSET_FIELDS)) {
+    for (const f of fields) {
+      if (f.type !== "enum") continue;
+      assert.ok(f.validation?.enum?.length, `${assetType}.${f.key}: enum needs validation.enum`);
+      if (f.options) {
+        for (const v of f.validation!.enum!) {
+          assert.ok(f.options[v], `${assetType}.${f.key}: enum value ${v} has no label`);
+        }
+      }
+    }
+  }
+});
+
+test("every required field is enterable at intake (provenance 'entered')", () => {
+  // A required field the lister cannot type would make the form unsubmittable.
+  for (const [assetType, fields] of Object.entries(ASSET_FIELDS)) {
+    for (const f of fields) {
+      if (f.required) assert.equal(f.provenance, "entered", `${assetType}.${f.key}: required but not enterable`);
+    }
+  }
+});
+
+test("price per m2 is computed, never collected at intake", () => {
+  for (const t of ["office", "warehouse"]) {
+    const pps = fieldsFor(t).find((f) => f.key === "price_per_sqm");
+    assert.ok(pps, `${t} should define price_per_sqm`);
+    assert.equal(pps!.provenance, "computed");
   }
 });
