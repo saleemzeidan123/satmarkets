@@ -19,6 +19,7 @@ import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
+import Gallery from "@/components/Gallery";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -128,7 +129,17 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
-          <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+          {mediaPhotos.length > 1 ? (
+            <div style={{ position: "relative" }}>
+              <div style={{ position: "absolute", top: 12, insetInlineStart: 12, zIndex: 3, display: "flex", gap: 8 }}>
+                {ownerVerified(l as any) ? <Verified text={dict.ld.verifiedOwner} /> : null}
+                <span className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>
+              </div>
+              <Gallery images={mediaPhotos} title={`${type}, ${dn}`} photosLabel={ar ? "صور" : "photos"} />
+            </div>
+          ) : (
+            <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+          )}
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
             {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
