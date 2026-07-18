@@ -250,7 +250,16 @@
     "sourceStrip": "REGA Rental Index (Ejar), averages of registered contracts. Indicative, not advice.",
     "thinChip": "Thin sample, not a firm band",
     "thinBody": "Too few registered rental contracts here yet to publish a firm band. The figure would be a guess, so we do not show one.",
-    "checkedOn": "checked"
+    "checkedOn": "checked",
+    "termsTitle": "Commercial terms",
+    "serviceCharge": "Service charge",
+    "leaseTerm": "Lease term",
+    "rentFree": "Rent-free period",
+    "fitoutContribution": "Fit-out contribution",
+    "breakOption": "Break option",
+    "vat": "VAT",
+    "pricePerSqm": "Price per m²",
+    "statedByLister": "Terms stated by the lister"
   },
   "chrome": {
     "tabHome": "Home",

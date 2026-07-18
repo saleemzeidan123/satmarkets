@@ -202,6 +202,38 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             ))}
           </div>
+          {(() => {
+            const T = (dict as any).ld;
+            const num = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+            const termFmt = (m: number) => (m % 12 === 0 ? `${num(m / 12)} ${m / 12 === 1 ? (ar ? "سنة" : "year") : (ar ? "سنوات" : "years")}` : `${num(m)} ${ar ? "شهراً" : "months"}`);
+            const vatFmt = (v: string) => (v === "inclusive" ? (ar ? "شامل الضريبة" : "Inclusive") : (ar ? "غير شامل الضريبة" : "Exclusive"));
+            const rows: [string, string][] = [];
+            if (lease) {
+              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, num(l.service_charge_sqm) + (ar ? " ريال/م²·سنة" : " SAR/m²·yr")]);
+              if (l.lease_term_months != null) rows.push([T.leaseTerm, termFmt(Number(l.lease_term_months))]);
+              if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, `${num(l.rent_free_months)} ${ar ? "شهراً" : "months"}`]);
+              if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, num(l.fitout_contribution) + (ar ? " ريال" : " SAR")]);
+              if (l.break_option_months != null) rows.push([T.breakOption, `${num(l.break_option_months)} ${ar ? "شهراً" : "months"}`]);
+            } else {
+              if (l.sale_price_sqm != null) rows.push([T.pricePerSqm, num(l.sale_price_sqm) + (ar ? " ريال/م²" : " SAR/m²")]);
+            }
+            if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
+            if (rows.length === 0) return null;
+            return (
+              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{T.termsTitle}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                  {rows.map((r, i) => (
+                    <div key={i}>
+                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
+                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
+              </div>
+            );
+          })()}
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
           {locFactsProps ? (
             <LocationFacts locale={locale as "en" | "ar"} {...locFactsProps} />
