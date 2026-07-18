@@ -19,6 +19,7 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
+import { facetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
@@ -135,6 +136,14 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const bbox = (() => { if (!searchParams.bbox) return null; const p = searchParams.bbox.split(",").map(Number); return p.length === 4 && p.every((n) => Number.isFinite(n)) ? p : null; })();
   if (bbox) { const [w, so, e, no] = bbox; shown = shown.filter((l: any) => { const c = coordByListing.get(l.id); return !!c && c.lng >= w && c.lng <= e && c.lat >= so && c.lat <= no; }); }
 
+  // Registry-driven per-asset facets, only when exactly one asset type is selected
+  // (facets are asset-specific). Filtered in memory over the fetched listings.
+  const facetAsset = list(searchParams.asset).length === 1 ? list(searchParams.asset)[0] : null;
+  const facets = facetAsset ? facetFields(facetAsset) : [];
+  const facetValues: Record<string, string | undefined> = {};
+  if (facetAsset) for (const f of facets) facetValues[f.key] = (searchParams as Record<string, string | undefined>)[`f_${f.key}`];
+  if (facets.length) shown = shown.filter((l: any) => matchesAssetFacets(l, facetAsset!, facetValues));
+
   const szT = searchParams.sz ? Number(searchParams.sz) : null;
   const rtT = searchParams.rt ? Number(searchParams.rt) : null;
   const spT = searchParams.sp ? Number(searchParams.sp) : null;
@@ -216,6 +225,35 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>
+      {facetAsset && facets.length > 0 && (
+        <form method="get" className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center" }}>
+          {Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
+          <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {ar ? "المرشحات" : "filters"}:</span>
+          {facets.map((f) => {
+            const cur = String((searchParams as Record<string, string | undefined>)[`f_${f.key}`] ?? "");
+            const lbl = ar ? f.label_ar : f.label_en;
+            const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", color: "var(--ink)" } as const;
+            if (f.type === "number" || f.type === "integer") {
+              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl}${f.unit ? " (" + f.unit + ")" : ""} ${ar ? "الأدنى" : "min"}`} style={{ ...inpStyle, width: 170 }} />;
+            }
+            const opts: [string, string][] = f.type === "tristate"
+              ? [["yes", ar ? "نعم" : "Yes"], ["no", ar ? "لا" : "No"]]
+              : (f.validation?.enum ?? []).map((v) => [v, f.options?.[v]?.[ar ? 1 : 0] ?? v.replace(/_/g, " ")] as [string, string]);
+            return (
+              <select key={f.key} name={`f_${f.key}`} defaultValue={cur} style={inpStyle}>
+                <option value="">{lbl}: {ar ? "الكل" : "Any"}</option>
+                {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            );
+          })}
+          <button type="submit" className="btn primary" style={{ height: 34 }}>{ar ? "تطبيق" : "Apply"}</button>
+          {facets.some((f) => (searchParams as Record<string, string | undefined>)[`f_${f.key}`]) && (
+            <a href={`/${locale}/listings?${Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{ar ? "مسح" : "Clear"}</a>
+          )}
+        </form>
+      )}
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
         <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض` : `${shown.length} ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات في ${searchParams.place} بعد` : ` · no spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {dict.listings.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dict.listings.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
