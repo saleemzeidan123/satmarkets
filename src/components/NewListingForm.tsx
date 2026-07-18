@@ -5,6 +5,7 @@ import { assetLabel } from "@/lib/labels";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 import LocationPicker from "@/components/LocationPicker";
 import type { DistrictPoint } from "@/lib/nearestDistrict";
+import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
 
 // These are captured by the base fields above (Area / Asking or Sale price), so
 // they are not shown again in the per-asset section even though the registry
@@ -36,6 +37,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   const [photos, setPhotos] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [floorFiles, setFloorFiles] = useState<File[]>([]);
+  const [floorTypes, setFloorTypes] = useState<PlanType[]>([]);
   const [brochureFile, setBrochureFile] = useState<File | null>(null);
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
@@ -46,7 +48,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
 
   // Reshape the per-asset section when the asset type changes: its fields differ,
   // so previously entered attribute values no longer apply.
-  const onAssetChange = (v: string) => { setF((p) => ({ ...p, asset_type: v })); setAttrs({}); };
+  const onAssetChange = (v: string) => { setF((p) => ({ ...p, asset_type: v })); setAttrs({}); setFloorTypes(floorFiles.map(() => defaultPlanType(v))); };
 
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null);
@@ -96,11 +98,13 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         try { await fetch(`/api/listings/${json.id}/media`, { method: "POST", body: fd }); } catch { /* ignore one bad file */ }
       }
       // Floor plans: images go to the image route (re-encoded), PDFs to the docs route.
-      for (const file of floorFiles) {
+      for (let i = 0; i < floorFiles.length; i++) {
+        const file = floorFiles[i];
         const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
         const fd = new FormData();
         fd.append("file", file);
         fd.append("kind", "floorplan");
+        fd.append("plan_type", floorTypes[i] ?? defaultPlanType(f.asset_type));
         try { await fetch(`/api/listings/${json.id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd }); } catch { /* ignore */ }
       }
       // Brochure / offering memorandum (PDF).
@@ -228,8 +232,15 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
         <div>
           <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "المخططات (صورة أو PDF)" : "Floor plans (image or PDF)"}</label>
-          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={(e)=>setFloorFiles(Array.from(e.target.files ?? []))} className="text-[13px]" />
-          {floorFiles.length > 0 && <p className="text-[11px] text-charcoal/55 mt-1">{floorFiles.length} {ar ? "ملف" : (floorFiles.length === 1 ? "file" : "files")}</p>}
+          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={(e)=>{ const arr = Array.from(e.target.files ?? []); setFloorFiles(arr); setFloorTypes(arr.map(() => defaultPlanType(f.asset_type))); }} className="text-[13px]" />
+          {floorFiles.map((file, i) => (
+            <div key={i} className="flex items-center gap-2 mt-1.5">
+              <span className="text-[11px] text-charcoal/55 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+              <select value={floorTypes[i] ?? defaultPlanType(f.asset_type)} onChange={(e)=>setFloorTypes((p)=>{ const c=[...p]; c[i]=e.target.value as PlanType; return c; })} className="text-[12px] border border-charcoal/20 rounded px-1.5 py-1">
+                {planTypesFor(f.asset_type).allowed.map((pt)=> <option key={pt} value={pt}>{planLabel(pt, ar)}</option>)}
+              </select>
+            </div>
+          ))}
         </div>
         <div>
           <label className="block text-[12px] text-charcoal/70 mb-1">{f.deal_type === "sale" ? (ar ? "مذكرة العرض (PDF)" : "Offering memorandum (PDF)") : (ar ? "الكتيّب التسويقي (PDF)" : "Marketing brochure (PDF)")}</label>

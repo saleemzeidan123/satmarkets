@@ -4,6 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
+import { isPlanType } from "@/lib/planTypes";
 
 export const runtime = "nodejs";
 
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Image is too large (max 4MB)." }, { status: 400 });
   const kind = form?.get("kind") === "floorplan" ? "floorplan" : "photo";
   const label = String(form?.get("label") ?? "").trim().slice(0, 80);
+  const ptRaw = form?.get("plan_type");
+  const planType = kind === "floorplan" && isPlanType(ptRaw) ? ptRaw : null;
 
   const { count } = await sb
     .from("listing_media")
@@ -90,6 +93,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       bytes: out.length,
       sort_order: count ?? 0,
       alt_en: label || null,
+      plan_type: planType,
     })
     .select("id")
     .single();

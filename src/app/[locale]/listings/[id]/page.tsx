@@ -20,6 +20,7 @@ import LocationFacts from "@/components/LocationFacts";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
+import { planLabel } from "@/lib/planTypes";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -97,13 +98,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   }
   // Real listing photos (source='url' for now; uploaded objects are signed in a later slice).
   let mediaPhotos: string[] = [];
-  const floorPlans: { url: string; isPdf: boolean; label: string | null }[] = [];
+  const floorPlans: { url: string; isPdf: boolean; label: string | null; planType: string | null }[] = [];
   const brochures: { url: string; label: string | null }[] = [];
   if (sb) {
     const { data: media } = await sb.from("listing_media")
-      .select("path,source,kind,mime,alt_en,alt_ar,sort_order")
+      .select("path,source,kind,mime,alt_en,alt_ar,plan_type,sort_order")
       .eq("listing_id", l.id).in("kind", ["photo", "floorplan", "brochure"]).order("sort_order");
-    for (const m of (media ?? []) as { path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null }[]) {
+    for (const m of (media ?? []) as { path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null; plan_type: string | null }[]) {
       if (!m.path) continue;
       const label = ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar);
       let url = String(m.path);
@@ -117,7 +118,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       }
       const isPdf = m.mime === "application/pdf" || url.toLowerCase().split("?")[0].endsWith(".pdf");
       if (m.kind === "photo") mediaPhotos.push(url);
-      else if (m.kind === "floorplan") floorPlans.push({ url, isPdf, label });
+      else if (m.kind === "floorplan") floorPlans.push({ url, isPdf, label, planType: m.plan_type });
       else if (m.kind === "brochure") brochures.push({ url, label });
     }
   }
@@ -354,23 +355,46 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             );
           })()}
-          {floorPlans.length > 0 && (
-            <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "المخططات" : "Floor plans"}</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 12 }}>
-                {floorPlans.map((fp, i) => (
-                  <a key={i} href={fp.url} target="_blank" rel="noopener noreferrer" className="card" style={{ textDecoration: "none", color: "inherit", overflow: "hidden", display: "block", boxShadow: "none" }}>
-                    {fp.isPdf ? (
-                      <div style={{ height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--harbor)", gap: 6, fontSize: 12.5, fontWeight: 600 }}><Icon.doc size={22} /> PDF</div>
-                    ) : (
-                      <img src={fp.url} alt={fp.label ?? (ar ? "مخطط" : "Floor plan")} style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
-                    )}
-                    <div className="muted" style={{ fontSize: 12, padding: "6px 8px" }}>{fp.label ?? (ar ? "مخطط الطابق" : "Floor plan")}</div>
-                  </a>
-                ))}
+          {floorPlans.length > 0 && (() => {
+            // Group by plan type. If every plan shares a type, that type names the
+            // whole section (land reads "Cadastral survey (Kroki)", not "Floor plans");
+            // if mixed, a neutral heading with per-type sub-groups.
+            const groups = new Map<string, typeof floorPlans>();
+            for (const fp of floorPlans) {
+              const key = fp.planType ?? "floor";
+              if (!groups.has(key)) groups.set(key, []);
+              groups.get(key)!.push(fp);
+            }
+            const single = groups.size === 1;
+            const onlyType = single ? Array.from(groups.keys())[0] : null;
+            const heading = single ? planLabel(onlyType, ar) : (ar ? "المخططات والرسومات" : "Plans & drawings");
+            const tile = (fp: typeof floorPlans[number], i: number) => (
+              <a key={i} href={fp.url} target="_blank" rel="noopener noreferrer" className="card" style={{ textDecoration: "none", color: "inherit", overflow: "hidden", display: "block", boxShadow: "none" }}>
+                {fp.isPdf ? (
+                  <div style={{ height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--harbor)", gap: 6, fontSize: 12.5, fontWeight: 600 }}><Icon.doc size={22} /> PDF</div>
+                ) : (
+                  <img src={fp.url} alt={fp.label ?? planLabel(fp.planType, ar)} style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
+                )}
+                <div className="muted" style={{ fontSize: 12, padding: "6px 8px" }}>{fp.label ?? planLabel(fp.planType, ar)}</div>
+              </a>
+            );
+            const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 12 } as const;
+            return (
+              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{heading}</div>
+                {single ? (
+                  <div style={gridStyle}>{groups.get(onlyType!)!.map(tile)}</div>
+                ) : (
+                  Array.from(groups.entries()).map(([type, items]) => (
+                    <div key={type} style={{ marginTop: 14 }}>
+                      <div className="mono muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{planLabel(type, ar)}</div>
+                      <div style={gridStyle}>{items.map(tile)}</div>
+                    </div>
+                  ))
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
           {brochures.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
               <div style={{ fontWeight: 600, fontSize: 15 }}>{lease ? (ar ? "الكتيّب التسويقي" : "Marketing brochure") : (ar ? "مذكرة العرض" : "Offering memorandum")}</div>

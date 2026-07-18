@@ -3,6 +3,7 @@ import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { randomUUID } from "crypto";
+import { isPlanType } from "@/lib/planTypes";
 
 export const runtime = "nodejs";
 
@@ -36,6 +37,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const file = form?.get("file");
   const kind = form?.get("kind") === "brochure" ? "brochure" : "floorplan";
   const label = String(form?.get("label") ?? "").trim().slice(0, 80);
+  const ptRaw = form?.get("plan_type");
+  const planType = kind === "floorplan" && isPlanType(ptRaw) ? ptRaw : null;
   if (!(file instanceof File)) return NextResponse.json({ error: "No file provided." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Document is too large (max 20MB)." }, { status: 400 });
 
@@ -71,6 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       bytes: buf.length,
       sort_order: count ?? 0,
       alt_en: label || null,
+      plan_type: planType,
     })
     .select("id")
     .single();
