@@ -21,6 +21,7 @@ import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { listedSince, listedLabel } from "@/lib/listedSince";
+import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
 // trust mark it had not earned, on the platform that publishes /neutrality.
@@ -275,6 +276,17 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                       <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
                       {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
+                      {(() => {
+                        const av = availabilityOf((l as any).availability_confirmed_at);
+                        if (!av) return null;
+                        const c = av.state === "stale" ? "#B26B00" : av.state === "aging" ? "var(--slate)" : "#1F8A5B";
+                        return (
+                          <div className="row gap6" style={{ marginTop: 5, alignItems: "center" }}>
+                            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto" }} />
+                            <span className="mono" style={{ fontSize: 10.5, letterSpacing: ".02em", color: c }}>{availabilityShortLabel(av, ar)}</span>
+                          </div>
+                        );
+                      })()}
                     </>);
                   })()}
                 </div>

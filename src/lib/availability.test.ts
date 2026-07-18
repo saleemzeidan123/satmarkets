@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { availabilityOf, availabilityLabel, FRESH_MAX_DAYS, STALE_MIN_DAYS } from "./availability";
+import { availabilityOf, availabilityLabel, availabilityShortLabel, FRESH_MAX_DAYS, STALE_MIN_DAYS } from "./availability";
 
 const NOW = Date.parse("2026-07-18T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86400000).toISOString();
@@ -37,4 +37,15 @@ test("label reads as affirmation when current, nudge when stale", () => {
   const stale = availabilityOf(daysAgo(120), NOW)!;
   assert.match(availabilityLabel(stale, "20 Mar 2026", false), /^Confirm availability with the lister/);
   assert.match(availabilityLabel(stale, "20 Mar 2026", true), /^تأكّد من التوفر/);
+});
+
+test("short card label: Available when current, a nudge when stale", () => {
+  const fresh = availabilityOf(daysAgo(3), NOW)!;
+  assert.equal(availabilityShortLabel(fresh, false), "Available");
+  assert.equal(availabilityShortLabel(fresh, true), "متاح");
+  const aging = availabilityOf(daysAgo(FRESH_MAX_DAYS + 5), NOW)!;
+  assert.equal(availabilityShortLabel(aging, false), "Available");
+  const stale = availabilityOf(daysAgo(STALE_MIN_DAYS + 5), NOW)!;
+  assert.equal(availabilityShortLabel(stale, false), "Confirm availability");
+  assert.equal(availabilityShortLabel(stale, true), "تأكّد من التوفر");
 });

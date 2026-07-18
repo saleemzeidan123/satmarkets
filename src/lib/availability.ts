@@ -47,3 +47,11 @@ export function availabilityLabel(a: Availability, dateText: string, ar: boolean
   }
   return ar ? `متاح · تأكد التوفر ${dateText}` : `Available · confirmed ${dateText}`;
 }
+
+// Compact form for browse/search cards: a status word whose colour (set by the
+// caller from `state`) carries the freshness gradient, so shortlisting tenants can
+// spot a stale listing at a glance without a second date line cluttering the card.
+export function availabilityShortLabel(a: Availability, ar: boolean): string {
+  if (a.state === "stale") return ar ? "تأكّد من التوفر" : "Confirm availability";
+  return ar ? "متاح" : "Available";
+}
