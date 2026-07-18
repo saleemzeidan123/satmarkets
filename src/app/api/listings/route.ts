@@ -124,5 +124,22 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-  return NextResponse.json({ id: data?.id });
+  const id = data?.id as string | undefined;
+
+  // Attach photo URLs as listing_media rows (best effort; the listing is already
+  // created). source='url' stores the external link in `path`. Uploaded files
+  // (source='upload') are added by the media upload route in a later slice.
+  if (id && Array.isArray(body.photos)) {
+    const rows = (body.photos as unknown[])
+      .map((u) => String(u).trim())
+      .filter((u) => /^https?:\/\/.+/i.test(u))
+      .slice(0, 20)
+      .map((u, i) => ({ listing_id: id, path: u, kind: "photo", source: "url", sort_order: i }));
+    if (rows.length) {
+      const { error: mErr } = await supabase.from("listing_media").insert(rows);
+      if (mErr) return NextResponse.json({ id, warning: "Listing saved, but photos could not be attached." });
+    }
+  }
+
+  return NextResponse.json({ id });
 }

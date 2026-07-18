@@ -94,6 +94,12 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       if (dg && (dg as any).lat != null && (dg as any).lng != null) originLL = { lat: Number((dg as any).lat), lng: Number((dg as any).lng), exact: false };
     }
   }
+  // Real listing photos (source='url' for now; uploaded objects are signed in a later slice).
+  let mediaPhotos: string[] = [];
+  if (sb) {
+    const { data: media } = await sb.from("listing_media").select("path,source,kind,sort_order").eq("listing_id", l.id).eq("kind", "photo").order("sort_order");
+    mediaPhotos = (media ?? []).filter((m: any) => m.source === "url").map((m: any) => String(m.path)).filter(Boolean);
+  }
   let locFactsProps: any = null;
   if (sb && originLL) {
     const { data: anch } = await sb.from("map_anchors").select("kind,name_en,name_ar,line,lat,lng").eq("city", cityEn).in("kind", ["metro", "airport", "rail"]);
@@ -122,7 +128,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
-          <Photo src={photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+          <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
             {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}

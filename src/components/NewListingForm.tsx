@@ -33,6 +33,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   });
   const [rightToMarket, setRightToMarket] = useState(false);
   const [loc, setLoc] = useState<{ lat: number | null; lng: number | null; districtId: string | null }>({ lat: null, lng: null, districtId: null });
+  const [photos, setPhotos] = useState("");
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
@@ -77,6 +78,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         ad_permit_no: f.ad_permit_no.trim(), ad_permit_expires_at: f.ad_permit_expires_at,
         right_to_market_confirmed: rightToMarket,
         attributes: attrs,
+        photos: photos.split(/\n+/).map((s) => s.trim()).filter(Boolean),
       }),
     });
     const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
@@ -184,6 +186,11 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         {isBroker && (
           <input placeholder="Authorization-to-market document URL (required)" value={f.authorization_doc_url} onChange={(e)=>set("authorization_doc_url",e.target.value)} className={inp} />
         )}
+        <div>
+          <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "روابط الصور (رابط في كل سطر)" : "Photo URLs (one per line)"}</label>
+          <textarea value={photos} onChange={(e)=>setPhotos(e.target.value)} className={inp} rows={3} placeholder={"https://...\nhttps://..."} />
+          <p className="text-[11px] text-charcoal/45">{ar ? "الصور تظهر في معرض العرض. رفع الملفات مباشرة قريباً." : "Real photos appear in the listing gallery. Direct file upload is coming next."}</p>
+        </div>
         <input placeholder="Video tour URL (YouTube or .mp4, optional)" value={f.video_url} onChange={(e)=>set("video_url",e.target.value)} className={inp} />
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
