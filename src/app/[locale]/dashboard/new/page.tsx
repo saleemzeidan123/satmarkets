@@ -17,7 +17,9 @@ export default async function NewListingPage({ params }: { params: { locale: str
   if (!su) redirect(`/${locale}/login`);
   if (!su.accountId) redirect(`/${locale}/signup`);
   const acctId = su.accountId;
-  const { data: districts } = await sb.from("districts").select("id, name_en, city").order("city");
+  // District centroids (with coordinates) power the map location picker: the lister
+  // pins the building and the nearest centroid derives the district.
+  const { data: districts } = await sb.from("districts_geo").select("id, name_en, name_ar, city, lat, lng").order("city");
   return (
     <section className="py-6">
       <h1 className="font-display text-2xl text-charcoal">{locale === "ar" ? "عرض جديد" : "New listing"}</h1>

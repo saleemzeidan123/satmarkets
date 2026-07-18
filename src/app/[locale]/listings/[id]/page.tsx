@@ -83,7 +83,9 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   // computation over one. Metro is Riyadh-only; airports cover every listed city.
   let originLL: { lat: number; lng: number; exact: boolean } | null = null;
   if (sb) {
-    if (l.building_id) {
+    // The lister's own pinned coordinates take precedence: it is the exact building.
+    if (l.lat != null && l.lng != null) originLL = { lat: Number(l.lat), lng: Number(l.lng), exact: true };
+    if (!originLL && l.building_id) {
       const b: any = await getBuildingById(l.building_id);
       if (b && b.lat != null && b.lng != null) originLL = { lat: Number(b.lat), lng: Number(b.lng), exact: true };
     }

@@ -3,8 +3,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { assetLabel } from "@/lib/labels";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
-
-interface District { id: string; name_en: string | null; city: string | null; }
+import LocationPicker from "@/components/LocationPicker";
+import type { DistrictPoint } from "@/lib/nearestDistrict";
 
 // These are captured by the base fields above (Area / Asking or Sale price), so
 // they are not shown again in the per-asset section even though the registry
@@ -19,19 +19,20 @@ const sectionLabel = (s: DisplaySection, ar: boolean): string => {
 
 // accountId is intentionally NOT destructured: the server route derives the
 // account from the session, never from the client, so the form no longer sends it.
-export default function NewListingForm({ locale, districts }: { accountId: string; locale: string; districts: District[] }) {
+export default function NewListingForm({ locale, districts }: { accountId: string; locale: string; districts: DistrictPoint[] }) {
   const router = useRouter();
   const ar = locale === "ar";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
-    title_en: "", asset_type: "office", deal_type: "lease", district_id: districts[0]?.id || "",
+    title_en: "", asset_type: "office", deal_type: "lease",
     area_sqm: "", price: "", description_en: "",
     contact_phone: "", contact_email: "",
     lister_type: "owner_direct", video_url: "", floorplan_url: "", authorization_doc_url: "",
     ad_permit_no: "", ad_permit_expires_at: "",
   });
   const [rightToMarket, setRightToMarket] = useState(false);
+  const [loc, setLoc] = useState<{ lat: number | null; lng: number | null; districtId: string | null }>({ lat: null, lng: null, districtId: null });
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
@@ -65,7 +66,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         title_en: f.title_en, asset_type: f.asset_type, deal_type: f.deal_type,
-        district_id: f.district_id || null, area_sqm: f.area_sqm, price: f.price,
+        district_id: loc.districtId, lat: loc.lat, lng: loc.lng, area_sqm: f.area_sqm, price: f.price,
         description_en: f.description_en,
         contact_phone: f.contact_phone, contact_email: f.contact_email,
         contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
@@ -135,9 +136,10 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         <select value={f.asset_type} onChange={(e)=>onAssetChange(e.target.value)} className={inp+" flex-1"}>{assets.map(a=><option key={a} value={a}>{assetLabel(a, locale as "en" | "ar")}</option>)}</select>
         <select value={f.deal_type} onChange={(e)=>set("deal_type",e.target.value)} className={inp+" flex-1"}><option value="lease">lease</option><option value="sale">sale</option></select>
       </div>
-      <select value={f.district_id} onChange={(e)=>set("district_id",e.target.value)} className={inp}>
-        {districts.map((d)=> <option key={d.id} value={d.id}>{d.name_en}, {d.city}</option>)}
-      </select>
+      <div>
+        <div className="text-[12px] font-medium text-charcoal/70 mb-1">{ar ? "الموقع" : "Location"}</div>
+        <LocationPicker locale={ar ? "ar" : "en"} districts={districts} value={loc} onChange={setLoc} />
+      </div>
       <div className="flex gap-3">
         <input required type="number" placeholder="Area (sqm)" value={f.area_sqm} onChange={(e)=>set("area_sqm",e.target.value)} className={inp+" flex-1"} />
         <input required type="number" placeholder={f.deal_type==="lease" ? "Asking (SAR/m²·yr)" : "Sale price (SAR)"} value={f.price} onChange={(e)=>set("price",e.target.value)} className={inp+" flex-1"} />

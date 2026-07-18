@@ -61,6 +61,20 @@ export async function POST(req: NextRequest) {
 
   if (body.right_to_market_confirmed !== true) return NextResponse.json({ error: "Confirm you have the right to market this property." }, { status: 400 });
 
+  // Optional exact building coordinates from the map pin. Validated to Saudi
+  // bounds when present; absent is fine (falls back to the district centroid).
+  let lat: number | null = null;
+  let lng: number | null = null;
+  if (body.lat != null && body.lat !== "" && body.lng != null && body.lng !== "") {
+    const la = Number(body.lat);
+    const ln = Number(body.lng);
+    if (!Number.isFinite(la) || !Number.isFinite(ln) || la < 16 || la > 33 || ln < 34 || ln > 56) {
+      return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
+    }
+    lat = la;
+    lng = ln;
+  }
+
   const lister_type = body.lister_type === "broker_authorized" ? "broker_authorized" : "owner_direct";
   const authorization_doc_url = lister_type === "broker_authorized" ? String(body.authorization_doc_url ?? "").trim() : null;
   if (lister_type === "broker_authorized" && !authorization_doc_url) {
@@ -90,6 +104,8 @@ export async function POST(req: NextRequest) {
       asset_type,
       deal_type,
       district_id: (body.district_id as string) || null,
+      lat,
+      lng,
       area_sqm,
       asking_rent_sqm: deal_type === "lease" ? price : null,
       sale_price: deal_type === "sale" ? price : null,
