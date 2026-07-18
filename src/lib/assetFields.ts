@@ -53,6 +53,7 @@ export interface AssetField {
   required?: boolean;
   show_rule?: ShowRule;   // default "if-present"
   validation?: FieldValidation;
+  options?: Record<string, [string, string]>; // enum value -> [label_en, label_ar] for display
   help_en?: string;
   help_ar?: string;
   available?: boolean;    // default true; false => renders "Not available yet" until source wired
@@ -91,12 +92,14 @@ export const ASSET_FIELDS: AssetFieldRegistry = {
       provenance: "entered" },
     { key: "hvac_type", label_en: "HVAC", label_ar: "التكييف", type: "text", section: "space", provenance: "entered" },
     { key: "generator_redundancy", label_en: "Backup power", label_ar: "الطاقة الاحتياطية", type: "enum",
-      section: "space", provenance: "entered", validation: { enum: ["none", "n", "n_plus_1"] } },
+      section: "space", provenance: "entered", validation: { enum: ["none", "n", "n_plus_1"] },
+      options: { none: ["None", "لا يوجد"], n: ["N", "N"], n_plus_1: ["N+1", "N+1"] } },
     { key: "fibre_redundant", label_en: "Redundant fibre", label_ar: "ألياف مكرّرة", type: "boolean",
       section: "space", provenance: "entered" },
     { key: "green_cert", label_en: "Green certification", label_ar: "شهادة الاستدامة", type: "enum",
       section: "space", provenance: "entered", verifyDoc: "certificate",
-      validation: { enum: ["none", "mostadam", "leed"] } },
+      validation: { enum: ["none", "mostadam", "leed"] },
+      options: { none: ["None", "لا يوجد"], mostadam: ["Mostadam", "مستدام"], leed: ["LEED", "LEED"] } },
     // Commercial
     { key: "asking_rent_sqm", label_en: "Asking rent", label_ar: "الإيجار المطلوب", type: "money", unit: "SAR/m²·yr",
       section: "commercial", provenance: "entered", column: "asking_rent_sqm", filterable: true, show_rule: "always" },

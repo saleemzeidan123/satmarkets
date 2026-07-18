@@ -26,8 +26,19 @@ test("true boolean renders Yes / نعم", () => {
   assert.equal(formatFieldValue(field({ type: "boolean" }), true, true), "نعم");
 });
 
-test("enum values are humanised", () => {
-  assert.equal(formatFieldValue(field({ type: "enum" }), "n_plus_1", false), "n plus 1");
+test("enum values use their option label, or humanise as fallback", () => {
+  const withOpts = field({ type: "enum", options: { n_plus_1: ["N+1", "N+1"], leed: ["LEED", "LEED"] } });
+  assert.equal(formatFieldValue(withOpts, "n_plus_1", false), "N+1");
+  assert.equal(formatFieldValue(withOpts, "leed", true), "LEED");
+  // no options -> snake_case is humanised
+  assert.equal(formatFieldValue(field({ type: "enum" }), "some_value", false), "some value");
+});
+
+test("office generator and green-cert enums resolve to proper labels", () => {
+  const gen = fieldsFor("office").find((f) => f.key === "generator_redundancy")!;
+  const green = fieldsFor("office").find((f) => f.key === "green_cert")!;
+  assert.equal(formatFieldValue(gen, "n_plus_1", false), "N+1");
+  assert.equal(formatFieldValue(green, "leed", false), "LEED");
 });
 
 test("space rows skip column-backed and unavailable fields, keep attribute fields", () => {

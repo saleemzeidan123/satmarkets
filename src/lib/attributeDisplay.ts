@@ -46,13 +46,18 @@ export function formatFieldValue(field: AssetField, value: unknown, ar: boolean)
     }
     case "boolean":
       return value ? (ar ? "نعم" : "Yes") : null;
-    case "enum":
+    case "enum": {
+      const key = String(value).trim();
+      if (!key) return null;
+      const opt = field.options?.[key];
+      if (opt) return ar ? opt[1] : opt[0];
+      // Fallback until a value gets a label: humanise snake_case.
+      return key.replace(/_/g, " ");
+    }
     case "text":
     default: {
       const s = String(value).trim();
-      if (!s) return null;
-      // Humanise snake_case enum values (best-effort until per-enum labels land).
-      return field.type === "enum" ? s.replace(/_/g, " ") : s;
+      return s || null;
     }
   }
 }
