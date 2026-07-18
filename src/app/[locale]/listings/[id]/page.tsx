@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listedSince, listedLabel } from "@/lib/listedSince";
+import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
@@ -145,6 +146,26 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             ) : null;
           })() : null}
+
+          {/* Honest availability freshness (Fable 5: own freshness, not just
+              provenance). Reads availability_confirmed_at, the real date the lister
+              affirmed the space is available, and lets it decay: green when current,
+              muted as it ages, an amber re-check nudge once it is old. Shown only when
+              the column is set; never inferred from updated_at or verified_at. */}
+          {(() => {
+            const av = availabilityOf((l as any).availability_confirmed_at);
+            if (!av) return null;
+            const dt = new Date((l as any).availability_confirmed_at);
+            if (!isFinite(dt.getTime())) return null;
+            const dtxt = dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
+            const color = av.state === "stale" ? "#B26B00" : av.state === "fresh" ? "#1F8A5B" : "var(--slate)";
+            return (
+              <div className="row gap6" style={{ marginTop: 6, alignItems: "center", color, fontSize: 12.5 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span className="mono">{availabilityLabel(av, dtxt, ar)}</span>
+              </div>
+            );
+          })()}
 
           {/* The advertising licence and its expiry, displayed as the REGA marketing
               rules require. It used to be a small grey tag with no expiry beside it. */}
