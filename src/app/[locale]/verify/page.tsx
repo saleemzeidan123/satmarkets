@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
-import { getSupabaseServer } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
 import ReviewActions from "@/components/ReviewActions";
 import { permitOf } from "@/lib/gate";
@@ -29,10 +29,15 @@ export default async function VerifyQueue() {
   // does not confirm it exists. No token in the URL, none in the client bundle.
   const su = await getSessionUser();
   if (!su?.isSat) notFound();
-  const sb = getSupabaseServer();
-  if (!sb) {
+  // After the isSat gate, read the full worklist with the service role, exactly as
+  // the signups and viewings consoles do. A reviewer must see every listing (drafts
+  // included), which session RLS deliberately does not expose.
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !serviceKey) {
     return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "#5B6470" }}>Database not configured.</p></main>;
   }
+  const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb
     .from("listings")
     .select("id, reference_code, title_en, status, is_sat_listed, ownership_verified, authorization_verified, verification_method, verified_at, authorization_doc_url, ad_permit_number, ad_permit_no, accounts(type, verification_status, name_en)")
