@@ -99,7 +99,17 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   let mediaPhotos: string[] = [];
   if (sb) {
     const { data: media } = await sb.from("listing_media").select("path,source,kind,sort_order").eq("listing_id", l.id).eq("kind", "photo").order("sort_order");
-    mediaPhotos = (media ?? []).filter((m: any) => m.source === "url").map((m: any) => String(m.path)).filter(Boolean);
+    for (const m of (media ?? []) as { path: string; source: string }[]) {
+      if (!m.path) continue;
+      if (m.source === "upload") {
+        // Private bucket: sign a short-lived URL. Works for viewers on published
+        // listings and for the owner/SAT on drafts, per the storage read policy.
+        const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
+        if (signed?.signedUrl) mediaPhotos.push(signed.signedUrl);
+      } else {
+        mediaPhotos.push(String(m.path));
+      }
+    }
   }
   let locFactsProps: any = null;
   if (sb && originLL) {
