@@ -35,6 +35,8 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   const [loc, setLoc] = useState<{ lat: number | null; lng: number | null; districtId: string | null }>({ lat: null, lng: null, districtId: null });
   const [photos, setPhotos] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [floorFiles, setFloorFiles] = useState<File[]>([]);
+  const [brochureFile, setBrochureFile] = useState<File | null>(null);
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
@@ -87,11 +89,26 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
     try { if (json.id) fetch(`/api/listings/${json.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) }); } catch {}
     // Upload any selected photo files to the new listing (each proxied, validated,
     // and re-encoded server-side). Best effort so a failed image never loses the listing.
-    if (json.id && files.length) {
+    if (json.id) {
       for (const file of files) {
         const fd = new FormData();
         fd.append("file", file);
         try { await fetch(`/api/listings/${json.id}/media`, { method: "POST", body: fd }); } catch { /* ignore one bad file */ }
+      }
+      // Floor plans: images go to the image route (re-encoded), PDFs to the docs route.
+      for (const file of floorFiles) {
+        const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("kind", "floorplan");
+        try { await fetch(`/api/listings/${json.id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd }); } catch { /* ignore */ }
+      }
+      // Brochure / offering memorandum (PDF).
+      if (brochureFile) {
+        const fd = new FormData();
+        fd.append("file", brochureFile);
+        fd.append("kind", "brochure");
+        try { await fetch(`/api/listings/${json.id}/docs`, { method: "POST", body: fd }); } catch { /* ignore */ }
       }
     }
     router.push(`/${locale}/dashboard`);
@@ -209,6 +226,16 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         </div>
         <input placeholder="Video tour URL (YouTube or .mp4, optional)" value={f.video_url} onChange={(e)=>set("video_url",e.target.value)} className={inp} />
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
+        <div>
+          <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "المخططات (صورة أو PDF)" : "Floor plans (image or PDF)"}</label>
+          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple onChange={(e)=>setFloorFiles(Array.from(e.target.files ?? []))} className="text-[13px]" />
+          {floorFiles.length > 0 && <p className="text-[11px] text-charcoal/55 mt-1">{floorFiles.length} {ar ? "ملف" : (floorFiles.length === 1 ? "file" : "files")}</p>}
+        </div>
+        <div>
+          <label className="block text-[12px] text-charcoal/70 mb-1">{f.deal_type === "sale" ? (ar ? "مذكرة العرض (PDF)" : "Offering memorandum (PDF)") : (ar ? "الكتيّب التسويقي (PDF)" : "Marketing brochure (PDF)")}</label>
+          <input type="file" accept="application/pdf" onChange={(e)=>setBrochureFile(e.target.files?.[0] ?? null)} className="text-[13px]" />
+          {brochureFile && <p className="text-[11px] text-charcoal/55 mt-1">{brochureFile.name.slice(0, 40)}</p>}
+        </div>
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
       </div>
 

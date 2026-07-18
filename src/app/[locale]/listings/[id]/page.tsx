@@ -97,18 +97,28 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   }
   // Real listing photos (source='url' for now; uploaded objects are signed in a later slice).
   let mediaPhotos: string[] = [];
+  const floorPlans: { url: string; isPdf: boolean; label: string | null }[] = [];
+  const brochures: { url: string; label: string | null }[] = [];
   if (sb) {
-    const { data: media } = await sb.from("listing_media").select("path,source,kind,sort_order").eq("listing_id", l.id).eq("kind", "photo").order("sort_order");
-    for (const m of (media ?? []) as { path: string; source: string }[]) {
+    const { data: media } = await sb.from("listing_media")
+      .select("path,source,kind,mime,alt_en,alt_ar,sort_order")
+      .eq("listing_id", l.id).in("kind", ["photo", "floorplan", "brochure"]).order("sort_order");
+    for (const m of (media ?? []) as { path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null }[]) {
       if (!m.path) continue;
+      const label = ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar);
+      let url = String(m.path);
       if (m.source === "upload") {
-        // Private bucket: sign a short-lived URL. Works for viewers on published
-        // listings and for the owner/SAT on drafts, per the storage read policy.
-        const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
-        if (signed?.signedUrl) mediaPhotos.push(signed.signedUrl);
-      } else {
-        mediaPhotos.push(String(m.path));
+        // Private bucket signed URL. Brochures are forced to download (attachment)
+        // so a PDF can never render inline in the viewer's session.
+        const opts = m.kind === "brochure" ? { download: `${(label || "brochure").replace(/[^\w.-]+/g, "-")}.pdf` } : undefined;
+        const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600, opts as { download: string } | undefined);
+        if (!signed?.signedUrl) continue;
+        url = signed.signedUrl;
       }
+      const isPdf = m.mime === "application/pdf" || url.toLowerCase().split("?")[0].endsWith(".pdf");
+      if (m.kind === "photo") mediaPhotos.push(url);
+      else if (m.kind === "floorplan") floorPlans.push({ url, isPdf, label });
+      else if (m.kind === "brochure") brochures.push({ url, label });
     }
   }
   let locFactsProps: any = null;
@@ -344,6 +354,33 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             );
           })()}
+          {floorPlans.length > 0 && (
+            <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "المخططات" : "Floor plans"}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 12 }}>
+                {floorPlans.map((fp, i) => (
+                  <a key={i} href={fp.url} target="_blank" rel="noopener noreferrer" className="card" style={{ textDecoration: "none", color: "inherit", overflow: "hidden", display: "block", boxShadow: "none" }}>
+                    {fp.isPdf ? (
+                      <div style={{ height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--harbor)", gap: 6, fontSize: 12.5, fontWeight: 600 }}><Icon.doc size={22} /> PDF</div>
+                    ) : (
+                      <img src={fp.url} alt={fp.label ?? (ar ? "مخطط" : "Floor plan")} style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
+                    )}
+                    <div className="muted" style={{ fontSize: 12, padding: "6px 8px" }}>{fp.label ?? (ar ? "مخطط الطابق" : "Floor plan")}</div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+          {brochures.length > 0 && (
+            <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{lease ? (ar ? "الكتيّب التسويقي" : "Marketing brochure") : (ar ? "مذكرة العرض" : "Offering memorandum")}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
+                {brochures.map((b, i) => (
+                  <a key={i} href={b.url} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "تحميل الكتيّب (PDF)" : "Download brochure (PDF)"}{b.label ? ` · ${b.label}` : ""}</a>
+                ))}
+              </div>
+            </div>
+          )}
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
           {locFactsProps ? (
             <LocationFacts locale={locale as "en" | "ar"} {...locFactsProps} />

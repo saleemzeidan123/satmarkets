@@ -141,5 +141,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Reconcile the floor-plan URL into listing_media so it has a single render path
+  // (listings.floorplan_url is no longer read by the detail page).
+  if (id) {
+    const fp = String((body.floorplan_url as string) ?? "").trim();
+    if (/^https?:\/\/.+/i.test(fp)) {
+      await supabase.from("listing_media").insert({ listing_id: id, path: fp, kind: "floorplan", source: "url", sort_order: 0 });
+    }
+  }
+
   return NextResponse.json({ id });
 }

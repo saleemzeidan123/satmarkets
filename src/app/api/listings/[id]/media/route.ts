@@ -13,7 +13,8 @@ export const runtime = "nodejs";
 // in the private listing-media bucket, written under the lister's own account
 // prefix (enforced by storage RLS). Uploading a photo sets no verification flag.
 const MAX_BYTES = 4 * 1024 * 1024; // 4MB, within the serverless request body limit
-const MAX_PHOTOS = 20;
+// Photo gallery vs floor-plan IMAGES (PDF floor plans go to the /docs route).
+const CAPS: Record<string, number> = { photo: 20, floorplan: 12 };
 
 function sniff(buf: Buffer): boolean {
   if (buf.length < 12) return false;
@@ -39,19 +40,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
   }
 
-  const { count } = await sb
-    .from("listing_media")
-    .select("id", { count: "exact", head: true })
-    .eq("listing_id", listingId)
-    .eq("kind", "photo");
-  if ((count ?? 0) >= MAX_PHOTOS) {
-    return NextResponse.json({ error: `A listing can have up to ${MAX_PHOTOS} photos.` }, { status: 400 });
-  }
-
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "No file provided." }, { status: 400 });
   if (file.size > MAX_BYTES) return NextResponse.json({ error: "Image is too large (max 4MB)." }, { status: 400 });
+  const kind = form?.get("kind") === "floorplan" ? "floorplan" : "photo";
+  const label = String(form?.get("label") ?? "").trim().slice(0, 80);
+
+  const { count } = await sb
+    .from("listing_media")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", listingId)
+    .eq("kind", kind);
+  if ((count ?? 0) >= CAPS[kind]) {
+    return NextResponse.json({ error: `Limit reached for ${kind} images.` }, { status: 400 });
+  }
 
   const input = Buffer.from(await file.arrayBuffer());
   if (!sniff(input)) return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are accepted." }, { status: 400 });
@@ -60,10 +63,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // is dropped, polyglots are neutralized, and the image is normalized to web-sized webp.
   let out: Buffer;
   try {
+    const maxDim = kind === "floorplan" ? 4000 : 2000; // floor plans need legible text
     out = await sharp(input)
       .rotate()
-      .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 80 })
+      .resize({ width: maxDim, height: maxDim, fit: "inside", withoutEnlargement: true })
+      .webp({ quality: kind === "floorplan" ? 88 : 80 })
       .toBuffer();
   } catch {
     return NextResponse.json({ error: "Could not process that image." }, { status: 400 });
@@ -80,11 +84,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .insert({
       listing_id: listingId,
       path: objectKey,
-      kind: "photo",
+      kind,
       source: "upload",
       mime: "image/webp",
       bytes: out.length,
       sort_order: count ?? 0,
+      alt_en: label || null,
     })
     .select("id")
     .single();
