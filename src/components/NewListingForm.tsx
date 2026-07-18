@@ -34,6 +34,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   const [rightToMarket, setRightToMarket] = useState(false);
   const [loc, setLoc] = useState<{ lat: number | null; lng: number | null; districtId: string | null }>({ lat: null, lng: null, districtId: null });
   const [photos, setPhotos] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
@@ -84,6 +85,15 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
     const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
     if (!res.ok) { setError(json.error || "Could not save the listing."); setBusy(false); return; }
     try { if (json.id) fetch(`/api/listings/${json.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) }); } catch {}
+    // Upload any selected photo files to the new listing (each proxied, validated,
+    // and re-encoded server-side). Best effort so a failed image never loses the listing.
+    if (json.id && files.length) {
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append("file", file);
+        try { await fetch(`/api/listings/${json.id}/media`, { method: "POST", body: fd }); } catch { /* ignore one bad file */ }
+      }
+    }
     router.push(`/${locale}/dashboard`);
   }
 
@@ -189,7 +199,13 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         <div>
           <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "روابط الصور (رابط في كل سطر)" : "Photo URLs (one per line)"}</label>
           <textarea value={photos} onChange={(e)=>setPhotos(e.target.value)} className={inp} rows={3} placeholder={"https://...\nhttps://..."} />
-          <p className="text-[11px] text-charcoal/45">{ar ? "الصور تظهر في معرض العرض. رفع الملفات مباشرة قريباً." : "Real photos appear in the listing gallery. Direct file upload is coming next."}</p>
+          <p className="text-[11px] text-charcoal/45">{ar ? "الصور تظهر في معرض العرض." : "Real photos appear in the listing gallery."}</p>
+          <div className="mt-2">
+            <label className="block text-[12px] text-charcoal/70 mb-1">{ar ? "أو ارفع صوراً من جهازك" : "Or upload photos from your device"}</label>
+            <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} className="text-[13px]" />
+            {files.length > 0 && <p className="text-[11px] text-charcoal/55 mt-1">{files.length} {ar ? "ملف مختار" : (files.length === 1 ? "file selected" : "files selected")}</p>}
+            <p className="text-[11px] text-charcoal/45 mt-1">{ar ? "JPEG أو PNG أو WebP، حتى 4 ميغابايت. تُعالَج الصور وتُزال بياناتها الوصفية." : "JPEG, PNG, or WebP, up to 4MB each. Images are processed and their metadata stripped."}</p>
+          </div>
         </div>
         <input placeholder="Video tour URL (YouTube or .mp4, optional)" value={f.video_url} onChange={(e)=>set("video_url",e.target.value)} className={inp} />
         <input placeholder="Floor plan image URL (optional)" value={f.floorplan_url} onChange={(e)=>set("floorplan_url",e.target.value)} className={inp} />
