@@ -86,7 +86,7 @@ export const ASSET_FIELDS: AssetFieldRegistry = {
       provenance: "entered", column: "fitout_condition", filterable: true,
       validation: { enum: ["shell_and_core", "warm_shell", "fitted", "furnished"] }, show_rule: "always" },
     { key: "parking_ratio", label_en: "Parking ratio", label_ar: "نسبة المواقف", type: "text", section: "space",
-      provenance: "entered", help_en: "For example 1 bay per 40 m².", help_ar: "مثال: موقف لكل 40 م²." },
+      provenance: "entered", column: "parking_ratio", help_en: "For example 1 bay per 40 m².", help_ar: "مثال: موقف لكل 40 م²." },
     { key: "floor_level", label_en: "Floor level", label_ar: "الدور", type: "integer", section: "space",
       provenance: "entered" },
     { key: "hvac_type", label_en: "HVAC", label_ar: "التكييف", type: "text", section: "space", provenance: "entered" },

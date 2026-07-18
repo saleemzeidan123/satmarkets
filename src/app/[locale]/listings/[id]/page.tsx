@@ -18,6 +18,7 @@ import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
+import { spaceAttributeRows } from "@/lib/attributeDisplay";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -242,6 +243,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (l.power_kva != null) rows.push([T.power, num(l.power_kva) + " kVA"]);
             if (l.parking_ratio != null) rows.push([T.parking, `1 ${ar ? "موقف / " : "space / "}${num(l.parking_ratio)} ${ar ? "م²" : "m²"}`]);
             if (l.civil_defense_approved) rows.push([T.civilDefense, ar ? "معتمد" : "Approved"]);
+            // Registry-driven per-asset fields stored in attributes (Phase 1). Appends
+            // the fields that have no typed column (for example office floor plate and
+            // ceiling height), so offices finally get a physical section too.
+            rows.push(...spaceAttributeRows(l.asset_type, l.attributes, ar));
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
