@@ -6,6 +6,7 @@ import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from 
 import LocationPicker from "@/components/LocationPicker";
 import type { DistrictPoint } from "@/lib/nearestDistrict";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
+import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
 
 // These are captured by the base fields above (Area / Asking or Sale price), so
 // they are not shown again in the per-asset section even though the registry
@@ -39,6 +40,8 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   const [floorFiles, setFloorFiles] = useState<File[]>([]);
   const [floorTypes, setFloorTypes] = useState<PlanType[]>([]);
   const [brochureFile, setBrochureFile] = useState<File | null>(null);
+  const [docFiles, setDocFiles] = useState<File[]>([]);
+  const [docKinds, setDocKinds] = useState<DocumentKind[]>([]);
   const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
@@ -125,6 +128,15 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         fd.append("file", brochureFile);
         fd.append("kind", "brochure");
         try { await fetch(`/api/listings/${json.id}/docs`, { method: "POST", body: fd }); } catch { /* ignore */ }
+      }
+      // Private verification documents (deed / Ejar / CR / licences / authorization).
+      // These go to the private legal bucket via a separate route; they are evidence
+      // for SAT, never shown to buyers, and never set any verification flag.
+      for (let i = 0; i < docFiles.length; i++) {
+        const fd = new FormData();
+        fd.append("file", docFiles[i]);
+        fd.append("kind", docKinds[i] ?? "other");
+        try { await fetch(`/api/listings/${json.id}/documents`, { method: "POST", body: fd }); } catch { /* ignore */ }
       }
     }
     router.push(`/${locale}/dashboard`);
@@ -262,6 +274,21 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
           {brochureFile && <p className="text-[11px] text-charcoal/55 mt-1">{brochureFile.name.slice(0, 40)}</p>}
         </div>
         <p className="text-[11px] text-charcoal/45">{isBroker ? "SAT verifies your authorization before the listing publishes." : "SAT verifies ownership before the listing publishes."}</p>
+      </div>
+
+      <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">
+        <div className="text-[12px] font-medium text-charcoal/70">{ar ? "مستندات التحقق (خاصة)" : "Verification documents (private)"}</div>
+        <p className="text-[11px] text-charcoal/55">{ar ? "تُرفع لسات للتحقق فقط. لا تظهر للمستأجرين أو المشترين، ورفعها لا يمنح شارة موثّق بذاته." : "For SAT verification only. Never shown to viewers, and uploading one does not by itself verify the listing."}</p>
+        <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" multiple onChange={(e)=>{ const arr = Array.from(e.target.files ?? []); setDocFiles(arr); setDocKinds(arr.map(() => "deed" as DocumentKind)); }} className="text-[13px]" />
+        {docFiles.map((file, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <span className="text-[11px] text-charcoal/55 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+            <select value={docKinds[i] ?? "deed"} onChange={(e)=>setDocKinds((p)=>{ const c=[...p]; c[i]=e.target.value as DocumentKind; return c; })} className="text-[12px] border border-charcoal/20 rounded px-1.5 py-1">
+              {DOCUMENT_KINDS.map((k)=> <option key={k} value={k}>{documentLabel(k, ar)}</option>)}
+            </select>
+          </div>
+        ))}
+        <p className="text-[11px] text-charcoal/45">{ar ? "PDF أو صورة، حتى 25 ميغابايت لكل ملف." : "PDF or image, up to 25MB each."}</p>
       </div>
 
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">

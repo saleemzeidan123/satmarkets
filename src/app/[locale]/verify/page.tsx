@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
 import ReviewActions from "@/components/ReviewActions";
 import { permitOf } from "@/lib/gate";
+import { documentLabel } from "@/lib/documentKinds";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,20 @@ export default async function VerifyQueue() {
     .order("created_at", { ascending: false })
     .limit(200);
   const rows = (data ?? []) as unknown as Row[];
+
+  // Verification documents for the listings in view. Rendered as links to the
+  // session-gated download route, never as raw storage URLs.
+  const ids = rows.map((r) => r.id);
+  const { data: docData } = ids.length
+    ? await sb.from("listing_documents").select("id, listing_id, kind").in("listing_id", ids).is("deleted_at", null)
+    : { data: [] as { id: string; listing_id: string; kind: string }[] };
+  const docsByListing = new Map<string, { id: string; kind: string }[]>();
+  for (const d of (docData ?? []) as { id: string; listing_id: string; kind: string }[]) {
+    const arr = docsByListing.get(d.listing_id) ?? [];
+    arr.push({ id: d.id, kind: d.kind });
+    docsByListing.set(d.listing_id, arr);
+  }
+
   const needs = (r: Row) => !r.is_sat_listed && !r.ownership_verified && !r.authorization_verified;
   const total = rows.length;
   const verified = rows.filter((r) => r.ownership_verified || r.authorization_verified || r.is_sat_listed).length;
@@ -72,7 +87,17 @@ export default async function VerifyQueue() {
                 <td style={td}><YN v={r.authorization_verified} /></td>
                 <td style={td}>{r.verification_method || "-"}</td>
                 <td style={td}>{r.verified_at ? new Date(r.verified_at).toISOString().slice(0, 10) : "-"}</td>
-                <td style={td}>{r.authorization_doc_url ? <a href={r.authorization_doc_url} style={{ color: "#2E5FE0" }}>view</a> : "-"}</td>
+                <td style={td}>{(() => {
+                  const ds = docsByListing.get(r.id) ?? [];
+                  if (ds.length === 0) {
+                    // Legacy authorization_doc_url is a raw storage URL; do not link it
+                    // (that was the leak). It is migrated into listing_documents separately.
+                    return r.authorization_doc_url ? <span style={{ color: "#8A93A0", fontSize: 11 }}>legacy</span> : "-";
+                  }
+                  return <span style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>{ds.map((d) => (
+                    <a key={d.id} href={`/api/documents/${d.id}/download`} style={{ color: "#2E5FE0", fontSize: 11.5 }}>{documentLabel(d.kind)}</a>
+                  ))}</span>;
+                })()}</td>
                 <td style={td}>{permitOf(r) || "-"}</td>
                 <td style={td}><ReviewActions id={r.id} /></td>
               </tr>
