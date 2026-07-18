@@ -92,16 +92,19 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   }
   let locFactsProps: any = null;
   if (sb && originLL) {
-    const { data: anch } = await sb.from("map_anchors").select("kind,name_en,name_ar,line,lat,lng").eq("city", cityEn).in("kind", ["metro", "airport"]);
+    const { data: anch } = await sb.from("map_anchors").select("kind,name_en,name_ar,line,lat,lng").eq("city", cityEn).in("kind", ["metro", "airport", "rail"]);
     const anchors = (anch ?? []).map((a: any) => ({ kind: a.kind, name_en: a.name_en, name_ar: a.name_ar, line: a.line, lat: Number(a.lat), lng: Number(a.lng) }));
     const nm = nearest(originLL, anchors, "metro");
     const na = nearest(originLL, anchors, "airport");
+    const nr = nearest(originLL, anchors, "rail");
     const rel = relevanceFor(l.asset_type);
     const airDrive = na ? await driveMinutes(originLL, na.anchor.lat, na.anchor.lng) : null;
+    const railDrive = nr ? await driveMinutes(originLL, nr.anchor.lat, nr.anchor.lng) : null;
     locFactsProps = {
       lat: originLL.lat, lng: originLL.lng, exact: originLL.exact,
       metro: nm ? { name_en: nm.anchor.name_en, name_ar: nm.anchor.name_ar, line: nm.anchor.line, lat: nm.anchor.lat, lng: nm.anchor.lng, km: nm.km, walkMin: nm.km <= WALKABLE_KM ? walkMinutes(nm.km) : null } : null,
       airport: na ? { name_en: na.anchor.name_en, name_ar: na.anchor.name_ar, km: na.km, driveMin: airDrive } : null,
+      rail: nr ? { name_en: nr.anchor.name_en, name_ar: nr.anchor.name_ar, line: nr.anchor.line, km: nr.km, driveMin: railDrive } : null,
       primary: rel.primary, less: rel.less,
       computedDate: new Date().toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }),
     };

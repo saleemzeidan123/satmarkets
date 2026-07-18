@@ -1359,7 +1359,7 @@
     "walk": "min walk",
     "metro": "Nearest metro",
     "airport": "Nearest airport",
-    "driveMin": "min drive",
+    "driveMin": "min",
     "driving": "driving, typical off-peak",
     "straightLine": "straight-line distance",
     "exact": "Exact building location, shown on the map.",
@@ -1370,6 +1370,10 @@
     "mapAria": "Map showing the listing location",
     "mapUnavailable": "Map unavailable",
     "loadingMap": "Loading map",
-    "sourceLine": "Metro: Riyadh Metro network, RCRC Open Data. Distances computed by SAT Markets."
+    "sourceLine": "Metro: Riyadh Metro network, RCRC Open Data. Distances computed by SAT Markets.",
+    "rail": "Nearest high-speed rail",
+    "lessRail": "High-speed rail proximity has little bearing on a logistics or storage site.",
+    "thisSpace": "This space",
+    "metroDot": "Metro station"
   }
 }

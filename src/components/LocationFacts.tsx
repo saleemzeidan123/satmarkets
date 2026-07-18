@@ -16,16 +16,19 @@ const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/positron";
 const LINE_AR: Record<string, string> = {
   "Blue line": "الخط الأزرق", "Red line": "الخط الأحمر", "Orange line": "الخط البرتقالي",
   "Yellow line": "الخط الأصفر", "Green line": "الخط الأخضر", "Purple line": "الخط البنفسجي",
+  "Haramain High Speed Railway": "قطار الحرمين السريع",
 };
 
 export interface MetroFact { name_en: string; name_ar: string; line: string | null; lat: number; lng: number; km: number; walkMin: number | null }
 export interface AirportFact { name_en: string; name_ar: string; km: number; driveMin: number | null }
+export interface RailFact { name_en: string; name_ar: string; line: string | null; km: number; driveMin: number | null }
 
-export default function LocationFacts({ locale, lat, lng, exact, metro, airport, primary, less, computedDate }: {
+export default function LocationFacts({ locale, lat, lng, exact, metro, airport, rail, primary, less, computedDate }: {
   locale: "en" | "ar";
   lat: number; lng: number; exact: boolean;
   metro: MetroFact | null;
   airport: AirportFact | null;
+  rail: RailFact | null;
   primary: FactKey[]; less: FactKey[];
   computedDate: string;
 }) {
@@ -111,12 +114,24 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
     </div>
   ) : null;
 
-  const renderKey = (k: FactKey, i: number) => (k === "metro" ? metroRow("p" + i) : airportRow("p" + i));
-  const lessReason = (k: FactKey) => (k === "metro" ? t.lessMetro : t.lessAirport);
-  const lessLabel = (k: FactKey) => (k === "metro" ? t.metro : t.airport);
+  const railRow = (key: string) => rail ? (
+    <div key={key} className="row between" style={{ gap: 12, padding: "11px 0", borderTop: "1px solid var(--silver)" }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.rail}</div>
+        <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? rail.name_ar : rail.name_en}{rail.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(rail.line)}</span> : null}</div>
+      </div>
+      <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
+        {rail.driveMin != null ? <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{rail.driveMin} {t.driveMin}</div> : <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{num(rail.km)} {t.km}</div>}
+        <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>{rail.driveMin != null ? t.driving : t.straightLine}</div>
+      </div>
+    </div>
+  ) : null;
+  const renderKey = (k: FactKey, i: number) => (k === "metro" ? metroRow("p" + i) : k === "rail" ? railRow("p" + i) : airportRow("p" + i));
+  const lessReason = (k: FactKey) => (k === "metro" ? t.lessMetro : k === "rail" ? t.lessRail : t.lessAirport);
+  const lessLabel = (k: FactKey) => (k === "metro" ? t.metro : k === "rail" ? t.rail : t.airport);
 
   // Only show a fact if we actually have it (metro is Riyadh-only).
-  const hasFact = (k: FactKey) => (k === "metro" ? !!metro : !!airport);
+  const hasFact = (k: FactKey) => (k === "metro" ? !!metro : k === "rail" ? !!rail : !!airport);
   const primaryShown = primary.filter(hasFact);
   const lessShown = less.filter(hasFact);
 
@@ -133,6 +148,10 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
             {status === "error" ? t.mapUnavailable : t.loadingMap}
           </div>
         )}
+      </div>
+      <div className="row" style={{ gap: 16, marginTop: 10, flexWrap: "wrap" }}>
+        <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#1F8A5B", display: "inline-block" }} />{t.thisSpace}</span>
+        {metro ? <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.metroDot}</span> : null}
       </div>
       <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 10 }}>
         {exact ? t.exact : t.district}

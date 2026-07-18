@@ -37,11 +37,11 @@ test("walkMinutes: ~1.2km is ~15 min, never below 1", () => {
   assert.equal(walkMinutes(0.01), 1);
 });
 
-test("relevance: logistics demotes metro, retail demotes airport, office shows both", () => {
-  assert.deepEqual(relevanceFor("warehouse"), { primary: ["airport"], less: ["metro"] });
-  assert.deepEqual(relevanceFor("retail"), { primary: ["metro"], less: ["airport"] });
-  assert.deepEqual(relevanceFor("office"), { primary: ["metro", "airport"], less: [] });
-  assert.deepEqual(relevanceFor("land"), { primary: ["metro", "airport"], less: [] });
+test("relevance: logistics demotes transit, retail demotes airport, office shows all", () => {
+  assert.deepEqual(relevanceFor("warehouse"), { primary: ["airport"], less: ["metro", "rail"] });
+  assert.deepEqual(relevanceFor("retail"), { primary: ["metro", "rail"], less: ["airport"] });
+  assert.deepEqual(relevanceFor("office"), { primary: ["metro", "rail", "airport"], less: [] });
+  assert.deepEqual(relevanceFor("land"), { primary: ["metro", "rail", "airport"], less: [] });
 });
 
 test("WALKABLE_KM threshold is a sane walking cap", () => {

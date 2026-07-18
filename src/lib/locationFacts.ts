@@ -50,7 +50,7 @@ export function walkMinutes(km: number): number {
 // Metro walk is only meaningful when the station is genuinely walkable.
 export const WALKABLE_KM = 1.5;
 
-export type FactKey = "metro" | "airport";
+export type FactKey = "metro" | "airport" | "rail";
 export interface Relevance { primary: FactKey[]; less: FactKey[] }
 
 // Which computed facts matter for which use, per context/asset-type-data-specs.md.
@@ -62,10 +62,10 @@ const RETAIL = ["retail", "showroom", "entertainment", "wedding_hall"];
 const LOGISTICS = ["warehouse", "self_storage", "worker_housing", "gas_station"];
 
 export function relevanceFor(asset: string): Relevance {
-  if (LOGISTICS.includes(asset)) return { primary: ["airport"], less: ["metro"] };
-  if (RETAIL.includes(asset)) return { primary: ["metro"], less: ["airport"] };
-  if (TRAVEL.includes(asset)) return { primary: ["metro", "airport"], less: [] };
-  return { primary: ["metro", "airport"], less: [] };
+  if (LOGISTICS.includes(asset)) return { primary: ["airport"], less: ["metro", "rail"] };
+  if (RETAIL.includes(asset)) return { primary: ["metro", "rail"], less: ["airport"] };
+  if (TRAVEL.includes(asset)) return { primary: ["metro", "rail", "airport"], less: [] };
+  return { primary: ["metro", "rail", "airport"], less: [] };
 }
 
 // Off-peak driving time to a destination via the Mapbox Directions API. Returns null
