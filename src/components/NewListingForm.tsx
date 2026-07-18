@@ -2,12 +2,26 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { assetLabel } from "@/lib/labels";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 
 interface District { id: string; name_en: string | null; city: string | null; }
 
-export default function NewListingForm({ accountId, locale, districts }: { accountId: string; locale: string; districts: District[] }) {
+// These are captured by the base fields above (Area / Asking or Sale price), so
+// they are not shown again in the per-asset section even though the registry
+// carries them as commercial fields.
+const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
+const SECTION_ORDER: DisplaySection[] = ["space", "commercial", "compliance"];
+const sectionLabel = (s: DisplaySection, ar: boolean): string => {
+  if (s === "commercial") return ar ? "الشروط التجارية" : "Commercial terms";
+  if (s === "compliance") return ar ? "الامتثال والتصاريح" : "Compliance and permits";
+  return ar ? "المساحة" : "The space";
+};
+
+// accountId is intentionally NOT destructured: the server route derives the
+// account from the session, never from the client, so the form no longer sends it.
+export default function NewListingForm({ locale, districts }: { accountId: string; locale: string; districts: District[] }) {
   const router = useRouter();
+  const ar = locale === "ar";
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState({
@@ -18,18 +32,20 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
     ad_permit_no: "", ad_permit_expires_at: "",
   });
   const [rightToMarket, setRightToMarket] = useState(false);
+  const [attrs, setAttrs] = useState<Record<string, unknown>>({});
   const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
   const [ch, setCh] = useState({ whatsapp: true, call: true, email: false, message: true });
   const assets = ["office","retail","medical","showroom","warehouse","serviced","education","land","gas_station","entertainment","wedding_hall","worker_housing","self_storage","hospitality","mixed_use"];
   const isBroker = f.lister_type === "broker_authorized";
 
+  // Reshape the per-asset section when the asset type changes: its fields differ,
+  // so previously entered attribute values no longer apply.
+  const onAssetChange = (v: string) => { setF((p) => ({ ...p, asset_type: v })); setAttrs({}); };
+
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setError(null);
     if (isBroker && !f.authorization_doc_url.trim()) { setError("Brokers must provide an authorization-to-market document URL."); return; }
-    // The advertising licence is not paperwork we collect later. Without it the
-    // listing cannot publish at all: the database refuses. Asking for it here, at
-    // the point of listing, is the difference between a draft that can go live and
-    // a draft that never will.
     if (!/^\d{10}$/.test(f.ad_permit_no.trim())) {
       setError("Enter the 10 digit real estate advertising licence number. A listing cannot publish without one.");
       return;
@@ -38,42 +54,85 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
       setError("Enter the date the advertising licence expires. The advertisement is withdrawn automatically on that date.");
       return;
     }
-    if (new Date(f.ad_permit_expires_at) <= new Date()) {
-      setError("That licence has already expired.");
-      return;
-    }
-    if (!rightToMarket) {
-      setError("Confirm you have the right to market this property.");
-      return;
-    }
+    if (new Date(f.ad_permit_expires_at) <= new Date()) { setError("That licence has already expired."); return; }
+    if (!rightToMarket) { setError("Confirm you have the right to market this property."); return; }
+
     setBusy(true);
-    const sb = getSupabaseBrowser(); if (!sb) return;
-    const { data, error } = await sb.from("listings").insert({
-      account_id: accountId, title_en: f.title_en, asset_type: f.asset_type, deal_type: f.deal_type,
-      district_id: f.district_id || null, area_sqm: Number(f.area_sqm),
-      asking_rent_sqm: f.deal_type === "lease" ? Number(f.price) : null,
-      sale_price: f.deal_type === "sale" ? Number(f.price) : null,
-      description_en: f.description_en || null,
-      contact_phone: f.contact_phone || null, contact_email: f.contact_email || null,
-      contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
-      lister_type: f.lister_type,
-      video_url: f.video_url || null, floorplan_url: f.floorplan_url || null,
-      authorization_doc_url: isBroker ? f.authorization_doc_url : null,
-      ad_permit_no: f.ad_permit_no.trim(),
-      ad_permit_expires_at: f.ad_permit_expires_at,
-      right_to_market_confirmed: rightToMarket,
-      status: "draft"
-    }).select("id").single();
-    if (error) { setError(error.message); setBusy(false); }
-    else { try { if (data?.id) fetch(`/api/listings/${data.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) }); } catch {} router.push(`/${locale}/dashboard`); }
+    // Server-authoritative write path. The route validates the base fields AND the
+    // per-asset attributes against the registry, and derives the account from the session.
+    const res = await fetch(`/api/listings`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title_en: f.title_en, asset_type: f.asset_type, deal_type: f.deal_type,
+        district_id: f.district_id || null, area_sqm: f.area_sqm, price: f.price,
+        description_en: f.description_en,
+        contact_phone: f.contact_phone, contact_email: f.contact_email,
+        contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
+        lister_type: f.lister_type,
+        video_url: f.video_url, floorplan_url: f.floorplan_url,
+        authorization_doc_url: isBroker ? f.authorization_doc_url : null,
+        ad_permit_no: f.ad_permit_no.trim(), ad_permit_expires_at: f.ad_permit_expires_at,
+        right_to_market_confirmed: rightToMarket,
+        attributes: attrs,
+      }),
+    });
+    const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+    if (!res.ok) { setError(json.error || "Could not save the listing."); setBusy(false); return; }
+    try { if (json.id) fetch(`/api/listings/${json.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) }); } catch {}
+    router.push(`/${locale}/dashboard`);
   }
 
   const inp = "w-full rounded border border-charcoal/20 px-3 py-2";
+
+  function renderField(field: AssetField) {
+    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "");
+    const help = ar ? field.help_ar : field.help_en;
+    const val = attrs[field.key];
+    if (field.type === "boolean") {
+      return (
+        <label key={field.key} className="flex items-center gap-2 text-[13px]">
+          <input type="checkbox" checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
+          <span>{ar ? field.label_ar : field.label_en}</span>
+        </label>
+      );
+    }
+    if (field.type === "enum") {
+      const opts = field.validation?.enum ?? [];
+      return (
+        <div key={field.key}>
+          <label className="block text-[12px] text-charcoal/60 mb-1">{label}</label>
+          <select value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
+            <option value="">{ar ? "اختر" : "Select"}</option>
+            {opts.map((o) => <option key={o} value={o}>{field.options?.[o]?.[ar ? 1 : 0] ?? o.replace(/_/g, " ")}</option>)}
+          </select>
+          {help && <p className="text-[11px] text-charcoal/45 mt-1">{help}</p>}
+        </div>
+      );
+    }
+    const numeric = field.type === "number" || field.type === "integer" || field.type === "money";
+    return (
+      <div key={field.key}>
+        <label className="block text-[12px] text-charcoal/60 mb-1">{label}</label>
+        <input
+          type={numeric ? "number" : "text"}
+          value={(val as string) ?? ""}
+          onChange={(e) => setAttr(field.key, e.target.value)}
+          className={inp}
+          placeholder={ar ? field.label_ar : field.label_en}
+        />
+        {help && <p className="text-[11px] text-charcoal/45 mt-1">{help}</p>}
+      </div>
+    );
+  }
+
+  const perAsset = intakeFields(f.asset_type).filter((x) => !BASE_OWNED.has(x.key));
+
   return (
     <form onSubmit={submit} className="max-w-xl space-y-3">
       <input required placeholder="Title" value={f.title_en} onChange={(e)=>set("title_en",e.target.value)} className={inp} />
       <div className="flex gap-3">
-        <select value={f.asset_type} onChange={(e)=>set("asset_type",e.target.value)} className={inp+" flex-1"}>{assets.map(a=><option key={a} value={a}>{assetLabel(a, locale as "en" | "ar")}</option>)}</select>
+        <select value={f.asset_type} onChange={(e)=>onAssetChange(e.target.value)} className={inp+" flex-1"}>{assets.map(a=><option key={a} value={a}>{assetLabel(a, locale as "en" | "ar")}</option>)}</select>
         <select value={f.deal_type} onChange={(e)=>set("deal_type",e.target.value)} className={inp+" flex-1"}><option value="lease">lease</option><option value="sale">sale</option></select>
       </div>
       <select value={f.district_id} onChange={(e)=>set("district_id",e.target.value)} className={inp}>
@@ -84,6 +143,31 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
         <input required type="number" placeholder={f.deal_type==="lease" ? "Asking (SAR/m²·yr)" : "Sale price (SAR)"} value={f.price} onChange={(e)=>set("price",e.target.value)} className={inp+" flex-1"} />
       </div>
       <textarea placeholder="Description" value={f.description_en} onChange={(e)=>set("description_en",e.target.value)} className={inp} rows={3} />
+
+      {hasRegistry(f.asset_type) && perAsset.length > 0 && (
+        <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-4">
+          <div className="text-[12px] font-medium text-charcoal/70">{ar ? "تفاصيل العقار" : "Property details"}</div>
+          {SECTION_ORDER.map((sec) => {
+            const fields = perAsset.filter((x) => x.section === sec);
+            if (fields.length === 0) return null;
+            const lead = fields.filter((x) => x.show_rule === "always");
+            const more = fields.filter((x) => x.show_rule !== "always");
+            return (
+              <div key={sec} className="space-y-2">
+                <div className="text-[11px] uppercase tracking-wide text-charcoal/45">{sectionLabel(sec, ar)}</div>
+                {lead.map(renderField)}
+                {more.length > 0 && (
+                  <details className="rounded border border-line/70 px-3 py-2">
+                    <summary className="text-[12px] text-charcoal/60 cursor-pointer">{ar ? "المزيد من التفاصيل" : "Add more detail"}</summary>
+                    <div className="mt-3 space-y-3">{more.map(renderField)}</div>
+                  </details>
+                )}
+              </div>
+            );
+          })}
+          <p className="text-[11px] text-charcoal/45">{ar ? "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات." : "Everything you enter shows as stated by the lister until SAT verifies it."}</p>
+        </div>
+      )}
 
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3 space-y-3">
         <div className="text-[12px] font-medium text-charcoal/70">Who is listing, and media</div>
@@ -105,7 +189,7 @@ export default function NewListingForm({ accountId, locale, districts }: { accou
           <input
             required
             inputMode="numeric"
-            pattern="\\d{10}"
+            pattern="\d{10}"
             placeholder="Licence number (10 digits)"
             value={f.ad_permit_no}
             onChange={(e)=>set("ad_permit_no", e.target.value.replace(/\D/g, "").slice(0,10))}
