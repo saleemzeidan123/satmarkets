@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { nearestDistrict, type DistrictPoint } from "@/lib/nearestDistrict";
+import { parseLatLng, isMapShareUrl } from "@/lib/parseLatLng";
 
 // Lets a lister place the exact building: search, click the map, drag the pin, or
 // type coordinates. The district is derived from the pin (nearest centroid), so
@@ -29,6 +30,7 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
   const [lng, setLng] = useState<number | null>(value.lng);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ label: string; sub: string; lat: number; lng: number }>>([]);
+  const [resolving, setResolving] = useState(false);
 
   const district = lat != null && lng != null ? nearestDistrict(lat, lng, districts) : null;
 
@@ -64,24 +66,44 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Debounced free-form search returning coordinates.
+  // The search box accepts three things: a place name (geocoded), a pasted Google
+  // Maps link, or a bare "lat, lng" pair. A link or coordinates places the pin
+  // directly; a shortened share link (maps.app.goo.gl) is resolved server-side.
   useEffect(() => {
-    if (q.trim().length < 2) { setResults([]); return; }
+    const s = q.trim();
+    if (s.length < 2) { setResults([]); setResolving(false); return; }
+    // Coordinates already present in the pasted text: place immediately.
+    const direct = parseLatLng(s);
+    if (direct) { setResults([]); setResolving(false); place(direct.lat, direct.lng, true); return; }
     const id = setTimeout(async () => {
+      // A shortened map share link hides the coordinates behind a redirect.
+      if (isMapShareUrl(s)) {
+        setResolving(true);
+        try {
+          const r = await fetch(`/api/geo/resolve?url=${encodeURIComponent(s)}`);
+          const j = await r.json();
+          if (Number.isFinite(j.lat) && Number.isFinite(j.lng)) {
+            setResults([]); setResolving(false); place(Number(j.lat), Number(j.lng), true); return;
+          }
+        } catch { /* fall through to place-name search */ }
+        setResolving(false);
+      }
       try {
-        const r = await fetch(`/api/geocode?q=${encodeURIComponent(q.trim())}`);
+        const r = await fetch(`/api/geocode?q=${encodeURIComponent(s)}`);
         const j = await r.json();
         setResults(Array.isArray(j.items) ? j.items : []);
       } catch { setResults([]); }
     }, 350);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   const inp = "w-full rounded border border-charcoal/20 px-3 py-2";
   return (
     <div className="space-y-2">
       <div className="relative">
-        <input className={inp} placeholder={t("Search for the address or area", "ابحث عن العنوان أو المنطقة")} value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className={inp} placeholder={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")} value={q} onChange={(e) => setQ(e.target.value)} />
+        {resolving && <p className="text-[11px] text-charcoal/45 mt-1">{t("Resolving the map link...", "جارٍ فتح رابط الخريطة...")}</p>}
         {results.length > 0 && (
           <div className="absolute z-10 mt-1 w-full rounded border border-line bg-white shadow max-h-56 overflow-auto">
             {results.map((r, i) => (
