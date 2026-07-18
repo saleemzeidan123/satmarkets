@@ -10,11 +10,13 @@ import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
-import { getListingById, getLister } from "@/lib/queries/listings";
+import { getListingById, getLister, getBuildingById } from "@/lib/queries/listings";
 import ListerBadge from "@/components/ListerBadge";
 import { getDictionary } from "@/i18n/getDictionary";
 import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
+import LocationFacts from "@/components/LocationFacts";
+import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -72,6 +74,37 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       (sim2 ?? []).forEach((x: any) => { if (!seen.has(x.id) && similar.length < 4) { seen.add(x.id); similar.push(x); } });
     }
     similar = similar.slice(0, 4);
+  }
+
+  // Location facts: resolve a real coordinate (exact building, else district centroid),
+  // then compute sourced distances. Every value shown is a verified coordinate or a
+  // computation over one. Metro is Riyadh-only; airports cover every listed city.
+  let originLL: { lat: number; lng: number; exact: boolean } | null = null;
+  if (sb) {
+    if (l.building_id) {
+      const b: any = await getBuildingById(l.building_id);
+      if (b && b.lat != null && b.lng != null) originLL = { lat: Number(b.lat), lng: Number(b.lng), exact: true };
+    }
+    if (!originLL && l.district_id) {
+      const { data: dg } = await sb.from("districts_geo").select("lat,lng").eq("id", l.district_id).maybeSingle();
+      if (dg && (dg as any).lat != null && (dg as any).lng != null) originLL = { lat: Number((dg as any).lat), lng: Number((dg as any).lng), exact: false };
+    }
+  }
+  let locFactsProps: any = null;
+  if (sb && originLL) {
+    const { data: anch } = await sb.from("map_anchors").select("kind,name_en,name_ar,line,lat,lng").eq("city", cityEn).in("kind", ["metro", "airport"]);
+    const anchors = (anch ?? []).map((a: any) => ({ kind: a.kind, name_en: a.name_en, name_ar: a.name_ar, line: a.line, lat: Number(a.lat), lng: Number(a.lng) }));
+    const nm = nearest(originLL, anchors, "metro");
+    const na = nearest(originLL, anchors, "airport");
+    const rel = relevanceFor(l.asset_type);
+    const airDrive = na ? await driveMinutes(originLL, na.anchor.lat, na.anchor.lng) : null;
+    locFactsProps = {
+      lat: originLL.lat, lng: originLL.lng, exact: originLL.exact,
+      metro: nm ? { name_en: nm.anchor.name_en, name_ar: nm.anchor.name_ar, line: nm.anchor.line, lat: nm.anchor.lat, lng: nm.anchor.lng, km: nm.km, walkMin: nm.km <= WALKABLE_KM ? walkMinutes(nm.km) : null } : null,
+      airport: na ? { name_en: na.anchor.name_en, name_ar: na.anchor.name_ar, km: na.km, driveMin: airDrive } : null,
+      primary: rel.primary, less: rel.less,
+      computedDate: new Date().toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }),
+    };
   }
 
   return (
@@ -167,9 +200,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             ))}
           </div>
           {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
-          <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-            <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 620 }}>{dict.ld.locNote}</div>
-          </div>
+          {locFactsProps ? (
+            <LocationFacts locale={locale as "en" | "ar"} {...locFactsProps} />
+          ) : (
+            <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
+              <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 620 }}>{dict.ld.locNote}</div>
+            </div>
+          )}
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
               <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>

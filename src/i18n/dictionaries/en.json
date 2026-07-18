@@ -1351,5 +1351,25 @@
     "ownersB": "owners",
     "brokersB": "brokers",
     "yours": "Your response"
+  },
+  "locFacts": {
+    "title": "Location facts",
+    "computed": "Computed",
+    "km": "km",
+    "walk": "min walk",
+    "metro": "Nearest metro",
+    "airport": "Nearest airport",
+    "driveMin": "min drive",
+    "driving": "driving, typical off-peak",
+    "straightLine": "straight-line distance",
+    "exact": "Exact building location, shown on the map.",
+    "district": "District-level location. The exact address is shared on enquiry, so the marker shows the area, not the building.",
+    "less": "Less relevant for your use",
+    "lessMetro": "Metro proximity has little bearing on a logistics or storage site.",
+    "lessAirport": "Airport distance has little bearing on a neighbourhood retail unit.",
+    "mapAria": "Map showing the listing location",
+    "mapUnavailable": "Map unavailable",
+    "loadingMap": "Loading map",
+    "sourceLine": "Metro: Riyadh Metro network, RCRC Open Data. Distances computed by SAT Markets."
   }
 }
