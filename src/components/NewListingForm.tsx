@@ -65,6 +65,18 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
     if (!rightToMarket) { setError("Confirm you have the right to market this property."); return; }
     if (loc.lat == null || loc.lng == null) { setError("Place the property location on the map, or enter its coordinates."); return; }
 
+    // Required per-asset fields. The server is authoritative, but this pre-flight
+    // names the missing fields instead of showing a generic rejection.
+    const missing = intakeFields(f.asset_type).filter(
+      (x) => x.required && !BASE_OWNED.has(x.key) &&
+        (attrs[x.key] === undefined || attrs[x.key] === "" || attrs[x.key] === null),
+    );
+    if (missing.length) {
+      const names = missing.map((x) => (ar ? x.label_ar : x.label_en)).join(ar ? "، " : ", ");
+      setError((ar ? "أكمل الحقول المطلوبة: " : "Please complete the required fields: ") + names);
+      return;
+    }
+
     setBusy(true);
     // Server-authoritative write path. The route validates the base fields AND the
     // per-asset attributes against the registry, and derives the account from the session.
@@ -189,8 +201,10 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
           {SECTION_ORDER.map((sec) => {
             const fields = perAsset.filter((x) => x.section === sec);
             if (fields.length === 0) return null;
-            const lead = fields.filter((x) => x.show_rule === "always");
-            const more = fields.filter((x) => x.show_rule !== "always");
+            // Required fields must never hide inside the collapsed "more" section,
+            // or a lister could submit without seeing them.
+            const lead = fields.filter((x) => x.show_rule === "always" || x.required);
+            const more = fields.filter((x) => x.show_rule !== "always" && !x.required);
             return (
               <div key={sec} className="space-y-2">
                 <div className="text-[11px] uppercase tracking-wide text-charcoal/45">{sectionLabel(sec, ar)}</div>
