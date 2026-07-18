@@ -253,3 +253,10 @@ export function sectionFieldsFor(assetType: string, section: DisplaySection): As
 export function filterableFields(assetType: string): AssetField[] {
   return fieldsFor(assetType).filter((f) => f.filterable);
 }
+
+// The fields a lister actually types at intake: the Entered tier. Verified fields
+// begin as Entered (the lister states them, SAT confirms later); Computed and
+// Sourced fields are never hand-entered, so they are excluded from the form.
+export function intakeFields(assetType: string): AssetField[] {
+  return fieldsFor(assetType).filter((f) => f.provenance === "entered");
+}
