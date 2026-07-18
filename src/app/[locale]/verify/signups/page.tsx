@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { getSessionUser } from "@/lib/auth/session";
 import SignupActions from "@/components/SignupActions";
 
 export const dynamic = "force-dynamic";
@@ -24,15 +26,14 @@ function detailsSummary(d: Record<string, unknown> | null): string {
   return parts.join(" · ");
 }
 
-export default async function SignupQueue({ searchParams }: { searchParams: { key?: string } }) {
-  const token = process.env.ADMIN_REVIEW_TOKEN;
+export default async function SignupQueue() {
+  // Session-gated on app_is_sat (RLS-safe). Non-reviewers get 404.
+  const su = await getSessionUser();
+  if (!su?.isSat) notFound();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!token || !url || !serviceKey) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Signup requests</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set ADMIN_REVIEW_TOKEN and SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
-  }
-  if (searchParams?.key !== token) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Signup requests</h1><p style={{ color: "#C8412E" }}>Not authorized.</p></main>;
+  if (!url || !serviceKey) {
+    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Signup requests</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
   }
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb.from("signup_requests").select("*").order("created_at", { ascending: false }).limit(300);
@@ -60,7 +61,7 @@ export default async function SignupQueue({ searchParams }: { searchParams: { ke
                 <td style={td}>{r.locale}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "#1F8A5B" : r.status === "rejected" ? "#C8412E" : r.status === "contacted" ? "#2C557F" : "#B7791F" }}>{r.status}</span></td>
                 <td style={{ ...td, maxWidth: 180, color: "#5B6470", fontSize: 12 }}>{r.notes || ""}</td>
-                <td style={td}><SignupActions id={r.id} token={token} status={r.status} /></td>
+                <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>
             ))}
           </tbody>

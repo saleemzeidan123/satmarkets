@@ -1,7 +1,9 @@
 "use client";
 import { useState, type CSSProperties } from "react";
 
-export default function ReviewActions({ id, token }: { id: string; token: string }) {
+// No token prop: the review API authorizes on the session cookie the browser
+// already sends. A secret must never cross into a client component.
+export default function ReviewActions({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   async function act(action: "approve" | "reject") {
@@ -14,7 +16,7 @@ export default function ReviewActions({ id, token }: { id: string; token: string
     try {
       const res = await fetch(`/api/listings/${id}/review`, {
         method: "POST",
-        headers: { "content-type": "application/json", authorization: "Bearer " + token },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ action, reason }),
       });
       const j = await res.json().catch(() => ({}));

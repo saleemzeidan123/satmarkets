@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { authed } from "@/lib/adminauth";
+import { getSessionUser } from "@/lib/auth/session";
 import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
@@ -19,17 +19,18 @@ export const runtime = "nodejs";
 // A status you can assert by hand is a status that can lie.
 const STATUSES = ["contacted", "approved", "verified", "rejected"] as const;
 
-// Privileged status updates for signup requests. Same gate as listing review:
-// ADMIN_REVIEW_TOKEN + service role, never exposed to the client bundle.
+// Privileged status updates for signup requests. Gated on the SESSION (app_is_sat,
+// RLS-safe), never a shared token in a URL or client bundle. Service role writes
+// after the gate. Non-reviewers get 404 so the console does not announce itself.
 export async function POST(req: NextRequest) {
-  const token = process.env.ADMIN_REVIEW_TOKEN;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!token || !url || !serviceKey) {
+  if (!url || !serviceKey) {
     return NextResponse.json({ ok: false, error: "Review not configured" }, { status: 503 });
   }
   if (!allow("signups-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
-  if (!authed(req, token)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  const su = await getSessionUser();
+  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
   let body: { id?: string; status?: string; notes?: string } = {};
   try { body = await req.json(); } catch {}
   if (!body.id || !(STATUSES as readonly string[]).includes(String(body.status))) {

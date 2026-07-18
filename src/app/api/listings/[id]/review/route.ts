@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { authed } from "@/lib/adminauth";
+import { getSessionUser } from "@/lib/auth/session";
 import { allow } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
+// Reviewer decisions are gated on the SESSION (app_is_sat, RLS-safe), never on a
+// shared token in a URL or client bundle. Non-reviewers get 404: the console does
+// not announce itself. The service role performs the write after the gate passes.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const token = process.env.ADMIN_REVIEW_TOKEN;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!token || !url || !serviceKey) {
+  if (!url || !serviceKey) {
     return NextResponse.json({ ok: false, error: "Review not configured" }, { status: 503 });
   }
   if (!allow("listings-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
-  if (!authed(req, token)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  const su = await getSessionUser();
+  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
   let body: { action?: string; reason?: string } = {};
   try { body = await req.json(); } catch {}
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -23,6 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       authorization_verified: true,
       verification_method: "manual_review",
       verified_at: new Date().toISOString(),
+      verified_by: su.userId,
     }).eq("id", params.id);
     if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
     return NextResponse.json({ ok: true });

@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 import ReviewActions from "@/components/ReviewActions";
 import { permitOf } from "@/lib/gate";
 
@@ -22,14 +24,11 @@ function YN({ v }: { v: boolean | null }) {
   return <span style={{ color: v ? "#1F8A5B" : "#5B6470", fontWeight: v ? 600 : 400 }}>{v ? "Yes" : "No"}</span>;
 }
 
-export default async function VerifyQueue({ searchParams }: { searchParams: { key?: string } }) {
-  const token = process.env.ADMIN_REVIEW_TOKEN;
-  if (!token) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set ADMIN_REVIEW_TOKEN in the server environment to enable it.</p></main>;
-  }
-  if (searchParams?.key !== token) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "#C8412E" }}>Not authorized.</p></main>;
-  }
+export default async function VerifyQueue() {
+  // Session-gated on app_is_sat (RLS-safe). A non-reviewer sees a 404: the console
+  // does not confirm it exists. No token in the URL, none in the client bundle.
+  const su = await getSessionUser();
+  if (!su?.isSat) notFound();
   const sb = getSupabaseServer();
   if (!sb) {
     return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "#5B6470" }}>Database not configured.</p></main>;
@@ -67,7 +66,7 @@ export default async function VerifyQueue({ searchParams }: { searchParams: { ke
                 <td style={td}>{r.verified_at ? new Date(r.verified_at).toISOString().slice(0, 10) : "-"}</td>
                 <td style={td}>{r.authorization_doc_url ? <a href={r.authorization_doc_url} style={{ color: "#2E5FE0" }}>view</a> : "-"}</td>
                 <td style={td}>{permitOf(r) || "-"}</td>
-                <td style={td}><ReviewActions id={r.id} token={token} /></td>
+                <td style={td}><ReviewActions id={r.id} /></td>
               </tr>
             ))}
           </tbody>

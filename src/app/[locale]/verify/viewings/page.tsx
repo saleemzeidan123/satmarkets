@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
+import { getSessionUser } from "@/lib/auth/session";
 import ViewingActions from "@/components/ViewingActions";
 
 export const dynamic = "force-dynamic";
@@ -21,15 +23,14 @@ function riyadh(iso: string | null): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Riyadh", weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(d);
 }
 
-export default async function ViewingsQueue({ searchParams }: { searchParams: { key?: string } }) {
-  const token = process.env.ADMIN_REVIEW_TOKEN;
+export default async function ViewingsQueue() {
+  // Session-gated on app_is_sat (RLS-safe). Non-reviewers get 404.
+  const su = await getSessionUser();
+  if (!su?.isSat) notFound();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!token || !url || !serviceKey) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Viewing requests</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set ADMIN_REVIEW_TOKEN and SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
-  }
-  if (searchParams?.key !== token) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Viewing requests</h1><p style={{ color: "#C8412E" }}>Not authorized.</p></main>;
+  if (!url || !serviceKey) {
+    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Viewing requests</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
   }
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb.from("viewings").select("id, created_at, scheduled_at, status, contact_name, contact_email, qualification, listings(reference_code, title_en, is_sat_listed)").order("created_at", { ascending: false }).limit(300);
@@ -55,7 +56,7 @@ export default async function ViewingsQueue({ searchParams }: { searchParams: { 
                 <td style={td}>{r.contact_name || ""}{r.contact_email ? <div><a href={`mailto:${r.contact_email}`} style={{ color: "#2C557F", fontSize: 12 }}>{r.contact_email}</a></div> : null}</td>
                 <td style={{ ...td, maxWidth: 280 }}>{r.qualification?.summary_en || ""}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: sColor[r.status] || "#5B6470" }}>{r.status}</span></td>
-                <td style={td}><ViewingActions id={r.id} token={token} status={r.status} /></td>
+                <td style={td}><ViewingActions id={r.id} status={r.status} /></td>
               </tr>
             ))}
           </tbody>

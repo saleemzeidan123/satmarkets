@@ -1,7 +1,8 @@
 "use client";
 import { useState, type CSSProperties } from "react";
 
-export default function SignupActions({ id, token, status }: { id: string; token: string; status: string }) {
+// No token prop: the review API authorizes on the session cookie.
+export default function SignupActions({ id, status }: { id: string; status: string }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   async function act(next: "contacted" | "verified" | "rejected") {
@@ -14,7 +15,7 @@ export default function SignupActions({ id, token, status }: { id: string; token
     try {
       const res = await fetch("/api/signups/review", {
         method: "POST",
-        headers: { "content-type": "application/json", authorization: "Bearer " + token },
+        headers: { "content-type": "application/json" },
         body: JSON.stringify({ id, status: next, notes }),
       });
       const j = await res.json().catch(() => ({}));
