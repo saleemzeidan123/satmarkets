@@ -61,18 +61,15 @@ export async function POST(req: NextRequest) {
 
   if (body.right_to_market_confirmed !== true) return NextResponse.json({ error: "Confirm you have the right to market this property." }, { status: 400 });
 
-  // Optional exact building coordinates from the map pin. Validated to Saudi
-  // bounds when present; absent is fine (falls back to the district centroid).
-  let lat: number | null = null;
-  let lng: number | null = null;
-  if (body.lat != null && body.lat !== "" && body.lng != null && body.lng !== "") {
-    const la = Number(body.lat);
-    const ln = Number(body.lng);
-    if (!Number.isFinite(la) || !Number.isFinite(ln) || la < 16 || la > 33 || ln < 34 || ln > 56) {
-      return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
-    }
-    lat = la;
-    lng = ln;
+  // Exact building coordinates from the map pin. Required, and validated to Saudi
+  // bounds. A listing with no location is not useful, so it is mandatory here too.
+  if (body.lat == null || body.lat === "" || body.lng == null || body.lng === "") {
+    return NextResponse.json({ error: "The property location is required." }, { status: 400 });
+  }
+  const lat = Number(body.lat);
+  const lng = Number(body.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 16 || lat > 33 || lng < 34 || lng > 56) {
+    return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
   }
 
   const lister_type = body.lister_type === "broker_authorized" ? "broker_authorized" : "owner_direct";

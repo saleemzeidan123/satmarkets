@@ -57,6 +57,7 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
     }
     if (new Date(f.ad_permit_expires_at) <= new Date()) { setError("That licence has already expired."); return; }
     if (!rightToMarket) { setError("Confirm you have the right to market this property."); return; }
+    if (loc.lat == null || loc.lng == null) { setError("Place the property location on the map, or enter its coordinates."); return; }
 
     setBusy(true);
     // Server-authoritative write path. The route validates the base fields AND the
@@ -87,7 +88,10 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
   const inp = "w-full rounded border border-charcoal/20 px-3 py-2";
 
   function renderField(field: AssetField) {
-    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "");
+    // Required is shown with a "*" and enforced by the server (not the native
+    // required attribute), so a required field inside a collapsed section can
+    // never silently block submit.
+    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "") + (field.required ? " *" : "");
     const help = ar ? field.help_ar : field.help_en;
     const val = attrs[field.key];
     if (field.type === "boolean") {

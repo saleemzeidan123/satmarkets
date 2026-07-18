@@ -100,7 +100,12 @@ export function coerceAndValidateAttributes(
       errors.push({ key: field.key, message: error });
       continue;
     }
-    if (value === undefined) continue; // omitted
+    if (value === undefined) {
+      // A required field with no value is an error, so the server enforces
+      // required-ness regardless of the client.
+      if (field.required) errors.push({ key: field.key, message: "is required" });
+      continue;
+    }
     if (field.column) columns[field.column] = value;
     else attributes[field.key] = value;
   }
