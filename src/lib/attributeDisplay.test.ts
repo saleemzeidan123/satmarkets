@@ -41,6 +41,12 @@ test("office generator and green-cert enums resolve to proper labels", () => {
   assert.equal(formatFieldValue(green, "leed", false), "LEED");
 });
 
+test("warehouse sprinkler enum resolves to a proper label", () => {
+  const sprinkler = fieldsFor("warehouse").find((f) => f.key === "sprinkler_type")!;
+  assert.equal(formatFieldValue(sprinkler, "esfr", false), "ESFR");
+  assert.equal(formatFieldValue(sprinkler, "wet", true), "رطب");
+});
+
 test("space rows skip column-backed and unavailable fields, keep attribute fields", () => {
   const rows = spaceAttributeRows("office", {
     floor_plate_sqm: 1200,       // attribute field -> shows
