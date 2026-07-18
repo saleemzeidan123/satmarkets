@@ -62,6 +62,13 @@ function coerceOne(field: AssetField, value: unknown): { value?: unknown; error?
         value === "true" || value === "on";
       return truthy ? { value: true } : {}; // false => omit
     }
+    case "tristate": {
+      // yes / no / unknown. "unknown" (and empty/absent) is not stored: an
+      // unanswered field must never be read back as an asserted "no".
+      if (value === true || value === "yes" || value === "true" || value === "on" || value === 1 || value === "1") return { value: "yes" };
+      if (value === false || value === "no") return { value: "no" };
+      return {}; // unknown / empty => omit
+    }
     case "enum": {
       const s = String(value).trim();
       if (!s) return {};

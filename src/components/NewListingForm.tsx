@@ -161,6 +161,19 @@ export default function NewListingForm({ locale, districts }: { accountId: strin
         </label>
       );
     }
+    if (field.type === "tristate") {
+      return (
+        <div key={field.key}>
+          <label className="block text-[12px] text-charcoal/60 mb-1">{label}</label>
+          <select value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
+            <option value="">{ar ? "غير محدّد" : "Not specified"}</option>
+            <option value="yes">{ar ? "نعم" : "Yes"}</option>
+            <option value="no">{ar ? "لا" : "No"}</option>
+          </select>
+          {help && <p className="text-[11px] text-charcoal/45 mt-1">{help}</p>}
+        </div>
+      );
+    }
     if (field.type === "enum") {
       const opts = field.validation?.enum ?? [];
       return (

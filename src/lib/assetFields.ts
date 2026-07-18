@@ -22,7 +22,7 @@
 import type { ProvenanceTier } from "./provenance";
 
 export type FieldType =
-  | "number" | "integer" | "boolean" | "enum" | "text" | "money" | "url" | "doc-ref" | "list";
+  | "number" | "integer" | "boolean" | "tristate" | "enum" | "text" | "money" | "url" | "doc-ref" | "list";
 
 // The seven fixed display sections, in render order. Identity, location, market,
 // and suitability are composed by existing components; the registry mainly drives
@@ -61,11 +61,24 @@ export interface AssetField {
 
 export type AssetFieldRegistry = Record<string, AssetField[]>;
 
-// Shared compliance field: Ejar registration applies to every leased asset.
+// Shared compliance fields, reused across asset types (like a mixin). Ejar applies
+// to every leased asset; Balady and Civil Defense gate most operating premises. All
+// are tri-state (yes/no/unknown): an unanswered field must never silently assert
+// "no". "unknown" is a legitimate answer and is simply not stored or shown.
 const ejar: AssetField = {
   key: "ejar_registered", label_en: "Ejar registration", label_ar: "تسجيل إيجار",
-  type: "boolean", section: "compliance", provenance: "entered", verifyDoc: "Ejar contract",
+  type: "tristate", section: "compliance", provenance: "entered", verifyDoc: "Ejar contract",
   help_en: "Whether the lease is registered on Ejar.", help_ar: "هل العقد مسجّل في إيجار.",
+};
+const baladyLicense: AssetField = {
+  key: "balady_license", label_en: "Municipal licence", label_ar: "رخصة بلدية",
+  type: "tristate", section: "compliance", provenance: "entered", verifyDoc: "Balady licence",
+  help_en: "Municipal (Balady) licence for the activity.", help_ar: "الرخصة البلدية للنشاط.",
+};
+const civilDefenseCert: AssetField = {
+  key: "civil_defense_cert", label_en: "Civil Defense certificate", label_ar: "شهادة الدفاع المدني",
+  type: "tristate", section: "compliance", provenance: "entered", verifyDoc: "Civil Defense certificate",
+  help_en: "Civil Defense safety certificate.", help_ar: "شهادة السلامة من الدفاع المدني.",
 };
 
 export const ASSET_FIELDS: AssetFieldRegistry = {
@@ -118,7 +131,7 @@ export const ASSET_FIELDS: AssetFieldRegistry = {
     { key: "sale_price", label_en: "Price", label_ar: "السعر", type: "money", unit: "SAR",
       section: "commercial", provenance: "entered", column: "sale_price", filterable: true, show_rule: "if-present" },
     { key: "price_per_sqm", label_en: "Price per m²", label_ar: "السعر لكل م²", type: "money", unit: "SAR/m²",
-      section: "commercial", provenance: "entered" },
+      section: "commercial", provenance: "computed" },
     // Compliance
     { key: "zoning_balady", label_en: "Zoning", label_ar: "التصنيف البلدي", type: "text", section: "compliance",
       provenance: "sourced", available: false, help_en: "From Balady, once wired.", help_ar: "من بلدي عند الربط." },
@@ -168,7 +181,7 @@ export const ASSET_FIELDS: AssetFieldRegistry = {
     { key: "sale_price", label_en: "Price", label_ar: "السعر", type: "money", unit: "SAR", section: "commercial",
       provenance: "entered", column: "sale_price", filterable: true, show_rule: "if-present" },
     { key: "price_per_sqm", label_en: "Price per m²", label_ar: "السعر لكل م²", type: "money", unit: "SAR/m²",
-      section: "commercial", provenance: "entered" },
+      section: "commercial", provenance: "computed" },
     { key: "modon_ground_lease", label_en: "MODON ground lease", label_ar: "أرض مدن بإيجار", type: "boolean",
       section: "commercial", provenance: "entered",
       help_en: "MODON ground-lease rather than private freehold.", help_ar: "أرض مدن مؤجّرة بدل التملّك الخاص." },

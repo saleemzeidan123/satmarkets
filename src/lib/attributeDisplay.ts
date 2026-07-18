@@ -46,6 +46,13 @@ export function formatFieldValue(field: AssetField, value: unknown, ar: boolean)
     }
     case "boolean":
       return value ? (ar ? "نعم" : "Yes") : null;
+    case "tristate": {
+      // Only an explicit yes/no shows; unknown/absent renders nothing (never an
+      // asserted "no"). Legacy boolean values are read as yes.
+      if (value === "yes" || value === true) return ar ? "نعم" : "Yes";
+      if (value === "no" || value === false) return ar ? "لا" : "No";
+      return null;
+    }
     case "enum": {
       const key = String(value).trim();
       if (!key) return null;
@@ -81,6 +88,31 @@ export function complianceRows(
     if (f.key === "civil_defense_approved") continue; // shown under The space
     const raw = f.column && listing[f.column] != null ? listing[f.column] : attributes[f.key];
     const formatted = formatFieldValue(f, raw, ar);
+    if (formatted === null) continue;
+    rows.push([ar ? f.label_ar : f.label_en, formatted]);
+  }
+  return rows;
+}
+
+// Rows for the "commercial" section drawn from a listing's attributes. The detail
+// page builds the core commercial terms (rent, service charge, VAT) from typed
+// columns; this appends the registry commercial attributes an asset defines that
+// have no column (for example a serviced office's price basis or a hotel's deal
+// scope). Column-backed and computed fields are skipped: computed price per m2 is
+// derived on the page from price and area, never entered.
+export function commercialAttributeRows(
+  assetType: string,
+  attributes: Record<string, unknown> | null | undefined,
+  ar: boolean,
+): [string, string][] {
+  if (!attributes) return [];
+  const rows: [string, string][] = [];
+  for (const f of fieldsFor(assetType)) {
+    if (f.section !== "commercial") continue;
+    if (f.column) continue;              // rendered by the existing column block
+    if (f.provenance === "computed") continue; // derived on the page, never stored
+    if (f.available === false) continue;
+    const formatted = formatFieldValue(f, attributes[f.key], ar);
     if (formatted === null) continue;
     rows.push([ar ? f.label_ar : f.label_en, formatted]);
   }

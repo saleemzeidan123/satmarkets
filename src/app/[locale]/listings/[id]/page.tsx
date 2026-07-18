@@ -18,7 +18,7 @@ import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
-import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
+import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
 import { getSessionUser } from "@/lib/auth/session";
@@ -331,9 +331,18 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, num(l.fitout_contribution) + (ar ? " ريال" : " SAR")]);
               if (l.break_option_months != null) rows.push([T.breakOption, `${num(l.break_option_months)} ${ar ? "شهراً" : "months"}`]);
             } else {
-              if (l.sale_price_sqm != null) rows.push([T.pricePerSqm, num(l.sale_price_sqm) + (ar ? " ريال/م²" : " SAR/m²")]);
+              // Price per m2 is COMPUTED (price / area), never entered, so a lister
+              // can never post one that contradicts their own price. Prefer a stored
+              // column if present, else derive it.
+              const pps = l.sale_price_sqm != null
+                ? Number(l.sale_price_sqm)
+                : (l.sale_price != null && l.area_sqm ? Number(l.sale_price) / Number(l.area_sqm) : null);
+              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, num(Math.round(pps)) + (ar ? " ريال/م²" : " SAR/m²")]);
             }
             if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
+            // Registry commercial attributes with no typed column (price basis, deal
+            // scope, turnover rent, and so on for the newer asset types).
+            rows.push(...commercialAttributeRows(l.asset_type, l.attributes, ar));
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>

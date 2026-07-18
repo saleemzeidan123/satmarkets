@@ -144,3 +144,13 @@ test("a present-but-invalid required field reports its validation error, not 'is
   const e = r.errors.find((x) => x.key === "clear_height_m");
   assert.equal(e?.message, "must be at most 40");
 });
+
+test("tristate stores yes/no explicitly; unknown or empty is omitted (never a silent no)", () => {
+  // ejar_registered is a compliance tristate on every leased asset.
+  assert.equal(withReq("office", { ejar_registered: "yes" }).attributes.ejar_registered, "yes");
+  assert.equal(withReq("office", { ejar_registered: "no" }).attributes.ejar_registered, "no");
+  assert.equal(withReq("office", { ejar_registered: "" }).attributes.ejar_registered, undefined);
+  assert.equal(withReq("office", {}).attributes.ejar_registered, undefined);
+  // a legacy boolean true reads as yes, so old data keeps rendering
+  assert.equal(withReq("office", { ejar_registered: true }).attributes.ejar_registered, "yes");
+});
