@@ -359,4 +359,14 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .sronly{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
 .seg label:focus-within{outline:2px solid var(--azure);outline-offset:2px;border-radius:7px;}
 
-@media(min-width:1024px){.ld-side{position:sticky;top:74px;align-self:start;}}
+/* Listing detail right rail. ONE sticky element per column, never nested. The rail
+   itself is NOT sticky, it only refuses to stretch (align-self:start) so its sticky
+   child can travel. The enquiry card is the single sticky, and only once the 2-col
+   layout exists (the grid collapses at 920px); below that it is plain flow so a tall
+   card cannot fight the fixed mobile contact dock. */
+.ld-side{align-self:start;}
+.ld-enquiry{position:static;}
+@media(min-width:921px){.ld-enquiry{position:sticky;top:90px;}}
+/* Reserve room for the fixed mobile contact dock (shown below 768px) so it never
+   covers the last of the page content. */
+@media(max-width:767px){.ld-page{padding-bottom:calc(84px + env(safe-area-inset-bottom));}}

@@ -67,7 +67,11 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
     import("maplibre-gl").then((mod) => {
       if (cancelled || !ref.current) return;
       const maplibregl = (mod as any).default ?? mod;
-      if (ar) { try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {} }
+      // Arabic labels appear on the Saudi basemap in EVERY locale (street names are
+      // Arabic), so the RTL shaping plugin must load regardless of the UI language.
+      // Gated to ar only, English maps rendered Arabic street names as disconnected,
+      // right-to-left-broken glyphs. This is a global, registered once.
+      try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
       map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [lng, lat], zoom: 13, minZoom: 8, maxZoom: 16, attributionControl: false });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       map.addControl(new maplibregl.AttributionControl({ compact: true }));

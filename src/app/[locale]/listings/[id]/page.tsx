@@ -159,7 +159,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   }
 
   return (
-    <div style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
+    <div className="ld-page" style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
         <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /><span className="chip"><Icon.arrow size={15} /> {dict.ld.share}</span></div>
@@ -189,6 +189,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
             {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
+          {/* WHO FILED THIS. A byline under the headline, not a footnote at the tail of
+              the contact rail. Moving it here also removed the last reason the rail
+              carried a second block, which is what let the rail stop being nested-sticky. */}
+          <ListerBadge lister={lister} ar={ar} locale={locale} />
           {/* Honest verification freshness (Q8 + decay). Shows the real check date; once
               the check is a year or older the badge desaturates and we append the check's
               AGE as a plain fact ("over a year ago"). We still assert NO expiry / valid-until,
@@ -491,7 +495,6 @@ export default async function ListingDetail({ params }: { params: { locale: stri
         </div>
         <div className="ld-side">
           <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
-          <ListerBadge lister={lister} ar={ar} locale={locale} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>

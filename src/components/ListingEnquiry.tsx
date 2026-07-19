@@ -188,7 +188,7 @@ export default function ListingEnquiry({
 
  if (done) {
   return (
-   <div className="card pad" style={{ position: "sticky", top: 90 }}>
+   <div className="card pad ld-enquiry">
     <div className="row gap8" style={{ color: "var(--green)", marginBottom: 10 }}>
      <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{t.enquirySent}</span>
     </div>
@@ -204,7 +204,7 @@ export default function ListingEnquiry({
  }
 
  return (
-  <div className="card pad" style={{ position: "sticky", top: 90 }}>
+  <div className="card pad ld-enquiry">
    <div className="row between" style={{ alignItems: "flex-start" }}>
     <div>
      <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : t.onRequest}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {price != null ? unit : ""}</small></div>

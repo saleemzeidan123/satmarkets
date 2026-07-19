@@ -51,6 +51,10 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
     import("maplibre-gl").then((mod) => {
       if (cancelled || !mapEl.current) return;
       const maplibregl = ((mod as { default?: unknown }).default ?? mod) as any;
+      // Arabic street labels on the Saudi basemap need the RTL shaping plugin in
+      // every locale, or they render as disconnected, reversed glyphs. Lazy and
+      // registered once globally.
+      try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
       const start: [number, number] = value.lng != null && value.lat != null ? [value.lng, value.lat] : RIYADH;
       const m = new maplibregl.Map({ container: mapEl.current, style: STYLE, center: start, zoom: value.lat != null ? 14 : 10, attributionControl: false });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
