@@ -156,6 +156,12 @@ export default async function ManageListingPage({ params }: { params: { locale: 
             contact_phone: L.contact_phone || "",
             contact_email: L.contact_email || "",
             contact_channels: Array.isArray(L.contact_channels) ? L.contact_channels : [],
+            visibility: L.visibility || "public",
+            offmarket_price_mode: L.offmarket_price_mode || "on_request",
+            offmarket_price_band_min: L.offmarket_price_band_min != null ? String(L.offmarket_price_band_min) : "",
+            offmarket_price_band_max: L.offmarket_price_band_max != null ? String(L.offmarket_price_band_max) : "",
+            offmarket_headline_en: L.offmarket_headline_en || "",
+            offmarket_teaser_en: L.offmarket_teaser_en || "",
           }}
         />
       </div>
