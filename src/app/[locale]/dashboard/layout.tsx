@@ -47,15 +47,16 @@ export default async function DashboardLayout({
         ? (ar ? "فريق سات" : "SAT team")
         : a.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner");
     }
-    // SAT is allowed to see every lead, so its badge must count every lead. An owner
-    // counts only leads on their own listings. The badge has to agree with the page.
+    // SAT sees every lead, an owner only their own. In BOTH cases the badge counts
+    // only enquiries still marked "new": one the owner has already handled must stop
+    // adding to the badge, or the badge never goes down and people stop reading it.
     if (su.isSat) {
-      const { count } = await sb.from("leads").select("id", { count: "exact", head: true });
+      const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).eq("status", "new");
       leadCount = count || 0;
     } else {
       const ids = (mine.data || []).map((x: any) => x.id);
       if (ids.length) {
-        const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids);
+        const { count } = await sb.from("leads").select("id", { count: "exact", head: true }).in("listing_id", ids).eq("status", "new");
         leadCount = count || 0;
         // Only the ones still awaiting a decision. A badge that counts viewings the
         // lister has already answered is a badge that never goes away, and a badge that

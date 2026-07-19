@@ -41,7 +41,6 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  const accountId = su.accountId;
  const rcity = db.riyadh;
  const na = db.na;
- const WEEK = Date.now() - 7 * 86400000;
 
  const sb = getSupabaseServer();
  let mine: any[] = [], districts: any[] = [], acct: any = null;
@@ -59,7 +58,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  let leadRows: any[] = [], viewingRows: any[] = [], briefs: any[] = [];
  if (sb && myIds.length) {
   const [b, v] = await Promise.all([
-   sb.from("leads").select("id,listing_id,contact_name,created_at").in("listing_id", myIds).order("created_at", { ascending: false }).limit(20),
+   sb.from("leads").select("id,listing_id,contact_name,created_at,status").in("listing_id", myIds).order("created_at", { ascending: false }).limit(20),
    sb.from("viewings").select("id,listing_id,contact_name,scheduled_at,created_at").in("listing_id", myIds).eq("status", "requested").order("created_at", { ascending: false }).limit(20),
   ]);
   leadRows = b.data || []; viewingRows = v.data || [];
@@ -78,7 +77,9 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  const withGate = mine.map((l: any) => ({ l, fails: gateFailures(l) }));
  const blocked = withGate.filter(({ l, fails }) => fails.length > 0 && (l.status === "archived" || (l.status === "published" && fails.includes("permit_expired" as GateReason))));
  const paused = withGate.filter(({ l, fails }) => l.status === "archived" && fails.length === 0);
- const freshLeads = leadRows.filter((x: any) => x.created_at && new Date(x.created_at).getTime() >= WEEK);
+ // "New" is now the enquiry's real status, set by the owner, not a guess from its
+ // age. This is what lets the queue and the badge go DOWN when the owner acts.
+ const newLeads = leadRows.filter((x: any) => (x.status || "new") === "new");
 
  // Build the needs-attention queue, most-blocking first.
  const q: QueueItem[] = [];
@@ -109,13 +110,13 @@ export default async function DashboardPage({ params }: { params: { locale: stri
    cta: paused.length === 1 ? (ar ? "إعادة النشر" : "Republish") : (ar ? "عرض العروض" : "View listings"),
    href: paused.length === 1 ? `/${lp}/dashboard/listings/${paused[0].l.id}` : `/${lp}/dashboard/listings` });
  }
- if (freshLeads.length) {
-  const one = freshLeads[0];
+ if (newLeads.length) {
+  const one = newLeads[0];
   const nm = one.contact_name || (ar ? "زائر" : "someone");
   q.push({ key: "enq", tone: "neutral", icon: Icon.inbox,
-   text: freshLeads.length === 1
-    ? (ar ? `استفسار جديد من ${nm}.` : `New enquiry from ${nm}.`)
-    : (ar ? `${freshLeads.length} استفسارات جديدة خلال آخر 7 أيام.` : `${freshLeads.length} new enquiries in the last 7 days.`),
+   text: newLeads.length === 1
+    ? (ar ? `استفسار جديد من ${nm} بانتظار ردّك.` : `New enquiry from ${nm} waiting for a reply.`)
+    : (ar ? `${newLeads.length} استفسارات جديدة بانتظار ردّك.` : `${newLeads.length} new enquiries waiting for a reply.`),
    cta: ar ? "عرض الاستفسارات" : "View enquiries", href: `/${lp}/dashboard/enquiries` });
  }
  if (briefs.length) {
@@ -130,7 +131,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  const titleById = new Map(mine.map((l: any) => [l.id, titleOf(l)]));
  const leads = leadRows.slice(0, 5).map((l: any) => {
   const nm = l.contact_name || db.directEnquiry;
-  const isNew = l.created_at && new Date(l.created_at).getTime() >= WEEK;
+  const isNew = (l.status || "new") === "new";
   return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || db.verifiedListing, time: ago(l.created_at, ar), isNew };
  });
  const matches = briefs.slice(0, 6).map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + db.m2 }));

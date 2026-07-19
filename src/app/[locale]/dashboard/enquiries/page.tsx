@@ -24,7 +24,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
 
   const t = ar ? {
     title: "الاستفسارات", sub: "من تواصلوا معك بشأن مساحاتك",
-    thWho: "المستفسر", thListing: "العرض", thPath: "المسار", thWhen: "وصل",
+    thWho: "المستفسر", thListing: "العرض", thPath: "الحالة", thWhen: "وصل",
     direct: "تواصل مباشر", rep: "طلب تمثيل",
     emptyT: "لا استفسارات بعد",
     emptyB: "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا برسالته وبيانات تواصله كاملة.",
@@ -32,7 +32,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
     anon: "استفسار",
   } : {
     title: "Enquiries", sub: "People who've reached out about your spaces",
-    thWho: "Enquirer", thListing: "Listing", thPath: "Path", thWhen: "Received",
+    thWho: "Enquirer", thListing: "Listing", thPath: "Status", thWhen: "Received",
     direct: "Direct contact", rep: "Representation (discontinued)",
     emptyT: "No enquiries yet",
     emptyB: "When someone reaches out about a listing, you'll find them here, with their message and full contact details.",
@@ -43,12 +43,25 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   // RLS ("owner read own listing leads") already scopes this to the owner's listings;
   // SAT sees all. We do not filter again here, we just render what we are allowed.
   const [{ data: leads }, { data: mine }] = await Promise.all([
-    sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(200),
+    sb.from("leads").select("id,listing_id,path,contact_name,created_at,status").order("created_at", { ascending: false }).limit(200),
     sb.from("listings").select("id").eq("account_id", su.accountId),
   ]);
 
   const mineIds = new Set((mine || []).map((x: any) => x.id));
-  const rows = (leads || []).filter((l: any) => su.isSat || (l.listing_id && mineIds.has(l.listing_id)));
+  const rows = (leads || [])
+    .filter((l: any) => su.isSat || (l.listing_id && mineIds.has(l.listing_id)))
+    // New (unhandled) enquiries rise to the top; within each group, most recent first.
+    .sort((a: any, b: any) => (((b.status || "new") === "new" ? 1 : 0) - ((a.status || "new") === "new" ? 1 : 0)));
+
+  const stLabel = (s: string): { label: string; cls: string } => {
+    switch (s) {
+      case "contacted": return { label: ar ? "تم التواصل" : "In touch", cls: "pend" };
+      case "qualified": return { label: ar ? "مؤهّل" : "Qualified", cls: "pend" };
+      case "converted": return { label: ar ? "مكسوب" : "Won", cls: "ok" };
+      case "closed_lost": return { label: ar ? "مُغلق" : "Closed", cls: "off" };
+      default: return { label: ar ? "جديد" : "New", cls: "warn" };
+    }
+  };
 
   // Resolve titles for the listings actually referenced by the rows we can see. This
   // used to look only at the session's own listings, so a SAT operator, who is allowed
@@ -106,7 +119,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
                         </Link>
                       </td>
                       <td className="muted" style={{ fontSize: 12.5 }}>{titleOf.get(l.listing_id) || ""}</td>
-                      <td className="muted" style={{ fontSize: 12.5 }}>{l.path === "representation" ? t.rep : t.direct}</td>
+                      <td>{(() => { const s = stLabel(l.status || "new"); return <span className={"statusdot " + s.cls} style={{ fontSize: 12 }}>{s.label}</span>; })()}</td>
                       <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(l.created_at)}</td>
                     </tr>
                   );

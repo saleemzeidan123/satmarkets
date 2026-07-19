@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon, Photo } from "@/components/satkit";
+import LeadStatusControl from "@/components/LeadStatusControl";
 
 // The enquiry an owner actually came for. The dashboard listed enquirers by name and
 // then had nowhere to send you: no message, no contact details, no way to reply. An
@@ -115,8 +116,8 @@ export default async function EnquiryPage({ params }: { params: { locale: string
       </div>
 
       <div className="card pad" style={{ marginTop: 16, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.replyT}</div>
-        <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 6, marginBottom: 0 }}>{t.replyB}</p>
+        <LeadStatusControl id={l.id} locale={lp} initial={l.status || "new"} />
+        <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 12, marginBottom: 0, paddingTop: 10, borderTop: "1px solid var(--silver)" }}>{t.replyB}</p>
       </div>
     </div>
   );
