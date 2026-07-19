@@ -30,7 +30,7 @@ export default async function EnquiryPage({ params }: { params: { locale: string
     back: "الاستفسارات", eyebrow: "استفسار",
     about: "بشأن", message: "الرسالة", noMessage: "لم يترك المستفسر رسالة.",
     contact: "بيانات التواصل", email: "البريد", phone: "الهاتف", noPhone: "لم يُقدَّم",
-    path: "المسار", direct: "تواصل مباشر", rep: "طلب تمثيل من سات",
+    path: "المسار", direct: "تواصل مباشر", rep: "طلب تمثيل من سات (خدمة موقوفة)",
     received: "وصل", consent: "الموافقة",
     consentYes: "وافق المستفسر على مشاركة بياناته معك.",
     consentNo: "لا توجد موافقة مسجّلة على هذا الاستفسار.",
