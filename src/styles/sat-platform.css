@@ -225,6 +225,10 @@
 .dside .me .rl{font-size:11px;color:#8A93A0;white-space:nowrap;}
 .dside .me .chev{margin-inline-start:auto;color:#6B7480;font-size:17px;line-height:1;flex:none;}
 [dir="rtl"] .dside .me .chev{transform:scaleX(-1);}
+/* Sign out sits beside the account card as an icon only, so the account name keeps
+   its width instead of truncating to "S...". The button keeps its aria-label. */
+.dside .me>button{flex:none;padding:0;}
+.dside .me>button span{display:none;}
 
 /* Whole dashboard table rows are clickable: the primary cell holds a link that is
    stretched across the row. Action buttons in the row sit above it (z-index) so they

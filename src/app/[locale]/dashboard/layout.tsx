@@ -86,6 +86,7 @@ export default async function DashboardLayout({
             { key: "viewings", label: db.navViewings, href: `/${lp}/dashboard/viewings`, badge: viewingCount || undefined },
             { key: "requirements", label: db.navReqMatches, href: `/${lp}/dashboard/requirements`, badge: reqCount || undefined },
             { key: "account", label: db.navAccount, section: true },
+            { key: "profile", label: ar ? "الملف العام" : "Profile", href: `/${lp}/dashboard/profile` },
             { key: "billing", label: db.navBilling, href: `/${lp}/pricing` },
           ]}
         />

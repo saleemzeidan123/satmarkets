@@ -5,7 +5,7 @@ import { Icon } from "@/components/satkit";
 
 const ICON: Record<string, (p: { size?: number }) => JSX.Element> = {
   overview: Icon.grid, listings: Icon.building, enquiries: Icon.inbox,
-  requirements: Icon.target, billing: Icon.coins,
+  requirements: Icon.target, billing: Icon.coins, profile: Icon.user,
 };
 
 export type NavItem = { key: string; label: string; href?: string; badge?: number; section?: boolean };

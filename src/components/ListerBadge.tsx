@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import type { Lister } from "@/lib/queries/listings";
 
@@ -18,8 +19,9 @@ import type { Lister } from "@/lib/queries/listings";
 // had at launch was a head start on paperwork: it was already verified and already held
 // its FAL licence, so it could list on day one while other brokers were still signing up.
 // First in the queue, not first in the ranking.
-export default function ListerBadge({ lister, ar }: { lister: Lister | null; ar: boolean }) {
+export default function ListerBadge({ lister, ar, locale }: { lister: Lister | null; ar: boolean; locale?: string }) {
   if (!lister) return null;
+  const lp = locale || (ar ? "ar" : "en");
 
   const name = (ar ? lister.name_ar : lister.name_en) || lister.name_en || lister.name_ar;
   if (!name) return null;
@@ -36,7 +38,7 @@ export default function ListerBadge({ lister, ar }: { lister: Lister | null; ar:
       </div>
 
       <div className="row gap8 wrap" style={{ alignItems: "center" }}>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>{name}</span>
+        <Link href={`/${lp}/lister/${lister.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
         <span className="tag">{role}</span>
         {lister.is_verified && (
           <span className="verified"><span className="dot" />{ar ? "موثّق" : "Verified"}</span>
