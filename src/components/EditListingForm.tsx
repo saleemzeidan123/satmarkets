@@ -1,10 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 
-// The owner's self-serve editor for a listing. Scoped to the fields an owner may
-// safely change; the licence and verification live elsewhere and are read-only. On
-// save it PATCHes and refreshes, so the change is visible immediately.
+// The owner's self-serve editor for a listing. It covers the fields an owner may
+// safely change: the headline, description, size, price, contact routing, AND the
+// full per-asset registry of property details (grade, fit-out, clear height,
+// compliance flags, and so on), rendered from the same registry the create form
+// uses and validated server-side by the same pipeline. The licence and verification
+// live elsewhere and are read-only. On save it PATCHes and refreshes.
+//
+// The registry renderer here is a deliberate sibling of NewListingForm's: same
+// registry, same field types, dashboard styling instead of the intake form's.
 type Init = {
   title_en: string;
   description_en: string;
@@ -16,10 +23,25 @@ type Init = {
   contact_channels: string[];
 };
 
-export default function EditListingForm({ id, locale, init }: { id: string; locale: string; init: Init }) {
+// These are captured by the base fields (Size / Asking or Sale price) so the
+// per-asset registry section never shows them a second time.
+const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
+const SECTION_ORDER: DisplaySection[] = ["space", "commercial", "compliance"];
+const sectionLabel = (s: DisplaySection, ar: boolean): string => {
+  if (s === "commercial") return ar ? "الشروط التجارية" : "Commercial terms";
+  if (s === "compliance") return ar ? "الامتثال والتصاريح" : "Compliance and permits";
+  return ar ? "المساحة" : "The space";
+};
+
+export default function EditListingForm({
+  id, locale, assetType, init, initAttrs,
+}: {
+  id: string; locale: string; assetType: string; init: Init; initAttrs: Record<string, unknown>;
+}) {
   const ar = locale === "ar";
   const router = useRouter();
   const [f, setF] = useState<Init>(init);
+  const [attrs, setAttrs] = useState<Record<string, unknown>>(initAttrs);
   const [ch, setCh] = useState<Record<string, boolean>>({
     whatsapp: init.contact_channels.includes("whatsapp"),
     call: init.contact_channels.includes("call"),
@@ -29,27 +51,95 @@ export default function EditListingForm({ id, locale, init }: { id: string; loca
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (k: keyof Init, v: string) => setF((p) => ({ ...p, [k]: v }));
+  const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
 
   const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: 13.5, color: "var(--ink)", background: "#fff", fontFamily: "var(--sans)" };
   const lbl: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
+  const hint: React.CSSProperties = { fontSize: 11, color: "var(--slate)", marginTop: 4, opacity: 0.8 };
 
   const t = ar ? {
     title: "العنوان", desc: "الوصف", area: "المساحة (م²)",
     price: init.deal_type === "lease" ? "الإيجار المطلوب (ريال/م²·سنة)" : "سعر البيع (ريال)",
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
+    details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
+    statedNote: "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات.",
+    missing: "أكمل الحقول المطلوبة: ",
     chLabels: { whatsapp: "واتساب", call: "اتصال", email: "بريد", message: "رسالة عبر سات" } as Record<string, string>,
   } : {
     title: "Title", desc: "Description", area: "Size (m²)",
     price: init.deal_type === "lease" ? "Asking rent (SAR/m²·yr)" : "Sale price (SAR)",
     phone: "Contact phone", email: "Contact email", channels: "How people reach you",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
+    details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",
+    statedNote: "Everything you enter shows as stated by the lister until SAT verifies it.",
+    missing: "Please complete the required fields: ",
     chLabels: { whatsapp: "WhatsApp", call: "Call", email: "Email", message: "Message on SAT" } as Record<string, string>,
   };
 
+  function renderField(field: AssetField) {
+    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "") + (field.required ? " *" : "");
+    const help = ar ? field.help_ar : field.help_en;
+    const val = attrs[field.key];
+    if (field.type === "boolean") {
+      return (
+        <label key={field.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer" }}>
+          <input type="checkbox" checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
+          <span>{ar ? field.label_ar : field.label_en}</span>
+        </label>
+      );
+    }
+    if (field.type === "tristate") {
+      return (
+        <div key={field.key}>
+          <label style={lbl}>{label}</label>
+          <select style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
+            <option value="">{t.notSpec}</option>
+            <option value="yes">{t.yes}</option>
+            <option value="no">{t.no}</option>
+          </select>
+          {help && <p style={hint}>{help}</p>}
+        </div>
+      );
+    }
+    if (field.type === "enum") {
+      const opts = field.validation?.enum ?? [];
+      return (
+        <div key={field.key}>
+          <label style={lbl}>{label}</label>
+          <select style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
+            <option value="">{t.choose}</option>
+            {opts.map((o) => <option key={o} value={o}>{field.options?.[o]?.[ar ? 1 : 0] ?? o.replace(/_/g, " ")}</option>)}
+          </select>
+          {help && <p style={hint}>{help}</p>}
+        </div>
+      );
+    }
+    const numeric = field.type === "number" || field.type === "integer" || field.type === "money";
+    return (
+      <div key={field.key}>
+        <label style={lbl}>{label}</label>
+        <input style={inp} type={numeric ? "number" : "text"} step={numeric ? "any" : undefined} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} placeholder={ar ? field.label_ar : field.label_en} />
+        {help && <p style={hint}>{help}</p>}
+      </div>
+    );
+  }
+
+  const perAsset = intakeFields(assetType).filter((x) => !BASE_OWNED.has(x.key));
+
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true); setMsg(null);
+    setMsg(null);
+    // Pre-flight the required per-asset fields so the owner sees which are missing
+    // rather than a generic server rejection. The server remains authoritative.
+    const missing = perAsset.filter(
+      (x) => x.required && (attrs[x.key] === undefined || attrs[x.key] === "" || attrs[x.key] === null),
+    );
+    if (missing.length) {
+      setMsg({ ok: false, text: t.missing + missing.map((x) => (ar ? x.label_ar : x.label_en)).join(ar ? "، " : ", ") });
+      return;
+    }
+    setBusy(true);
     try {
       const res = await fetch(`/api/listings/${id}`, {
         method: "PATCH",
@@ -62,6 +152,7 @@ export default function EditListingForm({ id, locale, init }: { id: string; loca
           contact_phone: f.contact_phone,
           contact_email: f.contact_email,
           contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
+          attributes: attrs,
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -94,6 +185,32 @@ export default function EditListingForm({ id, locale, init }: { id: string; loca
           <input style={inp} type="number" step="any" value={f.price} onChange={(e) => set("price", e.target.value)} />
         </div>
       </div>
+
+      {hasRegistry(assetType) && perAsset.length > 0 && (
+        <div style={{ border: "1px solid var(--silver)", borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 16, background: "var(--paper)" }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)" }}>{t.details}</div>
+          {SECTION_ORDER.map((sec) => {
+            const fields = perAsset.filter((x) => x.section === sec);
+            if (fields.length === 0) return null;
+            const lead = fields.filter((x) => x.show_rule === "always" || x.required);
+            const more = fields.filter((x) => x.show_rule !== "always" && !x.required);
+            return (
+              <div key={sec} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--slate)", opacity: 0.8 }}>{sectionLabel(sec, ar)}</div>
+                {lead.map(renderField)}
+                {more.length > 0 && (
+                  <details style={{ border: "1px solid var(--silver)", borderRadius: 8, padding: "8px 11px" }}>
+                    <summary style={{ fontSize: 12.5, color: "var(--slate)", cursor: "pointer" }}>{t.more}</summary>
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>{more.map(renderField)}</div>
+                  </details>
+                )}
+              </div>
+            );
+          })}
+          <p style={hint}>{t.statedNote}</p>
+        </div>
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
           <label style={lbl}>{t.phone}</label>

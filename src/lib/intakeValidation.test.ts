@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { coerceAndValidateAttributes } from "./intakeValidation";
+import { coerceAndValidateAttributes, editedAttributesJson } from "./intakeValidation";
 
 // The minimal required baseline per asset (see assetFields required flags). Tests
 // that are NOT about required-ness merge this in so a missing-required error does
@@ -143,6 +143,40 @@ test("a present-but-invalid required field reports its validation error, not 'is
   const r = coerceAndValidateAttributes("warehouse", { clear_height_m: "999" }); // max 40
   const e = r.errors.find((x) => x.key === "clear_height_m");
   assert.equal(e?.message, "must be at most 40");
+});
+
+// ---- EDIT merge (editedAttributesJson): the owner re-save path ----
+
+test("edit merge replaces registry attribute keys with the newly coerced set", () => {
+  const existing = { floor_level: 3, hvac_type: "old" };
+  const coerced = coerceAndValidateAttributes("office", { building_grade: "a", fitout_condition: "fitted", floor_level: "9", hvac_type: "VAV central" }).attributes;
+  const next = editedAttributesJson("office", existing, coerced);
+  assert.equal(next.floor_level, 9);          // updated
+  assert.equal(next.hvac_type, "VAV central"); // updated
+});
+
+test("edit merge DROPS a registry field the owner cleared (no lingering stale value)", () => {
+  const existing = { floor_level: 3, hvac_type: "VAV" };
+  // The owner cleared hvac_type; the full re-submit omits it, so coerced has no hvac_type.
+  const coerced = coerceAndValidateAttributes("office", { building_grade: "a", fitout_condition: "fitted", floor_level: "3", hvac_type: "" }).attributes;
+  const next = editedAttributesJson("office", existing, coerced);
+  assert.equal(next.hvac_type, undefined, "cleared field must disappear, not persist");
+  assert.equal(next.floor_level, 3);
+});
+
+test("edit merge preserves non-registry keys that already sit in the blob", () => {
+  const existing = { floor_level: 3, legacy_note: "kept" }; // legacy_note is not a registry key
+  const coerced = coerceAndValidateAttributes("office", { building_grade: "a", fitout_condition: "fitted", floor_level: "5" }).attributes;
+  const next = editedAttributesJson("office", existing, coerced);
+  assert.equal(next.legacy_note, "kept", "unknown pre-existing keys are preserved, not wiped");
+  assert.equal(next.floor_level, 5);
+});
+
+test("edit merge never writes a column-backed field into the blob", () => {
+  const coerced = coerceAndValidateAttributes("office", { building_grade: "a", fitout_condition: "fitted", floor_level: "5" }).attributes;
+  const next = editedAttributesJson("office", {}, coerced);
+  assert.equal((next as any).building_grade, undefined);
+  assert.equal((next as any).fitout_condition, undefined);
 });
 
 test("tristate stores yes/no explicitly; unknown or empty is omitted (never a silent no)", () => {

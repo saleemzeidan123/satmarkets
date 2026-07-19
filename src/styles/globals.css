@@ -199,8 +199,9 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   .tabs .t{padding:14px 16px;min-height:44px;}
   /* Interactive buttons must clear 44px on touch; base padding leaves them ~34px. */
   .btn, .btn.sm{min-height:44px;}
-  /* Icon-only affordances that carry an action. */
-  .icon-btn, .iconbtn, button.icononly, .fab{min-height:44px;min-width:44px;}
+  /* Icon-only affordances that carry an action. .vtool controls were the one set
+     the earlier pass missed, so they stayed 36px on touch. */
+  .icon-btn, .iconbtn, button.icononly, .fab, .vtool span{min-height:44px;min-width:44px;}
 }
 
 /* ---- Hero asset tiles: swipeable one-line rail on mobile, centered wrap on desktop ---- */

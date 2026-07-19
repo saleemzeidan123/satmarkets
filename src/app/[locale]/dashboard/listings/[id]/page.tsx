@@ -8,6 +8,9 @@ import { Icon } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
 import EditListingForm from "@/components/EditListingForm";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
+import { intakeFields } from "@/lib/assetFields";
+
+const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 
 // The owner's manage page for one listing: status and actions at the top, a
 // self-serve editor for the fields they control, and the licence and verification
@@ -26,15 +29,30 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   const sb = getSupabaseServer();
   if (!sb) notFound();
 
+  // The owner's own row: select everything so the per-asset registry can read its
+  // column-backed values (grade, fit-out, clear height, and so on) alongside the
+  // jsonb attributes, without enumerating 15 asset types' worth of columns here.
   const { data: l } = await sb
     .from("listings")
-    .select("id,account_id,title_en,title_ar,description_en,asset_type,deal_type,status,area_sqm,asking_rent_sqm,sale_price,contact_phone,contact_email,contact_channels,ownership_verified,authorization_verified,is_sat_listed,ad_permit_no,ad_permit_number,ad_permit_expires_at,right_to_market_confirmed")
+    .select("*")
     .eq("id", params.id)
     .single();
   if (!l) notFound();
   if ((l as any).account_id !== su.accountId) notFound(); // not yours: do not confirm it exists
 
   const L: any = l;
+
+  // Seed the editor's per-asset fields from the listing's current state: a
+  // column-backed field reads its column, everything else reads the attributes blob.
+  // Booleans stay boolean; every other type becomes a string for the inputs.
+  const existingAttrs: Record<string, unknown> = (L.attributes && typeof L.attributes === "object") ? L.attributes : {};
+  const initAttrs: Record<string, unknown> = {};
+  for (const field of intakeFields(L.asset_type)) {
+    if (BASE_OWNED.has(field.key)) continue;
+    const raw = field.column ? L[field.column] : existingAttrs[field.key];
+    if (raw === null || raw === undefined) { initAttrs[field.key] = field.type === "boolean" ? false : ""; continue; }
+    initAttrs[field.key] = field.type === "boolean" ? raw === true : String(raw);
+  }
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
     lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدَّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
@@ -80,6 +98,8 @@ export default async function ManageListingPage({ params }: { params: { locale: 
         <EditListingForm
           id={L.id}
           locale={lp}
+          assetType={L.asset_type}
+          initAttrs={initAttrs}
           init={{
             title_en: L.title_en || "",
             description_en: L.description_en || "",

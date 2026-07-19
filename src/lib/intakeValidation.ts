@@ -119,3 +119,24 @@ export function coerceAndValidateAttributes(
 
   return { attributes, columns, errors };
 }
+
+// EDIT path. When an owner re-saves a listing, the form sends the full set of
+// registry field values for that asset type, so `coerced` is the complete desired
+// state of every registry-owned attribute. We replace ALL registry attribute keys
+// with the coerced set (so a field the owner cleared actually disappears rather than
+// lingering), while preserving any non-registry keys that may already sit in the
+// jsonb. It never invents keys and never writes a column-backed value into the blob.
+export function editedAttributesJson(
+  assetType: string,
+  existing: Record<string, unknown> | null | undefined,
+  coercedAttributes: Record<string, unknown>,
+): Record<string, unknown> {
+  const registryAttrKeys = new Set(
+    intakeFields(assetType).filter((f) => !f.column).map((f) => f.key),
+  );
+  const preserved: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(existing ?? {})) {
+    if (!registryAttrKeys.has(k)) preserved[k] = v;
+  }
+  return { ...preserved, ...coercedAttributes };
+}
