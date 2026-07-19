@@ -5,19 +5,17 @@ import { getSessionUser } from "@/lib/auth/session";
 import { Icon, Photo } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
+import { gateFailures, gateReasonText, type GateReason } from "@/lib/gate";
 
-function KCard({ icon: I, tone, v, l, delta, dir }: { icon: (p: { size?: number }) => JSX.Element; tone?: string; v: string; l: string; delta?: string; dir?: string }) {
- return (
-  <div className="kcard">
-   <div className="top">
-    <span className={"ic" + (tone ? " " + tone : "")}><I size={18} /></span>
-    {delta && <span className={"delta " + (dir || "")}>{dir === "up" ? "▲ " : dir === "down" ? "▼ " : ""}{delta}</span>}
-   </div>
-   <div className="v tnum">{v}</div>
-   <div className="l">{l}</div>
-  </div>
- );
-}
+// The owner Overview answers ONE question they sign in with: "did anything happen,
+// and what needs me?" So it leads with a needs-attention queue (Fable 5 consult):
+// one row per job, most-blocking first, each collapsed to a single line and a single
+// action. Vanity counts (enquiries/requirements/listings totals) are gone: they told
+// the owner how big their account is, which nobody asks. Below the queue sits the
+// activity and the inventory. Never a metric we do not truly measure: no views, no
+// saves, and "new" means the last 7 days, not a fabricated "since your last visit".
+export const dynamic = "force-dynamic";
+
 function EmptyState({ title, body, cta, href }: { title: string; body: string; cta?: string; href?: string }) {
  return (
   <div style={{ padding: "22px 20px 24px" }}>
@@ -30,6 +28,8 @@ function EmptyState({ title, body, cta, href }: { title: string; body: string; c
 function ago(d: string, ar: boolean) { const s = (Date.now() - new Date(d).getTime()) / 1000; if (s < 3600) { const n = Math.max(1, Math.round(s / 60)); return ar ? `منذ ${n} د` : n + "m ago"; } if (s < 86400) { const n = Math.round(s / 3600); return ar ? `منذ ${n} س` : n + "h ago"; } const n = Math.round(s / 86400); return ar ? `منذ ${n} ي` : n + "d ago"; }
 const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
+type QueueItem = { key: string; tone: "warn" | "neutral"; icon: (p: { size?: number }) => JSX.Element; text: string; cta: string; href: string };
+
 export default async function DashboardPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const lp = params.locale;
@@ -39,147 +39,214 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  if (!su) redirect(`/${lp}/login`);
  if (!su.accountId) redirect(`/${lp}`);
  const accountId = su.accountId;
- let acctName = su.email || (db.acctNameFallback);
- let acctRole = db.acctRoleFallback;
  const rcity = db.riyadh;
  const na = db.na;
+ const WEEK = Date.now() - 7 * 86400000;
 
  const sb = getSupabaseServer();
- let pub: any[] = [], leadRows: any[] = [], briefs: any[] = [], districts: any[] = [], pubCount = 0;
+ let mine: any[] = [], districts: any[] = [], acct: any = null;
  if (sb) {
-  const [a, b, c, d, e, f] = await Promise.all([
-   sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm").eq("status", "published").eq("account_id", accountId).limit(50),
-   sb.from("leads").select("id,listing_id,path,contact_name,created_at").order("created_at", { ascending: false }).limit(20),
-   sb.from("tenant_briefs").select("id,title,title_ar,asset_type,size_min_sqm,size_max_sqm,district_id,city,ref_code").eq("status", "open").limit(6),
+  const [a, d, f] = await Promise.all([
+   sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm,status,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at").eq("account_id", accountId).limit(100),
    sb.from("districts").select("id,name_en,name_ar"),
-   sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published").eq("account_id", accountId),
    sb.from("accounts").select("name_en,name_ar,type,verification_status").eq("id", accountId).maybeSingle(),
   ]);
-  pub = a.data || []; leadRows = b.data || []; briefs = c.data || []; districts = d.data || []; pubCount = e.count || pub.length;
-  leadRows = leadRows.filter((l: any) => pub.some((x: any) => x.id === l.listing_id));
-  const acct: any = f.data;
-  if (acct) {
-   acctName = (ar ? acct.name_ar : acct.name_en) || acct.name_en || acctName;
-   acctRole = acct.type === "sat" ? (ar ? "فريق سات" : "SAT team") : (acct.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner"));
-  }
+  mine = a.data || []; districts = d.data || []; acct = f.data;
  }
- // Honest states, written as content rather than as an apology.
- const es = ar ? {
-  enqT: "لا استفسارات بعد",
-  enqB: "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا ببياناته وسجلّ محادثتك كاملاً.",
-  enqC: "اعرض عروضك",
-  reqT: "لا طلبات مطابقة الآن",
-  reqB: "عندما يُدرج مستأجر طلباً يطابق نوع أصولك وموقعك، سيظهر هنا لتتقدّم إليه.",
-  reqC: "تصفّح كل الطلبات",
-  lstT: "لا عروض منشورة",
-  lstB: "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض.",
-  lstC: "أدرج مساحة",
-  perf: "الأداء",
-  perfNote: "لم نبدأ بعد بقياس المشاهدات والحفظ. سيظهر ذلك بعد الإطلاق.",
- } : {
-  enqT: "No enquiries yet",
-  enqB: "When someone reaches out about a listing, you'll find them here, with their details and your full conversation.",
-  enqC: "View your listings",
-  reqT: "No matching requirements right now",
-  reqB: "When an occupier posts a requirement that matches your asset type and location, it appears here for you to pitch.",
-  reqC: "Browse all requirements",
-  lstT: "No published listings",
-  lstB: "List your first space and it starts reaching occupiers searching in Riyadh.",
-  lstC: "List a space",
-  perf: "Performance",
-  perfNote: "Views and saves aren't tracked yet; that goes live at launch. Everything you see here is real.",
- };
- const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
- const titleById = new Map(pub.map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
- const enq = new Map<string, number>();
- leadRows.forEach((l: any) => { if (l.listing_id) enq.set(l.listing_id, (enq.get(l.listing_id) || 0) + 1); });
+ const myIds = mine.map((l: any) => l.id);
+ const myAssets = Array.from(new Set(mine.map((l: any) => l.asset_type)));
 
- const listings = pub.map((l: any) => {
-  const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
-  return {
-   title: (ar ? l.title_ar : l.title_en) || l.title_en, place: (dmap.get(l.district_id) || rcity) + " · " + (l.area_sqm ? l.area_sqm + (db.m2) : na),
-   asset: l.asset_type, rent: rent ? Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? (db.sarSqm) : (db.sar)) : (db.onRequest),
-   views: null as number | null, saves: null as number | null, enq: enq.get(l.id) || 0,
-  };
- });
+ let leadRows: any[] = [], viewingRows: any[] = [], briefs: any[] = [];
+ if (sb && myIds.length) {
+  const [b, v] = await Promise.all([
+   sb.from("leads").select("id,listing_id,contact_name,created_at").in("listing_id", myIds).order("created_at", { ascending: false }).limit(20),
+   sb.from("viewings").select("id,listing_id,contact_name,scheduled_at,created_at").in("listing_id", myIds).eq("status", "requested").order("created_at", { ascending: false }).limit(20),
+  ]);
+  leadRows = b.data || []; viewingRows = v.data || [];
+ }
+ if (sb && myAssets.length) {
+  const c = await sb.from("tenant_briefs").select("id,title,title_ar,asset_type,size_min_sqm,size_max_sqm,district_id,city").eq("status", "open").in("asset_type", myAssets).limit(12);
+  briefs = c.data || [];
+ }
+
+ const isSat = acct?.type === "sat";
+ const verified = acct?.verification_status === "verified" || isSat;
+ const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
+ const titleOf = (l: any) => (ar ? l.title_ar : l.title_en) || l.title_en || (ar ? "عرض" : "listing");
+
+ // Per-listing derivation: paused vs blocked vs live.
+ const withGate = mine.map((l: any) => ({ l, fails: gateFailures(l) }));
+ const blocked = withGate.filter(({ l, fails }) => fails.length > 0 && (l.status === "archived" || (l.status === "published" && fails.includes("permit_expired" as GateReason))));
+ const paused = withGate.filter(({ l, fails }) => l.status === "archived" && fails.length === 0);
+ const freshLeads = leadRows.filter((x: any) => x.created_at && new Date(x.created_at).getTime() >= WEEK);
+
+ // Build the needs-attention queue, most-blocking first.
+ const q: QueueItem[] = [];
+ if (!verified) {
+  q.push({ key: "verify", tone: "warn", icon: Icon.check,
+   text: ar ? "حسابك غير موثّق بعد. الملاك الموثّقون يحصلون على ردود أكثر." : "Your account is not verified yet. Verified owners get more replies.",
+   cta: ar ? "الملف والتوثيق" : "View profile", href: `/${lp}/dashboard/profile` });
+ }
+ if (viewingRows.length) {
+  const one = viewingRows[0];
+  const nm = one.contact_name || (ar ? "زائر" : "someone");
+  q.push({ key: "viewings", tone: "warn", icon: Icon.check,
+   text: viewingRows.length === 1
+    ? (ar ? `طلب ${nm} معاينة لـ ` : `${nm} requested a viewing for `) + (titleOf(mine.find((l:any)=>l.id===one.listing_id) || {}))
+    : (ar ? `${viewingRows.length} طلبات معاينة بانتظار ردّك.` : `${viewingRows.length} viewing requests waiting for your reply.`),
+   cta: viewingRows.length === 1 ? (ar ? "مراجعة" : "Review") : (ar ? "مراجعة الطلبات" : "Review requests"), href: `/${lp}/dashboard/viewings` });
+ }
+ for (const { l, fails } of blocked.slice(0, 3)) {
+  q.push({ key: "blocked-" + l.id, tone: "warn", icon: Icon.info,
+   text: (ar ? "غير منشور: " : "Offline: ") + titleOf(l) + " · " + gateReasonText(fails[0], ar),
+   cta: ar ? "إصلاح العرض" : "Fix listing", href: `/${lp}/dashboard/listings/${l.id}` });
+ }
+ if (paused.length) {
+  q.push({ key: "paused", tone: "neutral", icon: Icon.building,
+   text: paused.length === 1
+    ? titleOf(paused[0].l) + (ar ? " موقوف ولا يظهر للمستأجرين." : " is paused and not visible to tenants.")
+    : (ar ? `${paused.length} عروض موقوفة لا تظهر للمستأجرين.` : `${paused.length} listings are paused and not visible.`),
+   cta: paused.length === 1 ? (ar ? "إعادة النشر" : "Republish") : (ar ? "عرض العروض" : "View listings"),
+   href: paused.length === 1 ? `/${lp}/dashboard/listings/${paused[0].l.id}` : `/${lp}/dashboard/listings` });
+ }
+ if (freshLeads.length) {
+  const one = freshLeads[0];
+  const nm = one.contact_name || (ar ? "زائر" : "someone");
+  q.push({ key: "enq", tone: "neutral", icon: Icon.inbox,
+   text: freshLeads.length === 1
+    ? (ar ? `استفسار جديد من ${nm}.` : `New enquiry from ${nm}.`)
+    : (ar ? `${freshLeads.length} استفسارات جديدة خلال آخر 7 أيام.` : `${freshLeads.length} new enquiries in the last 7 days.`),
+   cta: ar ? "عرض الاستفسارات" : "View enquiries", href: `/${lp}/dashboard/enquiries` });
+ }
+ if (briefs.length) {
+  q.push({ key: "matches", tone: "neutral", icon: Icon.target,
+   text: briefs.length === 1
+    ? (ar ? "مستأجر يبحث عن مساحة تطابق نوع أصولك." : "A tenant is looking for space that fits your listings.")
+    : (ar ? `${briefs.length} طلبات مستأجرين تطابق عروضك.` : `${briefs.length} tenant requirements match your listings.`),
+   cta: ar ? "التقديم" : "Pitch", href: `/${lp}/dashboard/requirements` });
+ }
+
+ // Body data.
+ const titleById = new Map(mine.map((l: any) => [l.id, titleOf(l)]));
  const leads = leadRows.slice(0, 5).map((l: any) => {
   const nm = l.contact_name || db.directEnquiry;
-  return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || (db.verifiedListing), time: ago(l.created_at, ar), status: "new" };
+  const isNew = l.created_at && new Date(l.created_at).getTime() >= WEEK;
+  return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || db.verifiedListing, time: ago(l.created_at, ar), isNew };
  });
- // Arabic parity: prefer the Arabic title on /ar, and keep the number+unit run
- // LTR so "320 m2" does not render as "m2 320" inside an RTL paragraph.
- const matches = briefs.map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + (db.m2) }));
+ const matches = briefs.slice(0, 6).map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + db.m2 }));
+
+ const statusPill = (l: any, fails: GateReason[]): { label: string; cls: string } => {
+  const isBlocked = fails.length > 0 && (l.status === "archived" || (l.status === "published" && fails.includes("permit_expired" as GateReason)));
+  if (isBlocked) return { label: ar ? "غير منشور" : "Offline", cls: "warn" };
+  switch (l.status) {
+   case "published": return { label: db.statusLive, cls: "ok" };
+   case "archived": return { label: ar ? "موقوف" : "Paused", cls: "pend" };
+   case "pending_review": return { label: ar ? "قيد المراجعة" : "In review", cls: "pend" };
+   case "approved": return { label: ar ? "معتمد" : "Approved", cls: "pend" };
+   case "rejected": return { label: ar ? "مرفوض" : "Rejected", cls: "warn" };
+   default: return { label: ar ? "مسودة" : "Draft", cls: "pend" };
+  }
+ };
+ const listRows = withGate.map(({ l, fails }) => {
+  const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+  return {
+   id: l.id, title: titleOf(l), asset: l.asset_type,
+   place: (dmap.get(l.district_id) || rcity) + " · " + (l.area_sqm ? l.area_sqm + db.m2 : na),
+   rent: rent ? Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : db.onRequest,
+   pill: statusPill(l, fails),
+  };
+ });
+
+ const caughtUp = ar
+  ? { t: "كل شيء على ما يرام.", b: "لا طلبات معاينة، ولا استفسارات جديدة، وكل عروضك تعمل." }
+  : { t: "You're all caught up.", b: "No viewing requests, no new enquiries, and all your listings are live." };
 
  return (
   <>
-     <div className="kgrid">
-      <KCard icon={Icon.inbox} v={String(leadRows.length)} l={db.kEnquiries} dir="up" />
-      <KCard icon={Icon.target} tone="a" v={String(matches.length)} l={db.kOpenReq} />
-      <KCard icon={Icon.building} tone="h" v={String(pubCount)} l={db.kActiveListings} />
+   {/* NEEDS ATTENTION. The whole top of the page, derived from real signals. */}
+   <div className="dpanel" style={{ overflow: "hidden" }}>
+    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{ar ? "يحتاج انتباهك" : "Needs your attention"}</span></div>
+    {q.length === 0 ? (
+     <div style={{ padding: "20px" }}>
+      <div style={{ fontSize: 14, fontWeight: 700 }}>{caughtUp.t}</div>
+      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{caughtUp.b}</div>
+      <Link href={`/${lp}/list`} className="btn secondary sm" style={{ marginTop: 12 }}><Icon.plus size={14} /> {ar ? "أدرج مساحة" : "Add a listing"}</Link>
      </div>
+    ) : (
+     <div>
+      {q.map((it) => {
+       const I = it.icon;
+       return (
+        <div key={it.key} className="row between" style={{ gap: 12, padding: "13px 16px", borderTop: "1px solid var(--silver)", borderInlineStart: `3px solid ${it.tone === "warn" ? "#B26B00" : "var(--harbor)"}`, alignItems: "center" }}>
+         <div className="row gap10" style={{ alignItems: "center", minWidth: 0 }}>
+          <span style={{ color: it.tone === "warn" ? "#B26B00" : "var(--harbor)", display: "inline-flex", flex: "none" }}><I size={16} /></span>
+          <span style={{ fontSize: 13, lineHeight: 1.45, minWidth: 0 }}><bdi>{it.text}</bdi></span>
+         </div>
+         <Link href={it.href} className="btn secondary sm" style={{ flex: "none", whiteSpace: "nowrap" }}>{it.cta}</Link>
+        </div>
+       );
+      })}
+     </div>
+    )}
+   </div>
 
-     {/* Activity leads. An owner signs in to ask "did anything happen?", so the two
-         panels that can answer that (enquiries, requirement matches) come first.
-         Inventory is reference, and sits below. */}
-     <div className="dash-2col">
-      <div className="dpanel">
-       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/dashboard/enquiries`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
-       {leads.length === 0
-        ? <EmptyState title={es.enqT} body={es.enqB} cta={es.enqC} href={`/${lp}/listings`} />
-        : leads.map((l, i) => (
-         <Link key={l.id} href={`/${lp}/dashboard/enquiries/${l.id}`} className="lead-item" style={{ color: "inherit" }}>
-          <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
-          <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{l.name}</div><div className="muted" style={{ fontSize: 11.5 }}>{l.listing}</div></div>
-          <div style={{ textAlign: ar ? "left" : "right" }}>
-           <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
-           <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>
-          </div>
-         </Link>
+   {/* Recent enquiries: the owner's core inbox feeling. */}
+   <div className="dpanel" style={{ marginTop: 18 }}>
+    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/dashboard/enquiries`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+    {leads.length === 0
+     ? <EmptyState title={ar ? "لا استفسارات بعد" : "No enquiries yet"} body={ar ? "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا ببياناته وسجلّ محادثتك." : "When someone reaches out about a listing, you'll find them here with their details and your full conversation."} cta={db.navMyListings} href={`/${lp}/dashboard/listings`} />
+     : leads.map((l, i) => (
+      <Link key={l.id} href={`/${lp}/dashboard/enquiries/${l.id}`} className="lead-item" style={{ color: "inherit" }}>
+       <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
+       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}><bdi>{l.name}</bdi></div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{l.listing}</bdi></div></div>
+       <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}>
+        <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
+        {l.isNew && <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>}
+       </div>
+      </Link>
+     ))}
+   </div>
+
+   {/* Inventory, promoted. Status is now load-bearing (it feeds the queue), so it is a real pill. */}
+   <div className="dpanel" style={{ marginTop: 18 }}>
+    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} />{listRows.length > 0 && <Link href={`/${lp}/dashboard/listings`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+    {listRows.length === 0 ? <EmptyState title={ar ? "لا عروض بعد" : "No listings yet"} body={ar ? "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض." : "List your first space and it starts reaching occupiers searching in Riyadh."} cta={ar ? "أدرج مساحة" : "List a space"} href={`/${lp}/list`} /> : (
+     <div style={{ overflowX: "auto" }}>
+      <table className="dt" style={{ minWidth: 460 }}>
+       <thead><tr><th>{db.thListing}</th><th style={{ textAlign: ar ? "left" : "right" }}>{db.thStatus}</th></tr></thead>
+       <tbody>
+        {listRows.map((l) => (
+         <tr key={l.id} style={{ position: "relative" }}>
+          <td>
+           <div className="row gap10">
+            <Photo kind={l.asset} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
+            <div style={{ minWidth: 0 }}><Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, textDecoration: "none", color: "inherit" }}>{l.title}</Link><div className="mono muted" style={{ fontSize: 11 }}><bdi>{l.place} · {l.rent}</bdi></div></div>
+           </div>
+          </td>
+          <td className="num"><span className={"statusdot " + l.pill.cls}>{l.pill.label}</span></td>
+         </tr>
         ))}
-      </div>
-
-      <div className="dpanel">
-       <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span><span className="t">{db.navReqMatches}</span></div>
-       <div style={{ padding: matches.length ? "6px 0" : 0 }}>
-        {matches.length === 0
-         ? <EmptyState title={es.reqT} body={es.reqB} cta={es.reqC} href={`/${lp}/requirements`} />
-         : matches.map((r, i) => (
-          <div key={i} className="lead-item">
-           <span className="queue-ic"><Icon.doc size={16} /></span>
-           <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
-           <Link href={`/${lp}/dashboard/requirements`} className="btn secondary sm">{db.pitch}</Link>
-          </div>
-         ))}
-       </div>
-      </div>
+       </tbody>
+      </table>
      </div>
+    )}
+   </div>
 
-     {/* Inventory. Views and saves columns are gone: nothing measures them yet, and a
-         column of "n/a" set in display mono reads as a metric. It is not one. */}
-     <div className="dpanel" style={{ marginTop: 18 }}>
-      <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} /><Link href={`/${lp}/dashboard/listings`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link></div>
-      {listings.length === 0 ? <EmptyState title={es.lstT} body={es.lstB} cta={es.lstC} href={`/${lp}/list`} /> : (
-       <div style={{ overflowX: "auto" }}>
-        <table className="dt" style={{ minWidth: 460 }}>
-         <thead><tr><th>{db.thListing}</th><th style={{ textAlign: "right" }}>{db.navEnquiries}</th><th style={{ textAlign: "right" }}>{db.thStatus}</th></tr></thead>
-         <tbody>
-          {listings.map((l, i) => (
-           <tr key={i}>
-            <td>
-             <div className="row gap10">
-              <Photo kind={l.asset} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
-              <div><div style={{ fontWeight: 600, fontSize: 13 }}>{l.title}</div><div className="mono muted" style={{ fontSize: 11 }}><bdi>{l.place} · {l.rent}</bdi></div></div>
-             </div>
-            </td>
-            <td className="num mono" style={{ fontWeight: 600, color: l.enq ? "var(--ink)" : "var(--slate-2)" }}>{l.enq}</td>
-            <td className="num"><span className="statusdot ok">{db.statusLive}</span></td>
-           </tr>
-          ))}
-         </tbody>
-        </table>
+   {/* Requirement matches: prospecting, so it sits last. */}
+   {matches.length > 0 && (
+    <div className="dpanel" style={{ marginTop: 18 }}>
+     <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span><span className="t">{db.navReqMatches}</span></div>
+     <div style={{ padding: "6px 0" }}>
+      {matches.map((r, i) => (
+       <div key={i} className="lead-item">
+        <span className="queue-ic"><Icon.doc size={16} /></span>
+        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}><bdi>{r.title}</bdi></div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
+        <Link href={`/${lp}/dashboard/requirements`} className="btn secondary sm">{db.pitch}</Link>
        </div>
-      )}
+      ))}
      </div>
+    </div>
+   )}
   </>
  );
 }

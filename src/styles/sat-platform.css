@@ -259,7 +259,7 @@ table.dt .rowact{position:relative;z-index:1;}
 .queue-ic{width:34px;height:34px;border-radius:8px;background:var(--cool);display:flex;align-items:center;justify-content:center;color:var(--slate);flex:none;}
 .statusdot{display:inline-flex;align-items:center;gap:7px;font-size:12px;}
 .statusdot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
-.statusdot.ok{color:var(--green);} .statusdot.pend{color:var(--amber);} .statusdot.off{color:var(--slate-2);}
+.statusdot.ok{color:var(--green);} .statusdot.pend{color:var(--amber);} .statusdot.off{color:var(--slate-2);} .statusdot.warn{color:#B26B00;}
 .dash-2col{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px;}
 /* Mobile app shell. The sidebar used to be display:none below 820px with nothing
    replacing it, so on a phone an owner lost My listings, Enquiries, Requirement
