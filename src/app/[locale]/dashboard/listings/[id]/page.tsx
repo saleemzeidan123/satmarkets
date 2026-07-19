@@ -59,14 +59,21 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   // owner read their own media on any status; the URLs are short-lived).
   const { data: mediaRows } = await sb
     .from("listing_media")
-    .select("id,path,sort_order")
+    .select("id,path,source,sort_order")
     .eq("listing_id", params.id)
     .eq("kind", "photo")
     .order("sort_order");
   const photos: { id: string; url: string | null }[] = [];
-  for (const m of (mediaRows ?? []) as { id: string; path: string }[]) {
-    const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
-    photos.push({ id: m.id, url: signed?.signedUrl ?? null });
+  for (const m of (mediaRows ?? []) as { id: string; path: string; source: string }[]) {
+    if (!m.path) { photos.push({ id: m.id, url: null }); continue; }
+    // Same rule as the public page: an uploaded photo is a private object that must
+    // be signed; a source=url photo already IS an external URL, so use it directly.
+    if (m.source === "upload") {
+      const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
+      photos.push({ id: m.id, url: signed?.signedUrl ?? null });
+    } else {
+      photos.push({ id: m.id, url: String(m.path) });
+    }
   }
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
