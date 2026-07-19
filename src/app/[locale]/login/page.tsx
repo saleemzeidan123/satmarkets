@@ -42,8 +42,9 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
   const { error } = await sb.auth.signInWithPassword({ email, password });
   setBusy(false);
   if (error) { setError(error.message); return; }
-  // Hard navigation so the server sees the freshly written session cookies.
-  window.location.replace(`/${params.locale}/dashboard`);
+  // Hard navigation so the server sees the freshly written session cookies. /go
+  // routes owners to the dashboard and occupiers to their own home.
+  window.location.replace(`/${params.locale}/go`);
  }
 
  async function emailLink() {
@@ -52,7 +53,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
   const sb = getSupabaseBrowser();
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/dashboard` } });
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/go` } });
   setBusy(false);
   if (error) setError(error.message); else setStep("sent");
  }
@@ -69,7 +70,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
   setBusy(true);
   const { error } = await sb.auth.signInWithOAuth({
    provider,
-   options: { redirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/dashboard` },
+   options: { redirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/go` },
   });
   // On success the browser is redirected to the provider, so we only land here on error.
   if (error) { setError(error.message); setBusy(false); }

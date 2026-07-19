@@ -1,27 +1,22 @@
 "use client";
 import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
+import { readSaved, writeSaved, syncSave } from "@/lib/saved";
 
-const KEY = "satm_saved";
-
-// Chip-style save toggle for the listing detail page. Writes the listing id into
-// the same satm_saved localStorage list the Saved page and TabBar badge read.
+// Chip-style save toggle for the listing detail page. Writes the listing id into the
+// shared satm_saved device list the Saved page and TabBar badge read, and mirrors the
+// change to the signed-in user's account (best effort) so favourites persist.
 export default function SaveButton({ id, locale }: { id: string; locale: string }) {
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").chrome;
   const [saved, setSaved] = useState(false);
-  useEffect(() => {
-    try { const s = JSON.parse(localStorage.getItem(KEY) || "[]"); setSaved(Array.isArray(s) && s.includes(id)); } catch {}
-  }, [id]);
+  useEffect(() => { setSaved(readSaved().includes(id)); }, [id]);
   const toggle = () => {
-    try {
-      const s = JSON.parse(localStorage.getItem(KEY) || "[]");
-      const arr: string[] = Array.isArray(s) ? s : [];
-      const next = arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
-      localStorage.setItem(KEY, JSON.stringify(next));
-      setSaved(next.includes(id));
-      try { window.dispatchEvent(new Event("storage")); } catch {}
-    } catch {}
+    const arr = readSaved();
+    const on = !arr.includes(id);
+    writeSaved(on ? [...arr, id] : arr.filter((x) => x !== id));
+    setSaved(on);
+    void syncSave(id, on);
   };
   return (
     <button type="button" onClick={toggle} className="chip" aria-pressed={saved}

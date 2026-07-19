@@ -46,7 +46,7 @@ export async function middleware(req: NextRequest) {
   const allowIndex = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
   // Prototype/account routes stay noindexed even on the production host until they
   // are real. /signup and /compare are prototype surfaces too (Codex MKT-P0-06).
-  const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare"];
+  const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare", "/me", "/go"];
   const isPrivate = PRIVATE_PREFIXES.some(
     (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
   );
