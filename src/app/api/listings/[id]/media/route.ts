@@ -102,3 +102,44 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(objectKey, 3600);
   return NextResponse.json({ id: (row as { id: string })?.id, url: signed?.signedUrl ?? null });
 }
+
+// Reorder a listing's photos (which also sets the cover: sort_order 0 is the hero).
+// Body: { order: [mediaId, ...] } listing the PHOTO rows in the desired order. Only
+// ids that actually belong to this listing's photos are touched; anything else is
+// ignored, so a stray id cannot reorder another listing. Owner-scoped in code and by
+// the listing_media RLS update policy.
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  if (!allow("listing-media-reorder", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+
+  const su = await getSessionUser();
+  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
+
+  const sb = getSupabaseServer();
+  if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
+
+  const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", params.id).single();
+  if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  if ((listing as { account_id: string }).account_id !== su.accountId) {
+    return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
+  }
+
+  const body = (await req.json().catch(() => ({}))) as { order?: unknown };
+  const order = Array.isArray(body.order) ? body.order.map(String) : null;
+  if (!order || order.length === 0) return NextResponse.json({ error: "No order provided." }, { status: 400 });
+
+  // Only reorder ids that really are this listing's photos.
+  const { data: photos } = await sb
+    .from("listing_media")
+    .select("id")
+    .eq("listing_id", params.id)
+    .eq("kind", "photo");
+  const valid = new Set(((photos ?? []) as { id: string }[]).map((p) => p.id));
+  const seq = order.filter((id) => valid.has(id));
+  if (seq.length === 0) return NextResponse.json({ error: "No matching photos." }, { status: 400 });
+
+  for (let i = 0; i < seq.length; i++) {
+    const { error } = await sb.from("listing_media").update({ sort_order: i }).eq("id", seq[i]).eq("listing_id", params.id);
+    if (error) return NextResponse.json({ error: "Could not reorder." }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true });
+}

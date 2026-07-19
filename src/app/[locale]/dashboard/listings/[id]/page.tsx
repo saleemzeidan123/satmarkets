@@ -7,6 +7,7 @@ import { assetLabel, dealLabel } from "@/lib/labels";
 import { Icon } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
 import EditListingForm from "@/components/EditListingForm";
+import ListingMediaManager from "@/components/ListingMediaManager";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
 import { intakeFields } from "@/lib/assetFields";
 
@@ -52,6 +53,20 @@ export default async function ManageListingPage({ params }: { params: { locale: 
     const raw = field.column ? L[field.column] : existingAttrs[field.key];
     if (raw === null || raw === undefined) { initAttrs[field.key] = field.type === "boolean" ? false : ""; continue; }
     initAttrs[field.key] = field.type === "boolean" ? raw === true : String(raw);
+  }
+
+  // The listing's photos, in display order, each signed for the owner (RLS lets an
+  // owner read their own media on any status; the URLs are short-lived).
+  const { data: mediaRows } = await sb
+    .from("listing_media")
+    .select("id,path,sort_order")
+    .eq("listing_id", params.id)
+    .eq("kind", "photo")
+    .order("sort_order");
+  const photos: { id: string; url: string | null }[] = [];
+  for (const m of (mediaRows ?? []) as { id: string; path: string }[]) {
+    const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
+    photos.push({ id: m.id, url: signed?.signedUrl ?? null });
   }
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
@@ -106,11 +121,16 @@ export default async function ManageListingPage({ params }: { params: { locale: 
             area_sqm: L.area_sqm != null ? String(L.area_sqm) : "",
             price: price != null ? String(price) : "",
             deal_type: L.deal_type,
+            video_url: L.video_url || "",
             contact_phone: L.contact_phone || "",
             contact_email: L.contact_email || "",
             contact_channels: Array.isArray(L.contact_channels) ? L.contact_channels : [],
           }}
         />
+      </div>
+
+      <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
+        <ListingMediaManager id={L.id} locale={lp} photos={photos} />
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>

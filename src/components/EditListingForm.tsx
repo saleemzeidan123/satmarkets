@@ -18,6 +18,7 @@ type Init = {
   area_sqm: string;
   price: string;
   deal_type: string;
+  video_url: string;
   contact_phone: string;
   contact_email: string;
   contact_channels: string[];
@@ -60,7 +61,7 @@ export default function EditListingForm({
   const t = ar ? {
     title: "العنوان", desc: "الوصف", area: "المساحة (م²)",
     price: init.deal_type === "lease" ? "الإيجار المطلوب (ريال/م²·سنة)" : "سعر البيع (ريال)",
-    phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون",
+    phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
     details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
     statedNote: "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات.",
@@ -69,7 +70,7 @@ export default function EditListingForm({
   } : {
     title: "Title", desc: "Description", area: "Size (m²)",
     price: init.deal_type === "lease" ? "Asking rent (SAR/m²·yr)" : "Sale price (SAR)",
-    phone: "Contact phone", email: "Contact email", channels: "How people reach you",
+    phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
     details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",
     statedNote: "Everything you enter shows as stated by the lister until SAT verifies it.",
@@ -149,6 +150,7 @@ export default function EditListingForm({
           description_en: f.description_en,
           area_sqm: f.area_sqm,
           price: f.price,
+          video_url: f.video_url,
           contact_phone: f.contact_phone,
           contact_email: f.contact_email,
           contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
@@ -211,6 +213,10 @@ export default function EditListingForm({
         </div>
       )}
 
+      <div>
+        <label style={lbl}>{t.video}</label>
+        <input style={inp} value={f.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+      </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
           <label style={lbl}>{t.phone}</label>

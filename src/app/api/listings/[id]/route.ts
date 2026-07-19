@@ -62,6 +62,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (dealType === "lease") patch.asking_rent_sqm = p;
     else patch.sale_price = p;
   }
+  // The video tour URL is stored as given; the detail page renders it through
+  // videoEmbed, which only ever embeds known origins (YouTube/Vimeo/direct file) and
+  // falls back to a plain outbound link for anything else, so an arbitrary URL here
+  // can never become an embedded iframe of an untrusted origin.
+  if (typeof body.video_url === "string") patch.video_url = body.video_url.trim().slice(0, 500) || null;
   if (typeof body.contact_phone === "string") patch.contact_phone = body.contact_phone.trim() || null;
   if (typeof body.contact_email === "string") patch.contact_email = body.contact_email.trim() || null;
   if (Array.isArray(body.contact_channels)) {
