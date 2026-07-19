@@ -84,14 +84,17 @@ export default async function DashboardLayout({
             { key: "listings", label: db.navMyListings, href: `/${lp}/dashboard/listings` },
             { key: "enquiries", label: db.navEnquiries, href: `/${lp}/dashboard/enquiries`, badge: leadCount || undefined },
             { key: "viewings", label: db.navViewings, href: `/${lp}/dashboard/viewings`, badge: viewingCount || undefined },
-            { key: "requirements", label: db.navReqMatches, href: `/${lp}/requirements`, badge: reqCount || undefined },
+            { key: "requirements", label: db.navReqMatches, href: `/${lp}/dashboard/requirements`, badge: reqCount || undefined },
             { key: "account", label: db.navAccount, section: true },
             { key: "billing", label: db.navBilling, href: `/${lp}/pricing` },
           ]}
         />
         <div className="me">
-          <span className="avatar" style={{ background: "var(--harbor)" }}>{initials}</span>
-          <div><div className="nm">{acctName}</div><div className="rl">{acctRole}</div></div>
+          <Link href={`/${lp}/pricing`} className="melink" aria-label={ar ? "الحساب والفوترة" : "Account and billing"}>
+            <span className="avatar" style={{ background: "var(--harbor)" }}>{initials}</span>
+            <span className="txt"><span className="nm">{acctName}</span><span className="rl">{acctRole}</span></span>
+            <span className="chev" aria-hidden>›</span>
+          </Link>
           <SignOutButton locale={lp} label={dict.login.signOut} />
         </div>
       </aside>

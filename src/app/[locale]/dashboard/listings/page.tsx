@@ -27,7 +27,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
   if (!sb) notFound();
 
   const t = ar ? {
-    title: "عروضي", sub: "أنت تتحكّم بما هو معروض في السوق",
+    title: "عروضي", sub: "عروضك وحالة كلٍّ منها الآن",
     thListing: "العرض", thEnq: "استفسارات", thStatus: "الحالة", thAction: "",
     emptyT: "لا عروض بعد", emptyB: "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض.", emptyC: "أدرج مساحة",
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ",
@@ -35,7 +35,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     view: "اعرض", note: "الإيقاف المؤقّت يزيل العرض من السوق فوراً. وإعادة النشر تخضع لبوابة النشر نفسها: لا يعود العرض إلى السوق بلا تصريح إعلان ساري.",
     cannot: "تعذّرت إعادة النشر:",
   } : {
-    title: "My listings", sub: "You control what is on the market",
+    title: "My listings", sub: "Your listings, and where each one stands right now",
     thListing: "Listing", thEnq: "Enquiries", thStatus: "Status", thAction: "",
     emptyT: "No listings yet", emptyB: "List your first space and it starts reaching occupiers searching in Riyadh.", emptyC: "List a space",
     pause: "Pause", resume: "Republish", working: "Working",
@@ -99,7 +99,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                         <div className="row gap10">
                           <Photo kind={l.asset_type} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
                           <div>
-                            <Link href={`/${lp}/listings/${l.id}`} style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{title}</Link>
+                            <Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{title}</Link>
                             <div className="mono muted" style={{ fontSize: 11 }}>
                               <bdi>{(dmap.get(l.district_id) || "") + (l.area_sqm ? " · " + l.area_sqm + db.m2 : "") + (rent ? " · " + Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : "")}</bdi>
                             </div>
@@ -109,7 +109,9 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                       <td className="num mono" style={{ fontWeight: 600, color: n ? "var(--ink)" : "var(--slate-2)" }}>{n}</td>
                       <td><span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12 }}>{t.st[l.status] || l.status}</span></td>
                       <td className="num">
-                        <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
+                        <span className="rowact" style={{ display: "inline-flex" }}>
+                          <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
+                        </span>
                       </td>
                     </tr>
                   );

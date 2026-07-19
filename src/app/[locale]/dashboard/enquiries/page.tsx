@@ -23,19 +23,19 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   if (!sb) notFound();
 
   const t = ar ? {
-    title: "الاستفسارات", sub: "من تواصل بشأن مساحاتك",
+    title: "الاستفسارات", sub: "من تواصلوا معك بشأن مساحاتك",
     thWho: "المستفسر", thListing: "العرض", thPath: "المسار", thWhen: "وصل",
     direct: "تواصل مباشر", rep: "طلب تمثيل",
     emptyT: "لا استفسارات بعد",
-    emptyB: "عندما يتواصل مستأجر بشأن أحد عروضك، سيظهر هنا برسالته وبيانات تواصله.",
+    emptyB: "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا برسالته وبيانات تواصله كاملة.",
     emptyC: "اعرض عروضي",
     anon: "استفسار",
   } : {
-    title: "Enquiries", sub: "Who has been in touch about your spaces",
+    title: "Enquiries", sub: "People who've reached out about your spaces",
     thWho: "Enquirer", thListing: "Listing", thPath: "Path", thWhen: "Received",
     direct: "Direct contact", rep: "Representation (discontinued)",
     emptyT: "No enquiries yet",
-    emptyB: "When an occupier gets in touch about one of your listings, it appears here with their message and contact details.",
+    emptyB: "When someone reaches out about a listing, you'll find them here, with their message and full contact details.",
     emptyC: "View my listings",
     anon: "Enquiry",
   };
@@ -100,7 +100,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
                   return (
                     <tr key={l.id}>
                       <td>
-                        <Link href={`/${lp}/dashboard/enquiries/${l.id}`} className="row gap10" style={{ color: "inherit" }}>
+                        <Link href={`/${lp}/dashboard/enquiries/${l.id}`} className="row gap10 rowlink" style={{ color: "inherit" }}>
                           <span className="avatar" style={{ background: "var(--harbor)", flex: "none" }}>{initials(nm)}</span>
                           <span style={{ fontWeight: 600, fontSize: 13 }}>{nm}</span>
                         </Link>

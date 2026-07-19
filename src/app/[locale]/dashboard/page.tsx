@@ -66,7 +66,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  // Honest states, written as content rather than as an apology.
  const es = ar ? {
   enqT: "لا استفسارات بعد",
-  enqB: "عندما يتواصل مستأجر بشأن أحد عروضك، سيظهر هنا مع بيانات التواصل وسجل المحادثة.",
+  enqB: "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا ببياناته وسجلّ محادثتك كاملاً.",
   enqC: "اعرض عروضك",
   reqT: "لا طلبات مطابقة الآن",
   reqB: "عندما يُدرج مستأجر طلباً يطابق نوع أصولك وموقعك، سيظهر هنا لتتقدّم إليه.",
@@ -78,7 +78,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   perfNote: "لم نبدأ بعد بقياس المشاهدات والحفظ. سيظهر ذلك بعد الإطلاق.",
  } : {
   enqT: "No enquiries yet",
-  enqB: "When an occupier gets in touch about one of your listings, it appears here with their contact details and the conversation so far.",
+  enqB: "When someone reaches out about a listing, you'll find them here, with their details and your full conversation.",
   enqC: "View your listings",
   reqT: "No matching requirements right now",
   reqB: "When an occupier posts a requirement that matches your asset type and location, it appears here for you to pitch.",
@@ -87,7 +87,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   lstB: "List your first space and it starts reaching occupiers searching in Riyadh.",
   lstC: "List a space",
   perf: "Performance",
-  perfNote: "We are not measuring views or saves yet. That starts at launch.",
+  perfNote: "Views and saves aren't tracked yet; that goes live at launch. Everything you see here is real.",
  };
  const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
  const titleById = new Map(pub.map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
@@ -147,7 +147,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
           <div key={i} className="lead-item">
            <span className="queue-ic"><Icon.doc size={16} /></span>
            <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 600 }}>{r.title}</div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
-           <Link href={`/${lp}/requirements`} className="btn secondary sm">{db.pitch}</Link>
+           <Link href={`/${lp}/dashboard/requirements`} className="btn secondary sm">{db.pitch}</Link>
           </div>
          ))}
        </div>

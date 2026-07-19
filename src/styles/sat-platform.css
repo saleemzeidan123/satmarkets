@@ -216,9 +216,23 @@
 .dnav a .badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--azure);color:#fff;border-radius:20px;padding:1px 7px;}
 .dnav a .badge.warn{background:var(--amber);}
 .dnav .sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#6B7480;text-transform:uppercase;padding:18px 12px 6px;}
-.dside .me{margin-top:auto;display:flex;align-items:center;gap:11px;padding:12px 10px;border-top:1px solid rgba(255,255,255,.1);}
-.dside .me .nm{font-size:13px;font-weight:600;color:#fff;}
-.dside .me .rl{font-size:11px;color:#8A93A0;}
+.dside .me{margin-top:auto;display:flex;align-items:center;gap:6px;padding:6px;border-top:1px solid rgba(255,255,255,.08);}
+.dside .me .melink{display:flex;align-items:center;gap:10px;flex:1;min-width:0;padding:8px;border-radius:10px;text-decoration:none;transition:background .14s ease;}
+.dside .me .melink:hover{background:rgba(255,255,255,.08);}
+.dside .me .melink:focus-visible{outline:2px solid var(--azure-l);outline-offset:2px;}
+.dside .me .txt{display:flex;flex-direction:column;min-width:0;line-height:1.25;}
+.dside .me .nm{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dside .me .rl{font-size:11px;color:#8A93A0;white-space:nowrap;}
+.dside .me .chev{margin-inline-start:auto;color:#6B7480;font-size:17px;line-height:1;flex:none;}
+[dir="rtl"] .dside .me .chev{transform:scaleX(-1);}
+
+/* Whole dashboard table rows are clickable: the primary cell holds a link that is
+   stretched across the row. Action buttons in the row sit above it (z-index) so they
+   still fire their own click. */
+table.dt tbody tr{position:relative;}
+table.dt tbody tr:hover{cursor:pointer;}
+a.rowlink::after{content:"";position:absolute;inset:0;z-index:0;}
+table.dt .rowact{position:relative;z-index:1;}
 .dmain{flex:1;min-width:0;}
 .dtopbar{display:flex;align-items:center;gap:14px;padding:16px 30px;background:var(--paper);border-bottom:1px solid var(--silver);}
 .dtopbar h1{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:0;}
@@ -257,8 +271,9 @@
   .dnav a{flex:none;white-space:nowrap;min-height:44px;padding:8px 12px;}
   .dnav a .badge{margin-left:6px;}
   .dnav .sec{display:none;}
-  .dside .me{margin-top:0;flex:none;border-top:0;padding:0 0 0 10px;border-left:1px solid rgba(255,255,255,.12);gap:8px;}
-  .dside .me>div{display:none;}
+  .dside .me{margin-top:0;flex:none;border-top:0;padding:0 0 0 10px;border-left:1px solid rgba(255,255,255,.12);gap:6px;}
+  .dside .me .txt,.dside .me .chev{display:none;}
+  .dside .me .melink{padding:4px;}
   .kgrid{grid-template-columns:repeat(2,1fr);}
   .dash-2col{grid-template-columns:minmax(0,1fr)!important;}
   .dash-2col>*{min-width:0;}
