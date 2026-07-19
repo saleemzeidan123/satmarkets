@@ -8,6 +8,7 @@ import { Icon } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
 import EditListingForm from "@/components/EditListingForm";
 import ListingMediaManager from "@/components/ListingMediaManager";
+import ListingDocsManager from "@/components/ListingDocsManager";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
 import { intakeFields } from "@/lib/assetFields";
 
@@ -75,6 +76,29 @@ export default async function ManageListingPage({ params }: { params: { locale: 
       photos.push({ id: m.id, url: String(m.path) });
     }
   }
+
+  // Floor plans and brochure, signed the same way. A floor plan may be an image or a
+  // PDF; the brochure is a PDF. The manager shows a thumbnail for images and a file
+  // chip for PDFs, and removes either through the shared media DELETE.
+  const { data: docRows } = await sb
+    .from("listing_media")
+    .select("id,path,source,kind,mime,alt_en,alt_ar,sort_order")
+    .eq("listing_id", params.id)
+    .in("kind", ["floorplan", "brochure"])
+    .order("sort_order");
+  const floorplans: { id: string; url: string | null; isPdf: boolean; label: string | null }[] = [];
+  const brochures: { id: string; url: string | null; isPdf: boolean; label: string | null }[] = [];
+  for (const m of (docRows ?? []) as { id: string; path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null }[]) {
+    if (!m.path) continue;
+    let url: string | null = String(m.path);
+    if (m.source === "upload") {
+      const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
+      url = signed?.signedUrl ?? null;
+    }
+    const isPdf = m.mime === "application/pdf" || String(m.path).toLowerCase().split("?")[0].endsWith(".pdf");
+    const item = { id: m.id, url, isPdf, label: (ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar)) || null };
+    if (m.kind === "brochure") brochures.push(item); else floorplans.push(item);
+  }
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
     lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدَّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
@@ -138,6 +162,10 @@ export default async function ManageListingPage({ params }: { params: { locale: 
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
         <ListingMediaManager id={L.id} locale={lp} photos={photos} />
+      </div>
+
+      <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
+        <ListingDocsManager id={L.id} locale={lp} floorplans={floorplans} brochures={brochures} />
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
