@@ -67,21 +67,6 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   // falls back to a plain outbound link for anything else, so an arbitrary URL here
   // can never become an embedded iframe of an untrusted origin.
   if (typeof body.video_url === "string") patch.video_url = body.video_url.trim().slice(0, 500) || null;
-
-  // Off-market: a visibility MODE the lister controls. Flipping to off_market takes
-  // the listing dark on every public surface (enforced by RLS, not this route). The
-  // teaser is the deliberately redacted public-safe payload the gated pool sees; the
-  // price mode lets the lister keep the figure hidden ("on request") or show a band.
-  if (body.visibility === "public" || body.visibility === "off_market") patch.visibility = body.visibility;
-  if (body.offmarket_price_mode === "on_request" || body.offmarket_price_mode === "band") patch.offmarket_price_mode = body.offmarket_price_mode;
-  if (body.offmarket_price_band_min != null && body.offmarket_price_band_min !== "") {
-    const n = Number(body.offmarket_price_band_min); if (Number.isFinite(n) && n >= 0) patch.offmarket_price_band_min = n;
-  } else if (body.offmarket_price_band_min === "") patch.offmarket_price_band_min = null;
-  if (body.offmarket_price_band_max != null && body.offmarket_price_band_max !== "") {
-    const n = Number(body.offmarket_price_band_max); if (Number.isFinite(n) && n >= 0) patch.offmarket_price_band_max = n;
-  } else if (body.offmarket_price_band_max === "") patch.offmarket_price_band_max = null;
-  if (typeof body.offmarket_headline_en === "string") patch.offmarket_headline_en = body.offmarket_headline_en.trim().slice(0, 160) || null;
-  if (typeof body.offmarket_teaser_en === "string") patch.offmarket_teaser_en = body.offmarket_teaser_en.trim().slice(0, 2000) || null;
   if (typeof body.contact_phone === "string") patch.contact_phone = body.contact_phone.trim() || null;
   if (typeof body.contact_email === "string") patch.contact_email = body.contact_email.trim() || null;
   if (Array.isArray(body.contact_channels)) {

@@ -22,12 +22,6 @@ type Init = {
   contact_phone: string;
   contact_email: string;
   contact_channels: string[];
-  visibility: string;
-  offmarket_price_mode: string;
-  offmarket_price_band_min: string;
-  offmarket_price_band_max: string;
-  offmarket_headline_en: string;
-  offmarket_teaser_en: string;
 };
 
 // These are captured by the base fields (Size / Asking or Sale price) so the
@@ -69,10 +63,6 @@ export default function EditListingForm({
     price: init.deal_type === "lease" ? "الإيجار المطلوب (ريال/م²·سنة)" : "سعر البيع (ريال)",
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
-    visTitle: "الظهور", visPublic: "عام", visPublicNote: "يظهر لكل الباحثين في السوق.",
-    visOff: "خارج السوق (حصري)", visOffNote: "مخفي عن العامة. يظهر تشويقاً فقط للمستثمرين المؤهّلين، والتفاصيل الكاملة بموافقتك لكل طلب.",
-    teaser: "التشويق المعروض للمؤهّلين", tHeadline: "عنوان التشويق", tBody: "وصف التشويق (بدون عنوان أو تواصل)",
-    priceMode: "عرض السعر", priceOnReq: "عند الطلب", priceBand: "نطاق", bandMin: "من (ريال)", bandMax: "إلى (ريال)",
     details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
     statedNote: "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات.",
     missing: "أكمل الحقول المطلوبة: ",
@@ -82,10 +72,6 @@ export default function EditListingForm({
     price: init.deal_type === "lease" ? "Asking rent (SAR/m²·yr)" : "Sale price (SAR)",
     phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
-    visTitle: "Visibility", visPublic: "Public", visPublicNote: "Shown to everyone searching the market.",
-    visOff: "Off-market (exclusive)", visOffNote: "Hidden from the public. Qualified investors see a teaser only; full detail is released per request, with your approval each time.",
-    teaser: "Teaser shown to qualified seekers", tHeadline: "Teaser headline", tBody: "Teaser description (no address or contact)",
-    priceMode: "Price display", priceOnReq: "On request", priceBand: "Band", bandMin: "From (SAR)", bandMax: "To (SAR)",
     details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",
     statedNote: "Everything you enter shows as stated by the lister until SAT verifies it.",
     missing: "Please complete the required fields: ",
@@ -169,12 +155,6 @@ export default function EditListingForm({
           contact_email: f.contact_email,
           contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
           attributes: attrs,
-          visibility: f.visibility,
-          offmarket_price_mode: f.offmarket_price_mode,
-          offmarket_price_band_min: f.offmarket_price_band_min,
-          offmarket_price_band_max: f.offmarket_price_band_max,
-          offmarket_headline_en: f.offmarket_headline_en,
-          offmarket_teaser_en: f.offmarket_teaser_en,
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -196,54 +176,6 @@ export default function EditListingForm({
       <div>
         <label style={lbl}>{t.desc}</label>
         <textarea style={{ ...inp, minHeight: 92, resize: "vertical" }} value={f.description_en} onChange={(e) => set("description_en", e.target.value)} />
-      </div>
-
-      {/* Visibility: public vs off-market. A premium, deliberate choice, not a buried
-          checkbox. Off-market reveals the teaser controls; public keeps them hidden. */}
-      <div style={{ border: "1px solid var(--silver)", borderRadius: 10, padding: 14, background: "var(--paper)" }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)", marginBottom: 10 }}>{t.visTitle}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {([["public", t.visPublic, t.visPublicNote], ["off_market", t.visOff, t.visOffNote]] as const).map(([v, label, note]) => {
-            const on = f.visibility === v;
-            return (
-              <button key={v} type="button" onClick={() => set("visibility", v)} style={{ textAlign: "start", cursor: "pointer", border: `1.5px solid ${on ? "var(--harbor)" : "var(--silver)"}`, borderRadius: 9, padding: "11px 12px", background: on ? "rgba(30,74,107,0.04)" : "#fff" }}>
-                <div className="row gap8" style={{ alignItems: "center" }}>
-                  <span style={{ width: 15, height: 15, borderRadius: "50%", border: `4px solid ${on ? "var(--harbor)" : "var(--silver-2)"}`, background: "#fff", flex: "none" }} />
-                  <span style={{ fontSize: 13.5, fontWeight: 700, color: on ? "var(--harbor)" : "var(--ink)" }}>{label}</span>
-                </div>
-                <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.55, marginTop: 6 }}>{note}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        {f.visibility === "off_market" && (
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "var(--slate)" }}>{t.teaser}</div>
-            <div>
-              <label style={lbl}>{t.tHeadline}</label>
-              <input style={inp} value={f.offmarket_headline_en} onChange={(e) => set("offmarket_headline_en", e.target.value)} placeholder={ar ? "مكتب حصري في قلب الرياض" : "Prime off-market office in central Riyadh"} />
-            </div>
-            <div>
-              <label style={lbl}>{t.tBody}</label>
-              <textarea style={{ ...inp, minHeight: 72, resize: "vertical" }} value={f.offmarket_teaser_en} onChange={(e) => set("offmarket_teaser_en", e.target.value)} />
-            </div>
-            <div>
-              <label style={lbl}>{t.priceMode}</label>
-              <div className="row gap8">
-                {([["on_request", t.priceOnReq], ["band", t.priceBand]] as const).map(([v, label]) => (
-                  <button key={v} type="button" onClick={() => set("offmarket_price_mode", v)} className="chip" style={{ cursor: "pointer", borderColor: f.offmarket_price_mode === v ? "var(--harbor)" : "var(--silver)", background: f.offmarket_price_mode === v ? "var(--harbor)" : "#fff", color: f.offmarket_price_mode === v ? "#fff" : "var(--slate)", fontWeight: f.offmarket_price_mode === v ? 700 : 500 }}>{label}</button>
-                ))}
-              </div>
-            </div>
-            {f.offmarket_price_mode === "band" && (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div><label style={lbl}>{t.bandMin}</label><input style={inp} type="number" step="any" value={f.offmarket_price_band_min} onChange={(e) => set("offmarket_price_band_min", e.target.value)} /></div>
-                <div><label style={lbl}>{t.bandMax}</label><input style={inp} type="number" step="any" value={f.offmarket_price_band_max} onChange={(e) => set("offmarket_price_band_max", e.target.value)} /></div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
