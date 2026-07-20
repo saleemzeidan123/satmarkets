@@ -257,6 +257,18 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           )}
         </form>
       )}
+      {/* Location filter header: when a district/place/city is active (e.g. from a
+          map bubble click), say so plainly with a one-tap clear, so a filter is never
+          an invisible state the user has to infer. */}
+      {(searchParams.district || searchParams.place || searchParams.city) && crumbLoc && (
+        <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
+          <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
+          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>{crumbLoc}</span>
+          <span className="muted" style={{ fontSize: 13 }}>· {ar ? `${shown.length} مساحة` : `${shown.length} ${shown.length === 1 ? "space" : "spaces"}`}</span>
+          <span style={{ flex: 1 }} />
+          <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{ar ? "مسح ✕" : "Clear ✕"}</Link>
+        </div>
+      )}
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
         <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض` : `${shown.length} ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات في ${searchParams.place} بعد` : ` · no spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {dict.listings.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dict.listings.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
@@ -337,7 +349,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
       )}
       </div>
-      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} initialBbox={bbox ?? undefined} />
+      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} initialBbox={bbox ?? undefined} selectedDistrict={searchParams.district ?? null} />
       </div>
     </div>
   );

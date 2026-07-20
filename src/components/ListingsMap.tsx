@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
 
@@ -21,20 +22,24 @@ export interface ExactPin { id: string; title: string; lat: number; lng: number;
 const PRIMARY_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export default function ListingsMap({ locale, bubbles, pins, baseParams, initialBbox }: {
-  locale: "en" | "ar"; bubbles: DistrictBubble[]; pins: ExactPin[]; baseParams: string; initialBbox?: number[];
+export default function ListingsMap({ locale, bubbles, pins, baseParams, initialBbox, selectedDistrict }: {
+  locale: "en" | "ar"; bubbles: DistrictBubble[]; pins: ExactPin[]; baseParams: string; initialBbox?: number[]; selectedDistrict?: string | null;
 }) {
   const ar = locale === "ar";
   const t2 = getDictionary(ar ? "ar" : "en").listingsMap;
+  const router = useRouter();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const mapRef = useRef<any>(null);
+  const readyRef = useRef(false);
+  const selectedRef = useRef<string | null>(null);
   const [moved, setMoved] = useState(false);
 
   useEffect(() => {
     let map: any; let ro: ResizeObserver | undefined;
     let cancelled = false; let triedFallback = false; let ready = false;
+    selectedRef.current = selectedDistrict ?? null;
 
     const pinById = new Map<string, [number, number]>(pins.map((p) => [p.id, [p.lng, p.lat]]));
     const EMPTY = { type: "FeatureCollection", features: [] as any[] };
@@ -58,31 +63,70 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       hoverCard = null; setRing(null);
     };
 
+    const bubbleFC = () => ({ type: "FeatureCollection", features: bubbles.map((b) => ({ type: "Feature", id: b.id, geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: { id: b.id, name: b.name, count: b.count } })) });
+    const pinFC = () => ({ type: "FeatureCollection", features: pins.map((p) => ({ type: "Feature", id: p.id, geometry: { type: "Point", coordinates: [p.lng, p.lat] }, properties: { id: p.id, title: p.title, price: p.price } })) });
+    // Radius the bubble scales by count; larger minimum (16) so small districts are
+    // still an easy target. The hit layer below reuses this plus a padding.
+    const RADIUS = ["interpolate", ["linear"], ["get", "count"], 1, 16, 12, 24, 30, 34];
+
     const addData = (m: any) => {
       if (m.getSource("d")) return;
-      m.addSource("d", { type: "geojson", data: { type: "FeatureCollection", features: bubbles.map((b) => ({ type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: { id: b.id, name: b.name, count: b.count } })) } });
-      m.addLayer({ id: "d-c", type: "circle", source: "d", paint: { "circle-color": "#3A6EA5", "circle-opacity": 0.85, "circle-radius": ["interpolate", ["linear"], ["get", "count"], 1, 13, 12, 22, 30, 30], "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+      // promoteId lets feature-state (selected ring) key off the district id.
+      m.addSource("d", { type: "geojson", promoteId: "id", data: bubbleFC() as any });
+      m.addLayer({ id: "d-c", type: "circle", source: "d", paint: {
+        "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#2C557F", "#3A6EA5"],
+        "circle-opacity": 0.9,
+        "circle-radius": RADIUS as any,
+        "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 2],
+        "circle-stroke-color": ["case", ["boolean", ["feature-state", "selected"], false], "#E8A33D", "#ffffff"],
+      } });
       m.addLayer({ id: "d-n", type: "symbol", source: "d", layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": "#ffffff" } });
-      m.addSource("p", { type: "geojson", data: { type: "FeatureCollection", features: pins.map((p) => ({ type: "Feature", geometry: { type: "Point", coordinates: [p.lng, p.lat] }, properties: { id: p.id, title: p.title, price: p.price } })) } });
+      // Transparent padded hit target on top, so clicks/hover land on a generous area
+      // even though the visible disc is smaller. Events bind to this layer.
+      m.addLayer({ id: "d-hit", type: "circle", source: "d", paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": ["+", RADIUS as any, 10] } });
+
+      m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
       m.addLayer({ id: "p-hl", type: "circle", source: "hl", paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" } });
-      m.addLayer({ id: "p-c", type: "circle", source: "p", paint: { "circle-color": "#1F8A5B", "circle-radius": 5.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff" } });
+      m.addLayer({ id: "p-c", type: "circle", source: "p", paint: { "circle-color": "#1F8A5B", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff" } });
+      m.addLayer({ id: "p-hit", type: "circle", source: "p", paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": 16 } });
+      applySelected(m, selectedRef.current);
+    };
+
+    // Move the amber selected ring to a district id (or clear it).
+    const applySelected = (m: any, id: string | null) => {
+      try {
+        const prev = selectedRef.current;
+        if (prev && m.getSource("d")) m.setFeatureState({ source: "d", id: prev }, { selected: false });
+        selectedRef.current = id;
+        if (id && m.getSource("d")) m.setFeatureState({ source: "d", id }, { selected: true });
+      } catch {}
     };
 
     const wire = (m: any, maplibregl: any) => {
       const tip = new maplibregl.Popup({ closeButton: false, offset: 12 });
-      m.on("click", "d-c", (e: any) => { const f = e.features?.[0]; if (!f) return; const sp = new URLSearchParams(baseParams); sp.set("district", f.properties.id); window.location.href = `/${locale}/listings?${sp.toString()}`; });
+      // Click a district: filter IN PLACE (soft navigation, no full reload), fly to
+      // the district, and set the amber selected ring. Three instant confirmations
+      // replace the old page-jump that left the user guessing what happened.
+      m.on("click", "d-hit", (e: any) => {
+        const f = e.features?.[0]; if (!f) return;
+        const id = f.properties.id;
+        applySelected(m, id);
+        try { m.flyTo({ center: (f.geometry.coordinates as [number, number]), zoom: Math.max(m.getZoom(), 11.5), duration: 650 }); } catch {}
+        const sp = new URLSearchParams(baseParams); sp.set("district", id);
+        router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false });
+      });
       const look = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 14, maxWidth: "220px" });
-      m.on("click", "p-c", (e: any) => {
+      m.on("click", "p-hit", (e: any) => {
         const f = e.features?.[0]; if (!f) return;
         const p = f.properties;
         const t = String(p.title).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const pr = p.price ? String(p.price).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
         look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:#14181B;line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:#14181B;margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:#3A6EA5;text-decoration:none">${t2.viewListing}</a>`).addTo(m);
       });
-      m.on("mouseenter", "d-c", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
-      m.on("mouseleave", "d-c", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
-      m.on("mouseenter", "p-c", (e: any) => {
+      m.on("mouseenter", "d-hit", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
+      m.on("mouseleave", "d-hit", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
+      m.on("mouseenter", "p-hit", (e: any) => {
         m.getCanvas().style.cursor = "pointer";
         const f = e.features?.[0]; if (!f) return;
         const id = f.properties.id;
@@ -90,7 +134,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         const el = cardEl(id);
         if (el) { document.querySelectorAll(".listing.lst-hl").forEach((n) => n.classList.remove("lst-hl")); el.classList.add("lst-hl"); el.scrollIntoView({ block: "nearest" }); }
       });
-      m.on("mouseleave", "p-c", () => { m.getCanvas().style.cursor = ""; setRing(null); document.querySelectorAll(".listing.lst-hl").forEach((n) => n.classList.remove("lst-hl")); });
+      m.on("mouseleave", "p-hit", () => { m.getCanvas().style.cursor = ""; setRing(null); document.querySelectorAll(".listing.lst-hl").forEach((n) => n.classList.remove("lst-hl")); });
       document.addEventListener("mouseover", onOver);
       document.addEventListener("mouseout", onOut);
     };
@@ -114,6 +158,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
 
       const onReady = () => {
         if (ready || cancelled) return; ready = true;
+        readyRef.current = true;
         setStatus("ready");
         [60, 400].forEach((d) => setTimeout(() => { try { map.resize(); } catch {} }, d));
         try { addData(map); wire(map, maplibregl); if (initialBbox && initialBbox.length === 4) { try { map.fitBounds([[initialBbox[0], initialBbox[1]], [initialBbox[2], initialBbox[3]]], { padding: 34, duration: 0, maxZoom: 14 }); } catch {} } } catch {}
@@ -129,7 +174,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         if (triedFallback || ready || cancelled) return;
         triedFallback = true;
         try {
-          map.once("style.load", () => { if (cancelled) return; ready = true; setStatus("ready"); try { map.resize(); addData(map); wire(map, maplibregl); } catch {} });
+          map.once("style.load", () => { if (cancelled) return; ready = true; readyRef.current = true; setStatus("ready"); try { map.resize(); addData(map); wire(map, maplibregl); } catch {} });
           map.setStyle(FALLBACK_STYLE);
         } catch { if (!cancelled) setStatus("error"); }
       };
@@ -149,6 +194,26 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // React to filter changes without re-initialising the map: a soft navigation
+  // re-renders this component with new bubbles/pins/selected, and we push them into
+  // the existing sources so the camera and map instance survive the filter.
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m || !readyRef.current) return;
+    try {
+      const ds = m.getSource("d");
+      const ps = m.getSource("p");
+      if (ds) ds.setData({ type: "FeatureCollection", features: bubbles.map((b) => ({ type: "Feature", id: b.id, geometry: { type: "Point", coordinates: [b.lng, b.lat] }, properties: { id: b.id, name: b.name, count: b.count } })) } as any);
+      if (ps) ps.setData({ type: "FeatureCollection", features: pins.map((p) => ({ type: "Feature", id: p.id, geometry: { type: "Point", coordinates: [p.lng, p.lat] }, properties: { id: p.id, title: p.title, price: p.price } })) } as any);
+      // setData clears feature-state, so re-apply the selected ring from the prop.
+      const prev = selectedRef.current;
+      if (prev && ds) { try { m.setFeatureState({ source: "d", id: prev }, { selected: false }); } catch {} }
+      selectedRef.current = selectedDistrict ?? null;
+      if (selectedDistrict && ds) { try { m.setFeatureState({ source: "d", id: selectedDistrict }, { selected: true }); } catch {} }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bubbles, pins, selectedDistrict]);
+
   return (
     <>
       <style>{`.listing.lst-hl{outline:2px solid var(--harbor);outline-offset:1px;border-radius:14px}`}</style>
@@ -161,10 +226,17 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
           </div>
         )}
         {moved && (
-          <button type="button" onClick={() => { const m = mapRef.current; if (!m) return; const b = m.getBounds(); const sp = new URLSearchParams(baseParams); sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(",")); window.location.href = `/${locale}/listings?${sp.toString()}`; }} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "#fff", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600 }}>{t2.searchArea}</button>
+          <button type="button" onClick={() => { const m = mapRef.current; if (!m) return; const b = m.getBounds(); const sp = new URLSearchParams(baseParams); sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(",")); setMoved(false); router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false }); }} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "#fff", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600 }}>{t2.searchArea}</button>
         )}
         <button type="button" className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
-        <span className="tag" style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.92)" }}>{t2.bubblesHint}</span>
+        {/* Legend: names the two mark types so a click is never a mystery. Bubbles are
+            district centroids (approximate); green dots are exact building points. */}
+        <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: 11.5, color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
+          <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 13, height: 13, borderRadius: "50%", background: "#3A6EA5", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "منطقة (تقديري) · انقر للتصفية" : "District (approx.) · click to filter"}</span>
+          {pins.length > 0 && (
+            <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "#1F8A5B", border: "1.5px solid #fff", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "مبنى محدد" : "Exact building"}</span>
+          )}
+        </div>
       </div>
       <button type="button" className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{t2.showMap}</button>
     </>
