@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth/session";
 
 // One path off a listing: direct_contact. It goes to the lister.
 //
@@ -71,6 +72,11 @@ export async function POST(req: NextRequest) {
   // answered 500: "Could not save the enquiry." The enquiry had been saved.
   //
   // Nothing reads the id. An insert with no error IS the success.
+  // Attribute the enquiry to the signed-in occupier who filed it, so it shows in
+  // their own enquiry history. Best effort and never trusted from the body: it is
+  // read from the session, and stays null for anonymous enquirers.
+  const su = await getSessionUser();
+
   const { error } = await supabase.from("leads").insert({
     listing_id: body.listing_id ?? null,
     path: body.path,
@@ -78,6 +84,7 @@ export async function POST(req: NextRequest) {
     contact_email: email.slice(0, 200),
     contact_phone: body.contact_phone ? String(body.contact_phone).slice(0, 40) : null,
     message: body.message ? String(body.message).slice(0, 2000) : null,
+    created_by_user_id: su?.userId ?? null,
     consent: false,
     consent_at: null,
   });
