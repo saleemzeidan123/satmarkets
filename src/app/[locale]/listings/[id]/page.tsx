@@ -17,6 +17,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { ownerVerified } from "@/lib/gate";
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
+import ReportListing from "@/components/ReportListing";
 import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
@@ -507,6 +508,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           )}
+          {/* Governance made visible: anyone can flag a listing for SAT to review. */}
+          <ReportListing listingId={l.id} locale={locale as "en" | "ar"} />
         </div>
         <div className="ld-side">
           <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
