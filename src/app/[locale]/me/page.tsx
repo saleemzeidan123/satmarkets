@@ -48,13 +48,41 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     threadCount = count ?? 0;
 
     // Enquiry history: the spaces this occupier has contacted, newest activity first.
-    // Conversations carry enquirer_user_id, so RLS scopes this to the current user.
+    // Two sources, deduped by listing:
+    //   1. Message threads (conversations) — a live in-app back-and-forth with the lister.
+    //   2. Direct-contact leads (the enquiry form) — sent straight to the lister, no
+    //      thread. Attributed to the occupier via leads.created_by_user_id.
+    // RLS scopes BOTH queries to the current user (conversations.enquirer_user_id and
+    // the "enquirer reads own leads" policy on leads). A listing the occupier both
+    // messaged AND enquired on directly shows once, as the thread: the live channel wins.
     const { data: convos } = await sb
       .from("conversations")
       .select("id,listing_id,created_at,last_message_at,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar))")
       .order("last_message_at", { ascending: false })
       .limit(20);
-    enquiries = (convos ?? []).filter((c: any) => c.listings);
+    const threadItems = (convos ?? [])
+      .filter((c: any) => c.listings)
+      .map((c: any) => ({ key: `t-${c.id}`, listing: c.listings, when: c.last_message_at || c.created_at, kind: "thread" as const }));
+
+    // Direct-contact leads with no thread. Dedup against threads AND against each other
+    // (a listing enquired on twice shows once, newest first — the list is ordered desc).
+    const { data: directLeads } = await sb
+      .from("leads")
+      .select("id,listing_id,created_at,path,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar))")
+      .eq("path", "direct_contact")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    const seenListings = new Set(threadItems.map((i: any) => i.listing.id));
+    const directItems: any[] = [];
+    for (const l of (directLeads ?? []) as any[]) {
+      if (!l.listings || seenListings.has(l.listings.id)) continue;
+      seenListings.add(l.listings.id);
+      directItems.push({ key: `d-${l.id}`, listing: l.listings, when: l.created_at, kind: "direct" as const });
+    }
+
+    enquiries = [...threadItems, ...directItems]
+      .sort((a, b) => (a.when < b.when ? 1 : a.when > b.when ? -1 : 0))
+      .slice(0, 20);
 
     // Saved searches + their alert counts. For each search: how many published spaces
     // match now (the re-run value), and how many are NEW since the search was saved
@@ -87,10 +115,10 @@ export default async function OccupierHome({ params }: { params: { locale: strin
 
   const t = ar
     ? { hi: "أهلاً بك", sub: "مساحتك على سات ماركتس: محفوظاتك ومراسلاتك في مكان واحد.", saved: "المحفوظات", none: "لم تحفظ أي مساحة بعد.", browse: "تصفّح المساحات", messages: "الرسائل", msgSub: "محادثاتك مع المُعلنين", onReq: "عند الطلب", openMsgs: "فتح الرسائل", explore: "استكشف السوق",
-        enquiries: "استفساراتك", enquiriesSub: "المساحات التي تواصلت بشأنها", noEnq: "لم ترسل أي استفسار بعد.", enquiredOn: "استفسار",
+        enquiries: "استفساراتك", enquiriesSub: "المساحات التي تواصلت بشأنها", noEnq: "لم ترسل أي استفسار بعد.", enquiredOn: "استفسار", sentDirect: "أُرسل للمُعلن",
         searches: "عمليات البحث المحفوظة", searchesSub: "احفظ بحثاً وتابع المساحات الجديدة المطابقة له.", noSearch: "لم تحفظ أي بحث بعد. احفظ بحثاً من صفحة المساحات لتتابعه هنا.", matches: "مساحة مطابقة", newSince: "جديدة", view: "عرض", remove: "حذف" }
     : { hi: "Welcome", sub: "Your space on SAT Markets: your saved listings and messages in one place.", saved: "Saved", none: "You have not saved any spaces yet.", browse: "Browse spaces", messages: "Messages", msgSub: "Your conversations with listers", onReq: "On request", openMsgs: "Open messages", explore: "Explore the market",
-        enquiries: "Your enquiries", enquiriesSub: "The spaces you have contacted", noEnq: "You have not made an enquiry yet.", enquiredOn: "enquired",
+        enquiries: "Your enquiries", enquiriesSub: "The spaces you have contacted", noEnq: "You have not made an enquiry yet.", enquiredOn: "enquired", sentDirect: "sent to lister",
         searches: "Saved searches", searchesSub: "Save a search and track new spaces that match it.", noSearch: "No saved searches yet. Save a search from the listings page to track it here.", matches: "spaces match", newSince: "new", view: "View", remove: "Remove" };
 
   return (
@@ -120,17 +148,20 @@ export default async function OccupierHome({ params }: { params: { locale: strin
         <div style={{ marginTop: 26 }}>
           <div className="modhead"><Icon.doc size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.enquiries}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{enquiries.length}</span></div>
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-            {enquiries.map((c: any) => {
-              const l = c.listings;
+            {enquiries.map((it: any) => {
+              const l = it.listing;
+              const direct = it.kind === "direct";
               const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
-              const when = listedSince(c.last_message_at || c.created_at);
+              const when = listedSince(it.when);
               return (
-                <div key={c.id} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
+                <div key={it.key} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
                     <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{(ar ? l.title_ar : l.title_en) || assetLabel(l.asset_type, lp)}</Link>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{when ? <> · {listedLabel(when.days, ar)} {t.enquiredOn}</> : null}</div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
                   </div>
-                  <Link href={`/${lp}/messages`} className="btn secondary sm" style={{ textDecoration: "none", flex: "none" }}>{t.openMsgs}</Link>
+                  {direct
+                    ? <Link href={`/${lp}/listings/${l.id}`} className="btn secondary sm" style={{ textDecoration: "none", flex: "none" }}>{t.view}</Link>
+                    : <Link href={`/${lp}/messages`} className="btn secondary sm" style={{ textDecoration: "none", flex: "none" }}>{t.openMsgs}</Link>}
                 </div>
               );
             })}
