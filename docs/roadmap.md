@@ -18,7 +18,8 @@ decisions and the ASSET_FIELDS data-coverage audit).
 - **Broker/agency verification profile** (`/lister/[id]`): trust dossier — Identity
   verified by SAT, live-spaces / lease-sale split / member-since, operator disclosure.
   CR + legal name stay private by design. (added `member_since` to `listers_public`)
-- **Occupier slice**: enquiry history (from conversations) + **account-backed saved
+- **Occupier slice**: enquiry history (message threads **plus** attributed
+  direct-contact leads, deduped by listing — thread wins) + **account-backed saved
   searches with in-app new-match alerts** on `/me`. (`/api/saved-searches`,
   `SavedSearchRows`, `SaveSearch` mirror, auth-callback merge)
 - **Report this listing** — governance-as-trust; files into `listing_reports` for SAT
@@ -69,7 +70,5 @@ on click, tiny pins under big bubbles.
 
 ## Follow-ups (buildable, lower priority)
 
-- Surface `direct_contact` leads (now attributed) in the `/me` enquiry history, deduped
-  against conversation threads.
 - Exact map pins beyond `building_id` (Phase 2 geom wiring).
 - Central-Riyadh bubble overlap at city zoom (Phase 2 city aggregation).
