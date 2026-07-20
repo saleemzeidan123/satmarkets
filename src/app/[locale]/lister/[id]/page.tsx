@@ -37,7 +37,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
 
   const { data: lister } = await sb
     .from("listers_public")
-    .select("id,name_en,name_ar,lister_type,is_operator,is_verified,about_en,about_ar,website,public_email,public_phone,logo_url")
+    .select("id,name_en,name_ar,lister_type,is_operator,is_verified,about_en,about_ar,website,public_email,public_phone,logo_url,member_since")
     .eq("id", params.id)
     .maybeSingle();
   if (!lister) notFound();
@@ -50,13 +50,28 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
     .order("created_at", { ascending: false }).limit(60);
   const rows = (listings || []) as any[];
 
+  // Dossier facts, all non-sensitive and true OF the lister (never a judgment about
+  // them): how many spaces they have live, the lease/sale split, and how long they
+  // have been on the exchange. CR number and legal name are deliberately not exposed.
+  const leaseCount = rows.filter((l) => l.deal_type === "lease").length;
+  const saleCount = rows.filter((l) => l.deal_type === "sale").length;
+  const memberYear = p.member_since && isFinite(new Date(p.member_since).getTime())
+    ? new Date(p.member_since).getFullYear()
+    : null;
+
   const name = (ar ? p.name_ar : p.name_en) || p.name_en || "";
   const about = (ar ? p.about_ar : p.about_en) || p.about_en || p.about_ar || "";
   const role = p.lister_type === "broker" ? (ar ? "وسيط مرخّص" : "Licensed broker") : (ar ? "مالك" : "Owner");
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   const t = ar
-    ? { spaces: "المساحات المعروضة", none: "لا مساحات معروضة حالياً.", website: "الموقع", verified: "موثّق", contact: "تواصل", onReq: "عند الطلب" }
-    : { spaces: "Spaces on the market", none: "No spaces are live right now.", website: "Website", verified: "Verified", contact: "Contact", onReq: "On request" };
+    ? { spaces: "المساحات المعروضة", none: "لا مساحات معروضة حالياً.", website: "الموقع", verified: "موثّق", contact: "تواصل", onReq: "عند الطلب",
+        spacesLive: "مساحة معروضة", forLease: "للإيجار", forSale: "للبيع", since: "على سات ماركتس منذ",
+        verifiedBy: "الهوية موثّقة من سات ماركتس",
+        operator: "شركة سات العقارية تُشغّل هذا السوق وتُدرج عروضها كوسيط مرخّص كأي مُعلن آخر، دون أي شارة أو أفضلية لا يستطيع غيرها الحصول عليها." }
+    : { spaces: "Spaces on the market", none: "No spaces are live right now.", website: "Website", verified: "Verified", contact: "Contact", onReq: "On request",
+        spacesLive: "live spaces", forLease: "for lease", forSale: "for sale", since: "On SAT Markets since",
+        verifiedBy: "Identity verified by SAT",
+        operator: "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn." };
 
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
@@ -70,12 +85,31 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
             <span className="tag">{role}</span>
             {p.is_verified && <span className="verified"><span className="dot" />{t.verified}</span>}
           </div>
-          {about && <p className="muted" style={{ fontSize: 14, lineHeight: 1.7, marginTop: 10, maxWidth: 680 }}>{about}</p>}
+          {/* Verification is the whole brand: state plainly that SAT checked the
+              identity, when the lister is verified. A binary fact, not a rank. */}
+          {p.is_verified && (
+            <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "#1F8A5B", fontSize: 12.5 }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+              <span style={{ fontWeight: 600 }}>{t.verifiedBy}</span>
+            </div>
+          )}
+          {/* Dossier stat strip: facts true OF the lister. No ratings, no tiers. */}
+          <div className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center", fontSize: 13, color: "var(--slate)" }}>
+            <span><strong style={{ color: "var(--ink)", fontWeight: 700 }}>{rows.length}</strong> {t.spacesLive}</span>
+            {leaseCount > 0 && <><span aria-hidden="true">·</span><span>{leaseCount} {t.forLease}</span></>}
+            {saleCount > 0 && <><span aria-hidden="true">·</span><span>{saleCount} {t.forSale}</span></>}
+            {memberYear && <><span aria-hidden="true">·</span><span>{t.since} <bdi dir="ltr">{memberYear}</bdi></span></>}
+          </div>
+          {about && <p className="muted" style={{ fontSize: 14, lineHeight: 1.7, marginTop: 12, maxWidth: 680 }}>{about}</p>}
           <div className="row gap10 wrap" style={{ marginTop: 12, fontSize: 13 }}>
             {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}><Icon.pin size={14} /> {t.website}</a>}
             {p.public_phone && <a href={`tel:${p.public_phone}`} className="chip" style={{ textDecoration: "none" }}>{p.public_phone}</a>}
             {p.public_email && <a href={`mailto:${p.public_email}`} className="chip" style={{ textDecoration: "none" }}>{p.public_email}</a>}
           </div>
+          {/* Neutrality disclosure: when the operator lists, say so plainly. */}
+          {p.is_operator && (
+            <p className="muted" style={{ marginTop: 12, fontSize: 12, lineHeight: 1.6, maxWidth: 680, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{t.operator}</p>
+          )}
         </div>
       </div>
 
