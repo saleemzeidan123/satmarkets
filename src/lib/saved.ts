@@ -61,3 +61,26 @@ export async function mergeSavedOnLogin(): Promise<void> {
     /* leave the device list as-is */
   }
 }
+
+// On sign-in: fold any searches saved on this device (while logged out) into the
+// account, so a saved search made before signing up is not lost and starts feeding
+// the occupier's alerts. Best effort; duplicates are skipped server-side.
+export const SAVED_SEARCHES_KEY = "sat_saved_searches";
+
+export async function mergeSavedSearchesOnLogin(): Promise<void> {
+  try {
+    const raw = localStorage.getItem(SAVED_SEARCHES_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    const items = (Array.isArray(list) ? list : [])
+      .filter((s: any) => s && typeof s.qs === "string")
+      .map((s: any) => ({ qs: s.qs, label: s.name || "" }));
+    if (!items.length) return;
+    await fetch("/api/saved-searches", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ items }),
+    });
+  } catch {
+    /* leave the device list as-is */
+  }
+}

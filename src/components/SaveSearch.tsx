@@ -2,14 +2,29 @@
 import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
 
-// Device-local saved searches (localStorage). Works signed-out; moves to the
-// saved_searches table when accounts go live. Bilingual, no backend calls.
+// Saved searches. localStorage is the device list (used signed-out and for the inline
+// chips here); when the visitor is signed in we ALSO mirror each save to their account
+// via /api/saved-searches, so it persists across devices and feeds the saved-search
+// alerts on their occupier home. Signed-out mirror calls 401 and are ignored.
 
 type Saved = { name: string; qs: string };
 const KEY = "sat_saved_searches";
 
 function read(): Saved[] {
   try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch { return []; }
+}
+
+// Best effort: a signed-out user gets 401 and we simply keep the device list.
+function mirror(qs: string, label: string): void {
+  try {
+    void fetch("/api/saved-searches", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ qs, label }),
+    });
+  } catch {
+    /* offline or signed out: the device list still has it */
+  }
 }
 
 export default function SaveSearch({ locale, qs, label }: { locale: "en" | "ar"; qs: string; label: string }) {
@@ -25,6 +40,7 @@ export default function SaveSearch({ locale, qs, label }: { locale: "en" | "ar";
     const next = [...saved, { name: label, qs }].slice(-8);
     localStorage.setItem(KEY, JSON.stringify(next));
     setSaved(next);
+    mirror(qs, label);
   };
   const remove = (q: string) => {
     const next = saved.filter((s) => s.qs !== q);

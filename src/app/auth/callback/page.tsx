@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { mergeSavedOnLogin } from "@/lib/saved";
+import { mergeSavedOnLogin, mergeSavedSearchesOnLogin } from "@/lib/saved";
 
 export default function AuthCallback() {
   const [msg, setMsg] = useState("Signing you in…");
@@ -29,9 +29,10 @@ export default function AuthCallback() {
           const { data } = await sb.auth.getSession();
           if (!data.session) throw new Error("no session");
         }
-        // Fold any favourites saved on this device (while logged out) into the new
-        // session's account, so signing in never loses a saved listing. Best effort.
+        // Fold anything saved on this device (while logged out) into the new session's
+        // account, so signing in never loses a saved listing or search. Best effort.
         await mergeSavedOnLogin();
+        await mergeSavedSearchesOnLogin();
         // hard navigation so the server sees the freshly written cookies
         window.location.replace(next);
       } catch {
