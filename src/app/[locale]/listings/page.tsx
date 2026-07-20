@@ -19,7 +19,7 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
-import { facetFields, matchesAssetFacets } from "@/lib/facets";
+import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
@@ -137,9 +137,12 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   if (bbox) { const [w, so, e, no] = bbox; shown = shown.filter((l: any) => { const c = coordByListing.get(l.id); return !!c && c.lng >= w && c.lng <= e && c.lat >= so && c.lat <= no; }); }
 
   // Registry-driven per-asset facets, only when exactly one asset type is selected
-  // (facets are asset-specific). Filtered in memory over the fetched listings.
+  // (facets are asset-specific). Coverage-gated over the fetched listings of that
+  // asset, so a facet renders only when enough listings actually carry the value:
+  // no dead controls (land_use on land, clinic_rooms on medical) until the data
+  // backfill lands, and each facet auto-appears once inventory crosses the bar.
   const facetAsset = list(searchParams.asset).length === 1 ? list(searchParams.asset)[0] : null;
-  const facets = facetAsset ? facetFields(facetAsset) : [];
+  const facets = facetAsset ? coveredFacetFields(facetAsset, listings as any) : [];
   const facetValues: Record<string, string | undefined> = {};
   if (facetAsset) for (const f of facets) facetValues[f.key] = (searchParams as Record<string, string | undefined>)[`f_${f.key}`];
   if (facets.length) shown = shown.filter((l: any) => matchesAssetFacets(l, facetAsset!, facetValues));
@@ -238,7 +241,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             if (f.type === "number" || f.type === "integer") {
               return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl}${f.unit ? " (" + f.unit + ")" : ""} ${ar ? "الأدنى" : "min"}`} style={{ ...inpStyle, width: 170 }} />;
             }
-            const opts: [string, string][] = f.type === "tristate"
+            const opts: [string, string][] = f.type === "tristate" || f.type === "boolean"
               ? [["yes", ar ? "نعم" : "Yes"], ["no", ar ? "لا" : "No"]]
               : (f.validation?.enum ?? []).map((v) => [v, f.options?.[v]?.[ar ? 1 : 0] ?? v.replace(/_/g, " ")] as [string, string]);
             return (

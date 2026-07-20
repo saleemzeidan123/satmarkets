@@ -282,30 +282,45 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <a href="#ov" className="t on" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.overview}</a>
             <Link href={L("/invest")} className="t" style={{ textDecoration: "none" }}><Icon.coins size={15} /> {dict.ld.investment}</Link>
           </div>
+          {/* At-a-glance facts grid. The universal facts (area, grade, fit-out, price)
+              plus whichever asset-defining typed-column specs are actually present
+              (clear height / docks / power / parking / civil defense) are promoted
+              here as scannable tiles, so a warehouse or land plot whose grade/fit-out
+              read n_a still leads with its real headline specs instead of a bare
+              two-tile strip. Every tile is a present, typed-column fact: n_a and null
+              are skipped, so a tile never shows a non-answer. These specs are drawn up
+              from the detail section below, not duplicated. */}
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
-            {([[dict.ld.area, `${l.area_sqm} m²`], (l.building_grade && l.building_grade !== "n_a" ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null), (l.fitout_condition && l.fitout_condition !== "n_a" ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null), [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)]].filter(Boolean) as [string, string][]).map((s, i) => (
-              <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
-                <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
-                <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
-              </div>
-            ))}
+            {(() => {
+              const T = (dict as any).ld;
+              const numf = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+              const tiles: ([string, string] | null)[] = [
+                [dict.ld.area, `${l.area_sqm} m²`],
+                (l.building_grade && l.building_grade !== "n_a") ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null,
+                (l.fitout_condition && l.fitout_condition !== "n_a") ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null,
+                l.clear_height_m != null ? [T.clearHeight, numf(l.clear_height_m) + (ar ? " م" : " m")] : null,
+                l.loading_docks != null ? [T.loadingDocks, numf(l.loading_docks)] : null,
+                l.power_kva != null ? [T.power, numf(l.power_kva) + " kVA"] : null,
+                l.parking_ratio != null ? [T.parking, `1 ${ar ? "موقف / " : "space / "}${numf(l.parking_ratio)} ${ar ? "م²" : "m²"}`] : null,
+                l.civil_defense_approved ? [T.civilDefense, ar ? "معتمد" : "Approved"] : null,
+                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)],
+              ];
+              return (tiles.filter(Boolean) as [string, string][]).map((s, i) => (
+                <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
+                  <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
+                  <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
+                </div>
+              ));
+            })()}
           </div>
           {(() => {
             const T = (dict as any).ld;
-            const num = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+            // The headline typed-column specs (clear height, docks, power, parking,
+            // civil defense) are now promoted into the at-a-glance facts grid above,
+            // so this section carries only the registry-driven per-asset fields stored
+            // in `attributes` (office floor plate and ceiling height, warehouse yard
+            // depth and column grid, and so on). The section auto-hides when empty.
             const rows: [string, string][] = [];
-            if (l.clear_height_m != null) rows.push([T.clearHeight, num(l.clear_height_m) + (ar ? " م" : " m")]);
-            if (l.loading_docks != null) {
-              const d = Number(l.loading_docks);
-              const ratio = l.area_sqm && d > 0 ? ` · 1 ${ar ? "لكل" : "per"} ${num(Math.round(Number(l.area_sqm) / d))} ${ar ? "م²" : "m²"}` : "";
-              rows.push([T.loadingDocks, `${num(d)}${ratio}`]);
-            }
-            if (l.power_kva != null) rows.push([T.power, num(l.power_kva) + " kVA"]);
-            if (l.parking_ratio != null) rows.push([T.parking, `1 ${ar ? "موقف / " : "space / "}${num(l.parking_ratio)} ${ar ? "م²" : "m²"}`]);
-            if (l.civil_defense_approved) rows.push([T.civilDefense, ar ? "معتمد" : "Approved"]);
-            // Registry-driven per-asset fields stored in attributes (Phase 1). Appends
-            // the fields that have no typed column (for example office floor plate and
-            // ceiling height), so offices finally get a physical section too.
             rows.push(...spaceAttributeRows(l.asset_type, l.attributes, ar));
             if (rows.length === 0) return null;
             return (
