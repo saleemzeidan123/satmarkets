@@ -23,13 +23,19 @@ body {
 }
 [dir="rtl"] .fig { letter-spacing: 0; }
 [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] .font-display, [dir="rtl"] .serif {
-  font-family: var(--font-ar-head), var(--font-ar), system-ui, sans-serif;
+  font-family: var(--font-ar), system-ui, sans-serif;
   letter-spacing: 0;
   line-height: 1.4;
-  font-weight: 600;
+  font-weight: 700;
 }
 h1,h2,h3,.font-display { font-family: var(--font-serif), Georgia, serif; font-weight: 500; letter-spacing: -0.01em; text-wrap: balance; }
 p, li { text-wrap: pretty; }
+/* Arabic script: tracking breaks the cursive joins, so it never applies anywhere;
+   Arabic prose also needs more leading than Latin at the same size (ascenders,
+   descenders, and stacked diacritics). Numerals stay Western via the ar-SA-u-nu-latn
+   locale used in code. */
+[dir="rtl"] { letter-spacing: 0; }
+[dir="rtl"] p, [dir="rtl"] li { line-height: 1.85; }
 ::selection { background: rgba(58,110,165,0.16); }
 a { transition: color .18s ease; }
 .eyebrow { font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color:#3A6EA5; font-weight:600; }
@@ -54,7 +60,9 @@ a { transition: color .18s ease; }
 .asset-arrow[data-hidden="true"]{ opacity:0; pointer-events:none; }
 [dir="rtl"] .asset-arrow svg{ transform:scaleX(-1); }
 @media (max-width:640px){ .asset-slider{ grid-template-columns:1fr; } .asset-arrow{ display:none; } }
-[dir="rtl"]{ --fs-cap:10px; --fs-3xs:11px; --fs-2xs:12px; --fs-xs:13px; --fs-sm:14px; --fs-base:15px; }
+/* Arabic size uplift (~x1.12): Arabic's meaningful detail sits in fine loops and
+   dots, so it reads smaller than Latin at the same px and is set a notch larger. */
+[dir="rtl"]{ --fs-cap:11px; --fs-3xs:12px; --fs-2xs:13px; --fs-xs:14px; --fs-sm:15px; --fs-base:17px; }
 .btn-ghost { border:1px solid rgba(28,33,38,0.16); border-radius:10px; transition: background .18s ease, border-color .18s ease; }
 .btn-ghost:hover { background: rgba(28,33,38,0.03); border-color: rgba(28,33,38,0.28); }
 .badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; letter-spacing:0.04em; padding:3px 9px; border-radius:999px; }
