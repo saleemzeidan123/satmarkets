@@ -71,25 +71,32 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
 
     const addData = (m: any) => {
       if (m.getSource("d")) return;
+      // Zoom-gated crossfade: district bubbles OWN the overview and fade out as the
+      // user drills in (maxzoom 14.5), while exact building pins are hidden at overview
+      // zoom and fade IN past z12. So the two mark systems never fight for the same
+      // pixel: bubbles above ~z13, pins below. This is the real de-overlap.
+      const D_FADE = ["interpolate", ["linear"], ["zoom"], 12.5, 0.9, 14, 0];
+      const P_FADE = ["interpolate", ["linear"], ["zoom"], 12, 0, 13.5, 1];
       // promoteId lets feature-state (selected ring) key off the district id.
       m.addSource("d", { type: "geojson", promoteId: "id", data: bubbleFC() as any });
-      m.addLayer({ id: "d-c", type: "circle", source: "d", paint: {
+      m.addLayer({ id: "d-c", type: "circle", source: "d", maxzoom: 14.5, paint: {
         "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#2C557F", "#3A6EA5"],
-        "circle-opacity": 0.9,
+        "circle-opacity": D_FADE as any,
         "circle-radius": RADIUS as any,
         "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 2],
         "circle-stroke-color": ["case", ["boolean", ["feature-state", "selected"], false], "#E8A33D", "#ffffff"],
+        "circle-stroke-opacity": D_FADE as any,
       } });
-      m.addLayer({ id: "d-n", type: "symbol", source: "d", layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": "#ffffff" } });
+      m.addLayer({ id: "d-n", type: "symbol", source: "d", maxzoom: 14.5, layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": "#ffffff", "text-opacity": D_FADE as any } });
       // Transparent padded hit target on top, so clicks/hover land on a generous area
       // even though the visible disc is smaller. Events bind to this layer.
-      m.addLayer({ id: "d-hit", type: "circle", source: "d", paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": ["+", RADIUS as any, 10] } });
+      m.addLayer({ id: "d-hit", type: "circle", source: "d", maxzoom: 14.5, paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": ["+", RADIUS as any, 10] } });
 
       m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
-      m.addLayer({ id: "p-hl", type: "circle", source: "hl", paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" } });
-      m.addLayer({ id: "p-c", type: "circle", source: "p", paint: { "circle-color": "#1F8A5B", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff" } });
-      m.addLayer({ id: "p-hit", type: "circle", source: "p", paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": 16 } });
+      m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" } });
+      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#1F8A5B", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff", "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
+      m.addLayer({ id: "p-hit", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": 16 } });
       applySelected(m, selectedRef.current);
     };
 
@@ -112,7 +119,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         const f = e.features?.[0]; if (!f) return;
         const id = f.properties.id;
         applySelected(m, id);
-        try { m.flyTo({ center: (f.geometry.coordinates as [number, number]), zoom: Math.max(m.getZoom(), 11.5), duration: 650 }); } catch {}
+        try { m.flyTo({ center: (f.geometry.coordinates as [number, number]), zoom: Math.max(m.getZoom(), 12.5), duration: 650 }); } catch {}
         const sp = new URLSearchParams(baseParams); sp.set("district", id);
         router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false });
       });
