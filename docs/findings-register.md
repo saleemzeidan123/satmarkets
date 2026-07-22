@@ -13,10 +13,10 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 | 2 | P0 | Inline negative tracking survives RTL reset | Confirmed open | Verified: inline `letterSpacing` on H1s in requirements, area, hbu, locations, brokers. WS08. |
 | 3 | P0 | Verification states merged into Owner-verified | Confirmed open | Verified: PDP metadata hardcodes owner-verified wording. DB has ownership_verified, authorization_verified, is_sat_listed; label split is Phase 2 with owner-approved policy. |
 | 4 | P0 | Internal reference H1, N/A in metadata | Confirmed open | Verified: title falls back to reference_code (2 published AR titles missing); grade label renders N/A in description. WS12/WS17. |
-| 5 | P0 | Q2 vs Q1 reporting-period mismatch | Fixed and awaiting deployment verification | DB evidence: rent_index_published carries only 2026-Q2 (7 rows, sufficient). Arabic corrected to الربع الثاني in both strings; advisor now renders via formatPeriod; parity test added. |
-| 6 | P0 | وسطاء الأحياء mistranslation on Pricing | Fixed and awaiting deployment verification | Source evidence: REGA publishes averages, not medians. EN "district medians" → "district averages", AR → متوسطات; matrix row fixed both locales; law test added. |
-| 7 | P0 | Preview canonicalizes to unowned satmarkets.sa | Fixed and awaiting deployment verification | site.ts now env-aware (NEXT_PUBLIC_SITE_URL, then VERCEL_PROJECT_PRODUCTION_URL, then VERCEL_URL); no satmarkets.sa fallback. |
-| 8 | P0 | /compare in sitemap while noindex | Fixed and awaiting deployment verification | Removed from sitemap ROUTES. |
+| 5 | P0 | Q2 vs Q1 reporting-period mismatch | Closed with live evidence | DB evidence: rent_index_published carries only 2026-Q2 (7 rows, sufficient). Arabic corrected to الربع الثاني in both strings; advisor now renders via formatPeriod; parity test added. |
+| 6 | P0 | وسطاء الأحياء mistranslation on Pricing | Closed with live evidence | Source evidence: REGA publishes averages, not medians. EN "district medians" → "district averages", AR → متوسطات; matrix row fixed both locales; law test added. |
+| 7 | P0 | Preview canonicalizes to unowned satmarkets.sa | Closed with live evidence | site.ts now env-aware (NEXT_PUBLIC_SITE_URL, then VERCEL_PROJECT_PRODUCTION_URL, then VERCEL_URL); no satmarkets.sa fallback. |
+| 8 | P0 | /compare in sitemap while noindex | Closed with live evidence | Removed from sitemap ROUTES. |
 | 9 | P0 | Counsel placeholders in legal pages | Blocked by evidence or decision | Needs Saudi counsel (WS30). Pages remain noindex. |
 | 10 | P0 | Developments flow through district parameter | Partially addressed | districts.kind exists in DB (Law 7). URL param and UI labels still say district; WS04 model doc done, route/label work is Phase 2 (WS19). |
 | 11 | P0 | Availability shown as static trust statement | Confirmed open | Freshness thresholds are WS13/WS18. |
@@ -41,8 +41,8 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 | 30 | P1 | Arabic calques | Confirmed open | WS11 editorial pass. |
 | 31 | P1 | Key names disagree with displayed terms | Partially addressed | Display now says averages; internal `median` column rename deferred (schema change, supervised). |
 | 32 | P1 | Listing alternates omit x-default | Confirmed open | WS12. |
-| 33 | P1 | /verify not covered by noindex middleware | Fixed and awaiting deployment verification | Verified all three /verify pages already 404 for non-SAT (su.isSat gate); /verify, /ops, /proto added to noindex prefixes. |
-| 34 | P1 | Footer advertises SATMARKETS.SA | Fixed and awaiting deployment verification | Footer shows bilingual brand name only; law test bans the domain in dictionary copy. |
+| 33 | P1 | /verify not covered by noindex middleware | Closed with live evidence | Verified all three /verify pages already 404 for non-SAT (su.isSat gate); /verify, /ops, /proto added to noindex prefixes. |
+| 34 | P1 | Footer advertises SATMARKETS.SA | Closed with live evidence | Footer shows bilingual brand name only; law test bans the domain in dictionary copy. |
 | 35 | P1 | /list looks like a working form | Not independently reverified | WS24 or honest coming-soon, Phase 3. |
 | 36 | P2 | WebSite/SearchAction schema absent | Confirmed open | WebSite in WS12; SearchAction only after WS16. |
 | 37 | P2 | Entity schema lacks verified fields | Not independently reverified | WS31. |
