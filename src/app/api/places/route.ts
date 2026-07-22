@@ -102,7 +102,7 @@ async function mapbox(q: string): Promise<Item[] | null> {
 async function photon(q: string): Promise<Item[]> {
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=en&limit=15&lat=24.7136&lon=46.6753`;
-    const r = await fetch(url, { headers: { "User-Agent": "SATMarkets/1.0 (satmarkets.sa)" }, cache: "no-store" });
+    const r = await fetch(url, { headers: { "User-Agent": "SATMarkets/1.0 (+https://github.com/saleemzeidan123/satmarkets)" }, cache: "no-store" });
     if (!r.ok) return [];
     const j: any = await r.json();
     const seen = new Set<string>();

@@ -7,7 +7,9 @@ import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
 import { getDictionary } from "@/i18n/getDictionary";
 
-type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; median: string; unit: string; period: string; source: string };
+// Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
+// `average` (it is an arithmetic average from the REGA source, never a median).
+type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string };
 
 const SEG_LABEL: Record<string, [string, string]> = {
  "office|grade_a": ["Office · Grade A", "مكاتب · الفئة A"],
@@ -85,11 +87,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   if (!activeRow) return;
   const r = parseFloat(rent.replace(/[,\s]/g, ""));
   if (!isFinite(r) || r <= 0) return;
-  const lo = Number(activeRow.band_low), hi = Number(activeRow.band_high), med = Number(activeRow.median);
+  const lo = Number(activeRow.band_low), hi = Number(activeRow.band_high), avg = Number(activeRow.average);
   const segL = SEG_LABEL[segKey] ? SEG_LABEL[segKey][ar ? 1 : 0] : segKey;
   const unitL = UNIT_LABEL[activeRow.unit] ? UNIT_LABEL[activeRow.unit][ar ? 1 : 0] : activeRow.unit;
   const locL = ar ? (activeRow.district_label_ar || activeRow.district_label) : activeRow.district_label;
-  const dm = Math.round(Math.abs(((r - med) / med) * 100));
+  const dm = Math.round(Math.abs(((r - avg) / avg) * 100));
   const v = r < lo ? "below" : r > hi ? "above" : "within";
   const sz = parseFloat(size.replace(/[,\s]/g, ""));
   const annual = isFinite(sz) && sz > 0 && activeRow.unit === "sar_sqm_year" ? Math.round(r * sz) : null;
@@ -97,18 +99,18 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   let text: string;
   if (ar) {
    const vAr = v === "within" ? "يقع ضمن النطاق المنشور" : v === "below" ? "يقع تحت النطاق المنشور" : "يقع فوق النطاق المنشور";
-   const dAr = r === med ? "عند المتوسط تماماً" : r < med ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
-   text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، المتوسط ${fmt(med)})، ${dAr}.` +
+   const dAr = r === avg ? "عند المتوسط تماماً" : r < avg ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
+   text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، المتوسط ${fmt(avg)})، ${dAr}.` +
     (annual ? ` عند ${fmt(sz)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
     ` ${formatPeriod(activeRow.period, true)}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
   } else {
    const vEn = v === "within" ? "sits within the published band" : v === "below" ? "sits below the published band" : "sits above the published band";
-   const dEn = r === med ? "exactly at the average" : r < med ? `about ${dm}% below the average` : `about ${dm}% above the average`;
-   text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, average ${fmt(med)}), ${dEn}.` +
+   const dEn = r === avg ? "exactly at the average" : r < avg ? `about ${dm}% below the average` : `about ${dm}% above the average`;
+   text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, average ${fmt(avg)}), ${dEn}.` +
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
     ` ${formatPeriod(activeRow.period, false)}, REGA Rental Index (Ejar): average of registered rental contracts. Indicative, not advice.`;
   }
-  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, median: med, high: hi, unit: activeRow.unit }, quoted: r, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
+  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, average: avg, high: hi, unit: activeRow.unit }, quoted: r, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
  }
 
  const started = msgs.length > 0;
@@ -167,7 +169,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
         <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
         {m.band && (() => {
          const b = m.band; const q0 = m.quoted ?? null;
-         const lo = b.low, md = b.median, hi = b.high;
+         const lo = b.low, avg = b.average, hi = b.high;
          const mn0 = Math.min(lo, q0 ?? lo), mx0 = Math.max(hi, q0 ?? hi);
          const pad = ((mx0 - mn0) || 1) * 0.12; const mn = mn0 - pad, mx = mx0 + pad; const sp = (mx - mn) || 1;
          const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
@@ -179,11 +181,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           <div style={{ margin: "10px 0 2px" }}>
            <div style={{ position: "relative", height: 8, borderRadius: 999, background: "var(--silver)" }}>
             <div style={{ position: "absolute", top: 0, bottom: 0, left: pc(lo), width: `calc(${pc(hi)} - ${pc(lo)})`, background: "var(--azure-wash)", borderRadius: 999 }} />
-            <div style={{ position: "absolute", top: -3, bottom: -3, left: pc(md), width: 2, background: "var(--harbor)" }} />
+            <div style={{ position: "absolute", top: -3, bottom: -3, left: pc(avg), width: 2, background: "var(--harbor)" }} />
             {q0 != null && <div style={{ position: "absolute", top: -5, bottom: -5, left: pc(q0), width: 3, marginInlineStart: -1, background: col, borderRadius: 2 }} />}
            </div>
            <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--slate)", marginTop: 6 }}>
-            <span>{fmt(lo)}</span><span>{(av.medianLabel) + fmt(md) + (unitL ? " · " + unitL : "")}</span><span>{fmt(hi)}</span>
+            <span>{fmt(lo)}</span><span>{(av.averageLabel) + fmt(avg) + (unitL ? " · " + unitL : "")}</span><span>{fmt(hi)}</span>
            </div>
            {q0 != null && <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 600, color: col, marginTop: 4 }}>{(av.yourRate) + fmt(q0)}</div>}
           </div>
@@ -236,13 +238,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           </label>
           <div className="row gap10 wrap">
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 150 }}>{(av.quotedRate) + (activeRow && UNIT_LABEL[activeRow.unit] ? UNIT_LABEL[activeRow.unit][ar ? 1 : 0] : "")}
-            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeRow ? Number(activeRow.median).toLocaleString("en-US") : ""} />
+            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeRow ? Number(activeRow.average).toLocaleString("en-US") : ""} />
            </label>
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · المتوسط ${Number(activeRow.median).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, true)}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · average ${Number(activeRow.median).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, false)}`}</div>}
+          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · المتوسط ${Number(activeRow.average).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, true)}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · average ${Number(activeRow.average).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, false)}`}</div>}
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeRow || !rent.trim()}>{av.analyse}</button>
           </div>

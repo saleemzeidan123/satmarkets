@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { formatPeriod, parsePeriod } from "./market/period";
+import { toPublicSegment } from "./market/segments";
+import { SITEMAP_ROUTES, HELD_ROUTES, PRIVATE_PREFIXES } from "./routePolicy";
 
 // PKG-0A law enforcement (Codex correction 6). Scope is deliberate: these tests
 // target user-visible output (both dictionaries, rendered source strings) and
@@ -108,12 +110,57 @@ test("period formatter renders the stored DB form in both languages", () => {
 });
 
 test("law: the preview never claims the unacquired domain in visible copy", () => {
-  // satmarkets.sa may appear in code comments and launch plumbing, but not in
-  // dictionary copy while unowned. (Canonical URLs are covered by lib/site.ts.)
+  // Two layers (PKG-0A.1, Codex correction 3):
+  // 1. Dictionaries: no string may carry the domain.
+  // 2. The full user-visible source surface: components, pages, API routes,
+  //    metadata (lib/meta.ts) and structured data (JsonLd lives in components).
+  //    The original defect was hardcoded in SatFooter.tsx, which the dictionary
+  //    check alone could never catch. Legitimate references live only in
+  //    lib/site.ts (launch configuration), lib/translate/glossary.ts (brand
+  //    protection list) and lib/legalContent.ts (counsel-blocked drafts,
+  //    noindex, register rank 9); those files are outside the scanned dirs and
+  //    lib/meta.ts is asserted clean explicitly.
   for (const dict of [EN, AR]) {
     for (const [path, s] of strings(dict)) {
       assert.ok(!/SATMARKETS\.SA/i.test(s), `unowned domain claim in dictionary at ${path}`);
     }
+  }
+  const scan = [...sourceFiles(join(ROOT, "components")), ...sourceFiles(join(ROOT, "app")), join(ROOT, "lib/meta.ts")];
+  for (const f of scan) {
+    assert.ok(!/satmarkets\.sa/i.test(readFileSync(f, "utf8")), `unowned domain reference in ${f}`);
+  }
+});
+
+test("law: the public Rent Index payload exposes the figure as average, never median", () => {
+  // Semantic contract (PKG-0A.1, Codex correction 1). The DB column is named
+  // median but stores REGA arithmetic averages (rentBasePipeline writes it from
+  // avg_rent; source_registry: "Publishes AVERAGES, not medians"). The mapper is
+  // the boundary; the route must use it.
+  const row = { district_label: "Al Olaya", district_label_ar: "العليا", district_id: "d1", asset_type: "office", segment: "grade_a", band_low: 1800, band_high: 2900, median: 2400, unit: "SAR/m2/yr", period: "2026-Q2", source: "rega_ejar" };
+  const pub = toPublicSegment(row) as Record<string, unknown>;
+  assert.equal(pub.average, 2400);
+  assert.ok(!("median" in pub), "public segment payload must not expose a median key");
+  const segmentsRoute = readFileSync(join(ROOT, "app/api/index/segments/route.ts"), "utf8");
+  assert.ok(segmentsRoute.includes("toPublicSegment"), "segments route must map rows through toPublicSegment");
+  const advisorRoute = readFileSync(join(ROOT, "app/api/advisor/route.ts"), "utf8");
+  assert.ok(advisorRoute.includes("toPublicSegment"), "advisor route must map band payloads through toPublicSegment");
+});
+
+test("law: sitemap, held-out routes and private prefixes agree", () => {
+  // Route policy is one module (lib/routePolicy.ts). A held or private route in
+  // the sitemap is a crawl contradiction (PKG-0A.1, Codex correction 2).
+  for (const h of HELD_ROUTES) {
+    assert.ok(!SITEMAP_ROUTES.includes(h.path), `${h.path} is held out but present in the sitemap`);
+    assert.ok(h.reason.length > 10, `${h.path} needs a documented holdout reason`);
+  }
+  for (const p of PRIVATE_PREFIXES) {
+    assert.ok(!SITEMAP_ROUTES.includes(p), `${p} is private but present in the sitemap`);
+  }
+  for (const must of ["/verify", "/ops", "/proto", "/compare"]) {
+    assert.ok(PRIVATE_PREFIXES.includes(must), `${must} missing from PRIVATE_PREFIXES`);
+  }
+  for (const must of ["/area", "/pricing", "/neutrality", "/about"]) {
+    assert.ok(HELD_ROUTES.some((h) => h.path === must), `${must} missing from HELD_ROUTES`);
   }
 });
 

@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
   try {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&lang=en&limit=15&lat=24.7136&lon=46.6753`;
-    const r = await fetch(url, { headers: { "User-Agent": "SATMarkets/1.0 (satmarkets.sa)" }, cache: "no-store" });
+    const r = await fetch(url, { headers: { "User-Agent": "SATMarkets/1.0 (+https://github.com/saleemzeidan123/satmarkets)" }, cache: "no-store" });
     if (!r.ok) return NextResponse.json({ items: [] });
     const j: { features?: Array<{ properties?: Record<string, unknown>; geometry?: { coordinates?: number[] } }> } = await r.json();
     const seen = new Set<string>();

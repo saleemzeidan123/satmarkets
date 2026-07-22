@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     const r = await fetch(raw, {
       redirect: "follow",
       signal: controller.signal,
-      headers: { "User-Agent": "SATMarkets/1.0 (satmarkets.sa)" },
+      headers: { "User-Agent": "SATMarkets/1.0 (+https://github.com/saleemzeidan123/satmarkets)" },
       cache: "no-store",
     }).finally(() => clearTimeout(timer));
 

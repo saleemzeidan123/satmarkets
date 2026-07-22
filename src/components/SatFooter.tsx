@@ -102,9 +102,9 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         </div>
       </div>
       <div className="bottom">
-        {/* Brand name only, no domain: satmarkets.sa is not yet acquired and the
-            preview must not claim it (PKG-0A, Codex rank 34). Reintroduce the
-            domain here only after acquisition and launch configuration. */}
+        {/* Brand name only, no domain: the production domain is not yet acquired
+            and the preview must not claim it (PKG-0A, Codex rank 34). Reintroduce
+            it here only after acquisition and launch configuration. */}
         <span>© 2026 {locale === "ar" ? "سات ماركتس" : "SAT MARKETS"} · {locale === "ar" ? "الرياض، السعودية" : "RIYADH, KSA"} · SAT REAL ESTATE FAL 1200025510</span>
         <span>{t("POWERED BY SAT REAL ESTATE")}</span>
       </div>

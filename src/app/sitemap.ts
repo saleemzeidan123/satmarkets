@@ -17,9 +17,11 @@ import { SITE } from "@/lib/site";
 //    declared page for a user whose language matches neither. English is the
 //    primary locale, so it takes x-default.
 
-// /compare is deliberately absent: the middleware permanently noindexes it as a
-// prototype surface, and no sitemap URL may be noindex (PKG-0A, Codex rank 8).
-const ROUTES = ["", "/listings", "/map", "/rent-index", "/area", "/advisor", "/pricing", "/about", "/neutrality", "/requirements", "/locations", "/market", "/brokers"];
+// Route membership lives in lib/routePolicy.ts, shared with the middleware, so
+// the sitemap and the noindex headers cannot drift apart. /compare (private
+// prototype) and the held-out routes (/area, /pricing, /neutrality, /about)
+// are deliberately absent: no sitemap URL may be noindex (PKG-0A / PKG-0A.1).
+import { SITEMAP_ROUTES as ROUTES } from "@/lib/routePolicy";
 
 // Routes whose content is driven by the listing set, so the newest listing
 // timestamp is a truthful lastmod for them. Everything else is editorial and

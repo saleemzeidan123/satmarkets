@@ -23,7 +23,8 @@ after acquisition (gate 21/22).
 | / | public-indexable-later | none | |
 | /listings, /listings/[id] | public-indexable-later | none | Detail pages enter sitemap only when ALLOW_INDEX (sample-data guard). |
 | /listings/[id]/flyer | noindex-public | none | Canonicalize to detail (WS12). |
-| /map, /rent-index, /area, /advisor, /pricing, /about, /neutrality, /requirements, /locations, /market, /brokers | public-indexable-later | none | /area and /pricing stay noindex at launch until their register rows clear. |
+| /map, /rent-index, /advisor, /requirements, /locations, /market, /brokers | public-indexable-later | none | In `SITEMAP_ROUTES` (lib/routePolicy.ts). |
+| /area, /pricing, /neutrality, /about | noindex-public (HELD) | none | In `HELD_ROUTES` (lib/routePolicy.ts): excluded from the sitemap AND noindexed by the middleware even when ALLOW_INDEX is on, until each route's audit gate clears (/area entity route, /pricing offer decision O1, /neutrality legal review O2, /about claim C8). |
 | /building/[id], /lister/[id], /requirements/[id] | public-indexable-later | none | Detail sitemap entries gated on ALLOW_INDEX. |
 | /login, /signup | noindex-private (/signup) / noindex-public (/login) | none | /signup is in PRIVATE_PREFIXES. |
 | /dashboard/** | noindex-private | account session | |
@@ -37,6 +38,9 @@ after acquisition (gate 21/22).
 
 ## Sitemap contract
 
-No sitemap URL may be noindex, private, or a redirect alias. Current sitemap =
-static ROUTES (minus /compare, removed PKG-0A) plus listing/building details only
-when ALLOW_INDEX. robots.txt disallows /api/, /verify, /admin in both locales.
+No sitemap URL may be noindex, private, or a redirect alias. Route membership is
+code: `src/lib/routePolicy.ts` exports `SITEMAP_ROUTES`, `HELD_ROUTES` and
+`PRIVATE_PREFIXES`, imported by BOTH the sitemap and the middleware, and a law
+test asserts they never contradict. Listing/building details enter the sitemap
+only when ALLOW_INDEX. robots.txt disallows /api/, /verify, /admin in both
+locales.

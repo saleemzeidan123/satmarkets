@@ -7,7 +7,9 @@
 //      after the domain is acquired and DNS is live, set it to
 //      https://satmarkets.sa. Never before.
 //   2. VERCEL_PROJECT_PRODUCTION_URL, the project's real production host
-//      (currently satmarkets-sat-markets.vercel.app), for production builds.
+//      (currently satmarkets-wheat.vercel.app; the satmarkets-sat-markets
+//      alias serves the same deployment), for production builds. Set
+//      NEXT_PUBLIC_SITE_URL to the alias if it should be the canonical host.
 //   3. VERCEL_URL, the per-deployment host, for previews.
 //   4. localhost for local dev.
 //

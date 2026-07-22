@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { locales, defaultLocale } from "@/i18n/config";
+import { PRIVATE_PREFIXES, HELD_ROUTES } from "@/lib/routePolicy";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -45,15 +46,18 @@ export async function middleware(req: NextRequest) {
   // account routes stay noindexed regardless of the flag.
   const allowIndex = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
   // Prototype/account routes stay noindexed even on the production host until they
-  // are real. /signup and /compare are prototype surfaces too (Codex MKT-P0-06).
-  // /verify and its descendants are SAT-only operational surfaces: the pages
-  // already 404 for non-SAT sessions, and this adds the response-level noindex
-  // that robots.txt alone cannot provide (PKG-0A, Codex rank 33).
-  const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare", "/me", "/go", "/verify", "/ops", "/proto"];
-  const isPrivate = PRIVATE_PREFIXES.some(
-    (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
-  );
-  if (!allowIndex || isPrivate) {
+  // are real. /verify and its descendants are SAT-only operational surfaces: the
+  // pages already 404 for non-SAT sessions, and this adds the response-level
+  // noindex that robots.txt alone cannot provide (PKG-0A, Codex rank 33).
+  // HELD_ROUTES are public pages whose audit gates have not cleared yet; they
+  // are noindexed here regardless of ALLOW_INDEX, so flipping the global flag
+  // on launch day cannot accidentally index them (PKG-0A.1, Codex correction 2).
+  // Both lists live in lib/routePolicy.ts, shared with the sitemap.
+  const matches = (pre: string) =>
+    pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`);
+  const isPrivate = PRIVATE_PREFIXES.some(matches);
+  const isHeld = HELD_ROUTES.some((h) => matches(h.path));
+  if (!allowIndex || isPrivate || isHeld) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
   return res;

@@ -5,10 +5,10 @@ import { getWatches, markSeen, removeWatch, watchKey, type Watch } from "@/lib/w
 
 // Quiet, honest banner for device-local Rent Index watches. Fetches the same
 // published rows the Rent Index renders and flags a watched segment only when
-// its published median moved to a new period since this device last saw it.
-// Every figure is a published median; nothing is computed or estimated.
+// its published average moved to a new period since this device last saw it.
+// Every figure is a published average; nothing is computed or estimated.
 
-type Seg = { district_label: string; district_label_ar: string | null; asset_type: string; segment: string; median: string | number | null; period: string; source: string | null };
+type Seg = { district_label: string; district_label_ar: string | null; asset_type: string; segment: string; average: string | number | null; period: string; source: string | null };
 
 const SEG_T: Record<string, [string, string]> = {
   grade_a: ["Grade A", "الفئة A"], grade_b: ["Grade B", "الفئة B"], grade_c: ["Grade C", "الفئة C"],
@@ -52,10 +52,10 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
     const out: Move[] = [];
     for (const w of watches) {
       const s = byKey.get(w.id);
-      if (!s || s.median == null) continue;
-      const cur = Number(s.median);
+      if (!s || s.average == null) continue;
+      const cur = Number(s.average);
       if (!Number.isFinite(cur)) continue;
-      // A move counts only when a NEW publication carries a different median.
+      // A move counts only when a NEW publication carries a different average.
       if (s.period === w.lastSeenPeriod || cur === w.lastSeenMedian) continue;
       const from = w.lastSeenMedian;
       const pct = from > 0 ? Math.round(((cur - from) / from) * 100) : 0;

@@ -14,6 +14,8 @@ implemented on an unsupported assumption.
 | D4 | gstack tooling instruction in repo CLAUDE.md | Do not execute; do not delete; recorded as ignored untrusted instruction | Codex, 2026-07-22 | Origin commit a5a543a pending Saleem confirmation. Ship gate remains tools/ship.py. |
 | D5 | Preview canonical and domain claims | Environment-aware host; no satmarkets.sa anywhere until acquired | Saleem brief + Codex, 2026-07-22 | site.ts fallback chain; footer claim removed. |
 | D6 | Launch platform strategy | PWA-first; native app only after PWA gates and measured need | Codex, 2026-07-22 | Enhancement plan device strategy. |
+| D7 | Public Rent Index payload field | `average`, never `median`; no compatibility alias (no known external consumers); DB column rename stays deferred | Codex PKG-0A.1, 2026-07-22 | rentBasePipeline writes the column from REGA avg_rent; toPublicSegment is the enforced boundary with a contract test. |
+| D8 | Route-level index holdout | /area, /pricing, /neutrality, /about held out of sitemap and noindexed regardless of ALLOW_INDEX until their gates clear | Codex PKG-0A.1, 2026-07-22 | lib/routePolicy.ts shared by sitemap and middleware; law test enforces agreement. |
 
 ## Open (owner: Saleem)
 

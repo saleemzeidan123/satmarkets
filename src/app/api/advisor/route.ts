@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
+import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -215,7 +216,9 @@ export async function POST(req: NextRequest) {
     const fallback = arq
       ? `\u0645\u0624\u0634\u0631 \u0633\u0627\u062a \u0644\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a ${band.period}\u060c ${band.district_label} ${band.asset_type}${seg}: \u0645\u0646 ${band.band_low} \u0625\u0644\u0649 ${band.band_high} ${band.unit}\u060c \u0627\u0644\u0645\u062a\u0648\u0633\u0637 ${band.median}. \u0627\u0644\u0645\u0635\u062f\u0631 ${srcLabel(band.source, true)}.`
       : `Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}. Source ${srcLabel(band.source, false)}.`;
-    return NextResponse.json({ mode: "value", message: msg || fallback, band });
+    // Public payload: the figure travels as `average` (the stored value IS an
+    // arithmetic average; see lib/market/segments.ts). Never expose `median`.
+    return NextResponse.json({ mode: "value", message: msg || fallback, band: toPublicSegment(band as IndexRowLike) });
   }
 
   if (mode === "watch") {
@@ -267,7 +270,7 @@ export async function POST(req: NextRequest) {
       : (arq
         ? `تعذر حفظ المراقبة الآن، لكن نطاق المؤشر الحالي لـ ${band.district_label} ${band.asset_type}${seg} هو ${baseline}. المصدر ${srcLabel(band.source, true)}.`
         : `I could not save the watch just now, but the current Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${srcLabel(band.source, false)}.`);
-    return NextResponse.json({ mode: "watch", message, band, threshold, saved });
+    return NextResponse.json({ mode: "watch", message, band: toPublicSegment(band as IndexRowLike), threshold, saved });
   }
 
   const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;

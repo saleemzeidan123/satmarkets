@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
 
 // Public, already-published index rows (sufficient segments only), used by the
 // deal analyser. Same data the /rent-index page renders. Law 3: published rows
 // only, nothing computed or estimated here.
+//
+// The payload exposes the figure as `average`, never `median`: the stored value
+// is an arithmetic average (see lib/market/segments.ts for the evidence chain).
+// The internal column name stays `median` only until the supervised rename.
 export const revalidate = 1800;
 
 export async function GET(req: Request) {
@@ -16,5 +21,5 @@ export async function GET(req: Request) {
   .select("district_label, district_label_ar, district_id, asset_type, segment, band_low, band_high, median, unit, period, source")
   .eq("sufficient", true)
   .order("median", { ascending: false });
- return NextResponse.json({ segments: data ?? [] });
+ return NextResponse.json({ segments: ((data ?? []) as IndexRowLike[]).map(toPublicSegment) });
 }
