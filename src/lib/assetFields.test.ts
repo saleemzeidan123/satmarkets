@@ -43,7 +43,7 @@ test("no em dash in any label or help text (Law 2)", () => {
   for (const [assetType, fields] of Object.entries(ASSET_FIELDS)) {
     for (const f of fields) {
       for (const s of [f.label_en, f.label_ar, f.help_en, f.help_ar]) {
-        assert.ok(!(s ?? "").includes("—"), `${assetType}.${f.key}: em dash in text`);
+        assert.ok(!(s ?? "").includes("\u2014"), `${assetType}.${f.key}: em dash in text`);
       }
     }
   }

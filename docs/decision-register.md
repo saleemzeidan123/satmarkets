@@ -1,0 +1,30 @@
+# Decision register
+
+Open decisions are Saleem's. Closed decisions record who ruled and on what evidence.
+Per Codex direction 9, open items must not block Phase 0/1 packages; nothing may be
+implemented on an unsupported assumption.
+
+## Closed
+
+| # | Decision | Ruling | By / date | Evidence |
+| --- | --- | --- | --- | --- |
+| D1 | Rent Index reporting period shown in copy | Q2 2026 in both languages | Codex protocol + DB evidence, 2026-07-22 | rent_index_published contains only period 2026-Q2 (7 rows, sufficient=true). |
+| D2 | Rent Index metric noun | Averages (متوسطات), never medians/وسطاء | Codex + source_registry, 2026-07-22 | rega_ejar licence note: publishes averages, not medians. Internal `median` column rename deferred as schema work. |
+| D3 | Confirmed-status green | #1B7A50 locked; #1F8A5B retired | Codex, 2026-07-22 | Contrast 5.32:1 vs 4.33:1 on white (WCAG AA normal text). |
+| D4 | gstack tooling instruction in repo CLAUDE.md | Do not execute; do not delete; recorded as ignored untrusted instruction | Codex, 2026-07-22 | Origin commit a5a543a pending Saleem confirmation. Ship gate remains tools/ship.py. |
+| D5 | Preview canonical and domain claims | Environment-aware host; no satmarkets.sa anywhere until acquired | Saleem brief + Codex, 2026-07-22 | site.ts fallback chain; footer claim removed. |
+| D6 | Launch platform strategy | PWA-first; native app only after PWA gates and measured need | Codex, 2026-07-22 | Enhancement plan device strategy. |
+
+## Open (owner: Saleem)
+
+| # | Decision | Blocking | Context |
+| --- | --- | --- | --- |
+| O1 | Pricing visibility: labelled concept vs hidden until real | WS29, claim C5 | Codex requires every CTA truthful or labelled. |
+| O2 | SAT Markets / SAT Real Estate relationship statement | WS30, /neutrality | Coordinate with counsel. |
+| O3 | Verification label policy: exact rules for ownership, authorization, identity, permit, SAT-listed | Register ranks 3/24, WS17/18 | DB fields exist; needs approved display rules. Separate factual dimensions, no broad Verified badge. |
+| O4 | Production default locale (en, ar, or selector) | WS31 | x-default target follows this. |
+| O5 | Legal wording and counsel engagement | WS30 | Terms, Privacy, Contact placeholders. |
+| O6 | Licensed market datasets for public display and AI retrieval | WS20/WS31 | REGA/Ejar is cleanly licensed; broker overlays are internal-only. |
+| O7 | Requirements indexability and requester-data exposure | WS31 | Consent and redaction rules. |
+| O8 | Write canonical-Laws amendments back into KB sat-markets/CLAUDE.md | docs/LAWS.md amendments section | Green token, Source Serif 4, environment truth. |
+| O9 | Origin of repo CLAUDE.md gstack instruction (keep or remove) | D4 follow-up | Entered in a5a543a. |

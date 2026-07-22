@@ -93,7 +93,7 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
           return (
             <div key={m.w.id} className="row gap8" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-                <span style={{ color: up ? "#1F8A5B" : "#C0492F", marginInlineEnd: 6, fontSize: 11 }}>{arrow}</span>
+                <span style={{ color: up ? "#1B7A50" : "#C0492F", marginInlineEnd: 6, fontSize: 11 }}>{arrow}</span>
                 {line}
                 {m.beyond ? <span style={{ marginInlineStart: 6, fontWeight: 600, color: "var(--azure-d, #2C5578)" }}>{`${wb.beyondPre}${m.w.thresholdPct}${wb.beyondSuf}`}</span> : null}
               </div>

@@ -88,7 +88,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
           {/* Verification is the whole brand: state plainly that SAT checked the
               identity, when the lister is verified. A binary fact, not a rank. */}
           {p.is_verified && (
-            <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "#1F8A5B", fontSize: 12.5 }}>
+            <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "#1B7A50", fontSize: 12.5 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
               <span style={{ fontWeight: 600 }}>{t.verifiedBy}</span>
             </div>

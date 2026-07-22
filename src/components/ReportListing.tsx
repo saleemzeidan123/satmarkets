@@ -12,14 +12,14 @@ export default function ReportListing({ listingId, locale }: { listingId: string
   const [state, setState] = useState<"idle" | "busy" | "done" | "error">("idle");
 
   const t = ar
-    ? { link: "الإبلاغ عن هذا الإعلان", prompt: "هل هناك مشكلة في هذا الإعلان؟", reason: "السبب", detail: "تفاصيل (اختياري)", submit: "إرسال البلاغ", sending: "جارٍ الإرسال…", done: "شكراً لك. سنراجع هذا الإعلان.", err: "تعذّر الإرسال، حاول مرة أخرى.", cancel: "إلغاء",
+    ? { link: "الإبلاغ عن هذا الإعلان", prompt: "هل هناك مشكلة في هذا الإعلان؟", reason: "السبب", choose: "اختر السبب", detail: "تفاصيل (اختياري)", submit: "إرسال البلاغ", sending: "جارٍ الإرسال…", done: "شكراً لك. سنراجع هذا الإعلان.", err: "تعذّر الإرسال، حاول مرة أخرى.", cancel: "إلغاء",
         reasons: { inaccurate: "معلومات غير دقيقة", unavailable: "لم يعد متاحاً", duplicate: "إعلان مكرر", suspicious: "يبدو مريباً", other: "أخرى" } }
-    : { link: "Report this listing", prompt: "Something wrong with this listing?", reason: "Reason", detail: "Details (optional)", submit: "Submit report", sending: "Sending…", done: "Thank you. We will review this listing.", err: "Could not send, please try again.", cancel: "Cancel",
+    : { link: "Report this listing", prompt: "Something wrong with this listing?", reason: "Reason", choose: "Choose a reason", detail: "Details (optional)", submit: "Submit report", sending: "Sending…", done: "Thank you. We will review this listing.", err: "Could not send, please try again.", cancel: "Cancel",
         reasons: { inaccurate: "Inaccurate information", unavailable: "No longer available", duplicate: "Duplicate listing", suspicious: "Looks suspicious", other: "Other" } };
 
   if (state === "done") {
     return <p className="muted" style={{ fontSize: 12.5, marginTop: 14, display: "flex", gap: 6, alignItems: "center" }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F8A5B" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B7A50" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
       {t.done}
     </p>;
   }
@@ -54,7 +54,7 @@ export default function ReportListing({ listingId, locale }: { listingId: string
       <label style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.reason}</label>
       <select value={reason} onChange={(e) => setReason(e.target.value)}
         style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff" }}>
-        <option value="">—</option>
+        <option value="">{t.choose}</option>
         {Object.entries(t.reasons).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </select>
       <label style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.detail}</label>

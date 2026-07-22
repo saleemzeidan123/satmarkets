@@ -176,7 +176,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14, marginTop: 10 }}>
           <div>
             <div className="muted" style={{ fontSize: 11.5 }}>{t.permit}</div>
-            <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{permitOf(L) || "—"}</div>
+            <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{permitOf(L) || (ar ? "غير مسجّل" : "Not on file")}</div>
           </div>
           {expiry && (
             <div>

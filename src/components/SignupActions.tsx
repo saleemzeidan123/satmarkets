@@ -26,7 +26,7 @@ export default function SignupActions({ id, status }: { id: string; status: stri
   return (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {status === "new" && <button disabled={busy} onClick={() => act("contacted")} style={btn("#2C557F")}>Contacted</button>}
-      {status !== "verified" && <button disabled={busy} onClick={() => act("verified")} style={btn("#1F8A5B")}>Approve</button>}
+      {status !== "verified" && <button disabled={busy} onClick={() => act("verified")} style={btn("#1B7A50")}>Approve</button>}
       {status !== "rejected" && <button disabled={busy} onClick={() => act("rejected")} style={btn("#C8412E")}>Reject</button>}
       {msg && <span style={{ fontSize: 11, color: "#C8412E" }}>{msg}</span>}
     </span>

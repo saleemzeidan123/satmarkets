@@ -241,7 +241,7 @@ export default function ListingEnquiry({
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
       <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>
-      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#1F8A5B" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
+      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#1B7A50" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
      </div>
      {vDone ? (
       <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>

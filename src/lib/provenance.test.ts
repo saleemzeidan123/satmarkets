@@ -54,8 +54,8 @@ test("no label or aria contains an em dash (Law 2), in either locale", () => {
   for (const tier of TIERS) {
     for (const ar of [false, true]) {
       const parts = { date: "29 Jun 2026", method: "m", dataset: "d", period: "p" };
-      assert.ok(!provenanceLabel(tier, parts, ar).includes("—"), `label ${tier} ar=${ar}`);
-      assert.ok(!provenanceAria(tier, parts, ar).includes("—"), `aria ${tier} ar=${ar}`);
+      assert.ok(!provenanceLabel(tier, parts, ar).includes("\u2014"), `label ${tier} ar=${ar}`);
+      assert.ok(!provenanceAria(tier, parts, ar).includes("\u2014"), `aria ${tier} ar=${ar}`);
     }
   }
 });

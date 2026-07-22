@@ -46,10 +46,10 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
       // soft area circle so a district centroid is never mistaken for a precise address.
       if (exact) {
         m.addSource("origin", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: {} } });
-        m.addLayer({ id: "origin-c", type: "circle", source: "origin", paint: { "circle-color": "#1F8A5B", "circle-radius": 7, "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+        m.addLayer({ id: "origin-c", type: "circle", source: "origin", paint: { "circle-color": "#1B7A50", "circle-radius": 7, "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
       } else {
         m.addSource("origin", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: {} } });
-        m.addLayer({ id: "origin-area", type: "circle", source: "origin", paint: { "circle-color": "rgba(31,138,91,0.14)", "circle-radius": 46, "circle-stroke-width": 2, "circle-stroke-color": "#1F8A5B", "circle-stroke-opacity": 0.55 } });
+        m.addLayer({ id: "origin-area", type: "circle", source: "origin", paint: { "circle-color": "rgba(27,122,80,0.14)", "circle-radius": 46, "circle-stroke-width": 2, "circle-stroke-color": "#1B7A50", "circle-stroke-opacity": 0.55 } });
       }
       if (metro) {
         m.addSource("metro", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [metro.lng, metro.lat] }, properties: {} } });
@@ -154,7 +154,7 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
         )}
       </div>
       <div className="row" style={{ gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#1F8A5B", display: "inline-block" }} />{t.thisSpace}</span>
+        <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#1B7A50", display: "inline-block" }} />{t.thisSpace}</span>
         {metro ? <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.metroDot}</span> : null}
       </div>
       <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 10 }}>

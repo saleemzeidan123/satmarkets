@@ -36,7 +36,7 @@ export default async function ViewingsQueue() {
   const { data } = await sb.from("viewings").select("id, created_at, scheduled_at, status, contact_name, contact_email, qualification, listings(reference_code, title_en, is_sat_listed)").order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as unknown as Row[];
   const pending = rows.filter((r) => r.status === "requested").length;
-  const sColor: Record<string, string> = { requested: "#B7791F", confirmed: "#1F8A5B", completed: "#2C557F", cancelled: "#C8412E", no_show: "#C8412E" };
+  const sColor: Record<string, string> = { requested: "#B7791F", confirmed: "#1B7A50", completed: "#2C557F", cancelled: "#C8412E", no_show: "#C8412E" };
   return (
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#3A6EA5" }}>SAT Markets, internal</div>
@@ -52,7 +52,7 @@ export default async function ViewingsQueue() {
               <tr key={r.id} style={{ background: r.status === "requested" ? "#FBF3E6" : "#fff" }}>
                 <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11.5 }}>{riyadh(r.scheduled_at)}</span></td>
                 <td style={td}>{r.listings?.title_en || "?"}<div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10.5, color: "#8A93A0" }}>{r.listings?.reference_code || ""}</div></td>
-                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "#2C557F" : "#1F8A5B" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
+                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "#2C557F" : "#1B7A50" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
                 <td style={td}>{r.contact_name || ""}{r.contact_email ? <div><a href={`mailto:${r.contact_email}`} style={{ color: "#2C557F", fontSize: 12 }}>{r.contact_email}</a></div> : null}</td>
                 <td style={{ ...td, maxWidth: 280 }}>{r.qualification?.summary_en || ""}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: sColor[r.status] || "#5B6470" }}>{r.status}</span></td>

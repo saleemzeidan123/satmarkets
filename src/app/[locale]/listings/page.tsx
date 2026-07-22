@@ -320,7 +320,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "#1B7A50", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
                 <div className="body">
                   {(() => {
                     const ls = listedSince((l as any).created_at);
@@ -332,7 +332,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       {(() => {
                         const av = availabilityOf((l as any).availability_confirmed_at);
                         if (!av) return null;
-                        const c = av.state === "stale" ? "#B26B00" : av.state === "aging" ? "var(--slate)" : "#1F8A5B";
+                        const c = av.state === "stale" ? "#B26B00" : av.state === "aging" ? "var(--slate)" : "#1B7A50";
                         return (
                           <div className="row gap6" style={{ marginTop: 5, alignItems: "center" }}>
                             <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto" }} />

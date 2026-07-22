@@ -40,7 +40,7 @@ test("isPlanType validates the enum", () => {
 
 test("no plan label contains an em dash (Law 2)", () => {
   for (const t of PLAN_TYPES) {
-    assert.ok(!planLabel(t, false).includes("—"));
-    assert.ok(!planLabel(t, true).includes("—"));
+    assert.ok(!planLabel(t, false).includes("\u2014"));
+    assert.ok(!planLabel(t, true).includes("\u2014"));
   }
 });

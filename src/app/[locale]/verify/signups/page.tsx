@@ -39,7 +39,7 @@ export default async function SignupQueue() {
   const { data } = await sb.from("signup_requests").select("*").order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as Row[];
   const news = rows.filter((r) => r.status === "new").length;
-  const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#1F8A5B", broker: "#A88B5C", investor: "#7C3AED" };
+  const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#1B7A50", broker: "#A88B5C", investor: "#7C3AED" };
   return (
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#3A6EA5" }}>SAT Markets, internal</div>
@@ -59,7 +59,7 @@ export default async function SignupQueue() {
                 <td style={td}><a href={`mailto:${r.email}`} style={{ color: "#2C557F" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, color: "#5B6470" }}>{r.phone}</div> : null}</td>
                 <td style={{ ...td, maxWidth: 260 }}>{detailsSummary(r.details)}</td>
                 <td style={td}>{r.locale}</td>
-                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "#1F8A5B" : r.status === "rejected" ? "#C8412E" : r.status === "contacted" ? "#2C557F" : "#B7791F" }}>{r.status}</span></td>
+                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "#1B7A50" : r.status === "rejected" ? "#C8412E" : r.status === "contacted" ? "#2C557F" : "#B7791F" }}>{r.status}</span></td>
                 <td style={{ ...td, maxWidth: 180, color: "#5B6470", fontSize: 12 }}>{r.notes || ""}</td>
                 <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>

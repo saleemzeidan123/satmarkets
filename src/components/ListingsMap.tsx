@@ -95,7 +95,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
       m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" } });
-      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#1F8A5B", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff", "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
+      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#1B7A50", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff", "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
       m.addLayer({ id: "p-hit", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": 16 } });
       applySelected(m, selectedRef.current);
     };
@@ -241,7 +241,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: 11.5, color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
           <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 13, height: 13, borderRadius: "50%", background: "#3A6EA5", border: "2px solid #fff", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "منطقة (تقديري) · انقر للتصفية" : "District (approx.) · click to filter"}</span>
           {pins.length > 0 && (
-            <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "#1F8A5B", border: "1.5px solid #fff", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "مبنى محدد" : "Exact building"}</span>
+            <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "#1B7A50", border: "1.5px solid #fff", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "مبنى محدد" : "Exact building"}</span>
           )}
         </div>
       </div>

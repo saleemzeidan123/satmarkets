@@ -49,8 +49,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
 
     // Enquiry history: the spaces this occupier has contacted, newest activity first.
     // Two sources, deduped by listing:
-    //   1. Message threads (conversations) — a live in-app back-and-forth with the lister.
-    //   2. Direct-contact leads (the enquiry form) — sent straight to the lister, no
+    //   1. Message threads (conversations), a live in-app back-and-forth with the lister.
+    //   2. Direct-contact leads (the enquiry form), sent straight to the lister, no
     //      thread. Attributed to the occupier via leads.created_by_user_id.
     // RLS scopes BOTH queries to the current user (conversations.enquirer_user_id and
     // the "enquirer reads own leads" policy on leads). A listing the occupier both
@@ -65,7 +65,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       .map((c: any) => ({ key: `t-${c.id}`, listing: c.listings, when: c.last_message_at || c.created_at, kind: "thread" as const }));
 
     // Direct-contact leads with no thread. Dedup against threads AND against each other
-    // (a listing enquired on twice shows once, newest first — the list is ordered desc).
+    // (a listing enquired on twice shows once, newest first, since the list is ordered desc).
     const { data: directLeads } = await sb
       .from("leads")
       .select("id,listing_id,created_at,path,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar))")

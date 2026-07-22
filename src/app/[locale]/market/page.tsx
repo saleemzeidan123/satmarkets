@@ -83,7 +83,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
   ];
 
   const disc = [
-    { n: below, p: pct(below), c: "#1F8A5B", en: "Below their index band", arb: "أقل من نطاق المؤشر" },
+    { n: below, p: pct(below), c: "#1B7A50", en: "Below their index band", arb: "أقل من نطاق المؤشر" },
     { n: within, p: pct(within), c: "#3A6EA5", en: "Within their index band", arb: "ضمن نطاق المؤشر" },
     { n: above, p: pct(above), c: "#8A5A1F", en: "Above their index band", arb: "أعلى من نطاق المؤشر" },
   ];

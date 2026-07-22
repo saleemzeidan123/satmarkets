@@ -16,7 +16,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
  const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
  const tiers: Tier[] = ar ? [
   { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "تصفّح مجاناً",
-   pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، وسطاء الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
+   pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، متوسطات الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
   { nm: "مبتدئ", who: "ملاك أفراد في البداية", price: "299", unit: "ريال/شهر", feat: false, cta: "اختر مبتدئ",
    pts: ["<b>5</b> قوائم نشطة", "<b>1</b> تمييز مميّز / شهر", "<b>50</b> كشف تواصل / شهر", "مؤشر الإيجارات الكامل + تنبيهات", "<b>100</b> استفسار ذكاء / شهر"] },
   { nm: "احترافي", who: "ملاك نشطون ووسطاء أفراد", price: "899", unit: "ريال/شهر", feat: true, cta: "اختر احترافي",
@@ -27,7 +27,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
    pts: ["<b>بلا حدود</b> قوائم ومقاعد", "بيانات كاملة وموجزات برمجية", "دخول موحّد وأدوار مخصّصة", "تقارير محفظة مجدولة", "مدير مخصّص + اتفاقية مستوى خدمة"] },
  ] : [
   { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Free to browse",
-   pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district medians", "<b>10</b> AI Advisor queries / mo"] },
+   pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district averages", "<b>10</b> AI Advisor queries / mo"] },
   { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
    pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
   { nm: "Professional", who: "Active owners & solo brokers", price: "899", unit: "SAR/mo", feat: true, cta: "Choose Professional",
@@ -47,7 +47,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   ["صندوق العملاء والتحليلات", "no", "yes", "yes", "yes", "yes"],
   ["عمليات البحث المحفوظة والتنبيهات", "3", "20", "∞", "∞", "∞"],
   ["grp", "البيانات والذكاء"],
-  ["مؤشر الإيجارات", "وسطاء", "كامل", "كامل + سجل", "كامل + بالجملة", "كامل + موجز"],
+  ["مؤشر الإيجارات", "متوسطات", "كامل", "كامل + سجل", "كامل + بالجملة", "كامل + موجز"],
   ["ذكاء الموقع / شهر", "غير متاح", "2", "10", "50", "∞"],
   ["استفسارات المستشار الذكي / شهر", "10", "100", "500", "2,000", "∞"],
   ["تصدير التقارير", "no", "yes", "yes", "yes", "yes"],
@@ -65,7 +65,7 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   ["Lead inbox & analytics", "no", "yes", "yes", "yes", "yes"],
   ["Saved searches & alerts", "3", "20", "∞", "∞", "∞"],
   ["grp", "Data & intelligence"],
-  ["Rent Index", "Medians", "Full", "Full + history", "Full + bulk", "Full + feed"],
+  ["Rent Index", "Averages", "Full", "Full + history", "Full + bulk", "Full + feed"],
   ["Location Intelligence / mo", "n/a", "2", "10", "50", "∞"],
   ["AI Advisor queries / mo", "10", "100", "500", "2,000", "∞"],
   ["Report export", "no", "yes", "yes", "yes", "yes"],

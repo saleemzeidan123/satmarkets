@@ -28,7 +28,7 @@ export default function ReviewActions({ id }: { id: string }) {
   const btn = (color: string): CSSProperties => ({ fontSize: 11, padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "#fff", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1 });
   return (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
-      <button disabled={busy} onClick={() => act("approve")} style={btn("#1F8A5B")}>Approve</button>
+      <button disabled={busy} onClick={() => act("approve")} style={btn("#1B7A50")}>Approve</button>
       <button disabled={busy} onClick={() => act("reject")} style={btn("#C8412E")}>Reject</button>
       {msg && <span style={{ fontSize: 11, color: "#C8412E" }}>{msg}</span>}
     </span>

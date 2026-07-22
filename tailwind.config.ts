@@ -11,7 +11,7 @@ const config: Config = {
         harbor: "#3A6EA5", "harbor-d": "#2C557F",
         azure: "#3A6EA5", "azure-d": "#2C557F", "azure-l": "#9DBBD6", "azure-wash": "#ECF2F8",
         brass: "#A88B5C", stone: "#EDE7DC",
-        green: "#1F8A5B", "green-wash": "#E7F4ED", "green-line": "#BFE3CF",
+        green: "#1B7A50", "green-wash": "#E7F4ED", "green-line": "#BFE3CF",
         amber: "#B7791F", red: "#C8412E",
         line: "rgba(28,33,38,0.10)",
         charcoal: "#14181B",

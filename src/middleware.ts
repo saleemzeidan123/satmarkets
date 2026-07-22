@@ -46,7 +46,10 @@ export async function middleware(req: NextRequest) {
   const allowIndex = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
   // Prototype/account routes stay noindexed even on the production host until they
   // are real. /signup and /compare are prototype surfaces too (Codex MKT-P0-06).
-  const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare", "/me", "/go"];
+  // /verify and its descendants are SAT-only operational surfaces: the pages
+  // already 404 for non-SAT sessions, and this adds the response-level noindex
+  // that robots.txt alone cannot provide (PKG-0A, Codex rank 33).
+  const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare", "/me", "/go", "/verify", "/ops", "/proto"];
   const isPrivate = PRIVATE_PREFIXES.some(
     (pre) => pathname === `/en${pre}` || pathname === `/ar${pre}` || pathname.startsWith(`/en${pre}/`) || pathname.startsWith(`/ar${pre}/`)
   );

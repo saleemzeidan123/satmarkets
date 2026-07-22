@@ -22,7 +22,7 @@ const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "upp
 const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid #E9EDF1", verticalAlign: "top" };
 
 function YN({ v }: { v: boolean | null }) {
-  return <span style={{ color: v ? "#1F8A5B" : "#5B6470", fontWeight: v ? 600 : 400 }}>{v ? "Yes" : "No"}</span>;
+  return <span style={{ color: v ? "#1B7A50" : "#5B6470", fontWeight: v ? 600 : 400 }}>{v ? "Yes" : "No"}</span>;
 }
 
 export default async function VerifyQueue() {

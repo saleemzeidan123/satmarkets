@@ -25,8 +25,8 @@ test("unknown kind falls back to Other, never crashes", () => {
 
 test("no document label contains an em dash (Law 2)", () => {
   for (const k of DOCUMENT_KINDS) {
-    assert.ok(!documentLabel(k, false).includes("—"));
-    assert.ok(!documentLabel(k, true).includes("—"));
+    assert.ok(!documentLabel(k, false).includes("\u2014"));
+    assert.ok(!documentLabel(k, true).includes("\u2014"));
   }
 });
 

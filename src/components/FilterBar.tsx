@@ -213,7 +213,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {pill("grade", gradeSel.length ? `${t("Grade", "الفئة")} (${gradeSel.length})` : t("Grade", "الفئة"), gradeSel.length > 0)}
         {pill("fit", fitSel.length ? `${t("Fit-out", "التجهيز")} (${fitSel.length})` : t("Fit-out", "التجهيز"), fitSel.length > 0)}
         <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} className="chip"
-          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "#1F8A5B" : "var(--ink)", fontSize: "var(--fs-base)" }}>
+          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "#1B7A50" : "var(--ink)", fontSize: "var(--fs-base)" }}>
           {params.verified ? "✓ " : ""}{t("Verified owners", "ملاك موثّقون")}
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}

@@ -52,7 +52,7 @@ export default function SavedSearchRows({
             <div className="row gap8 wrap" style={{ alignItems: "center" }}>
               <Link href={s.href} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.label}</Link>
               {s.fresh > 0 && (
-                <span className="tag" style={{ background: "#1F8A5B", color: "#fff", borderColor: "transparent", fontSize: 11 }}>
+                <span className="tag" style={{ background: "#1B7A50", color: "#fff", borderColor: "transparent", fontSize: 11 }}>
                   {s.fresh} {labels.newSince}
                 </span>
               )}
