@@ -21,7 +21,10 @@ body {
    token definitions (0,1,0) regardless of stylesheet order. */
 html[dir="rtl"] {
   --sans: var(--font-ar), system-ui, sans-serif;
-  --serif: var(--font-ar), Georgia, serif;
+  /* No Georgia in the Arabic serif fallback (it has no Arabic glyphs). Use IBM
+     Plex Sans Arabic then Arabic-capable system fonts until a tested dedicated
+     Arabic serif is introduced (Codex correction 4). */
+  --serif: var(--font-ar), "Noto Naskh Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
 }
 /* `body` and a few components set font-family from the raw Latin font var
    directly, which overrides the inherited RTL family. Make every such surface
@@ -43,6 +46,11 @@ html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif;
    Figure/mono runs (Western numerals, tabular tracking) and the Latin language
    toggle are excluded. */
 html[dir="rtl"] :not(.fig):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
+/* .mono is the Latin figure/label font (IBM Plex Mono); it must never render
+   Arabic script (Codex correction 1). Arabic-bearing .mono labels (status,
+   listed-since dates, district names) flip to the Arabic family under RTL. True
+   tabular figures use .fig/.tnum, which stay mono for Western-numeral alignment. */
+html[dir="rtl"] .mono:not(.fig):not(.tnum) { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {

@@ -1,7 +1,10 @@
 import type { Config } from "tailwindcss";
+import { screens } from "./src/theme/breakpoints";
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
+    // One authoritative breakpoint source (src/theme/breakpoints.ts).
+    screens,
     extend: {
       colors: {
         ink: "#14181B", "ink-2": "#2B3138",

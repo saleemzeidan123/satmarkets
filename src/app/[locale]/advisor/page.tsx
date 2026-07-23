@@ -165,7 +165,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          const pad = ((mx0 - mn0) || 1) * 0.12; const mn = mn0 - pad, mx = mx0 + pad; const sp = (mx - mn) || 1;
          const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
          const st = q0 == null ? null : q0 < lo ? "below" : q0 > hi ? "above" : "within";
-         const col = st === "below" ? "#1B7A50" : st === "above" ? "#8A5A1F" : "#3A6EA5";
+         // Comparative market position, not verification: below uses a neutral
+         // Harbor-ramp tone (never confirmed green), above uses the attention
+         // token, within uses Harbor (PKG-1B, Codex correction 2).
+         const col = st === "below" ? "#5C8CBF" : st === "above" ? "#B7791F" : "#3A6EA5";
          const unitL = rentUnitLabel(b.unit, ar) ?? "";
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (

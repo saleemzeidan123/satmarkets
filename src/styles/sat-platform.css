@@ -68,18 +68,27 @@
   /* Layers / z-index scale. */
   --z-base:0; --z-raised:5; --z-sticky:30; --z-tabbar:45; --z-header:50; --z-fab:60; --z-overlay:61; --z-panel:62; --z-toast:80; --z-skip:200;
 
-  /* Breakpoints (documented constants; media queries can reference the numbers). */
-  --bp-xs:320px; --bp-sm:390px; --bp-md:768px; --bp-lg:1024px; --bp-xl:1280px; --bp-2xl:1440px;
+  /* Breakpoint MIRRORS for documentation and JS-in-CSS only. The authoritative
+     source is src/theme/breakpoints.ts (generates Tailwind screens). CSS custom
+     properties cannot drive @media conditions, so real media queries use the
+     Tailwind screens or literal px matching these values (Codex correction 3). */
+  --bp-xs:320px; --bp-sm:640px; --bp-md:768px; --bp-lg:1024px; --bp-xl:1280px; --bp-2xl:1536px;
 
-  /* Map states (MapLibre paint tokens; Harbor family, plus the status greens/ambers). */
+  /* Map states (MapLibre paint tokens). The GENERIC location pin is Harbor, not
+     green: a pin is a location, not a verification (Codex correction 2). Only an
+     evidence-backed verified pin may use the confirmed green, via a separate
+     token. */
   --map-district:var(--harbor); --map-district-selected:var(--harbor-d); --map-district-ring:var(--amber);
-  --map-pin:var(--verified); --map-pin-stroke:#FFFFFF; --map-cluster:var(--harbor); --map-area-wash:rgba(58,110,165,0.14);
+  --map-pin:var(--harbor); --map-pin-verified:var(--verified); --map-pin-stroke:#FFFFFF; --map-cluster:var(--harbor); --map-area-wash:rgba(58,110,165,0.14);
 
-  /* Data-visualization tokens: sequential Harbor ramp + the band semantics used
-     by the rent-band chart. Kept few and comparable, never decorative. */
+  /* Data-visualization tokens: a sequential Harbor ramp plus the band semantics
+     used by the rent-band chart. Verification, comparative market position and
+     positive business outcome must never share a colour (Codex correction 2):
+     the "below" comparative uses a neutral Harbor-ramp tone, NOT confirmed green;
+     "within" is Harbor; "above" uses the approved attention token. */
   --dv-seq-1:#DCE7F1; --dv-seq-2:#9DBBD6; --dv-seq-3:#5C8CBF; --dv-seq-4:var(--harbor); --dv-seq-5:var(--harbor-d);
   --dv-band-fill:var(--azure-wash); --dv-band-average:var(--harbor);
-  --dv-quote-below:var(--verified); --dv-quote-within:var(--harbor); --dv-quote-above:#8A5A1F;
+  --dv-quote-below:var(--dv-seq-3); --dv-quote-within:var(--harbor); --dv-quote-above:var(--status-attention);
   --dv-grid:rgba(28,33,38,0.10); --dv-axis:var(--slate);
 }
 /* Reduced-motion: neutralise the motion scale token too, for JS/inline consumers. */
