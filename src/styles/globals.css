@@ -23,10 +23,18 @@ html[dir="rtl"] {
   --sans: var(--font-ar), system-ui, sans-serif;
   --serif: var(--font-ar), Georgia, serif;
 }
-/* `body` sets font-family from the raw Latin font var directly, which overrides
-   the inherited RTL family; make the body rule itself direction-aware so all
-   inheriting body/UI text renders in Arabic. */
-html[dir="rtl"] body { font-family: var(--font-ar), system-ui, sans-serif; }
+/* `body` and a few components set font-family from the raw Latin font var
+   directly, which overrides the inherited RTL family. Make every such surface
+   direction-aware at source: body and the form controls (per the audit action),
+   plus the footer and skip-link which set the Latin var on their own container. */
+html[dir="rtl"] body,
+html[dir="rtl"] input,
+html[dir="rtl"] button,
+html[dir="rtl"] select,
+html[dir="rtl"] textarea,
+html[dir="rtl"] .foot,
+html[dir="rtl"] .foot .cta-title,
+html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Tracking never applies to Arabic (it breaks the cursive joins), yet several
    component classes re-set a small letter-spacing that beats the base RTL reset.
    Zero it for all Arabic content, excluding figure/mono runs (Western numerals
