@@ -89,7 +89,7 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button type="submit" className="btn primary" disabled={busy}>{busy ? t.saving : t.save}</button>
-        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--green)" : "var(--red)" }}>{msg.text}</span>}
+        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>{msg.text}</span>}
       </div>
     </form>
   );

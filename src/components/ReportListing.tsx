@@ -19,7 +19,7 @@ export default function ReportListing({ listingId, locale }: { listingId: string
 
   if (state === "done") {
     return <p className="muted" style={{ fontSize: 12.5, marginTop: 14, display: "flex", gap: 6, alignItems: "center" }}>
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1B7A50" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C557F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
       {t.done}
     </p>;
   }

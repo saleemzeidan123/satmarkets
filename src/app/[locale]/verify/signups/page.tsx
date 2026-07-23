@@ -39,7 +39,7 @@ export default async function SignupQueue() {
   const { data } = await sb.from("signup_requests").select("*").order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as Row[];
   const news = rows.filter((r) => r.status === "new").length;
-  const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#1B7A50", broker: "#A88B5C", investor: "#7C3AED" };
+  const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#0E9488", broker: "#A88B5C", investor: "#7C3AED" };
   return (
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>

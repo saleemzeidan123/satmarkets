@@ -326,7 +326,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "#1B7A50", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
                 <div className="body">
                   {(() => {
                     const ls = listedSince((l as any).created_at);

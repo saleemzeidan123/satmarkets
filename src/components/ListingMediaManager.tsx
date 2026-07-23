@@ -109,7 +109,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
 
       <div className="row gap10" style={{ marginTop: 10, alignItems: "center" }}>
         <p className="muted" style={{ fontSize: 11.5, margin: 0 }}>{t.hint}</p>
-        {note && <span style={{ fontSize: 12.5, color: "var(--green)" }}>{note}</span>}
+        {note && <span style={{ fontSize: 12.5, color: "var(--harbor-d)" }}>{note}</span>}
         {err && <span style={{ fontSize: 12.5, color: "var(--red)" }}>{err}</span>}
       </div>
     </div>

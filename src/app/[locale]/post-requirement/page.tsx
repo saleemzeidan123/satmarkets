@@ -71,7 +71,7 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
    <div style={{ background: "var(--cool)" }}>
     <div style={{ padding: "40px 24px 56px", maxWidth: 720, margin: "0 auto" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
-      <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--green)", color: "var(--on-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
+      <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--harbor-d)", color: "var(--on-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
       <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
       <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
       <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
@@ -81,7 +81,7 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
       </div>
       <div className="col gap8" style={{ textAlign: ar ? "right" : "left", maxWidth: 420, margin: "0 auto 22px" }}>
        {done.notified.map((n, i) => (
-        <div key={i} className="row gap8" style={{ fontSize: 13 }}><span style={{ color: "var(--green)" }}><Icon.check size={15} /></span>{n}</div>
+        <div key={i} className="row gap8" style={{ fontSize: 13 }}><span style={{ color: "var(--harbor-d)" }}><Icon.check size={15} /></span>{n}</div>
        ))}
       </div>
       <div className="row gap10" style={{ justifyContent: "center" }}>

@@ -158,7 +158,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
       </div>
       <div style={{ height: 1, background: "var(--silver)", margin: "20px 0" }} />
       <div className="row between" style={{ fontSize: "var(--fs-sm)" }}><span className="muted">{iv.goingInYieldLbl}</span><b className="mono">{fmtPct(m.goingInYield)}</b></div>
-      <div className="row between" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}><span className="muted">{iv.yieldOnCost}</span><b className="mono" style={{ color: "var(--green)" }}>{fmtPct(m.yoc5)}</b></div>
+      <div className="row between" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}><span className="muted">{iv.yieldOnCost}</span><b className="mono" style={{ color: "var(--harbor-d)" }}>{fmtPct(m.yoc5)}</b></div>
       <button className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }} onClick={() => setRan(true)}>{ran ? (iv.modelUpdated) + fmtPct(m.irr) : (iv.runFull)}</button>
      </div>
 

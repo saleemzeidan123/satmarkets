@@ -183,7 +183,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
             {l.fitout_condition && l.fitout_condition !== "n_a" ? <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
             <span className="tag">{dict.ld.availableNow}</span>
-            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "#1B7A50", color: "var(--on-brand)", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
+            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "var(--harbor)", color: "var(--on-brand)", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>

@@ -85,7 +85,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
       </div>
       <div style={{ height: 1, background: "var(--silver)", margin: "20px 0" }} />
       <div className="row between" style={{ fontSize: 13 }}><span className="muted">{hb.goingInYieldLbl}</span><b className="mono">6.8%</b></div>
-      <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">{hb.yieldOnCost}</span><b className="mono" style={{ color: "var(--green)" }}>8.1%</b></div>
+      <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">{hb.yieldOnCost}</span><b className="mono" style={{ color: "var(--harbor-d)" }}>8.1%</b></div>
       <span className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }}>{hb.runFull}</span>
      </div>
 

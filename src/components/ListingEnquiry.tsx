@@ -189,7 +189,7 @@ export default function ListingEnquiry({
  if (done) {
   return (
    <div className="card pad ld-enquiry">
-    <div className="row gap8" style={{ color: "var(--green)", marginBottom: 10 }}>
+    <div className="row gap8" style={{ color: "var(--harbor-d)", marginBottom: 10 }}>
      <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{t.enquirySent}</span>
     </div>
     <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>
@@ -241,11 +241,11 @@ export default function ListingEnquiry({
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
       <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>
-      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#1B7A50" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
+      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#0E9488" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
      </div>
      {vDone ? (
       <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>
-       <span style={{ color: "var(--green)", flex: "none", marginTop: 1 }}><Icon.check size={16} /></span>
+       <span style={{ color: "var(--harbor-d)", flex: "none", marginTop: 1 }}><Icon.check size={16} /></span>
        <span style={{ lineHeight: 1.55 }}>{satListed ? t.vDoneSat : t.vDoneLister}</span>
       </div>
      ) : (

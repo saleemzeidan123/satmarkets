@@ -25,7 +25,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
  ];
  const unread = groups.reduce((n, g) => n + g[1].filter((x) => x[5]).length, 0);
  const tone: Record<string, [string, string]> = {
-  g: ["#E7F3EC", "var(--green)"], a: ["var(--azure-wash)", "var(--azure-d)"],
+  g: ["var(--azure-wash)", "var(--harbor-d)"], a: ["var(--azure-wash)", "var(--azure-d)"],
   h: ["#EAF0F7", "var(--harbor)"], "": ["var(--cool)", "var(--slate)"],
  };
  const prefs: [string, boolean, boolean, boolean][] = [

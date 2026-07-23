@@ -72,7 +72,7 @@ export default function SignupFlow({ locale }: Props) {
         : [t("We confirm your details", "نتأكد من بياناتك"), t("Your account opens", "يُفتح حسابك"), t("You get matched supply and market data from day one", "تصلك العروض المطابقة وبيانات السوق من اليوم الأول")];
     return (
       <div className="card" style={{ padding: 28, textAlign: "center" }}>
-        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--green-wash)", color: "var(--green)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
+        <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--azure-wash)", color: "var(--harbor-d)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 700, margin: "16px 0 6px" }}>{t("Request received", "استلمنا طلبك")}</h2>

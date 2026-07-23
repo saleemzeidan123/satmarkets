@@ -49,7 +49,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
         </div>
         {r.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 10 }}>{r.mustHaves.slice(0, 4).map((m, i) => <span key={i} className="chip" style={{ fontSize: 11 }}>{m}</span>)}</div> : null}
         <div className="row between" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)", alignItems: "center" }}>
-         <span style={{ fontSize: 12.5, color: r.interest ? "var(--green)" : "var(--slate)" }}>{r.interest ? (ar ? `${r.interest} مهتم` : `${r.interest} interested`) : (dict.req.noInterest)}</span>
+         <span style={{ fontSize: 12.5, color: r.interest ? "var(--harbor)" : "var(--slate)" }}>{r.interest ? (ar ? `${r.interest} مهتم` : `${r.interest} interested`) : (dict.req.noInterest)}</span>
          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--azure-d)" }}>{dict.req.viewRespond}</span>
         </div>
        </Link>

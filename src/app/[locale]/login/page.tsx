@@ -116,7 +116,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
 
     {step === "sent" && (
      <div className="text-center">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--green-wash,#E7F3EC)", color: "var(--green)" }}>
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--azure-wash)", color: "var(--harbor-d)" }}>
        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4 13 5 5L20 7"/></svg>
       </div>
       <h1 className="mt-4 font-display text-2xl text-charcoal">{t.checkEmail}</h1>

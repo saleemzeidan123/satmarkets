@@ -125,7 +125,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 const a = Math.abs(v.deltaPct);
                 const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (cp.withinBand);
                 const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)";
-                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--green)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
+                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--dv-quote-below)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
               }} />
               <HeaderRow label={cp.district} render={(l) => <span>{dn(l)}</span>} />
               <HeaderRow label={cp.owner} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{cp.verified}</span> : <span className="muted">–</span>} />
