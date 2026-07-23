@@ -42,7 +42,7 @@ html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif;
    rule is the durable backstop for every other and any future inline tracking.
    Figure/mono runs (Western numerals, tabular tracking) and the Latin language
    toggle are excluded. */
-html[dir="rtl"] :not(.fig):not(.mono):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
+html[dir="rtl"] :not(.fig):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
