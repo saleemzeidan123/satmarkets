@@ -45,9 +45,9 @@ test("a general-office band cannot become a Grade A band (EN and AR)", () => {
   const ar = renderValue(ev!, "ar");
   // Neither language may present the figures AS a Grade A band.
   assert.ok(/cannot present it as a Grade A band/i.test(en), en);
-  assert.ok(/covers all/i.test(en), en);
+  assert.ok(/covers the whole segment, not a single grade/i.test(en), en);
   assert.ok(/لا يمكنني تقديمه كنطاق/.test(ar), ar);
-  assert.ok(/يغطي جميع/.test(ar), ar);
+  assert.ok(/يغطي الفئة كاملة/.test(ar), ar);
 });
 
 test("EN and AR expose the same numeric set from the same evidence", () => {
