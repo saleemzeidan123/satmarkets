@@ -62,6 +62,12 @@ html[dir="rtl"] table.dt td.num,
 html[dir="rtl"] .matrix td.tnum,
 html[dir="rtl"] .hrow .pc,
 html[dir="rtl"] .bars .b .v { font-family: var(--font-mono), ui-monospace, monospace; }
+/* Footer label classes set the RAW --font-mono var (not the token), so the token
+   flip above does not reach them. Their content is Arabic (FAL line, section
+   headers), so flip them to the Arabic family too. */
+html[dir="rtl"] .foot .tpill,
+html[dir="rtl"] .foot .col-h,
+html[dir="rtl"] .foot h5 { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
