@@ -8,10 +8,27 @@ SVG presentation attribute or a library colour string (where it would not resolv
 ## Counts
 
 - Before: 400 inline-hex occurrences across 60 files.
-- Migrated to semantic tokens: 142.
-- After: 258 inline-hex occurrences across 49 files.
+- After first pass (role-stable tokens): 258.
+- After deep pass (stale token, comparative unification, map palette module): 189.
 
-The remaining 258 are intentional and fall into the allowlist categories below. They
+The deep pass added three things beyond the role-stable swaps:
+
+1. `--status-stale` (#B26B00) token for the availability stale/aging state and
+   warn-tone dashboard rows (was an inline literal in three files + the CSS).
+2. Comparative colour unification: market, compare and saved rendered the "below
+   index band" indicator in confirmed green #1B7A50, which VIOLATED green-exclusivity
+   (decision D14: comparative is never the verification green) and disagreed with the
+   Advisor. All comparative surfaces now use --dv-quote-below / -within / -above.
+   Verified live on /en/market: "below" resolves to rgb(92,140,191) (Harbor ramp),
+   "above" to amber; no green remains on the comparative.
+3. src/theme/palette.ts: a central module for colours that CANNOT be CSS variables
+   (MapLibre paint, canvas, generated HTML). MapExplorer and ListingsMap now import
+   BRAND / ASSET_COLORS / HEAT_RAMP / MAP from it and hold 0 inline hex. The map's
+   ~60 scattered literals are now one named, token-mirrored source. Verified live:
+   legend swatches render the correct per-asset colours, MapLibre initialised with no
+   paint errors.
+
+The remaining 189 are intentional and fall into the allowlist categories below. They
 are NOT unclassified debt; each was inspected and kept literal for a concrete reason.
 
 ## Tokens adopted
@@ -56,9 +73,25 @@ freshness, FilterBar "verified owners", lister "verified by SAT", verify Yes).
    band, warm sample-tag palettes, dark-panel muted texts, error reds that are not
    #C8412E, translucent whites (alpha != 1).
 
+## Open decision (needs owner / Codex ruling)
+
+Green-exclusivity strictness for positive-STATUS (not comparative) greens. The
+comparative greens are fixed. The remaining ~18 #1B7A50 occurrences are positive
+status/outcome uses: "new listing" badges, success checkmarks ("report received"),
+viewing-confirmed and listing-approved actions, and the WhatsApp brand green. D14
+says "outcome never shares a colour with verification", which would push these off
+green too, but there is no defined positive-outcome token to move them to, and
+recolouring ~18 status indicators app-wide is a visible brand change, not a mechanical
+swap. Recommendation: either (a) rule that positive-status may keep green (verification
+is then distinguished by context/label, not colour alone), or (b) define a
+positive-outcome token (e.g. a distinct teal) and migrate them. Held for a ruling
+rather than changing the brand unilaterally.
+
 ## Follow-up candidates (recorded, not actioned)
 
-- `--status-stale`: #B26B00 recurs for the availability "stale/aging" state
-  (listings/[id], dashboard). A dedicated token would let it join the system.
 - `#3ECF8E` decorative green on the marketing home: possible semantic-review item
   (a non-verified green used decoratively); flagged, not changed.
+- The "sample data" warning-tag palette (warm ambers/creams) could become a
+  `--sample-*` token set; self-contained, low churn, deferred.
+- The /list dark hero rail text colours could become `--on-dark[-muted]` tokens;
+  single-surface, deferred.
