@@ -643,6 +643,7 @@
     "loadingBands": "Loading the sample ranges…",
     "noBands": "No sample ranges available right now.",
     "spaceType": "Space type",
+    "chooseType": "Choose a space type",
     "locationLabel": "Location (with a sample range)",
     "quotedRate": "Quoted rate ",
     "sizeLabel": "Size m² (optional)",

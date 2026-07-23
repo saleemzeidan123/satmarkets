@@ -18,7 +18,7 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 | 7 | P0 | Preview canonicalizes to unowned satmarkets.sa | Closed with live evidence | site.ts now env-aware (NEXT_PUBLIC_SITE_URL, then VERCEL_PROJECT_PRODUCTION_URL, then VERCEL_URL); no satmarkets.sa fallback. |
 | 8 | P0 | /compare in sitemap while noindex | Closed with live evidence | Removed from sitemap ROUTES. |
 | 9 | P0 | Counsel placeholders in legal pages | Blocked by evidence or decision | Needs Saudi counsel (WS30). Pages remain noindex. |
-| 10 | P0 | Developments flow through district parameter | Partially addressed | districts.kind exists in DB (Law 7). URL param and UI labels still say district; WS04 model doc done, route/label work is Phase 2 (WS19). |
+| 10 | P0 | Developments flow through district parameter | Partially addressed | WS04 done: docs/taxonomy.md + typed src/lib/locationKind.ts (a development is never labelled a district; unknown kinds coerce to neutral area; mixed lists use the Location umbrella), tested. The district URL parameter rename is Phase 2 (WS19), launch-adjacent. |
 | 11 | P0 | Availability shown as static trust statement | Confirmed open | Freshness thresholds are WS13/WS18. |
 | 12 | P0 | Map/Advisor/Requirements inherit root metadata | Confirmed open | WS12 metadata factory upgrade, Phase 1. |
 | 13 | P1 | Area/lister missing hreflang alternates | Confirmed open | WS12. |

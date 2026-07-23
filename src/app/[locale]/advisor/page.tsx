@@ -5,31 +5,13 @@ import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
+import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num } from "@/lib/market/analyser";
 import { getDictionary } from "@/i18n/getDictionary";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
 type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string };
 
-const SEG_LABEL: Record<string, [string, string]> = {
- "office|grade_a": ["Office · Grade A", "مكاتب · الفئة A"],
- "office|grade_b": ["Office · Grade B", "مكاتب · الفئة B"],
- "retail|street_front": ["Retail · street front", "تجزئة · واجهة شارع"],
- "retail|mall_inline": ["Retail · mall inline", "تجزئة · داخل مول"],
- "warehouse|modern": ["Warehouse · modern", "مستودعات · حديثة"],
- "warehouse|older": ["Warehouse · older", "مستودعات · قديمة"],
- "medical|clinic": ["Clinic", "عيادات"],
- "serviced|serviced": ["Serviced office", "مكاتب مخدومة"],
- "land|ground_lease": ["Land · ground lease", "أراضٍ · إيجار أرض"],
- "showroom|listing": ["Showroom", "معارض"],
- "education|school": ["Education · school", "تعليم · مدارس"],
- "hospitality|hotel": ["Hospitality · hotel", "ضيافة · فنادق"],
- "mixed_use|blended": ["Mixed use · blended", "متعدد الاستخدامات · مدمج"],
-};
-const UNIT_LABEL: Record<string, [string, string]> = {
- sar_sqm_year: ["SAR/m²·yr", "ريال/م²·سنة"],
- sar_desk_month: ["SAR/desk·month", "ريال/مكتب·شهر"],
-};
 const XIcon = ({ size = 16 }: { size?: number }) => (
  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
 );
@@ -42,7 +24,9 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  const [input, setInput] = useState("");
  const [tool, setTool] = useState<null | "value">(null);
  const [segs, setSegs] = useState<SegRow[] | null>(null);
- const [segKey, setSegKey] = useState("office|grade_a");
+ // No implicit space type on entry: the user must choose one (or a valid page
+ // context supplies it). API row order must never become the user's intent.
+ const [segKey, setSegKey] = useState("");
  const [segLoc, setSegLoc] = useState("");
  const [rent, setRent] = useState("");
  const [size, setSize] = useState("");
@@ -54,14 +38,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   fetch("/api/index/segments").then((r) => r.json()).then((d) => setSegs(d.segments || [])).catch(() => setSegs([]));
  }, [tool, segs]);
 
- // Prototype hotfix: the default segKey may not be among the segments the API
- // actually returns (it offers office|all, retail|all, warehouse|all). Once
- // segments load, snap segKey to a real available option so the location list
- // populates immediately and only a rate is needed before Analyse enables.
+ // Keep a still-valid previous selection, but never auto-pick a segment as
+ // implicit intent: if the current choice is not among the loaded options,
+ // clear it back to "choose a type" rather than snapping to the first row.
  useEffect(() => {
-  if (!segs || !segs.length) return;
+  if (!segs || !segs.length || !segKey) return;
   const opts = Array.from(new Set(segs.map((s) => `${s.asset_type}|${s.segment}`)));
-  if (!opts.includes(segKey)) setSegKey(opts[0]);
+  setSegKey((prev) => pickSegment(opts, prev));
  }, [segs, segKey]);
 
  const JOBS = ar ? [
@@ -90,37 +73,27 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  }
 
  const segOptions = segs ? Array.from(new Set(segs.map((s) => `${s.asset_type}|${s.segment}`))) : [];
- const locOptions = segs ? segs.filter((s) => `${s.asset_type}|${s.segment}` === segKey) : [];
+ const locOptions = segs && segKey ? segs.filter((s) => `${s.asset_type}|${s.segment}` === segKey) : [];
  const activeRow = locOptions.find((s) => s.district_label === segLoc) || locOptions[0] || null;
+ const activeBand = activeRow ? validBand({ band_low: activeRow.band_low, band_high: activeRow.band_high, average: activeRow.average }) : null;
+ const rateValid = num(rent.replace(/[,\s]/g, "")) !== null && Number(rent.replace(/[,\s]/g, "")) > 0;
 
  function analyse() {
   if (!activeRow) return;
-  const r = parseFloat(rent.replace(/[,\s]/g, ""));
-  if (!isFinite(r) || r <= 0) return;
-  const lo = Number(activeRow.band_low), hi = Number(activeRow.band_high), avg = Number(activeRow.average);
-  const segL = SEG_LABEL[segKey] ? SEG_LABEL[segKey][ar ? 1 : 0] : segKey;
-  const unitL = UNIT_LABEL[activeRow.unit] ? UNIT_LABEL[activeRow.unit][ar ? 1 : 0] : activeRow.unit;
   const locL = ar ? (activeRow.district_label_ar || activeRow.district_label) : activeRow.district_label;
-  const dm = Math.round(Math.abs(((r - avg) / avg) * 100));
-  const v = r < lo ? "below" : r > hi ? "above" : "within";
-  const sz = parseFloat(size.replace(/[,\s]/g, ""));
-  const annual = isFinite(sz) && sz > 0 && activeRow.unit === "sar_sqm_year" ? Math.round(r * sz) : null;
-  const fmt = (n: number) => n.toLocaleString("en-US");
-  let text: string;
-  if (ar) {
-   const vAr = v === "within" ? "يقع ضمن النطاق الاسترشادي التجريبي" : v === "below" ? "يقع تحت النطاق الاسترشادي التجريبي" : "يقع فوق النطاق الاسترشادي التجريبي";
-   const dAr = r === avg ? "عند المتوسط تماماً" : r < avg ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
-   text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، المتوسط ${fmt(avg)})، ${dAr}.` +
-    (annual ? ` عند ${fmt(sz)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
-    ` ${formatPeriod(activeRow.period, true)}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
-  } else {
-   const vEn = v === "within" ? "sits within the sample indicative range" : v === "below" ? "sits below the sample indicative range" : "sits above the sample indicative range";
-   const dEn = r === avg ? "exactly at the average" : r < avg ? `about ${dm}% below the average` : `about ${dm}% above the average`;
-   text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, average ${fmt(avg)}), ${dEn}.` +
-    (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
-    ` ${formatPeriod(activeRow.period, false)}, REGA Rental Index (Ejar): average of registered rental contracts. Indicative, not advice.`;
-  }
-  setMsgs((m) => [...m, { role: "a", text, band: { low: lo, average: avg, high: hi, unit: activeRow.unit }, quoted: r, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
+  const res = analyseDeal({
+   rate: rent.replace(/[,\s]/g, ""),
+   size: size.replace(/[,\s]/g, ""),
+   band: { band_low: activeRow.band_low, band_high: activeRow.band_high, average: activeRow.average },
+   unit: activeRow.unit,
+   assetType: activeRow.asset_type,
+   segment: activeRow.segment,
+   locationLabel: locL,
+   period: activeRow.period,
+   ar,
+  });
+  if (!res) return;
+  setMsgs((m) => [...m, { role: "a", text: res.text, band: { low: res.band.low, average: res.band.average, high: res.band.high, unit: activeRow.unit }, quoted: res.quoted, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
  }
 
  const started = msgs.length > 0;
@@ -178,21 +151,21 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
        <div key={i} className="chatmsg a">
         <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
         {m.band && (() => {
+         // Validate through the shared guard: rejects missing, null, empty, NaN,
+         // Infinity and out-of-order (low>average>high) values, and also accepts
+         // an older stored shape (band.median). Invalid state renders nothing
+         // rather than a false zero (PKG-0B, Codex correction 4).
+         const vb = validBand(m.band);
+         if (!vb) return null;
          const b: any = m.band; const q0raw = m.quoted ?? null;
-         // Guard every number: a message saved by an older prototype build can
-         // carry a different band shape (e.g. band.median). Coerce, and if the
-         // three band values are not all finite, render nothing instead of
-         // crashing on undefined.toLocaleString.
-         const lo = Number(b.low), hi = Number(b.high);
-         const avg = Number(b.average ?? b.median);
-         const q0 = q0raw != null && Number.isFinite(Number(q0raw)) ? Number(q0raw) : null;
-         if (![lo, hi, avg].every(Number.isFinite)) return null;
+         const lo = vb.low, hi = vb.high, avg = vb.average;
+         const q0 = num(q0raw);
          const mn0 = Math.min(lo, q0 ?? lo), mx0 = Math.max(hi, q0 ?? hi);
          const pad = ((mx0 - mn0) || 1) * 0.12; const mn = mn0 - pad, mx = mx0 + pad; const sp = (mx - mn) || 1;
          const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
          const st = q0 == null ? null : q0 < lo ? "below" : q0 > hi ? "above" : "within";
          const col = st === "below" ? "#1B7A50" : st === "above" ? "#8A5A1F" : "#3A6EA5";
-         const unitL = b.unit === "sar_sqm_year" ? (av.unitSqmYr) : b.unit === "sar_desk_month" ? (av.unitDeskMo) : "";
+         const unitL = rentUnitLabel(b.unit, ar);
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (
           <div style={{ margin: "10px 0 2px" }}>
@@ -245,26 +218,29 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          <div className="col gap10">
           <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{av.spaceType}
            <select className="input" value={segKey} onChange={(e) => { setSegKey(e.target.value); setSegLoc(""); }} style={{ fontFamily: "var(--sans)" }}>
-            {segOptions.map((k) => <option key={k} value={k}>{SEG_LABEL[k] ? SEG_LABEL[k][ar ? 1 : 0] : k}</option>)}
+            <option value="">{av.chooseType}</option>
+            {segOptions.map((k) => { const [a, seg] = k.split("|"); return <option key={k} value={k}>{spaceTypeLabel(a, seg, ar)}</option>; })}
            </select>
           </label>
-          <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{av.locationLabel}
+          {segKey && <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{av.locationLabel}
            <select className="input" value={activeRow ? activeRow.district_label : ""} onChange={(e) => setSegLoc(e.target.value)} style={{ fontFamily: "var(--sans)" }}>
             {locOptions.map((s) => <option key={s.district_label} value={s.district_label}>{ar ? (s.district_label_ar || s.district_label) : s.district_label}</option>)}
            </select>
-          </label>
+          </label>}
+          {activeRow && <>
           <div className="row gap10 wrap">
-           <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 150 }}>{(av.quotedRate) + (activeRow && UNIT_LABEL[activeRow.unit] ? UNIT_LABEL[activeRow.unit][ar ? 1 : 0] : "")}
-            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeRow ? Number(activeRow.average).toLocaleString("en-US") : ""} />
+           <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 170 }}>{rateBasisLabel(activeRow.unit, ar)}
+            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeBand ? activeBand.average.toLocaleString("en-US") : ""} />
            </label>
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")}. متوسط مؤشر الإيجارات (إيجار) ${Number(activeRow.average).toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")}. Rent Index (Ejar) average ${Number(activeRow.average).toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>}
+          {activeBand && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${activeBand.low.toLocaleString("en-US")} إلى ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, true)}. متوسط مؤشر الإيجارات (إيجار) ${activeBand.average.toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${activeBand.low.toLocaleString("en-US")} to ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, false)}. Rent Index (Ejar) average ${activeBand.average.toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>}
           <div className="row gap8">
-           <button className="btn primary sm" onClick={analyse} disabled={!activeRow || !rent.trim()}>{av.analyse}</button>
+           <button className="btn primary sm" onClick={analyse} disabled={!activeBand || !rateValid}>{av.analyse}</button>
           </div>
+          </>}
           <div className="muted" style={{ fontSize: "var(--fs-2xs)" }}>{av.analyserNote}</div>
          </div>
         )}

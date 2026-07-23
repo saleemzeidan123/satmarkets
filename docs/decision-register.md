@@ -16,6 +16,9 @@ implemented on an unsupported assumption.
 | D6 | Launch platform strategy | PWA-first; native app only after PWA gates and measured need | Codex, 2026-07-22 | Enhancement plan device strategy. |
 | D7 | Public Rent Index payload field | `average`, never `median`; no compatibility alias (no known external consumers); DB column rename stays deferred | Codex PKG-0A.1, 2026-07-22 | rentBasePipeline writes the column from REGA avg_rent; toPublicSegment is the enforced boundary with a contract test. |
 | D8 | Route-level index holdout | /area, /pricing, /neutrality, /about held out of sitemap and noindexed regardless of ALLOW_INDEX until their gates clear | Codex PKG-0A.1, 2026-07-22 | lib/routePolicy.ts shared by sitemap and middleware; law test enforces agreement. |
+| D9 | Analyser space-type selection | No implicit segment on entry; the user must choose a human-labelled type (or valid page context supplies it); API row order is never intent; a still-valid prior choice is preserved | Codex PKG-0B, 2026-07-23 | pickSegment + tests. Overrides the earlier auto-select-first hotfix. |
+| D10 | Location taxonomy model (WS04) | Typed kinds district/development/area; development never labelled a district; unknown coerces to area; mixed lists use Location umbrella | Law 7 + Codex, 2026-07-23 | docs/taxonomy.md, src/lib/locationKind.ts, tests. Route/param change deferred to WS19. |
+| D11 | Release-state vocabulary (WS05) | Six approved bilingual states: Preview, Sample data, Planned, Available, Needs reconfirmation, Verified | Codex, 2026-07-23 | src/lib/releaseState.ts + tests; per-surface wiring is WS13. |
 
 ## Pre-launch, deferred by owner (2026-07-23): prototype stage, do not action now
 
