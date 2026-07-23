@@ -18,6 +18,7 @@ const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
 
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
+import DataState from "@/components/DataState";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
@@ -309,8 +310,13 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>
-          <p className="muted" style={{ margin: 0 }}>{bbox ? (dict.listings.emptyMapArea) : (dict.listings.emptyNoMatch)}</p>
-          <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", marginTop: 10, height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dict.listings.clearMapArea) : (dict.listings.clearAllFilters)}</Link>
+          <DataState
+            kind="empty"
+            title={bbox ? (dict.listings.emptyMapArea) : (dict.listings.emptyNoMatch)}
+            action={
+              <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dict.listings.clearMapArea) : (dict.listings.clearAllFilters)}</Link>
+            }
+          />
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
