@@ -61,6 +61,7 @@ html[dir="rtl"] .ftype,
 html[dir="rtl"] .freeze,
 html[dir="rtl"] .foot .col-h,
 html[dir="rtl"] .foot .tpill,
+html[dir="rtl"] .statusdot,
 html[dir="rtl"] .dnav .sec { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
