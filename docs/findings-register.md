@@ -9,8 +9,8 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 
 | Rank | Sev | Finding (short) | Status after PKG-0A | Evidence / note |
 | --- | --- | --- | --- | --- |
-| 1 | P0 | Arabic body/UI inherits Hanken via --sans | Fixed and awaiting deployment verification | PKG-1A WS08: `--sans`/`--serif` redefined under `html[dir=rtl]` to IBM Plex Sans Arabic, so inline `var(--sans)` resolves Arabic at the token source. Awaiting computed-style capture. |
-| 2 | P0 | Inline negative tracking survives RTL reset | Fixed and awaiting deployment verification | PKG-1A WS08: inline negative `letterSpacing` removed at source from requirements, requirements detail, area, hbu, locations, brokers; Arabic tracking is 0 by cascade. Awaiting computed-style capture. |
+| 1 | P0 | Arabic body/UI inherits Hanken via --sans | Closed with live evidence | PKG-1A WS08: direction-aware `--sans`/`--serif` tokens plus `html[dir=rtl]` body/footer/skip-link/form-control family. Live computed-style sweep on 5 AR pages (home, listings, rent-index, requirements, brokers; 1,589 Arabic nodes) shows 0 Hanken-Latin nodes. |
+| 2 | P0 | Inline negative tracking survives RTL reset | Closed with live evidence | PKG-1A WS08: inline tracking removed at source on the flagged pages plus an authoritative `!important` RTL letter-spacing reset (figures/mono-numeral/lang-toggle excluded). Same live sweep shows 0 tracked Arabic nodes across all 5 pages. |
 | 3 | P0 | Verification states merged into Owner-verified | Confirmed open | Verified: PDP metadata hardcodes owner-verified wording. DB has ownership_verified, authorization_verified, is_sat_listed; label split is Phase 2 with owner-approved policy. |
 | 4 | P0 | Internal reference H1, N/A in metadata | Confirmed open | Verified: title falls back to reference_code (2 published AR titles missing); grade label renders N/A in description. WS12/WS17. |
 | 5 | P0 | Q2 vs Q1 reporting-period mismatch | Closed with live evidence | DB evidence: rent_index_published carries only 2026-Q2 (7 rows, sufficient). Arabic corrected to الربع الثاني in both strings; advisor now renders via formatPeriod; parity test added. |
