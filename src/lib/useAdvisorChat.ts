@@ -63,7 +63,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
      const qn = mnum ? parseFloat(mnum[0].replace(/,/g, "")) : NaN;
      extra.band = { low: Number(aj.band.band_low), average: Number(aj.band.average), high: Number(aj.band.band_high), unit: aj.band.unit };
      extra.quoted = isFinite(qn) && qn > 0 ? qn : null;
-     if (aj.band.district_id) { extra.handoffDistrict = String(aj.band.district_id); extra.handoffAsset = aj.band.asset_type || null; extra.handoffLabel = aj.band.district_label || null; }
+     if (aj.band.district_id) { extra.handoffDistrict = String(aj.band.district_id); extra.handoffAsset = aj.band.asset_type || null; extra.handoffLabel = (ar ? (aj.band.district_label_ar || aj.band.district_label) : aj.band.district_label) || null; }
     }
     setMsgs((m) => [...m, { role: "a", text: aj.message, ...extra }]);
     setBusy(false);

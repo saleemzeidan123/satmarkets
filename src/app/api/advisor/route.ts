@@ -3,6 +3,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
+import { buildValueEvidence, detectRequestedSegment, renderValue } from "@/lib/market/valueEvidence";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
     let band: any = null;
     if (supabase) {
       const did = await resolveDistrictId(supabase, intent?.district);
-      let q = supabase.from("rent_index_published").select("period, district_label, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
+      let q = supabase.from("rent_index_published").select("id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
       if (intent?.asset) q = q.eq("asset_type", intent.asset);
       // Prefer an exact district_id match (language-independent); fall back to a
       // label ilike only when the name did not resolve to a known district.
@@ -210,15 +211,30 @@ export async function POST(req: NextRequest) {
     if (!band) {
       return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}، أو تصفّح العروض الموثّقة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false, intent?.district)}, or browse the verified listings.` });
     }
-    const seg = band.segment ? ` ${band.segment}` : "";
-    const sys = `You are SAT Advisor, a warm, plain-spoken human advisor. Using ONLY the numbers below and never inventing or adjusting them, explain how the figure the user quotes compares to the Rent Index band. Band for ${band.district_label} ${band.asset_type}${seg}: low ${band.band_low}, average ${band.median}, high ${band.band_high} ${band.unit}, period ${band.period}, source ${srcLabel(band.source, arq)}. Say clearly whether the quoted figure is below, within, or above the band and how it sits against the average. If they gave no figure, just describe the current band plainly. Two to four sentences. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;
-    const msg = await llm([{ role: "system", content: sys }, { role: "user", content: raw }], false);
-    const fallback = arq
-      ? `\u0645\u0624\u0634\u0631 \u0633\u0627\u062a \u0644\u0644\u0625\u064a\u062c\u0627\u0631\u0627\u062a ${band.period}\u060c ${band.district_label} ${band.asset_type}${seg}: \u0645\u0646 ${band.band_low} \u0625\u0644\u0649 ${band.band_high} ${band.unit}\u060c \u0627\u0644\u0645\u062a\u0648\u0633\u0637 ${band.median}. \u0627\u0644\u0645\u0635\u062f\u0631 ${srcLabel(band.source, true)}.`
-      : `Rent Index ${band.period}, ${band.district_label} ${band.asset_type}${seg}: ${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}. Source ${srcLabel(band.source, false)}.`;
+    // Structured evidence boundary (Codex Advisor P0). Build ONE result from the
+    // retrieved row plus the user's own figure and any specific segment they asked
+    // for; render BOTH locales from it deterministically (no model call). This is
+    // what makes EN and AR provably agree on scope, segment, numbers, source and a
+    // localized location, and stops a general-office band from ever being relabelled
+    // a Grade A band. Tests: src/lib/market/valueEvidence.test.ts.
+    const requestedSegment = detectRequestedSegment(raw);
+    const userFigure = typeof intent?.figure === "number" && intent.figure > 0
+      ? intent.figure
+      : (() => { const m = raw.match(/\d[\d,]{2,}(?:\.\d+)?/); return m ? parseFloat(m[0].replace(/,/g, "")) : null; })();
+    const ev = buildValueEvidence(band as any, requestedSegment, userFigure);
+    if (!ev) {
+      return NextResponse.json({ mode: "value", message: arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.` });
+    }
+    const message = renderValue(ev, arq ? "ar" : "en");
     // Public payload: the figure travels as `average` (the stored value IS an
-    // arithmetic average; see lib/market/segments.ts). Never expose `median`.
-    return NextResponse.json({ mode: "value", message: msg || fallback, band: toPublicSegment(band as IndexRowLike) });
+    // arithmetic average; see lib/market/segments.ts). Never expose `median`. The
+    // evidence summary lets the client and QA assert the same scope both languages saw.
+    return NextResponse.json({
+      mode: "value",
+      message,
+      band: toPublicSegment(band as IndexRowLike),
+      evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason },
+    });
   }
 
   if (mode === "watch") {
