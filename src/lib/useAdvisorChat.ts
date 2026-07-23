@@ -5,15 +5,23 @@ import { addWatch } from "@/lib/watches";
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; }
 
+// Bump when the persisted Msg shape changes so old prototype conversations are
+// dropped rather than deserialised into the new renderer. v1 stored band.median;
+// the renderer now reads band.average, and a stale v1 blob would feed undefined
+// into number formatting. The version is part of the storage key, so bumping it
+// simply orphans the old blob (no migration needed for throwaway test state).
+const STATE_VERSION = "v2";
+
 /**
  * Shared advisor conversation state: /api/advisor first ({query, history}),
  * only true search mode falls through to /api/search. Used by the advisor
  * page and the floating advisor widget. Pass a storageKey to persist the
- * conversation in sessionStorage (the widget does; the page does not).
+ * conversation in sessionStorage. BOTH callers pass one today (the page uses
+ * "sat_advisor_page", the widget "sat_advisor"), so both persist per locale.
  */
 export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
  const ar = locale === "ar";
- const key = storageKey ? `${storageKey}:${locale}` : undefined;
+ const key = storageKey ? `${storageKey}:${STATE_VERSION}:${locale}` : undefined;
  const [msgs, setMsgs] = useState<Msg[]>([]);
  const [busy, setBusy] = useState(false);
  const [hydrated, setHydrated] = useState(!key);

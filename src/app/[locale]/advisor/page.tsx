@@ -54,20 +54,30 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   fetch("/api/index/segments").then((r) => r.json()).then((d) => setSegs(d.segments || [])).catch(() => setSegs([]));
  }, [tool, segs]);
 
+ // Prototype hotfix: the default segKey may not be among the segments the API
+ // actually returns (it offers office|all, retail|all, warehouse|all). Once
+ // segments load, snap segKey to a real available option so the location list
+ // populates immediately and only a rate is needed before Analyse enables.
+ useEffect(() => {
+  if (!segs || !segs.length) return;
+  const opts = Array.from(new Set(segs.map((s) => `${s.asset_type}|${s.segment}`)));
+  if (!opts.includes(segKey)) setSegKey(opts[0]);
+ }, [segs, segKey]);
+
  const JOBS = ar ? [
   { icon: <Icon.search size={18} />, label: "ابحث عن مساحة", sub: "صِف ما تحتاجه بكلماتك وسأبحث في العروض الموثّقة", prefill: "مكتب فئة A مجهّز في غرناطة، نحو 300 م²، بأقل من 1,600 ريال/م²", tool: null },
   { icon: <Icon.spark size={18} />, label: "اكتب إعلاناً", sub: "أعطني تفاصيل مساحتك وأكتب الإعلان كاملاً", prefill: "اكتب إعلاناً لمساحتي: [النوع]، [الموقع]، [المساحة] م²، [مجهّزة أو هيكل]", tool: null },
-  { icon: <Icon.chart size={18} />, label: "حلّل صفقة أو عقد إيجار", sub: "أدخل أرقام صفقتك وأقيسها على النطاقات المنشورة", prefill: "", tool: "value" as const },
+  { icon: <Icon.chart size={18} />, label: "حلّل صفقة أو عقد إيجار", sub: "أدخل أرقام صفقتك وأقيسها على النطاقات الاسترشادية التجريبية", prefill: "", tool: "value" as const },
   { icon: <Icon.target size={18} />, label: "راقب السوق", sub: "تنبيه دائم عند تحرّك المؤشر", prefill: "نبّهني عندما تتحرك إيجارات المكاتب في [الموقع] أكثر من 3%", tool: null },
  ] : [
   { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe what you need in your own words, I search verified stock", prefill: "Fitted Grade A office in Granada, around 300 m², under 1,600 SAR/m²", tool: null },
   { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "Give me your space's details and I write the whole listing", prefill: "Draft a listing for my space: [type], [location], [size] m², [fitted or shell]", tool: null },
-  { icon: <Icon.chart size={18} />, label: "Analyse a deal or lease", sub: "Enter your deal's numbers, I grade them against the published bands", prefill: "", tool: "value" as const },
+  { icon: <Icon.chart size={18} />, label: "Analyse a deal or lease", sub: "Enter your deal's numbers, I grade them against the sample indicative ranges", prefill: "", tool: "value" as const },
   { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prefill: "Alert me when office rents in [location] move more than 3%", tool: null },
  ];
 
  const CHIPS = ar
-  ? ["سعّر مكتب فئة A في العليا", "ما النطاق المنشور في كافد؟", "هل 1,600 ريال/م² عادل لمكاتب غرناطة؟", "راقب مكاتب كافد فئة A"]
+  ? ["سعّر مكتب فئة A في العليا", "ما النطاق الاسترشادي في كافد؟", "هل 1,600 ريال/م² عادل لمكاتب غرناطة؟", "راقب مكاتب كافد فئة A"]
   : ["Price a Grade A office in Al Olaya", "What's within band in KAFD?", "Is 1,600 SAR/m² fair for Granada offices?", "Watch KAFD Grade A offices"];
 
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy, tool]);
@@ -98,13 +108,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   const fmt = (n: number) => n.toLocaleString("en-US");
   let text: string;
   if (ar) {
-   const vAr = v === "within" ? "يقع ضمن النطاق المنشور" : v === "below" ? "يقع تحت النطاق المنشور" : "يقع فوق النطاق المنشور";
+   const vAr = v === "within" ? "يقع ضمن النطاق الاسترشادي التجريبي" : v === "below" ? "يقع تحت النطاق الاسترشادي التجريبي" : "يقع فوق النطاق الاسترشادي التجريبي";
    const dAr = r === avg ? "عند المتوسط تماماً" : r < avg ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
    text = `فحص الصفقة: ${segL}، ${locL}، عند ${fmt(r)} ${unitL}. ${vAr} (${fmt(lo)} إلى ${fmt(hi)}، المتوسط ${fmt(avg)})، ${dAr}.` +
     (annual ? ` عند ${fmt(sz)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
     ` ${formatPeriod(activeRow.period, true)}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
   } else {
-   const vEn = v === "within" ? "sits within the published band" : v === "below" ? "sits below the published band" : "sits above the published band";
+   const vEn = v === "within" ? "sits within the sample indicative range" : v === "below" ? "sits below the sample indicative range" : "sits above the sample indicative range";
    const dEn = r === avg ? "exactly at the average" : r < avg ? `about ${dm}% below the average` : `about ${dm}% above the average`;
    text = `Deal check: ${segL}, ${locL}, at ${fmt(r)} ${unitL}. That ${vEn} (${fmt(lo)} to ${fmt(hi)}, average ${fmt(avg)}), ${dEn}.` +
     (annual ? ` At ${fmt(sz)} m² that is about ${fmt(annual)} SAR a year.` : "") +
@@ -168,8 +178,15 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
        <div key={i} className="chatmsg a">
         <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
         {m.band && (() => {
-         const b = m.band; const q0 = m.quoted ?? null;
-         const lo = b.low, avg = b.average, hi = b.high;
+         const b: any = m.band; const q0raw = m.quoted ?? null;
+         // Guard every number: a message saved by an older prototype build can
+         // carry a different band shape (e.g. band.median). Coerce, and if the
+         // three band values are not all finite, render nothing instead of
+         // crashing on undefined.toLocaleString.
+         const lo = Number(b.low), hi = Number(b.high);
+         const avg = Number(b.average ?? b.median);
+         const q0 = q0raw != null && Number.isFinite(Number(q0raw)) ? Number(q0raw) : null;
+         if (![lo, hi, avg].every(Number.isFinite)) return null;
          const mn0 = Math.min(lo, q0 ?? lo), mx0 = Math.max(hi, q0 ?? hi);
          const pad = ((mx0 - mn0) || 1) * 0.12; const mn = mn0 - pad, mx = mx0 + pad; const sp = (mx - mn) || 1;
          const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
@@ -244,7 +261,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `النطاق المنشور: ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")} · المتوسط ${Number(activeRow.average).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, true)}` : `Published band: ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")} · average ${Number(activeRow.average).toLocaleString("en-US")} · ${formatPeriod(activeRow.period, false)}`}</div>}
+          {activeRow && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${Number(activeRow.band_low).toLocaleString("en-US")} إلى ${Number(activeRow.band_high).toLocaleString("en-US")}. متوسط مؤشر الإيجارات (إيجار) ${Number(activeRow.average).toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${Number(activeRow.band_low).toLocaleString("en-US")} to ${Number(activeRow.band_high).toLocaleString("en-US")}. Rent Index (Ejar) average ${Number(activeRow.average).toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>}
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeRow || !rent.trim()}>{av.analyse}</button>
           </div>

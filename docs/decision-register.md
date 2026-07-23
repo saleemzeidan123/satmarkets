@@ -17,6 +17,22 @@ implemented on an unsupported assumption.
 | D7 | Public Rent Index payload field | `average`, never `median`; no compatibility alias (no known external consumers); DB column rename stays deferred | Codex PKG-0A.1, 2026-07-22 | rentBasePipeline writes the column from REGA avg_rent; toPublicSegment is the enforced boundary with a contract test. |
 | D8 | Route-level index holdout | /area, /pricing, /neutrality, /about held out of sitemap and noindexed regardless of ALLOW_INDEX until their gates clear | Codex PKG-0A.1, 2026-07-22 | lib/routePolicy.ts shared by sitemap and middleware; law test enforces agreement. |
 
+## Pre-launch, deferred by owner (2026-07-23): prototype stage, do not action now
+
+The product is a private, unshared prototype on mock data; the whole preview stays
+noindex. These launch-level items are parked until closer to launch and must not
+consume prototype-stage effort:
+
+- Acquire and configure the production domain; remove domain references from draft
+  legal documents; final legal wording and contact emails (registers ranks 9, 34 stay open).
+- Production SEO and canonical-domain perfection (rank 7 env-awareness is enough for now).
+- A full backward-compatible migration framework (prototype state is disposable).
+- Final Rent Index statistical methodology, including how the low/high range is derived.
+  The current low/high are development test ranges; UI now labels them "sample
+  indicative range" and attributes only the REGA average + period as sourced.
+- Physical database-column rename of `median` (rank 31 stays deferred; the public
+  API boundary already exposes `average`).
+
 ## Open (owner: Saleem)
 
 | # | Decision | Blocking | Context |
