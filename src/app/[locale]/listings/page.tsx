@@ -297,8 +297,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + (SEGL[r.segment] || r.segment) : ""}</td>
-                      <td className="num mono">{r.sufficient && r.median != null ? Number(r.median).toLocaleString("en-US") : (dict.listings.na)}</td>
-                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? `${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}` : (dict.listings.thinSample)}</td>
+                      <td className="num mono">{r.sufficient && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dict.listings.na)}</td>
+                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dict.listings.thinSample)}</td>
                       <td className="num">{r.sufficient ? <span className="statusdot ok">{dict.listings.sufficient}</span> : <span className="statusdot pend">{dict.listings.thin}</span>}</td>
                     </tr>
                   ))}

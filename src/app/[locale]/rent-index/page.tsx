@@ -205,8 +205,12 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           <tr key={i}>
            <td style={{ fontWeight: 600 }}>{d[0]}</td>
            <td className="muted">{d[1]}</td>
-           <td className="num mono" style={{ fontWeight: 500 }}>{d[2]}</td>
-           <td className="num mono muted">{d[3]}</td>
+           <td className="num mono" style={{ fontWeight: 500 }}><bdi dir="ltr">{d[2]}</bdi></td>
+           {/* A low-high figure range is a single numeric atom: force LTR so it always
+               reads low-to-high left-to-right, even under RTL (Codex area 4). Without
+               this the two numbers reorder to high-on-left, misreading the range. The
+               thin-sample text stays in the ambient direction. */}
+           <td className="num mono muted">{d[4] ? <bdi dir="ltr">{d[3]}</bdi> : d[3]}</td>
            <td className="num">{d[4] ? <span className="statusdot ok">{ri.sufficient}</span> : <span className="statusdot pend">{ri.thin}</span>}</td>
            <td className="num"><span className="statusdot pend">{ri.sample}</span></td>
           </tr>

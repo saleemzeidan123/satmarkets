@@ -173,15 +173,22 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (
           <div style={{ margin: "10px 0 2px" }}>
-           <div style={{ position: "relative", height: 8, borderRadius: 999, background: "var(--silver)" }}>
+           {/* The bar and its numeric scale are a low-to-high measure: force LTR so the
+               track and the end labels always read low (left) to high (right) in both
+               locales, matching the numerals' own direction (Codex area 4). */}
+           <div style={{ position: "relative", height: 8, borderRadius: 999, background: "var(--silver)", direction: "ltr" }}>
             <div style={{ position: "absolute", top: 0, bottom: 0, left: pc(lo), width: `calc(${pc(hi)} - ${pc(lo)})`, background: "var(--azure-wash)", borderRadius: 999 }} />
             <div style={{ position: "absolute", top: -3, bottom: -3, left: pc(avg), width: 2, background: "var(--harbor)" }} />
-            {q0 != null && <div style={{ position: "absolute", top: -5, bottom: -5, left: pc(q0), width: 3, marginInlineStart: -1, background: col, borderRadius: 2 }} />}
+            {q0 != null && <div style={{ position: "absolute", top: -5, bottom: -5, left: pc(q0), width: 3, marginLeft: -1, background: col, borderRadius: 2 }} />}
            </div>
-           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--slate)", marginTop: 6 }}>
-            <span>{fmt(lo)}</span><span>{(av.averageLabel) + fmt(avg) + (unitL ? " · " + unitL : "")}</span><span>{fmt(hi)}</span>
+           {/* End labels: only low and high, forced LTR and bidi-isolated. The average
+               moved to its own line below so the middle label can no longer collide with
+               the ends at narrow widths (Codex area 4, EN label collision). */}
+           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--slate)", marginTop: 6, direction: "ltr" }}>
+            <span style={{ unicodeBidi: "isolate" }}>{fmt(lo)}</span><span style={{ unicodeBidi: "isolate" }}>{fmt(hi)}</span>
            </div>
-           {q0 != null && <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 600, color: col, marginTop: 4 }}>{(av.yourRate) + fmt(q0)}</div>}
+           <div className="mono" style={{ fontSize: 11, color: "var(--slate)", marginTop: 3, textAlign: "center" }}>{(av.averageLabel)}<bdi dir="ltr">{fmt(avg)}</bdi>{unitL ? " · " + unitL : ""}</div>
+           {q0 != null && <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 600, color: col, marginTop: 4 }}>{(av.yourRate)}<bdi dir="ltr">{fmt(q0)}</bdi></div>}
           </div>
          );
         })()}
