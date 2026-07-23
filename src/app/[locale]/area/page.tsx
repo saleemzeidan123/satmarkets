@@ -54,7 +54,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{ap.eyebrow}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ap.h1}</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, margin: "10px 0 0" }}>{ap.h1}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ap.intro}</div>
      </div>
      <div className="row gap10 wrap">
@@ -167,7 +167,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div style={{ padding: "8px 24px 48px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="eyebrow">{ap.howTitle}</div>
-      <h2 style={{ fontSize: 21, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 6px" }}>{ap.howH}</h2>
+      <h2 style={{ fontSize: 21, fontWeight: 700, margin: "10px 0 6px" }}>{ap.howH}</h2>
       <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>

@@ -12,11 +12,12 @@ export function isLocationKind(v: string | null | undefined): v is LocationKind 
   return v === "district" || v === "development" || v === "area";
 }
 
-// Normalise an unknown/legacy value to a safe kind. Unknown kinds fall back to
-// the neutral "area" rather than the specific "district", so a mislabelled row
-// can never assert district-hood it does not have.
-export function coerceKind(v: string | null | undefined): LocationKind {
-  return isLocationKind(v) ? v : "area";
+// Return the kind only when it is a real taxonomy value, else null. An unknown
+// kind is NOT coerced to "area": "area" is a genuine taxonomy assertion (a real
+// catchment), not a dumping ground for unrecognised values (Codex Phase 0
+// correction 3). Callers show the neutral "Location" umbrella for null.
+export function normalizeKind(v: string | null | undefined): LocationKind | null {
+  return isLocationKind(v) ? v : null;
 }
 
 const KIND_LABEL: Record<LocationKind, [string, string]> = {
@@ -25,18 +26,20 @@ const KIND_LABEL: Record<LocationKind, [string, string]> = {
   area: ["Area", "منطقة"],
 };
 
-// The umbrella noun to use when a single kind is known.
+// The umbrella noun for a location. A known kind gets its specific label; an
+// unknown/neutral kind gets "Location" / "الموقع", never an invented "Area" and
+// never "District" (Law 7).
 export function kindLabel(kind: string | null | undefined, ar: boolean): string {
-  return KIND_LABEL[coerceKind(kind)][ar ? 1 : 0];
+  const k = normalizeKind(kind);
+  return k ? KIND_LABEL[k][ar ? 1 : 0] : locationUmbrella(ar);
 }
 
-// Neutral umbrella for a list that MIXES kinds: never "district" (Law 7), always
-// "Location" / "الموقع".
+// Neutral umbrella for a mixed list or an unknown kind: always "Location" / "الموقع".
 export function locationUmbrella(ar: boolean): string {
   return ar ? "الموقع" : "Location";
 }
 
-// True when a project marker should be shown next to the name (developments).
+// True only when the kind is explicitly a development.
 export function isDevelopment(kind: string | null | undefined): boolean {
-  return coerceKind(kind) === "development";
+  return normalizeKind(kind) === "development";
 }

@@ -644,6 +644,7 @@
     "noBands": "No sample ranges available right now.",
     "spaceType": "Space type",
     "chooseType": "Choose a space type",
+    "unsupported": "This segment's rent unit is not supported yet, so it cannot be analysed.",
     "locationLabel": "Location (with a sample range)",
     "quotedRate": "Quoted rate ",
     "sizeLabel": "Size m² (optional)",

@@ -32,7 +32,7 @@ export default async function BrokersPage({ params }: { params: { locale: string
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="eyebrow">{b.eyebrow}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{b.title}</h1>
+      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "10px 0 0" }}>{b.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640, lineHeight: 1.6 }}>{b.intro}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14, marginTop: 24 }}>

@@ -55,7 +55,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(req.asset, locale)} · {req.deal === "lease" ? t.lease : t.buy}</span>
       <span className="mono muted" style={{ fontSize: 11 }}>{req.ref}</span>
      </div>
-     <h1 style={{ fontSize: 23, fontWeight: 700, letterSpacing: "-.02em", margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
+     <h1 style={{ fontSize: 23, fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
      <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
       {([

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { coerceKind, isLocationKind, kindLabel, locationUmbrella, isDevelopment, LOCATION_KINDS } from "./locationKind";
+import { normalizeKind, isLocationKind, kindLabel, locationUmbrella, isDevelopment, LOCATION_KINDS } from "./locationKind";
 import { releaseLabel, stateTone, RELEASE_STATES } from "./releaseState";
 
 // WS04: a development is never a district.
@@ -13,14 +13,23 @@ test("location kind: developments are labelled as developments, never districts"
   assert.ok(!isDevelopment("district"));
 });
 
-test("location kind: unknown or legacy kinds fall back to neutral area, never district", () => {
-  assert.equal(coerceKind(null), "area");
-  assert.equal(coerceKind(undefined), "area");
-  assert.equal(coerceKind("neighbourhood"), "area");
-  assert.equal(coerceKind(""), "area");
-  assert.notEqual(coerceKind("garbage"), "district");
+test("location kind: unknown kinds are NOT coerced to area (area is a real assertion)", () => {
+  // normalizeKind returns null for unknown, never a fabricated "area".
+  assert.equal(normalizeKind(null), null);
+  assert.equal(normalizeKind(undefined), null);
+  assert.equal(normalizeKind("neighbourhood"), null);
+  assert.equal(normalizeKind(""), null);
+  assert.equal(normalizeKind("garbage"), null);
+  assert.equal(normalizeKind("area"), "area"); // a real value survives
   assert.ok(!isLocationKind("garbage"));
   assert.ok(isLocationKind("development"));
+  // An unknown kind labels as the neutral Location umbrella, not Area, not District.
+  assert.equal(kindLabel("garbage", false), "Location");
+  assert.equal(kindLabel(null, true), "الموقع");
+  assert.notEqual(kindLabel("garbage", false), "Area");
+  assert.notEqual(kindLabel("garbage", false), "District");
+  // A real area still reads Area.
+  assert.equal(kindLabel("area", false), "Area");
 });
 
 test("location kind: mixed lists use the neutral Location umbrella, not District", () => {
@@ -44,15 +53,19 @@ test("release state: all states have EN and AR labels and a tone", () => {
     assert.ok(en.length > 0, `${s} missing EN`);
     assert.ok(ar.length > 0, `${s} missing AR`);
     assert.notEqual(en, ar, `${s} EN and AR should differ`);
-    assert.ok(["positive", "attention", "neutral"].includes(stateTone(s)));
+    assert.ok(["verified", "info", "attention", "neutral"].includes(stateTone(s)));
   }
 });
 
-test("release state: sample and preview are neutral, verified and available positive, reconfirm is attention", () => {
+test("release state: only verified uses the verified (green) tone; available is info, not green", () => {
+  assert.equal(stateTone("verified"), "verified");
+  assert.equal(stateTone("available"), "info"); // Harbor/informational, never confirmed green
+  assert.notEqual(stateTone("available"), "verified");
+  assert.equal(stateTone("reconfirm"), "attention");
   assert.equal(stateTone("preview"), "neutral");
   assert.equal(stateTone("sample"), "neutral");
   assert.equal(stateTone("planned"), "neutral");
-  assert.equal(stateTone("verified"), "positive");
-  assert.equal(stateTone("available"), "positive");
-  assert.equal(stateTone("reconfirm"), "attention");
+  // Exactly one state may claim the verified tone.
+  const verifiedStates = RELEASE_STATES.filter((s) => stateTone(s) === "verified");
+  assert.deepEqual(verifiedStates, ["verified"]);
 });

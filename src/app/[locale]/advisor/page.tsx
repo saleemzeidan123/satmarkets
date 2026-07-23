@@ -5,7 +5,7 @@ import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
-import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num } from "@/lib/market/analyser";
+import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num, isKnownUnit } from "@/lib/market/analyser";
 import { getDictionary } from "@/i18n/getDictionary";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
@@ -76,6 +76,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  const locOptions = segs && segKey ? segs.filter((s) => `${s.asset_type}|${s.segment}` === segKey) : [];
  const activeRow = locOptions.find((s) => s.district_label === segLoc) || locOptions[0] || null;
  const activeBand = activeRow ? validBand({ band_low: activeRow.band_low, band_high: activeRow.band_high, average: activeRow.average }) : null;
+ const unitOk = activeRow ? isKnownUnit(activeRow.unit) : false;
  const rateValid = num(rent.replace(/[,\s]/g, "")) !== null && Number(rent.replace(/[,\s]/g, "")) > 0;
 
  function analyse() {
@@ -165,7 +166,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          const pc = (v: number) => `${((v - mn) / sp) * 100}%`;
          const st = q0 == null ? null : q0 < lo ? "below" : q0 > hi ? "above" : "within";
          const col = st === "below" ? "#1B7A50" : st === "above" ? "#8A5A1F" : "#3A6EA5";
-         const unitL = rentUnitLabel(b.unit, ar);
+         const unitL = rentUnitLabel(b.unit, ar) ?? "";
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (
           <div style={{ margin: "10px 0 2px" }}>
@@ -227,18 +228,19 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
             {locOptions.map((s) => <option key={s.district_label} value={s.district_label}>{ar ? (s.district_label_ar || s.district_label) : s.district_label}</option>)}
            </select>
           </label>}
-          {activeRow && <>
+          {activeRow && !(activeBand && unitOk) && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{av.unsupported}</div>}
+          {activeRow && activeBand && unitOk && <>
           <div className="row gap10 wrap">
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 170 }}>{rateBasisLabel(activeRow.unit, ar)}
-            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeBand ? activeBand.average.toLocaleString("en-US") : ""} />
+            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeBand.average.toLocaleString("en-US")} />
            </label>
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          {activeBand && <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${activeBand.low.toLocaleString("en-US")} إلى ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, true)}. متوسط مؤشر الإيجارات (إيجار) ${activeBand.average.toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${activeBand.low.toLocaleString("en-US")} to ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, false)}. Rent Index (Ejar) average ${activeBand.average.toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>}
+          <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${activeBand.low.toLocaleString("en-US")} إلى ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, true)}. متوسط مؤشر الإيجارات (إيجار) ${activeBand.average.toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${activeBand.low.toLocaleString("en-US")} to ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, false)}. Rent Index (Ejar) average ${activeBand.average.toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>
           <div className="row gap8">
-           <button className="btn primary sm" onClick={analyse} disabled={!activeBand || !rateValid}>{av.analyse}</button>
+           <button className="btn primary sm" onClick={analyse} disabled={!activeBand || !rateValid || !unitOk}>{av.analyse}</button>
           </div>
           </>}
           <div className="muted" style={{ fontSize: "var(--fs-2xs)" }}>{av.analyserNote}</div>

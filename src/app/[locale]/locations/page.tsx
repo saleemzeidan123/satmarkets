@@ -58,7 +58,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
       ] }} />
       <JsonLd data={{ "@type": "ItemList", name: d.itemListName, numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${(ar ? l.name_ar : l.name_en) || l.name_en}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
       <div className="eyebrow">{d.directory}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{d.title}</h1>
+      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "10px 0 0" }}>{d.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{d.intro}</p>
       <div className="row gap8" style={{ marginTop: 12 }}><Link href={`/${locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{d.marketPulse}</Link></div>
       {KIND_ORDER.map((k) => {

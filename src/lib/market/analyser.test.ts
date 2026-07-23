@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { num, validBand, spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, analyseDeal } from "./analyser";
+import { num, validBand, spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, analyseDeal, unitKind, isKnownUnit } from "./analyser";
 
 // PKG-0B regression coverage for the Advisor analyser (Codex correction 5).
 
@@ -38,6 +38,44 @@ test("validBand rejects missing, null, empty, NaN and out-of-order values", () =
   assert.equal(validBand({ low: "", average: "", high: "" }), null);
 });
 
+test("validBand rejects zero and negative rent ranges (rents are positive)", () => {
+  assert.equal(validBand({ low: 0, average: 0, high: 0 }), null);
+  assert.equal(validBand({ low: 0, average: 100, high: 200 }), null); // zero low
+  assert.equal(validBand({ low: -100, average: 100, high: 200 }), null); // negative low
+  assert.equal(validBand({ low: 100, average: 0, high: 200 }), null); // zero average
+  assert.equal(validBand({ low: 100, average: 150, high: 0 }), null); // zero high breaks order anyway
+  assert.equal(validBand({ band_low: -5, average: -3, band_high: -1 }), null); // all negative, ordered
+  assert.deepEqual(validBand({ low: 1, average: 1, high: 1 }), { low: 1, average: 1, high: 1 });
+});
+
+test("unit basis is never inferred: unknown/null/empty units are unsupported", () => {
+  assert.equal(unitKind("SAR/m2/yr"), "sqm_year");
+  assert.equal(unitKind("sar_sqm_yr"), "sqm_year");
+  assert.equal(unitKind("sar_desk_month"), "desk_month");
+  assert.equal(unitKind(null), null);
+  assert.equal(unitKind(""), null);
+  assert.equal(unitKind("SAR"), null);
+  assert.equal(unitKind("bushels"), null);
+  assert.equal(isKnownUnit("SAR/m2/yr"), true);
+  assert.equal(isKnownUnit("weird"), false);
+  // rentUnitLabel returns null (never a guessed basis) for unknown units.
+  assert.equal(rentUnitLabel("weird", false), null);
+  assert.equal(rentUnitLabel(null, true), null);
+  // rateBasisLabel surfaces an explicit unsupported label, not a guessed unit.
+  assert.equal(rateBasisLabel("weird", false), "Rent unit not supported");
+  assert.equal(rateBasisLabel(null, true), "وحدة الإيجار غير مدعومة");
+  // analyseDeal refuses to analyse an unknown unit even with a valid band+rate.
+  assert.equal(analyseDeal({ rate: "2100", band: { band_low: 1, average: 2, band_high: 3 }, unit: "weird", assetType: "office", segment: "all", locationLabel: "X", period: "2026-Q2", ar: false }), null);
+});
+
+test("percentage maths never produce Infinity or NaN (average is guaranteed positive)", () => {
+  // With a valid (positive) band, the delta% is always finite.
+  const r = analyseDeal({ rate: "2100", band: { band_low: 1, average: 1, band_high: 3 }, unit: "SAR/m2/yr", assetType: "office", segment: "all", locationLabel: "X", period: "2026-Q2", ar: false })!;
+  assert.ok(r, "expected result");
+  assert.ok(Number.isFinite(r.quoted));
+  assert.ok(!/Infinity|NaN/.test(r.text));
+});
+
 test("spaceTypeLabel returns human labels, never an internal compound key", () => {
   // The "all" segment adds no qualifier.
   assert.equal(spaceTypeLabel("retail", "all", false), "Retail & F&B");
@@ -62,8 +100,8 @@ test("rentUnitLabel is localized, Western-numeral and uses م² in Arabic", () =
   assert.equal(rentUnitLabel("sar_desk_month", false), "SAR/desk/month");
   assert.equal(rentUnitLabel("sar_desk_month", true), "ريال/مكتب·شهر");
   // Arabic never emits the raw ASCII unit.
-  assert.ok(!rentUnitLabel("SAR/m2/yr", true).includes("m2"));
-  assert.ok(rentUnitLabel("SAR/m2/yr", true).includes("م²"));
+  assert.ok(!rentUnitLabel("SAR/m2/yr", true)!.includes("m2"));
+  assert.ok(rentUnitLabel("SAR/m2/yr", true)!.includes("م²"));
 });
 
 test("rateBasisLabel states the basis explicitly before input in both languages", () => {

@@ -22,7 +22,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
      <div>
       <div className="eyebrow">{dict.req.openReqs}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{dict.req.h1}</h1>
+      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "12px 0 6px" }}>{dict.req.h1}</h1>
       <p className="muted" style={{ fontSize: 15, maxWidth: 580, lineHeight: 1.6 }}>{dict.req.sub}</p>
      </div>
      <Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link>
@@ -41,7 +41,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
           <span className="mono muted" style={{ fontSize: 11 }}>{r.ref}</span>
          </span>
         </div>
-        <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", letterSpacing: "-.01em", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
+        <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
         <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
          <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</div>
          <div className="row gap6"><Icon.layers size={14} /> <bdi>{r.sizeMin} {dict.req.rangeTo} {r.sizeMax} {ar ? "م²" : "m²"}</bdi> · {dict.req.upTo} <bdi>{Number(r.budget).toLocaleString("en-US")} {r.deal === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</bdi></div>

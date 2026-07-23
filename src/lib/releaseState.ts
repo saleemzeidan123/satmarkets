@@ -29,12 +29,20 @@ export function releaseLabel(state: ReleaseState, ar: boolean): string {
   return LABEL[state][ar ? 1 : 0];
 }
 
-// Which semantic tone a state should render with (drives colour/icon later,
-// never colour alone). "verified" and "available" are positive; "reconfirm" is
-// attention; "preview"/"sample"/"planned" are neutral/informational.
-export type StateTone = "positive" | "attention" | "neutral";
+// Which semantic tone a state renders with (drives colour AND icon, never colour
+// alone). Tones are deliberately separated (Codex Phase 0 correction 4):
+//   - "verified": confirmed green (#1B7A50). RESERVED for an evidence-backed
+//     verification. Only render it when the specific underlying dimension
+//     (ownership_verified, authorization_verified, identity, ...) is actually
+//     true; a generic "Verified" with no dimension must NOT use this tone.
+//   - "info": Harbor. "available" is current and usable, but availability is not
+//     a verification, so it gets an informational treatment, not green.
+//   - "attention": amber. "reconfirm" needs action.
+//   - "neutral": preview / sample / planned.
+export type StateTone = "verified" | "info" | "attention" | "neutral";
 export function stateTone(state: ReleaseState): StateTone {
-  if (state === "verified" || state === "available") return "positive";
+  if (state === "verified") return "verified";
+  if (state === "available") return "info";
   if (state === "reconfirm") return "attention";
   return "neutral";
 }

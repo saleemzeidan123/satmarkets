@@ -19,10 +19,11 @@ of 2026-07-23): `district` (48), `area` (21), `development` (8).
 
 Rules the typed helper enforces:
 
-- An unknown or legacy kind coerces to the neutral `area`, never to `district`,
-  so a mislabelled row cannot assert district-hood.
-- A list that mixes kinds uses the neutral umbrella "Location" / "الموقع", never
-  "District".
+- `normalizeKind` returns the kind only when it is a real taxonomy value, else
+  `null`. An unknown or legacy kind is NEVER coerced to `area`: "area" is a
+  genuine catchment assertion, not a fallback (Codex Phase 0 correction 3).
+- A `null`/unknown kind, and any mixed list, use the neutral umbrella
+  "Location" / "الموقع", never "Area" and never "District".
 - Developments carry a project marker next to the name (`isDevelopment`).
 
 Deferred (recorded, not done now): the taxonomy is currently all keyed through a
@@ -31,22 +32,34 @@ parameter is Phase 2 / WS19; until then no development is *labelled* a district,
 which is the WS04 acceptance gate, but the URL parameter name change is a
 launch-adjacent item.
 
-## Trust / verification dimensions (typed, rendered independently)
+## Reconciliation with the canonical domain model (WS04, Codex correction 5)
 
-The `listings` table already carries these as separate booleans; they must never
-collapse into one "Verified" badge (audit rank 3, decision O3 open):
+This workstream adds only the ONE genuinely missing type, `LocationKind`
+(`src/lib/locationKind.ts`); it does not duplicate the working domain models,
+which stay canonical and are referenced here:
 
-- `ownership_verified` — SAT confirmed the lister owns the asset.
-- `authorization_verified` — a broker's written right-to-market is on file.
-- `is_sat_listed` — the listing is SAT's own.
-- identity verification (account level) — the person/entity is verified.
+- `src/lib/types.ts` owns `AssetType`, `DealType`, `Listing` (incl.
+  `ownership_verified`, `authorization_verified`, `right_to_market_confirmed`,
+  `is_sat_listed`, permit fields), `DistrictRef` and `RentIndexCell`.
+- `src/lib/gate.ts` owns the verification/publish logic: `GateFields`,
+  `ownerVerified`, `permitOf`, `passesGate`, `gateFailures`. Verification
+  dimensions are read through these, not re-declared.
+- `src/lib/market/segments.ts` owns the public Rent Index segment contract
+  (`average`, never `median`).
+- `src/lib/releaseState.ts` owns the release-state vocabulary and tones.
 
-Each maps to exactly one documented database condition; the display-rule split is
-owner decision O3, to be built in Phase 2 (WS17/WS18) with a fixture matrix.
+Trust / verification dimensions therefore live in `types.ts` + `gate.ts` and must
+never collapse into one generic "Verified" badge (audit rank 3, decision O3
+open). A generic "Verified" label may not render unless its specific dimension is
+actually true; only that evidence-backed state uses the confirmed-green tone
+(release-state tone `verified`), while `available` is informational (Harbor), not
+green. Each dimension maps to one documented database condition; the display-rule
+split is Phase 2 (WS17/WS18) with a fixture matrix.
 
-## Other entities (unchanged, listed for completeness)
+## Other entities (canonical, listed for reference)
 
-`buildings` (lat/lng, exact pins) → belong to a location of a known kind;
-`listings` → belong to a building and/or a location; `listers` → carry a role
-(owner / licensed broker / SAT) and verification records; `requirements` →
-occupier demand; market figures → attributed to a source publication (REGA Ejar).
+`buildings` (lat/lng, exact pins) belong to a location of a known kind;
+`listings` (see `types.ts`) belong to a building and/or a location; `listers`
+carry a role (owner / licensed broker / SAT) and verification records;
+`requirements` are occupier demand; market figures are attributed to a source
+publication (REGA Ejar, via `segments.ts`).

@@ -27,7 +27,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{hb.eyebrow}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{hb.assetTitle}</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, margin: "10px 0 0" }}>{hb.assetTitle}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{hb.assetSub}</div>
      </div>
      <div className="row gap10 wrap">

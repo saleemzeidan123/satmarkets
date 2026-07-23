@@ -22,10 +22,12 @@ export function num(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-// A band is valid only when low, average and high are all finite AND ordered
-// low <= average <= high. Accepts either the public shape (average/band_low/
-// band_high) or a stale stored shape (median/low/high) so an old prototype
-// message fails safe instead of rendering a false zero.
+// A band is valid only when low, average and high are all finite, STRICTLY
+// POSITIVE (rents are positive; a zero or negative band is data corruption, not
+// a real range) AND ordered low <= average <= high. Positive average also means
+// downstream percentage maths can never divide by zero into Infinity or NaN.
+// Accepts either the public shape (average/band_low/band_high) or a stale stored
+// shape (median/low/high) so an old prototype message fails safe.
 export function validBand(raw: unknown): Band | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
@@ -33,8 +35,23 @@ export function validBand(raw: unknown): Band | null {
   const high = num(r.high ?? r.band_high);
   const average = num(r.average ?? r.median);
   if (low === null || high === null || average === null) return null;
+  if (low <= 0 || average <= 0 || high <= 0) return null;
   if (!(low <= average && average <= high)) return null;
   return { low, average, high };
+}
+
+// The rent basis a stored unit denotes. Returns null for anything unrecognised:
+// the price basis is NEVER inferred (Codex Phase 0 correction 2). A null kind
+// means "unsupported", not "assume SAR/m²/year".
+export type UnitKind = "sqm_year" | "desk_month";
+export function unitKind(unit: string | null | undefined): UnitKind | null {
+  if (isSqmYear(unit)) return "sqm_year";
+  const n = String(unit || "").toLowerCase();
+  if (/desk/.test(n) && /(mo|month)/.test(n)) return "desk_month";
+  return null;
+}
+export function isKnownUnit(unit: string | null | undefined): boolean {
+  return unitKind(unit) !== null;
 }
 
 // Human space-type label, never an internal compound key like "retail|all".
@@ -47,19 +64,21 @@ export function spaceTypeLabel(assetType: string, segment: string | null | undef
 }
 
 // Concise localized rent unit. Western numerals always; Arabic uses م², never
-// "SAR/m2/yr". Robust to the inconsistent stored unit strings (the seed carries
-// "SAR/m2/yr", ingest carries "sar_sqm_yr"), normalising through isSqmYear.
-export function rentUnitLabel(unit: string | null | undefined, ar: boolean): string {
-  if (isSqmYear(unit)) return ar ? "ريال/م²·سنة" : "SAR/m²/year";
-  const n = String(unit || "").toLowerCase();
-  if (/desk/.test(n) && /(mo|month)/.test(n)) return ar ? "ريال/مكتب·شهر" : "SAR/desk/month";
-  return ar ? "ريال/م²·سنة" : "SAR/m²/year";
+// "SAR/m2/yr". Returns null for an unrecognised unit rather than inferring a
+// basis (Codex Phase 0 correction 2), so callers surface an unsupported state.
+export function rentUnitLabel(unit: string | null | undefined, ar: boolean): string | null {
+  const k = unitKind(unit);
+  if (k === "sqm_year") return ar ? "ريال/م²·سنة" : "SAR/m²/year";
+  if (k === "desk_month") return ar ? "ريال/مكتب·شهر" : "SAR/desk/month";
+  return null;
 }
 
-// The rate-basis label shown BEFORE input, so the user knows what to type.
+// The rate-basis label shown BEFORE input, so the user knows what to type. An
+// unrecognised unit yields an explicit unsupported label, never a guessed basis.
 export function rateBasisLabel(unit: string | null | undefined, ar: boolean): string {
   const u = rentUnitLabel(unit, ar);
-  const monthly = !isSqmYear(unit) && /desk/.test(String(unit || "").toLowerCase());
+  if (!u) return ar ? "وحدة الإيجار غير مدعومة" : "Rent unit not supported";
+  const monthly = unitKind(unit) === "desk_month";
   if (ar) return monthly ? `الإيجار الشهري المطلوب، ${u}` : `الإيجار السنوي المطلوب، ${u}`;
   return monthly ? `Quoted monthly rent, ${u}` : `Quoted annual rent, ${u}`;
 }
@@ -93,7 +112,9 @@ export type DealResult = { text: string; band: Band; quoted: number; verdict: "b
 export function analyseDeal(input: DealInput): DealResult | null {
   const band = validBand(input.band);
   const rate = num(input.rate);
-  if (!band || rate === null || rate <= 0) return null;
+  // Block analysis on an invalid band, a non-positive/invalid rate, OR an
+  // unrecognised unit: the price basis is never inferred (Codex correction 2).
+  if (!band || rate === null || rate <= 0 || !isKnownUnit(input.unit)) return null;
   const { low, average, high } = band;
   const ar = input.ar;
   const fmt = (n: number) => n.toLocaleString("en-US");

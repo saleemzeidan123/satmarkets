@@ -14,6 +14,15 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 [dir="rtl"] { font-family: var(--font-ar), system-ui, sans-serif; }
+/* WS08: make the family TOKENS direction-aware, not just the element font-family.
+   Components set inline `fontFamily: var(--sans)` / `var(--serif)`, which beats an
+   element rule; redefining the tokens themselves under RTL fixes every one of
+   those inline usages at the source. `html[dir=rtl]` (0,1,1) outranks the :root
+   token definitions (0,1,0) regardless of stylesheet order. */
+html[dir="rtl"] {
+  --sans: var(--font-ar), system-ui, sans-serif;
+  --serif: var(--font-ar), Georgia, serif;
+}
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
