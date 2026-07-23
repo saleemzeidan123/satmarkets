@@ -68,6 +68,9 @@ html[dir="rtl"] .bars .b .v { font-family: var(--font-mono), ui-monospace, monos
 html[dir="rtl"] .foot .tpill,
 html[dir="rtl"] .foot .col-h,
 html[dir="rtl"] .foot h5 { font-family: var(--font-ar), system-ui, sans-serif; }
+/* Arabic status labels sit inside a re-asserted-mono numeric cell (table td.num);
+   a direct font-family rule on the label overrides the inherited mono. */
+html[dir="rtl"] .statusdot { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
