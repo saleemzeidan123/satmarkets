@@ -226,7 +226,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             const dt = new Date((l as any).availability_confirmed_at);
             if (!isFinite(dt.getTime())) return null;
             const dtxt = dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
-            const color = av.state === "stale" ? "#B26B00" : av.state === "fresh" ? "#1B7A50" : "var(--slate)";
+            const color = av.state === "stale" ? "var(--status-stale)" : av.state === "fresh" ? "#1B7A50" : "var(--slate)";
             return (
               <div className="row gap6" style={{ marginTop: 6, alignItems: "center", color, fontSize: 12.5 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>

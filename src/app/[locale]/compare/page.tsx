@@ -124,7 +124,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 if (!v || v.status === "na" || v.deltaPct == null) return <span className="muted" style={{ fontSize: 12.5 }}>{l.deal_type === "sale" ? (cp.indexLease) : (cp.noSuffIndex)}</span>;
                 const a = Math.abs(v.deltaPct);
                 const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (cp.withinBand);
-                const col = v.status === "below" ? "#1B7A50" : v.status === "above" ? "#8A5A1F" : "#3A6EA5";
+                const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)";
                 return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--green)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
               }} />
               <HeaderRow label={cp.district} render={(l) => <span>{dn(l)}</span>} />

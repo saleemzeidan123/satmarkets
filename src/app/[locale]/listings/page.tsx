@@ -338,7 +338,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       {(() => {
                         const av = availabilityOf((l as any).availability_confirmed_at);
                         if (!av) return null;
-                        const c = av.state === "stale" ? "#B26B00" : av.state === "aging" ? "var(--slate)" : "#1B7A50";
+                        const c = av.state === "stale" ? "var(--status-stale)" : av.state === "aging" ? "var(--slate)" : "#1B7A50";
                         return (
                           <div className="row gap6" style={{ marginTop: 5, alignItems: "center" }}>
                             <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto" }} />

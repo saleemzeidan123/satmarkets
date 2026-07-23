@@ -178,9 +178,9 @@ export default async function DashboardPage({ params }: { params: { locale: stri
       {q.map((it) => {
        const I = it.icon;
        return (
-        <div key={it.key} className="row between" style={{ gap: 12, padding: "13px 16px", borderTop: "1px solid var(--silver)", borderInlineStart: `3px solid ${it.tone === "warn" ? "#B26B00" : "var(--harbor)"}`, alignItems: "center" }}>
+        <div key={it.key} className="row between" style={{ gap: 12, padding: "13px 16px", borderTop: "1px solid var(--silver)", borderInlineStart: `3px solid ${it.tone === "warn" ? "var(--status-stale)" : "var(--harbor)"}`, alignItems: "center" }}>
          <div className="row gap10" style={{ alignItems: "center", minWidth: 0 }}>
-          <span style={{ color: it.tone === "warn" ? "#B26B00" : "var(--harbor)", display: "inline-flex", flex: "none" }}><I size={16} /></span>
+          <span style={{ color: it.tone === "warn" ? "var(--status-stale)" : "var(--harbor)", display: "inline-flex", flex: "none" }}><I size={16} /></span>
           <span style={{ fontSize: 13, lineHeight: 1.45, minWidth: 0 }}><bdi>{it.text}</bdi></span>
          </div>
          <Link href={it.href} className="btn secondary sm" style={{ flex: "none", whiteSpace: "nowrap" }}>{it.cta}</Link>

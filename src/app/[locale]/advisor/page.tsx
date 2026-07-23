@@ -168,7 +168,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          // Comparative market position, not verification: below uses a neutral
          // Harbor-ramp tone (never confirmed green), above uses the attention
          // token, within uses Harbor (PKG-1B, Codex correction 2).
-         const col = st === "below" ? "#5C8CBF" : st === "above" ? "var(--amber)" : "var(--harbor)";
+         const col = st === "below" ? "var(--dv-quote-below)" : st === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)";
          const unitL = rentUnitLabel(b.unit, ar) ?? "";
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (
