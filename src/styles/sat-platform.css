@@ -613,14 +613,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .tabbar a:focus-visible { outline: 2px solid var(--azure); outline-offset: -3px; border-radius: 12px; }
 
-/* ---- Sprint A1 item 5: visible keyboard focus (a11y). Keyboard-only via :focus-visible, never on mouse click. ---- */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
-[role="button"]:focus-visible, .chip:focus-visible, .btn:focus-visible, .tabs .t:focus-visible,
-.seg span:focus-visible, .listing:focus-visible, .card:focus-visible, .lang:focus-visible {
-  outline: 2px solid var(--azure);
-  outline-offset: 2px;
+/* ---- PKG-1B area 6: touch targets. On coarse (touch) pointers every button-like
+   control gets a >=44px hit area (WCAG 2.5.8 with margin), without inflating the
+   compact desktop UI on precise pointers. min-height/min-width clamp up even where a
+   control sets a smaller fixed height inline. Bare text links are intentionally
+   excluded; icon-only controls opt in via .icon or [aria-label]. ---- */
+@media (pointer: coarse) {
+  button, [role="button"], .btn, .chip, .tabs .t, .seg span, .lang, .tabbar a,
+  select, summary, .melink {
+    min-height: 44px;
+  }
+  button.icon, .btn.icon, button[aria-label], a[aria-label][class] {
+    min-width: 44px;
+  }
 }
-.tabbar a:focus-visible { outline: 2px solid var(--azure); outline-offset: -3px; border-radius: 12px; }
 
 /* ===== Arabic RTL typography fix (Fable advisory 2026-07-09, must-fix 1) =====
    The tracked mono token style (eyebrow/tag/verified/meta/freeze/etc.) was applied
