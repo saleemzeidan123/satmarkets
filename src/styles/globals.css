@@ -35,12 +35,14 @@ html[dir="rtl"] textarea,
 html[dir="rtl"] .foot,
 html[dir="rtl"] .foot .cta-title,
 html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif; }
-/* Tracking never applies to Arabic (it breaks the cursive joins), yet several
-   component classes re-set a small letter-spacing that beats the base RTL reset.
-   Zero it for all Arabic content, excluding figure/mono runs (Western numerals
-   where tabular tracking is fine). Specificity here outranks the component
-   classes, so this is a correctness rule, not just a patch. */
-html[dir="rtl"] :not(.fig):not(.mono):not(.tnum):not(.lang-seg) { letter-spacing: 0; }
+/* Tracking never applies to Arabic (it breaks the cursive joins). This is a hard
+   correctness invariant, not a style preference, so it is enforced with
+   !important to override even inline `letterSpacing` on individual headings.
+   The audit-flagged pages also had their inline tracking removed at source; this
+   rule is the durable backstop for every other and any future inline tracking.
+   Figure/mono runs (Western numerals, tabular tracking) and the Latin language
+   toggle are excluded. */
+html[dir="rtl"] :not(.fig):not(.mono):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
