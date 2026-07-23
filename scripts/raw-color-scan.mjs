@@ -13,6 +13,9 @@ const ALLOW_FILES = [
   "src/styles/globals.css",
   "src/styles/footer.css",
   "tailwind.config.ts",
+  // Central palette for MapLibre paint and other non-CSS-var contexts: hex is the
+  // source of truth here, mirroring the CSS tokens (PKG-1B). Not scattered debt.
+  "src/theme/palette.ts",
 ];
 const HEX = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g;
 

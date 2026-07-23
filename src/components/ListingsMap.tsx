@@ -3,6 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
+// MapLibre paint cannot read CSS custom properties; these values come from the
+// central palette module (mirrors the CSS tokens) rather than inline hex (PKG-1B).
+import { BRAND, MAP } from "@/theme/palette";
 
 // Split-view map for /listings. District bubbles carry the count of spaces in
 // the current filter, positioned at the district centroid (honest district-level
@@ -80,23 +83,23 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       // promoteId lets feature-state (selected ring) key off the district id.
       m.addSource("d", { type: "geojson", promoteId: "id", data: bubbleFC() as any });
       m.addLayer({ id: "d-c", type: "circle", source: "d", maxzoom: 14.5, paint: {
-        "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], "#2C557F", "#3A6EA5"],
+        "circle-color": ["case", ["boolean", ["feature-state", "selected"], false], MAP.pinSelected, MAP.pin],
         "circle-opacity": D_FADE as any,
         "circle-radius": RADIUS as any,
         "circle-stroke-width": ["case", ["boolean", ["feature-state", "selected"], false], 3.5, 2],
-        "circle-stroke-color": ["case", ["boolean", ["feature-state", "selected"], false], "#E8A33D", "#ffffff"],
+        "circle-stroke-color": ["case", ["boolean", ["feature-state", "selected"], false], MAP.pinSelectedStroke, MAP.pinStroke],
         "circle-stroke-opacity": D_FADE as any,
       } });
-      m.addLayer({ id: "d-n", type: "symbol", source: "d", maxzoom: 14.5, layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": "#ffffff", "text-opacity": D_FADE as any } });
+      m.addLayer({ id: "d-n", type: "symbol", source: "d", maxzoom: 14.5, layout: { "text-field": ["to-string", ["get", "count"]], "text-size": 12, "text-font": ["Noto Sans Regular"] }, paint: { "text-color": MAP.pinStroke, "text-opacity": D_FADE as any } });
       // Transparent padded hit target on top, so clicks/hover land on a generous area
       // even though the visible disc is smaller. Events bind to this layer.
-      m.addLayer({ id: "d-hit", type: "circle", source: "d", maxzoom: 14.5, paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": ["+", RADIUS as any, 10] } });
+      m.addLayer({ id: "d-hit", type: "circle", source: "d", maxzoom: 14.5, paint: { "circle-color": MAP.hit, "circle-opacity": 0, "circle-radius": ["+", RADIUS as any, 10] } });
 
       m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
-      m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" } });
-      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#3A6EA5", "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff", "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
-      m.addLayer({ id: "p-hit", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": "#000", "circle-opacity": 0, "circle-radius": 16 } });
+      m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": MAP.pin } });
+      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": MAP.pin, "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": MAP.pinStroke, "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
+      m.addLayer({ id: "p-hit", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": MAP.hit, "circle-opacity": 0, "circle-radius": 16 } });
       applySelected(m, selectedRef.current);
     };
 
@@ -129,9 +132,9 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         const p = f.properties;
         const t = String(p.title).replace(/</g, "&lt;").replace(/>/g, "&gt;");
         const pr = p.price ? String(p.price).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:#14181B;line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:#14181B;margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:#3A6EA5;text-decoration:none">${t2.viewListing}</a>`).addTo(m);
+        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:${BRAND.ink};line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:${BRAND.ink};margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:${BRAND.harbor};text-decoration:none">${t2.viewListing}</a>`).addTo(m);
       });
-      m.on("mouseenter", "d-hit", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:#14181B">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:#5B6470">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
+      m.on("mouseenter", "d-hit", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:${BRAND.ink}">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:${BRAND.slate}">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
       m.on("mouseleave", "d-hit", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
       m.on("mouseenter", "p-hit", (e: any) => {
         m.getCanvas().style.cursor = "pointer";

@@ -1,25 +1,21 @@
 "use client";
 // COLOUR POLICY (decision D14 exception): every colour in this file is MapLibre GL
-// paint: heatmap ramps, cluster/circle/line/fill colours, the asset-type COLORS
-// palette map, the selected-ring rgba(), and symbol text/halo colours. MapLibre
-// paint expressions cannot resolve CSS custom properties, so ALL hex here stays
-// LITERAL and is intentionally NOT migrated to design tokens.
+// paint (heatmap ramps, cluster/circle/line/fill colours, the asset-type category
+// palette, the selected-ring rgba(), and symbol text/halo colours). MapLibre paint
+// cannot resolve CSS custom properties, so these values are LITERAL, but they are
+// sourced from ONE named place, src/theme/palette.ts, which mirrors the CSS tokens,
+// rather than scattered inline hex (PKG-1B).
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
 import { getDictionary } from "@/i18n/getDictionary";
+import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
 
 export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
  grade: string; size: number | null; lat: number; lng: number;
  band: number | null; bandLow: number | null; bandHigh: number | null; unit: string | null; listings: number;
 }
-const COLORS: Record<string, string> = {
- office: "#3A6EA5", retail: "#0E9488", medical: "#DB2777", warehouse: "#64748B",
- showroom: "#7C3AED", serviced: "#0EA5E9", education: "#16A34A", land: "#CA8A04",
- hospitality: "#F472B6", mixed_use: "#1D4ED8", gas_station: "#D97706", entertainment: "#E11D48",
- wedding_hall: "#A88B5C", worker_housing: "#475569", self_storage: "#65A30D",
-};
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
 const unitFmt = (u: string | null, l: string) =>
  u === "sar_desk_month" ? (l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo") : (l === "ar" ? "ريال/م²/سنة" : "SAR/m²·yr");
@@ -159,44 +155,44 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 9, 22, 14, 50],
      "heatmap-opacity": 0.8,
      "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
-      0, "rgba(58,110,165,0)", 0.2, "#CFE0EF", 0.4, "#9DBBD6", 0.6, "#5C8BBF", 0.8, "#3A6EA5", 1, "#2C557F"],
+      0, "rgba(58,110,165,0)", 0.2, HEAT_RAMP[0], 0.4, HEAT_RAMP[1], 0.6, HEAT_RAMP[2], 0.8, HEAT_RAMP[3], 1, HEAT_RAMP[4]],
     }});
 
     // zone polygon
-    map.addLayer({ id: "zone-fill", type: "fill", source: "zone", filter: ["==", "$type", "Polygon"], paint: { "fill-color": "#3A6EA5", "fill-opacity": 0.12 }});
-    map.addLayer({ id: "zone-line", type: "line", source: "zone", filter: ["!=", "$type", "Point"], paint: { "line-color": "#2C557F", "line-width": 2, "line-dasharray": [2, 1.5] }});
-    map.addLayer({ id: "zone-vtx", type: "circle", source: "zone", filter: ["==", "$type", "Point"], paint: { "circle-radius": 4, "circle-color": "#2C557F", "circle-stroke-width": 2, "circle-stroke-color": "#fff" }});
+    map.addLayer({ id: "zone-fill", type: "fill", source: "zone", filter: ["==", "$type", "Polygon"], paint: { "fill-color": MAP.zoneFill, "fill-opacity": 0.12 }});
+    map.addLayer({ id: "zone-line", type: "line", source: "zone", filter: ["!=", "$type", "Point"], paint: { "line-color": MAP.zoneLine, "line-width": 2, "line-dasharray": [2, 1.5] }});
+    map.addLayer({ id: "zone-vtx", type: "circle", source: "zone", filter: ["==", "$type", "Point"], paint: { "circle-radius": 4, "circle-color": MAP.zoneLine, "circle-stroke-width": 2, "circle-stroke-color": MAP.pinStroke }});
 
     // clusters
     map.addLayer({ id: "cl-halo", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-     "circle-color": "#64748B", "circle-opacity": 0.16, "circle-radius": ["step", ["get", "point_count"], 28, 5, 36, 15, 46] }});
+     "circle-color": MAP.cluster, "circle-opacity": 0.16, "circle-radius": ["step", ["get", "point_count"], 28, 5, 36, 15, 46] }});
     map.addLayer({ id: "cl", type: "circle", source: "b", filter: ["has", "point_count"], paint: {
-     "circle-color": ["step", ["get", "point_count"], "#9DBBD6", 5, "#64748B", 15, "#3A6EA5"],
-     "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28], "circle-stroke-width": 3, "circle-stroke-color": "#FFFFFF" }});
+     "circle-color": ["step", ["get", "point_count"], MAP.clusterSmall, 5, MAP.clusterMid, 15, MAP.clusterLarge],
+     "circle-radius": ["step", ["get", "point_count"], 17, 5, 22, 15, 28], "circle-stroke-width": 3, "circle-stroke-color": MAP.pinStroke }});
     map.addLayer({ id: "cl-count", type: "symbol", source: "b", filter: ["has", "point_count"], layout: {
-     "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": "#FFFFFF" }});
+     "text-field": ["get", "point_count_abbreviated"], "text-font": ["Noto Sans Regular"], "text-size": 13 }, paint: { "text-color": MAP.labelHalo }});
 
     const colorMatch: any[] = ["match", ["get", "asset"]];
-    Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v)); colorMatch.push("#64748B");
+    Object.entries(COLORS).forEach(([k, v]) => colorMatch.push(k, v)); colorMatch.push(BRAND.clusterNeutral);
 
     // selected building ring
     map.addLayer({ id: "pt-sel", type: "circle", source: "sel", paint: {
      "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 17, 16, 24], "circle-color": "rgba(58,110,165,0.14)",
-     "circle-stroke-width": 3, "circle-stroke-color": "#3A6EA5" }});
+     "circle-stroke-width": 3, "circle-stroke-color": MAP.pin }});
 
     map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
      "circle-color": colorMatch, "circle-opacity": 0.16, "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 18, 16, 26] }});
     map.addLayer({ id: "pt", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
      "circle-color": colorMatch, "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 6.5, 13, 9, 16, 13],
-     "circle-stroke-width": 2.5, "circle-stroke-color": "#FFFFFF" }});
+     "circle-stroke-width": 2.5, "circle-stroke-color": MAP.pinStroke }});
     // LoopNet-style price label (zoomed in)
     map.addLayer({ id: "pt-price", type: "symbol", source: "b", minzoom: 12,
      filter: ["all", ["!", ["has", "point_count"]], ["!=", ["get", "priceLabel"], ""]], layout: {
      "text-field": ["get", "priceLabel"], "text-font": ["Noto Sans Regular"], "text-size": 11.5,
      "text-offset": [0, -1.5], "text-anchor": "bottom", "text-allow-overlap": false }, paint: {
-     "text-color": "#1C1A15", "text-halo-color": "#FFFFFF", "text-halo-width": 1.6 }});
+     "text-color": MAP.labelInk, "text-halo-color": MAP.labelHalo, "text-halo-width": 1.6 }});
     map.addLayer({ id: "pt-hit", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {
-     "circle-color": "#000000", "circle-opacity": 0, "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 15, 13, 21, 16, 30] }});
+     "circle-color": MAP.hit, "circle-opacity": 0, "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 15, 13, 21, 16, 30] }});
 
     const tip = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 14, className: "satm-tip" });
     map.on("mousemove", "pt-hit", (e: any) => {
@@ -206,7 +202,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
      if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
      hoverId = f.id; map.setFeatureState({ source: "b", id: hoverId }, { hover: true });
      const p = f.properties;
-     tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:#1C1A15">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:#64748B">${esc(p.assetLabel)}${p.priceLabel ? " · " + esc(p.priceLabel) : ""}</div>`).addTo(map);
+     tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:${BRAND.inkWarm}">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:${BRAND.clusterNeutral}">${esc(p.assetLabel)}${p.priceLabel ? " · " + esc(p.priceLabel) : ""}</div>`).addTo(map);
     });
     map.on("mouseleave", "pt-hit", () => { map.getCanvas().style.cursor = ""; if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false }); hoverId = null; tip.remove(); });
     map.on("click", "pt-hit", (e: any) => {
@@ -313,7 +309,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
       <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === "all" ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
       {assetOrder.map((a) => (
        <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === a ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
-        <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || "#64748B" }} />{assetLabels[a] || a}
+        <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || BRAND.clusterNeutral }} />{assetLabels[a] || a}
        </button>
       ))}
      </div>
@@ -370,7 +366,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
       <div className="relative h-32">
        <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
        <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
-       <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || "#64748B" }}>{sel.assetLabel}</span>
+       <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || BRAND.clusterNeutral }}>{sel.assetLabel}</span>
       </div>
       <div className="p-4">
        <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
