@@ -60,6 +60,15 @@ export async function middleware(req: NextRequest) {
   if (!allowIndex || isPrivate || isHeld) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
+  // Private-cache protection (PKG-1B area 5). Account and operational surfaces
+  // (messages, deals, documents, verification, dashboard, saved, and the rest of
+  // PRIVATE_PREFIXES) carry session-specific content, so no shared or persistent
+  // cache may retain them. There is no service worker in this app, so nothing is
+  // ever precached; this header is the defence-in-depth that also stops the browser
+  // HTTP cache and any intermediary from storing an authenticated private page.
+  if (isPrivate) {
+    res.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+  }
   return res;
 }
 
