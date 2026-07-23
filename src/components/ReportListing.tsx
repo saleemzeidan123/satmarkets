@@ -53,13 +53,13 @@ export default function ReportListing({ listingId, locale }: { listingId: string
       <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.prompt}</div>
       <label style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.reason}</label>
       <select value={reason} onChange={(e) => setReason(e.target.value)}
-        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff" }}>
+        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "var(--paper)" }}>
         <option value="">{t.choose}</option>
         {Object.entries(t.reasons).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </select>
       <label style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.detail}</label>
       <textarea value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} maxLength={1000}
-        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", resize: "vertical", fontFamily: "inherit" }} />
+        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "var(--paper)", resize: "vertical", fontFamily: "inherit" }} />
       {state === "error" && <p style={{ color: "#B23B3B", fontSize: 12.5, marginTop: 8 }}>{t.err}</p>}
       <div className="row gap8" style={{ marginTop: 12 }}>
         <button type="button" onClick={submit} disabled={!reason || state === "busy"} className="btn primary sm" style={{ opacity: !reason || state === "busy" ? 0.6 : 1 }}>

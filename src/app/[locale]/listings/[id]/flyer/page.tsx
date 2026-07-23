@@ -105,7 +105,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           {qrSvg ? (
             <div className="row gap8" style={{ alignItems: "center", flex: "none" }}>
               <span className="muted" style={{ fontSize: 10.5, maxWidth: 96, textAlign: "end", lineHeight: 1.45 }}>{t.scanHint}</span>
-              <div aria-label={t.qrAria} style={{ width: 104, height: 104, flex: "none", background: "#fff", border: "1px solid var(--silver)", borderRadius: 8, overflow: "hidden", lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: qrSvg }} />
+              <div aria-label={t.qrAria} style={{ width: 104, height: 104, flex: "none", background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 8, overflow: "hidden", lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: qrSvg }} />
             </div>
           ) : null}
         </div>

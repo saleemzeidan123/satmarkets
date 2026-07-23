@@ -60,7 +60,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
 
       <Section title={t("Buttons", "الأزرار")}>
         <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "var(--harbor)", color: "#fff", border: "none", fontSize: 14, fontWeight: 600 }}>{t("Primary", "أساسي")}</button>
+          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "var(--harbor)", color: "var(--on-brand)", border: "none", fontSize: 14, fontWeight: 600 }}>{t("Primary", "أساسي")}</button>
           <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--ink)", border: "1px solid var(--silver-2)", fontSize: 14, fontWeight: 600 }}>{t("Secondary", "ثانوي")}</button>
           <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--harbor)", border: "none", fontSize: 14, fontWeight: 600 }}>{t("Ghost", "شبحي")}</button>
           <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--red)", border: "1px solid var(--red)", fontSize: 14, fontWeight: 600 }}>{t("Destructive", "حذف")}</button>
@@ -69,7 +69,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
 
       <Section title={t("Listing card", "بطاقة العرض")}>
         <div style={{ maxWidth: 320, borderRadius: "var(--r-md)", border: "1px solid var(--silver)", overflow: "hidden", background: "var(--paper)" }}>
-          <div style={{ height: 150, background: "linear-gradient(135deg,#2C557F,#3A6EA5)" }} />
+          <div style={{ height: 150, background: "linear-gradient(135deg,var(--harbor-d),var(--harbor))" }} />
           <div style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Verified owner", "مالك موثّق")}</span>
             <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t("SAR/m²·yr", "ريال/م²·سنة")}</span></div>

@@ -112,7 +112,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
         <div className="muted" style={{ fontSize: 12, marginTop: 10, lineHeight: 1.6 }}>{t.hiddenNote}</div>
        </div>
        {ints.filter((i) => i.mine).map((it) => (
-        <div key={it.id} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
+        <div key={it.id} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.shield size={16} /></span>
          <div className="grow">
           <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{t.yours}</span></div>
@@ -124,7 +124,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
      ) : (
       <div className="col gap10">
        {ints.map((it) => (
-        <div key={it.id} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
+        <div key={it.id} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}>{it.type === "broker" ? <Icon.user size={16} /> : <Icon.shield size={16} />}</span>
          <div className="grow">
           <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name || (it.type === "broker" ? t.aBroker : t.anOwner)}</span><span className="tag" style={{ fontSize: 10 }}>{it.type === "broker" ? t.broker : t.owner}</span></div>
@@ -140,4 +140,4 @@ export default function RequirementDetail({ params }: { params: { locale: string
   </div>
  );
 }
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, color: "var(--ink)", background: "#fff", outline: "none", width: "100%" };
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", outline: "none", width: "100%" };

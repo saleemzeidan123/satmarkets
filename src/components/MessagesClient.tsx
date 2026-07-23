@@ -202,8 +202,8 @@ export default function MessagesClient({
                   return (
                     <div key={m.id} className={"chatmsg " + (mine ? "u" : "a")} style={
                       mine
-                        ? { alignSelf: "flex-end", background: "var(--ink)", color: "#fff" }
-                        : { background: "#fff", border: "1px solid var(--silver)" }
+                        ? { alignSelf: "flex-end", background: "var(--ink)", color: "var(--on-brand)" }
+                        : { background: "var(--paper)", border: "1px solid var(--silver)" }
                     }>
                       {m.body}
                       <div style={{ fontSize: 10, opacity: 0.55, marginTop: 6 }}>{when(m.created_at)}</div>

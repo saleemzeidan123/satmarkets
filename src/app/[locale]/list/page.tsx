@@ -19,14 +19,14 @@ export default function ListPage({ params }: { params: { locale: string } }) {
     <div style={{ position: "absolute", right: -30, bottom: -30, opacity: .3 }}><Mark size={240} base="#222A31" lit={HARBOR} /></div>
     <div style={{ position: "relative" }}>
      <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{lp.eyebrow}</div>
-     <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.01em", margin: "14px 0 0", color: "#fff" }}>{lp.h1}</h1>
+     <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.01em", margin: "14px 0 0", color: "var(--on-brand)" }}>{lp.h1}</h1>
      <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "#AEB6C0", margin: "16px 0 28px" }}>{lp.intro}</p>
      <div className="col gap16">
       {sells.map((x, i) => { const I = x[0]; return <div key={i} className="row gap12"><span style={{ color: "var(--green)" }}><I size={18} /></span><span style={{ fontSize: 13.5, color: "#D6DCE3" }}>{x[1]}</span></div>; })}
      </div>
      <div style={{ marginTop: 36, padding: "16px 18px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 11 }}>
       <div className="mono" style={{ fontSize: 11, color: "#8A93A0", letterSpacing: ".06em" }}>{lp.avgTimeLabel}</div>
-      <div className="mono tnum" style={{ fontSize: 22, fontWeight: 500, color: "#fff", marginTop: 6 }}>{lp.avgTimeValue}</div>
+      <div className="mono tnum" style={{ fontSize: 22, fontWeight: 500, color: "var(--on-brand)", marginTop: 6 }}>{lp.avgTimeValue}</div>
       <div style={{ fontSize: 12, lineHeight: 1.6, color: "#AEB6C0", marginTop: 8 }}>{lp.avgTimeNote}</div>
      </div>
     </div>

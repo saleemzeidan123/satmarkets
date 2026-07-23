@@ -91,14 +91,14 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
               <div style={{ position: "relative", aspectRatio: "4 / 3", background: "var(--cool)" }}>
                 {p.url ? <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null}
                 {i === 0 && (
-                  <span style={{ position: "absolute", top: 8, insetInlineStart: 8, fontSize: 10.5, fontWeight: 700, letterSpacing: ".03em", color: "#fff", background: "var(--harbor)", padding: "3px 8px", borderRadius: 6 }}>{t.cover}</span>
+                  <span style={{ position: "absolute", top: 8, insetInlineStart: 8, fontSize: 10.5, fontWeight: 700, letterSpacing: ".03em", color: "var(--on-brand)", background: "var(--harbor)", padding: "3px 8px", borderRadius: 6 }}>{t.cover}</span>
                 )}
               </div>
               <div className="row gap8" style={{ padding: "8px 10px", justifyContent: "space-between" }}>
                 {i !== 0 ? (
                   <button type="button" onClick={() => makeCover(p.id)} disabled={busy} className="chip" style={{ cursor: "pointer", fontSize: 11.5 }}>{t.makeCover}</button>
                 ) : <span />}
-                <button type="button" onClick={() => remove(p.id)} disabled={busy} aria-label={t.remove} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "#C8412E", borderColor: "var(--silver)" }}>
+                <button type="button" onClick={() => remove(p.id)} disabled={busy} aria-label={t.remove} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "var(--red)", borderColor: "var(--silver)" }}>
                   <Icon.trash size={13} /> {t.remove}
                 </button>
               </div>
@@ -110,7 +110,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
       <div className="row gap10" style={{ marginTop: 10, alignItems: "center" }}>
         <p className="muted" style={{ fontSize: 11.5, margin: 0 }}>{t.hint}</p>
         {note && <span style={{ fontSize: 12.5, color: "var(--green)" }}>{note}</span>}
-        {err && <span style={{ fontSize: 12.5, color: "#C8412E" }}>{err}</span>}
+        {err && <span style={{ fontSize: 12.5, color: "var(--red)" }}>{err}</span>}
       </div>
     </div>
   );

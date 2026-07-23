@@ -17,12 +17,12 @@ type Row = {
   accounts: { type: string | null; verification_status: string | null; name_en: string | null } | null;
 };
 
-const wrap: CSSProperties = { maxWidth: 1180, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "#14181B" };
-const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "#5B6470", padding: "8px 10px", borderBottom: "1px solid #D7DDE5", whiteSpace: "nowrap" };
-const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid #E9EDF1", verticalAlign: "top" };
+const wrap: CSSProperties = { maxWidth: 1180, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)" };
+const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
+const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
 
 function YN({ v }: { v: boolean | null }) {
-  return <span style={{ color: v ? "#1B7A50" : "#5B6470", fontWeight: v ? 600 : 400 }}>{v ? "Yes" : "No"}</span>;
+  return <span style={{ color: v ? "var(--verified)" : "var(--slate)", fontWeight: v ? 600 : 400 }}>{v ? "Yes" : "No"}</span>;
 }
 
 export default async function VerifyQueue() {
@@ -36,7 +36,7 @@ export default async function VerifyQueue() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "#5B6470" }}>Database not configured.</p></main>;
+    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Verification review</h1><p style={{ color: "var(--slate)" }}>Database not configured.</p></main>;
   }
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb
@@ -68,16 +68,16 @@ export default async function VerifyQueue() {
   const toReview = rows.filter(needs).length;
   return (
     <main style={wrap}>
-      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#3A6EA5" }}>SAT Markets, internal</div>
+      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: 30, margin: "6px 0 4px" }}>Verification review queue</h1>
-      <p style={{ color: "#5B6470", margin: "0 0 4px" }}>{total} listings, {verified} verified, {toReview} need review. Verification is recorded against the listing; no status is asserted that the data does not carry.</p>
-      <p style={{ color: "#5B6470", fontSize: 12, margin: "0 0 20px" }}>Approve and reject act on the listing immediately, gated on your SAT session. Document links open the private file through a short-lived, download-only signed URL.</p>
-      <div style={{ overflowX: "auto", border: "1px solid #E9EDF1", borderRadius: 12 }}>
+      <p style={{ color: "var(--slate)", margin: "0 0 4px" }}>{total} listings, {verified} verified, {toReview} need review. Verification is recorded against the listing; no status is asserted that the data does not carry.</p>
+      <p style={{ color: "var(--slate)", fontSize: 12, margin: "0 0 20px" }}>Approve and reject act on the listing immediately, gated on your SAT session. Document links open the private file through a short-lived, download-only signed URL.</p>
+      <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["Ref","Title","Account","Acct status","Status","Owner","Auth","Method","Verified at","Doc","Ad permit","Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} style={{ background: needs(r) ? "#FBF3E6" : "#fff" }}>
+              <tr key={r.id} style={{ background: needs(r) ? "#FBF3E6" : "var(--paper)" }}>
                 <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11 }}>{r.reference_code || r.id.slice(0, 8)}</span></td>
                 <td style={td}>{r.title_en || "(untitled)"}</td>
                 <td style={td}>{r.accounts?.name_en || "?"} <span style={{ color: "#8A93A0" }}>({r.accounts?.type || "?"})</span></td>

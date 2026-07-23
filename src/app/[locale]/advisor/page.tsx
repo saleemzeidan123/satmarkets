@@ -119,7 +119,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
 
    <div className="dmain" style={{ display: "flex", flexDirection: "column" }}>
     <div className="dtopbar" style={{ gap: 10 }}>
-     <Link href={`/${locale}`} aria-label={av.backHome} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--silver)", color: "var(--ink)", background: "#fff", flex: "none", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: ar ? undefined : "scaleX(-1)" }}><Icon.arrow size={16} /></span></Link>
+     <Link href={`/${locale}`} aria-label={av.backHome} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--silver)", color: "var(--ink)", background: "var(--paper)", flex: "none", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: ar ? undefined : "scaleX(-1)" }}><Icon.arrow size={16} /></span></Link>
      <span style={{ color: "var(--harbor)" }}><Icon.spark size={20} /></span>
      <div style={{ minWidth: 0 }}><h1>{av.title}</h1><div className="sub adv-desk">{av.subtitle}</div></div>
      <span style={{ flex: 1 }} />
@@ -136,7 +136,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
         <p className="muted" style={{ fontSize: "var(--fs-base)", margin: "0 0 18px" }}>{av.welcomeSub}</p>
         <div className="adv-jobs-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
          {JOBS.map((j, i) => (
-          <button key={i} onClick={() => pickJob(j)} className="card pad lift" style={{ textAlign: ar ? "right" : "left", cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }}>
+          <button key={i} onClick={() => pickJob(j)} className="card pad lift" style={{ textAlign: ar ? "right" : "left", cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }}>
            <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
            <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{j.sub}</div>
@@ -168,7 +168,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          // Comparative market position, not verification: below uses a neutral
          // Harbor-ramp tone (never confirmed green), above uses the attention
          // token, within uses Harbor (PKG-1B, Codex correction 2).
-         const col = st === "below" ? "#5C8CBF" : st === "above" ? "#B7791F" : "#3A6EA5";
+         const col = st === "below" ? "#5C8CBF" : st === "above" ? "var(--amber)" : "var(--harbor)";
          const unitL = rentUnitLabel(b.unit, ar) ?? "";
          const fmt = (n: number) => n.toLocaleString("en-US");
          return (
@@ -197,7 +197,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            const dn = l.districts ? (locale === "ar" ? l.districts.name_ar : l.districts.name_en) : "";
            const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
            return (
-            <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
+            <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
              <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
              <div style={{ textAlign: ar ? "left" : "right" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
@@ -264,7 +264,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
        <div style={{ marginBottom: 10 }}>
         <div className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "0 2px 7px" }}>{started ? (av.keepExploring) : (av.tryAsking)}</div>
         <div className="row gap8 wrap">
-         {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
+         {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
         </div>
        </div>
       )}

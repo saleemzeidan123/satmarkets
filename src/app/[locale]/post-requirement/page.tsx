@@ -71,7 +71,7 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
    <div style={{ background: "var(--cool)" }}>
     <div style={{ padding: "40px 24px 56px", maxWidth: 720, margin: "0 auto" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
-      <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--green)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
+      <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--green)", color: "var(--on-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
       <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
       <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
       <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
@@ -212,5 +212,5 @@ export default function PostRequirementPage({ params }: { params: { locale: stri
   </div>
  );
 }
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: 14, color: "var(--ink)", background: "#fff", outline: "none", width: "100%" };
-const chip: React.CSSProperties = { cursor: "pointer", border: "1px solid var(--silver)", background: "#fff" };
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", outline: "none", width: "100%" };
+const chip: React.CSSProperties = { cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" };

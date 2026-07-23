@@ -46,7 +46,7 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
         <span
           className="avatar"
           aria-hidden
-          style={{ width: 40, height: 40, borderRadius: 10, background: "var(--harbor)", color: "#fff", fontSize: 14, fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+          style={{ width: 40, height: 40, borderRadius: 10, background: "var(--harbor)", color: "var(--on-brand)", fontSize: 14, fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
         >
           {initials}
         </span>

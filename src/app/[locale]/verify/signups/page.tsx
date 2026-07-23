@@ -12,9 +12,9 @@ type Row = {
   status: string; notes: string | null;
 };
 
-const wrap: CSSProperties = { maxWidth: 1180, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "#14181B" };
-const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "#5B6470", padding: "8px 10px", borderBottom: "1px solid #D7DDE5", whiteSpace: "nowrap" };
-const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid #E9EDF1", verticalAlign: "top" };
+const wrap: CSSProperties = { maxWidth: 1180, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)" };
+const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
+const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
 
 function detailsSummary(d: Record<string, unknown> | null): string {
   if (!d) return "";
@@ -33,7 +33,7 @@ export default async function SignupQueue() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
-    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Signup requests</h1><p style={{ color: "#5B6470" }}>This internal screen is not configured. Set SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
+    return <main style={wrap}><h1 style={{ fontFamily: "var(--font-serif), serif" }}>Signup requests</h1><p style={{ color: "var(--slate)" }}>This internal screen is not configured. Set SUPABASE_SERVICE_ROLE_KEY in the server environment.</p></main>;
   }
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data } = await sb.from("signup_requests").select("*").order("created_at", { ascending: false }).limit(300);
@@ -42,25 +42,25 @@ export default async function SignupQueue() {
   const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#1B7A50", broker: "#A88B5C", investor: "#7C3AED" };
   return (
     <main style={wrap}>
-      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "#3A6EA5" }}>SAT Markets, internal</div>
+      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: 30, margin: "6px 0 4px" }}>Signup requests</h1>
-      <p style={{ color: "#5B6470", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request verified; account provisioning follows when auth goes live.</p>
-      <div style={{ overflowX: "auto", border: "1px solid #E9EDF1", borderRadius: 12 }}>
+      <p style={{ color: "var(--slate)", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request verified; account provisioning follows when auth goes live.</p>
+      <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["When", "Role", "Name", "Company", "Contact", "Details", "Lang", "Status", "Notes", "Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td style={td} colSpan={10}>No requests yet.</td></tr>}
             {rows.map((r) => (
-              <tr key={r.id} style={{ background: r.status === "new" ? "#FBF3E6" : "#fff" }}>
+              <tr key={r.id} style={{ background: r.status === "new" ? "#FBF3E6" : "var(--paper)" }}>
                 <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11 }}>{new Date(r.created_at).toISOString().slice(0, 16).replace("T", " ")}</span></td>
-                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, color: roleColor[r.role] || "#5B6470", textTransform: "uppercase", letterSpacing: ".04em" }}>{r.role}</span></td>
+                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, color: roleColor[r.role] || "var(--slate)", textTransform: "uppercase", letterSpacing: ".04em" }}>{r.role}</span></td>
                 <td style={td}>{r.full_name}</td>
                 <td style={td}>{r.company || ""}</td>
-                <td style={td}><a href={`mailto:${r.email}`} style={{ color: "#2C557F" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, color: "#5B6470" }}>{r.phone}</div> : null}</td>
+                <td style={td}><a href={`mailto:${r.email}`} style={{ color: "var(--harbor-d)" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, color: "var(--slate)" }}>{r.phone}</div> : null}</td>
                 <td style={{ ...td, maxWidth: 260 }}>{detailsSummary(r.details)}</td>
                 <td style={td}>{r.locale}</td>
-                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "#1B7A50" : r.status === "rejected" ? "#C8412E" : r.status === "contacted" ? "#2C557F" : "#B7791F" }}>{r.status}</span></td>
-                <td style={{ ...td, maxWidth: 180, color: "#5B6470", fontSize: 12 }}>{r.notes || ""}</td>
+                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber)" }}>{r.status}</span></td>
+                <td style={{ ...td, maxWidth: 180, color: "var(--slate)", fontSize: 12 }}>{r.notes || ""}</td>
                 <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>
             ))}

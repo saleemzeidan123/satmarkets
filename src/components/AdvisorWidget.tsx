@@ -93,9 +93,9 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
         <span className="tag" style={{ fontSize: 10 }}>{av.beta}</span>
         <span style={{ flex: 1 }} />
         {msgs.length > 0 && (
-         <button type="button" onClick={reset} className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "#fff" }}>{av.newChat}</button>
+         <button type="button" onClick={reset} className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)" }}>{av.newChat}</button>
         )}
-        <Link href={`/${loc}/advisor`} className="chip" style={{ fontSize: 11.5, border: "1px solid var(--silver)", background: "#fff", textDecoration: "none", color: "inherit" }} onClick={() => setOpen(false)}>{av.fullPage}</Link>
+        <Link href={`/${loc}/advisor`} className="chip" style={{ fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)", textDecoration: "none", color: "inherit" }} onClick={() => setOpen(false)}>{av.fullPage}</Link>
         <button type="button" onClick={() => setOpen(false)} aria-label={av.close} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 6 }}>{xIcon}</button>
        </div>
       </div>
@@ -119,7 +119,7 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : "";
              const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
              return (
-              <Link key={l.id} href={`/${loc}/listings/${l.id}`} onClick={() => setOpen(false)} className="row gap10" style={{ background: "#fff", border: "1px solid var(--silver)", borderRadius: 10, padding: 9, textDecoration: "none", color: "inherit" }}>
+              <Link key={l.id} href={`/${loc}/listings/${l.id}`} onClick={() => setOpen(false)} className="row gap10" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 10, padding: 9, textDecoration: "none", color: "inherit" }}>
                <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={15} /></span>
                <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{assetLabel(l.asset_type, loc)} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{dn ? " · " + dn : ""}</div></div>
                <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : av.na}</div></div>
@@ -140,10 +140,10 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
       <div style={{ padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
        {msgs.length === 0 && (
         <div className="row gap8 wrap" style={{ marginBottom: 8 }}>
-         {chips.map((p, i) => <button key={i} type="button" className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "#fff" }} onClick={() => doSend(p)}>{p}</button>)}
+         {chips.map((p, i) => <button key={i} type="button" className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => doSend(p)}>{p}</button>)}
         </div>
        )}
-       <form onSubmit={(e) => { e.preventDefault(); doSend(input); }} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--azure)", borderRadius: 999, padding: "6px 8px 6px 14px", background: "#fff" }}>
+       <form onSubmit={(e) => { e.preventDefault(); doSend(input); }} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--azure)", borderRadius: 999, padding: "6px 8px 6px 14px", background: "var(--paper)" }}>
         <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.placeholder} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left", minWidth: 0 }} />
         <button type="submit" className="btn primary sm" disabled={busy} aria-label={av.send}><Icon.send size={14} /></button>
        </form>

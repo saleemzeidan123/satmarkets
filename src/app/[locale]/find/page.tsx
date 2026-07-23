@@ -269,7 +269,7 @@ export default function FindPage() {
           </div>
         )}
         <div className="col-span-2 sm:col-span-3">
-          <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "#fff", padding: "11px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
+          <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "var(--on-brand)", padding: "11px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
             {loading ? T.loading : T.go}
           </button>
         </div>

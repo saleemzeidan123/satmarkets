@@ -286,5 +286,5 @@ export default function ListingEnquiry({
 
 const fld: React.CSSProperties = {
  border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px",
- fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)", outline: "none", background: "#fff", width: "100%",
+ fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)", outline: "none", background: "var(--paper)", width: "100%",
 };

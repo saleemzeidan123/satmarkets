@@ -177,8 +177,8 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
          const light = t > 0.55;
          return (
           <div key={i} title={String(d[0]) + " · " + String(d[1])} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
-           <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25, color: light ? "#fff" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d[0]}</div>
-           <div className="mono" style={{ fontSize: 13, fontWeight: 700, marginTop: 6, color: light ? "#fff" : "var(--azure-d)" }}>{v > 0 ? d[2] : "–"}</div>
+           <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25, color: light ? "var(--on-brand)" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d[0]}</div>
+           <div className="mono" style={{ fontSize: 13, fontWeight: 700, marginTop: 6, color: light ? "var(--on-brand)" : "var(--azure-d)" }}>{v > 0 ? d[2] : "–"}</div>
           </div>
          );
         });

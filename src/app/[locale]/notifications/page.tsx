@@ -71,7 +71,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
         <div key={i} className="urow" style={{ display: "flex", alignItems: "center", gap: 10 }}>
          <span className="grow" style={{ fontSize: 13 }}>{r[0]}</span>
          {[r[1], r[2], r[3]].map((on, j) => (
-          <span key={j} title={chans[j]} style={{ width: 30, height: 18, borderRadius: 10, background: on ? "var(--azure)" : "var(--silver)", position: "relative", flex: "none" }}><span style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "#fff", top: 2, insetInlineStart: on ? 14 : 2, transition: ".15s" }} /></span>
+          <span key={j} title={chans[j]} style={{ width: 30, height: 18, borderRadius: 10, background: on ? "var(--azure)" : "var(--silver)", position: "relative", flex: "none" }}><span style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--paper)", top: 2, insetInlineStart: on ? 14 : 2, transition: ".15s" }} /></span>
          ))}
         </div>
        ))}

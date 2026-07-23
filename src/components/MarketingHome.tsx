@@ -222,14 +222,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
       <span className="mono" style={{ fontSize: "var(--fs-2xs)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>{T.eyebrow}</span>
      </div>
-     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "#fff", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
+     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "var(--on-brand)", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
       {T.h1a}<span style={{ color: "#C4DAF2", textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>{T.h1b}</span>
      </h1>
      <p style={{ fontSize: "var(--fs-lg)", lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>{T.sub}</p>
      <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
       <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
        {T.tabs.map(([v, l]) => (
-        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal === v ? "#fff" : "transparent", color: deal === v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
+        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal === v ? "var(--paper)" : "transparent", color: deal === v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
        ))}
       </div>
       {deal !== "req" && (
@@ -241,9 +241,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          {ASSETS.map((a) => {
           const on = assetType === a.v;
           return (
-           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(58,110,165,.24)" : "rgba(255,255,255,.045)", color: "#fff", boxShadow: on ? "0 0 0 1px rgba(58,110,165,.35), 0 6px 16px -8px rgba(58,110,165,.5)" : "none", transition: "background .15s, border-color .15s" }}>
+           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(58,110,165,.24)" : "rgba(255,255,255,.045)", color: "var(--on-brand)", boxShadow: on ? "0 0 0 1px rgba(58,110,165,.35), 0 6px 16px -8px rgba(58,110,165,.5)" : "none", transition: "background .15s, border-color .15s" }}>
             <span style={{ opacity: on ? 1 : .82 }}>{a.icon}</span>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, whiteSpace: "nowrap", color: on ? "#fff" : "rgba(255,255,255,.82)" }}>{ar ? a.ar : a.en}</span>
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, whiteSpace: "nowrap", color: on ? "var(--on-brand)" : "rgba(255,255,255,.82)" }}>{ar ? a.ar : a.en}</span>
            </button>
           );
          })}
@@ -254,7 +254,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        </div>
       )}
       <div ref={sref} style={{ position: "relative" }}>
-      <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "#fff", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
+      <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "var(--paper)", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
         <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
         <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? T.phReq : T.phStd} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: "var(--fs-md)", height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: ar ? "right" : "left" }} />
@@ -262,10 +262,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: "var(--fs-md)", fontWeight: 600, flex: "none" }}>{deal === "req" ? T.btnReq : T.btnStd}</button>
       </form>
       {sopen && sug.length > 0 && (
-       <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, background: "#fff", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 14px 36px rgba(20,24,27,.22)", zIndex: 50, overflow: "hidden", textAlign: ar ? "right" : "left" }}>
+       <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 14px 36px rgba(20,24,27,.22)", zIndex: 50, overflow: "hidden", textAlign: ar ? "right" : "left" }}>
         {sug.map((o, i) => (
          <button key={i} type="button" onClick={() => { setSopen(false); if (o.did) { const sp = new URLSearchParams(); sp.set("deal", deal === "buy" ? "sale" : "lease"); sp.set("district", o.did); router.push(`/${locale}/listings?${sp.toString()}`); } else { setQ(o.label); } }}
-          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "#fff", color: "var(--ink)", fontSize: "var(--fs-base)", fontFamily: "var(--sans)", textAlign: "inherit" }}>
+          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "var(--paper)", color: "var(--ink)", fontSize: "var(--fs-base)", fontFamily: "var(--sans)", textAlign: "inherit" }}>
           <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 600 }}>{o.label}</span>
           {o.verified ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--green)", border: "1px solid var(--green-line)", background: "var(--green-wash)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{H.verifiedShort}</span> : null}
@@ -280,9 +280,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
-       <Link href={L("/listings?q=KAFD")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip1}</Link>
-       <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip2}</Link>
-       <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "#fff" }}>{T.chip3}</Link>
+       <Link href={L("/listings?q=KAFD")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip1}</Link>
+       <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip2}</Link>
+       <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip3}</Link>
       </div>
      </div>
      <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
@@ -387,16 +387,16 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      </div>
     </div>
 
-    <div className="hero-band" style={{ margin: "0 24px", borderRadius: 18, background: "var(--ink)", color: "#fff", padding: "clamp(40px,6vw,56px) clamp(28px,5vw,48px)", position: "relative", overflow: "hidden" }}>
+    <div className="hero-band" style={{ margin: "0 24px", borderRadius: 18, background: "var(--ink)", color: "var(--on-brand)", padding: "clamp(40px,6vw,56px) clamp(28px,5vw,48px)", position: "relative", overflow: "hidden" }}>
      <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .3 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.05fr)", gap: 48, alignItems: "center" }}>
       <div>
        <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}{kpis.period ? (ar ? "، " : ", ") + kpis.period : ""}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "#fff" }}>{T.bandH}</h2>
+       <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "var(--on-brand)" }}>{T.bandH}</h2>
        <p style={{ fontSize: "var(--fs-input)", lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
        <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
         {bands.map((b, i) => (
-         <button key={b.en} type="button" onClick={() => setBi(i)} style={{ cursor: "pointer", fontFamily: "var(--sans)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === bi ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === bi ? "#fff" : "transparent", transition: "all .15s ease" }}>{ar ? b.ar : b.en}</button>
+         <button key={b.en} type="button" onClick={() => setBi(i)} style={{ cursor: "pointer", fontFamily: "var(--sans)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === bi ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === bi ? "var(--paper)" : "transparent", transition: "all .15s ease" }}>{ar ? b.ar : b.en}</button>
         ))}
        </div>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
@@ -417,7 +417,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
            neither is shown. */}
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
         <span>{kpis.source || (ar ? "\u0627\u0644\u0645\u0635\u062f\u0631" : "Source")}</span>
-        <span className="mono" style={{ color: "#fff", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : "\u2014"}</span>
+        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : "\u2014"}</span>
        </div>
       </div>}
      </div>
@@ -452,13 +452,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
 
 
     <div style={{ padding: "8px 24px 64px" }}>
-     <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "#fff", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
-      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "#fff" }}>{T.ctaH}</h2>
+     <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "var(--on-brand)", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
+      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "var(--on-brand)" }}>{T.ctaH}</h2>
       <p style={{ fontSize: "var(--fs-input)", color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
       <div className="row gap12 center wrap">
-       <Link href={L("/dashboard")} className="btn lg" style={{ background: "#fff", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
-       <Link href={L("/find")} className="btn lg" style={{ background: "#fff", color: "var(--ink)", textDecoration: "none" }}>{H.findSpace}</Link>
-       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
+       <Link href={L("/dashboard")} className="btn lg" style={{ background: "var(--paper)", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
+       <Link href={L("/find")} className="btn lg" style={{ background: "var(--paper)", color: "var(--ink)", textDecoration: "none" }}>{H.findSpace}</Link>
+       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "var(--on-brand)", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
      </div>
     </div>

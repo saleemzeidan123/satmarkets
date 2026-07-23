@@ -104,7 +104,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   );
   const check = (label: string, on: boolean, toggle: () => void, count?: number) => (
     <button key={label} type="button" onClick={toggle} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: "transparent", color: "var(--ink)" }}>
-      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: "var(--fs-xs)" }}>{on ? "✓" : ""}</span>
+      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--on-brand)", fontSize: "var(--fs-xs)" }}>{on ? "✓" : ""}</span>
       <span style={{ flex: 1 }}>{label}</span>
       {count != null ? <span className="mono" style={{ fontSize: "var(--fs-2xs)", color: "var(--slate-2)" }}>{count}</span> : null}
     </button>
@@ -213,7 +213,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {pill("grade", gradeSel.length ? `${t("Grade", "الفئة")} (${gradeSel.length})` : t("Grade", "الفئة"), gradeSel.length > 0)}
         {pill("fit", fitSel.length ? `${t("Fit-out", "التجهيز")} (${fitSel.length})` : t("Fit-out", "التجهيز"), fitSel.length > 0)}
         <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} className="chip"
-          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "#1B7A50" : "var(--ink)", fontSize: "var(--fs-base)" }}>
+          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "var(--verified)" : "var(--ink)", fontSize: "var(--fs-base)" }}>
           {params.verified ? "✓ " : ""}{t("Verified owners", "ملاك موثّقون")}
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}

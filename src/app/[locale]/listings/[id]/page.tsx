@@ -183,7 +183,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
             {l.fitout_condition && l.fitout_condition !== "n_a" ? <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
             <span className="tag">{dict.ld.availableNow}</span>
-            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "#1B7A50", color: "#fff", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
+            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "#1B7A50", color: "var(--on-brand)", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
@@ -207,7 +207,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             const yrs = Math.floor(months / 12);
             const ageTxt = !stale ? null : (yrs >= 2 ? (ar ? `أكثر من ${yrs} سنوات` : `over ${yrs} years ago`) : (ar ? "أكثر من سنة" : "over a year ago"));
             return dtxt ? (
-              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: stale ? "var(--slate)" : "#1B7A50", fontSize: 12.5 }}>
+              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: stale ? "var(--slate)" : "var(--verified)", fontSize: 12.5 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
                 <span style={{ fontWeight: 600 }}>{dict.ld.verifiedOwner}</span>
                 <span className="mono" style={{ color: "var(--slate)", fontWeight: 400 }}>· {dict.ld.checkedOn} <bdi dir="ltr">{dtxt}</bdi>{ageTxt ? ` · ${ageTxt}` : ""}</span>

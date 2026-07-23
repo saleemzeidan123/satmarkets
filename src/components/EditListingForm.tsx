@@ -54,7 +54,7 @@ export default function EditListingForm({
   const set = (k: keyof Init, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
 
-  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: 13.5, color: "var(--ink)", background: "#fff", fontFamily: "var(--sans)" };
+  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
   const lbl: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
   const hint: React.CSSProperties = { fontSize: 11, color: "var(--slate)", marginTop: 4, opacity: 0.8 };
 
@@ -239,7 +239,7 @@ export default function EditListingForm({
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button type="submit" className="btn primary" disabled={busy}>{busy ? t.saving : t.save}</button>
-        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--green)" : "#C8412E" }}>{msg.text}</span>}
+        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--green)" : "var(--red)" }}>{msg.text}</span>}
       </div>
     </form>
   );

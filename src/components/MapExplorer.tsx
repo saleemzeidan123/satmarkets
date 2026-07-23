@@ -1,4 +1,9 @@
 "use client";
+// COLOUR POLICY (decision D14 exception): every colour in this file is MapLibre GL
+// paint: heatmap ramps, cluster/circle/line/fill colours, the asset-type COLORS
+// palette map, the selected-ring rgba(), and symbol text/halo colours. MapLibre
+// paint expressions cannot resolve CSS custom properties, so ALL hex here stays
+// LITERAL and is intentionally NOT migrated to design tokens.
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";

@@ -55,8 +55,8 @@ export default function LeadStatusControl({ id, locale, initial }: { id: string;
               style={{
                 cursor: busy ? "default" : "pointer",
                 borderColor: on ? "var(--harbor)" : "var(--silver)",
-                background: on ? "var(--harbor)" : "#fff",
-                color: on ? "#fff" : "var(--slate)",
+                background: on ? "var(--harbor)" : "var(--paper)",
+                color: on ? "var(--on-brand)" : "var(--slate)",
                 fontWeight: on ? 700 : 500,
               }}
             >
@@ -65,7 +65,7 @@ export default function LeadStatusControl({ id, locale, initial }: { id: string;
           );
         })}
       </div>
-      {err && <p style={{ fontSize: 12, color: "#C8412E", marginTop: 8, marginBottom: 0 }}>{err}</p>}
+      {err && <p style={{ fontSize: 12, color: "var(--red)", marginTop: 8, marginBottom: 0 }}>{err}</p>}
     </div>
   );
 }

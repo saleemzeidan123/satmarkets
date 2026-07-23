@@ -82,7 +82,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
        <div className="col gap0">
         {next.map((n, i) => (
          <div key={i} className="row gap10" style={{ padding: "10px 0", borderTop: i ? "1px solid var(--silver)" : 0, alignItems: "flex-start" }}>
-          <span style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", marginTop: 1, background: n[2] ? "var(--green)" : "var(--cool)", color: n[2] ? "#fff" : "var(--slate)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontFamily: "var(--mono)" }}>{n[2] ? <Icon.check size={12} /> : i + 1}</span>
+          <span style={{ width: 20, height: 20, borderRadius: "50%", flex: "none", marginTop: 1, background: n[2] ? "var(--green)" : "var(--cool)", color: n[2] ? "var(--on-brand)" : "var(--slate)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontFamily: "var(--mono)" }}>{n[2] ? <Icon.check size={12} /> : i + 1}</span>
           <div><div style={{ fontSize: 12.5, fontWeight: 600 }}>{n[0]}</div><div className="muted" style={{ fontSize: 11, lineHeight: 1.5 }}>{n[1]}</div></div>
          </div>
         ))}

@@ -52,7 +52,7 @@ export default function SavedSearchRows({
             <div className="row gap8 wrap" style={{ alignItems: "center" }}>
               <Link href={s.href} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.label}</Link>
               {s.fresh > 0 && (
-                <span className="tag" style={{ background: "#1B7A50", color: "#fff", borderColor: "transparent", fontSize: 11 }}>
+                <span className="tag" style={{ background: "#1B7A50", color: "var(--on-brand)", borderColor: "transparent", fontSize: 11 }}>
                   {s.fresh} {labels.newSince}
                 </span>
               )}
@@ -64,7 +64,7 @@ export default function SavedSearchRows({
           <div className="row gap8" style={{ alignItems: "center", flex: "none" }}>
             <Link href={s.href} className="btn secondary sm" style={{ textDecoration: "none" }}>{labels.view}</Link>
             <button type="button" onClick={() => remove(s.id)} disabled={busy === s.id} aria-label={labels.remove}
-              style={{ border: "1px solid var(--silver)", background: "#fff", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "var(--slate)", flex: "none", opacity: busy === s.id ? 0.5 : 1 }}>✕</button>
+              style={{ border: "1px solid var(--silver)", background: "var(--paper)", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "var(--slate)", flex: "none", opacity: busy === s.id ? 0.5 : 1 }}>✕</button>
           </div>
         </div>
       ))}

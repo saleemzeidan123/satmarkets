@@ -72,7 +72,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
       </div>
       <div className="row" style={{ padding: "8px 10px", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
         {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="muted" style={{ fontSize: 11.5, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label || (ar ? "عرض" : "Open")}</a> : <span />}
-        <button type="button" onClick={() => remove(d.id)} disabled={removing === d.id} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "#C8412E", borderColor: "var(--silver)", flex: "none" }}>
+        <button type="button" onClick={() => remove(d.id)} disabled={removing === d.id} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "var(--red)", borderColor: "var(--silver)", flex: "none" }}>
           <Icon.trash size={13} /> {t.remove}
         </button>
       </div>
@@ -92,7 +92,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
         {floorplans.length === 0 ? <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.noPlans}</p> : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{floorplans.map(tile)}</div>
         )}
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.planHint}{plan.err ? <span style={{ color: "#C8412E" }}> · {plan.err}</span> : null}</p>
+        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.planHint}{plan.err ? <span style={{ color: "var(--red)" }}> · {plan.err}</span> : null}</p>
       </div>
 
       <div style={{ borderTop: "1px solid var(--silver)", paddingTop: 16 }}>
@@ -106,9 +106,9 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
         {brochures.length === 0 ? <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.noBroch}</p> : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{brochures.map(tile)}</div>
         )}
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.brochHint}{broch.err ? <span style={{ color: "#C8412E" }}> · {broch.err}</span> : null}</p>
+        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.brochHint}{broch.err ? <span style={{ color: "var(--red)" }}> · {broch.err}</span> : null}</p>
       </div>
-      {rmErr && <p style={{ fontSize: 12, color: "#C8412E", margin: 0 }}>{rmErr}</p>}
+      {rmErr && <p style={{ fontSize: 12, color: "var(--red)", margin: 0 }}>{rmErr}</p>}
     </div>
   );
 }
