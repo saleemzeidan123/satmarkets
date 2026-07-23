@@ -47,22 +47,21 @@ html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif;
    toggle are excluded. */
 html[dir="rtl"] :not(.fig):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
 /* The mono font (IBM Plex Mono) must never render Arabic script (Codex
-   correction 1). Arabic-bearing mono LABEL classes (status, dates, notes,
-   section headers, badges) flip to the Arabic family under RTL. True tabular
-   FIGURE classes (.fig, .tnum, and the numeric value classes) are excluded and
-   stay mono for Western-numeral alignment. */
-html[dir="rtl"] .mono:not(.fig):not(.tnum),
-html[dir="rtl"] .delta,
-html[dir="rtl"] .tag,
-html[dir="rtl"] .verified,
-html[dir="rtl"] .chatmsg .src,
-html[dir="rtl"] .bento-eyebrow,
-html[dir="rtl"] .ftype,
-html[dir="rtl"] .freeze,
-html[dir="rtl"] .foot .col-h,
-html[dir="rtl"] .foot .tpill,
-html[dir="rtl"] .statusdot,
-html[dir="rtl"] .dnav .sec { font-family: var(--font-ar), system-ui, sans-serif; }
+   correction 1). Rather than chase each label class, redefine the --mono TOKEN
+   under RTL so every `var(--mono)` consumer, including classless inline-styled
+   containers, resolves to IBM Plex Sans Arabic. Dedicated Western-numeral FIGURE
+   classes then re-assert true mono for tabular alignment; those must never carry
+   Arabic words (enforced by e2e/arabic-font.spec.ts, which has no allowlist).
+   `.fig`/`.tnum` use the raw --font-mono var so they are unaffected by the token
+   flip; the value/number classes below use the token and are re-asserted. */
+html[dir="rtl"] { --mono: var(--font-ar), system-ui, sans-serif; }
+html[dir="rtl"] .kpi .v,
+html[dir="rtl"] .statpill .v,
+html[dir="rtl"] .kcard .v,
+html[dir="rtl"] table.dt td.num,
+html[dir="rtl"] .matrix td.tnum,
+html[dir="rtl"] .hrow .pc,
+html[dir="rtl"] .bars .b .v { font-family: var(--font-mono), ui-monospace, monospace; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
