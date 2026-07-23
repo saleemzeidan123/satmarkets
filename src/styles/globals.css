@@ -46,11 +46,22 @@ html[dir="rtl"] .skip-link { font-family: var(--font-ar), system-ui, sans-serif;
    Figure/mono runs (Western numerals, tabular tracking) and the Latin language
    toggle are excluded. */
 html[dir="rtl"] :not(.fig):not(.tnum):not(.lang-seg) { letter-spacing: 0 !important; }
-/* .mono is the Latin figure/label font (IBM Plex Mono); it must never render
-   Arabic script (Codex correction 1). Arabic-bearing .mono labels (status,
-   listed-since dates, district names) flip to the Arabic family under RTL. True
-   tabular figures use .fig/.tnum, which stay mono for Western-numeral alignment. */
-html[dir="rtl"] .mono:not(.fig):not(.tnum) { font-family: var(--font-ar), system-ui, sans-serif; }
+/* The mono font (IBM Plex Mono) must never render Arabic script (Codex
+   correction 1). Arabic-bearing mono LABEL classes (status, dates, notes,
+   section headers, badges) flip to the Arabic family under RTL. True tabular
+   FIGURE classes (.fig, .tnum, and the numeric value classes) are excluded and
+   stay mono for Western-numeral alignment. */
+html[dir="rtl"] .mono:not(.fig):not(.tnum),
+html[dir="rtl"] .delta,
+html[dir="rtl"] .tag,
+html[dir="rtl"] .verified,
+html[dir="rtl"] .chatmsg .src,
+html[dir="rtl"] .bento-eyebrow,
+html[dir="rtl"] .ftype,
+html[dir="rtl"] .freeze,
+html[dir="rtl"] .foot .col-h,
+html[dir="rtl"] .foot .tpill,
+html[dir="rtl"] .dnav .sec { font-family: var(--font-ar), system-ui, sans-serif; }
 /* Arabic script rules: tracking breaks cursive joining. Mono is for figures, not Arabic words. */
 [dir="rtl"] .eyebrow, [dir="rtl"] .badge, [dir="rtl"] .chip-line,
 [dir="rtl"] .fig-label, [dir="rtl"] .bento-eyebrow {
