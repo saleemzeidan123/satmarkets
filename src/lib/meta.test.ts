@@ -114,6 +114,23 @@ test("every public template's head is built through the factory, never hand writ
   }
 });
 
+test("every single entity template declares the article type, never the index type", () => {
+  // meta.ts reserves "website" for index pages and "article" for a single
+  // entity. /lister/[id] declared website while its four sibling detail
+  // templates declared article, so the same class of page described itself two
+  // ways to a share card. Asserted on source rather than on a call, because the
+  // defect is a forgotten argument at the call site.
+  const APP = join(__dirname, "../app/[locale]");
+  for (const p of DETAIL_ROUTES) {
+    const f = ["page.tsx", "layout.tsx"].map((leaf) => join(APP, p, leaf)).find((x) => existsSync(x) && /generateMetadata|export\s+const\s+metadata/.test(readFileSync(x, "utf8")));
+    assert.ok(f, `${p} has no head to check`);
+    const body = readFileSync(f!, "utf8");
+    for (const call of body.match(/(?:localeMeta|pageMeta)\([\s\S]*?\);/g) ?? []) {
+      assert.match(call, /type:\s*"article"/, `${p} builds a head without type article`);
+    }
+  }
+});
+
 test("no two public templates share a title or a description, in either language", () => {
   // WS12: unique bilingual title and description per public template. The
   // dictionaries are the source, so uniqueness is asserted there, where a

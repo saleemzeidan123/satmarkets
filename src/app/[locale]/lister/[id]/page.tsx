@@ -27,8 +27,13 @@ export async function generateMetadata({ params }: { params: { locale: string; i
     const { data } = await sb.from("listers_public").select("name_en,name_ar").eq("id", params.id).maybeSingle();
     if (data) name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
   }
-  if (!name) return localeMeta(params.locale, path, t.metaTitleFallback, t.metaDescFallback);
-  return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(t.metaDesc, { name }));
+  // A profile is a single entity, so it takes the same Open Graph type as the
+  // listing, building, requirement and flyer templates. This was the one detail
+  // template still declaring type website, which is the value meta.ts reserves
+  // for index pages: exactly the kind of disagreement between hand-written heads
+  // that the factory exists to remove, surviving inside the factory's own call.
+  if (!name) return localeMeta(params.locale, path, t.metaTitleFallback, t.metaDescFallback, { type: "article" });
+  return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(t.metaDesc, { name }), { type: "article" });
 }
 
 export default async function ListerProfilePage({ params }: { params: { locale: string; id: string } }) {
