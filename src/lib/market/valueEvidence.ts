@@ -212,13 +212,13 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
   if (ev.supportStatus === "segment_mismatch") {
     const reqLabel = (ar ? ev.requestedSegmentLabelAr : ev.requestedSegmentLabelEn) || (ar ? "تلك الفئة" : "that grade");
     if (ar) {
-      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً بـ ${reqLabel} في ${loc}. نطاق ${assetLower} المنشور يغطي الفئة كاملةً وليس درجة بعينها، لذلك لا يمكنني تقديمه كنطاق ${reqLabel}. كسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
+      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً بـ${reqLabel} في ${loc}. النطاق المنشور لـ${assetLower} يغطي الفئة كاملةً وليس درجة بعينها، لذلك لا يمكنني تقديمه كنطاق ${reqLabel}. كسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
     }
     return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. As general market context, that band runs ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
   }
 
   if (ar) {
-    return `${lead}نطاق مؤشر الإيجارات لـ ${assetLower} في ${loc} ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
+    return `${lead}نطاق مؤشر الإيجارات لـ${assetLower} في ${loc} ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
   }
   return `${lead}The Rent Index ${assetLower} band for ${loc} is ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
 }
