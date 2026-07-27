@@ -1,81 +1,71 @@
 import { getDictionary } from "@/i18n/getDictionary";
 import { isLocale } from "@/i18n/config";
-import { pageMeta } from "@/lib/meta";
+import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
+import { formatInteger, formatUnit } from "@/lib/format";
 
 type Tier = { nm: string; who: string; price: string; unit: string; feat: boolean; ghost?: boolean; cta: string; pts: string[] };
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '/pricing', 'Pricing | SAT Markets', 'الأسعار | سات ماركتس', 'How SAT Markets works and what it costs. Listing and verification are free. SAT Markets does not act for buyers or tenants and takes no commission.', 'كيف تعمل سات ماركتس وكم تكلفتها. الإدراج والتوثيق مجاناً. لا تعمل سات ماركتس وكيلاً عن أي طرف ولا تتقاضى عمولة.');
+  const d = getDictionary(params.locale === "ar" ? "ar" : "en").pricing;
+  return localeMeta(params.locale, "/pricing", d.metaTitle, d.metaDesc);
 }
 
 export default function PricingPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
- const ar = params.locale === "ar";
- const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
- const tiers: Tier[] = ar ? [
-  { nm: "مستكشف", who: "تصفّح واستفسر، مجاني للأبد", price: "0", unit: "ريال", feat: false, ghost: true, cta: "تصفّح مجاناً",
-   pts: ["<b>1</b> قائمة نشطة", "<b>2</b> طلب منشور", "تواصل مع المُدرِجين الموثّقين", "مؤشر الإيجارات، متوسطات الأحياء", "<b>10</b> استفسارات للمستشار الذكي / شهر"] },
-  { nm: "مبتدئ", who: "ملاك أفراد في البداية", price: "299", unit: "ريال/شهر", feat: false, cta: "اختر مبتدئ",
-   pts: ["<b>5</b> قوائم نشطة", "<b>1</b> تمييز مميّز / شهر", "<b>50</b> كشف تواصل / شهر", "مؤشر الإيجارات الكامل + تنبيهات", "<b>100</b> استفسار ذكاء / شهر"] },
-  { nm: "احترافي", who: "ملاك نشطون ووسطاء أفراد", price: "899", unit: "ريال/شهر", feat: true, cta: "اختر احترافي",
-   pts: ["<b>25</b> قائمة نشطة", "<b>5</b> تمييزات / شهر", "كشوفات وعملاء بلا حدود", "ذكاء الموقع، <b>10</b>/شهر", "<b>5</b> مقاعد"] },
-  { nm: "وكالة", who: "مكاتب وساطة وفرق متعددة", price: "2,900", unit: "ريال/شهر", feat: false, cta: "اختر وكالة",
-   pts: ["<b>150</b> قائمة نشطة", "<b>30</b> تمييز / شهر", "ذكاء الموقع، <b>50</b>/شهر", "<b>15</b> مقعداً · توجيه العملاء", "واجهة برمجية، <b>25k</b> طلب / شهر"] },
-  { nm: "مؤسسات", who: "مطوّرون وصناديق ومؤسسات", price: "مخصّص", unit: "", feat: false, ghost: true, cta: "تحدّث للمبيعات",
-   pts: ["<b>بلا حدود</b> قوائم ومقاعد", "بيانات كاملة وموجزات برمجية", "دخول موحّد وأدوار مخصّصة", "تقارير محفظة مجدولة", "مدير مخصّص + اتفاقية مستوى خدمة"] },
- ] : [
-  { nm: "Explorer", who: "Browse & enquire, free forever", price: "0", unit: "SAR", feat: false, ghost: true, cta: "Free to browse",
-   pts: ["<b>1</b> active listing", "<b>2</b> requirement posts", "Contact verified listers", "Rent Index, district averages", "<b>10</b> AI Advisor queries / mo"] },
-  { nm: "Starter", who: "Individual owners getting started", price: "299", unit: "SAR/mo", feat: false, cta: "Choose Starter",
-   pts: ["<b>5</b> active listings", "<b>1</b> featured boost / mo", "<b>50</b> contact reveals / mo", "Full Rent Index + alerts", "<b>100</b> AI queries / mo"] },
-  { nm: "Professional", who: "Active owners & solo brokers", price: "899", unit: "SAR/mo", feat: true, cta: "Choose Professional",
-   pts: ["<b>25</b> active listings", "<b>5</b> featured boosts / mo", "Unlimited reveals & leads", "Location Intelligence, <b>10</b>/mo", "<b>5</b> seats"] },
-  { nm: "Agency", who: "Brokerages & multi-agent teams", price: "2,900", unit: "SAR/mo", feat: false, cta: "Choose Agency",
-   pts: ["<b>150</b> active listings", "<b>30</b> featured / mo", "Location Intelligence, <b>50</b>/mo", "<b>15</b> seats · lead routing", "API, <b>25k</b> calls / mo"] },
-  { nm: "Enterprise", who: "Developers, REITs & institutions", price: "Custom", unit: "", feat: false, ghost: true, cta: "Talk to sales",
-   pts: ["<b>Unlimited</b> listings & seats", "Full data & API feeds", "SSO & custom roles", "Scheduled portfolio reports", "Dedicated manager + SLA"] },
+ const loc: "en" | "ar" = params.locale === "ar" ? "ar" : "en";
+ const dict = getDictionary(loc);
+ const p = dict.pricing;
+ // Five tiers and sixteen comparison rows, every one of them written out twice,
+ // once per language, inside this file: the largest duplicated block on any
+ // public page and the one most likely to drift, because a price or a limit gets
+ // edited in the language the editor happens to be reading. The tier names were
+ // then written a THIRD time as the comparison table's column headings, so a
+ // renamed tier could disagree with its own column. Names, limits and prices now
+ // have one source each. The prices themselves go through formatInteger, so the
+ // thousands separator in 2,900 comes from the numeral formatter rather than
+ // from a hand-typed comma that only the English branch happened to carry.
+ const perMonth = formatUnit("sar_month", loc, "short");
+ const tiers: Tier[] = [
+  { nm: p.tExplorer, who: p.whoExplorer, price: formatInteger(0, loc), unit: formatUnit("sar", loc), feat: false, ghost: true, cta: p.explorerCta,
+   pts: [p.pE1, p.pE2, p.pE3, p.pE4, p.pE5] },
+  { nm: p.tStarter, who: p.whoStarter, price: formatInteger(299, loc), unit: perMonth, feat: false, cta: p.ctaStarter,
+   pts: [p.pS1, p.pS2, p.pS3, p.pS4, p.pS5] },
+  { nm: p.tPro, who: p.whoPro, price: formatInteger(899, loc), unit: perMonth, feat: true, cta: p.ctaPro,
+   pts: [p.pP1, p.pP2, p.pP3, p.pP4, p.pP5] },
+  { nm: p.tAgency, who: p.whoAgency, price: formatInteger(2900, loc), unit: perMonth, feat: false, cta: p.ctaAgency,
+   pts: [p.pA1, p.pA2, p.pA3, p.pA4, p.pA5] },
+  { nm: p.tEnt, who: p.whoEnt, price: p.priceCustom, unit: "", feat: false, ghost: true, cta: p.ctaEnt,
+   pts: [p.pN1, p.pN2, p.pN3, p.pN4, p.pN5] },
  ];
- const matrix: string[][] = ar ? [
-  ["grp", "العروض والتسويق"],
-  ["القوائم النشطة", "1", "5", "25", "150", "∞"],
-  ["تمييزات / شهر", "غير متاح", "1", "5", "30", "مخصّص"],
-  ["الطلبات المنشورة", "2", "10", "∞", "∞", "∞"],
-  ["grp", "العملاء والاستفسارات"],
-  ["كشوفات التواصل / شهر", "5", "50", "∞", "∞", "∞"],
-  ["صندوق العملاء والتحليلات", "no", "yes", "yes", "yes", "yes"],
-  ["عمليات البحث المحفوظة والتنبيهات", "3", "20", "∞", "∞", "∞"],
-  ["grp", "البيانات والذكاء"],
-  ["مؤشر الإيجارات", "متوسطات", "كامل", "كامل + سجل", "كامل + بالجملة", "كامل + موجز"],
-  ["ذكاء الموقع / شهر", "غير متاح", "2", "10", "50", "∞"],
-  ["استفسارات المستشار الذكي / شهر", "10", "100", "500", "2,000", "∞"],
-  ["تصدير التقارير", "no", "yes", "yes", "yes", "yes"],
-  ["grp", "الفريق والواجهة البرمجية والدعم"],
-  ["مقاعد الفريق", "1", "2", "5", "15", "∞"],
-  ["الوصول للواجهة البرمجية", "no", "no", "no", "25k/شهر", "مخصّص"],
-  ["الدعم", "المجتمع", "بريد", "أولوية", "مدير", "اتفاقية + مدير"],
- ] : [
-  ["grp", "Listings & marketing"],
-  ["Active listings", "1", "5", "25", "150", "∞"],
-  ["Featured boosts / mo", "n/a", "1", "5", "30", "Custom"],
-  ["Requirement posts", "2", "10", "∞", "∞", "∞"],
-  ["grp", "Leads & enquiries"],
-  ["Contact reveals / mo", "5", "50", "∞", "∞", "∞"],
-  ["Lead inbox & analytics", "no", "yes", "yes", "yes", "yes"],
-  ["Saved searches & alerts", "3", "20", "∞", "∞", "∞"],
-  ["grp", "Data & intelligence"],
-  ["Rent Index", "Averages", "Full", "Full + history", "Full + bulk", "Full + feed"],
-  ["Location Intelligence / mo", "n/a", "2", "10", "50", "∞"],
-  ["AI Advisor queries / mo", "10", "100", "500", "2,000", "∞"],
-  ["Report export", "no", "yes", "yes", "yes", "yes"],
-  ["grp", "Team, API & support"],
-  ["Team seats", "1", "2", "5", "15", "∞"],
-  ["API access", "no", "no", "no", "25k/mo", "Custom"],
-  ["Support", "Community", "Email", "Priority", "Manager", "SLA + manager"],
+ const n = (v: number) => formatInteger(v, loc);
+ const INF = p.vUnlimited;
+ const matrix: string[][] = [
+  ["grp", p.grpListings],
+  [p.rowActiveListings, n(1), n(5), n(25), n(150), INF],
+  [p.rowFeatured, "na", n(1), n(5), n(30), p.priceCustom],
+  [p.rowRequirements, n(2), n(10), INF, INF, INF],
+  ["grp", p.grpLeads],
+  [p.rowReveals, n(5), n(50), INF, INF, INF],
+  [p.rowLeadInbox, "no", "yes", "yes", "yes", "yes"],
+  [p.rowSavedSearches, n(3), n(20), INF, INF, INF],
+  ["grp", p.grpData],
+  [p.rowRentIndex, p.vAverages, p.vFull, p.vFullHistory, p.vFullBulk, p.vFullFeed],
+  [p.rowLocIntel, "na", n(2), n(10), n(50), INF],
+  [p.rowAdvisor, n(10), n(100), n(500), n(2000), INF],
+  [p.rowExport, "no", "yes", "yes", "yes", "yes"],
+  ["grp", p.grpTeam],
+  [p.rowSeats, n(1), n(2), n(5), n(15), INF],
+  [p.rowApi, "no", "no", "no", p.vApiCalls, p.priceCustom],
+  [p.rowSupport, p.vCommunity, p.vEmail, p.vPriority, p.vManager, p.vSlaManager],
  ];
- const heads = ar ? ["مستكشف", "مبتدئ", "احترافي", "وكالة", "مؤسسات"] : ["Explorer", "Starter", "Professional", "Agency", "Enterprise"];
- const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : v === "no" ? <span className="no">{dict.pricing.na}</span> : <span className="tnum">{v}</span>;
+ const heads = [p.tExplorer, p.tStarter, p.tPro, p.tAgency, p.tEnt];
+ // "no" and "na" are both absences and both rendered from the same dictionary
+ // string. The Arabic table used to spell one of them inline as "غير متاح" and
+ // read the other from the dictionary, which is how the same cell meaning got
+ // two spellings in one table.
+ const cell = (v: string) => v === "yes" ? <span className="yes">✓</span> : (v === "no" || v === "na") ? <span className="no">{p.na}</span> : <span className="tnum">{v}</span>;
  return (
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg,var(--cool),var(--paper))" }}>

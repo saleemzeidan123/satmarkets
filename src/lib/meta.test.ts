@@ -2,6 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { localeMeta, pageMeta, languageAlternates, localeUrl } from "@/lib/meta";
 import { formatArea } from "@/lib/format";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
+import { SITEMAP_ROUTES, HELD_ROUTES } from "@/lib/routePolicy";
 
 // The four defects meta.ts exists to kill, asserted rather than described.
 
@@ -67,6 +70,69 @@ test("pageMeta picks the language and never leaks the other one", () => {
   assert.equal(ar.openGraph.title, "من نحن");
   const en = pageMeta("en", "/about", "About", "من نحن", "EN copy", "نبذة") as any;
   assert.equal(en.title, "About");
+});
+
+// ------------------------------------------------- coverage across templates
+
+// Public detail templates: indexable-later, so not literal sitemap members.
+// This list is the same one scripts/prose-scan.mjs scopes its GATE tier to;
+// docs/routes.md mirrors both.
+const DETAIL_ROUTES = ["/listings/[id]", "/listings/[id]/flyer", "/building/[id]", "/lister/[id]", "/requirements/[id]"];
+
+test("every public template builds its own head, none inherits the root layout's", () => {
+  // WS12 defect 3: several public templates defined no metadata at all, so they
+  // served the root layout's generic title and description with no canonical and
+  // no reciprocal language set. A "use client" page physically cannot export
+  // generateMetadata, so for those the head lives in a sibling route-segment
+  // layout; either position satisfies this test, an absence satisfies neither.
+  const APP = join(__dirname, "../app/[locale]");
+  const missing: string[] = [];
+  for (const p of [...SITEMAP_ROUTES, ...HELD_ROUTES.map((h) => h.path), ...DETAIL_ROUTES]) {
+    const found = ["page.tsx", "layout.tsx"].some((leaf) => {
+      const f = join(APP, p, leaf);
+      return existsSync(f) && /export\s+(async\s+)?function\s+generateMetadata|export\s+const\s+metadata/.test(readFileSync(f, "utf8"));
+    });
+    if (!found) missing.push(p || "/");
+  }
+  assert.deepEqual(missing, [], `public templates with no head of their own: ${missing.join(", ")}`);
+});
+
+test("every public template's head is built through the factory, never hand written", () => {
+  // WS12 defect 4: hand-assembled alternates and openGraph literals disagreed
+  // about siteName, about type and about whether languages were declared.
+  const APP = join(__dirname, "../app/[locale]");
+  for (const p of [...SITEMAP_ROUTES, ...HELD_ROUTES.map((h) => h.path), ...DETAIL_ROUTES]) {
+    for (const leaf of ["page.tsx", "layout.tsx"]) {
+      const f = join(APP, p, leaf);
+      if (!existsSync(f)) continue;
+      const body = readFileSync(f, "utf8");
+      if (!/generateMetadata|export\s+const\s+metadata/.test(body)) continue;
+      assert.match(body, /localeMeta|pageMeta/, `${p || "/"}/${leaf} defines metadata without the factory`);
+      assert.doesNotMatch(body, /alternates\s*:/, `${p || "/"}/${leaf} hand writes alternates`);
+      assert.doesNotMatch(body, /openGraph\s*:/, `${p || "/"}/${leaf} hand writes openGraph`);
+    }
+  }
+});
+
+test("no two public templates share a title or a description, in either language", () => {
+  // WS12: unique bilingual title and description per public template. The
+  // dictionaries are the source, so uniqueness is asserted there, where a
+  // copy-paste between two sections is what would actually cause a collision.
+  const dir = join(__dirname, "../i18n/dictionaries");
+  for (const loc of ["en", "ar"]) {
+    const d = JSON.parse(readFileSync(join(dir, `${loc}.json`), "utf8")) as Record<string, Record<string, string>>;
+    for (const field of ["metaTitle", "metaDesc"]) {
+      const seen = new Map<string, string>();
+      for (const [section, body] of Object.entries(d)) {
+        const v = body && typeof body === "object" ? body[field] : undefined;
+        if (typeof v !== "string" || !v.trim()) continue;
+        const prev = seen.get(v);
+        assert.equal(prev, undefined, `${loc}: ${section}.${field} duplicates ${prev}.${field}`);
+        seen.set(v, section);
+      }
+      assert.ok(seen.size >= 12, `${loc}: only ${seen.size} sections declare ${field}`);
+    }
+  }
 });
 
 test("invisible bidi controls from the formatters are stripped out of metadata", () => {

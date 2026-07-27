@@ -83,6 +83,33 @@ test("the six legacy spellings all resolve to the same unit key", () => {
   assert.equal(resolveUnitKey("ريال/م²·سنة"), null, "an already-rendered Arabic unit is not a key");
 });
 
+test("a subscription price carries the per-month unit from the table, not from the page", () => {
+  // PKG-1C: the pricing page spelled this inline, "SAR/mo" and "ريال/شهر", the
+  // last unit on a public page still living outside UNITS. The short form is the
+  // one the tier cards render, so it is pinned in both languages.
+  assert.equal(plain(formatUnit("sar_month", "en")), "SAR/month");
+  assert.equal(plain(formatUnit("sar_month", "en", "short")), "SAR/mo");
+  assert.equal(plain(formatUnit("sar_month", "ar")), "ريال/شهر");
+  assert.equal(plain(formatUnit("sar_month", "ar", "short")), "ريال/شهر");
+  // Unbreakable in Arabic, like every other composite unit.
+  assert.equal(formatUnit("sar_month", "ar"), `ريال${WJ}/${WJ}شهر`);
+  for (const legacy of ["SAR/mo", "SAR/month", "sar_month"]) {
+    assert.equal(resolveUnitKey(legacy), "sar_month", legacy);
+  }
+  // The rent unit and the subscription unit must not collapse into each other.
+  assert.notEqual(resolveUnitKey("SAR/m²/yr"), "sar_month");
+});
+
+test("snapshot: the pricing tier figures, both locales", () => {
+  // Every tier price on the public pricing page, taken through the same two
+  // functions the page calls. The 2,900 separator comes from the formatter now,
+  // not from a comma typed into the English branch alone.
+  const tiers = (loc: "en" | "ar") =>
+    [0, 299, 899, 2900].map((v, i) => plain(formatInteger(v, loc) + (i ? " " + formatUnit("sar_month", loc, "short") : " " + formatUnit("sar", loc))));
+  assert.deepEqual(tiers("en"), ["0 SAR", "299 SAR/mo", "899 SAR/mo", "2,900 SAR/mo"]);
+  assert.deepEqual(tiers("ar"), ["0 ريال", "299 ريال/شهر", "899 ريال/شهر", "2,900 ريال/شهر"]);
+});
+
 test("an unknown unit is passed through, never silently dropped", () => {
   assert.equal(plain(formatUnit("SAR/bay/mo", "en")), "SAR/bay/mo");
   assert.equal(formatUnit(null, "ar"), "");

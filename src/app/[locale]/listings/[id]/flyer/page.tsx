@@ -12,12 +12,36 @@ import PrintButton from "@/components/PrintButton";
 import { SITE } from "@/components/JsonLd";
 import QRCode from "qrcode";
 import { getDictionary } from "@/i18n/getDictionary";
+import { getListingById } from "@/lib/queries/listings";
+import { localeMeta } from "@/lib/meta";
 
 // Branded property flyer: the landlord outreach artifact. Print-to-PDF via the
 // browser (native feature, no dependencies). Every figure is the listing's own
 // asking data or the index band from the database; the index context carries
 // the platform-sample label pre-launch, and the published benchmarks strip is
 // attributed. Bilingual by locale.
+
+// The last public template with no head of its own (WS12). It was serving the
+// root layout's generic title and description with no canonical and no
+// reciprocal language set, so a shared flyer link described the site rather than
+// the property. The title names the listing the way the listing detail page
+// names it, and falls back to a described sentence rather than to a reference
+// code, because a code identifies a listing and does not describe one: the same
+// rule the detail page already follows.
+export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+  if (!isLocale(params.locale)) return {};
+  const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const t = getDictionary(loc).flyer;
+  const l: any = await getListingById(params.id);
+  if (!l) return {};
+  const ar = loc === "ar";
+  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : t.riyadh;
+  const name = String((ar ? l.title_ar : l.title_en) || "").trim();
+  const title = name
+    ? fill(t.metaTitle, { title: name })
+    : fill(t.metaTitleFallback, { type: assetLabel(l.asset_type, loc), place: dn });
+  return localeMeta(loc, `/listings/${params.id}/flyer`, title, t.metaDesc, { type: "article" });
+}
 
 export default async function ListingFlyer({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();

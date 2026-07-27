@@ -7,6 +7,7 @@ import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
 import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num, isKnownUnit } from "@/lib/market/analyser";
 import { getDictionary } from "@/i18n/getDictionary";
+import { fill, formatArea, formatInteger, formatRange } from "@/lib/format";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
@@ -47,21 +48,21 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
   setSegKey((prev) => pickSegment(opts, prev));
  }, [segs, segKey]);
 
- const JOBS = ar ? [
-  { icon: <Icon.search size={18} />, label: "ابحث عن مساحة", sub: "صِف ما تحتاجه بكلماتك وسأبحث في العروض الموثّقة", prefill: "مكتب فئة A مجهّز في غرناطة، نحو 300 م²، بأقل من 1,600 ريال/م²", tool: null },
-  { icon: <Icon.spark size={18} />, label: "اكتب إعلاناً", sub: "أعطني تفاصيل مساحتك وأكتب الإعلان كاملاً", prefill: "اكتب إعلاناً لمساحتي: [النوع]، [الموقع]، [المساحة] م²، [مجهّزة أو هيكل]", tool: null },
-  { icon: <Icon.chart size={18} />, label: "حلّل صفقة أو عقد إيجار", sub: "أدخل أرقام صفقتك وأقيسها على النطاقات الاسترشادية التجريبية", prefill: "", tool: "value" as const },
-  { icon: <Icon.target size={18} />, label: "راقب السوق", sub: "تنبيه دائم عند تحرّك المؤشر", prefill: "نبّهني عندما تتحرك إيجارات المكاتب في [الموقع] أكثر من 3%", tool: null },
- ] : [
-  { icon: <Icon.search size={18} />, label: "Find a space", sub: "Describe what you need in your own words, I search verified stock", prefill: "Fitted Grade A office in Granada, around 300 m², under 1,600 SAR/m²", tool: null },
-  { icon: <Icon.spark size={18} />, label: "Draft a listing", sub: "Give me your space's details and I write the whole listing", prefill: "Draft a listing for my space: [type], [location], [size] m², [fitted or shell]", tool: null },
-  { icon: <Icon.chart size={18} />, label: "Analyse a deal or lease", sub: "Enter your deal's numbers, I grade them against the sample indicative ranges", prefill: "", tool: "value" as const },
-  { icon: <Icon.target size={18} />, label: "Watch the market", sub: "A standing alert when the index moves", prefill: "Alert me when office rents in [location] move more than 3%", tool: null },
+ // The four jobs and the four starter chips were each written out twice, once
+ // per language, inside this component. Two of the Arabic strings spelled the
+ // building grade with a Latin letter, "فئة A", the same drift the Rent Index
+ // carried, so the Advisor's own suggestions contradicted the grade wording on
+ // every listing they lead to. They read from the dictionaries now and follow
+ // gradePhrase, "فئة أ". The Arabic intent parser already accepts both spellings
+ // (valueEvidence detectRequestedSegment), so the chips still classify.
+ const JOBS = [
+  { icon: <Icon.search size={18} />, label: av.jobFindT, sub: av.jobFindS, prefill: av.jobFindP, tool: null },
+  { icon: <Icon.spark size={18} />, label: av.jobDraftT, sub: av.jobDraftS, prefill: av.jobDraftP, tool: null },
+  { icon: <Icon.chart size={18} />, label: av.jobAnalyseT, sub: av.jobAnalyseS, prefill: "", tool: "value" as const },
+  { icon: <Icon.target size={18} />, label: av.jobWatchT, sub: av.jobWatchS, prefill: av.jobWatchP, tool: null },
  ];
 
- const CHIPS = ar
-  ? ["سعّر مكتب فئة A في العليا", "ما النطاق الاسترشادي في كافد؟", "هل 1,600 ريال/م² عادل لمكاتب غرناطة؟", "راقب مكاتب كافد فئة A"]
-  : ["Price a Grade A office in Al Olaya", "What's within band in KAFD?", "Is 1,600 SAR/m² fair for Granada offices?", "Watch KAFD Grade A offices"];
+ const CHIPS = [av.chipPrice, av.chipBand, av.chipFair, av.chipWatch];
 
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy, tool]);
 
@@ -196,12 +197,15 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          // A failed or timed-out request offers its own way out: one tap resends
          // the same question, so a provider stall never dead-ends the session.
          <button className="btn secondary sm" style={{ marginTop: 10 }} disabled={busy} onClick={() => send(m.retry as string)}>
-          {ar ? "أعد المحاولة" : "Try again"}
+          {av.tryAgain}
          </button>
         )}
         {m.handoffDistrict && (
          <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600, alignItems: "flex-start" }}>
-          <span style={{ flex: "none", display: "inline-flex", marginTop: 2 }}><Icon.search size={14} /></span><span style={{ minWidth: 0 }}>{ar ? `اعرض العروض الموثّقة في ${m.handoffLabel || ""}` : `See verified listings in ${m.handoffLabel || "this district"}`}</span>
+          <span style={{ flex: "none", display: "inline-flex", marginTop: 2 }}><Icon.search size={14} /></span>{/* The English sentence fell back to "this district" when the label was
+                 missing and the Arabic fell back to nothing at all, leaving a
+                 dangling "في". One template, one fallback, both languages. */}
+             <span style={{ minWidth: 0 }}>{fill(av.handoffSeeIn, { district: m.handoffLabel || av.handoffThisDistrict })}</span>
          </Link>
         )}
         {m.results && m.results.length > 0 && (
@@ -213,8 +217,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            return (
             <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
-             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
-             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
+             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {formatArea(Number(l.area_sqm), locale)}{dn ? " · " + dn : ""}</div></div>
+             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? formatInteger(price, locale) : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
             </Link>
            );
           })}
@@ -249,13 +253,22 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           {activeRow && activeBand && unitOk && <>
           <div className="row gap10 wrap">
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 170 }}>{rateBasisLabel(activeRow.unit, ar)}
-            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={activeBand.average.toLocaleString("en-US")} />
+            <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={formatInteger(activeBand.average, locale)} />
            </label>
            <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
-          <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{ar ? `نطاق استرشادي تجريبي (بيانات اختبار): ${activeBand.low.toLocaleString("en-US")} إلى ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, true)}. متوسط مؤشر الإيجارات (إيجار) ${activeBand.average.toLocaleString("en-US")}، ${formatPeriod(activeRow.period, true)}.` : `Sample indicative range (test data): ${activeBand.low.toLocaleString("en-US")} to ${activeBand.high.toLocaleString("en-US")} ${rentUnitLabel(activeRow.unit, false)}. Rent Index (Ejar) average ${activeBand.average.toLocaleString("en-US")}, ${formatPeriod(activeRow.period, false)}.`}</div>
+          {/* formatRange renders exactly the wording this line used to build by
+              hand, "1,200 to 1,700" and "1,200 إلى 1,700", so the sentence keeps
+              its shape while the numerals and the connector come from the one
+              formatter the rest of the site uses. */}
+          <div className="mono muted" style={{ fontSize: "var(--fs-2xs)" }}>{fill(av.bandLine, {
+            range: formatRange(activeBand.low, activeBand.high, locale, 0),
+            unit: rentUnitLabel(activeRow.unit, ar) ?? "",
+            avg: formatInteger(activeBand.average, locale),
+            period: formatPeriod(activeRow.period, ar),
+          })}</div>
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeBand || !rateValid || !unitOk}>{av.analyse}</button>
           </div>
@@ -297,9 +310,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     <div style={{ padding: 20 }} className="col gap16">
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
       <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65 }}>
-       {ar
-        ? "تُستمد أرقام المؤشر من المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. اسأل عن حيّ ونوع أصل وسيعرض المستشار النطاق مع مصدره."
-        : "Index figures come from the REGA Rental Index (Ejar): averages of registered rental contracts. Ask about a district and an asset type and the Advisor will show the band with its source."}
+       {av.snapshotNote}
       </div>
      </div>
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>

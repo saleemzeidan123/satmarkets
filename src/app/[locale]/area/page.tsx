@@ -28,17 +28,19 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
  const ar = params.locale === "ar";
  const ap = getDictionary(params.locale === "ar" ? "ar" : "en").area;
  const hours = [4, 5, 7, 11, 18, 26, 30, 28, 24, 20, 22, 27, 31, 29, 25, 23, 28, 33, 30, 21, 14, 9, 6, 4];
- const origins: [string, number, string][] = ar ? [
-  ["حطين · الملقا", 34, ""], ["ممر كافد", 27, ""], ["الحي الدبلوماسي", 19, "h2"],
-  ["الورود · السليمانية", 12, "h2"], ["خارج الرياض", 8, "h2"],
- ] : [
-  ["Hittin · Al Malqa", 34, ""], ["KAFD corridor", 27, ""], ["Diplomatic Quarter", 19, "h2"],
-  ["Al Wurud · Sulimaniyah", 12, "h2"], ["Outside Riyadh", 8, "h2"],
+ // The catchment, sector-mix, source and score lists were each written twice in
+ // this file, once per language, so an Arabic edit could silently leave the
+ // English list a different length. They are the same five, five, four and five
+ // entries in both languages now, read from the one place the rest of the page
+ // already reads.
+ const origins: [string, number, string][] = [
+  [ap.originHittin, 34, ""], [ap.originKafd, 27, ""], [ap.originDq, 19, "h2"],
+  [ap.originWurud, 12, "h2"], [ap.originOutside, 8, "h2"],
  ];
  const ages: [string, number, string][] = [["25–34", 34, "var(--azure)"], ["35–44", 28, "var(--harbor)"], ["45–54", 16, "var(--azure-l)"], ["18–24", 12, "#B9C6E8"], ["55+", 10, "#D7DDE5"]];
- const mix: [string, number][] = ar
-  ? [["مكاتب شركات", 41], ["بنوك وتمويل", 22], ["أغذية ومشروبات", 19], ["تجزئة", 11], ["طبي", 7]]
-  : [["Corporate office", 41], ["Banking & finance", 22], ["F&B", 19], ["Retail", 11], ["Medical", 7]];
+ const mix: [string, number][] = [
+  [ap.mixCorporate, 41], [ap.mixBanking, 22], [ap.mixFnb, 19], [ap.mixRetail, 11], [ap.mixMedical, 7],
+ ];
  let acc = 0;
  const stops = ages.map((a) => { const s = `${a[2]} ${acc}% ${acc + a[1]}%`; acc += a[1]; return s; }).join(",");
  const comp: [string, string][] = [["44%", "34%"], ["62%", "40%"], ["58%", "62%"], ["40%", "60%"], ["68%", "52%"]];
@@ -169,7 +171,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>
-       {(ar ? [["إشارات الجوال","بيانات GPS / واي فاي مجهّلة من شركاء الاتصالات السعوديين، زيارات ومكوث ونطاقات تجارية."],["سجلات وزارة العدل","سجلات الصفقات العقارية المنشورة تعاير معايير الأسعار مقابل صفقات حقيقية."],["بيانات الإنفاق","أنماط معاملات مجهّلة من بوابات الدفع تغذّي إمكانات الإيرادات."],["السجلات الحكومية","الهيئة العامة للإحصاء والهيئة العامة للعقار وإيجار للسكان والدخل ونشاط الإيجار والطلب."]] : [["Mobile signals","Anonymised GPS / Wi-Fi from Saudi telecom partners, visits, dwell, trade areas."],["Ministry of Justice records","Published real estate transaction records calibrate price benchmarks against real deals."],["Spend data","Anonymised transaction patterns from payment gateways feed revenue potential."],["Public records","GASTAT, REGA and Ejar for population, income, lease activity and demand."]]).map((d,i)=>(
+       {([[ap.srcMobileT, ap.srcMobileB], [ap.srcMojT, ap.srcMojB], [ap.srcSpendT, ap.srcSpendB], [ap.srcPublicT, ap.srcPublicB]] as [string, string][]).map((d,i)=>(
         <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
          <div style={{ fontSize: 13.5, fontWeight: 700 }}>{d[0]}</div>
          <div className="muted" style={{ fontSize: "var(--fs-xs)", lineHeight: 1.5, marginTop: 4 }}>{d[1]}</div>
@@ -179,7 +181,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
       <div className="eyebrow" style={{ margin: "22px 0 10px" }}>{ap.scoreTitle}</div>
       <div className="row gap8 wrap">
-       {(ar ? ["حركة المشاة","ملاءمة الديموغرافيا","إمكانات السوق","المنافسة","الوضوح"] : ["Foot traffic","Demographics fit","Market potential","Competition","Visibility"]).map((l,i)=>(
+       {[ap.scoreFoot, ap.scoreDemo, ap.scorePotential, ap.scoreCompetition, ap.scoreVisibility].map((l,i)=>(
         <span key={i} className="chip on" style={{ fontSize: "var(--fs-xs)" }}>{l}</span>
        ))}
       </div>

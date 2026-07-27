@@ -106,6 +106,10 @@ export const UNITS = {
   sar_sqm_month: { en: { long: "SAR/m²/month", short: "SAR/m²/mo" }, ar: { long: "ريال/م²·شهر", short: "ريال/م²·شهر" } },
   sar_desk_month: { en: { long: "SAR/desk/month", short: "SAR/desk/mo" }, ar: { long: "ريال/مكتب·شهر", short: "ريال/مكتب·شهر" } },
   sar_sqm: { en: { long: "SAR/m²", short: "SAR/m²" }, ar: { long: "ريال/م²", short: "ريال/م²" } },
+  // A subscription price is per month and per nothing else. The pricing page
+  // spelled it inline, "SAR/mo" and "ريال/شهر", the last unit on a public page
+  // still living outside this table.
+  sar_month: { en: { long: "SAR/month", short: "SAR/mo" }, ar: { long: "ريال/شهر", short: "ريال/شهر" } },
   kva: { en: { long: "kVA", short: "kVA" }, ar: { long: "ك.ف.أ", short: "ك.ف.أ" } },
   pct: { en: { long: "%", short: "%" }, ar: { long: "%", short: "%" } },
 } as const;
@@ -120,6 +124,7 @@ const UNIT_ALIASES: Record<string, UnitKey> = {
   "sar/m2/mo": "sar_sqm_month", "sar/m²/mo": "sar_sqm_month", "m²/mo": "sar_sqm_month", "m2/mo": "sar_sqm_month",
   "sar/desk/mo": "sar_desk_month", "sar_desk_month": "sar_desk_month",
   "sar/m2": "sar_sqm", "sar/m²": "sar_sqm",
+  "sar/mo": "sar_month", "sar/month": "sar_month", "sar_month": "sar_month",
   "m2": "sqm", "m²": "sqm", "sqm": "sqm",
   "sar": "sar", "kva": "kva", "%": "pct",
 };
