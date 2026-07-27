@@ -1,6 +1,6 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
-import { Icon, Verified } from "@/components/satkit";
+import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
 import SampleBanner from "@/components/SampleBanner";
@@ -124,7 +124,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
 
       <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
        <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>{hb.compsTitle}</div>
+        <div><div style={{ fontSize: 15, fontWeight: 700 }}>{hb.compsTitle}</div><div className="muted" style={{ fontSize: 12.5 }}>{hb.compsSubtitle}</div></div>
         <span className="chip" style={{ borderColor: "var(--silver)" }}>{hb.last6mo} <Icon.chevd size={14} /></span>
        </div>
        <div style={{ overflowX: "auto" }}>
@@ -138,14 +138,18 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
             <td className="num" style={{ fontWeight: 500 }}>{c[2]}</td>
             <td className="num">{c[3]}</td>
             <td className="num mono">{c[4]}</td>
-            <td className="num"><Verified text="✓" /></td>
+            {/* This column used to render the verified tick on every row, which
+                said each of these named buildings had a checked, SAT-advised
+                transaction behind it. Every figure here is simulated, so the
+                column now says exactly that. */}
+            <td className="num"><span className="tag">{hb.compsSourceSimulated}</span></td>
            </tr>
           ))}
          </tbody>
         </table>
        </div>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
-        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
+        <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
         <span className="muted" style={{ fontSize: 12.5 }}>{hb.compsNote}</span>
        </div>
       </div>

@@ -22,18 +22,27 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   // language set. Returning an empty object here is what made this route inherit
   // the root layout's generic title with no canonical at all.
   let name: string | null = null;
+  let verified = false;
   const sb = getSupabaseServer();
   if (sb) {
-    const { data } = await sb.from("listers_public").select("name_en,name_ar").eq("id", params.id).maybeSingle();
-    if (data) name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
+    const { data } = await sb.from("listers_public").select("name_en,name_ar,is_verified").eq("id", params.id).maybeSingle();
+    if (data) {
+      name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
+      verified = (data as any).is_verified === true;
+    }
   }
-  // A profile is a single entity, so it takes the same Open Graph type as the
-  // listing, building, requirement and flyer templates. This was the one detail
-  // template still declaring type website, which is the value meta.ts reserves
-  // for index pages: exactly the kind of disagreement between hand-written heads
-  // that the factory exists to remove, surviving inside the factory's own call.
-  if (!name) return localeMeta(params.locale, path, t.metaTitleFallback, t.metaDescFallback, { type: "article" });
-  return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(t.metaDesc, { name }), { type: "article" });
+  // The Open Graph type is not passed from here. It comes from the route policy
+  // in meta.ts, which leaves this route on the website default: listers_public
+  // models an organization and carries no individual-person fields, so profile
+  // would be a claim the data does not support, and a company profile is not an
+  // article. The entity meaning lives in the Schema.org JSON-LD instead.
+  if (!name) return localeMeta(params.locale, path, t.metaTitleFallback, t.metaDescFallback);
+  // What SAT checked on this record is the lister's identity, so that is what
+  // the sentence may say, and only when is_verified is actually true. It does
+  // not follow that the spaces they publish are verified, and the head no longer
+  // says so. The strip on the page itself already draws exactly this line.
+  const desc = verified ? t.metaDescVerified : t.metaDesc;
+  return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(desc, { name }));
 }
 
 export default async function ListerProfilePage({ params }: { params: { locale: string; id: string } }) {

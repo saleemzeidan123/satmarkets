@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const title = name
     ? fill(t.metaTitle, { title: name })
     : fill(t.metaTitleFallback, { type: assetLabel(l.asset_type, loc), place: dn });
-  return localeMeta(loc, `/listings/${params.id}/flyer`, title, t.metaDesc, { type: "article" });
+  return localeMeta(loc, `/listings/${params.id}/flyer`, title, t.metaDesc);
 }
 
 export default async function ListingFlyer({ params }: { params: { locale: string; id: string } }) {

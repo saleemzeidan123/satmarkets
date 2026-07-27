@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const type = assetLabel(b.asset_type, loc);
   const title = fillProse(dict.building.metaTitle, { name, place });
   const description = fillProse(dict.building.metaDesc, { name, type, grade, place });
-  return localeMeta(params.locale, `/building/${params.id}`, title, description, { type: "article" });
+  return localeMeta(params.locale, `/building/${params.id}`, title, description);
 }
 
 export default async function BuildingPage({ params }: { params: { locale: string; id: string } }) {

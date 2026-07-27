@@ -207,8 +207,8 @@
     "tabDecide": "Decide with data",
     "tabTransact": "Transact with trust",
     "findSpace": "Find your space",
-    "metaTitle": "SAT Markets | Verified commercial real estate, Saudi Arabia",
-    "metaDesc": "The neutral commercial exchange for Riyadh: owner-verified listings, a source-attributed rent index, and AI that never invents a figure.",
+    "metaTitle": "SAT Markets | Commercial spaces, verified owners and licensed brokers",
+    "metaDesc": "The neutral commercial exchange for Riyadh: spaces listed by verified owners and licensed brokers, a source-attributed rent index, and AI that never invents a figure.",
     "onRequest": "On request"
   },
   "ld": {
@@ -272,7 +272,7 @@
     "statedGeneric": "Stated by the lister",
     "metaTitle": "{title}{in} | SAT Markets",
     "metaIn": " in {place}",
-    "metaDesc": "{grade} {type} in {place}, {area}, {price}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.",
+    "metaDesc": "{grade} {type} in {place}, {area}, {price}. Listed on SAT Markets, with published Rent Index context where available. Indicative, not advice.",
     "metaTitleFallback": "{type} in {place}",
     "verifiedAgeYear": "over a year ago",
     "verifiedAgeYears": "over {age} ago",
@@ -290,7 +290,8 @@
     "verifDocs": "Verification documents (private)",
     "verifDocsNote": "Visible only to you and the SAT team, never to viewers.",
     "parkingRatio": "1 space / {area}",
-    "approved": "Approved"
+    "approved": "Approved",
+    "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed by a verified owner on SAT Markets, with published Rent Index context where available. Indicative, not advice."
   },
   "chrome": {
     "tabHome": "Home",
@@ -317,7 +318,7 @@
   },
   "listings": {
     "metaTitle": "Commercial spaces in Saudi Arabia | SAT Markets",
-    "metaDesc": "Browse verified commercial spaces across Saudi Arabia, owner-verified and backed by the Rent Index.",
+    "metaDesc": "Commercial spaces listed by verified owners and licensed brokers across Saudi Arabia, with published Rent Index context where available.",
     "allSpaces": "All spaces",
     "exchange": "The exchange",
     "h1": "Commercial spaces across the Kingdom",
@@ -355,7 +356,7 @@
     "newBadge": "New",
     "metaTitleIn": "{what} in {place} | SAT Markets",
     "metaWhatFallback": "Commercial spaces",
-    "metaDescIn": "Browse verified commercial spaces in {place} on SAT Markets, owner-verified and backed by the published Rent Index.",
+    "metaDescIn": "Commercial spaces in {place} on SAT Markets, listed by verified owners and licensed brokers, with published Rent Index context where available.",
     "sortNewest": "Newest",
     "sortPriceAsc": "Price, low to high",
     "sortPriceDesc": "Price, high to low",
@@ -592,7 +593,7 @@
   "hbu": {
     "eyebrow": "Investment underwriting · Q2 2026",
     "assetTitle": "Grade A Office Floor, Olaya Tower",
-    "assetSub": "320 m² · Al Olaya · underwritten on verified comparable transactions",
+    "assetSub": "320 m² · Al Olaya · simulated underwriting on illustrative comparables",
     "exportModel": "Export model",
     "askAi": "Ask AI to underwrite",
     "scenario": "Scenario",
@@ -629,7 +630,7 @@
     "thCapRate": "Cap rate",
     "thPrice": "Price",
     "thSource": "Source",
-    "compsNote": "Comps drawn only from verified SAT-advised transactions, no asking prices, no scraped figures.",
+    "compsNote": "Simulated demonstration. Every comparable, price and cap rate in this table is illustrative and does not describe a real transaction.",
     "kValue": "Indicative value, SAR",
     "netInitYield": "Net initial yield",
     "nVsDistrict": "+0.2 vs district",
@@ -670,7 +671,9 @@
       ]
     ],
     "metaTitle": "Highest and best use analysis | SAT Markets",
-    "metaDesc": "Model the use that earns a site the most: rent escalation, stabilised occupancy, exit cap rate and levered return, on sample data with every assumption shown."
+    "metaDesc": "Model the use that earns a site the most: rent escalation, stabilised occupancy, exit cap rate and levered return, on sample data with every assumption shown.",
+    "compsSourceSimulated": "Simulated",
+    "compsSubtitle": "Illustrative figures, not observed transactions."
   },
   "list": {
     "sellVerified": "Verified, prominent placement",
@@ -1519,7 +1522,7 @@
     "officeAvg": "Office average {rate} SAR/m²·yr. ",
     "indexSource": "Source: REGA Rental Index (Ejar), average of registered rental contracts. Indicative, not advice.",
     "metaTitle": "{title}, flyer | SAT Markets",
-    "metaDesc": "A printable one page summary of a verified listing on SAT Markets: its asking terms, its verification state and its Rent Index context.",
+    "metaDesc": "A printable one page summary of a listing on SAT Markets: its asking terms, its verification state and its Rent Index context.",
     "metaTitleFallback": "{type} in {place}, flyer | SAT Markets"
   },
   "termsheet": {
@@ -1592,7 +1595,8 @@
     "brokersB": "brokers",
     "yours": "Your response",
     "metaTitle": "Requirement | SAT Markets",
-    "metaDesc": "A verified occupier requirement on SAT Markets. Owners and licensed brokers can register interest directly, with no assumed commission."
+    "metaDesc": "An occupier requirement published on SAT Markets. Owners and licensed brokers can register interest directly, with no assumed commission.",
+    "metaTitleEntity": "{title} | SAT Markets"
   },
   "locFacts": {
     "title": "Location facts",
@@ -1623,7 +1627,7 @@
   },
   "listerPage": {
     "metaTitle": "{name} | SAT Markets",
-    "metaDesc": "Verified commercial spaces listed by {name} on SAT Markets, with the published Rent Index behind every figure.",
+    "metaDesc": "Commercial spaces listed by {name} on SAT Markets, with published Rent Index context where available.",
     "metaTitleFallback": "Lister | SAT Markets",
     "metaDescFallback": "Verified owners and licensed brokers listing commercial space on SAT Markets.",
     "roleBroker": "Licensed broker",
@@ -1637,7 +1641,8 @@
     "forSale": "for sale",
     "since": "On SAT Markets since",
     "verifiedBy": "Identity verified by SAT",
-    "operator": "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn."
+    "operator": "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn.",
+    "metaDescVerified": "Commercial spaces listed by {name}, whose identity is verified by SAT Markets, with published Rent Index context where available."
   },
   "legalMeta": {
     "termsTitle": "Terms of Service | SAT Markets",
@@ -1648,8 +1653,8 @@
     "contactDesc": "Reach SAT Real Estate about a listing, the Rent Index or a partnership. Riyadh, Saudi Arabia. REGA FAL licence 1200025510."
   },
   "appMeta": {
-    "title": "SAT Markets | Verified commercial real estate, Saudi Arabia",
-    "description": "Riyadh-first commercial leasing and sales exchange. Verified listings, decision-grade rent index, AI search. A neutral, verified commercial real estate intelligence platform.",
+    "title": "SAT Markets | Commercial real estate, Saudi Arabia",
+    "description": "Riyadh-first commercial leasing and sales exchange. Commercial spaces listed by verified owners and licensed brokers, a source-attributed rent index, and AI search. A neutral commercial real estate intelligence platform.",
     "appName": "SAT Markets"
   },
   "notFound": {

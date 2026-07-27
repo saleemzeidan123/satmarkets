@@ -10,8 +10,11 @@
 //   identifiers, single-token codes matching ^[A-Za-z0-9_.:/-]+$ (asset keys,
 //   SATM- reference codes, unit strings), numeric-and-punctuation-only strings,
 //   and any string carrying an explicit /* i18n-exempt */ marker. Directive
-//   prologues ("use client", "use server") are excluded on syntactic position:
-//   they are language keywords spelled with a space, not translatable prose.
+//   prologues ("use client", "use server", "use strict") are excluded on
+//   syntactic position: they are language keywords spelled with a space, not
+//   translatable prose. That exclusion is an addition beyond the four categories
+//   named in the proposal; it was flagged for ruling in the PKG-1C handback and
+//   RATIFIED by Codex in PKG-1C.1, so it stays and is no longer provisional.
 //
 //   A string is flagged only when it contains a run of two or more
 //   natural-language words in Latin or Arabic script outside those categories.
@@ -213,7 +216,8 @@ function insideExemptCall(node) {
 /**
  * A directive prologue ("use client", "use server", "use strict") is a language
  * keyword that happens to be spelled with a space. It is not prose, it cannot be
- * translated, and moving it into a dictionary would break the file. The check is
+ * translated, and moving it into a dictionary would break the file. Ratified by
+ * Codex in PKG-1C.1 as a permanent part of the allowlist. The check is
  * syntactic rather than a string match on the words: the literal must be the
  * whole of an expression statement standing in the leading run of expression
  * statements of a file or a function body, which is the only position where the

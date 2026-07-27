@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { localeMeta, pageMeta, languageAlternates, localeUrl } from "@/lib/meta";
+import { localeMeta, pageMeta, languageAlternates, localeUrl, ogTypeFor, OG_TYPE_POLICY } from "@/lib/meta";
 import { formatArea } from "@/lib/format";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -54,8 +54,26 @@ test("the Twitter card is present and carries the same image", () => {
   assert.equal(m.twitter.images[0], (m.openGraph as any).images[0].url);
 });
 
-test("type article is carried through for single-entity templates", () => {
-  assert.equal((localeMeta("en", "/building/1", "T", "D", { type: "article" }).openGraph as any).type, "article");
+test("the Open Graph type comes from the route policy, and the generic value is website", () => {
+  // A single entity is not automatically an article: a listing, a building, an
+  // occupier requirement, a printable flyer and a company profile are none of
+  // them editorial articles. website is the safe generic value; the detailed
+  // entity meaning is published in the Schema.org JSON-LD, not in og:type.
+  assert.equal(ogTypeFor("/building/1"), "website");
+  assert.equal(ogTypeFor("/lister/1"), "website");
+  assert.equal(ogTypeFor("/"), "website");
+  assert.equal((localeMeta("en", "/building/1", "T", "D").openGraph as any).type, ogTypeFor("/building/1"));
+});
+
+test("every departure from the website default names a type and states its reason", () => {
+  for (const rule of OG_TYPE_POLICY) {
+    assert.ok(["website", "profile", "article"].includes(rule.type), `${rule.pattern} declares an Open Graph type this site does not use`);
+    assert.ok(rule.reason.trim().split(/\s+/).length >= 5, `${rule.pattern} departs from the default without stating why`);
+    // profile describes an individual person and article describes an editorial
+    // article. Neither may be claimed for a route whose reason does not say what
+    // in the entity data supports it.
+    assert.notEqual(rule.type, "website", `${rule.pattern} is not a departure and belongs outside this table`);
+  }
 });
 
 test("robots is emitted only when a template asks for it", () => {
@@ -114,19 +132,19 @@ test("every public template's head is built through the factory, never hand writ
   }
 });
 
-test("every single entity template declares the article type, never the index type", () => {
-  // meta.ts reserves "website" for index pages and "article" for a single
-  // entity. /lister/[id] declared website while its four sibling detail
-  // templates declared article, so the same class of page described itself two
-  // ways to a share card. Asserted on source rather than on a call, because the
-  // defect is a forgotten argument at the call site.
+test("no template chooses its own Open Graph type, the route policy is the only source", () => {
+  // The earlier rule here required every detail route to declare "article",
+  // which made all five mechanically identical and semantically wrong: only an
+  // editorial article is an article. The type now comes from OG_TYPE_POLICY, so
+  // the thing to assert on source is that no call site passes one at all.
   const APP = join(__dirname, "../app/[locale]");
-  for (const p of DETAIL_ROUTES) {
-    const f = ["page.tsx", "layout.tsx"].map((leaf) => join(APP, p, leaf)).find((x) => existsSync(x) && /generateMetadata|export\s+const\s+metadata/.test(readFileSync(x, "utf8")));
-    assert.ok(f, `${p} has no head to check`);
-    const body = readFileSync(f!, "utf8");
-    for (const call of body.match(/(?:localeMeta|pageMeta)\([\s\S]*?\);/g) ?? []) {
-      assert.match(call, /type:\s*"article"/, `${p} builds a head without type article`);
+  for (const p of [...SITEMAP_ROUTES, ...HELD_ROUTES.map((h) => h.path), ...DETAIL_ROUTES]) {
+    for (const leaf of ["page.tsx", "layout.tsx"]) {
+      const f = join(APP, p, leaf);
+      if (!existsSync(f)) continue;
+      const body = readFileSync(f, "utf8");
+      if (!/generateMetadata|export\s+const\s+metadata/.test(body)) continue;
+      assert.doesNotMatch(body, /type:\s*"(website|profile|article)"/, `${p || "/"}/${leaf} picks an Open Graph type at the call site`);
     }
   }
 });

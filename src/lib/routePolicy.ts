@@ -20,4 +20,10 @@ export const HELD_ROUTES: { path: string; reason: string }[] = [
 
 // Account, prototype and operational surfaces: never indexed, never in the
 // sitemap, regardless of any flag.
-export const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/compare", "/me", "/go", "/verify", "/ops", "/proto"];
+//
+// /login and /hbu were linked from the public header and footer while appearing
+// in none of the three lists, so neither the sitemap nor the middleware held a
+// ruling on them. /login is an authentication surface with nothing to index.
+// /hbu is a highest-and-best-use demonstration whose every figure is simulated,
+// so it is private until it is driven by real evidence.
+export const PRIVATE_PREFIXES = ["/admin", "/dashboard", "/messages", "/notifications", "/deal", "/docs", "/find", "/post-requirement", "/list", "/invest", "/saved", "/signup", "/login", "/hbu", "/compare", "/me", "/go", "/verify", "/ops", "/proto"];

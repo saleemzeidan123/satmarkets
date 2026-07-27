@@ -70,9 +70,49 @@ export function languageAlternates(path: string): Record<string, string> {
   return set;
 }
 
+/**
+ * The Open Graph types this site is allowed to declare.
+ *
+ * `website` is the safe generic value and the default for every route.
+ * `profile` describes an actual individual person, so it is only correct when
+ * the entity data carries person fields.
+ * `article` describes an editorial article. It is NOT the generic value for a
+ * single entity: a listing, a building, an occupier requirement, a printable
+ * flyer and an organization profile are none of them articles.
+ */
+export type OgType = "website" | "profile" | "article";
+
+/**
+ * ROUTE OPEN GRAPH TYPE POLICY, the single source of the og:type value.
+ *
+ * This table holds DEPARTURES from the `website` default only, and every
+ * departure must state why the route's own data supports the claim. A call site
+ * cannot pass a type, so a template can no longer guess, and the two types that
+ * assert something specific about a page can no longer be applied by analogy to
+ * a sibling route.
+ *
+ * The two departures considered and rejected, recorded so they are not
+ * relitigated silently:
+ *
+ * `/lister/[id]` to `profile`. Rejected. `listers_public` models an
+ * organization (name, lister_type owner or broker, logo, website, public email,
+ * is_operator) and carries no fields describing an individual person, so
+ * `profile` would be a claim the data does not support.
+ *
+ * The four other detail routes to `article`. Rejected. None of them is an
+ * editorial article. The detailed meaning of each entity is already published
+ * in the Schema.org JSON-LD, which is the vocabulary that can actually express
+ * a RealEstateListing or an Organization; og:type cannot, and should not be
+ * stretched into pretending it can.
+ */
+export const OG_TYPE_POLICY: { pattern: RegExp; type: OgType; reason: string }[] = [];
+
+/** The Open Graph type for a path. `website` unless the policy departs from it. */
+export function ogTypeFor(path: string): OgType {
+  return OG_TYPE_POLICY.find((r) => r.pattern.test(path))?.type ?? "website";
+}
+
 export interface MetaOptions {
-  /** Open Graph type. "website" for index pages, "article" for a single entity. */
-  type?: "website" | "article";
   /** Override the share card. Defaults to the locale's own card. */
   image?: string;
   /** Passed through to Next. The middleware owns the site-wide noindex. */
@@ -106,7 +146,7 @@ export function localeMeta(
       description: d,
       url,
       siteName: SITE_NAME[loc],
-      type: opts.type ?? "website",
+      type: ogTypeFor(path),
       locale: OG_LOCALE[loc],
       alternateLocale: locales.filter((l) => l !== loc).map((l) => OG_LOCALE[l]),
       images,

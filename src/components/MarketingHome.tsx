@@ -418,7 +418,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
            neither is shown. */}
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
         <span>{kpis.source || (ar ? "\u0627\u0644\u0645\u0635\u062f\u0631" : "Source")}</span>
-        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : "\u2014"}</span>
+        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : ""}</span>
        </div>
       </div>}
      </div>

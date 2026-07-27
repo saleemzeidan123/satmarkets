@@ -96,7 +96,9 @@ async function callProvider(baseUrl: string, k: string, mdl: string, messages: a
     if (!res.ok) return null;
     const j: any = await res.json();
     const out = j?.choices?.[0]?.message?.content ?? null;
-    return out ? out.replace(/\s*[\u2014\u2013]\s*/g, ", ") : null;
+    // This sanitizer strips the forbidden dashes out of model output before it
+    // reaches a page, so it is one of the few places that has to name them.
+    return out ? out.replace(/\s*[\u2014\u2013]\s*/g, ", ") : null; /* em-dash-law */
   } catch {
     return null;
   }

@@ -59,8 +59,15 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const has = (needle: string) => needle.length > 0 && t0.toLowerCase().includes(needle.toLowerCase());
   const inSeg = has(String(dn)) ? "" : fill(dict.ld.metaIn, { place: dn });
   const title = fillProse(dict.ld.metaTitle, { title: t0, in: inSeg });
-  const description = fillProse(dict.ld.metaDesc, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
-  return localeMeta(params.locale, `/listings/${params.id}`, title, description, { type: "article" });
+  // Verification wording is evidence-qualified: the sentence may say a verified
+  // owner only when THIS row passes the owner gate. Every other row gets the
+  // neutral sentence. The blanket "owner-verified listing, backed by the Rent
+  // Index" claimed two things at once that the data does not carry: that the
+  // listing itself is verified rather than its owner, and that the figure above
+  // was derived from the index rather than sitting next to its context.
+  const descTemplate = ownerVerified(l) ? dict.ld.metaDescOwnerVerified : dict.ld.metaDesc;
+  const description = fillProse(descTemplate, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
+  return localeMeta(params.locale, `/listings/${params.id}`, title, description);
 }
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {

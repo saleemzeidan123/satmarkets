@@ -14,10 +14,28 @@
 import type { ReactNode } from "react";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
+import { getSupabaseServer } from "@/lib/supabase/server";
+import { fill } from "@/lib/format";
 
-export function generateMetadata({ params }: { params: { locale: string; id: string } }) {
-  const t = getDictionary(params.locale === "ar" ? "ar" : "en").reqDetail;
-  return localeMeta(params.locale, `/requirements/${params.id}`, t.metaTitle, t.metaDesc, { type: "article" });
+// The head names the requirement. It used to serve "Requirement" and "طلب مساحة"
+// for every row, so five hundred distinct briefs shared one share title while
+// the listing, building, lister and flyer templates all named their entity. The
+// rows carry a real bilingual title; the only reason this layout did not use it
+// was that it did no data fetch. It does one now, against the same public view
+// the detail page reads, and the generic wording survives only as the fallback
+// for a missing or unreadable record.
+export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+  const loc = params.locale === "ar" ? "ar" : "en";
+  const t = getDictionary(loc).reqDetail;
+  const path = `/requirements/${params.id}`;
+  let title: string | null = null;
+  const sb = getSupabaseServer();
+  if (sb && /^[0-9a-f-]{36}$/i.test(params.id)) {
+    const { data } = await sb.from("requirements_public").select("title,title_ar").eq("id", params.id).maybeSingle();
+    if (data) title = String((loc === "ar" ? (data as any).title_ar : (data as any).title) || (data as any).title || "").trim() || null;
+  }
+  if (!title) return localeMeta(params.locale, path, t.metaTitle, t.metaDesc);
+  return localeMeta(params.locale, path, fill(t.metaTitleEntity, { title }), t.metaDesc);
 }
 
 export default function RequirementDetailLayout({ children }: { children: ReactNode }) {
