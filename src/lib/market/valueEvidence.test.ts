@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildValueEvidence, detectRequestedSegment, renderValue, type RowLike } from "./valueEvidence";
+import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type RowLike } from "./valueEvidence";
+import { formatPeriod } from "./period";
 
 // The real Al Olaya all-office row (the exact P0 case Codex retested).
 const AL_OLAYA_OFFICE: RowLike = {
@@ -18,10 +19,15 @@ const AL_OLAYA_OFFICE: RowLike = {
   source: "REGA Rental Index (Ejar)",
 };
 
-// Rent figures (>=100) in a rendered string, with the period removed so its year is
-// not mistaken for a rent figure.
+// Rent figures (>=100) in a rendered string, with every rendered form of the period
+// removed so its year is not mistaken for a rent figure. Periods now render through
+// formatPeriod ("Q2 2026" / "الربع الثاني 2026"), so stripping only the raw storage
+// form "2026-Q2" would leave a bare "2026" behind and count it as a rent.
 function rentFigures(text: string, period: string): string[] {
-  const cleaned = text.split(period).join(" ");
+  let cleaned = text;
+  for (const form of [period, formatPeriod(period, false), formatPeriod(period, true)]) {
+    cleaned = cleaned.split(form).join(" ");
+  }
   return (cleaned.match(/\d[\d,]*(?:\.\d+)?/g) || []).filter((t) => {
     const n = Number(t.replace(/,/g, ""));
     return Number.isFinite(n) && n >= 100;
@@ -117,4 +123,76 @@ test("Western numerals remain in Arabic output", () => {
 test("no em dash in rendered output (global law)", () => {
   const ev = buildValueEvidence(AL_OLAYA_OFFICE, detectRequestedSegment("Grade A"), 1600)!;
   for (const loc of ["en", "ar"] as const) assert.ok(!/\u2014/.test(renderValue(ev, loc)));
+});
+
+// ===== PKG-1B.2 (Codex items 3, 4 and 5) =====
+
+test("Codex 4: Arabic grade letters are normalized to the Latin grades", () => {
+  for (const q of ["سعّر مكتب فئة أ في العليا", "سعّر مكتب فئة إ في العليا", "سعّر مكتب فئة آ في العليا", "سعّر مكتب فئة ا في العليا"]) {
+    assert.equal(detectRequestedSegment(q)?.key, "grade_a", q);
+  }
+  assert.equal(detectRequestedSegment("مكتب فئة ب في العليا")?.key, "grade_b");
+  assert.equal(detectRequestedSegment("مكتب فئة ج في العليا")?.key, "grade_c");
+  assert.equal(detectRequestedSegment("مكتب فئة أ+ في العليا")?.key, "grade_a_plus");
+  // A general Arabic question must still be general.
+  assert.equal(detectRequestedSegment("ما نطاق المكاتب في العليا؟"), null);
+});
+
+test("Codex 4: the Arabic grade request carries the SAME scope limitation as English", () => {
+  const arReq = detectRequestedSegment("سعّر مكتب فئة أ في العليا");
+  const enReq = detectRequestedSegment("Price a Grade A office in Al Olaya");
+  assert.equal(arReq?.key, enReq?.key);
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, arReq, null)!;
+  assert.equal(ev.supportStatus, "segment_mismatch");
+  const ar = renderValue(ev, "ar");
+  assert.ok(/لا يمكنني تقديمه كنطاق/.test(ar), ar);
+  assert.ok(/فئة A/.test(ar), ar);
+});
+
+test("Codex 5: no raw storage period reaches the reader, in either language", () => {
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, null, null)!;
+  for (const loc of ["en", "ar"] as const) {
+    const out = renderValue(ev, loc);
+    assert.ok(!out.includes("2026-Q2"), `raw period leaked in ${loc}: ${out}`);
+  }
+  assert.ok(renderValue(ev, "en").includes("Q2 2026"));
+  assert.ok(renderValue(ev, "ar").includes("الربع الثاني 2026"));
+  // A year-only request has no quarter and renders as the plain year.
+  assert.equal(displayPeriod("2025", false), "2025");
+  assert.equal(displayPeriod("2025", true), "2025");
+});
+
+test("Codex 3: an unavailable period is stated, not silently substituted", () => {
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, null, null, { requested: "2025", status: "unavailable" })!;
+  assert.equal(ev.requestedPeriod, "2025");
+  assert.equal(ev.periodStatus, "unavailable");
+  const en = renderValue(ev, "en");
+  assert.ok(/does not publish .* for 2025/i.test(en), en);
+  assert.ok(/newest published period is Q2 2026/i.test(en), en);
+  assert.ok(/not an answer for 2025/i.test(en), en);
+  const ar = renderValue(ev, "ar");
+  assert.ok(ar.includes("للفترة 2025"), ar);
+  assert.ok(ar.includes("أحدث فترة منشورة هي الربع الثاني 2026"), ar);
+  // The 2025 in the question is never rendered as the user's rent.
+  assert.ok(!/Your figure/i.test(en), en);
+  assert.ok(!/رقمك/.test(ar), ar);
+});
+
+test("Codex 3: a period that IS available is answered without the caveat", () => {
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, null, null, { requested: "2026-Q2", status: "match" })!;
+  const en = renderValue(ev, "en");
+  assert.ok(!/does not publish/i.test(en), en);
+  assert.ok(en.includes("Q2 2026"), en);
+});
+
+test("Codex 1 and 2: a year question produces no user figure in either language", () => {
+  // The route hands renderValue whatever readNumericIntent found; for a year question
+  // that is null, and null must never become a quotation.
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, null, null, { requested: "2026", status: "unavailable" })!;
+  const en = renderValue(ev, "en");
+  const ar = renderValue(ev, "ar");
+  assert.ok(!/2,026/.test(en), en);
+  assert.ok(!/2,026/.test(ar), ar);
+  assert.ok(!/sits (above|below|within) the band/i.test(en), en);
+  assert.ok(!/رقمك/.test(ar), ar);
 });

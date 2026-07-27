@@ -1,3 +1,7 @@
+/* The footer paints on ink, so it carries its own scoped copy of the tokens it
+   needs. --green is here for ONE reason: the FAL 1200025510 licence pill dot, which
+   is an evidence-backed verification (a held, published licence number), so it keeps
+   confirmed green under D24. Nothing else in the footer may use it. */
 .foot{
   --ink:#14181B; --harbor:#3A6EA5; --green:#1B7A50;
   --slate:#5B6470; --slate-2:#6B7480;
@@ -28,6 +32,7 @@
 .foot .foot-mid{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:36px;padding-top:26px;border-top:1px solid #2B3138;}
 .foot .trust-row{display:flex;gap:8px;flex-wrap:wrap;}
 .foot .tpill{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono),monospace;font-size:10px;letter-spacing:.04em;color:#AEB6C0;border:1px solid #2B3138;border-radius:7px;padding:6px 11px;}
+/* FAL 1200025510 licence pill: verification credential, confirmed green. */
 .foot .tpill .d{width:6px;height:6px;border-radius:50%;background:var(--green);}
 .foot .foot-end{display:flex;align-items:center;gap:12px;}
 .foot .langtog{display:inline-flex;border:1px solid #2B3138;border-radius:8px;overflow:hidden;}

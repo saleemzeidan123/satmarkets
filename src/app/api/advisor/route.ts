@@ -3,7 +3,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
-import { buildValueEvidence, detectRequestedSegment, renderValue } from "@/lib/market/valueEvidence";
+import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type PeriodStatus } from "@/lib/market/valueEvidence";
+import { readNumericIntent } from "@/lib/market/numericIntent";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -196,17 +197,40 @@ export async function POST(req: NextRequest) {
     if (!intent?.district && !intent?.asset) {
       return NextResponse.json({ mode: "value", message: arq ? `أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأستخرج النطاق الحالي من مؤشر الإيجارات.` : `Tell me the location and the asset type, for example ${examplePair(false)}, and I will pull the current band from the Rent Index.` });
     }
+    // Numbers are separated by MEANING before anything is compared to a band
+    // (PKG-1B.2, Codex items 1 to 3). A reporting year, a floor area, a percentage
+    // and a total budget are not rents; only an explicit rent unit or an explicit
+    // rent comparison produces a comparison figure. The model's own `figure` is
+    // deliberately ignored here: it is what turned "in 2026" into a 2,026 rent.
+    const numeric = readNumericIntent(raw);
+    const wantedPeriod = numeric.requestedPeriod;
+    let periodStatus: PeriodStatus = "none";
     let band: any = null;
     if (supabase) {
       const did = await resolveDistrictId(supabase, intent?.district);
-      let q = supabase.from("rent_index_published").select("id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
-      if (intent?.asset) q = q.eq("asset_type", intent.asset);
-      // Prefer an exact district_id match (language-independent); fall back to a
-      // label ilike only when the name did not resolve to a known district.
-      if (did) q = q.eq("district_id", did);
-      else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
-      const { data } = await q;
-      band = data && data[0] ? data[0] : null;
+      const scoped = () => {
+        let q = supabase.from("rent_index_published").select("id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true);
+        if (intent?.asset) q = q.eq("asset_type", intent.asset);
+        // Prefer an exact district_id match (language-independent); fall back to a
+        // label ilike only when the name did not resolve to a known district.
+        if (did) q = q.eq("district_id", did);
+        else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
+        return q;
+      };
+      // Ask for the period the user asked for. Only when that period is not
+      // published do we fall back to the newest one, and then the answer must say
+      // so rather than presenting the newest row as the requested period.
+      if (wantedPeriod) {
+        const exact = /^\d{4}-Q[1-4]$/.test(wantedPeriod);
+        const pq = exact ? scoped().eq("period", wantedPeriod) : scoped().ilike("period", `${wantedPeriod}%`);
+        const { data } = await pq.order("period", { ascending: false }).limit(1);
+        if (data && data[0]) { band = data[0]; periodStatus = "match"; }
+      }
+      if (!band) {
+        const { data } = await scoped().order("created_at", { ascending: false }).limit(1);
+        band = data && data[0] ? data[0] : null;
+        if (band && wantedPeriod) periodStatus = "unavailable";
+      }
     }
     if (!band) {
       return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}، أو تصفّح العروض الموثّقة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false, intent?.district)}, or browse the verified listings.` });
@@ -218,10 +242,7 @@ export async function POST(req: NextRequest) {
     // localized location, and stops a general-office band from ever being relabelled
     // a Grade A band. Tests: src/lib/market/valueEvidence.test.ts.
     const requestedSegment = detectRequestedSegment(raw);
-    const userFigure = typeof intent?.figure === "number" && intent.figure > 0
-      ? intent.figure
-      : (() => { const m = raw.match(/\d[\d,]{2,}(?:\.\d+)?/); return m ? parseFloat(m[0].replace(/,/g, "")) : null; })();
-    const ev = buildValueEvidence(band as any, requestedSegment, userFigure);
+    const ev = buildValueEvidence(band as any, requestedSegment, numeric.rent, { requested: wantedPeriod, status: periodStatus });
     if (!ev) {
       return NextResponse.json({ mode: "value", message: arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.` });
     }
@@ -233,7 +254,12 @@ export async function POST(req: NextRequest) {
       mode: "value",
       message,
       band: toPublicSegment(band as IndexRowLike),
-      evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason },
+      // The server is the ONLY place a user figure is identified. The client used to
+      // re-parse the question with the same naive first-number regex, so it drew the
+      // "your rate" marker on the chart from a year or an area even after the prose
+      // stopped doing so. It now consumes this authoritative value and nothing else.
+      quoted: ev.userFigure,
+      evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason, requestedPeriod: ev.requestedPeriod, periodStatus: ev.periodStatus },
     });
   }
 
@@ -261,9 +287,12 @@ export async function POST(req: NextRequest) {
       const { error } = await supabase.from("market_watches").insert({ district_label: band.district_label, asset_type: band.asset_type, segment: band.segment ?? null, threshold_pct: threshold, baseline_median: band.median, baseline_band_low: band.band_low, baseline_band_high: band.band_high, baseline_period: band.period });
       saved = !error;
     }
+    // Periods are rendered through the shared bilingual helper, never as the raw
+    // "2026-Q2" storage form (Codex item 5).
+    const baselinePeriod = displayPeriod(band.period, arq);
     const baseline = arq
-      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، المتوسط ${band.median}، للفترة ${band.period}`
-      : `${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}, for ${band.period}`;
+      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، المتوسط ${band.median}، للفترة ${baselinePeriod}`
+      : `${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}, for ${baselinePeriod}`;
     // WE CANNOT ALERT ANYONE, SO WE DO NOT SAY WE WILL.
     //
     // This used to answer: "I am watching X for you. When the index next updates, I

@@ -150,7 +150,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
        <div key={i} className="chatmsg u" style={{ alignSelf: "flex-end" }}>{m.text}</div>
       ) : (
        <div key={i} className="chatmsg a">
-        <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
+        <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0, alignItems: "flex-start" }}><span style={{ color: "var(--harbor)", flex: "none", display: "inline-flex", marginTop: 3 }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500, minWidth: 0 }}>{m.text}</span></div>
         {m.band && (() => {
          // Validate through the shared guard: rejects missing, null, empty, NaN,
          // Infinity and out-of-order (low>average>high) values, and also accepts
@@ -193,8 +193,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          );
         })()}
         {m.handoffDistrict && (
-         <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600 }}>
-          <Icon.search size={14} />{ar ? `اعرض العروض الموثّقة في ${m.handoffLabel || ""}` : `See verified listings in ${m.handoffLabel || "this district"}`}
+         <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600, alignItems: "flex-start" }}>
+          <span style={{ flex: "none", display: "inline-flex", marginTop: 2 }}><Icon.search size={14} /></span><span style={{ minWidth: 0 }}>{ar ? `اعرض العروض الموثّقة في ${m.handoffLabel || ""}` : `See verified listings in ${m.handoffLabel || "this district"}`}</span>
          </Link>
         )}
         {m.results && m.results.length > 0 && (
@@ -206,8 +206,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            return (
             <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
-             <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
-             <div style={{ textAlign: ar ? "left" : "right" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
+             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} m²{dn ? " · " + dn : ""}</div></div>
+             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
             </Link>
            );
           })}
@@ -219,9 +219,9 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
 
       {tool === "value" && (
        <div className="chatmsg a" style={{ maxWidth: 640 }}>
-        <div className="row gap8" style={{ marginBottom: 12 }}><span style={{ color: "var(--harbor)" }}><Icon.chart size={16} /></span><span style={{ fontWeight: 600 }}>{av.analyserTitle}</span>
+        <div className="row gap8" style={{ marginBottom: 12 }}><span style={{ color: "var(--harbor)", flex: "none", display: "inline-flex" }}><Icon.chart size={16} /></span><span style={{ fontWeight: 600, minWidth: 0 }}>{av.analyserTitle}</span>
          <span style={{ flex: 1 }} />
-         <button onClick={() => setTool(null)} aria-label={av.closeAnalyser} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 2 }}><XIcon size={15} /></button>
+         <button onClick={() => setTool(null)} aria-label={av.closeAnalyser} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 2, flex: "none" }}><XIcon size={15} /></button>
         </div>
         {!segs && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{av.loadingBands}</div>}
         {segs && segs.length === 0 && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{av.noBands}</div>}
@@ -270,7 +270,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       {!busy && (
        <div style={{ marginBottom: 10 }}>
         <div className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "0 2px 7px" }}>{started ? (av.keepExploring) : (av.tryAsking)}</div>
-        <div className="row gap8 wrap">
+        <div className="row gap8 wrap chip-flow">
          {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
         </div>
        </div>

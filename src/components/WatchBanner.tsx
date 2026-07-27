@@ -2,6 +2,7 @@
 import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState } from "react";
 import { getWatches, markSeen, removeWatch, watchKey, type Watch } from "@/lib/watches";
+import { formatPeriod } from "@/lib/market/period";
 
 // Quiet, honest banner for device-local Rent Index watches. Fetches the same
 // published rows the Rent Index renders and flags a watched segment only when
@@ -88,8 +89,8 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
           const arrow = up ? "▲" : "▼";
           const dir = up ? wb.upWord : wb.downWord;
           const line = ar
-            ? `${m.label}: تحرّك المتوسط المنشور من ${nf(m.from)} إلى ${nf(m.to)} (${m.period})، ${dir} ${Math.abs(m.pct)}%.`
-            : `${m.label}: published average moved from ${nf(m.from)} to ${nf(m.to)} (${m.period}), ${dir} ${Math.abs(m.pct)}%.`;
+            ? `${m.label}: تحرّك المتوسط المنشور من ${nf(m.from)} إلى ${nf(m.to)} (${formatPeriod(m.period, true)})، ${dir} ${Math.abs(m.pct)}%.`
+            : `${m.label}: published average moved from ${nf(m.from)} to ${nf(m.to)} (${formatPeriod(m.period, false)}), ${dir} ${Math.abs(m.pct)}%.`;
           return (
             <div key={m.w.id} className="row gap8" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
               <div style={{ fontSize: 13, lineHeight: 1.5 }}>

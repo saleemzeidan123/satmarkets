@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { addWatch } from "@/lib/watches";
+import { formatPeriod } from "@/lib/market/period";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; }
@@ -59,8 +60,12 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
     }
     const extra: Partial<Msg> = {};
     if (aj.mode === "value" && aj.band && aj.band.average != null && aj.band.band_low != null && aj.band.band_high != null) {
-     const mnum = String(q).match(/\d[\d,]{2,}(?:\.\d+)?/);
-     const qn = mnum ? parseFloat(mnum[0].replace(/,/g, "")) : NaN;
+     // The user's comparison figure is decided ONCE, on the server, by
+     // readNumericIntent (PKG-1B.2, Codex items 1 and 2). This used to re-parse the
+     // question here with a first-number regex, so asking "what was the office band
+     // in Al Olaya in 2026" drew a "your rate" marker at 2,026 on the chart even
+     // when the prose was correct. The client now trusts the server or shows nothing.
+     const qn = typeof aj.quoted === "number" ? aj.quoted : NaN;
      extra.band = { low: Number(aj.band.band_low), average: Number(aj.band.average), high: Number(aj.band.band_high), unit: aj.band.unit };
      extra.quoted = isFinite(qn) && qn > 0 ? qn : null;
      if (aj.band.district_id) { extra.handoffDistrict = String(aj.band.district_id); extra.handoffAsset = aj.band.asset_type || null; extra.handoffLabel = (ar ? (aj.band.district_label_ar || aj.band.district_label) : aj.band.district_label) || null; }
@@ -86,7 +91,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
     else if (results.length) note = `${results.length} verified ${results.length === 1 ? "match" : "matches"}, owner-verified and deduplicated.`;
     else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
    }
-   setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? "مؤشر الإيجارات للربع الثاني 2026 · معايير منشورة منسوبة إلى مصادرها" : "Rent Index Q2 2026 · published benchmarks, attributed to source" }]);
+   setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
   } catch {
    setMsgs((m) => [...m, { role: "a", text: ar ? "حدث ما قاطع البحث. حاول مرة أخرى." : "Something interrupted the search. Please try again." }]);
   }

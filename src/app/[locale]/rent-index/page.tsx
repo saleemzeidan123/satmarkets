@@ -8,6 +8,7 @@ import { getPublishedKpis } from "@/lib/market/published";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import WatchBanner from "@/components/WatchBanner";
 import { getDictionary } from "@/i18n/getDictionary";
+import { formatPeriod } from "@/lib/market/period";
 
 const AZURE = "#3A6EA5";
 
@@ -90,7 +91,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ri.eyebrow}{pub.period ? " \u00b7 " + pub.period : ""}</div>
+      <div className="eyebrow">{ri.eyebrow}{pub.period ? " \u00b7 " + formatPeriod(pub.period, ar) : ""}</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ri.intro}</div>
      </div>
