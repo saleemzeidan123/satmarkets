@@ -4,7 +4,30 @@ import { addWatch } from "@/lib/watches";
 import { formatPeriod } from "@/lib/market/period";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
-export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; }
+export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string; }
+
+/**
+ * Every advisor request is bounded. An AI provider stall or a network hang used
+ * to leave the composer in the searching state indefinitely (observed live at
+ * over 30 seconds), with no way out except a page reload: the two fetches had no
+ * timeout and no abort. The request is now abandoned at this deadline and the
+ * failure message carries the original question back as a retry action, so the
+ * user is never trapped waiting. Applied per call, so a slow /api/advisor cannot
+ * spend the /api/search budget as well.
+ */
+export const REQUEST_TIMEOUT_MS = 20000;
+
+const isAbort = (e: unknown) => !!e && typeof e === "object" && (e as { name?: string }).name === "AbortError";
+
+async function fetchBounded(url: string, body: unknown, ms: number): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 // Bump when the persisted Msg shape changes so old prototype conversations are
 // dropped rather than deserialised into the new renderer. v1 stored band.median;
@@ -50,9 +73,22 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
   if (!q || busy) return;
   setMsgs((m) => [...m, { role: "u", text: q }]);
   setBusy(true);
+  // One failure surface for both calls. `retry` carries the exact question, so
+  // the renderer can offer a single-tap retry instead of asking the user to
+  // retype it (and instead of leaving them watching a spinner that never ends).
+  const failed = (timedOut: boolean) => {
+   setMsgs((m) => [...m, {
+    role: "a",
+    text: timedOut
+     ? (ar ? "استغرق هذا وقتاً أطول من المتوقع، فأوقفت الانتظار. يمكنك المحاولة مرة أخرى." : "That took longer than expected, so I stopped waiting. You can try again.")
+     : (ar ? "حدث ما قاطع البحث. حاول مرة أخرى." : "Something interrupted the search. Please try again."),
+    retry: q,
+   }]);
+   setBusy(false);
+  };
   try {
    const hist = msgs.slice(-6).map((mm) => ({ role: mm.role === "u" ? "user" : "assistant", text: mm.text })).filter((h) => h.text);
-   const ar1 = await fetch("/api/advisor", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q, history: hist }) });
+   const ar1 = await fetchBounded("/api/advisor", { query: q, history: hist }, REQUEST_TIMEOUT_MS);
    const aj = await ar1.json();
    if (aj?.mode && aj.mode !== "search" && aj.message) {
     if (aj.mode === "watch" && aj.band && aj.band.average != null) {
@@ -74,9 +110,14 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
     setBusy(false);
     return;
    }
-  } catch {}
+  } catch (e) {
+   // A timed-out advisor call must NOT fall through to the search call: that
+   // would double the wait the deadline exists to bound. Any other advisor
+   // failure still falls through, exactly as before.
+   if (isAbort(e)) { failed(true); return; }
+  }
   try {
-   const r = await fetch("/api/search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ query: q }) });
+   const r = await fetchBounded("/api/search", { query: q }, REQUEST_TIMEOUT_MS);
    const j = await r.json();
    const results: R[] = j.results || [];
    let note = "";
@@ -92,8 +133,9 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
     else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
    }
    setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
-  } catch {
-   setMsgs((m) => [...m, { role: "a", text: ar ? "حدث ما قاطع البحث. حاول مرة أخرى." : "Something interrupted the search. Please try again." }]);
+  } catch (e) {
+   failed(isAbort(e));
+   return;
   }
   setBusy(false);
  }

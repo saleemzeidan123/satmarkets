@@ -112,6 +112,11 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
         ) : (
          <div key={i} className="chatmsg a">
           <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
+          {m.retry && (
+           <button className="btn secondary sm" style={{ marginTop: 8 }} disabled={busy} onClick={() => send(m.retry as string)}>
+            {ar ? "أعد المحاولة" : "Try again"}
+           </button>
+          )}
           {m.results && m.results.length > 0 && (
            <div className="col gap8">
             {m.results.slice(0, 3).map((l) => {

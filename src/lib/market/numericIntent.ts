@@ -149,8 +149,16 @@ export function readNumericIntent(raw: string): NumericIntent {
     if (BUDGET_BEFORE.test(before) || CURRENCY_AFTER.test(after)) { budgets.push(value); continue; }
     // A year needs either an explicit cue, or a bare in-range integer written
     // without a thousands separator. "2,000" is a quantity, "2026" is a year.
+    //
+    // PRECEDENCE CORRECTION (Codex, 27 July). The bare-integer default outranked
+    // the sentence-level comparison fallback, so "Is 2000 fair for an Al Olaya
+    // office?" was read as a request about the year 2000 and answered with a
+    // historical-period refusal. The sentence is an explicit rent comparison and
+    // carries no year cue, so 2000 is the proposed rent. An explicit cue ("in
+    // 2000", "for 2000", "عام 2000", "the 2000 band") still wins outright; the
+    // bare-integer default now applies only when comparison intent is absent.
     const cued = YEAR_BEFORE.test(before) || YEAR_AFTER.test(after);
-    if (isYearValue(value) && (cued || !hasSep)) { years.push(value); continue; }
+    if (isYearValue(value) && (cued || (!hasSep && !comparison))) { years.push(value); continue; }
     unclaimed.push({ value, hasSep });
   }
 

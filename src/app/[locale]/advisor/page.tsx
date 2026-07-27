@@ -192,6 +192,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           </div>
          );
         })()}
+        {m.retry && (
+         // A failed or timed-out request offers its own way out: one tap resends
+         // the same question, so a provider stall never dead-ends the session.
+         <button className="btn secondary sm" style={{ marginTop: 10 }} disabled={busy} onClick={() => send(m.retry as string)}>
+          {ar ? "أعد المحاولة" : "Try again"}
+         </button>
+        )}
         {m.handoffDistrict && (
          <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600, alignItems: "flex-start" }}>
           <span style={{ flex: "none", display: "inline-flex", marginTop: 2 }}><Icon.search size={14} /></span><span style={{ minWidth: 0 }}>{ar ? `اعرض العروض الموثّقة في ${m.handoffLabel || ""}` : `See verified listings in ${m.handoffLabel || "this district"}`}</span>

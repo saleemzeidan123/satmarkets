@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type RowLike } from "./valueEvidence";
+import { arPeriodPhrase, buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type RowLike } from "./valueEvidence";
 import { formatPeriod } from "./period";
 
 // The real Al Olaya all-office row (the exact P0 case Codex retested).
@@ -25,7 +25,7 @@ const AL_OLAYA_OFFICE: RowLike = {
 // form "2026-Q2" would leave a bare "2026" behind and count it as a rent.
 function rentFigures(text: string, period: string): string[] {
   let cleaned = text;
-  for (const form of [period, formatPeriod(period, false), formatPeriod(period, true)]) {
+  for (const form of [period, formatPeriod(period, false), formatPeriod(period, true), arPeriodPhrase(period)]) {
     cleaned = cleaned.split(form).join(" ");
   }
   return (cleaned.match(/\d[\d,]*(?:\.\d+)?/g) || []).filter((t) => {
@@ -53,7 +53,7 @@ test("a general-office band cannot become a Grade A band (EN and AR)", () => {
   assert.ok(/cannot present it as a Grade A band/i.test(en), en);
   assert.ok(/covers the whole segment, not a single grade/i.test(en), en);
   assert.ok(/لا يمكنني تقديمه كنطاق/.test(ar), ar);
-  assert.ok(/يغطي الفئة كاملة/.test(ar), ar);
+  assert.ok(/يغطي النطاق المنشور قطاع المكاتب ككل/.test(ar), ar);
 });
 
 test("EN and AR expose the same numeric set from the same evidence", () => {
@@ -156,7 +156,7 @@ test("Codex 5: no raw storage period reaches the reader, in either language", ()
     assert.ok(!out.includes("2026-Q2"), `raw period leaked in ${loc}: ${out}`);
   }
   assert.ok(renderValue(ev, "en").includes("Q2 2026"));
-  assert.ok(renderValue(ev, "ar").includes("الربع الثاني 2026"));
+  assert.ok(renderValue(ev, "ar").includes("الربع الثاني من عام 2026"));
   // A year-only request has no quarter and renders as the plain year.
   assert.equal(displayPeriod("2025", false), "2025");
   assert.equal(displayPeriod("2025", true), "2025");
@@ -171,8 +171,8 @@ test("Codex 3: an unavailable period is stated, not silently substituted", () =>
   assert.ok(/newest published period is Q2 2026/i.test(en), en);
   assert.ok(/not an answer for 2025/i.test(en), en);
   const ar = renderValue(ev, "ar");
-  assert.ok(ar.includes("للفترة 2025"), ar);
-  assert.ok(ar.includes("أحدث فترة منشورة هي الربع الثاني 2026"), ar);
+  assert.ok(ar.includes("لعام 2025"), ar);
+  assert.ok(ar.includes("أحدث فترة منشورة هي الربع الثاني من عام 2026"), ar);
   // The 2025 in the question is never rendered as the user's rent.
   assert.ok(!/Your figure/i.test(en), en);
   assert.ok(!/رقمك/.test(ar), ar);
@@ -195,4 +195,50 @@ test("Codex 1 and 2: a year question produces no user figure in either language"
   assert.ok(!/2,026/.test(ar), ar);
   assert.ok(!/sits (above|below|within) the band/i.test(en), en);
   assert.ok(!/رقمك/.test(ar), ar);
+});
+
+// ===== Codex closure patch (27 July): Arabic surface grammar =====
+// The strings below were correct data and wrong Arabic: a one-letter preposition
+// glued to a bare noun ("بـفئة A", "لـمكاتب") and a quarter apposed to "الفترة"
+// ("للفترة الربع الثاني 2026"). They are now grammar, not concatenation.
+
+test("Codex closure: no detached prefix and no apposed period in the Arabic answer", () => {
+  const cases = [
+    buildValueEvidence(AL_OLAYA_OFFICE, null, null)!,
+    buildValueEvidence(AL_OLAYA_OFFICE, detectRequestedSegment("فئة A"), 1600)!,
+    buildValueEvidence(AL_OLAYA_OFFICE, null, null, { requested: "2025", status: "unavailable" })!,
+    buildValueEvidence(AL_OLAYA_OFFICE, null, null, { requested: "2025-Q3", status: "unavailable" })!,
+  ];
+  for (const ev of cases) {
+    const ar = renderValue(ev, "ar");
+    assert.ok(!ar.includes("بـ"), ar);
+    assert.ok(!ar.includes("لـ"), ar);
+    assert.ok(!ar.includes("للفترة"), ar);
+    assert.ok(!/[٠-٩۰-۹]/.test(ar), ar);
+  }
+  const general = renderValue(cases[0], "ar");
+  assert.ok(general.startsWith("يتراوح نطاق مؤشر الإيجارات للمكاتب في العليا"), general);
+  assert.ok(general.includes("في الربع الثاني من عام 2026"), general);
+  const mismatch = renderValue(cases[1], "ar");
+  assert.ok(mismatch.includes("نطاقاً خاصاً بالفئة A"), mismatch);
+  assert.ok(mismatch.includes("يغطي النطاق المنشور قطاع المكاتب ككل"), mismatch);
+  assert.ok(renderValue(cases[2], "ar").includes("لعام 2025"), renderValue(cases[2], "ar"));
+  assert.ok(renderValue(cases[3], "ar").includes("للربع الثالث من عام 2025"), renderValue(cases[3], "ar"));
+});
+
+test("Codex closure: the Arabic unit cannot break after the slash", () => {
+  const ev = buildValueEvidence(AL_OLAYA_OFFICE, null, null)!;
+  const ar = renderValue(ev, "ar");
+  assert.ok(ar.includes("ريال⁠/⁠م²⁠·⁠سنة"), JSON.stringify(ar));
+  // The joiner is invisible: strip it and the unit reads exactly as written.
+  assert.ok(ar.replace(/⁠/g, "").includes("ريال/م²·سنة"));
+  // English is untouched.
+  assert.ok(!/⁠/.test(renderValue(ev, "en")));
+});
+
+test("Codex closure: an Arabic period phrase never leaks the raw storage form", () => {
+  assert.equal(arPeriodPhrase("2026-Q2"), "الربع الثاني من عام 2026");
+  assert.equal(arPeriodPhrase("2025"), "عام 2025");
+  assert.equal(arPeriodPhrase("2025-Q3"), "الربع الثالث من عام 2025");
+  assert.equal(arPeriodPhrase(null), "");
 });

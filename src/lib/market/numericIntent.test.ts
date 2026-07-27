@@ -99,6 +99,41 @@ test("an explicit quarter is parsed in both languages and both orders", () => {
   assert.equal(detectRequestedPeriod("What is the office band in Al Olaya?", []), null);
 });
 
+// Codex closure patch (27 July). A bare in-range integer used to be claimed as a
+// year before the sentence-level comparison fallback could ever see it, so an
+// explicit rent comparison whose figure happens to fall in 1900-2100 was answered
+// with a historical-period refusal. Comparison intent now outranks the bare-integer
+// year default; an EXPLICIT year cue still outranks both.
+
+test("Codex closure: an in-range rent in a comparison sentence is a rent, not a year (EN)", () => {
+  const n = readNumericIntent("Is 2000 fair for an Al Olaya office?");
+  assert.equal(n.rent, 2000);
+  assert.equal(n.rentBasis, "comparison");
+  assert.deepEqual(n.years, []);
+  assert.equal(n.requestedPeriod, null);
+});
+
+test("Codex closure: the same holds in Arabic", () => {
+  const n = readNumericIntent("هل 2000 مناسب لمكتب في العليا؟");
+  assert.equal(n.rent, 2000);
+  assert.equal(n.rentBasis, "comparison");
+  assert.deepEqual(n.years, []);
+  assert.equal(n.requestedPeriod, null);
+});
+
+test("Codex closure: an explicit year cue still wins, even for the same figure", () => {
+  const n = readNumericIntent("What was the office band in Al Olaya in 2000?");
+  assert.equal(n.rent, null);
+  assert.equal(n.rentBasis, null);
+  assert.deepEqual(n.years, [2000]);
+  assert.equal(n.requestedPeriod, "2000");
+  // And a cue INSIDE a comparison sentence keeps the year a year.
+  const both = readNumericIntent("Is 1,600 SAR/m² fair for an Al Olaya office in 2000?");
+  assert.equal(both.rent, 1600);
+  assert.equal(both.rentBasis, "unit");
+  assert.deepEqual(both.years, [2000]);
+});
+
 test("a thousands-separated quantity is not mistaken for a year", () => {
   // "2,000" is a quantity; "2026" with no separator is a year. This is the rule that
   // stops an area request being answered as a period request.

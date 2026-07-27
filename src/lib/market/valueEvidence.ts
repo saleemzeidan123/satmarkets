@@ -16,7 +16,7 @@
 // rather than leaking the raw "2026-Q2" storage form into user-facing prose.
 
 import { assetLabel } from "@/lib/labels";
-import { formatPeriod } from "@/lib/market/period";
+import { formatPeriod, parsePeriod } from "@/lib/market/period";
 
 /** Whether the answer is built from the period the user actually asked for. */
 export type PeriodStatus = "match" | "unavailable" | "none";
@@ -155,10 +155,73 @@ export function displayPeriod(period: string | null | undefined, ar: boolean): s
   return formatPeriod(p, ar);
 }
 
+// The Arabic unit is one token to a reader, but a browser will happily break a
+// line after the slash and after the middle dot, which at 320px split
+// "ريال/م²·سنة" across two lines mid-unit. U+2060 WORD JOINER removes those
+// break opportunities without adding a visible character or a space. It cannot
+// cause horizontal overflow: the advisor bubble already carries
+// overflow-wrap:anywhere, which still breaks the token if a line genuinely
+// cannot hold it. Only the deterministic advisor answer is treated here; the
+// listing and analyser surfaces render the unit in their own layouts.
+const WJ = "⁠";
+const arUnit = (s: string) => s.replace(/([/·])/g, `${WJ}$1${WJ}`);
+
 function unitLabel(unit: string, ar: boolean): string {
-  if (/m2\/yr|m²\/yr|sqm\/yr/i.test(unit)) return ar ? "ريال/م²·سنة" : "SAR/m²/year";
-  if (/m2\/mo|m²\/mo/i.test(unit)) return ar ? "ريال/م²·شهر" : "SAR/m²/month";
+  if (/m2\/yr|m²\/yr|sqm\/yr/i.test(unit)) return ar ? arUnit("ريال/م²·سنة") : "SAR/m²/year";
+  if (/m2\/mo|m²\/mo/i.test(unit)) return ar ? arUnit("ريال/م²·شهر") : "SAR/m²/month";
   return unit;
+}
+
+// ===== Arabic surface grammar for the deterministic answer =====
+//
+// The first pass built Arabic sentences by gluing a one-letter preposition to a
+// bare label ("لـ" + "مكاتب") and by labelling every period with the same
+// noun+apposition ("للفترة الربع الثاني 2026"). Both are correct data and wrong
+// Arabic: a single-letter preposition attaches to the DEFINITE noun (للمكاتب,
+// بالفئة A) and a quarter reads as a phrase, not as an apposition to "الفترة".
+// The helpers below keep that grammar in one place so no sentence can drift.
+
+// Definite plural form of each asset noun as it is used after a preposition or
+// after "قطاع". Written out rather than derived, because Arabic definiteness in
+// a compound label is not a prefix operation ("سكن عمالة" is "سكن العمالة", not
+// "السكن عمالة").
+const AR_ASSET_DEFINITE: Record<string, string> = {
+  office: "المكاتب",
+  retail: "التجزئة والمطاعم",
+  medical: "الرعاية الصحية",
+  showroom: "المعارض",
+  warehouse: "المستودعات",
+  serviced: "المكاتب المخدومة",
+  education: "التعليم",
+  hospitality: "الضيافة",
+  mixed_use: "المباني متعددة الاستخدامات",
+  land: "الأراضي",
+  gas_station: "محطات الوقود",
+  entertainment: "الترفيه",
+  wedding_hall: "قاعات المناسبات",
+  worker_housing: "سكن العمالة",
+  self_storage: "التخزين الذاتي",
+};
+const arAssetDefinite = (t: string) => AR_ASSET_DEFINITE[t] ?? assetLabel(t, "ar");
+
+/** "ل" + "المكاتب" contracts to "للمكاتب"; every other prefix simply attaches. */
+function arPrefix(p: "ل" | "ب", noun: string): string {
+  if (p === "ل" && noun.startsWith("ال")) return `لل${noun.slice(2)}`;
+  return `${p}${noun}`;
+}
+
+/**
+ * A period as Arabic prose, with NO leading preposition so each sentence can
+ * attach the one it needs. "2026-Q2" reads "الربع الثاني من عام 2026" and a
+ * year-only request reads "عام 2025". The quarter word itself still comes from
+ * the shared formatPeriod, so EN and AR cannot disagree on which quarter it is.
+ */
+export function arPeriodPhrase(period: string | null | undefined): string {
+  const p = String(period ?? "").trim();
+  if (/^\d{4}$/.test(p)) return `عام ${p}`;
+  const parsed = parsePeriod(p);
+  if (!parsed) return p;
+  return `${formatPeriod(p, true).replace(/\s*\d{4}\s*$/, "")} من عام ${parsed.year}`;
 }
 
 function sourceLabel(source: string, ar: boolean): string {
@@ -184,9 +247,15 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
   const unit = unitLabel(ev.unit, ar);
   const src = sourceLabel(ev.source, ar);
   const period = displayPeriod(ev.period, ar);
+  // Arabic prose forms: the definite asset noun, the period as a phrase, and the
+  // two range shapes ("يتراوح ... بين ... و..." for the answer proper, "يمتد هذا
+  // النطاق من ... إلى ..." for the context sentence after a scope refusal).
+  const arAsset = arAssetDefinite(ev.assetType);
+  const arPeriod = arPeriodPhrase(ev.period);
   const bandPhrase = ar
     ? `من ${fmt(ev.low)} إلى ${fmt(ev.high)} ${unit}، بمتوسط ${fmt(ev.average)}`
     : `${fmt(ev.low)} to ${fmt(ev.high)} ${unit}, averaging ${fmt(ev.average)}`;
+  const arBetween = `بين ${fmt(ev.low)} و${fmt(ev.high)} ${unit}، بمتوسط ${fmt(ev.average)}`;
   const pos = position(ev);
   const posSentence = () => {
     if (pos === null || ev.userFigure === null) return "";
@@ -203,22 +272,25 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
   // that was actually asked (Codex item 3).
   const unavailable = ev.periodStatus === "unavailable" && ev.requestedPeriod;
   const req = displayPeriod(ev.requestedPeriod, ar);
+  const arReq = arPeriodPhrase(ev.requestedPeriod);
   const lead = !unavailable
     ? ""
     : ar
-      ? `لا ينشر مؤشر الإيجارات أرقام ${assetLower} في ${loc} للفترة ${req}. أحدث فترة منشورة هي ${period}، لذلك لا يمكنني الإجابة عن ${req}. الأرقام التالية للفترة ${period} فقط، وليست جواباً عن ${req}. `
+      ? `لا ينشر مؤشر الإيجارات أرقام ${arAsset} في ${loc} ${arPrefix("ل", arReq)}. أحدث فترة منشورة هي ${arPeriod}، لذلك لا يمكنني الإجابة عن ${arReq}. الأرقام التالية تخص ${arPeriod} فقط، وليست جواباً عن ${arReq}. `
       : `The Rent Index does not publish ${assetLower} figures for ${loc} for ${req}. The newest published period is ${period}, so I cannot answer for ${req}. The figures below are for ${period} only and are not an answer for ${req}. `;
 
   if (ev.supportStatus === "segment_mismatch") {
     const reqLabel = (ar ? ev.requestedSegmentLabelAr : ev.requestedSegmentLabelEn) || (ar ? "تلك الفئة" : "that grade");
     if (ar) {
-      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً بـ${reqLabel} في ${loc}. النطاق المنشور لـ${assetLower} يغطي الفئة كاملةً وليس درجة بعينها، لذلك لا يمكنني تقديمه كنطاق ${reqLabel}. كسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
+      // "الفئة A" so the preposition attaches as بالفئة A, never as بـفئة A.
+      const grade = ev.requestedSegmentLabelAr ? `ال${ev.requestedSegmentLabelAr}` : "تلك الفئة";
+      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً ${arPrefix("ب", grade)} في ${loc}. يغطي النطاق المنشور قطاع ${arAsset} ككل، وليس درجةً بعينها، لذلك لا يمكنني تقديمه كنطاق ${grade}. وكسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، في ${arPeriod}.${posSentence()} المصدر: ${src}.`;
     }
     return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. As general market context, that band runs ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
   }
 
   if (ar) {
-    return `${lead}نطاق مؤشر الإيجارات لـ${assetLower} في ${loc} ${bandPhrase}، للفترة ${period}.${posSentence()} المصدر: ${src}.`;
+    return `${lead}يتراوح نطاق مؤشر الإيجارات ${arPrefix("ل", arAsset)} في ${loc} ${arBetween}، في ${arPeriod}.${posSentence()} المصدر: ${src}.`;
   }
   return `${lead}The Rent Index ${assetLower} band for ${loc} is ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
 }
