@@ -49,12 +49,16 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const priceStr = price != null
     ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", loc, "long", 0) : formatMoney(Number(price), loc))
     : dict.ld.onRequest;
-  // Both qualifiers are dropped when the title already carries them, which is
-  // what stopped the English title reading "Serviced offices, Al Aqiq, Serviced".
+  // The title names the listing and the place. The type belongs in the
+  // description, which opens with it in both languages, and not in the title:
+  // the only available guard is substring containment, and Arabic inflects, so
+  // the same listing showed the tail in Arabic and not in English (مكتبي does
+  // not contain مكاتب), and when it did appear it read "Corniche Retail, Ash
+  // Shati, Retail & F&B". A district name is a proper noun and does appear
+  // verbatim in a title, so that guard stays and stays symmetric.
   const has = (needle: string) => needle.length > 0 && t0.toLowerCase().includes(needle.toLowerCase());
-  const typeSeg = has(type) ? "" : fill(dict.ld.metaType, { type });
-  const inSeg = has(dn) ? "" : fill(dict.ld.metaIn, { place: dn });
-  const title = fillProse(dict.ld.metaTitle, { title: t0, type: typeSeg, in: inSeg });
+  const inSeg = has(String(dn)) ? "" : fill(dict.ld.metaIn, { place: dn });
+  const title = fillProse(dict.ld.metaTitle, { title: t0, in: inSeg });
   const description = fillProse(dict.ld.metaDesc, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
   return localeMeta(params.locale, `/listings/${params.id}`, title, description, { type: "article" });
 }
