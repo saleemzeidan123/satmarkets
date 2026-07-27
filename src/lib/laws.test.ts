@@ -156,7 +156,11 @@ test("law: sitemap, held-out routes and private prefixes agree", () => {
   for (const p of PRIVATE_PREFIXES) {
     assert.ok(!SITEMAP_ROUTES.includes(p), `${p} is private but present in the sitemap`);
   }
-  for (const must of ["/verify", "/ops", "/proto", "/compare"]) {
+  // /login and /hbu were added in PKG-1C.1: /login is an authentication surface
+  // with nothing to index, /hbu is a demonstration whose every figure and every
+  // named comparable is simulated. Pinning them here keeps the ruling from being
+  // undone by an unrelated edit to the array.
+  for (const must of ["/verify", "/ops", "/proto", "/compare", "/login", "/hbu"]) {
     assert.ok(PRIVATE_PREFIXES.includes(must), `${must} missing from PRIVATE_PREFIXES`);
   }
   for (const must of ["/area", "/pricing", "/neutrality", "/about"]) {
