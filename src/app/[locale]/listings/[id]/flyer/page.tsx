@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { photoFor } from "@/lib/photos";
+import { fill } from "@/lib/format";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { Logo } from "@/components/satkit";
 import PrintButton from "@/components/PrintButton";
@@ -92,9 +93,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
             </div>
           )}
           <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
-            {ar
-              ? `${pub.officeRent != null ? `متوسط المكاتب ${pub.officeRent.toLocaleString()} ريال/م²·سنة. ` : ""}المصدر: المؤشر الإيجاري (إيجار)، متوسط العقود المسجّلة. سياق استرشادي، ليس نصيحة.`
-              : `${pub.officeRent != null ? `Office average ${pub.officeRent.toLocaleString()} SAR/m²·yr. ` : ""}Source: REGA Rental Index (Ejar), average of registered rental contracts. Indicative, not advice.`}
+            {`${pub.officeRent != null ? fill(t.officeAvg, { rate: pub.officeRent.toLocaleString("en-US") }) : ""}${t.indexSource}`}
           </div>
         </div>
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>

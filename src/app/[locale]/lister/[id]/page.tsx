@@ -6,7 +6,7 @@ import { assetLabel, cityLabel } from "@/lib/labels";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
-import { fill } from "@/lib/format";
+import { fill, formatArea, formatCounted, formatMoney, formatWithUnit } from "@/lib/format";
 
 // A lister's PUBLIC profile: who they are, and every space they have live. Reads the
 // listers_public view (the safe projection, only for accounts with a published
@@ -65,17 +65,13 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
 
   const name = (ar ? p.name_ar : p.name_en) || p.name_en || "";
   const about = (ar ? p.about_ar : p.about_en) || p.about_en || p.about_ar || "";
-  const role = p.lister_type === "broker" ? (ar ? "وسيط مرخّص" : "Licensed broker") : (ar ? "مالك" : "Owner");
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
-  const t = ar
-    ? { spaces: "المساحات المعروضة", none: "لا مساحات معروضة حالياً.", website: "الموقع", verified: "موثّق", contact: "تواصل", onReq: "عند الطلب",
-        spacesLive: "مساحة معروضة", forLease: "للإيجار", forSale: "للبيع", since: "على سات ماركتس منذ",
-        verifiedBy: "الهوية موثّقة من سات ماركتس",
-        operator: "شركة سات العقارية تُشغّل هذا السوق وتُدرج عروضها كوسيط مرخّص كأي مُعلن آخر، دون أي شارة أو أفضلية لا يستطيع غيرها الحصول عليها." }
-    : { spaces: "Spaces on the market", none: "No spaces are live right now.", website: "Website", verified: "Verified", contact: "Contact", onReq: "On request",
-        spacesLive: "live spaces", forLease: "for lease", forSale: "for sale", since: "On SAT Markets since",
-        verifiedBy: "Identity verified by SAT",
-        operator: "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn." };
+  // This page used to carry its own private EN and AR object, so its copy sat
+  // outside the dictionaries and outside the controlled vocabulary entirely. It
+  // reads the shared section now, and the live-space count is a real plural
+  // rather than one Arabic noun form printed after every number.
+  const t = dict.listerPage;
+  const role = p.lister_type === "broker" ? t.roleBroker : t.roleOwner;
 
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
@@ -99,7 +95,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
           )}
           {/* Dossier stat strip: facts true OF the lister. No ratings, no tiers. */}
           <div className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center", fontSize: 13, color: "var(--slate)" }}>
-            <span><strong style={{ color: "var(--ink)", fontWeight: 700 }}>{rows.length}</strong> {t.spacesLive}</span>
+            <span style={{ color: "var(--ink)", fontWeight: 700 }}>{formatCounted(rows.length, "liveSpace", lp)}</span>
             {leaseCount > 0 && <><span aria-hidden="true">·</span><span>{leaseCount} {t.forLease}</span></>}
             {saleCount > 0 && <><span aria-hidden="true">·</span><span>{saleCount} {t.forSale}</span></>}
             {memberYear && <><span aria-hidden="true">·</span><span>{t.since} <bdi dir="ltr">{memberYear}</bdi></span></>}
@@ -130,9 +126,12 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
                 <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                   <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
                   <div className="body" style={{ padding: "10px 12px 12px" }}>
-                    <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price != null ? Number(price).toLocaleString("en-US") : t.onReq}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{price != null ? (l.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
+                    {/* The price and its unit were assembled here from four inline
+                        strings, which is how an Arabic card could show a Latin unit.
+                        Both now come from the shared unit formatter. */}
+                    <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price == null ? t.onReq : l.deal_type === "lease" ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)}</div>
                     <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                    <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
+                    <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · {formatArea(l.area_sqm, lp)}</div>
                   </div>
                 </Link>
               );

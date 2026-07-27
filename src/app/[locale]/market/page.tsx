@@ -2,7 +2,8 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel } from "@/lib/labels";
+import { assetLabel, segmentLabel } from "@/lib/labels";
+import { fill, formatCounted } from "@/lib/format";
 import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
@@ -21,6 +22,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
   const locale = params.locale;
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").marketPage;
+  const brand = getDictionary(ar ? "ar" : "en").appMeta.appName;
   const sb = getSupabaseServer();
   const nf = (n: number) => n.toLocaleString("en-US");
 
@@ -39,7 +41,12 @@ export default async function MarketPage({ params }: { params: { locale: string 
   }
 
   const officeRows = idxRows.filter((r) => r.asset_type === "office" && isSqmYear(r.unit) && r.median != null);
-  const gradeSuffix = (seg: string) => { const m: Record<string, [string, string]> = { grade_a: ["Grade A", "فئة أ"], grade_b: ["Grade B", "فئة ب"], grade_c: ["Grade C", "فئة ج"] }; const g = m[seg]; return g ? " · " + (ar ? g[1] : g[0]) : ""; };
+  // The segment wording is controlled vocabulary and lives in labels.ts, where the
+  // listing pages and the index already read it. It was duplicated here as six
+  // inline strings, which is how "فئة A" and "فئة أ" came to coexist on the site.
+  // Only the grade segments qualify a row here: the chart is office bands by
+  // district, and an "all" row is the district itself with nothing to add.
+  const gradeSuffix = (seg: string) => (seg.startsWith("grade_") ? " · " + segmentLabel(seg, locale) : "");
   const bandRows = officeRows
     .map((r) => ({ label: ((ar ? r.district_label_ar : r.district_label) || r.district_label) + gradeSuffix(r.segment), low: Number(r.band_low ?? r.median), med: Number(r.median), high: Number(r.band_high ?? r.median), seg: r.segment }))
     .sort((a, b) => b.med - a.med)
@@ -78,9 +85,9 @@ export default async function MarketPage({ params }: { params: { locale: string 
   ];
 
   const disc = [
-    { n: below, p: pct(below), c: "var(--dv-quote-below)", en: "Below their index band", arb: "أقل من نطاق المؤشر" },
-    { n: within, p: pct(within), c: "var(--dv-quote-within)", en: "Within their index band", arb: "ضمن نطاق المؤشر" },
-    { n: above, p: pct(above), c: "var(--dv-quote-above)", en: "Above their index band", arb: "أعلى من نطاق المؤشر" },
+    { n: below, p: pct(below), c: "var(--dv-quote-below)", label: t.quoteBelow },
+    { n: within, p: pct(within), c: "var(--dv-quote-within)", label: t.quoteWithin },
+    { n: above, p: pct(above), c: "var(--dv-quote-above)", label: t.quoteAbove },
   ];
 
   return (
@@ -91,13 +98,16 @@ export default async function MarketPage({ params }: { params: { locale: string 
       ] }} />
       <JsonLd data={{
         "@type": "Dataset",
-        name: `Riyadh Commercial Market Pulse${period ? ", " + period : ""}`,
+        // Structured data is prose a machine reads, and it was pinned to English
+        // on a page that declares itself bilingual. It follows the locale now,
+        // like everything else the page says.
+        name: t.datasetName + (period ? ", " + period : ""),
         url: `${SITE}/${locale}/market`,
         inLanguage: ["ar", "en"],
-        description: "Commercial rent indicators for Riyadh derived from the REGA Rental Index (Ejar), compiled by SAT Markets. Figures are averages of registered rental contracts. Indicative market context, not advice.",
-        creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
-        isBasedOn: ["REGA Rental Index (Ejar), registered rental contracts"],
-        spatialCoverage: "Riyadh, Saudi Arabia",
+        description: t.datasetDesc,
+        creator: { "@type": "Organization", name: brand, url: SITE },
+        isBasedOn: [t.datasetSource],
+        spatialCoverage: t.datasetCoverage,
       }} />
       <div className="eyebrow">{t.eyebrow}</div>
       <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{t.h1}</h1>
@@ -161,18 +171,18 @@ export default async function MarketPage({ params }: { params: { locale: string 
               <span style={{ width: `${listings.length ? (leaseN / listings.length) * 100 : 50}%`, background: "var(--harbor)" }} />
               <span style={{ flex: 1, background: "rgba(58,110,165,.25)" }} />
             </div>
-            <span className="mono" style={{ fontSize: 11.5, color: "var(--slate)", flex: "none" }}>{ar ? `إيجار ${nf(leaseN)} · بيع ${nf(saleN)}` : `${nf(leaseN)} lease · ${nf(saleN)} sale`}</span>
+            <span className="mono" style={{ fontSize: 11.5, color: "var(--slate)", flex: "none" }}>{fill(t.leaseSaleSplit, { lease: nf(leaseN), sale: nf(saleN) })}</span>
           </div>
         </section>
 
         <section className="card" style={{ padding: "22px 24px" }}>
           <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.pricingTitle}</h2>
-          <p className="muted" style={{ fontSize: 12.5, marginTop: 6, lineHeight: 1.55 }}>{ar ? `من بين ${nf(graded)} عرض إيجار له شريحة مؤشر كافية، هكذا تقع الأسعار المطلوبة مقابل نطاق المؤشر.` : `Of ${nf(graded)} lease listings with a sufficient index segment, this is where asking rents sit against their band.`}</p>
+          <p className="muted" style={{ fontSize: 12.5, marginTop: 6, lineHeight: 1.55 }}>{fill(t.quoteIntro, { count: formatCounted(graded, "leaseListing", locale) })}</p>
           <div style={{ marginTop: 14 }}>
             {disc.map((d, i) => (
               <div key={i} style={{ padding: "8px 0" }}>
                 <div className="row between" style={{ fontSize: 12.5, marginBottom: 5 }}>
-                  <span style={{ fontWeight: 600 }}>{ar ? d.arb : d.en}</span>
+                  <span style={{ fontWeight: 600 }}>{d.label}</span>
                   <span className="mono" style={{ color: d.c, fontWeight: 700 }}>{d.n} · {d.p}%</span>
                 </div>
                 <div style={{ height: 10, background: "var(--cool)", borderRadius: 5 }}>

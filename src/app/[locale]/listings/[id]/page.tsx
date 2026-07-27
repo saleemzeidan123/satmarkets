@@ -7,7 +7,7 @@ import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, fillProse, formatArea, formatMoney, formatWithUnit } from "@/lib/format";
+import { fill, fillProse, formatArea, formatCounted, formatMoney, formatNumber, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -66,7 +66,11 @@ export async function generateMetadata({ params }: { params: { locale: string; i
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale; const ar = locale === "ar";
-  const dict = getDictionary(locale as "en" | "ar");
+  // The label helpers take a loose string, but the number, unit and plural
+  // formatters are typed to the two locales the site actually has. One narrowed
+  // binding here keeps every formatter call on this page honest.
+  const lp = locale as "en" | "ar";
+  const dict = getDictionary(lp);
   const sb = getSupabaseServer();
   const l: any = await getListingById(params.id);
   const lister = await getLister(l?.account_id);
@@ -201,7 +205,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           </div>
           <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
           <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
-            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span><bdi dir="ltr">{l.area_sqm} m²</bdi></span>
+            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span>{formatArea(l.area_sqm, lp)}</span>
             {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
           {/* WHO FILED THIS. A byline under the headline, not a footnote at the tail of
@@ -219,7 +223,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             const months = Number.isFinite(vt) ? Math.max(0, Math.floor((Date.now() - vt) / 2629800000)) : 0;
             const stale = months >= 12;
             const yrs = Math.floor(months / 12);
-            const ageTxt = !stale ? null : (yrs >= 2 ? (ar ? `أكثر من ${yrs} سنوات` : `over ${yrs} years ago`) : (ar ? "أكثر من سنة" : "over a year ago"));
+            // The Arabic side printed "سنوات" after every number, which is right
+            // for three to ten and wrong for eleven and up. The counted noun knows
+            // the rule; the sentence around it lives in the dictionaries.
+            const ageTxt = !stale ? null : (yrs >= 2 ? fill(dict.ld.verifiedAgeYears, { age: formatCounted(yrs, "year", lp) }) : dict.ld.verifiedAgeYear);
             return dtxt ? (
               <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: stale ? "var(--slate)" : "var(--verified)", fontSize: 12.5 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
@@ -257,7 +264,11 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             name: title,
             url: `${SITE}/${locale}/listings/${l.id}`,
             inLanguage: ar ? "ar" : "en",
-            provider: { "@type": "Organization", name: "SAT Markets", url: SITE },
+            // The structured data declares inLanguage, so the human-readable
+            // strings inside it are the page's language too. The operator name
+            // and the two price descriptions were the last three English
+            // literals an Arabic page emitted.
+            provider: { "@type": "Organization", name: dict.appMeta.appName, url: SITE },
             // SM-P1-004: a lease price here is SAR per square metre PER YEAR, not a
             // total. Emitting it as a flat offers.price told Google (and any other
             // consumer) that a 2,600 SAR/m2/yr office costs 2,600 SAR. A rate needs
@@ -274,13 +285,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                           price: Number(price),
                           priceCurrency: "SAR",
                           unitCode: "MTK",              // square metre
-                          unitText: "SAR per square metre per year",
+                          unitText: dict.ld.ldUnitText,
                           billingDuration: 1,
                           billingIncrement: 1,
                           referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "ANN" },
                         },
                       }
-                    : { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: "Asking sale price, SAR" },
+                    : { "@type": "Offer", price: Number(price), priceCurrency: "SAR", description: dict.ld.ldSalePrice },
                 }
               : {}),
             ...(l.area_sqm ? { floorSize: { "@type": "QuantitativeValue", value: l.area_sqm, unitCode: "MTK" } } : {}),
@@ -308,17 +319,21 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
             {(() => {
               const T = (dict as any).ld;
-              const numf = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+              // Every tile below used to carry its own unit string, which is how the
+              // Arabic page came to print a Latin "m²" and "kVA" beside Arabic labels
+              // and how the parking line hand-built a counted phrase. The unit table
+              // and the money and area formatters answer all of them, and they carry
+              // the bidi isolation the raw concatenations were missing.
               const tiles: ([string, string] | null)[] = [
-                [dict.ld.area, `${l.area_sqm} m²`],
+                [dict.ld.area, formatArea(l.area_sqm, lp)],
                 (l.building_grade && l.building_grade !== "n_a") ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null,
                 (l.fitout_condition && l.fitout_condition !== "n_a") ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null,
-                l.clear_height_m != null ? [T.clearHeight, numf(l.clear_height_m) + (ar ? " م" : " m")] : null,
-                l.loading_docks != null ? [T.loadingDocks, numf(l.loading_docks)] : null,
-                l.power_kva != null ? [T.power, numf(l.power_kva) + " kVA"] : null,
-                l.parking_ratio != null ? [T.parking, `1 ${ar ? "موقف / " : "space / "}${numf(l.parking_ratio)} ${ar ? "م²" : "m²"}`] : null,
-                l.civil_defense_approved ? [T.civilDefense, ar ? "معتمد" : "Approved"] : null,
-                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? Number(price).toLocaleString() + (lease ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : (dict.ld.onRequest)],
+                l.clear_height_m != null ? [T.clearHeight, formatWithUnit(Number(l.clear_height_m), "metre", lp, "long", 2)] : null,
+                l.loading_docks != null ? [T.loadingDocks, formatNumber(Number(l.loading_docks), lp)] : null,
+                l.power_kva != null ? [T.power, formatWithUnit(Number(l.power_kva), "kva", lp, "long", 0)] : null,
+                l.parking_ratio != null ? [T.parking, fill(T.parkingRatio, { area: formatArea(Number(l.parking_ratio), lp) })] : null,
+                l.civil_defense_approved ? [T.civilDefense, T.approved] : null,
+                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)) : (dict.ld.onRequest)],
               ];
               return (tiles.filter(Boolean) as [string, string][]).map((s, i) => (
                 <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
@@ -355,16 +370,21 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           })()}
           {(() => {
             const T = (dict as any).ld;
-            const num = (n: any) => Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
-            const termFmt = (m: number) => (m % 12 === 0 ? `${num(m / 12)} ${m / 12 === 1 ? (ar ? "سنة" : "year") : (ar ? "سنوات" : "years")}` : `${num(m)} ${ar ? "شهراً" : "months"}`);
-            const vatFmt = (v: string) => (v === "inclusive" ? (ar ? "شامل الضريبة" : "Inclusive") : (ar ? "غير شامل الضريبة" : "Exclusive"));
+            // The terms block carried its own number formatter, its own year and
+            // month plurals and four inline unit strings. Arabic "سنوات" is right
+            // for three to ten and wrong for one, two and eleven up, and "شهراً"
+            // was printed after every month count for the same reason. The
+            // counted nouns and the unit table answer all of it, and the money
+            // and rate formatters keep the Latin unit off the Arabic page.
+            const termFmt = (m: number) => (m % 12 === 0 ? formatCounted(m / 12, "year", lp) : formatCounted(m, "month", lp));
+            const vatFmt = (v: string) => (v === "inclusive" ? T.vatInclusive : T.vatExclusive);
             const rows: [string, string][] = [];
             if (lease) {
-              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, num(l.service_charge_sqm) + (ar ? " ريال/م²·سنة" : " SAR/m²·yr")]);
+              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, formatWithUnit(Number(l.service_charge_sqm), "sar_sqm_year", lp, "short", 0)]);
               if (l.lease_term_months != null) rows.push([T.leaseTerm, termFmt(Number(l.lease_term_months))]);
-              if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, `${num(l.rent_free_months)} ${ar ? "شهراً" : "months"}`]);
-              if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, num(l.fitout_contribution) + (ar ? " ريال" : " SAR")]);
-              if (l.break_option_months != null) rows.push([T.breakOption, `${num(l.break_option_months)} ${ar ? "شهراً" : "months"}`]);
+              if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, formatCounted(Number(l.rent_free_months), "month", lp)]);
+              if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, formatMoney(Number(l.fitout_contribution), lp)]);
+              if (l.break_option_months != null) rows.push([T.breakOption, formatCounted(Number(l.break_option_months), "month", lp)]);
             } else {
               // Price per m2 is COMPUTED (price / area), never entered, so a lister
               // can never post one that contradicts their own price. Prefer a stored
@@ -372,7 +392,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               const pps = l.sale_price_sqm != null
                 ? Number(l.sale_price_sqm)
                 : (l.sale_price != null && l.area_sqm ? Number(l.sale_price) / Number(l.area_sqm) : null);
-              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, num(Math.round(pps)) + (ar ? " ريال/م²" : " SAR/m²")]);
+              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, formatWithUnit(Math.round(pps), "sar_sqm", lp, "short", 0)]);
             }
             if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
             // Registry commercial attributes with no typed column (price basis, deal
@@ -401,7 +421,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "الامتثال والتصاريح" : "Compliance and permits"}</div>
+                <div style={{ fontWeight: 600, fontSize: 15 }}>{(dict as any).ld.complianceTitle}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => (
                     <div key={i}>
@@ -426,7 +446,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             }
             const single = groups.size === 1;
             const onlyType = single ? Array.from(groups.keys())[0] : null;
-            const heading = single ? planLabel(onlyType, ar) : (ar ? "المخططات والرسومات" : "Plans & drawings");
+            const heading = single ? planLabel(onlyType, ar) : (dict as any).ld.plansTitle;
             const tile = (fp: typeof floorPlans[number], i: number) => (
               <a key={i} href={fp.url} target="_blank" rel="noopener noreferrer" className="card" style={{ textDecoration: "none", color: "inherit", overflow: "hidden", display: "block", boxShadow: "none" }}>
                 {fp.isPdf ? (
@@ -456,10 +476,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           })()}
           {brochures.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{lease ? (ar ? "الكتيّب التسويقي" : "Marketing brochure") : (ar ? "مذكرة العرض" : "Offering memorandum")}</div>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{lease ? (dict as any).ld.brochureTitle : (dict as any).ld.omTitle}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
                 {brochures.map((b, i) => (
-                  <a key={i} href={b.url} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {ar ? "تحميل الكتيّب (PDF)" : "Download brochure (PDF)"}{b.label ? ` · ${b.label}` : ""}</a>
+                  <a key={i} href={b.url} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {(dict as any).ld.downloadBrochure}{b.label ? ` · ${b.label}` : ""}</a>
                 ))}
               </div>
             </div>
@@ -469,23 +489,23 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (!v) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{ar ? "جولة بالفيديو" : "Video tour"}</div>
+                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{(dict as any).ld.videoTour}</div>
                 {v.kind === "youtube" || v.kind === "vimeo" ? (
                   <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: 10, overflow: "hidden" }}>
-                    <iframe src={v.embedUrl} title={ar ? "جولة بالفيديو" : "Video tour"} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
+                    <iframe src={v.embedUrl} title={(dict as any).ld.videoTour} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
                   </div>
                 ) : v.kind === "file" ? (
                   <video controls preload="none" src={v.src} style={{ width: "100%", borderRadius: 10, maxHeight: 440, background: "#000" }} />
                 ) : (
-                  <a href={v.href} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}>{ar ? "مشاهدة الفيديو" : "Watch the video tour"}</a>
+                  <a href={v.href} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}>{(dict as any).ld.watchVideo}</a>
                 )}
               </div>
             );
           })()}
           {canSeeDocs && ownerDocs.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--line)" }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{ar ? "مستندات التحقق (خاصة)" : "Verification documents (private)"}</div>
-              <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{ar ? "مرئية لك ولفريق سات فقط، لا تظهر للمستأجرين أو المشترين." : "Visible only to you and the SAT team, never to viewers."}</div>
+              <div style={{ fontWeight: 600, fontSize: 15 }}>{(dict as any).ld.verifDocs}</div>
+              <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{(dict as any).ld.verifDocsNote}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
                 {ownerDocs.map((d) => (
                   <a key={d.id} href={`/api/documents/${d.id}/download`} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {documentLabel(d.kind, ar)}{d.name ? ` · ${d.name}` : ""}</a>
@@ -512,9 +532,9 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                     <Link key={s.id} href={L(`/listings/${s.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (dict.ld.onRequest)}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? (s.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (dict.ld.onRequest)}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? " " + formatUnit(s.deal_type === "lease" ? "sar_sqm_year" : "sar", lp, "short") : ""}</small></div>
                         <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? s.title_ar : s.title_en) || s.reference_code}</div>
-                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · <bdi dir="ltr">{s.area_sqm} m²</bdi></div>
+                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · {formatArea(s.area_sqm, lp)}</div>
                       </div>
                     </Link>
                   );
@@ -526,7 +546,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <ReportListing listingId={l.id} locale={locale as "en" | "ar"} />
         </div>
         <div className="ld-side">
-          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
+          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={formatUnit(lease ? "sar_sqm_year" : "sar", lp, "short")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>

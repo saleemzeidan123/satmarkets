@@ -39,13 +39,30 @@ export const gradePhrase = (t: string | null | undefined, l: L): string =>
   !t || t === "n_a" ? "" : l === "ar" ? `فئة ${gradeLabel(t, l)}` : `Grade ${gradeLabel(t, l)}`;
 
 const SEGMENT: Record<string,[string,string]> = {
-  grade_a:["Grade A","فئة A"], grade_b:["Grade B","فئة B"], serviced:["Serviced & furnished","مخدومة ومفروشة"],
-  clinic:["Clinic in Grade A mixed-use","عيادات ضمن مبانٍ فئة A"], modern:["Modern · post-2015","حديثة · بعد 2015"],
+  serviced:["Serviced & furnished","مخدومة ومفروشة"],
+  clinic:["Clinic in Grade A mixed-use","عيادات ضمن مبانٍ فئة أ"], modern:["Modern · post-2015","حديثة · بعد 2015"],
   older:["Older · pre-2015","قديمة · قبل 2015"], street_front:["Street-front","واجهة شارع"],
-  mall_inline:["Mall in-line","داخل المول"], listing:["Listing-derived","من القوائم"]
+  mall_inline:["Mall in-line","داخل المول"], listing:["Listing-derived","من القوائم"],
+  // The Rent Index publishes three further segments that this table did not
+  // carry, so its page kept a private copy of the whole vocabulary to name them.
+  // Without these three the page could not be moved onto the shared table at
+  // all: segmentLabel would have printed the raw keys "blended", "prime" and
+  // "street" on a public row.
+  blended:["Blended","مجمّع"], prime:["Prime","مميّز"], street:["Street retail","تجزئة الشارع"]
 };
+/**
+ * An index segment named after a building grade is that grade, so it has to be
+ * spelled the way every other grade on the site is spelled. This table used to
+ * carry its own grade_a and grade_b entries reading "فئة A" with a Latin letter,
+ * while gradePhrase said "فئة أ", and the listings page carried a third copy
+ * saying "الفئة A" and inventing a grade_c the table did not have. One grade
+ * vocabulary now answers all three, so the letter cannot drift again and no
+ * segment can print a raw key.
+ */
+const SEGMENT_GRADE: Record<string, string> = { grade_a: "a", grade_b: "b", grade_c: "c" };
 const UNIT: Record<string,[string,string]> = {
   sar_sqm_year:["SAR / m² / yr","ريال / م² / سنة"], sar_desk_month:["SAR / desk / mo","ريال / مكتب / شهر"]
 };
-export const segmentLabel = (t: string | null | undefined, l: L) => (t ? (SEGMENT[t]?.[idx(l)] ?? t) : "");
+export const segmentLabel = (t: string | null | undefined, l: L) =>
+  !t ? "" : SEGMENT_GRADE[t] ? gradePhrase(SEGMENT_GRADE[t], l) : (SEGMENT[t]?.[idx(l)] ?? t);
 export const unitLabel = (t: string, l: L) => (UNIT[t]?.[idx(l)]) ?? t;

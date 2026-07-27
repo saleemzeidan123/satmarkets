@@ -1,8 +1,10 @@
 import { isLocale } from "@/i18n/config";
-import { pageMeta } from "@/lib/meta";
+import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel } from "@/lib/labels";
+import { getDictionary } from "@/i18n/getDictionary";
+import { assetLabel, cityLabel } from "@/lib/labels";
+import { formatArea, formatNumber } from "@/lib/format";
 import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
@@ -18,7 +20,8 @@ function idxSegment(asset: string, grade: string | null): string | null {
 }
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '', 'SAT Markets | Verified commercial real estate, Saudi Arabia', 'سات ماركتس | مساحات تجارية موثّقة في السعودية', 'The neutral commercial exchange for Riyadh: owner-verified listings, a source-attributed rent index, and AI that never invents a figure.', 'منصة محايدة للعقار التجاري في الرياض: عروض موثّقة من الملّاك، مؤشر إيجارات منسوب إلى مصادره، وذكاء اصطناعي لا يخترع الأرقام.');
+  const d = getDictionary(params.locale === "ar" ? "ar" : "en").home;
+  return localeMeta(params.locale, "", d.metaTitle, d.metaDesc);
 }
 
 export default async function HomePage({ params }: { params: { locale: string } }) {
@@ -48,7 +51,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
     for (const r of (idxRows ?? []) as any[]) idxBands.set(`${String(r.district_label).toLowerCase()}|${r.asset_type}|${r.segment}`, { low: Number(r.band_low), high: Number(r.band_high) });
     const { data: bandRows } = await sb.from("rent_index_published").select("district_label, district_label_ar, band_low, band_high, median, period").eq("asset_type", "office").eq("segment", "all").eq("sufficient", true).order("median", { ascending: false });
     for (const r of (bandRows ?? []) as any[]) heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period });
-    const oi = heroBands.findIndex((b) => b.en === "Al Olaya");
+    // Matches the English district_label stored in rent_index_published, not a
+    // label shown to anyone, so it stays a literal.
+    const oi = heroBands.findIndex((b) => b.en === /* i18n-exempt */ "Al Olaya");
     if (oi > -1 && oi < heroBands.length - 1) heroBands.push(heroBands.splice(oi, 1)[0]);
     const { count: rc } = await sb.from("requirements_public").select("*", { count: "exact", head: true });
     openReqs = rc ?? null;
@@ -56,6 +61,11 @@ export default async function HomePage({ params }: { params: { locale: string } 
     idxSegs = sc ?? null;
   }
 
+  const h = getDictionary(locale).home;
+  // The card fell back to the Latin string "Riyadh" in both languages and wrote
+  // the area as "300 m²" in both. The city name is controlled vocabulary and the
+  // area is a unit, so both now come from the shared formatters.
+  const city = cityLabel("Riyadh", locale);
   const featured: FeaturedListing[] = rows.map((l) => {
     const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
     const dnEn = l.districts ? l.districts.name_en : null;
@@ -74,13 +84,13 @@ export default async function HomePage({ params }: { params: { locale: string } 
     }
     return {
       id: l.id,
-      price: price != null ? Number(price).toLocaleString() : (ar ? "عند الطلب" : "On request"),
+      price: price != null ? formatNumber(Number(price), locale) : h.onRequest,
       title: (ar ? l.title_ar : l.title_en) || l.reference_code,
-      district: dn || "Riyadh",
-      area: `${l.area_sqm} m²`,
+      district: dn || city,
+      area: formatArea(l.area_sqm, locale),
       type,
       verified: !!((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed),
-      ph: `${type}, ${dn || "Riyadh"}`,
+      ph: `${type}, ${dn || city}`,
       img: photoFor(l.asset_type, l.id),
       idx,
     };

@@ -2,7 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
+import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel, segmentLabel } from "@/lib/labels";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import dynamic from "next/dynamic";
@@ -30,7 +30,7 @@ import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
 import { ownerVerified } from "@/lib/gate";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill } from "@/lib/format";
+import { fill, formatArea, formatCounted, formatNumber, formatUnit } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
@@ -41,7 +41,7 @@ type SP = { asset?: string; deal?: string; q?: string; district?: string; city?:
 
 export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
-  const dict = getDictionary(loc);
+  const dl = getDictionary(loc).listings;
   const ar = loc === "ar";
   let locLabel = "";
   if (searchParams.district) {
@@ -53,11 +53,11 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   const deal = searchParams.deal ? dealLabel(searchParams.deal, loc) : "";
   const what = [asset, deal].filter(Boolean).join(" ").trim();
   const title = locLabel
-    ? fill(dict.listings.metaTitleIn, { what: what || dict.listings.metaWhatFallback, place: locLabel })
-    : dict.listings.metaTitle;
+    ? fill(dl.metaTitleIn, { what: what || dl.metaWhatFallback, place: locLabel })
+    : dl.metaTitle;
   const description = locLabel
-    ? fill(dict.listings.metaDescIn, { place: locLabel })
-    : dict.listings.metaDesc;
+    ? fill(dl.metaDescIn, { place: locLabel })
+    : dl.metaDesc;
   const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
   return localeMeta(params.locale, `/listings${qs}`, title, description);
 }
@@ -67,7 +67,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const locale = params.locale;
   const ar = locale === "ar";
   const dict = getDictionary(locale as "en" | "ar");
-  const t = (en: string, arr: string) => (ar ? arr : en);
+  // The page used to carry a private t(en, ar) helper, which is how roughly two
+  // dozen visible strings came to live in this file instead of the dictionaries,
+  // with a second grade vocabulary and a second sort vocabulary among them.
+  const dl = dict.listings;
   const list = (k?: string) => (k ? k.split(",").filter(Boolean) : []);
   const sb = getSupabaseServer();
   let listings: Listing[] = [];
@@ -114,7 +117,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     (irows ?? []).forEach((r: any) => { const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
-    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((ar ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? t(" · project", " · مشروع") : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((ar ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? " · " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
     locations = (allLocs ?? []).map((d: any) => ({ id: d.id, city: d.city || "Other", kind: d.kind || "district", en: d.name_en, ar: d.name_ar, count: counts.get(d.id) ?? 0 }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {
@@ -191,20 +194,22 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const { data: idata } = await iq;
     idx = idata ?? [];
   }
-  const SEGL: Record<string, string> = ar
-    ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street_front: "واجهة شارع", mall_inline: "داخل مول", clinic: "عيادة" }
-    : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street_front: "Street front", mall_inline: "Mall inline", clinic: "Clinic" };
-  const rcity = dict.listings.riyadh;
+  const rcity = dl.riyadh;
   const kindFor = (a: string) => a;
 
   const assets = ASSETS.map((a) => ({ value: a, label: assetLabel(a, locale) }));
   const grades = GRADES.map((g) => ({ value: g, label: gradeLabel(g, locale) }));
   const fits = FITS.map((f) => ({ value: f, label: fitoutLabel(f, locale) }));
-  const sorts = ar
-    ? [{ value: "new", label: "الأحدث" }, { value: "rent", label: "السعر من الأقل" }, { value: "rent_desc", label: "السعر من الأعلى" }, { value: "size", label: "المساحة من الأصغر" }, { value: "size_desc", label: "المساحة من الأكبر" }, { value: "best", label: "الأفضل مطابقة" }]
-    : [{ value: "new", label: "Newest" }, { value: "rent", label: "Price, low to high" }, { value: "rent_desc", label: "Price, high to low" }, { value: "size", label: "Size, small to large" }, { value: "size_desc", label: "Size, large to small" }, { value: "best", label: "Best match" }];
+  const sorts = [
+    { value: "new", label: dl.sortNewest },
+    { value: "rent", label: dl.sortPriceAsc },
+    { value: "rent_desc", label: dl.sortPriceDesc },
+    { value: "size", label: dl.sortSizeAsc },
+    { value: "size_desc", label: dl.sortSizeDesc },
+    { value: "best", label: dl.sortBest },
+  ];
 
-  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (dict.listings.allSpaces);
+  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (dl.allSpaces);
 
   const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
   const crumbLoc = distLoc ? (ar ? (distLoc.ar || distLoc.en) : distLoc.en) : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""));
@@ -212,21 +217,21 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
-        { "@type": "ListItem", position: 1, name: dict.listings.crumbHome, item: `${SITE}/${locale}` },
-        { "@type": "ListItem", position: 2, name: dict.listings.crumbListings, item: `${SITE}/${locale}/listings` },
+        { "@type": "ListItem", position: 1, name: dl.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: dl.crumbListings, item: `${SITE}/${locale}/listings` },
         ...(crumbLoc ? [{ "@type": "ListItem", position: 3, name: crumbLoc, item: `${SITE}/${locale}/listings${crumbQs}` }] : []),
       ] }} />
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
-          <div className="eyebrow">{dict.listings.exchange}</div>
-          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dict.listings.h1}</h1>
+          <div className="eyebrow">{dl.exchange}</div>
+          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>
         </div>
-        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dict.listings.viewOnMap}</Link>
+        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
       <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <input name="q" defaultValue={searchParams.q || ""} placeholder={dict.listings.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
-        <button type="submit" className="btn primary">{dict.listings.search}</button>
+        <input name="q" defaultValue={searchParams.q || ""} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
+        <button type="submit" className="btn primary">{dl.search}</button>
       </form>
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
@@ -236,27 +241,27 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           {Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
-          <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {ar ? "المرشحات" : "filters"}:</span>
+          <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {dl.assetFilters}:</span>
           {facets.map((f) => {
             const cur = String((searchParams as Record<string, string | undefined>)[`f_${f.key}`] ?? "");
             const lbl = ar ? f.label_ar : f.label_en;
             const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", color: "var(--ink)" } as const;
             if (f.type === "number" || f.type === "integer") {
-              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl}${f.unit ? " (" + f.unit + ")" : ""} ${ar ? "الأدنى" : "min"}`} style={{ ...inpStyle, width: 170 }} />;
+              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl}${f.unit ? " (" + f.unit + ")" : ""} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
             }
             const opts: [string, string][] = f.type === "tristate" || f.type === "boolean"
-              ? [["yes", ar ? "نعم" : "Yes"], ["no", ar ? "لا" : "No"]]
+              ? [["yes", dl.yes], ["no", dl.no]]
               : (f.validation?.enum ?? []).map((v) => [v, f.options?.[v]?.[ar ? 1 : 0] ?? v.replace(/_/g, " ")] as [string, string]);
             return (
               <select key={f.key} name={`f_${f.key}`} defaultValue={cur} style={inpStyle}>
-                <option value="">{lbl}: {ar ? "الكل" : "Any"}</option>
+                <option value="">{lbl}: {dl.any}</option>
                 {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
             );
           })}
-          <button type="submit" className="btn primary" style={{ height: 34 }}>{ar ? "تطبيق" : "Apply"}</button>
+          <button type="submit" className="btn primary" style={{ height: 34 }}>{dl.apply}</button>
           {facets.some((f) => (searchParams as Record<string, string | undefined>)[`f_${f.key}`]) && (
-            <a href={`/${locale}/listings?${Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{ar ? "مسح" : "Clear"}</a>
+            <a href={`/${locale}/listings?${Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dl.clear}</a>
           )}
         </form>
       )}
@@ -267,16 +272,19 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>{crumbLoc}</span>
-          <span className="muted" style={{ fontSize: 13 }}>· {ar ? `${shown.length} مساحة` : `${shown.length} ${shown.length === 1 ? "space" : "spaces"}`}</span>
+          <span className="muted" style={{ fontSize: 13 }}>· {formatCounted(shown.length, "space", locale)}</span>
           <span style={{ flex: 1 }} />
-          <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{ar ? "مسح ✕" : "Clear ✕"}</Link>
+          <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{dl.clear} ✕</Link>
         </div>
       )}
       <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
-        <div className="muted" style={{ fontSize: 13 }}>{ar ? `${shown.length} عرض` : `${shown.length} ${shown.length === 1 ? "space" : "spaces"}`}{searchParams.place && (!placeIds || !placeIds.size) ? (ar ? ` · لا مساحات في ${searchParams.place} بعد` : ` · no spaces in ${searchParams.place} yet`) : ""}{bbox ? <> {"\u00B7"} {dict.listings.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dict.listings.clearArea}</Link></> : null}</div>
+        {/* The result count printed one Arabic noun form after every number, and
+            it disagreed with the count in the location header two lines up, which
+            said "مساحة" where this said "عرض". One counted noun answers both. */}
+        <div className="muted" style={{ fontSize: 13 }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
-          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.properties}</Link>
-          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dict.listings.insights}</Link>
+          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.properties}</Link>
+          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.insights}</Link>
         </div>
       </div>
       <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={saveLabel} />
@@ -285,38 +293,38 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       {insightsView ? (
         <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
           <div className="row between" style={{ padding: "14px 18px", borderBottom: "1px solid var(--silver)" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dict.listings.indexCut}</div>
-            <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{dict.listings.fullIndex}</Link>
+            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dl.indexCut}</div>
+            <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{dl.fullIndex}</Link>
           </div>
           {idx.length === 0 ? (
-            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{dict.listings.noSegments}</p>
+            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{dl.noSegments}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 520 }}>
-                <thead><tr><th>{dict.listings.colLocation}</th><th>{dict.listings.colAsset}</th><th style={{ textAlign: "right" }}>{dict.listings.colMedian}</th><th style={{ textAlign: "right" }}>{dict.listings.colBand}</th><th style={{ textAlign: "right" }}>{dict.listings.colData}</th></tr></thead>
+                <thead><tr><th>{dl.colLocation}</th><th>{dl.colAsset}</th><th style={{ textAlign: "right" }}>{dl.colMedian}</th><th style={{ textAlign: "right" }}>{dl.colBand}</th><th style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
                 <tbody>
                   {idx.map((r: any, i: number) => (
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
-                      <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + (SEGL[r.segment] || r.segment) : ""}</td>
-                      <td className="num mono">{r.sufficient && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dict.listings.na)}</td>
-                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dict.listings.thinSample)}</td>
-                      <td className="num">{r.sufficient ? <span className="statusdot ok">{dict.listings.sufficient}</span> : <span className="statusdot pend">{dict.listings.thin}</span>}</td>
+                      <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + segmentLabel(r.segment, locale) : ""}</td>
+                      <td className="num mono">{r.sufficient && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dl.na)}</td>
+                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dl.thinSample)}</td>
+                      <td className="num">{r.sufficient ? <span className="statusdot ok">{dl.sufficient}</span> : <span className="statusdot pend">{dl.thin}</span>}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{dict.listings.sampleDisclaimer}</div>
+          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{dl.sampleDisclaimer}</div>
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>
           <DataState
             kind="empty"
-            title={bbox ? (dict.listings.emptyMapArea) : (dict.listings.emptyNoMatch)}
+            title={bbox ? (dl.emptyMapArea) : (dl.emptyNoMatch)}
             action={
-              <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dict.listings.clearMapArea) : (dict.listings.clearAllFilters)}</Link>
+              <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dl.clearMapArea) : (dl.clearAllFilters)}</Link>
             }
           />
         </div>
@@ -328,14 +336,18 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.listings.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dict.listings.newBadge}</span>] : [])]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dl.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dl.newBadge}</span>] : [])]} />
                 <div className="body">
                   {(() => {
                     const ls = listedSince((l as any).created_at);
                     return (<>
-                      <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? Number(price).toLocaleString("en-US") : (dict.listings.onRequest)}<small> {l.deal_type === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</small></div>
+                      {/* The card kept the figure and its unit in separate elements
+                          so the unit could be set smaller, and paid for it with four
+                          inline unit strings and a Latin "m²" on the Arabic card. The
+                          split stays; both parts now come from the unit table. */}
+                      <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? formatNumber(Number(price), locale) : dl.onRequest}<small> {formatUnit(l.deal_type === "lease" ? "sar_sqm_year" : "sar", locale, "short")}</small></div>
                       <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                      <div className="meta"><span>{dn || rcity}</span><i /><span>{l.area_sqm} m²</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
+                      <div className="meta"><span>{dn || rcity}</span><i /><span>{formatArea(l.area_sqm, locale)}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
                       {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
                       {(() => {
                         const av = availabilityOf((l as any).availability_confirmed_at);

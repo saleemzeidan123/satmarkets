@@ -1,5 +1,5 @@
 import { isLocale } from "@/i18n/config";
-import { pageMeta } from "@/lib/meta";
+import { localeMeta } from "@/lib/meta";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon, Verified } from "@/components/satkit";
@@ -9,13 +9,17 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import WatchBanner from "@/components/WatchBanner";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
+import { assetLabel, segmentLabel } from "@/lib/labels";
+import { fill, formatInteger, formatUnit } from "@/lib/format";
 
 const AZURE = "#3A6EA5";
 
 type DRow = [string, string, string, string, boolean];
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '/rent-index', 'Rent Index | SAT Markets', 'مؤشر الإيجارات | سات ماركتس', 'Saudi commercial rent figures by district and asset type, derived from the REGA Rental Index (Ejar). Averages of registered contracts, with honest blanks where the sample is too thin. Indicative, not advice.', 'أرقام إيجار العقار التجاري في السعودية حسب الحي ونوع الأصل، مستمدّة من المؤشر الإيجاري (إيجار). متوسطات العقود المسجّلة، مع ترك الخلايا فارغة بصدق حين تقلّ العيّنة. استرشادي وليس نصيحة.');
+  const loc = params.locale === "ar" ? "ar" : "en";
+  const d = getDictionary(loc).rentIndex;
+  return localeMeta(params.locale, "/rent-index", d.metaTitle, d.metaDesc);
 }
 
 export default async function RentIndexPage({ params }: { params: { locale: string } }) {
@@ -24,13 +28,13 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;
  const pub = await getPublishedKpis();
 
- const SEG: Record<string, string> = ar
-  ? { grade_a: "الفئة A", grade_b: "الفئة B", grade_c: "الفئة C", serviced: "مخدومة", street: "شارع تجزئة", prime: "مميّز", clinic: "عيادات", street_front: "واجهة شارع", mall_inline: "داخل مول", modern: "حديثة", older: "أقدم", blended: "مجمّع" }
-  : { grade_a: "Grade A", grade_b: "Grade B", grade_c: "Grade C", serviced: "Serviced", street: "street", prime: "prime", clinic: "Clinic", street_front: "Street front", mall_inline: "Mall inline", modern: "Modern", older: "Older", blended: "Blended" };
- const ASSET: Record<string, string> = ar
-  ? { office: "مكاتب", retail: "تجزئة", warehouse: "مستودعات", serviced: "مفروشة", medical: "طبي", showroom: "معارض", land: "أراضٍ" }
-  : { office: "Office", retail: "Retail", warehouse: "Warehouse", serviced: "Serviced", medical: "Medical", showroom: "Showroom", land: "Land" };
- const nf = (n: number) => n.toLocaleString("en-US");
+ // This page used to carry its own asset table and its own segment table, a
+ // fourth and a fifth copy of vocabulary that labels.ts already owns. That is
+ // where "الفئة A" came from, with a Latin letter in an Arabic phrase, while the
+ // listing pages spelled the same grade "فئة أ". The index now reads the same
+ // tables every other public surface reads, so a row cannot name an asset or a
+ // segment differently from the listings it sits beside.
+ const loc: "en" | "ar" = ar ? "ar" : "en";
 
  // There is no mock table any more. The Rent Index shows what the pipeline
  // produced from a source file, or it shows nothing. A district with too few
@@ -45,9 +49,9 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     .order("sort_order", { ascending: true })
     .limit(40);
    districts = (data ?? []).map((r: any): DRow => {
-    const asset = `${ASSET[r.asset_type] || r.asset_type}${r.segment && r.segment !== "all" ? " \u00b7 " + (SEG[r.segment] || r.segment) : ""}`;
-    const figure = r.sufficient && r.median != null ? nf(Number(r.median)) : (ri.na);
-    const band = r.sufficient && r.band_low != null && r.band_high != null ? `${nf(Number(r.band_low))}\u2013${nf(Number(r.band_high))}` : (ri.thinSample);
+    const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " \u00b7 " + segmentLabel(r.segment, loc) : ""}`;
+    const figure = r.sufficient && r.median != null ? formatInteger(Number(r.median), loc) : (ri.na);
+    const band = r.sufficient && r.band_low != null && r.band_high != null ? `${formatInteger(Number(r.band_low), loc)}\u2013${formatInteger(Number(r.band_high), loc)}` : (ri.thinSample);
     return [ar ? (r.district_label_ar || r.district_label) : r.district_label, asset, figure, band, !!r.sufficient];
    });
   }
@@ -56,36 +60,35 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  }
 
  // Only what the index can actually evidence. Where a figure has no cell behind
- // it, we show a dash. The old row led with "3,630 KAFD prime", which is JLL's
- // published figure, and an occupancy percentage taken from broker research that
- // we have no licence to republish.
- const dash = "\u2014";
+ // it, we show the same "not available" the table shows. The old row led with
+ // "3,630 KAFD prime", which is JLL's published figure, and an occupancy
+ // percentage taken from broker research that we have no licence to republish.
+ //
+ // The two rent tiles used to carry their unit inside the label string, once per
+ // language, which is how "SAR/m\u00b2\u00b7yr" came to be spelled here and in the unit
+ // table separately. The period tile printed the raw "2026-06" from the database
+ // while the eyebrow eight lines below printed the same period formatted.
+ const rentUnit = formatUnit("sar_sqm_year", loc, "short");
  const kpis: [string, string, string, string | null][] = [
-  [pub.officeRent != null ? nf(pub.officeRent) : dash,
-   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0645\u0643\u0627\u062a\u0628 \u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629" : "Office, SAR/m\u00b2\u00b7yr",
-   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0642\u0648\u062f \u0627\u0644\u0645\u0633\u062c\u0651\u0644\u0629" : "average of registered contracts", null],
-  [pub.retailRent != null ? nf(pub.retailRent) : dash,
-   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u062a\u062c\u0632\u0626\u0629 \u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629" : "Retail, SAR/m\u00b2\u00b7yr",
-   ar ? "\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0642\u0648\u062f \u0627\u0644\u0645\u0633\u062c\u0651\u0644\u0629" : "average of registered contracts", null],
-  [String(pub.cells),
-   ar ? "\u062e\u0644\u0627\u064a\u0627 \u0645\u0646\u0634\u0648\u0631\u0629" : "Published cells",
-   ar ? "\u0627\u062c\u062a\u0627\u0632\u062a \u0642\u0627\u0639\u062f\u0629 \u0627\u0644\u0639\u064a\u0646\u0629" : "cleared the sample rule", null],
-  [String(pub.districts),
-   ar ? "\u0623\u062d\u064a\u0627\u0621 \u0645\u063a\u0637\u0651\u0627\u0629" : "Districts covered",
-   pub.period ?? dash, null],
+  [pub.officeRent != null ? formatInteger(pub.officeRent, loc) : ri.na,
+   fill(ri.kpiOffice, { unit: rentUnit }), ri.kpiContracts, null],
+  [pub.retailRent != null ? formatInteger(pub.retailRent, loc) : ri.na,
+   fill(ri.kpiRetail, { unit: rentUnit }), ri.kpiContracts, null],
+  [formatInteger(pub.cells, loc), ri.kpiCells, ri.kpiCellsSub, null],
+  [formatInteger(pub.districts, loc), ri.kpiDistricts, pub.period ? formatPeriod(pub.period, ar) : ri.na, null],
  ];
 
  return (
   <div style={{ background: "var(--cool)" }}>
    <JsonLd data={{
     "@type": "Dataset",
-    name: "Saudi Commercial Rent Index",
+    name: ri.dsName,
     url: `${SITE}/${params.locale}/rent-index`,
     inLanguage: ["ar", "en"],
-    description: "Commercial rent figures derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Cells that do not clear a minimum transaction count are shown blank rather than estimated. Indicative market context, not advice.",
-    creator: { "@type": "Organization", name: "SAT Markets", url: SITE },
-    isBasedOn: ["REGA Rental Index (Ejar), registered rental contracts"],
-    spatialCoverage: "Riyadh, Saudi Arabia",
+    description: ri.dsDesc,
+    creator: { "@type": "Organization", name: getDictionary(loc).appMeta.appName, url: SITE },
+    isBasedOn: [ri.dsBasedOn],
+    spatialCoverage: ri.dsCoverage,
    }} />
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
     {/* header band */}

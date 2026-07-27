@@ -217,6 +217,10 @@ export const COUNTED = {
     en: { one: "listing", other: "listings" },
     ar: { zero: "قائمة", one: "قائمة واحدة", two: "قائمتان", few: "قوائم", many: "قائمة", other: "قائمة" },
   },
+  space: {
+    en: { one: "space", other: "spaces" },
+    ar: { zero: "مساحة", one: "مساحة واحدة", two: "مساحتان", few: "مساحات", many: "مساحة", other: "مساحة" },
+  },
   match: {
     en: { one: "match", other: "matches" },
     ar: { zero: "مطابقة", one: "مطابقة واحدة", two: "مطابقتان", few: "مطابقات", many: "مطابقة", other: "مطابقة" },
@@ -228,6 +232,14 @@ export const COUNTED = {
   result: {
     en: { one: "result", other: "results" },
     ar: { zero: "نتيجة", one: "نتيجة واحدة", two: "نتيجتان", few: "نتائج", many: "نتيجة", other: "نتيجة" },
+  },
+  leaseListing: {
+    en: { one: "lease listing", other: "lease listings" },
+    ar: { zero: "عرض إيجار", one: "عرض إيجار واحد", two: "عرضا إيجار", few: "عروض إيجار", many: "عرض إيجار", other: "عرض إيجار" },
+  },
+  liveSpace: {
+    en: { one: "space on the market", other: "spaces on the market" },
+    ar: { zero: "مساحة معروضة", one: "مساحة معروضة واحدة", two: "مساحتان معروضتان", few: "مساحات معروضة", many: "مساحة معروضة", other: "مساحة معروضة" },
   },
 } as const satisfies Record<string, { en: PluralForms; ar: PluralForms }>;
 

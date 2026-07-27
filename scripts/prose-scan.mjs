@@ -9,7 +9,9 @@
 //   / data-* attribute values, import paths and URLs, dictionary keys and enum
 //   identifiers, single-token codes matching ^[A-Za-z0-9_.:/-]+$ (asset keys,
 //   SATM- reference codes, unit strings), numeric-and-punctuation-only strings,
-//   and any string carrying an explicit /* i18n-exempt */ marker.
+//   and any string carrying an explicit /* i18n-exempt */ marker. Directive
+//   prologues ("use client", "use server") are excluded on syntactic position:
+//   they are language keywords spelled with a space, not translatable prose.
 //
 //   A string is flagged only when it contains a run of two or more
 //   natural-language words in Latin or Arabic script outside those categories.
@@ -208,6 +210,29 @@ function insideExemptCall(node) {
   return false;
 }
 
+/**
+ * A directive prologue ("use client", "use server", "use strict") is a language
+ * keyword that happens to be spelled with a space. It is not prose, it cannot be
+ * translated, and moving it into a dictionary would break the file. The check is
+ * syntactic rather than a string match on the words: the literal must be the
+ * whole of an expression statement standing in the leading run of expression
+ * statements of a file or a function body, which is the only position where the
+ * runtime reads it as a directive.
+ */
+function isDirectivePrologue(node) {
+  const st = node.parent;
+  if (!st || !ts.isExpressionStatement(st) || st.expression !== node) return false;
+  const owner = st.parent;
+  const list = ts.isSourceFile(owner) ? owner.statements : ts.isBlock(owner) ? owner.statements : null;
+  if (!list) return false;
+  for (const s of list) {
+    if (s === st) return true;
+    const isPrologue = ts.isExpressionStatement(s) && ts.isStringLiteral(s.expression);
+    if (!isPrologue) return false;
+  }
+  return false;
+}
+
 function hasExemptMarker(sf, node) {
   const full = sf.getFullText();
   const lead = full.slice(node.getFullStart(), node.getStart(sf));
@@ -246,6 +271,7 @@ function scanFile(file) {
         || (attr !== null && isSkippedAttrName(attr))
         || insideStyleObject(node)
         || insideExemptCall(node)
+        || isDirectivePrologue(node)
         || (ts.isPropertyAssignment(node.parent) && node.parent.name === node)   // object KEY
         || (ts.isPropertyAssignment(node.parent) && SKIP_PROP.has(node.parent.name.getText().replace(/^["']|["']$/g, "")))
         || ts.isElementAccessExpression(node.parent)                              // dict["key"]

@@ -24,8 +24,11 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
   const f = dict.footer;
   const couplet = dict.layout.couplet;
   const family = dict.layout.family;
-  const areas = (dict.nav as any).areas ?? "Area intel";
-  const develop = (dict.nav as any).develop ?? "Develop";
+  // Both keys exist in both dictionaries. The casts and the English fallbacks
+  // date from before they did, and the fallback was dead code that would have
+  // dropped a Latin label into an Arabic footer if it had ever fired.
+  const areas = dict.nav.areas;
+  const develop = dict.nav.develop;
   const signIn = dict.layout.signIn;
   const cols = [
     { h: dict.layout.colMarket, links: [

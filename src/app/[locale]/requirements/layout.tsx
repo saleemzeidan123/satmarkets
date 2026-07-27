@@ -1,15 +1,10 @@
 import type { ReactNode } from "react";
-import { pageMeta } from "@/lib/meta";
+import { localeMeta } from "@/lib/meta";
+import { getDictionary } from "@/i18n/getDictionary";
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(
-    params.locale,
-    "/requirements",
-    "Requirements | SAT Markets",
-    "الطلبات | سات ماركتس",
-    "Post what you need and let verified owners and licensed brokers come to you. The demand board for Riyadh commercial space.",
-    "انشر ما تحتاجه ودع الملّاك الموثّقين والوسطاء المرخّصين يصلونك. لوحة الطلب للمساحات التجارية في الرياض.",
-  );
+  const d = getDictionary(params.locale === "ar" ? "ar" : "en").req;
+  return localeMeta(params.locale, "/requirements", d.metaTitle, d.metaDesc);
 }
 
 export default function RequirementsLayout({ children }: { children: ReactNode }) {

@@ -1,5 +1,5 @@
 import { isLocale } from "@/i18n/config";
-import { pageMeta } from "@/lib/meta";
+import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
@@ -10,7 +10,8 @@ import { getDictionary } from "@/i18n/getDictionary";
 export const revalidate = 3600;
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  return pageMeta(params.locale, '/brokers', 'For Brokers | SAT Markets', 'للوسطاء | سات ماركتس', 'A neutral exchange for licensed brokers: verified demand, honest pricing context, and no assumed commission.', 'منصة محايدة للوسطاء المرخّصين: طلب موثّق، وسياق سعري صادق، ودون عمولة مفترضة.');
+  const d = getDictionary(params.locale === "ar" ? "ar" : "en").brokers;
+  return localeMeta(params.locale, "/brokers", d.metaTitle, d.metaDesc);
 }
 
 export default async function BrokersPage({ params }: { params: { locale: string } }) {

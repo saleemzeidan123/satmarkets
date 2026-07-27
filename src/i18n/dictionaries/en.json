@@ -206,7 +206,10 @@
     "tabDiscover": "Discover",
     "tabDecide": "Decide with data",
     "tabTransact": "Transact with trust",
-    "findSpace": "Find your space"
+    "findSpace": "Find your space",
+    "metaTitle": "SAT Markets | Verified commercial real estate, Saudi Arabia",
+    "metaDesc": "The neutral commercial exchange for Riyadh: owner-verified listings, a source-attributed rent index, and AI that never invents a figure.",
+    "onRequest": "On request"
   },
   "ld": {
     "notFound": "Listing not found.",
@@ -270,7 +273,24 @@
     "metaTitle": "{title}{in} | SAT Markets",
     "metaIn": " in {place}",
     "metaDesc": "{grade} {type} in {place}, {area}, {price}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.",
-    "metaTitleFallback": "{type} in {place}"
+    "metaTitleFallback": "{type} in {place}",
+    "verifiedAgeYear": "over a year ago",
+    "verifiedAgeYears": "over {age} ago",
+    "ldUnitText": "SAR per square metre per year",
+    "ldSalePrice": "Asking sale price, SAR",
+    "vatInclusive": "Inclusive",
+    "vatExclusive": "Exclusive",
+    "complianceTitle": "Compliance and permits",
+    "plansTitle": "Plans & drawings",
+    "brochureTitle": "Marketing brochure",
+    "omTitle": "Offering memorandum",
+    "downloadBrochure": "Download brochure (PDF)",
+    "videoTour": "Video tour",
+    "watchVideo": "Watch the video tour",
+    "verifDocs": "Verification documents (private)",
+    "verifDocsNote": "Visible only to you and the SAT team, never to viewers.",
+    "parkingRatio": "1 space / {area}",
+    "approved": "Approved"
   },
   "chrome": {
     "tabHome": "Home",
@@ -335,7 +355,22 @@
     "newBadge": "New",
     "metaTitleIn": "{what} in {place} | SAT Markets",
     "metaWhatFallback": "Commercial spaces",
-    "metaDescIn": "Browse verified commercial spaces in {place} on SAT Markets, owner-verified and backed by the published Rent Index."
+    "metaDescIn": "Browse verified commercial spaces in {place} on SAT Markets, owner-verified and backed by the published Rent Index.",
+    "sortNewest": "Newest",
+    "sortPriceAsc": "Price, low to high",
+    "sortPriceDesc": "Price, high to low",
+    "sortSizeAsc": "Size, small to large",
+    "sortSizeDesc": "Size, large to small",
+    "sortBest": "Best match",
+    "noSpacesIn": "no spaces in {place} yet",
+    "project": "project",
+    "assetFilters": "filters",
+    "minimum": "min",
+    "yes": "Yes",
+    "no": "No",
+    "any": "Any",
+    "apply": "Apply",
+    "clear": "Clear"
   },
   "pricing": {
     "na": "n/a",
@@ -361,7 +396,9 @@
     "noInterest": "No interest yet",
     "viewRespond": "View & respond →",
     "sampleTag": "Sample",
-    "rangeTo": "to"
+    "rangeTo": "to",
+    "metaTitle": "Requirements | SAT Markets",
+    "metaDesc": "Post what you need and let verified owners and licensed brokers come to you. The demand board for Riyadh commercial space."
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence"
@@ -673,7 +710,9 @@
     "sourcesUsed": "Sources used",
     "sourceRentIndex": "Rent Index Q2 2026",
     "sourceRega": "SAT verification records",
-    "sourceListings": "Verified platform listings"
+    "sourceListings": "Verified platform listings",
+    "metaTitle": "AI Advisor | SAT Markets",
+    "metaDesc": "Ask about any Riyadh commercial space and get an answer grounded in the verified Rent Index, never a figure from a model."
   },
   "area": {
     "crumbHome": "Home",
@@ -762,7 +801,19 @@
     "heatSubReal": "Darker is a higher average, in SAR/m²·yr. Districts with too thin a sample are left blank rather than guessed.",
     "heatSubSample": "Preview sample figures. Darker is a higher average. Real district averages appear here at launch.",
     "heatLow": "Lower",
-    "heatHigh": "Higher"
+    "heatHigh": "Higher",
+    "metaTitle": "Rent Index | SAT Markets",
+    "metaDesc": "Saudi commercial rent figures by district and asset type, derived from the REGA Rental Index (Ejar). Averages of registered contracts, with honest blanks where the sample is too thin. Indicative, not advice.",
+    "kpiOffice": "Office, {unit}",
+    "kpiRetail": "Retail, {unit}",
+    "kpiContracts": "average of registered contracts",
+    "kpiCells": "Published cells",
+    "kpiCellsSub": "cleared the sample rule",
+    "kpiDistricts": "Districts covered",
+    "dsName": "Saudi Commercial Rent Index",
+    "dsDesc": "Commercial rent figures derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Cells that do not clear a minimum transaction count are shown blank rather than estimated. Indicative market context, not advice.",
+    "dsBasedOn": "REGA Rental Index (Ejar), registered rental contracts",
+    "dsCoverage": "Riyadh, Saudi Arabia"
   },
   "postReq": {
     "submitError": "Something interrupted the submission. Please try again.",
@@ -1211,7 +1262,9 @@
     "footer": "Real storefronts open with account launch. Verification first, always.",
     "sqmUnit": "m²",
     "rentUnit": "SAR/m²·yr",
-    "onRequest": "On request"
+    "onRequest": "On request",
+    "metaTitle": "For Brokers | SAT Markets",
+    "metaDesc": "A neutral exchange for licensed brokers: verified demand, honest pricing context, and no assumed commission."
   },
   "layout": {
     "couplet": "The space is yours. So are the numbers.",
@@ -1295,7 +1348,16 @@
     "ctaBrowse": "Browse the spaces",
     "ctaIndex": "The full Rent Index",
     "ctaLocations": "Locations directory",
-    "sampleNote": "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page."
+    "sampleNote": "Pre-launch sample data illustrating the mechanism. Attributed published benchmarks live on the Rent Index page.",
+    "quoteBelow": "Below their index band",
+    "quoteWithin": "Within their index band",
+    "quoteAbove": "Above their index band",
+    "quoteIntro": "Of {count} with a sufficient index segment, this is where asking rents sit against their band.",
+    "leaseSaleSplit": "{lease} lease · {sale} sale",
+    "datasetName": "Riyadh Commercial Market Pulse",
+    "datasetDesc": "Commercial rent indicators for Riyadh derived from the REGA Rental Index (Ejar), compiled by SAT Markets. Figures are averages of registered rental contracts. Indicative market context, not advice.",
+    "datasetSource": "REGA Rental Index (Ejar), registered rental contracts",
+    "datasetCoverage": "Riyadh, Saudi Arabia"
   },
   "flyer": {
     "riyadh": "Riyadh",
@@ -1315,7 +1377,9 @@
     "platformSample": "platform sample",
     "footer": "SAT Markets · Powered by SAT Real Estate · FAL 1200025510",
     "scanHint": "Scan to open the live listing",
-    "qrAria": "QR code to the live listing"
+    "qrAria": "QR code to the live listing",
+    "officeAvg": "Office average {rate} SAR/m²·yr. ",
+    "indexSource": "Source: REGA Rental Index (Ejar), average of registered rental contracts. Indicative, not advice."
   },
   "termsheet": {
     "dealRoomLink": "← Deal room",
@@ -1420,7 +1484,19 @@
     "metaTitle": "{name} | SAT Markets",
     "metaDesc": "Verified commercial spaces listed by {name} on SAT Markets, with the published Rent Index behind every figure.",
     "metaTitleFallback": "Lister | SAT Markets",
-    "metaDescFallback": "Verified owners and licensed brokers listing commercial space on SAT Markets."
+    "metaDescFallback": "Verified owners and licensed brokers listing commercial space on SAT Markets.",
+    "roleBroker": "Licensed broker",
+    "roleOwner": "Owner",
+    "spaces": "Spaces on the market",
+    "none": "No spaces are live right now.",
+    "website": "Website",
+    "verified": "Verified",
+    "onReq": "On request",
+    "forLease": "for lease",
+    "forSale": "for sale",
+    "since": "On SAT Markets since",
+    "verifiedBy": "Identity verified by SAT",
+    "operator": "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn."
   },
   "legalMeta": {
     "termsTitle": "Terms of Service | SAT Markets",
@@ -1429,5 +1505,18 @@
     "privacyDesc": "How SAT Markets collects, uses and protects personal data, and the choices open to you. A working draft pending review by licensed counsel in Saudi Arabia.",
     "contactTitle": "Contact | SAT Markets",
     "contactDesc": "Reach SAT Real Estate about a listing, the Rent Index or a partnership. Riyadh, Saudi Arabia. REGA FAL licence 1200025510."
+  },
+  "appMeta": {
+    "title": "SAT Markets | Verified commercial real estate, Saudi Arabia",
+    "description": "Riyadh-first commercial leasing and sales exchange. Verified listings, decision-grade rent index, AI search. A neutral, verified commercial real estate intelligence platform.",
+    "appName": "SAT Markets"
+  },
+  "notFound": {
+    "body": "This page could not be found.",
+    "back": "Back to SAT Markets"
+  },
+  "errorPage": {
+    "body": "We could not load this page. Try again.",
+    "retry": "Try again"
   }
 }

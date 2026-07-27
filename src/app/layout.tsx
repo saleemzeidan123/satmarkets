@@ -3,6 +3,7 @@ import "@/styles/sat-platform.css";
 import "@/styles/footer.css";
 import type { ReactNode } from "react";
 import { headers } from "next/headers";
+import { getDictionary } from "@/i18n/getDictionary";
 import { Source_Serif_4, Hanken_Grotesk, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
 
 // Typography system (Fable review). EN display is Source Serif 4, a low-contrast
@@ -16,20 +17,28 @@ const sans = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", 
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "swap", variable: "--font-mono" });
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], display: "swap", variable: "--font-ar" });
 
-export const metadata = {
-  title: "SAT Markets | Verified commercial real estate, Saudi Arabia",
-  description: "Riyadh-first commercial leasing and sales exchange. Verified listings, decision-grade rent index, AI search. A neutral, verified commercial real estate intelligence platform.",
-  manifest: "/manifest.webmanifest",
-  applicationName: "SAT Markets",
-  appleWebApp: { capable: true, statusBarStyle: "default" as const, title: "SAT Markets" },
-  icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
-    ],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
-  }
-};
+// Root metadata is what every route inherits before its own factory runs, and it
+// is also the installed-app identity. It was frozen in English, so an Arabic
+// visitor who added the app to a home screen got an English name. It now reads
+// the locale the middleware resolved, the same one <html lang> uses below, and
+// takes its words from the dictionaries like every other public surface.
+export function generateMetadata() {
+  const d = getDictionary(headers().get("x-locale") === "ar" ? "ar" : "en").appMeta;
+  return {
+    title: d.title,
+    description: d.description,
+    manifest: "/manifest.webmanifest",
+    applicationName: d.appName,
+    appleWebApp: { capable: true, statusBarStyle: "default" as const, title: d.appName },
+    icons: {
+      icon: [
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" }
+      ],
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+    }
+  };
+}
 
 export const viewport = {
   width: "device-width",
