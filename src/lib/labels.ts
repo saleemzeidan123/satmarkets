@@ -23,6 +23,21 @@ export const fitoutLabel = (t: string, l: L) => (FITOUT[t]?.[idx(l)]) ?? t;
 export const confLabel = (t: string, l: L) => (CONF[t]?.[idx(l)]) ?? t;
 export const cityLabel = (t: string | null | undefined, l: L) => (t ? (CITY[t]?.[idx(l)] ?? t) : "");
 
+/**
+ * The grade as it belongs INSIDE a sentence, or nothing at all.
+ *
+ * gradeLabel returns the bare letter for a chip, and returns the literal N/A
+ * when a listing carries no grade, which is right for a table cell and wrong for
+ * prose: it produced descriptions reading "N/A Serviced in Al Aqiq", and in
+ * Arabic it dropped a Latin abbreviation into the middle of an Arabic sentence.
+ * Every visible surface already guards on n_a; only the metadata layer did not.
+ * An absent grade is absent, so the phrase disappears and fillProse closes the
+ * gap. The word is here rather than in the dictionaries because the grade
+ * vocabulary itself lives here.
+ */
+export const gradePhrase = (t: string | null | undefined, l: L): string =>
+  !t || t === "n_a" ? "" : l === "ar" ? `فئة ${gradeLabel(t, l)}` : `Grade ${gradeLabel(t, l)}`;
+
 const SEGMENT: Record<string,[string,string]> = {
   grade_a:["Grade A","فئة A"], grade_b:["Grade B","فئة B"], serviced:["Serviced & furnished","مخدومة ومفروشة"],
   clinic:["Clinic in Grade A mixed-use","عيادات ضمن مبانٍ فئة A"], modern:["Modern · post-2015","حديثة · بعد 2015"],

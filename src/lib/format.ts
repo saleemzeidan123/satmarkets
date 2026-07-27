@@ -254,3 +254,25 @@ export const formatCounted = (n: number, noun: CountedNoun, locale: Loc): string
 export function fill(template: string, vars: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in vars ? String(vars[key]) : whole));
 }
+
+/**
+ * Fill a sentence whose variable parts are ALLOWED to be empty, then close the
+ * gap the empty part leaves behind.
+ *
+ * A building grade, a district qualifier or a type word is optional data. The
+ * wrong answer is to print a placeholder such as N/A inside a sentence, which is
+ * how a description ends up reading "N/A Serviced in Al Aqiq" and, in Arabic,
+ * how a Latin abbreviation lands in the middle of Arabic prose. The right answer
+ * is for the phrase to disappear and for the sentence to still read correctly:
+ * one space between words, and no space before a comma or a full stop in either
+ * script.
+ *
+ * Only the ASCII space is collapsed. The invisible bidi isolates and word
+ * joiners the unit formatters emit are left exactly where they were put.
+ */
+export function fillProse(template: string, vars: Record<string, string | number>): string {
+  return fill(template, vars)
+    .replace(/ {2,}/g, " ")
+    .replace(/ ([,،.:؛])/g, "$1")
+    .trim();
+}

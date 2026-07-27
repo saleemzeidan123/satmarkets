@@ -4,7 +4,7 @@ import {
   formatNumber, formatInteger, formatDecimal, formatPercent, formatRange,
   formatUnit, formatArea, formatWithUnit, formatMoney,
   pluralCategory, plural, formatCount, formatCounted,
-  bidiIsolate, ltrIsolate, resolveUnitKey, UNITS, COUNTED, fill,
+  bidiIsolate, ltrIsolate, resolveUnitKey, UNITS, COUNTED, fill, fillProse,
 } from "./format";
 
 const FSI = "⁨", PDI = "⁩", LRI = "⁦", WJ = "⁠";
@@ -212,4 +212,32 @@ test("fill puts values into dictionary prose and keeps a missing key visible", (
   assert.equal(fill("x{in}y", { in: "" }), "xy");
   // Nothing that is not a placeholder is touched.
   assert.equal(fill("100% { spaced } {}", {}), "100% { spaced } {}");
+});
+
+test("fillProse closes the gap an optional phrase leaves behind, in both scripts", () => {
+  // The live defect: an ungraded listing rendered "N/A Serviced in Al Aqiq".
+  // With the grade gone the sentence must still read as one.
+  const en = "{grade} {type} in {place}, {area}. Indicative, not advice.";
+  assert.equal(fillProse(en, { grade: "Grade A", type: "Office", place: "Al Olaya", area: "300 m²" }),
+    "Grade A Office in Al Olaya, 300 m². Indicative, not advice.");
+  assert.equal(fillProse(en, { grade: "", type: "Office", place: "Al Olaya", area: "300 m²" }),
+    "Office in Al Olaya, 300 m². Indicative, not advice.");
+  const ar = "{type} {grade} في {place}، {area}.";
+  assert.equal(fillProse(ar, { type: "مكاتب", grade: "فئة أ", place: "العليا", area: "300 م²" }), "مكاتب فئة أ في العليا، 300 م².");
+  assert.equal(fillProse(ar, { type: "مكاتب", grade: "", place: "العليا", area: "300 م²" }), "مكاتب في العليا، 300 م².");
+  // An empty segment before punctuation must not leave a space in front of it,
+  // in either script.
+  assert.equal(fillProse("{title}{type} | SAT Markets", { title: "Serviced offices, Al Aqiq", type: "" }), "Serviced offices, Al Aqiq | SAT Markets");
+  assert.equal(fillProse("{a} ، {b}", { a: "س", b: "ص" }), "س، ص");
+  assert.equal(fillProse("  {a}  ", { a: "x" }), "x");
+});
+
+test("fillProse collapses spaces without touching the invisible controls", () => {
+  // The unit formatters put word joiners and isolates in deliberately. A prose
+  // filler that stripped them would silently undo PKG-1B.2's unbreakable unit.
+  const area = formatArea(2000, "ar");
+  const out = fillProse("{a}  {b}", { a: area, b: formatWithUnit(1420.5, "sar_sqm_year", "ar") });
+  assert.equal(out, `${area} ${formatWithUnit(1420.5, "sar_sqm_year", "ar")}`);
+  assert.match(out, /[\u2066-\u2069]/);
+  assert.match(out, /\u2060/);
 });

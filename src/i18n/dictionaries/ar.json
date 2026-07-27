@@ -267,9 +267,11 @@
     "parking": "مواقف السيارات",
     "civilDefense": "الدفاع المدني",
     "statedGeneric": "كما ذكرها المُعلن",
-    "metaTitle": "{title}، {type}{in} | سات ماركتس",
+    "metaTitle": "{title}{type}{in} | سات ماركتس",
     "metaIn": " في {place}",
-    "metaDesc": "{type} {grade} في {place}، {area}، {price}. عرض موثّق من المالك على سات ماركتس، مدعوم بمؤشر الإيجارات المنشور. استرشادي وليس نصيحة."
+    "metaDesc": "{type} {grade} في {place}، {area}، {price}. عرض موثّق من المالك على سات ماركتس، مدعوم بمؤشر الإيجارات المنشور. استرشادي وليس نصيحة.",
+    "metaType": "، {type}",
+    "metaTitleFallback": "{type} في {place}"
   },
   "chrome": {
     "tabHome": "الرئيسية",

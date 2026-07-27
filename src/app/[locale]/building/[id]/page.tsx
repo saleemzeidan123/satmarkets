@@ -2,14 +2,14 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, gradeLabel, cityLabel } from "@/lib/labels";
+import { assetLabel, gradeLabel, gradePhrase, cityLabel } from "@/lib/labels";
 import { photoFor } from "@/lib/photos";
 import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill } from "@/lib/format";
+import { fillProse } from "@/lib/format";
 import { getBuildingById } from "@/lib/queries/listings";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
@@ -25,10 +25,12 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   if (!b) return { title: dict.building.metaNotFound };
   const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (dict.building.fallbackName);
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
-  const grade = gradeLabel(b.grade, loc);
+  // An ungraded building has no grade phrase at all, rather than an N/A sitting
+  // inside the sentence in both languages.
+  const grade = gradePhrase(b.grade, loc);
   const type = assetLabel(b.asset_type, loc);
-  const title = fill(dict.building.metaTitle, { name, place });
-  const description = fill(dict.building.metaDesc, { name, type, grade, place });
+  const title = fillProse(dict.building.metaTitle, { name, place });
+  const description = fillProse(dict.building.metaDesc, { name, type, grade, place });
   return localeMeta(params.locale, `/building/${params.id}`, title, description, { type: "article" });
 }
 

@@ -267,9 +267,11 @@
     "parking": "Parking",
     "civilDefense": "Civil Defense",
     "statedGeneric": "Stated by the lister",
-    "metaTitle": "{title}, {type}{in} | SAT Markets",
+    "metaTitle": "{title}{type}{in} | SAT Markets",
     "metaIn": " in {place}",
-    "metaDesc": "{grade} {type} in {place}, {area}, {price}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice."
+    "metaDesc": "{grade} {type} in {place}, {area}, {price}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.",
+    "metaType": ", {type}",
+    "metaTitleFallback": "{type} in {place}"
   },
   "chrome": {
     "tabHome": "Home",

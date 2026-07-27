@@ -2,12 +2,12 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
+import { assetLabel, gradeLabel, gradePhrase, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, formatArea, formatMoney, formatWithUnit } from "@/lib/format";
+import { fill, fillProse, formatArea, formatMoney, formatWithUnit } from "@/lib/format";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -37,16 +37,25 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   if (!l) return { title: dict.ld.notFoundTitle };
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
   const type = assetLabel(l.asset_type, loc);
-  const grade = gradeLabel(l.building_grade, loc);
-  const t0 = (ar ? l.title_ar : l.title_en) || l.reference_code;
+  // An absent grade is absent. gradeLabel would print N/A into the sentence.
+  const grade = gradePhrase(l.building_grade, loc);
+  // A listing with no title in this language used to fall back to its reference
+  // code, so the Arabic share title read SATM-BB3FCB59 where the English one read
+  // a sentence. A code identifies a listing; it does not describe one. The
+  // fallback is now the same description the English side would give.
+  const t0 = String((ar ? l.title_ar : l.title_en) || fillProse(dict.ld.metaTitleFallback, { type, place: dn }));
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
   const priceStr = price != null
     ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", loc, "long", 0) : formatMoney(Number(price), loc))
     : dict.ld.onRequest;
-  const inDn = String(t0).includes(dn) ? "" : fill(dict.ld.metaIn, { place: dn });
-  const title = fill(dict.ld.metaTitle, { title: t0, type, in: inDn });
-  const description = fill(dict.ld.metaDesc, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
+  // Both qualifiers are dropped when the title already carries them, which is
+  // what stopped the English title reading "Serviced offices, Al Aqiq, Serviced".
+  const has = (needle: string) => needle.length > 0 && t0.toLowerCase().includes(needle.toLowerCase());
+  const typeSeg = has(type) ? "" : fill(dict.ld.metaType, { type });
+  const inSeg = has(dn) ? "" : fill(dict.ld.metaIn, { place: dn });
+  const title = fillProse(dict.ld.metaTitle, { title: t0, type: typeSeg, in: inSeg });
+  const description = fillProse(dict.ld.metaDesc, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
   return localeMeta(params.locale, `/listings/${params.id}`, title, description, { type: "article" });
 }
 
