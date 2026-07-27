@@ -39,7 +39,11 @@ export default async function SignupQueue() {
   const { data } = await sb.from("signup_requests").select("*").order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as Row[];
   const news = rows.filter((r) => r.status === "new").length;
-  const roleColor: Record<string, string> = { occupier: "#2C557F", owner: "#0E9488", broker: "#A88B5C", investor: "#7C3AED" };
+  // Role is a CATEGORY (who someone is), never a status, so these must not carry
+  // confirmed green and, per D24, not teal either. The role word is always written
+  // next to the swatch, so colour is never the sole carrier. Tokens resolve here
+  // because these are inline styles, not SVG presentation attributes.
+  const roleColor: Record<string, string> = { occupier: "var(--harbor-d)", owner: "var(--harbor)", broker: "var(--brass)", investor: "var(--slate)" };
   return (
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>

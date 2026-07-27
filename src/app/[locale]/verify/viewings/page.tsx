@@ -52,7 +52,7 @@ export default async function ViewingsQueue() {
               <tr key={r.id} style={{ background: r.status === "requested" ? "#FBF3E6" : "var(--paper)" }}>
                 <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11.5 }}>{riyadh(r.scheduled_at)}</span></td>
                 <td style={td}>{r.listings?.title_en || "?"}<div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10.5, color: "#8A93A0" }}>{r.listings?.reference_code || ""}</div></td>
-                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "#2C557F" : "#0E9488" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
+                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "var(--harbor-d)" : "var(--slate)" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
                 <td style={td}>{r.contact_name || ""}{r.contact_email ? <div><a href={`mailto:${r.contact_email}`} style={{ color: "var(--harbor-d)", fontSize: 12 }}>{r.contact_email}</a></div> : null}</td>
                 <td style={{ ...td, maxWidth: 280 }}>{r.qualification?.summary_en || ""}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: sColor[r.status] || "var(--slate)" }}>{r.status}</span></td>

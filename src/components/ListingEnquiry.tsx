@@ -241,7 +241,10 @@ export default function ListingEnquiry({
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
       <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>
-      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "#2C557F" : "#0E9488" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
+      {/* Who confirms the viewing is a PARTY distinction, not a status: SAT-hosted is the
+          branded path (Harbor Deep), lister-confirmed is neutral (slate). The neutral side
+          was an off-palette teal, ruled out by D24, which also read as a positive outcome. */}
+      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "var(--harbor-d)" : "var(--slate)" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
      </div>
      {vDone ? (
       <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>

@@ -28,8 +28,20 @@ const ALLOW: Record<string, string> = {
   "src/app/[locale]/listings/[id]/page.tsx": "verification (verified owner) + availability-confirmed (availability_confirmed_at)",
   "src/app/[locale]/listings/[id]/flyer/page.tsx": "verification: verified-owner tag",
   "src/app/[locale]/listings/page.tsx": "availability-confirmed (availability_confirmed_at)",
+  "src/components/ListingCard.tsx": "verification: passesGate() verified-listing tick (SVG stroke, literal because var() does not resolve in a presentation attribute)",
   "src/components/ContactBar.tsx": "third-party brand: WhatsApp fill",
 };
+
+// The allowlist above is ONE-DIRECTIONAL: it catches confirmed green used where it
+// does not belong, but it could not catch the opposite failure, which is what actually
+// happened on ListingCard: an evidence-backed verification tick rendered in an
+// off-palette teal, so the strongest signal on the most-viewed component read as a
+// decorative accent AND the reserved green was silently absent. D24 settled that teal
+// is not the positive-outcome colour, so the durable gate is to ban the hue outright
+// outside the ONE place it is a legitimate categorical hue: the retail asset-type
+// swatch in the centralized palette (permitted by D18/D23 as a justified chart colour).
+const TEAL = /#0e9488\b/i;
+const TEAL_ALLOW = new Set(["src/theme/palette.ts"]);
 
 // Reserved saturated green, but NOT the pale washes/lines and NOT var(--status-*).
 const GREEN = /#1b7a50\b|var\(--green\)|var\(--verified\)/i;
@@ -56,6 +68,18 @@ test("confirmed green appears only in enumerated verification/availability/brand
     });
   }
   assert.deepEqual(offenders, [], `Confirmed green outside the reserved allowlist:\n${offenders.join("\n")}`);
+});
+
+test("the off-palette teal is not used as a status or verification colour", () => {
+  const offenders: string[] = [];
+  for (const f of files("src")) {
+    const rel = f.replace(/\\/g, "/");
+    if (TEAL_ALLOW.has(rel)) continue;
+    readFileSync(f, "utf8").split("\n").forEach((ln, i) => {
+      if (TEAL.test(ln)) offenders.push(`${rel}:${i + 1}  ${ln.trim().slice(0, 80)}`);
+    });
+  }
+  assert.deepEqual(offenders, [], `Off-palette teal outside the categorical palette:\n${offenders.join("\n")}`);
 });
 
 test("the allowlist is not stale: every enumerated file still uses confirmed green", () => {
