@@ -23,7 +23,12 @@ const walk = (d) => {
 };
 walk("src/i18n");
 walk("src/lib/translate");
-if (fs.existsSync("src/lib/labels.ts")) files.push("src/lib/labels.ts");
+// Shipped Arabic copy that lives outside the dictionaries: the label catalogue
+// and the unit and plural formatter tables. Both render straight into public
+// pages, so both must clear the same voice gate as src/i18n.
+for (const p of ["src/lib/labels.ts", "src/lib/format.ts"]) {
+  if (fs.existsSync(p)) files.push(p);
+}
 
 let bad = 0;
 for (const f of files) {

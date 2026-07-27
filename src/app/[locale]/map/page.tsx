@@ -4,8 +4,14 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
+import { localeMeta } from "@/lib/meta";
 
 const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+  const m = getDictionary(params.locale === "ar" ? "ar" : "en").map;
+  return localeMeta(params.locale, "/map", m.metaTitle, m.metaDesc);
+}
 
 export default async function MapPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();

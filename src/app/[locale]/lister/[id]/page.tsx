@@ -5,7 +5,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
-import { SITE } from "@/components/JsonLd";
+import { localeMeta } from "@/lib/meta";
+import { fill } from "@/lib/format";
 
 // A lister's PUBLIC profile: who they are, and every space they have live. Reads the
 // listers_public view (the safe projection, only for accounts with a published
@@ -14,17 +15,20 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
-  const ar = params.locale === "ar";
+  const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
+  const t = getDictionary(loc).listerPage;
+  const path = `/lister/${params.id}`;
+  // A lister who cannot be loaded still gets a canonical and a reciprocal
+  // language set. Returning an empty object here is what made this route inherit
+  // the root layout's generic title with no canonical at all.
+  let name: string | null = null;
   const sb = getSupabaseServer();
-  if (!sb) return {};
-  const { data } = await sb.from("listers_public").select("name_en,name_ar").eq("id", params.id).maybeSingle();
-  const name = data ? ((ar ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) : null;
-  if (!name) return { title: "SAT Markets" };
-  return {
-    title: ar ? `${name} | سات ماركتس` : `${name} | SAT Markets`,
-    description: ar ? `مساحات ${name} المعروضة والموثّقة على سات ماركتس.` : `Verified spaces listed by ${name} on SAT Markets.`,
-    alternates: { canonical: `${SITE}/${params.locale}/lister/${params.id}` },
-  };
+  if (sb) {
+    const { data } = await sb.from("listers_public").select("name_en,name_ar").eq("id", params.id).maybeSingle();
+    if (data) name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
+  }
+  if (!name) return localeMeta(params.locale, path, t.metaTitleFallback, t.metaDescFallback);
+  return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(t.metaDesc, { name }));
 }
 
 export default async function ListerProfilePage({ params }: { params: { locale: string; id: string } }) {

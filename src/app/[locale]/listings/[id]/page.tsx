@@ -6,6 +6,8 @@ import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { localeMeta } from "@/lib/meta";
+import { fill, formatArea, formatMoney, formatWithUnit } from "@/lib/format";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -39,14 +41,13 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const t0 = (ar ? l.title_ar : l.title_en) || l.reference_code;
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
-  const priceStr = price != null ? `${Number(price).toLocaleString("en-US")} ${lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}` : (dict.ld.onRequest);
-  const inDn = String(t0).includes(dn) ? "" : (ar ? ` في ${dn}` : ` in ${dn}`);
-  const title = ar ? `${t0}، ${type}${inDn} | سات ماركتس` : `${t0}, ${type}${inDn} | SAT Markets`;
-  const description = ar
-    ? `${type} ${grade} في ${dn}، ${l.area_sqm} م²، ${priceStr}. عرض موثّق من المالك على سات ماركتس، مدعوم بمؤشر الإيجارات المنشور. استرشادي وليس نصيحة.`
-    : `${grade} ${type} in ${dn}, ${l.area_sqm} m², ${priceStr}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice.`;
-  const url = `${SITE}/${params.locale}/listings/${params.id}`;
-  return { title, description, alternates: { canonical: url, languages: { en: `${SITE}/en/listings/${params.id}`, ar: `${SITE}/ar/listings/${params.id}` } }, openGraph: { title, description, url, type: "website" } };
+  const priceStr = price != null
+    ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", loc, "long", 0) : formatMoney(Number(price), loc))
+    : dict.ld.onRequest;
+  const inDn = String(t0).includes(dn) ? "" : fill(dict.ld.metaIn, { place: dn });
+  const title = fill(dict.ld.metaTitle, { title: t0, type, in: inDn });
+  const description = fill(dict.ld.metaDesc, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
+  return localeMeta(params.locale, `/listings/${params.id}`, title, description, { type: "article" });
 }
 
 export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {

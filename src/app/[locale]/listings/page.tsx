@@ -29,6 +29,8 @@ import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
 // trust mark it had not earned, on the platform that publishes /neutrality.
 import { ownerVerified } from "@/lib/gate";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { localeMeta } from "@/lib/meta";
+import { fill } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
@@ -51,13 +53,13 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   const deal = searchParams.deal ? dealLabel(searchParams.deal, loc) : "";
   const what = [asset, deal].filter(Boolean).join(" ").trim();
   const title = locLabel
-    ? (ar ? `${what || "مساحات تجارية"} في ${locLabel} | سات ماركتس` : `${what || "Commercial spaces"} in ${locLabel} | SAT Markets`)
-    : (dict.listings.metaTitle);
+    ? fill(dict.listings.metaTitleIn, { what: what || dict.listings.metaWhatFallback, place: locLabel })
+    : dict.listings.metaTitle;
   const description = locLabel
-    ? (ar ? `تصفّح المساحات التجارية الموثّقة في ${locLabel} على سات ماركتس، من الملّاك مباشرة ومدعومة بمؤشر الإيجارات المنشور.` : `Browse verified commercial spaces in ${locLabel} on SAT Markets, owner-verified and backed by the published Rent Index.`)
-    : (dict.listings.metaDesc);
+    ? fill(dict.listings.metaDescIn, { place: locLabel })
+    : dict.listings.metaDesc;
   const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
-  return { title, description, alternates: { canonical: `${SITE}/${params.locale}/listings${qs}`, languages: { en: `${SITE}/en/listings${qs}`, ar: `${SITE}/ar/listings${qs}` } }, openGraph: { title, description, url: `${SITE}/${params.locale}/listings${qs}`, type: "website", siteName: "SAT Markets" } };
+  return localeMeta(params.locale, `/listings${qs}`, title, description);
 }
 
 export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {

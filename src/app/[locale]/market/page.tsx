@@ -7,18 +7,13 @@ import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/mar
 import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
+import { localeMeta } from "@/lib/meta";
 
 export const revalidate = 1800;
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const ar = params.locale === "ar";
-  const t = getDictionary(ar ? "ar" : "en").marketPage;
-  return {
-    title: t.metaTitle,
-    description: t.metaDesc,
-    alternates: { canonical: `${SITE}/${params.locale}/market`, languages: { en: `${SITE}/en/market`, ar: `${SITE}/ar/market` } },
-    openGraph: { title: t.metaTitle, url: `${SITE}/${params.locale}/market`, type: "website", siteName: "SAT Markets" },
-  };
+  const t = getDictionary(params.locale === "ar" ? "ar" : "en").marketPage;
+  return localeMeta(params.locale, "/market", t.metaTitle, t.metaDesc);
 }
 
 export default async function MarketPage({ params }: { params: { locale: string } }) {

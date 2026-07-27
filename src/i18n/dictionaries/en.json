@@ -266,7 +266,10 @@
     "power": "Power",
     "parking": "Parking",
     "civilDefense": "Civil Defense",
-    "statedGeneric": "Stated by the lister"
+    "statedGeneric": "Stated by the lister",
+    "metaTitle": "{title}, {type}{in} | SAT Markets",
+    "metaIn": " in {place}",
+    "metaDesc": "{grade} {type} in {place}, {area}, {price}. Owner-verified listing on SAT Markets, backed by the published Rent Index. Indicative, not advice."
   },
   "chrome": {
     "tabHome": "Home",
@@ -328,7 +331,10 @@
     "mapArea": "in this map area",
     "clearArea": "clear",
     "withinBand": "Within index band",
-    "newBadge": "New"
+    "newBadge": "New",
+    "metaTitleIn": "{what} in {place} | SAT Markets",
+    "metaWhatFallback": "Commercial spaces",
+    "metaDescIn": "Browse verified commercial spaces in {place} on SAT Markets, owner-verified and backed by the published Rent Index."
   },
   "pricing": {
     "na": "n/a",
@@ -529,7 +535,9 @@
         "7.6%",
         "486M"
       ]
-    ]
+    ],
+    "metaTitle": "Highest and best use analysis | SAT Markets",
+    "metaDesc": "Model the use that earns a site the most: rent escalation, stabilised occupancy, exit cap rate and levered return, on sample data with every assumption shown."
   },
   "list": {
     "sellVerified": "Verified, prominent placement",
@@ -711,7 +719,9 @@
     "scoreBody": "Each site is scored across these five lenses with the reasoning shown, never a black-box number. Works across offices, retail, mixed-use and warehouses, not just retail.",
     "pdplNote": "Location data is treated as sensitive: anonymised and aggregated. No on-site sensors and no personal images, ever.",
     "signalsLabel": "Location signals",
-    "sampleTag": "Sample data"
+    "sampleTag": "Sample data",
+    "metaTitle": "Location Intelligence, Al Olaya trade area | SAT Markets",
+    "metaDesc": "Footfall, trade-area catchment and co-tenancy for Al Olaya, Riyadh. Built for Saudi Arabia and scored transparently across five lenses for reliable site selection."
   },
   "rentIndex": {
     "na": "n/a",
@@ -913,7 +923,9 @@
     "metaNotFound": "Building not found | SAT Markets",
     "fallbackName": "Building",
     "crumbHome": "Home",
-    "crumbListings": "Listings"
+    "crumbListings": "Listings",
+    "metaTitle": "{name}, {place} | SAT Markets",
+    "metaDesc": "{name}: {grade} {type} building in {place}. Available units, verified rent band and location intelligence on SAT Markets. Indicative, not advice."
   },
   "docs": {
     "sheet1": "Floor plate · L18",
@@ -1051,7 +1063,9 @@
     "rentBand": "Rent band",
     "results": "buildings",
     "close": "Close",
-    "clusterUnit": "buildings"
+    "clusterUnit": "buildings",
+    "metaTitle": "Commercial space map, Saudi Arabia | SAT Markets",
+    "metaDesc": "Every verified building SAT Markets covers, mapped by district and asset type, with the published Rent Index band where the sample is sufficient. Indicative, not advice."
   },
   "locations": {
     "directory": "The directory",
@@ -1073,7 +1087,8 @@
     "metaTitle": "Commercial locations across Saudi Arabia | SAT Markets",
     "crumbHome": "Home",
     "crumbLocations": "Locations",
-    "itemListName": "Commercial locations in Saudi Arabia"
+    "itemListName": "Commercial locations in Saudi Arabia",
+    "metaDesc": "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index average where the data is sufficient."
   },
   "enquiry": {
     "errSend": "Could not send the request. Please try again.",
@@ -1329,7 +1344,8 @@
     "errNotConfigured": "Sign-in is not configured on this environment yet.",
     "errEnterEmail": "Enter your email first, then request a link.",
     "signOut": "Sign out",
-    "metaTitle": "Sign in | SAT Markets"
+    "metaTitle": "Sign in | SAT Markets",
+    "metaDesc": "Sign in to SAT Markets to manage listings, enquiries and viewings."
   },
   "reqDetail": {
     "back": "All requirements",
@@ -1368,7 +1384,9 @@
     "hiddenNote": "Respondent details are visible to the occupier who posted this requirement. They are not shown publicly.",
     "ownersB": "owners",
     "brokersB": "brokers",
-    "yours": "Your response"
+    "yours": "Your response",
+    "metaTitle": "Requirement | SAT Markets",
+    "metaDesc": "A verified occupier requirement on SAT Markets. Owners and licensed brokers can register interest directly, with no assumed commission."
   },
   "locFacts": {
     "title": "Location facts",
@@ -1396,5 +1414,19 @@
     "srcMetro": "Metro: Riyadh Metro network, RCRC Open Data.",
     "srcRail": "High-speed rail: Haramain stations, OpenStreetMap.",
     "srcComputed": "Distances computed by SAT Markets."
+  },
+  "listerPage": {
+    "metaTitle": "{name} | SAT Markets",
+    "metaDesc": "Verified commercial spaces listed by {name} on SAT Markets, with the published Rent Index behind every figure.",
+    "metaTitleFallback": "Lister | SAT Markets",
+    "metaDescFallback": "Verified owners and licensed brokers listing commercial space on SAT Markets."
+  },
+  "legalMeta": {
+    "termsTitle": "Terms of Service | SAT Markets",
+    "termsDesc": "The terms that govern access to and use of the SAT Markets exchange, its Rent Index and its advisor. A working draft pending review by licensed counsel in Saudi Arabia.",
+    "privacyTitle": "Privacy Policy | SAT Markets",
+    "privacyDesc": "How SAT Markets collects, uses and protects personal data, and the choices open to you. A working draft pending review by licensed counsel in Saudi Arabia.",
+    "contactTitle": "Contact | SAT Markets",
+    "contactDesc": "Reach SAT Real Estate about a listing, the Rent Index or a partnership. Riyadh, Saudi Arabia. REGA FAL licence 1200025510."
   }
 }

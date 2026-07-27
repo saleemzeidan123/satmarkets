@@ -1,12 +1,15 @@
 import type { ReactNode } from "react";
 import { getDictionary } from "@/i18n/getDictionary";
+import { localeMeta } from "@/lib/meta";
 
 // SM-P1-009 / route metadata: the login route carries its own localized title
-// and is never indexable (it is an authentication surface, not marketing).
+// and is never indexable (it is an authentication surface, not marketing). It
+// still goes through the factory, because a canonical and a reciprocal language
+// set are how a crawler learns the two locales are the same page, which is a
+// separate question from whether it may index them.
 export function generateMetadata({ params }: { params: { locale: string } }) {
-  const ar = params.locale === "ar";
-  const t = getDictionary(ar ? "ar" : "en").login;
-  return { title: t.metaTitle, robots: { index: false, follow: false } };
+  const t = getDictionary(params.locale === "ar" ? "ar" : "en").login;
+  return localeMeta(params.locale, "/login", t.metaTitle, t.metaDesc, { robots: { index: false, follow: false } });
 }
 
 export default function LoginLayout({ children }: { children: ReactNode }) {

@@ -6,6 +6,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { cityLabel } from "@/lib/labels";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
+import { localeMeta } from "@/lib/meta";
 
 export const revalidate = 3600;
 
@@ -14,16 +15,8 @@ type Loc = { id: string; city: string; name_en: string; name_ar: string; kind: s
 const KIND_ORDER = ["district", "development", "area"];
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
-  const ar = params.locale === "ar";
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").locations;
-  return {
-    title: d.metaTitle,
-    description: ar
-      ? "الأحياء والمشاريع والمناطق التجارية التي تغطيها سات ماركتس، مع عدد المساحات الموثّقة ومتوسط مؤشر الإيجارات للمكاتب حيث تكفي البيانات."
-      : "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index average where the data is sufficient.",
-    alternates: { canonical: `${SITE}/${params.locale}/locations`, languages: { en: `${SITE}/en/locations`, ar: `${SITE}/ar/locations` } },
-    openGraph: { title: d.metaTitle, url: `${SITE}/${params.locale}/locations`, type: "website", siteName: "SAT Markets" },
-  };
+  return localeMeta(params.locale, "/locations", d.metaTitle, d.metaDesc);
 }
 
 export default async function LocationsPage({ params }: { params: { locale: string } }) {

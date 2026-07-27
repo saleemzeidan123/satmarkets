@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Icon, MarkPin } from "@/components/satkit";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
+import { localeMeta } from "@/lib/meta";
 
 function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string; dir?: string }) {
  return (
@@ -18,11 +19,8 @@ function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string;
 }
 
 export async function generateMetadata({ params }: { params: { locale: string } }) {
- const ar = params.locale === "ar";
- const title = ar ? "ذكاء الموقع، نطاق العليا التجاري | سات ماركتس" : "Location Intelligence, Al Olaya trade area | SAT Markets";
- const description = ar ? "حركة المشاة والنطاق التجاري والجوار في العليا بالرياض، مبنية للمملكة ومقيّمة بشفافية عبر خمس عدسات." : "Footfall, trade-area catchment and co-tenancy for Al Olaya, Riyadh. Built for Saudi Arabia and scored transparently across five lenses for reliable site selection.";
- const url = `${SITE}/${params.locale}/area`;
- return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" } };
+ const a = getDictionary(params.locale === "ar" ? "ar" : "en").area;
+ return localeMeta(params.locale, "/area", a.metaTitle, a.metaDesc);
 }
 
 export default function AreaPage({ params }: { params: { locale: string } }) {

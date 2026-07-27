@@ -4,6 +4,13 @@ import { Icon, Verified } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
 import SampleBanner from "@/components/SampleBanner";
+import { localeMeta } from "@/lib/meta";
+
+export function generateMetadata({ params }: { params: { locale: string } }) {
+ const h = getDictionary(params.locale === "ar" ? "ar" : "en").hbu;
+ return localeMeta(params.locale, "/hbu", h.metaTitle, h.metaDesc);
+}
+
 export default function HbuPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";

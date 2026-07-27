@@ -8,6 +8,8 @@ import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
 import JsonLd, { SITE } from "@/components/JsonLd";
+import { localeMeta } from "@/lib/meta";
+import { fill } from "@/lib/format";
 import { getBuildingById } from "@/lib/queries/listings";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
@@ -25,12 +27,9 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
   const grade = gradeLabel(b.grade, loc);
   const type = assetLabel(b.asset_type, loc);
-  const title = ar ? `${name}، ${place} | سات ماركتس` : `${name}, ${place} | SAT Markets`;
-  const description = ar
-    ? `${name}: مبنى ${type} ${grade} في ${place}. الوحدات المتاحة ونطاق الإيجار الموثّق وذكاء الموقع على سات ماركتس. استرشادي وليس نصيحة.`
-    : `${name}: ${grade} ${type} building in ${place}. Available units, verified rent band and location intelligence on SAT Markets. Indicative, not advice.`;
-  const url = `${SITE}/${params.locale}/building/${params.id}`;
-  return { title, description, alternates: { canonical: url, languages: { en: `${SITE}/en/building/${params.id}`, ar: `${SITE}/ar/building/${params.id}` } }, openGraph: { title, description, url, type: "website" } };
+  const title = fill(dict.building.metaTitle, { name, place });
+  const description = fill(dict.building.metaDesc, { name, type, grade, place });
+  return localeMeta(params.locale, `/building/${params.id}`, title, description, { type: "article" });
 }
 
 export default async function BuildingPage({ params }: { params: { locale: string; id: string } }) {
