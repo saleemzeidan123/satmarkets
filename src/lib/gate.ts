@@ -67,8 +67,11 @@ export function passesGate(l: GateFields): boolean {
   return gateFailures(l).length === 0;
 }
 
-// "Verified owner" is a narrower claim than "verified listing" and is allowed to
-// stand on its own.
+// The truth source for the ownership leg, and nothing more. ADV-1 and owner decision
+// O3 retired the badge this once justified: "Verified owner" is narrower than
+// "verified listing", but it is still a claim with no date, no method and no reviewer
+// in it, so no surface renders either phrase now. src/lib/listingVerification.ts
+// extends this function into named dimensions; it does not replace it.
 export function ownerVerified(l: GateFields): boolean {
   return l.ownership_verified === true;
 }

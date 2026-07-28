@@ -54,7 +54,10 @@ const ALLOW: Record<string, Allow> = {
   "src/app/[locale]/listings/[id]/page.tsx": { reason: "verification (verified owner) + availability-confirmed (availability_confirmed_at)", context: AVAILABILITY },
   "src/app/[locale]/listings/[id]/flyer/page.tsx": { reason: "verification: verified-owner tag", context: VERIFICATION },
   "src/app/[locale]/listings/page.tsx": { reason: "availability-confirmed (availability_confirmed_at)", context: AVAILABILITY },
-  "src/components/ListingCard.tsx": { reason: "verification: passesGate() verified-listing tick (SVG stroke, literal because var() does not resolve in a presentation attribute)", context: VERIFICATION },
+  // ADV-1 (C). This read "passesGate() verified-listing tick" until the card stopped
+  // asking the publish gate whether a record was verified. The gate answers a different
+  // question, and two of its four legs answer PASS when nobody has looked.
+  "src/components/ListingCard.tsx": { reason: "verification: the resolved badge tick (SVG stroke, literal because var() does not resolve in a presentation attribute)", context: VERIFICATION },
   "src/components/ContactBar.tsx": { reason: "third-party brand: WhatsApp fill", context: /whatsapp|wa_fill|wa_hover/i },
   "src/styles/sat-platform.css": { reason: "token definitions + the .verified badge (evidence-backed verification)", context: /verif|confirmed-status/i },
   "src/styles/footer.css": { reason: "verification: the FAL 1200025510 licence credential pill", context: /licence|license|tpill|fal 1200025510/i },

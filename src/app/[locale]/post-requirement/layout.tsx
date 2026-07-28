@@ -18,7 +18,7 @@ export function generateMetadata({ params }: { params: { locale: string } }): Me
     // in a search result, away from the page and away from the preview notice, so
     // here the wording states who can respond without asserting they were checked.
     "Post what you need. Owners and licensed brokers with a matching space can respond, and you choose whom to contact.",
-    "انشر ما تحتاجه، فيستجيب الملاك والوسطاء المرخّصون ممن لديهم مساحة مطابقة، وتختار من تتواصل معه."
+    "انشر ما تحتاجه، فيستجيب الملّاك والوسطاء المرخّصون ممن لديهم مساحة مطابقة، وتختار من تتواصل معه."
   );
 }
 

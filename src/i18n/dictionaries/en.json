@@ -25,7 +25,6 @@
     "language": "Language"
   },
   "listing": {
-    "verified": "Verified",
     "rentBand": "Published rent band",
     "medianAsking": "Average asking",
     "medianAchieved": "Average achieved",
@@ -63,7 +62,6 @@
   },
   "dash": {
     "verifyPending": "Your account is not verified yet. Listings stay in draft until SAT verifies ownership.",
-    "verified": "Verified owner",
     "district": "District",
     "description": "Description"
   },
@@ -85,7 +83,6 @@
     "perSqmYear": "SAR / m² / year",
     "sar": "SAR",
     "onRequest": "On request",
-    "verifiedListing": "Verified listing",
     "verificationIncomplete": "Verification incomplete",
     "view": "View",
     "allListings": "All listings",
@@ -152,7 +149,7 @@
     "noBandLease": "No sufficient sample range for this space yet. The advisor can estimate the market context.",
     "noBandSale": "The Rent Index tracks lease rent per m² per year; sale-price context is available via the advisor.",
     "askAdvisor": "Ask the advisor →",
-    "bandsDisclaimer": "Bands from the SAT published Rent Index. Indicative, not advice.",
+    "bandsDisclaimer": "Bands from the published REGA Rental Index (Ejar). Indicative, not advice.",
     "sample": "sample",
     "driveTime": "Drive-time · 5 / 10 / 15 min",
     "daytimePopulation": "Daytime population",
@@ -204,7 +201,7 @@
     "verifDocsNote": "Visible only to you and the SAT team, never to viewers.",
     "parkingRatio": "1 space / {area}",
     "approved": "Approved",
-    "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed by a verified owner on SAT Markets, with published Rent Index context where available. Indicative, not advice."
+    "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed on SAT Markets with ownership verified, with published Rent Index context where available. Indicative, not advice."
   },
   "chrome": {
     "tabHome": "Home",
@@ -606,8 +603,8 @@
     "compsIllustrative": "Illustrative set"
   },
   "list": {
-    "sellVerified": "Verified, prominent placement",
-    "sellPriced": "Priced against the Rent Index",
+    "sellVerified": "Ownership checked before publication",
+    "sellPriced": "Priced against the REGA Rental Index (Ejar)",
     "sellDirect": "Direct enquiries, no middleman",
     "eyebrow": "For owners",
     "h1": "List your space on the neutral exchange",
@@ -652,7 +649,7 @@
   },
   "dashboard": {
     "acctNameFallback": "Sample Owner Co.",
-    "acctRoleFallback": "Verified owner",
+    "acctRoleFallback": "Owner",
     "riyadh": "Riyadh",
     "na": "n/a",
     "m2": " m²",
@@ -660,7 +657,7 @@
     "sar": " SAR",
     "onRequest": "On request",
     "directEnquiry": "Direct enquiry",
-    "verifiedListing": "A verified listing",
+    "verifiedListing": "A listing",
     "navOverview": "Overview",
     "navMyListings": "My listings",
     "navEnquiries": "Enquiries",
@@ -736,7 +733,7 @@
     "gradeAOccupancy": "Grade A occupancy",
     "daytimeCatchment": "Daytime catchment",
     "sourcesUsed": "Sources used",
-    "sourceRentIndex": "Rent Index Q2 2026",
+    "sourceRentIndex": "REGA Rental Index (Ejar) Q2 2026",
     "sourceRega": "REGA Rental Index (Ejar)",
     "sourceListings": "Platform listing records",
     "metaTitle": "AI Advisor | SAT Markets",
@@ -896,7 +893,7 @@
     "allReqs": "All requirements",
     "postReqTitle": "Post a requirement",
     "tellMarket": "Tell the market what you need",
-    "intro": "Post your requirement and verified owners, brokers and SAT bring matching space to you. The reverse of searching.",
+    "intro": "Post your requirement and owners, brokers and SAT bring matching space to you. The reverse of searching.",
     "newReq": "New requirement",
     "draft": "Draft",
     "lookingFor": "What are you looking for?",
@@ -916,11 +913,11 @@
     "fullNamePh": "Full name",
     "email": "Email",
     "phone": "Phone",
-    "postsToNote": "Posts to verified owners, brokers and the SAT desk.",
-    "privacyNote": "Visible to verified owners, brokers & SAT · your identity stays private until you respond.",
+    "postsToNote": "Posts to owners, brokers and the SAT desk.",
+    "privacyNote": "Visible to owners, brokers & SAT · your identity stays private until you respond.",
     "posting": "Posting…",
     "postReqBtn": "Post requirement",
-    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with verified owners and licensed brokers so they can respond to me. I can withdraw this at any time."
+    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with owners and licensed brokers on SAT Markets so they can respond to me. I can withdraw this at any time."
   },
   "compare": {
     "riyadh": "Riyadh",
@@ -934,7 +931,7 @@
     "sar": "SAR",
     "sarYr": "SAR/yr",
     "sideBySide": "Side by side, priced in context",
-    "verified": "Verified",
+    "verified": "Ownership verified",
     "sep": ", ",
     "deal": "Deal",
     "type": "Type",
@@ -1035,7 +1032,6 @@
     "unitsSec": "Available units in this building",
     "noUnits": "No available units listed in this building yet.",
     "sample": "Sample",
-    "verified": "Verified",
     "live": "live · sample",
     "note": "Footfall and population figures are indicative and will be replaced by real movement data via a partner.",
     "perYear": "SAR/m²·yr",
@@ -1047,7 +1043,8 @@
     "crumbHome": "Home",
     "crumbListings": "Listings",
     "metaTitle": "{name}, {place} | SAT Markets",
-    "metaDesc": "{name}: {grade} {type} building in {place}. Available units, published rent band and location intelligence on SAT Markets. Indicative, not advice."
+    "metaDesc": "{name}: {grade} {type} building in {place}. Available units, published rent band and location intelligence on SAT Markets. Indicative, not advice.",
+    "bandSource": "REGA Rental Index (Ejar)"
   },
   "docs": {
     "sheet1": "Floor plate · L18",
@@ -1090,8 +1087,8 @@
   "notifications": {
     "today": "Today",
     "earlier": "Earlier",
-    "n1Title": "Listing verified",
-    "n1Body": "Grade A Office, sample building is now live and verified.",
+    "n1Title": "Listing published",
+    "n1Body": "Grade A Office, sample building is now live.",
     "n1Time": "2m",
     "n2Title": "New enquiry",
     "n2Body": "Ahmed K. enquired about the Grade A floor, responds best within 2h.",
@@ -1152,7 +1149,7 @@
     "party1Name": "You · Acme Co.",
     "party1Role": "Occupier",
     "party2Name": "Sample Owner Co.",
-    "party2Role": "Verified owner",
+    "party2Role": "Owner",
     "next1Title": "Owner shares the Ejar lease draft",
     "next1Sub": "Sent to your email and here",
     "next2Title": "Both parties sign in Ejar",
@@ -1500,7 +1497,7 @@
     "interestedH": "Who is interested",
     "haveSpace": "I have space for this",
     "interestedP": "Owners and brokers who can fill this requirement appear here. The occupier chooses who to talk to.",
-    "appearAs": "You appear as your verified account. Only verified owners and brokers can register interest.",
+    "appearAs": "You appear as your account. Only owners and brokers on SAT Markets can register interest.",
     "placeholder": "What you have that matches (size, district, fit-out)",
     "signIn": "Sign in",
     "cancel": "Cancel",
@@ -1508,9 +1505,9 @@
     "register": "Register interest",
     "errRegister": "Could not register interest.",
     "errSignIn": "Sign in to register interest.",
-    "none": "No interest yet, verified owners and brokers were notified. Responses will appear here.",
+    "none": "No interest yet, owners and brokers were notified. Responses will appear here.",
     "aBroker": "A SAT broker",
-    "anOwner": "A verified owner",
+    "anOwner": "An owner",
     "broker": "Broker",
     "owner": "Owner",
     "reply": "Reply",
@@ -1562,7 +1559,6 @@
     "spaces": "Spaces on the market",
     "none": "No spaces are live right now.",
     "website": "Website",
-    "verified": "Verified",
     "onReq": "On request",
     "forLease": "for lease",
     "forSale": "for sale",

@@ -106,8 +106,12 @@ export default async function BuildingPage({ params }: { params: { locale: strin
               <div className="mt-0.5 flex items-baseline gap-2">
                 <span className="fig text-[26px]" style={{ color: GOLD }}>{Math.round(band.median).toLocaleString()}</span>
                 <span className="fig text-[12px] text-charcoal/55">{band.band_low ? `${Number(band.band_low).toLocaleString()}–${Number(band.band_high).toLocaleString()} · ` : ""}{T.perYear}</span>
-                <span className="rounded-full px-2 py-0.5 text-[10px] tag-verified">{T.verified}</span>
               </div>
+              {/* ADV-1. A chip here read "Verified" beside a band drawn from
+                  rent_index_published, whose own data_class is synthetic. It now names
+                  the source, which is also the attribution owner ruling 2 requires of
+                  every Rent Index reference on the platform. */}
+              <div className="mt-1 text-[11px] text-charcoal/45">{T.bandSource}</div>
             </div>
           ) : <div className="text-[13px] text-charcoal/45">{T.noBand}</div>}
           <span className="text-[13px] text-charcoal/60"><span className="fig">{listings.length}</span> {T.units}</span>
@@ -126,7 +130,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
 
       <SectionLabel n="01" title={T.movement} sub={T.live} />
       <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        <Card title={T.footfall} ok={false} sample={T.sample} verified={T.verified}>
+        <Card title={T.footfall} sample={T.sample}>
           <div className="flex items-end justify-between">
             <div className="fig text-[26px]" style={{ color: TEAL }}>{weekly[weekly.length-1]}k</div>
             <div className={`fig text-sm ${wow>=0?"text-emerald-600":"text-red-500"}`}>{wow>=0?"▲":"▼"} {Math.abs(wow)}%</div>
@@ -138,7 +142,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
           </svg>
           <div className="mt-1 flex justify-between text-[10px] text-charcoal/40">{days.map((d,i)=>(<span key={i}>{d}</span>))}</div>
         </Card>
-        <Card title={T.hourly} ok={false} sample={T.sample} verified={T.verified}>
+        <Card title={T.hourly} sample={T.sample}>
           <div className="flex h-[120px] items-end gap-[3px]">
             {hours.map((v,h)=>(<div key={h} className="flex-1 rounded-t" style={{ height: `${(v/maxHour)*100}%`, background: [5,12,15,18,20].includes(h)?"rgba(47,163,154,0.32)":TEAL }} />))}
           </div>
@@ -149,7 +153,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
 
       <SectionLabel n="02" title={T.catchSec} sub={T.live} />
       <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        <Card title={T.catchment} ok={false} sample={T.sample} verified={T.verified}>
+        <Card title={T.catchment} sample={T.sample}>
           <div className="flex items-center gap-5">
             <svg viewBox="0 0 160 160" className="h-36 w-36">
               <circle cx="80" cy="80" r="72" fill={TEAL} opacity="0.10" /><circle cx="80" cy="80" r="50" fill={TEAL} opacity="0.18" /><circle cx="80" cy="80" r="28" fill={TEAL} opacity="0.30" /><circle cx="80" cy="80" r="4" fill={TEAL} />
@@ -159,7 +163,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
             </div>
           </div>
         </Card>
-        <Card title={T.demo} ok={false} sample={T.sample} verified={T.verified}>
+        <Card title={T.demo} sample={T.sample}>
           <div className="space-y-3">
             <Bar label={T.workingAge} value={workingAge} suffix="%" max={100} />
             <Bar label={T.daytime} value={daytime} suffix="" max={120} />
@@ -168,7 +172,10 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         </Card>
       </div>
 
-      <SectionLabel n="03" title={T.unitsSec} sub={T.verified} />
+      {/* The subtitle read "Verified" above the whole unit grid, which claimed for
+          every card below it whatever the reader took the word to mean. Each card
+          states its own verification for itself. */}
+      <SectionLabel n="03" title={T.unitsSec} sub="" />
       {listings.length === 0 ? (
         <p className="mt-3 text-[14px] text-charcoal/50">{T.noUnits}</p>
       ) : (
@@ -190,8 +197,12 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone: "live
   const c = tone === "live" ? TEAL : GOLD;
   return (<div className="card p-3.5"><div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-charcoal/45"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />{label}</div><div className="mt-1 fig text-[20px] tracking-tight" style={{ color: c }}>{value}</div></div>);
 }
-function Card({ title, ok, sample, verified, children }: { title: string; ok: boolean; sample: string; verified: string; children: React.ReactNode }) {
-  return (<div className="card p-5"><div className="flex items-center justify-between"><div className="font-display text-[15px] text-charcoal">{title}</div><span className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium ${ok?"tag-verified":"tag-sample"}`}>{ok?verified:sample}</span></div><div className="mt-3">{children}</div></div>);
+// ADV-1. Every call site passed ok={false}, so the "Verified" branch was already
+// unreachable; had a source ever been wired to it, it would have labelled a movement
+// or demographic panel with a claim instead of with its provenance. Those panels stay
+// sample until ADV-5 clears a licensed provider, so the label is the only honest one.
+function Card({ title, sample, children }: { title: string; sample: string; children: React.ReactNode }) {
+  return (<div className="card p-5"><div className="flex items-center justify-between"><div className="font-display text-[15px] text-charcoal">{title}</div><span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium tag-sample">{sample}</span></div><div className="mt-3">{children}</div></div>);
 }
 function Ring({ label, v }: { label: string; v: string }) {
   return (<div className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full" style={{ background: TEAL, opacity: 0.5 }} /><span className="text-charcoal/60">{label}</span><span className="fig text-charcoal">{v}</span></div>);

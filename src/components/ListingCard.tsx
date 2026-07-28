@@ -5,7 +5,7 @@ import type { Locale } from "@/i18n/config";
 import { photoFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, cityLabel, dealLabel } from "@/lib/labels";
 import SaveHeart from "@/components/SaveHeart";
-import { passesGate } from "@/lib/gate";
+import { verifiedBadgeTexts } from "@/lib/listingVerification";
 
 export default function ListingCard({ listing, locale, sqm, ui }: {
   listing: Listing; locale: Locale; sqm: string; ui: any;
@@ -15,7 +15,14 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
   const dn = d ? (locale === "ar" ? d.name_ar : d.name_en) : "";
   const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
   const lease = listing.deal_type === "lease";
-  const verified = passesGate(listing);
+  // ADV-1, owner decision O3. This read passesGate, the PUBLISH gate, and printed
+  // "Verified listing" when it returned true. Two problems. The publish gate mirrors
+  // the database trigger, whose ownership and authorisation legs default to PASS when
+  // the column is unset, so a row nobody had looked at cleared two of its four legs by
+  // being silent. And a listing is not the thing that gets verified: an owner, an
+  // authorisation, a right to market and a permit are, separately. The card now shows
+  // exactly what this record earned, which today is nothing on all 88 published rows.
+  const badges = verifiedBadgeTexts(listing as any, null, locale === "ar");
   const price = lease ? listing.asking_rent_sqm : listing.sale_price;
   return (
     <Link href={`/${locale}/listings/${listing.id}`} className="card group relative block overflow-hidden">
@@ -40,16 +47,17 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         <h3 className="font-display text-[17px] leading-snug text-charcoal line-clamp-1">{title}</h3>
         <div className="mt-1 text-[13px] text-charcoal/55">{place}{place ? " · " : ""}<bdi dir="ltr">{listing.area_sqm} {sqm}</bdi>{listing.building_grade !== "n_a" ? " · " + gradeLabel(listing.building_grade, locale) : ""}</div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
-          {/* This tick used to be unconditional. It now says what is true of THIS listing. */}
-          {verified ? (
+          {/* This tick used to be unconditional, then it read the publish gate. It now
+              names the gates this record has actually cleared. */}
+          {badges.length > 0 ? (
             <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/50">
-              {/* passesGate() is evidence-backed verification, so this tick MUST carry
-                  confirmed green (D11/D24). It was rendering off-palette teal, which both
-                  broke the reservation and made the strongest signal on the card read as
-                  a decorative accent. The hex is literal because var() does not resolve
-                  inside an SVG stroke presentation attribute. */}
+              {/* The hex is literal because var() does not resolve in an SVG stroke
+                  presentation attribute, and this tick once rendered off-palette teal,
+                  which both broke the reservation and made the strongest signal on the
+                  card read as decoration. Each badge is an evidence-backed verification
+                  naming its own gate, so the tick carries confirmed green (D11/D24). */}
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B7A50" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-              {ui.verifiedListing}
+              {badges.join(locale === "ar" ? "، " : " · ")}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/40">

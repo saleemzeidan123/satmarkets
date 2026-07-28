@@ -85,7 +85,10 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  const q: QueueItem[] = [];
  if (!verified) {
   q.push({ key: "verify", tone: "warn", icon: Icon.check,
-   text: ar ? "حسابك غير موثّق بعد. الملاك الموثّقون يحصلون على ردود أكثر." : "Your account is not verified yet. Verified owners get more replies.",
+   // ADV-1 and owner ruling 3. "Verified owners get more replies" is a performance
+   // claim about a platform that has taken no replies yet, used to push the owner
+   // toward verification. The reason to verify is the publish gate, which is a fact.
+   text: ar ? "حسابك غير موثّق بعد. تبقى عروضك مسودة حتى تُوثَّق الملكية." : "Your account is not verified yet. Listings stay in draft until ownership is verified.",
    cta: ar ? "الملف والتوثيق" : "View profile", href: `/${lp}/dashboard/profile` });
  }
  if (viewingRows.length) {
