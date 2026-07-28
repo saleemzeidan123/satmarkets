@@ -102,7 +102,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   btnStd: "بحث",
   popular: "الأكثر طلباً:",
   chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
-  micro1: "توثيق المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "فال 1200025510",
+  micro1: "عند الإطلاق، يُفحص المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "فال 1200025510",
   stat: [[stats.listings, "عروض منشورة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], [stats.buildings, "مبانٍ"]] as [string | null, string][],
   exEye: "المنصّة",
   exH: "أربع وظائف، في مكان محايد واحد",
@@ -157,7 +157,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   btnStd: "Search",
   popular: "Popular:",
   chip1: "Office, KAFD", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
-  micro1: "Owners verified before listing", micro2: "No assumed commission", micro3: "FAL 1200025510",
+  micro1: "At launch, owners checked before listing", micro2: "No assumed commission", micro3: "FAL 1200025510",
   stat: [[stats.listings, "Published listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], [stats.buildings, "Buildings"]] as [string | null, string][],
   exEye: "The exchange",
   exH: "Four jobs, one neutral place",
@@ -285,9 +285,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
      </div>
      <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro1}</span>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro2}</span>
-      <span className="row gap8"><span style={{ color: "#3ECF8E" }}><Icon.check size={16} /></span> {T.micro3}</span>
+      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro1}</span>
+      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro2}</span>
+      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro3}</span>
      </div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
       {([

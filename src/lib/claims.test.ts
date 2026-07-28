@@ -358,7 +358,7 @@ const CORPUS_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
     [/the verified index/i, "no index on the platform has been verified"],
     [/verified (stock|space|spaces|inventory|listings|data|matches|facts)/i, "asserts a verified corpus"],
     [/verified (occupiers|participants|listers|platform)/i, "asserts a verified class of actor"],
-    [/every listing is verified|owners are verified before|we verify (the parties|every)/i, "universal present-tense verification"],
+    [/every listing is verified|owners? (?:are |get )?verified before|we verify (the parties|every)/i, "universal present-tense verification"],
     [/verified commercial (real estate )?(intelligence|exchange)/i, "verified as a positioning claim"],
     [/verified owners and licensed brokers|verified owners, brokers/i, "asserts the lister set has been checked"],
     [/faster verification/i, "a turnaround claim we have not measured"],
@@ -368,7 +368,7 @@ const CORPUS_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
     [/المؤشر الموثّق|المؤشر الموثق/, "no index on the platform has been verified"],
     [/مساحات موثقة|مساحات موثّقة|مساحة موثّقة|العروض الموثّقة|عروضك الموثّقة|قوائم موثقة|بيانات موثقة|بيانات موثّقة|حقائق موثّقة/, "asserts a verified corpus"],
     [/مستأجرون موثّقون|مؤشرات المنصّة الموثّقة|المُدرِجين الموثّقين/, "asserts a verified class of actor"],
-    [/توثّق سات كل|يتم توثيق الملاك قبل/, "universal present-tense verification"],
+    [/توثّق سات كل|توثيق ال[^ ]{2,6}ك قبل/, "universal present-tense verification"],
     [/ذكاء عقاري تجاري موثوق|المنصة التجارية الموثّقة|المنصة الموثّقة/, "verified as a positioning claim"],
     [/أسرع التوثيق/, "a turnaround claim we have not measured"],
   ],
@@ -597,4 +597,30 @@ test("ruling 3: the unreferenced home keys stay deleted", () => {
       assert.equal(k in dict.home, false, `home.${k} (${locale}) is back; it carries a claim the record does not hold`);
     }
   }
+});
+
+test("ruling 3: the hero trust chips are scoped to launch and are not verification marks", () => {
+  // Found by reading the deployed Arabic page, not by a test: an enumeration of the
+  // root توثيق on /ar returned eight hits, seven correct, and the first was this chip
+  // sitting under the hero with a green tick beside it. account_verifications holds 0
+  // rows and all ten accounts are is_demo, so no owner has been checked.
+  //
+  // Two things were wrong and both are pinned here. The wording asserted a completed
+  // check, and the tick was drawn in #3ECF8E, a green in the verified family. A green
+  // tick reads as "confirmed" wherever it appears, which is the whole reason
+  // src/styles/sat-platform.css reserves --verified (#1B7A50) for evidence-backed
+  // verification; spending a verified-looking mark on a launch-scoped promise
+  // reintroduces the claim the wording just gave up.
+  //
+  // The remaining #3ECF8E in this file is the hero eyebrow status dot, which asserts
+  // nothing about a record. It is left alone deliberately: the palette consolidation
+  // is a separate parked package, and widening a claim fix into a colour sweep is the
+  // thing the standing constraint forbids.
+  const mh = code(readFileSync(join(ROOT, "components/MarketingHome.tsx"), "utf8"));
+  assert.doesNotMatch(mh, /Owners verified before/i, "the hero chip claims owners have been verified");
+  assert.doesNotMatch(mh, /توثيق ال[^ ]{2,6}ك قبل/, "the Arabic hero chip claims owners have been verified");
+  assert.match(mh, /At launch, owners checked before listing/, "the English hero chip must scope the check to launch");
+  assert.match(mh, /عند الإطلاق، يُفحص المُلّاك قبل الإدراج/, "the Arabic hero chip must scope the check to launch");
+  const ticks = mh.split(/#3ECF8E/).length - 1;
+  assert.equal(ticks, 1, `MarketingHome carries ${ticks} uses of the unguarded green #3ECF8E; only the hero eyebrow dot may keep it`);
 });
