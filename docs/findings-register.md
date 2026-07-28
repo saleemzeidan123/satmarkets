@@ -31,10 +31,10 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 | 20 | P1 | Claims outrun evidence (No one else, live now, 100%) | Confirmed open | Claim ledger created (docs/claims-ledger.md); wording changes are WS11/WS15 after Saleem approves preview-state language. |
 | 21 | P1 | Pricing looks purchasable | Blocked by evidence or decision | Saleem decision: concept label vs hide (deferred per Codex 9). |
 | 22 | P1 | English leakage in Arabic new-listing flow | Confirmed open | WS11/Phase 3. |
-| 23 | P1 | Search q ignored, returns full inventory | Confirmed open | Verified: q input never read server-side. WS16. |
+| 23 | P1 | Search q ignored, returns full inventory | Closed with live evidence | PKG-2A (b3e2dfa). `q` is parsed server-side by the deterministic bilingual parser (`src/lib/search/queryParse.ts`, 22 tests) and narrows the result set. Live EN: a six-constraint sentence returned 0 and withdrawing two readings returned 6; `?q=office+in+Al+Olaya&deal=lease&sort=price` returned 8 with the other constraints intact. Live AR: same query, six Arabic chips, zero Latin characters, same counts. Unrecognised terms render a "not used" line rather than being silently dropped. See docs/pkg-2a-closure.md. |
 | 24 | P1 | Lister type contradicts badge | Confirmed open | WS17/WS18 fixture matrix. |
 | 25 | P1 | Title and district can disagree | Not independently reverified | WS17. |
-| 26 | P1 | Touch targets below 44 px | Not independently reverified | WS10. |
+| 26 | P1 | Touch targets below 44 px | Partially addressed | PKG-2A measured the listings query surface live at 320, 360, 390, 430, 768 and 1280 px in both languages: minimum interactive height 44 px at every touch-capable width, in EN and AR, with zero horizontal overflow and no control rendered outside its containing block. The 29 px at 1280 is a fine-pointer desktop, where WCAG 2.5.8 asks for 24 px. Two rules carry it: `@media(max-width:1024px)` in globals.css and `@media (pointer: coarse)` in sat-platform.css. Evidence covers `/listings` only; the remaining public surfaces are unmeasured, so this is not closed. |
 | 27 | P1 | Arabic mobile text below reading size | Partially addressed | AR --fs scale raised 2026-07-20; full audit against 13/17 px floors is WS08. |
 | 28 | P1 | Post-requirement sentence unclear | Confirmed open | WS11/WS23. |
 | 29 | P1 | English comma splices | Confirmed open | WS11. |
@@ -44,7 +44,7 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 | 33 | P1 | /verify not covered by noindex middleware | Closed with live evidence | Verified all three /verify pages already 404 for non-SAT (su.isSat gate); /verify, /ops, /proto added to noindex prefixes. |
 | 34 | P1 | Footer advertises SATMARKETS.SA | Closed with live evidence | Footer shows bilingual brand name only; law test bans the domain in dictionary copy. |
 | 35 | P1 | /list looks like a working form | Not independently reverified | WS24 or honest coming-soon, Phase 3. |
-| 36 | P2 | WebSite/SearchAction schema absent | Confirmed open | WebSite in WS12; SearchAction only after WS16. |
+| 36 | P2 | WebSite/SearchAction schema absent | Closed with live evidence | PKG-2A (b3e2dfa). `website(locale)` in src/components/JsonLd.tsx is emitted per locale from the locale layout, so the Arabic document advertises an Arabic entry point (`inLanguage: "ar-SA"`, `/ar/listings?q=`). The SearchAction was deliberately withheld until rank 23 was fixed, because a declared search endpoint that returns the same page for every term is a claim the platform cannot honour. |
 | 37 | P2 | Entity schema lacks verified fields | Not independently reverified | WS31. |
 | 38 | P2 | No kind-aware entity pages | Confirmed open | WS31/Phase 5. |
 | 39 | P2 | Quality rules not in automated gates | Partially addressed | laws.test.ts + analyser.test.ts + taxonomy.test.ts add forbidden-term, period-parity, key-parity, analyser-guard, taxonomy and release-state gates; raw-color-scan reports the hex baseline; metadata/font/tracking CI automation is WS36. |

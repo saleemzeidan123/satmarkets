@@ -1,7 +1,10 @@
 # SAT Markets — build state & roadmap
 
-Updated 2026-07-20. Companion to `competitive-research.md` (the OSUS / Property Finder
-decisions and the ASSET_FIELDS data-coverage audit).
+Updated 2026-07-28. Companions: `competitive-research.md` (the OSUS / Property Finder
+decisions and the ASSET_FIELDS data-coverage audit), `competitive-paseetah.md` (the
+public-data dossier) and `strategy-reconciliation.md` (the Competitive Advantage
+Strategy classified against live HEAD, which is what the ADV programme below is
+converted from).
 
 ## Shipped and verified (recent sessions)
 
@@ -105,7 +108,11 @@ players structurally cannot copy. Their data says a transaction happened; ours s
 owner is this owner. Feeds the existing `gate.ts` dimensions rather than inventing new
 ones, and `ownerVerified` stays the truth source.
 
-**PD5. Government recognition and procurement listing.** Etimad announcement
+**PD5. Government recognition and procurement listing. OWNER ACTION ONLY (ruling 7,
+2026-07-28).** Getting onto a recognised-platform list requires approaching a government
+buyer, and the owner ruling forbids contacting vendors, signing agreements or
+representing that rights exist. This stays a named objective and produces no engineering
+task. Etimad announcement
 240141005052 (مركز الإسناد و التصفية, published 11/01/2024, closed) was a **limited**
 competition naming exactly three permitted platforms: منصة ساس, منصة سهيل (the Ministry
 of Justice's own) and منصة بسيطة. Paseetah's only genuinely non-copyable asset is being
@@ -121,6 +128,151 @@ want, at margins that cannot fund verification.
 Also open from the dossier: **منصة ساس** appeared only in the tender and is an
 unresearched fourth competitor. Aqar (aqar.fm) is the real clock, because it already
 owns the supply side and the traffic and has begun adding deal data.
+
+## Competitive advantage programme, ADV-0 to ADV-6 (owner directive, 2026-07-28)
+
+Converted from the Competitive Advantage Strategy through
+`docs/strategy-reconciliation.md`, which classifies every recommendation as shipped,
+partial, missing, gated or already answered more strictly in this repository. Only the
+surviving items appear below. The five PD workstreams above are folded in rather than
+run in parallel; the mapping is at the end of the reconciliation file.
+
+**Objective.** Not a Saudi real-estate chatbot, not a mobility-data company, not a
+listing-count portal. SAT Markets is the verified evidence and transaction operating
+system for Saudi commercial real estate: requirement, verified inventory,
+evidence-backed comparison, viewing, decision pack, transaction preparation, first-party
+market intelligence.
+
+**Standing constraints across every package.** Owner ruling 7: create interfaces,
+procurement requirements and decision records, but buy nothing, contact no vendor, sign
+nothing, and never represent that a data right exists. Gated features stay disabled in
+code until the owner holds the permission. Nothing in this programme relaxes a law in
+`docs/LAWS.md`.
+
+### ADV-0. Regulatory and data-rights register
+
+Deliver: the FAL scope question stated per surface with its stop condition; a rights
+ledger extending `source_registry` rather than replacing it (permitted derived values,
+permitted export, permitted AI retrieval, permitted model input, refresh, corrections,
+audit, termination, stop condition); the AI data-classification policy as a
+code-enforceable boundary deciding what may leave the process; the contract backlog.
+Covers FAL 1200025510 scope, the separate REGA analytics licence question (O13), REGA
+and Ejar republication and derivative rights (O10), SPL National Address, stc Geo
+Analytics, maps and POI providers, AI-provider privacy terms, contributor agreements and
+PDPL roles.
+
+Gate: every planned data surface has an owner, a lawful basis, permitted uses and a stop
+condition. No surface may render from a source whose row is incomplete.
+
+Already in place and not to be rebuilt: `source_registry` with attribution, licence
+note, storage policy, redisplay policy and licence reference across nine sources.
+
+### ADV-1. Evidence and entity foundation
+
+Precondition, sequenced first because a passport on an over-claiming page is decorative:
+**owner ruling 3**, audit and correct the roughly 100 remaining over-broad claims from
+record-level evidence, `/invest` first, then public discovery, listing, lister,
+requirement, research and advisory surfaces; and **owner ruling 4**, anonymize the HBU
+comparables unless each named comparable has a lawful documented public source and
+permission, with HBU staying illustrative and noindex until its gates clear.
+
+Then deliver: a typed Evidence Passport binding field, value, source, period, geography,
+entity kind, unit, statistic type, transformation, sufficiency, freshness, confidence,
+verification scope, correction history and permitted use, extending `provenance.ts`;
+the entity-kind model separating property, development, building and unit (the location
+side is already typed by D10); field-level verification states resolving findings rank 3
+and owner decision O3; the corrections model. PD4, deed checks under FAL, extends
+`gate.ts` dimensions and never replaces `ownerVerified` as the truth source.
+
+Gate: every material public claim traceable to source, scope, time and verification
+meaning. Verification rendering satisfies D24 in **both** directions.
+
+### ADV-2. Professional supply and demand workflow
+
+Deliver: the asset-specific Listing Studio (short progressive steps, save and resume,
+building facts separate from offered-space facts, media missions, quality scoring, blur
+and duplicate and contradiction detection, originals preserved, public marketing media
+separated from private verification evidence, exact EN and AR public preview, and an
+explicit statement of what is missing); availability confirmation; structured
+requirements; organizations, teams, roles and brand profiles; permissioned passive
+opportunity matching and its reverse; explainable match reasons with exact, possible and
+needs-clarification states; a matches inbox for both sides; consent, channel, suppression
+and frequency controls; secure progressive disclosure and mutual-interest contact
+release; shortlist and comparison; viewing workflow; RFP; deal-room preparation.
+
+Constraints: matching extends the existing saved-search and watch alert path, it does not
+stand up a second notification system. No score ships without its reasons. Nothing infers
+a missing utility, permission, dimension, rent or term. Until O12 is ruled, external
+channels (email, push, SMS, WhatsApp) stay disabled in code and only in-product
+notification ships, with consent receipts recorded from the start.
+
+Gate: a mobile EN or AR user completes the core journey without duplicate entry, invented
+facts or hidden verification meaning; a new verified availability or active requirement
+produces relevant explainable matches without exposing confidential information or
+sending an unauthorized message.
+
+### ADV-3. Model-agnostic AI platform
+
+Deliver: the six agents (discovery, listing copilot, opportunity matching, evidence
+auditor, deal analyst, operations); typed SAT tools; the deterministic calculation layer;
+the evaluation gold set and the cost-aware router. Kimi may be evaluated and is not
+automatically selected; DeepSeek, Gemini and others go through the same evaluation; no
+provider is chosen on token price.
+
+Constraints: calculations, permissions, ranking eligibility, verification and transaction
+state stay deterministic. The discovery agent sits on top of `queryParse.ts` and may not
+replace it or silently upgrade an unrecognised term into a constraint. Private documents
+do not reach an external provider until the enterprise AI agreement exists; until then
+external models see only public, sample or strongly redacted information, enforced by the
+ADV-0 classification rather than by care.
+
+Gate: zero unsupported figures, no uncontrolled writes, source-correct evaluation
+results, human confirmation for consequential fields.
+
+### ADV-4. Source-linked research and AI-search authority
+
+Deliver: the bilingual Riyadh commercial bulletin with published methodology,
+definitions, source, period, geography, statistic type, sufficiency, limitations and
+corrections history; the canonical AI-facts pages; structured data. Absorbs PD1, PD2 and
+PD3.
+
+Split by owner ruling 1: the **evidence** half proceeds now. The **indexing** half, the
+controlled route allowlist over `routePolicy.ts` and the O11 ruling on lifting the
+site-wide noindex, is parked with the rest of launch indexing. Buildable now without any
+permission: the verification-meaning page, the source-policy page and the bilingual
+terminology page. Blocked: anything drawing on `broker_overlay`, which is
+`redisplay_policy: internal` because JLL, CBRE and Knight Frank each forbid reproduction
+without written permission.
+
+Gate: every figure licensed, sourced, period-correct, sufficiently aggregated and
+bilingual, with EN and AR parity.
+
+### ADV-5. Location intelligence, interfaces and a controlled pilot
+
+Deliver: the SPL National Address interface, the stc Geo Analytics procurement
+requirements, a retail or showroom decision workflow, the privacy methodology and the
+coverage and value evaluation. No mobility, visitation or demographic claim is exposed
+without licensed data, methodology, privacy review and coverage validation. No vendor
+contact.
+
+**Hard constraint carried from `source_registry`, stricter than the strategy asks:** the
+live Foursquare terms permit caching nothing but `fsq_place_id`, and Mapbox forbids
+caching isochrone results at all, so no isochrone table exists in this schema and the
+server holds no Navigation-scoped token. ADV-5 must not reintroduce an isochrone cache.
+`fsq_os_places` under Apache 2.0 remains the only lawful stored POI layer, attribution
+"Powered by Foursquare". Travel time, if it ships, is computed at request time, carries
+its method and time context, and is never stored as a property fact.
+
+Gate: coverage, bias, sample, privacy and user-value evidence pass.
+
+### ADV-6. Contributor network
+
+Deliver: portfolio feeds, contributor agreements as interfaces and requirements, the
+analyst review queue, aggregated comparables, response and demand intelligence, each with
+permission, correction, audit and revocation controls. Depends on ADV-1's correction and
+audit model existing to attach permissions to.
+
+Gate: legal, confidentiality, competition, quality and minimum-sample controls pass.
 
 ## Parked (deliberate)
 
