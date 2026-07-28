@@ -41,7 +41,12 @@ export default async function HomePage({ params }: { params: { locale: string } 
     rows = (data as Listing[]) ?? [];
     const { count: lc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published");
     listings = lc ?? 0;
-    const { count: vc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published").or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    // C4. This counted three different things and called all of them owner-verified:
+    // a checked owner, a broker's authorisation to market, and the row simply being
+    // our own stock. src/lib/gate.ts is the truth source and says the first of those
+    // is the only one that carries the claim, so the KPI now counts exactly what its
+    // label says. Guarded by src/lib/claims.test.ts.
+    const { count: vc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published").eq("ownership_verified", true);
     verified = vc ?? 0;
     const { count: dc } = await sb.from("districts").select("*", { count: "exact", head: true });
     districts = dc ?? 0;

@@ -101,7 +101,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (gradeArr.length) query = query.in("building_grade", gradeArr);
     const fitArr = list(searchParams.fit);
     if (fitArr.length) query = query.in("fitout_condition", fitArr);
-    if (searchParams.verified) query = query.or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    // C4. The verified chip filtered on owner OR authorisation OR our own stock, while
+    // the card badge below calls ownerVerified(l), which is ownership_verified alone.
+    // A reader could therefore tick "verified" and receive rows carrying no badge. The
+    // filter now matches the badge, and both match src/lib/gate.ts.
+    if (searchParams.verified) query = query.eq("ownership_verified", true);
     const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
@@ -111,7 +115,9 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (searchParams.smax) fq = fq.lte("area_sqm", Number(searchParams.smax));
     if (searchParams.deal !== "sale") { if (searchParams.pmin) fq = fq.gte("asking_rent_sqm", Number(searchParams.pmin)); if (searchParams.pmax) fq = fq.lte("asking_rent_sqm", Number(searchParams.pmax)); }
     else { if (searchParams.spmin) fq = fq.gte("sale_price", Number(searchParams.spmin)); if (searchParams.spmax) fq = fq.lte("sale_price", Number(searchParams.spmax)); }
-    if (searchParams.verified) fq = fq.or("ownership_verified.eq.true,authorization_verified.eq.true,is_sat_listed.eq.true");
+    // Same predicate as the result query above, for the same reason: a facet count
+    // that disagrees with the list it describes is its own small false claim.
+    if (searchParams.verified) fq = fq.eq("ownership_verified", true);
     const { data: fdata } = await fq;
     (fdata ?? []).forEach((r: any) => { if (r.asset_type) assetCounts[r.asset_type] = (assetCounts[r.asset_type] || 0) + 1; if (r.building_grade) gradeCounts[r.building_grade] = (gradeCounts[r.building_grade] || 0) + 1; if (r.fitout_condition) fitCounts[r.fitout_condition] = (fitCounts[r.fitout_condition] || 0) + 1; });
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");

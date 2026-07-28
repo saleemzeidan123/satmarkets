@@ -23,9 +23,12 @@ export default function TermSheetPage({ params }: { params: { locale: string } }
     ["Deposit", "5% · 23,200 SAR", "Paid direct to landlord"],
     ["Ejar registration", "By landlord / broker", "Standard Ejar lease"],
   ];
+  // A term sheet is printed and carried out of the product, so the counterparty
+  // named on it is the one thing a reader will take at face value. It named a real
+  // Riyadh landlord as a verified party to a lease that does not exist.
   const parties: [string, string][] = ar
-    ? [["أنت · شركة آكمي", "مستأجر"], ["شركة أبراج العليا", "مالك موثّق"]]
-    : [["You · Acme Co.", "Occupier"], ["Olaya Towers Co.", "Verified owner"]];
+    ? [["أنت · شركة آكمي", "مستأجر"], ["شركة مالك نموذجية", "مالك موثّق"]]
+    : [["You · Acme Co.", "Occupier"], ["Sample Owner Co.", "Verified owner"]];
   const next: string[] = ar
     ? ["يشارك المالك مسودة عقد إيجار", "يوقّع الطرفان في إيجار مباشرة", "دفع التأمين وتسليم المفاتيح"]
     : ["Owner shares the Ejar lease draft", "Both parties sign in Ejar directly", "Deposit paid and keys handed over"];
