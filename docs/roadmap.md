@@ -58,10 +58,69 @@ on click, tiny pins under big bubbles.
   email provider (Resend/SendGrid) + credentials. Which provider?
 - **Direct WhatsApp/Call vs mediated enquiry** — a product decision. The PDP still
   exposes direct lister contact, against Fable's advice.
-- **Market data** (transactions + price trends) — gated on sourcing KSA commercial data
-  (REGA / Ejar / Suhail).
+- **Market data** (transactions + price trends) — NO LONGER BLOCKED as of 2026-07-28.
+  The sourcing question is answered; see the public data programme below.
 - **Report destination** — reports land in `listing_reports` for now; if you want email
   notification or an admin review screen, say so.
+
+## Public data programme (owner ruling, 2026-07-28)
+
+Source: `docs/competitive-paseetah.md`. Paseetah (بسيطة) and its enterprise sibling
+Paseet (paseet.ai) sell Saudi real-estate data assembled entirely from public government
+sources, which they state themselves: "بيانات دقيقة من وزارة العدل والسجل العقاري وشبكة
+إيجار والعديد من المصادر". No FAL licence, no MOU and no data partnership was found.
+Their data position is therefore not defensible, and every source is open to us on
+identical terms. This closes the long-standing "gated on sourcing KSA commercial data"
+blocker above. It is now a build problem, not a sourcing problem.
+
+Five workstreams, in priority order.
+
+**PD1. Official ingestion of MOJ open data.** Through moj.gov.sa/ar/opendata and the
+custom data-request form at moj.gov.sa/ar/OpenData/Pages/Request.aspx. Every dataset
+enters `source_registry` with its licence, its period and its attribution string before
+a single figure renders. **Hard constraint: srem.moj.gov.sa and the Najiz UIs are
+interactive portals, not data products, and are never scraped.** A verification-first
+exchange cannot be caught taking that shortcut.
+
+**PD2. Ingest the Ejar commercial rent index.** Published at sakani.sa/reports-and-data.
+It carries price per square metre for shops, showrooms and offices across six cities
+including Riyadh, back to 2019. This is the evidence spine behind the Rent Index context
+line that PKG-1C.1 now renders on every listing, building, lister and flyer head.
+Highest-value single action in the programme. It interacts with the deferred "final Rent
+Index statistical methodology" item: a real series may replace the current development
+low/high test ranges, which are labelled "sample indicative range" today.
+
+**PD3. A public, un-gated, bilingual monthly Riyadh CRE bulletin, with the full method
+published.** This is the competitive move, not a marketing one. Paseetah gates everything
+behind a login at paseetah.com/map and has published zero methodology, so they hold no
+public data surface and no search position on any Saudi CRE query. Taking that ground is
+what makes a broker cite SAT Markets instead of them, and it gives the site its first
+genuinely indexable public asset. **Route policy consequence: this is the first surface
+that argues for coming out from under the site-wide noindex, and it must not ship until
+its numbers are sourced, periodised and attributed under the existing laws.** No figure
+may be published without its source row.
+
+**PD4. Verification via RER deed checks under FAL 1200025510.** The one thing the data
+players structurally cannot copy. Their data says a transaction happened; ours says this
+owner is this owner. Feeds the existing `gate.ts` dimensions rather than inventing new
+ones, and `ownerVerified` stays the truth source.
+
+**PD5. Government recognition and procurement listing.** Etimad announcement
+240141005052 (مركز الإسناد و التصفية, published 11/01/2024, closed) was a **limited**
+competition naming exactly three permitted platforms: منصة ساس, منصة سهيل (the Ministry
+of Justice's own) and منصة بسيطة. Paseetah's only genuinely non-copyable asset is being
+on a government buyer's recognised-platform list, and it was acquired by being early and
+visible, not by holding a licence. Getting SAT Markets onto those lists is a named
+objective. The buyer is itself a lead: a liquidation centre needs verified ownership,
+asset search and comparable evidence, which is this product almost exactly.
+
+Explicit non-goal: **no consumer price war.** Paseetah prices a one-off property report
+at SAR 49.99 and plans from SAR 90.99. Competing there buys a consumer product we do not
+want, at margins that cannot fund verification.
+
+Also open from the dossier: **منصة ساس** appeared only in the tender and is an
+unresearched fourth competitor. Aqar (aqar.fm) is the real clock, because it already
+owns the supply side and the traffic and has begun adding deal data.
 
 ## Parked (deliberate)
 
