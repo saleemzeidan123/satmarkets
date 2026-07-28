@@ -217,6 +217,105 @@ test("C4: the verified surfaces filter on ownership_verified alone", () => {
   assert.equal(hits.length, 2, "both the /listings result query and its facet counts must use the same predicate");
 });
 
+// --- ruling 3: /about describes a standard, not a corpus ---
+//
+// The record behind this page, read on 2026-07-28: 88 published listings, 0 of them
+// carrying an ad_permit_number; 3 verification_events, every one is_demo, whose own
+// basis text says no Wathq lookup and no REGA lookup was performed; 94
+// listing_verification_events on gate rega_permit, all 94 is_demo, behind listings
+// that hold no permit number; 0 rows in account_verifications. Nothing on the
+// platform has been checked against a government register, and every verification
+// record says so in its own words.
+//
+// /about was the worst offender because it is the page a reader goes to in order to
+// find out whether to believe the rest of the site. It said a permit is on file for
+// every listing, that a badge here can be trusted, and that SAT is the verified data
+// authority for the sector. The corrections keep the standard, which is real and is
+// what we intend to hold ourselves to, and drop the claim that the standard has
+// already been applied to anything.
+
+const ABOUT_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
+  en: [
+    [/verified data authority/i, "self-declared authority with no survey behind it"],
+    [/no listing enters the market without/i, "asserts a permit on file; 0 published listings hold one"],
+    [/any visitor can trust/i, "invites trust in a badge no register stands behind"],
+    [/how we verify every listing/i, "universal present-tense verification claim"],
+    [/verified (listings|inventory|stock)/i, "asserts the current corpus is verified"],
+  ],
+  ar: [
+    [/المرجع الموثوق/, "self-declared authority"],
+    [/بلا تصريح إعلان مسجّل/, "asserts a permit on file"],
+    [/الاطمئنان لها/, "invites trust in the badge"],
+    [/نتحقق من كل قائمة/, "universal present-tense verification claim"],
+    [/قوائم موثقة/, "asserts the current corpus is verified"],
+  ],
+};
+
+for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+  test(`ruling 3: /about makes no claim the record cannot carry (${locale})`, () => {
+    const offenders: string[] = [];
+    for (const [path, s] of dictStrings(dict.about, "about")) {
+      for (const [re, why] of ABOUT_BANNED[locale]) if (re.test(s)) offenders.push(`${path}: ${why}`);
+    }
+    assert.deepEqual(offenders, [], `about claims beyond the record (${locale}):\n${offenders.join("\n")}`);
+  });
+
+  test(`ruling 3: /about states that the standard applies at launch, not now (${locale})`, () => {
+    // A weaker claim is only honest if the reader is told what the weaker claim is.
+    // Removing "every listing has a permit" without saying "preview inventory holds
+    // none" would leave the same impression through silence.
+    const a = dict.about;
+    const launch = locale === "en" ? /at launch/i : /عند الإطلاق/;
+    const preview = locale === "en" ? /preview/i : /المعاينة|معاينة/;
+    assert.match(String(a.intro), preview, "about.intro must say the platform is in preview on sample data");
+    assert.match(String(a.cardCheckedB), launch, "about.cardCheckedB must scope the publishing standard to launch");
+    assert.match(String(a.cardCheckedB), preview, "about.cardCheckedB must say preview inventory holds no permit");
+    assert.match(String(a.verifySub), preview, "about.verifySub must say no preview record has been checked");
+    assert.match(String(a.stepLiveB), launch, "about.stepLiveB must scope the badge to launch");
+  });
+
+  test(`ruling 3: the three /about gate steps keep their before-launch qualifier (${locale})`, () => {
+    // These three were already honest. They are pinned so a future copy pass cannot
+    // quietly promote them to the present tense, which is how the page drifted the
+    // first time.
+    const before = locale === "en" ? /arrives? before launch/i : /يصل قبل الإطلاق/;
+    for (const k of ["stepNafathB", "stepOwnerB", "stepBrokerB"] as const) {
+      assert.match(String(dict.about[k]), before, `about.${k} (${locale}) lost its before-launch qualifier`);
+    }
+  });
+
+  test(`ruling 2: the /about rent index card keeps the REGA Rental Index (Ejar) attribution (${locale})`, () => {
+    const attribution = locale === "en" ? /REGA Rental Index \(Ejar\)/ : /المؤشر الإيجاري للهيئة العامة للعقار \(إيجار\)/;
+    for (const k of ["cardMoatB", "intro"] as const) {
+      assert.match(String(dict.about[k]), attribution, `about.${k} (${locale}) names the rent index without its source`);
+    }
+  });
+}
+
+// --- ruling 3: unreferenced copy still counts as a claim ---
+
+// Seven dictionary sections with no reader. Confirmed dead by reference count across
+// all of src/ outside the dictionaries themselves, then deleted rather than reworded,
+// because between them they carried "Every figure is computed from verified data. No
+// model-generated numbers", "Decision-grade rent bands. Verified, never modelled",
+// "The moat that makes this an authority, not a board", "Owner-direct listings,
+// verified by SAT before they publish", "Every lister is verified" and "The Kingdom's
+// home for verified commercial space". Every one of those is false against the
+// record, and the cheapest way for a false claim to reach a page is to be sitting in
+// the dictionary already, correctly translated, one autocomplete away.
+//
+// hero is in the list despite two apparent hits on `.hero`. Neither reads this
+// section: LocationScore calls `t.hero.map` on its own slice and signup renders
+// `t.hero` as a string from its own.
+const DEAD_SECTIONS = ["filters", "areaIntel", "why", "statBand", "rentTeaser", "featured", "hero"];
+
+for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+  test(`ruling 3: the retired unreferenced sections stay deleted (${locale})`, () => {
+    const revived = DEAD_SECTIONS.filter((s) => s in dict);
+    assert.deepEqual(revived, [], `dead dictionary sections back in ${locale}.json: ${revived.join(", ")}`);
+  });
+}
+
 test("ruling 3: the retired recency chip is gone from both pages and both dictionaries", () => {
   // "Last 6 months" described a query over transaction records. There is no such
   // query and there are no such records, so the key is removed rather than reworded,

@@ -18,6 +18,21 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
  // everywhere else on the site, on its own KPI row, in its dataset description
  // and in the Advisor's band line. The claim is corrected here to "average" and
  // "متوسط" so the page describing the product cannot contradict the product.
+ //
+ // Owner ruling 3, 2026-07-28. This page carried the strongest claims on the
+ // platform and the least evidence for them. Against the record it describes, 88
+ // published listings hold zero advertising permits, every verification event is
+ // flagged is_demo and its own basis text says no Wathq and no REGA lookup was
+ // performed, and account_verifications is empty. The copy said a permit is on file
+ // for every listing, that the badge here can be trusted, and that SAT is already
+ // the verified data authority for the sector.
+ //
+ // The correction keeps the standard and drops the claim that it has been applied.
+ // The three gate steps below were already written as "arrives before launch" and
+ // are untouched; what changed is the surrounding copy that read them as finished
+ // work. All of it lives in the dictionary, so the fix is there and the guard is
+ // src/lib/claims.test.ts, which pins both the removed wording and the preview
+ // qualification that replaced it.
  const c = dict.about;
  const cards: [string, string][] = [
   [c.cardNeutralT, c.cardNeutralB],

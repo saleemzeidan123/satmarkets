@@ -24,13 +24,6 @@
     "list": "List",
     "language": "Language"
   },
-  "hero": {
-    "eyebrow": "Saudi Arabia · Commercial real estate exchange",
-    "title": "The Kingdom's home for verified commercial space",
-    "subtitle": "Verified listings, decision-grade rent data, and location intelligence for commercial real estate across Saudi Arabia, live now in Riyadh, expanding Kingdom-wide.",
-    "searchPlaceholder": "Office, Al Olaya, up to 1,000 m²",
-    "browse": "Browse listings"
-  },
   "listing": {
     "verified": "Verified",
     "rentBand": "Verified rent band",
@@ -68,18 +61,6 @@
     "none": "No matches yet. Try a different brief.",
     "grounded": "Results come from verified listings. The assistant explains and filters, it never invents a rent figure."
   },
-  "filters": {
-    "all": "All",
-    "asset": "Asset",
-    "city": "City"
-  },
-  "areaIntel": {
-    "title": "Area intelligence",
-    "band": "Verified rent band",
-    "briefs": "Active tenant briefs in this district",
-    "available": "Available listings in this district",
-    "note": "Every figure is computed from verified data. No model-generated numbers."
-  },
   "dash": {
     "verifyPending": "Your account is not verified yet. Listings stay in draft until SAT verifies ownership.",
     "verified": "Verified owner",
@@ -113,34 +94,6 @@
     "notEnough": "not enough verified data yet",
     "browse": "Browse",
     "searching": "Searching..."
-  },
-  "why": {
-    "title": "Why SAT Markets",
-    "sub": "The four things no Saudi portal combines, and that no global platform localises for the Kingdom.",
-    "p1t": "Verified supply",
-    "p1d": "Owner-direct listings, verified by SAT before they publish. Not a classifieds dump.",
-    "p2t": "Decision-grade data",
-    "p2d": "The Rent Index: published Riyadh rent benchmarks by location and asset, attributed to source.",
-    "p3t": "AI search, grounded",
-    "p3d": "Describe what you need in plain language. Answers come from verified data, never a model.",
-    "p4t": "Neutral by design",
-    "p4d": "SAT Markets does not act for anyone. Every lister is verified, our own included, and no listing buys a better position."
-  },
-  "statBand": {
-    "listings": "Verified listings",
-    "buildings": "Buildings mapped",
-    "cities": "Cities, Kingdom-wide",
-    "districts": "Districts & clusters"
-  },
-  "rentTeaser": {
-    "title": "Decision-grade rent bands. Verified, never modelled.",
-    "body": "Average achieved rents by district and asset class, published only where the data is real. The moat that makes this an authority, not a board.",
-    "cta": "Open the rent index"
-  },
-  "featured": {
-    "eyebrow": "Featured",
-    "title": "Verified commercial space",
-    "viewAll": "View all"
   },
   "footer": {
     "tagline": "Verified commercial real estate intelligence for Saudi Arabia. Open to the market.",
@@ -486,20 +439,20 @@
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence",
     "metaTitle": "About | SAT Markets",
-    "metaDesc": "The neutral, verified commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL 1200025510).",
+    "metaDesc": "The neutral commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL 1200025510).",
     "eyebrow": "About",
-    "title": "The verified data authority for Saudi commercial real estate.",
-    "intro": "SAT Markets is an independent, neutral commercial real estate intelligence, leasing, and sales platform, starting in Riyadh. We combine verified listings from owners and licensed brokers, a compliant viewing workflow, a decision-grade rent index, and a building-level intelligence map in one platform, delivered English-first with a full Arabic mirror and AI search grounded in verified data.",
+    "title": "The neutral commercial real estate exchange for Saudi Arabia, built so every figure can name its source.",
+    "intro": "SAT Markets is an independent, neutral commercial real estate intelligence, leasing, and sales platform, starting in Riyadh. It brings together listings from owners and licensed brokers, a compliant viewing workflow, a rent index derived from the REGA Rental Index (Ejar), and a building-level intelligence map in one platform, delivered English-first with a full Arabic mirror. The platform is in preview on sample data, so the verification standard below describes how a listing will qualify at launch, not a check any preview record has already passed.",
     "cardNeutralT": "Neutral by design",
     "cardNeutralB": "Open to every owner and occupier. Platform-originated stock never silently outranks owner-direct listings.",
     "cardCheckedT": "Checked, not classifieds",
-    "cardCheckedB": "Owners are verified before a listing publishes, and no listing enters the market without an advertising permit on file. Every listing shows its own verification state; the badge is never decoration.",
+    "cardCheckedB": "This is a publishing standard, not a classifieds board. At launch an owner is checked, the right to lease is confirmed, and an advertising permit is recorded before a listing can carry a verified state. Preview inventory is sample data and holds no permit, so each listing shows only the state its own record supports.",
     "cardMoatT": "A real data moat",
-    "cardMoatB": "A commercial rent index: average rents by district and space type, minimum sample counts, and honest blanks where data is missing.",
+    "cardMoatB": "A commercial rent index derived from the REGA Rental Index (Ejar): average rents by district and space type, minimum sample counts, and honest blanks where data is missing.",
     "cardComplianceT": "Compliance-native",
     "cardComplianceB": "Designed around REGA requirements, written mandates, ad-permit gating, and data-protection and e-invoicing by design.",
-    "verifyTitle": "How we verify every listing",
-    "verifySub": "No anonymous classifieds. Before a space goes live, we check the person, the property, and the licence.",
+    "verifyTitle": "Our verification standard",
+    "verifySub": "No anonymous classifieds. The standard has three gates: the person, the right to the property, and the licence. The automated lookups behind each gate arrive before launch, so nothing in this preview has been checked against Nafath, REGA or Ejar.",
     "stepNafathT": "Nafath identity",
     "stepNafathB": "SAT reviews the person behind each listing before it publishes. Nafath national-ID sign-in, binding identity to the national digital identity, arrives before launch.",
     "stepOwnerT": "Ownership & permit",
@@ -507,8 +460,8 @@
     "stepBrokerT": "Licensed brokers",
     "stepBrokerB": "Brokers must hold a valid FAL licence from REGA. Automated verification against the REGA register arrives before launch.",
     "stepLiveT": "Then it goes live",
-    "stepLiveB": "Only after these checks does a listing publish, with a Verified badge any visitor can trust.",
-    "foot": "SAT Markets, verified commercial real estate intelligence for Saudi Arabia."
+    "stepLiveB": "At launch a listing publishes only after all three gates pass, and its verified state names the gate it rests on rather than standing in for all three.",
+    "foot": "SAT Markets, commercial real estate intelligence for Saudi Arabia."
   },
   "invest": {
     "na": "n/a",
