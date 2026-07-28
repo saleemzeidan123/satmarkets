@@ -30,6 +30,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
   let rows: any[] = [];
   let threadCount = 0;
   let enquiries: any[] = [];
+  let viewings: any[] = [];
   const savedSearches: SavedSearchRow[] = [];
   if (sb) {
     const { data: saved } = await sb.from("saved_listings").select("listing_id").order("created_at", { ascending: false });
@@ -84,6 +85,30 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       .sort((a, b) => (a.when < b.when ? 1 : a.when > b.when ? -1 : 0))
       .slice(0, 20);
 
+    // Viewings this occupier booked.
+    //
+    // This is the half of the viewing workflow that did not exist. A request landed, the
+    // lister confirmed it or cancelled it, and the one person waiting on that decision had
+    // nowhere to read it. The row carries requested_by now, and RLS returns only the rows
+    // where that is this user (policy "requester reads own viewings"), so the absence of a
+    // filter below is the point: the policy is the filter, and a mistake in this query
+    // cannot widen what comes back.
+    //
+    // A booking made anonymously stays anonymous and does not appear here, even for the
+    // person who made it. Nothing is claimed retrospectively on the strength of a matching
+    // email address, because a matching email address is not proof of anything.
+    const { data: vs } = await sb
+      .from("viewings")
+      .select("id,scheduled_at,status,created_at,listings(id,title_en,title_ar,asset_type,area_sqm,districts(name_en,name_ar))")
+      .order("scheduled_at", { ascending: true })
+      .limit(50);
+    // Soonest first among the ones still ahead, then the most recent of the ones behind.
+    // A viewing that has already happened still matters: it is where the outcome is read.
+    const nowMs = Date.now();
+    const ahead = ((vs ?? []) as any[]).filter((v) => v.listings && Date.parse(v.scheduled_at) >= nowMs);
+    const behind = ((vs ?? []) as any[]).filter((v) => v.listings && Date.parse(v.scheduled_at) < nowMs).reverse();
+    viewings = [...ahead, ...behind].slice(0, 8);
+
     // Saved searches + their alert counts. For each search: how many published spaces
     // match now (the re-run value), and how many are NEW since the search was saved
     // (the alert). asset_type / district_id were lifted into columns at save time.
@@ -116,10 +141,25 @@ export default async function OccupierHome({ params }: { params: { locale: strin
   const t = ar
     ? { hi: "أهلاً بك", sub: "مساحتك على سات ماركتس: محفوظاتك ومراسلاتك في مكان واحد.", saved: "المحفوظات", none: "لم تحفظ أي مساحة بعد.", browse: "تصفّح المساحات", messages: "الرسائل", msgSub: "محادثاتك مع المُعلنين", onReq: "عند الطلب", openMsgs: "فتح الرسائل", explore: "استكشف السوق",
         enquiries: "استفساراتك", enquiriesSub: "المساحات التي تواصلت بشأنها", noEnq: "لم ترسل أي استفسار بعد.", enquiredOn: "استفسار", sentDirect: "أُرسل للمُعلن",
+        viewings: "معايناتك", viewingsSub: "المواعيد التي طلبتها وما استقر عليه الأمر", vPast: "موعد مضى",
+        vRequested: "بانتظار رد المُعلن", vConfirmed: "مؤكد", vCancelled: "ملغاة", vCompleted: "تمت", vNoShow: "مسجّلة كعدم حضور",
         searches: "عمليات البحث المحفوظة", searchesSub: "احفظ بحثاً وتابع المساحات الجديدة المطابقة له.", noSearch: "لم تحفظ أي بحث بعد. احفظ بحثاً من صفحة المساحات لتتابعه هنا.", matches: "مساحة مطابقة", newSince: "جديدة", view: "عرض", remove: "حذف" }
     : { hi: "Welcome", sub: "Your space on SAT Markets: your saved listings and messages in one place.", saved: "Saved", none: "You have not saved any spaces yet.", browse: "Browse spaces", messages: "Messages", msgSub: "Your conversations with listers", onReq: "On request", openMsgs: "Open messages", explore: "Explore the market",
         enquiries: "Your enquiries", enquiriesSub: "The spaces you have contacted", noEnq: "You have not made an enquiry yet.", enquiredOn: "enquired", sentDirect: "sent to lister",
+        viewings: "Your viewings", viewingsSub: "The slots you asked for, and what was decided", vPast: "slot has passed",
+        vRequested: "Awaiting the lister", vConfirmed: "Confirmed", vCancelled: "Cancelled", vCompleted: "Completed", vNoShow: "Recorded as not attended",
         searches: "Saved searches", searchesSub: "Save a search and track new spaces that match it.", noSearch: "No saved searches yet. Save a search from the listings page to track it here.", matches: "spaces match", newSince: "new", view: "View", remove: "Remove" };
+
+  // A confirmed viewing is harbor, not green. Green states that evidence was checked, and
+  // a lister agreeing to a time is an agreement, not a verification.
+  const vTone = (s: string) => (s === "confirmed" ? "var(--harbor)" : s === "requested" ? "var(--amber)" : "var(--slate)");
+  const vLabel = (s: string) =>
+    ({ requested: t.vRequested, confirmed: t.vConfirmed, cancelled: t.vCancelled, completed: t.vCompleted, no_show: t.vNoShow } as Record<string, string>)[s] ?? s;
+  const vWhen = (iso: string) =>
+    new Date(iso).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-GB", {
+      weekday: "short", day: "2-digit", month: "short",
+      hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Riyadh",
+    });
 
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
@@ -142,6 +182,34 @@ export default async function OccupierHome({ params }: { params: { locale: strin
         </div>
         <span className="btn secondary sm">{t.openMsgs}</span>
       </Link>
+
+      {/* Viewings this occupier booked, and what the lister decided. */}
+      {viewings.length > 0 && (
+        <div style={{ marginTop: 26 }}>
+          <div className="modhead"><Icon.clock size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.viewings}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{viewings.length}</span></div>
+          <p className="muted" style={{ fontSize: 12.5, margin: "4px 0 0" }}>{t.viewingsSub}</p>
+          <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+            {viewings.map((v: any) => {
+              const l = v.listings;
+              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
+              const passed = Date.parse(v.scheduled_at) < Date.now();
+              return (
+                <div key={v.id} className="card pad row between wrap" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{(ar ? l.title_ar : l.title_en) || assetLabel(l.asset_type, lp)}</Link>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
+                    <div className="mono" style={{ fontSize: 12.5, marginTop: 4 }}><bdi dir="ltr">{vWhen(v.scheduled_at)}</bdi>{passed && v.status === "requested" ? <span className="muted" style={{ marginInlineStart: 8 }}>{t.vPast}</span> : null}</div>
+                  </div>
+                  <div className="row gap12" style={{ alignItems: "center", flex: "none" }}>
+                    <span style={{ color: vTone(v.status), fontWeight: 600, fontSize: 12.5 }}>{vLabel(v.status)}</span>
+                    <Link href={`/${lp}/listings/${l.id}`} className="btn secondary sm" style={{ textDecoration: "none" }}>{t.view}</Link>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Enquiry history: the spaces this occupier has contacted. */}
       {enquiries.length > 0 && (
