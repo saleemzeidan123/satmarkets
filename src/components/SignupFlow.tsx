@@ -26,7 +26,7 @@ export default function SignupFlow({ locale }: Props) {
 
   const roles: { v: Role; h: string; p: string }[] = [
     { v: "occupier", h: t("I need a space", "أحتاج مساحة"), p: t("Find and lease or buy verified commercial space", "ابحث واستأجر أو اشترِ مساحة تجارية موثّقة") },
-    { v: "owner", h: t("I own property", "أملك عقاراً"), p: t("List verified spaces and reach serious occupiers", "اعرض مساحات موثّقة وصل إلى مستأجرين جادّين") },
+    { v: "owner", h: t("I own property", "أملك عقاراً"), p: t("List your spaces and reach serious occupiers", "اعرض مساحاتك وصل إلى مستأجرين جادّين") },
     { v: "broker", h: t("I am a licensed broker", "أنا وسيط مرخّص"), p: t("Work the exchange with your FAL licence", "اعمل في المنصة برخصة فال الخاصة بك") },
     { v: "investor", h: t("I invest in real estate", "أستثمر في العقار"), p: t("Underwrite verified assets with sourced data", "قيّم أصولاً موثّقة ببيانات مُسندة") },
   ];

@@ -115,7 +115,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       <div>
         <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")}
           className="input" style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box", textAlign: ar ? "right" : "left" }} />
-        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "8px 2px 6px" }}>{q.trim() ? t("Verified areas first, then all of Saudi Arabia.", "المناطق الموثّقة أولاً، ثم كل السعودية.") : t("Areas with verified spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات موثّقة. اكتب للبحث في كل السعودية.")}</div>
+        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "8px 2px 6px" }}>{q.trim() ? t("Indexed areas first, then all of Saudi Arabia.", "المناطق المفهرسة أولاً، ثم كل السعودية.") : t("Areas with listed spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات معروضة. اكتب للبحث في كل السعودية.")}</div>
         {cities.map((c) => {
           const ql = q.trim().toLowerCase();
           const inCity = locations.filter((l) => l.city === c.key && (ql ? (l.en.toLowerCase().includes(ql) || (l.ar || "").includes(q.trim())) : (Number(l.count) || 0) > 0));

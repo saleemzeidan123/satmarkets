@@ -105,34 +105,6 @@
     "legal": "SAT Markets, commercial real estate intelligence, Saudi Arabia."
   },
   "home": {
-    "lens": "Explore by asset class",
-    "mapTitle": "Every building, on one map",
-    "mapBody": "Explore the Kingdom's commercial buildings as clickable objects, published rent bands, available space, and area intelligence. Live now in Riyadh, expanding nationwide. The intelligence platform, with the transaction built in.",
-    "mapCta": "Open the map",
-    "forTitle": "Built for every decision",
-    "forSub": "One platform, three journeys. Each sees the intelligence relevant to it.",
-    "occT": "Occupiers & brokers",
-    "occB": "Find and lease listed space with full context: rent bands, accessibility, and asset-relevant signals before you commit.",
-    "occC": "Find space",
-    "ownT": "Owners & developers",
-    "ownB": "List owner-direct, benchmark your asset against the published Rent Index, derived from the REGA Rental Index (Ejar), and see the demand posted for your building and district.",
-    "ownC": "List your space",
-    "invT": "Investors & retailers",
-    "invB": "Site selection and highest-and-best-use: take a parcel and see, with data, whether to build office, retail, hospitality, or mixed-use.",
-    "invC": "Explore the map",
-    "cityBars": [
-      "KAFD",
-      "Olaya",
-      "Jeddah",
-      "Dammam"
-    ],
-    "rentEyebrow": "Riyadh Commercial Rent Index",
-    "teaserPlaces": [
-      "KAFD",
-      "Tahliah St.",
-      "Al Olaya",
-      "2nd Industrial"
-    ],
     "verifiedOwner": "Verified owner",
     "idxWithin": "Within the Rent Index band",
     "idxBelow": "Below the index band",
@@ -149,7 +121,6 @@
     "statSegments": "index segments with sufficient data",
     "gradeAOfficeSuffix": ", office (all grades)",
     "medianUnit": "average SAR/m²·yr",
-    "occupancyLabel": "Riyadh Grade A occupancy",
     "tabDiscover": "Discover",
     "tabDecide": "Decide with data",
     "tabTransact": "Transact with trust",

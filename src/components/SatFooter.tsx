@@ -60,7 +60,7 @@ const FOOT_TRUST = ["FAL 1200025510"];
 const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "About SAT Real Estate": "/about", "Help center": "/about", "Brokers": "/brokers", "Occupiers": "/listings", "Owners and landlords": "/dashboard", "Investors": "/invest", "Our neutrality": "/neutrality", "How we verify": "/about", "REGA compliance": "/about", "Terms of Service": "/terms", "Privacy and PDPL": "/privacy", "Contact": "/contact" };
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
-  const __T: Record<string, string> = {"FAL 1200025510":"فال 1200025510","Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملاك والمؤجرون","Brokers":"الوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on verified ground.":"أدرج، أجّر، أو استثمر، على أرض موثّقة.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.":"منصة سعودية للتأجير والبيع التجاري. عروض موثّقة، بيانات تدعم القرار، وصفقات متكاملة."};
+  const __T: Record<string, string> = {"FAL 1200025510":"فال 1200025510","Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملاك والمؤجرون","Brokers":"الوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on the record.":"أدرج، أجّر، أو استثمر، استناداً إلى السجل.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's commercial leasing and sales exchange. Listings that show their verification state, published rent bands attributed to source, deals end to end.":"منصة سعودية للتأجير والبيع التجاري. عروض تُظهر حالة توثيقها، ونطاقات إيجار منشورة منسوبة إلى مصادرها، وصفقات متكاملة."};
   const t = (x: string): string => (locale === "ar" ? (__T[x] ?? x) : x);
   const L = (p: string) => `/${locale}${p}`;
   return (
@@ -68,7 +68,7 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
       <div className="foot-mark"><SatMark size={300} base="#fff" lit={HARBOR} /></div>
       <div className="cta">
         <div className="cta-copy">
-          <div className="cta-title">{t("List, lease or invest, on verified ground.")}</div>
+          <div className="cta-title">{t("List, lease or invest, on the record.")}</div>
           <div className="cta-sub">{t("Join owners, occupiers and licensed brokers across the Kingdom.")}</div>
         </div>
         <div className="cta-actions">
@@ -79,7 +79,12 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
       <div className="foot-cols">
         <div className="foot-brand">
           <SatLogo size={30} />
-          <p>{t("Saudi Arabia's commercial leasing and sales exchange. Verified listings, decision-grade data, end-to-end deals.")}</p>
+          {/* Ruling 3. This paragraph and the CTA line above it render on every
+              page in both languages and asserted a verified corpus and
+              decision-grade data. The listings are 88 published rows, every one
+              of them sample stock, so the footer now says what a reader can see
+              on the record instead. */}
+          <p>{t("Saudi Arabia's commercial leasing and sales exchange. Listings that show their verification state, published rent bands attributed to source, deals end to end.")}</p>
         </div>
         {FOOT_COLS.map(([title, links]) => (
           <div className="foot-col" key={title}>

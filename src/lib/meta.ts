@@ -39,9 +39,12 @@ const SITE_NAME = { en: "SAT Markets", ar: "سات ماركتس" } as const;
 // Open Graph wants a language_TERRITORY tag, not a bare language code.
 const OG_LOCALE = { en: "en_US", ar: "ar_SA" } as const;
 
+// Ruling 3. The alt text is read aloud by a screen reader and scraped into a
+// link preview, both outside the page where the preview notice sits, so it
+// describes what the card shows rather than asserting the corpus is verified.
 const CARD_ALT = {
-  en: "SAT Markets, verified commercial real estate in Saudi Arabia",
-  ar: "سات ماركتس، مساحات تجارية موثّقة في السعودية",
+  en: "SAT Markets, commercial real estate in Saudi Arabia",
+  ar: "سات ماركتس، عقارات تجارية في السعودية",
 } as const;
 
 const asLocale = (locale: string): Locale => (locale === "ar" ? "ar" : "en");

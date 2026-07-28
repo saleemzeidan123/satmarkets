@@ -430,7 +430,9 @@ for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
       ["locations.metaDesc", String(dict.locations.metaDesc)],
       ["compare.note", String(dict.compare.note)],
       ["pricing.sub", String(dict.pricing.sub)],
-      ["home.ownB", String(dict.home.ownB)],
+      // home.ownB used to sit here. It was corrected for attribution while it was
+      // unreferenced, which is the clearest possible sign that the surrounding
+      // group was a latent-claim reservoir; the whole group is now deleted (C39).
     ];
     for (const [path, s] of sourceStrings) {
       assert.match(s, attribution, `${path} (${locale}) names the Rent Index as a source without attributing it`);
@@ -500,4 +502,99 @@ test("ruling 3: the retired recency chip is gone from both pages and both dictio
   }
   assert.doesNotMatch(INVEST_CODE, /last6mo/);
   assert.doesNotMatch(HBU_CODE, /last6mo/);
+});
+
+// --- Ruling 3, the tier the dictionary sweep could not reach ---
+//
+// scripts/prose-scan.mjs has two tiers. The GATE tier, public page source, is
+// enforced at zero. The BASE tier, shared component source, is reported and
+// deferred to the page-redesign packages. That deferral is a formatting and i18n
+// decision and it is a reasonable one, but a claim does not care which tier its
+// string lives in. The home page, the site-wide footer, the Open Graph alt text
+// and the social card generator all sit in BASE, and between them they carried
+// the largest remaining concentration of corpus claims on the platform: a footer
+// that rendered "Verified listings, decision-grade data" under every page in both
+// languages, and a share card that said "Verified commercial real estate" to
+// every reader who had not opened the site at all.
+//
+// This is ledger C19 one more time. A guard scoped to where a defect was first
+// seen will not find the same defect one field over, so this one is scoped to the
+// claim rather than to the file.
+
+const CLAIM_SOURCES: string[] = [
+  ...[...sourceFiles(join(ROOT, "components"))],
+  ...[...sourceFiles(join(ROOT, "app"))],
+  join(ROOT, "lib/meta.ts"),
+  join(ROOT, "..", "scripts/og-cards.mjs"),
+];
+
+test("ruling 3: no component or script source carries a corpus claim", () => {
+  const offenders: string[] = [];
+  for (const f of CLAIM_SOURCES) {
+    const src = code(readFileSync(f, "utf8"));
+    const rel = f.replace(join(ROOT, ".."), "").replace(/^\//, "");
+    for (const locale of ["en", "ar"] as const) {
+      for (const [re, why] of CORPUS_BANNED[locale]) {
+        const m = src.match(new RegExp(re.source, re.flags.replace("g", "")));
+        if (m) offenders.push(`${rel}: ${JSON.stringify(m[0])}: ${why}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], `claims beyond the record in source:\n${offenders.join("\n")}`);
+});
+
+test("ruling 3: the social card and its alt text describe the card, not the corpus", () => {
+  // The alt text is read by a screen reader and scraped into a link preview, and
+  // the card is seen by people who never load the page. Neither is covered by the
+  // global preview notice, because neither is on the page.
+  const meta = readFileSync(join(ROOT, "lib/meta.ts"), "utf8");
+  assert.doesNotMatch(code(meta), /verified commercial real estate/i);
+  assert.doesNotMatch(code(meta), /مساحات تجارية موثّقة/);
+  const og = code(readFileSync(join(ROOT, "..", "scripts/og-cards.mjs"), "utf8"));
+  assert.doesNotMatch(og, /Verified commercial real estate/i);
+  assert.doesNotMatch(og, /Owner-verified listings/i);
+  assert.doesNotMatch(og, /مساحات تجارية موثّقة/);
+});
+
+test("C4: the featured card verification flag is exactly ownership_verified", () => {
+  // The three queries C4 corrected were Supabase .or() calls. The same widening
+  // also existed in plain JavaScript, on the home page, where the featured card
+  // computed its badge from ownership_verified || authorization_verified ||
+  // is_sat_listed and then labelled it "Verified owner". A scan for .or() cannot
+  // see that, so the flag is asserted directly.
+  const home = code(readFileSync(join(ROOT, "app/[locale]/page.tsx"), "utf8"));
+  assert.doesNotMatch(home, /verified:\s*!!\([^)]*authorization_verified/, "the featured card badge counts more than ownership_verified");
+  assert.doesNotMatch(home, /verified:\s*!!\([^)]*is_sat_listed/, "the featured card badge counts our own stock as owner-verified");
+  assert.match(home, /verified:\s*!!\(l as any\)\.ownership_verified/, "the featured card badge must read ownership_verified alone");
+});
+
+test("ruling 3: the dead year-on-year band caption stays deleted", () => {
+  // bandStat held "Riyadh Grade A, YoY (published)" and two more captions. Nothing
+  // rendered them: the year-on-year block above them was removed when it turned out
+  // a trend needs two periods of the same series and rent_index_published holds one.
+  // The strings survived the removal and would have read as a published trend to the
+  // next person who wired them back up.
+  const mh = code(readFileSync(join(ROOT, "components/MarketingHome.tsx"), "utf8"));
+  assert.doesNotMatch(mh, /bandStat/, "MarketingHome still carries the retired bandStat captions");
+  assert.doesNotMatch(mh, /YoY/i, "MarketingHome still claims a year-on-year figure");
+});
+
+test("ruling 3: the unreferenced home keys stay deleted", () => {
+  // C6 lived in home.mapBody: "the Kingdom's commercial buildings ... Live now in
+  // Riyadh, expanding nationwide", against 75 sample buildings in one city. It was
+  // never rendered. Neither was home.occupancyLabel, a Riyadh Grade A occupancy
+  // figure no query produces, nor home.cityBars, which named Jeddah and Dammam.
+  //
+  // Deleted rather than reworded, for the C27 reason: the cheapest route for a
+  // false claim onto a page is to be sitting in the dictionary already, correctly
+  // translated, one autocomplete away. A rewritten string that nothing renders is
+  // a claim waiting for a call site.
+  const DEAD = ["lens", "mapTitle", "mapBody", "mapCta", "forTitle", "forSub",
+    "occT", "occB", "occC", "ownT", "ownB", "ownC", "invT", "invB", "invC",
+    "cityBars", "rentEyebrow", "teaserPlaces", "occupancyLabel"];
+  for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+    for (const k of DEAD) {
+      assert.equal(k in dict.home, false, `home.${k} (${locale}) is back; it carries a claim the record does not hold`);
+    }
+  }
 });

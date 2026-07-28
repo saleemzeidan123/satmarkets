@@ -94,7 +94,11 @@ export default async function HomePage({ params }: { params: { locale: string } 
       district: dn || city,
       area: formatArea(l.area_sqm, locale),
       type,
-      verified: !!((l as any).ownership_verified || (l as any).authorization_verified || (l as any).is_sat_listed),
+      // C4 again, in JS rather than in a query. The badge this feeds is labelled
+      // "Verified owner", and src/lib/gate.ts says ownership_verified is the only
+      // field that carries that claim. A broker's authorisation to market and the
+      // row being our own stock are different facts and do not earn this badge.
+      verified: !!(l as any).ownership_verified,
       ph: `${type}, ${dn || city}`,
       img: photoFor(l.asset_type, l.id),
       idx,

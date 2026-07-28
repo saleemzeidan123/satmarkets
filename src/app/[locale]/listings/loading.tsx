@@ -5,7 +5,7 @@ export default function Loading() {
   );
   const cards = Array.from({ length: 6 });
   return (
-    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px" }} aria-busy="true" aria-label="Loading verified spaces">
+    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px" }} aria-busy="true" aria-label="Loading listings">
       <div className="sk" style={{ width: 120, height: 11 }} />
       <div className="sk" style={{ width: 340, height: 30, marginTop: 12, maxWidth: "80%" }} />
       <div className="sk" style={{ width: "100%", height: 48, marginTop: 18, borderRadius: 11 }} />

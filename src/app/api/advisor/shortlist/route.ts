@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
   const locale = (b as any)?.locale === "ar" ? "ar" : "en";
   let message: string;
   if (shown.length === 0) {
-    message = locale === "ar" ? "لا توجد مساحات موثّقة مطابقة الآن. وسّع الميزانية أو الموقع، أو انشر طلباً وسيصلك ردّ المُلّاك والوسطاء." : "No verified spaces match right now. Widen the budget or location, or post a requirement and let owners and brokers come to you.";
+    message = locale === "ar" ? "لا توجد مساحات معروضة مطابقة الآن. وسّع الميزانية أو الموقع، أو انشر طلباً وسيصلك ردّ المُلّاك والوسطاء." : "No listed spaces match right now. Widen the budget or location, or post a requirement and let owners and brokers come to you.";
   } else {
     const prices = shown
       .filter((r: any) => {
@@ -163,8 +163,8 @@ export async function POST(req: NextRequest) {
       ? (locale === "ar" ? ` الأسعار المعلنة من ${lo} إلى ${hi} ريال/م²·سنة، منها ${within} ضمن نطاق المؤشر أو أدنى.` : ` Asking runs ${lo} to ${hi} SAR/m²·yr, with ${within} at or below their index band.`)
       : "";
     message = locale === "ar"
-      ? `وجدت ${shown.length} مساحة موثّقة مطابقة.${mid} أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
-      : `Found ${shown.length} verified ${shown.length === 1 ? "space" : "spaces"}.${mid} Give me a budget, size or location to narrow it, or ask me about any of them.`;
+      ? `وجدت ${shown.length} مساحة معروضة مطابقة.${mid} أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
+      : `Found ${shown.length} listed ${shown.length === 1 ? "space" : "spaces"}.${mid} Give me a budget, size or location to narrow it, or ask me about any of them.`;
   }
   return NextResponse.json({ count: results.length, relaxed, message, results: shown });
 }

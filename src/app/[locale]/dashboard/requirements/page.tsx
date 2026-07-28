@@ -27,7 +27,7 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
 
   const t = ar ? {
     title: "طلبات المطابقة",
-    sub: "مستأجرون موثّقون يبحثون عن مساحات مثل مساحاتك",
+    sub: "مستأجرون يبحثون عن مساحات مثل مساحاتك",
     matchOn: "يطابق",
     pitch: "قدّم عرضك",
     browseAll: "تصفّح كل الطلبات",
@@ -36,7 +36,9 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
     to: " إلى ",
   } : {
     title: "Requirement matches",
-    sub: "Verified occupiers looking for spaces like yours",
+    // C30. requirements_public has no verification column at all, so there is no
+    // field on the record that could make an occupier verified.
+    sub: "Occupiers looking for spaces like yours",
     matchOn: "Matches your",
     pitch: "Pitch",
     browseAll: "Browse all requirements",

@@ -18,7 +18,10 @@ export const ORG = {
   name: "SAT Markets",
   url: SITE,
   description:
-    "Verified commercial real estate exchange for Saudi Arabia. Powered by SAT Real Estate (REGA FAL licence 1200025510). Open to the market.",
+    // Ruling 3. Structured data is read by a crawler with no page around it to
+    // qualify the claim, so the organisation describes itself by what it is and
+    // by the one credential that is evidenced.
+    "Commercial real estate exchange for Saudi Arabia. Powered by SAT Real Estate (REGA FAL licence 1200025510). Open to the market.",
   parentOrganization: {
     "@type": "Organization",
     name: "SAT Real Estate",

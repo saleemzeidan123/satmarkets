@@ -72,8 +72,8 @@ const COPY = {
   en: {
     dir: "ltr",
     wordmark: `<span style="color:${HARBOR}">SAT</span><span style="color:${COOL}">MARKETS</span>`,
-    headline: "Verified commercial real estate,<br/>Saudi Arabia",
-    sub: "Owner-verified listings · Source-attributed rent index · AI that never invents a figure",
+    headline: "Commercial real estate,<br/>Saudi Arabia",
+    sub: "Listings that show their verification state · Published rent index, attributed to source · AI that never invents a figure",
     foot: "SAT REAL ESTATE · REGA FAL 1200025510",
     headFont: "'SatSerif', Georgia, serif",
     subFont: "'SatPlexLatin', system-ui, sans-serif",
@@ -83,8 +83,8 @@ const COPY = {
   ar: {
     dir: "rtl",
     wordmark: `<span style="color:${HARBOR}">سات</span><span style="color:${COOL}">ماركتس</span>`,
-    headline: "مساحات تجارية موثّقة<br/>في السعودية",
-    sub: "عروض موثّقة من الملّاك · مؤشر إيجارات منسوب إلى مصادره · ذكاء اصطناعي لا يخترع الأرقام",
+    headline: "العقارات التجارية<br/>في السعودية",
+    sub: "عروض تُظهر حالة توثيقها · مؤشر إيجارات منشور منسوب إلى مصادره · ذكاء اصطناعي لا يخترع الأرقام",
     foot: "سات العقارية · رخصة فال 1200025510",
     // The Arabic wordmark is set in the Arabic brand face, not the Latin serif:
     // a serif fallback would silently substitute a system Arabic font.
