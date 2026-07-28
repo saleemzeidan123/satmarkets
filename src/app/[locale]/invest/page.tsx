@@ -1,6 +1,24 @@
 "use client";
+//
+// Owner ruling 3 (2026-07-28) correction.
+//
+// This page used to hold two figures that looked like findings and were not. A
+// potential NOI of SAR 4,583,333 and a going-in cap rate of 6.8% were compiled
+// constants, and the cap rate carried a code comment calling it "the verified comp
+// cap rate". Nothing in any record supported either. The comparables table then
+// stamped a verified tick on four named Riyadh buildings whose transactions we do
+// not hold, and the CSV export carried the whole set off the platform under a
+// filename naming a real tower.
+//
+// The fix is not softer wording. Every number the model needs is now a user input
+// with a starting value, in the same class as acquisition price, occupancy, exit cap
+// and leverage, which were already inputs and were never the problem. The model does
+// arithmetic on the reader's assumptions and asserts nothing of its own. When SAT
+// holds real comparables and the right to show them, they arrive as records through
+// the evidence path, not as constants in a page.
+//
 import { useMemo, useState } from "react";
-import { Icon, Verified } from "@/components/satkit";
+import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
 const fmtM = (v: number) => (v / 1e6).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "M";
@@ -21,11 +39,14 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
  const [exitCap, setExitCap] = useState(0.065);
  const [ltv, setLtv] = useState(0.55);
  const [ran, setRan] = useState(false);
+ // Starting values, not findings. Both are the reader's to change, which is the whole
+ // reason they are state and not constants.
+ const [potentialNoi, setPotentialNoi] = useState(4583333);
+ const [pricingCap, setPricingCap] = useState(0.068);
 
  const m = useMemo(() => {
-  const potentialNOI = 4583333; // SAR/yr at 100% occupancy
-  const noi = potentialNOI * occ;
-  const value = noi / 0.068; // priced off the verified comp cap rate
+  const noi = potentialNoi * occ;
+  const value = noi / pricingCap;
   const goingInYield = noi / price;
   const gOpen = term === 3 ? 0.07 : term === 5 ? 0.06 : 0.052;
   const years = 7, freeze = 5;
@@ -46,13 +67,16 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   cf[4] += exit5;
   const flows = [-equity, ...cf];
   return { noi, value, goingInYield, yoc5, openS, cappedS, series, irr: irr(flows), em: cf.reduce((a, b) => a + b, 0) / equity };
- }, [price, term, esc, occ, exitCap, ltv]);
+ }, [price, term, esc, occ, exitCap, ltv, potentialNoi, pricingCap]);
 
  const maxBar = Math.max(...m.openS, ...m.cappedS);
  const na = iv.na;
  const kpis: [string, string, string, string | null][] = [
   [fmtM(m.value), iv.kValue, iv.nComps, null],
-  [fmtPct(m.goingInYield), iv.netInitYield, m.goingInYield >= 0.068 ? iv.nAtAbove : iv.nBelow, m.goingInYield >= 0.068 ? "up" : null],
+  // Compared against the reader's own pricing cap, which is what the arithmetic
+  // actually does. It previously read as a comparison against a district benchmark
+  // that no query produced.
+  [fmtPct(m.goingInYield), iv.netInitYield, m.goingInYield >= pricingCap ? iv.nAtAbove : iv.nBelow, m.goingInYield >= pricingCap ? "up" : null],
   [fmtM(m.noi), iv.kNoi, "", null],
   [ran ? fmtPct(m.irr) : na, iv.irr5, ran ? iv.nModeled : iv.nRun, ran ? "up" : null],
   [ran ? m.em.toFixed(1) + "\u00d7" : na, iv.equityMult, ran ? iv.nOverHold : iv.nRun, null],
@@ -66,6 +90,8 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   rows.push([]);
   rows.push([iv.csvInputs]);
   rows.push([iv.csvAcqPrice, price]);
+  rows.push([iv.csvPotentialNoi, potentialNoi]);
+  rows.push([iv.csvPricingCap, fmtPct(pricingCap)]);
   rows.push([iv.csvTerm, term]);
   rows.push([iv.csvEscalation, esc]);
   rows.push([iv.csvOccupancy, fmtPct(occ)]);
@@ -85,7 +111,9 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = "sat-underwriting-olaya-tower.csv";
+  // The file leaves the platform, so the filename has to survive being read without
+  // the page around it. It no longer names a real building.
+  a.href = url; a.download = "sat-underwriting-sample.csv";
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
  }
@@ -135,6 +163,17 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
         </div>
        </div>
        <div className="field">
+        <label>{iv.potentialNoi}</label>
+        <div className="input between" style={{ padding: 0 }}>
+         <input value={fmtN(potentialNoi)} onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (!isNaN(n)) setPotentialNoi(n || 0); }} style={{ border: "none", outline: "none", background: "transparent", fontSize: "var(--fs-base)", color: "var(--ink)", padding: "10px 12px", width: "100%", textAlign: ar ? "right" : "left" }} />
+         <span className="mono muted2" style={{ paddingRight: 12 }}>{iv.sarUnit}</span>
+        </div>
+       </div>
+       <div className="field">
+        <label>{iv.pricingCapRate} <span className="hint">{fmtPct(pricingCap)}</span></label>
+        <input type="range" min={0.05} max={0.085} step={0.001} value={pricingCap} onChange={(e) => setPricingCap(Number(e.target.value))} style={{ width: "100%", accentColor: "var(--harbor)" }} />
+       </div>
+       <div className="field">
         <label>{iv.leaseTerm}</label>
         <div className="seg" style={{ alignSelf: "flex-start" }}>{([3, 5, 10] as const).map((t) => <span key={t} className={term === t ? "on" : ""} style={{ cursor: "pointer" }} onClick={() => setTerm(t)}>{t}{iv.yrShort}</span>)}</div>
        </div>
@@ -160,6 +199,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
       <div className="row between" style={{ fontSize: "var(--fs-sm)" }}><span className="muted">{iv.goingInYieldLbl}</span><b className="mono">{fmtPct(m.goingInYield)}</b></div>
       <div className="row between" style={{ fontSize: "var(--fs-sm)", marginTop: 10 }}><span className="muted">{iv.yieldOnCost}</span><b className="mono" style={{ color: "var(--harbor-d)" }}>{fmtPct(m.yoc5)}</b></div>
       <button className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }} onClick={() => setRan(true)}>{ran ? (iv.modelUpdated) + fmtPct(m.irr) : (iv.runFull)}</button>
+      <p className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 14, marginBottom: 0 }}>{iv.assumptionsNote}</p>
      </div>
 
      <div className="col gap20">
@@ -190,8 +230,10 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
 
       <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
        <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-        <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{iv.compsTitle}</div>
-        <span className="chip" style={{ borderColor: "var(--silver)" }}>{iv.last6mo} <Icon.chevd size={14} /></span>
+        <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{iv.compsTitle}</div><div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{iv.compsSubtitle}</div></div>
+        {/* Was a "Last 6 months" filter chip, which described a query over transaction
+            records. There is no such query and there are no such records. */}
+        <span className="tag">{iv.compsIllustrative}</span>
        </div>
        <div style={{ overflowX: "auto" }}>
         <table className="dt" style={{ minWidth: 560 }}>
@@ -204,14 +246,16 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
             <td className="num" style={{ fontWeight: 500 }}>{c[2]}</td>
             <td className="num">{c[3]}</td>
             <td className="num mono">{c[4]}</td>
-            <td className="num"><Verified text="✓" /></td>
+            {/* The verified tick lived here on every row. Verified green is reserved
+                for evidence-backed verification, and these rows have none. */}
+            <td className="num"><span className="tag">{iv.compsSourceSimulated}</span></td>
            </tr>
           ))}
          </tbody>
         </table>
        </div>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
-        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
+        <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
         <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{iv.compsNote}</span>
        </div>
       </div>

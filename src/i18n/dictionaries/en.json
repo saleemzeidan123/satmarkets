@@ -512,8 +512,8 @@
   },
   "invest": {
     "na": "n/a",
-    "assetTitle": "Grade A Office Floor, Olaya Tower",
-    "csvSub": "Indicative underwriting, Q2 2026, off verified comps, indicative not advice",
+    "assetTitle": "Grade A office floor · sample asset",
+    "csvSub": "Simulated underwriting on illustrative comparables. Indicative, not advice.",
     "csvInputs": "Inputs",
     "csvAcqPrice": "Acquisition price (SAR)",
     "csvTerm": "Term (yr)",
@@ -528,8 +528,8 @@
     "irr5": "5-yr levered IRR",
     "equityMult": "Equity multiple",
     "csvNoiByYear": "NOI by year",
-    "eyebrow": "Investment underwriting · Q2 2026",
-    "assetSub": "320 m² · Al Olaya · underwritten on verified comparable transactions",
+    "eyebrow": "Investment underwriting · simulated model",
+    "assetSub": "320 m² · Al Olaya · simulated underwriting on illustrative comparables",
     "exportModel": "Export model",
     "askAi": "Ask AI to underwrite",
     "scenario": "Scenario",
@@ -551,19 +551,18 @@
     "openLegend": "Open · re-prices to market",
     "cappedLegend": "Capped · frozen yrs 1-5",
     "compsTitle": "Comparable transactions",
-    "last6mo": "Last 6 months",
     "thAsset": "Asset",
     "thDate": "Date",
     "thSarM2": "SAR/m²",
     "thCapRate": "Cap rate",
     "thPrice": "Price",
     "thSource": "Source",
-    "compsNote": "Comps drawn only from verified SAT-advised transactions, no asking prices, no scraped figures.",
+    "compsNote": "Simulated demonstration. Every comparable, price and cap rate in this table is illustrative and does not describe a real transaction.",
     "kValue": "Indicative value, SAR",
     "kNoi": "Stabilised NOI, SAR/yr",
-    "nComps": "off verified comps",
-    "nAtAbove": "at/above district",
-    "nBelow": "below district",
+    "nComps": "at the pricing assumption",
+    "nAtAbove": "at/above the pricing assumption",
+    "nBelow": "below the pricing assumption",
     "nModeled": "modeled",
     "nRun": "run the model",
     "nOverHold": "over hold",
@@ -572,34 +571,42 @@
     "yAxis": "Y",
     "comps": [
       [
-        "Olaya Tower · whole floor",
+        "Comparable A · Grade A office, whole floor",
         "Apr 2026",
         "1,440",
         "6.6%",
         "202M"
       ],
       [
-        "Al Akaria Plaza · 2 floors",
+        "Comparable B · Grade B office, 2 floors",
         "Feb 2026",
         "1,210",
         "7.1%",
         "318M"
       ],
       [
-        "Tahlia Gate · office",
+        "Comparable C · Grade A office, single floor",
         "Jan 2026",
         "1,520",
         "6.4%",
         "141M"
       ],
       [
-        "Granada Oasis · tower",
+        "Comparable D · Grade B office, whole tower",
         "Dec 2025",
         "1,060",
         "7.6%",
         "486M"
       ]
-    ]
+    ],
+    "potentialNoi": "Potential NOI at full occupancy (SAR/yr)",
+    "pricingCapRate": "Pricing cap rate",
+    "csvPotentialNoi": "Potential NOI at full occupancy (SAR/yr)",
+    "csvPricingCap": "Pricing cap rate",
+    "compsIllustrative": "Illustrative set",
+    "assumptionsNote": "Every input above is your assumption, including the starting values. SAT does not supply a rent, a price or a cap rate on this page. The model does the arithmetic and nothing else.",
+    "compsSourceSimulated": "Simulated",
+    "compsSubtitle": "Illustrative figures, not observed transactions."
   },
   "hbu": {
     "eyebrow": "Investment underwriting · Q2 2026",
@@ -634,7 +641,6 @@
     "upsideBold": "unaffected by the freeze",
     "upsideB": " and re-prices every term, that gap is the underwriting upside.",
     "compsTitle": "Comparable transactions",
-    "last6mo": "Last 6 months",
     "thAsset": "Asset",
     "thDate": "Date",
     "thSarM2": "SAR/m²",
@@ -653,28 +659,28 @@
     "nAssumed": "assumed",
     "comps": [
       [
-        "Olaya Tower · whole floor",
+        "Comparable A · Grade A office, whole floor",
         "Apr 2026",
         "1,440",
         "6.6%",
         "202M"
       ],
       [
-        "Al Akaria Plaza · 2 floors",
+        "Comparable B · Grade B office, 2 floors",
         "Feb 2026",
         "1,210",
         "7.1%",
         "318M"
       ],
       [
-        "Tahlia Gate · office",
+        "Comparable C · Grade A office, single floor",
         "Jan 2026",
         "1,520",
         "6.4%",
         "141M"
       ],
       [
-        "Granada Oasis · tower",
+        "Comparable D · Grade B office, whole tower",
         "Dec 2025",
         "1,060",
         "7.6%",
@@ -684,7 +690,8 @@
     "metaTitle": "Highest and best use analysis | SAT Markets",
     "metaDesc": "Model the use that earns a site the most: rent escalation, stabilised occupancy, exit cap rate and levered return, on sample data with every assumption shown.",
     "compsSourceSimulated": "Simulated",
-    "compsSubtitle": "Illustrative figures, not observed transactions."
+    "compsSubtitle": "Illustrative figures, not observed transactions.",
+    "compsIllustrative": "Illustrative set"
   },
   "list": {
     "sellVerified": "Verified, prominent placement",

@@ -125,7 +125,9 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
       <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
        <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
         <div><div style={{ fontSize: 15, fontWeight: 700 }}>{hb.compsTitle}</div><div className="muted" style={{ fontSize: 12.5 }}>{hb.compsSubtitle}</div></div>
-        <span className="chip" style={{ borderColor: "var(--silver)" }}>{hb.last6mo} <Icon.chevd size={14} /></span>
+        {/* Was a "Last 6 months" filter chip. It described a recency window over
+            transaction records, and this table holds none. */}
+        <span className="tag">{hb.compsIllustrative}</span>
        </div>
        <div style={{ overflowX: "auto" }}>
         <table className="dt" style={{ minWidth: 620 }}>
