@@ -151,6 +151,20 @@ code until the owner holds the permission. Nothing in this programme relaxes a l
 
 ### ADV-0. Regulatory and data-rights register
 
+**Delivered** in `8b6614a` and `9018c2f`. Closure record and handback:
+`docs/adv-0-closure.md`. Artefacts: `supabase/migrations/20260728_source_rights_ledger.sql`,
+`src/lib/sourceRights.ts`, `src/lib/queries/sourceRights.ts`, `src/lib/aiBoundary.ts`
+wired into `src/app/api/advisor/route.ts`, `docs/regulatory-register.md`,
+`docs/procurement-backlog.md`. 52 new tests, 347 total.
+
+The gate below is met in the only sense available today: every registered source has an
+owner, a recorded permission state and a stop condition, and every unanswered question
+sits at a failing default rather than an optimistic one. The surfaces whose permissions
+are still open (the bulletin, HBU, investment scenarios, derived Rent Index figures,
+external notification channels, any external-model use of private material) stay
+disabled in code, not by convention. What remains is owner and counsel decisions,
+ordered by leverage in `docs/procurement-backlog.md`.
+
 Deliver: the FAL scope question stated per surface with its stop condition; a rights
 ledger extending `source_registry` rather than replacing it (permitted derived values,
 permitted export, permitted AI retrieval, permitted model input, refresh, corrections,
