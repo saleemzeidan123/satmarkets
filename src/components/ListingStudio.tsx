@@ -74,24 +74,182 @@ function stateLabel(state: StepState, ar: boolean): string {
   }
 }
 
-export default function ListingStudio({ locale, districts }: { locale: string; districts: DistrictPoint[] }) {
+/**
+ * A draft as the server read it, which is what resuming actually means: the
+ * Studio starts from this instead of from empty, and every later save patches
+ * this row rather than creating another one.
+ */
+export type StudioInitial = {
+  id: string;
+  title_en: string;
+  title_ar: string;
+  asset_type: string;
+  deal_type: string;
+  area_sqm: string;
+  price: string;
+  description_en: string;
+  description_ar: string;
+  contact_phone: string;
+  contact_email: string;
+  contact_channels: string[] | null;
+  lister_type: string;
+  video_url: string;
+  floorplan_url: string;
+  ad_permit_no: string;
+  ad_permit_expires_at: string;
+  right_to_market_confirmed: boolean;
+  availability_confirmed_at: string;
+  lat: number | null;
+  lng: number | null;
+  district_id: string | null;
+  attributes: Record<string, unknown>;
+  photo_count: number;
+  floorplan_count: number;
+  document_count: number;
+};
+
+type FormFields = {
+  title_en: string; title_ar: string; asset_type: string; deal_type: string;
+  area_sqm: string; price: string; description_en: string; description_ar: string;
+  contact_phone: string; contact_email: string;
+  lister_type: string; video_url: string; floorplan_url: string;
+  ad_permit_no: string; ad_permit_expires_at: string;
+};
+
+type Place = { lat: number | null; lng: number | null; districtId: string | null };
+type Channels = { whatsapp: boolean; call: boolean; email: boolean; message: boolean };
+
+const DEFAULT_CHANNELS: Channels = { whatsapp: true, call: true, email: false, message: true };
+
+/** Every piece of starting state in one place, so a blank Studio and a resumed one are built by the same code. */
+function seedFrom(initial: StudioInitial | null | undefined) {
+  const ch: Channels = initial?.contact_channels
+    ? {
+        whatsapp: initial.contact_channels.includes("whatsapp"),
+        call: initial.contact_channels.includes("call"),
+        email: initial.contact_channels.includes("email"),
+        message: initial.contact_channels.includes("message"),
+      }
+    : DEFAULT_CHANNELS;
+  const f: FormFields = {
+    title_en: initial?.title_en ?? "",
+    title_ar: initial?.title_ar ?? "",
+    asset_type: initial?.asset_type ?? "office",
+    deal_type: initial?.deal_type ?? "lease",
+    area_sqm: initial?.area_sqm ?? "",
+    price: initial?.price ?? "",
+    description_en: initial?.description_en ?? "",
+    description_ar: initial?.description_ar ?? "",
+    contact_phone: initial?.contact_phone ?? "",
+    contact_email: initial?.contact_email ?? "",
+    lister_type: initial?.lister_type ?? "owner_direct",
+    video_url: initial?.video_url ?? "",
+    floorplan_url: initial?.floorplan_url ?? "",
+    ad_permit_no: initial?.ad_permit_no ?? "",
+    ad_permit_expires_at: initial?.ad_permit_expires_at ?? "",
+  };
+  return {
+    f,
+    ch,
+    attrs: initial?.attributes ?? {},
+    place: { lat: initial?.lat ?? null, lng: initial?.lng ?? null, districtId: initial?.district_id ?? null } as Place,
+    rightToMarket: initial?.right_to_market_confirmed ?? false,
+    availableAt: initial?.availability_confirmed_at ?? "",
+    stored: {
+      photos: initial?.photo_count ?? 0,
+      floorplans: initial?.floorplan_count ?? 0,
+      documents: initial?.document_count ?? 0,
+    },
+  };
+}
+
+/**
+ * The facts as the completeness model reads them, built from Studio state alone.
+ *
+ * It is a free function rather than a hook body because the first render already
+ * needs an assessment: a resumed draft must land on the step still waiting, and
+ * that step is derived from the assessment before any state exists.
+ *
+ * Registry values are entered under their field key, so column-backed fields are
+ * also projected onto their column name, which is where fieldValue() looks for
+ * them. The authoritative platform facts are written last so a registry field can
+ * never displace one.
+ */
+function factsFrom(s: {
+  f: FormFields;
+  attrs: Record<string, unknown>;
+  place: Place;
+  rightToMarket: boolean;
+  availableAt: string;
+  photoCount: number;
+  documentCount: number;
+  hasFloorplanFile: boolean;
+}): ListingFacts {
+  const { f, attrs, place } = s;
+  const columns: Record<string, unknown> = {};
+  for (const field of intakeFields(f.asset_type)) {
+    if (field.column && attrs[field.key] !== undefined && attrs[field.key] !== "") {
+      columns[field.column] = attrs[field.key];
+    }
+  }
+  const price = Number(f.price);
+  const isSale = f.deal_type === "sale";
+  return {
+    ...columns,
+    asset_type: f.asset_type,
+    deal_type: f.deal_type,
+    title_en: f.title_en,
+    title_ar: f.title_ar,
+    description_en: f.description_en,
+    description_ar: f.description_ar,
+    area_sqm: Number.isFinite(Number(f.area_sqm)) && f.area_sqm !== "" ? Number(f.area_sqm) : null,
+    asking_rent_sqm: !isSale && Number.isFinite(price) && f.price !== "" ? price : null,
+    sale_price: isSale && Number.isFinite(price) && f.price !== "" ? price : null,
+    lat: place.lat,
+    lng: place.lng,
+    district_id: place.districtId,
+    building_id: null,
+    contact_phone: f.contact_phone,
+    contact_email: f.contact_email,
+    ad_permit_no: f.ad_permit_no,
+    ad_permit_expires_at: f.ad_permit_expires_at || null,
+    right_to_market_confirmed: s.rightToMarket,
+    availability_confirmed_at: s.availableAt || null,
+    published_at: null,
+    // A selected plan file counts as a floor plan even before it is uploaded, and
+    // a plan already uploaded on an earlier visit counts too, so the step does not
+    // report as missing something the lister has already supplied. This value is
+    // local to the assessment and is never sent to the server.
+    floorplan_url: f.floorplan_url || (s.hasFloorplanFile ? "selected-file" : null),
+    video_url: f.video_url,
+    attributes: attrs,
+    photo_count: s.photoCount,
+    document_count: s.documentCount,
+  };
+}
+
+export default function ListingStudio({
+  locale,
+  districts,
+  initial,
+}: {
+  locale: string;
+  districts: DistrictPoint[];
+  initial?: StudioInitial | null;
+}) {
   const router = useRouter();
   const ar = locale === "ar";
   const loc: "en" | "ar" = ar ? "ar" : "en";
   const t = (en: string, arText: string) => (ar ? arText : en);
 
+  const seed = seedFrom(initial);
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [f, setF] = useState({
-    title_en: "", title_ar: "", asset_type: "office", deal_type: "lease",
-    area_sqm: "", price: "", description_en: "", description_ar: "",
-    contact_phone: "", contact_email: "",
-    lister_type: "owner_direct", video_url: "", floorplan_url: "",
-    ad_permit_no: "", ad_permit_expires_at: "",
-  });
-  const [rightToMarket, setRightToMarket] = useState(false);
-  const [availableAt, setAvailableAt] = useState("");
-  const [place, setPlace] = useState<{ lat: number | null; lng: number | null; districtId: string | null }>({ lat: null, lng: null, districtId: null });
+  const [f, setF] = useState<FormFields>(seed.f);
+  const [rightToMarket, setRightToMarket] = useState(seed.rightToMarket);
+  const [availableAt, setAvailableAt] = useState(seed.availableAt);
+  const [place, setPlace] = useState<Place>(seed.place);
   const [photos, setPhotos] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [floorFiles, setFloorFiles] = useState<File[]>([]);
@@ -99,12 +257,42 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
   const [brochureFile, setBrochureFile] = useState<File | null>(null);
   const [docFiles, setDocFiles] = useState<File[]>([]);
   const [docKinds, setDocKinds] = useState<DocumentKind[]>([]);
-  const [attrs, setAttrs] = useState<Record<string, unknown>>({});
-  const [ch, setCh] = useState({ whatsapp: true, call: true, email: false, message: true });
-  const [current, setCurrent] = useState("asset");
+  const [attrs, setAttrs] = useState<Record<string, unknown>>(seed.attrs);
+  const [ch, setCh] = useState<Channels>(seed.ch);
+  // What the server already holds for this listing. Uploads add to it after they
+  // succeed, so a file counts as supplied once, whether it went up on this visit
+  // or a previous one.
+  const [stored, setStored] = useState(seed.stored);
+  // The row this Studio is editing. Null until the first save creates it, and
+  // from then on every save is a patch of that row rather than a second listing.
+  const [listingId, setListingId] = useState<string | null>(initial?.id ?? null);
+  const [saved, setSaved] = useState(false);
+  // Bumped after a successful upload so the file inputs drop the names of files
+  // that are now on the server and would otherwise be sent a second time.
+  const [uploadRound, setUploadRound] = useState(0);
+  // A resumed draft opens where it was left, which is the step still waiting
+  // rather than the first one. Computed once, from the same model the rest of
+  // this component reads, so the server and the first client render agree.
+  const [current, setCurrent] = useState<string>(() => {
+    if (!initial) return "asset";
+    const facts0 = factsFrom({
+      f: seed.f,
+      attrs: seed.attrs,
+      place: seed.place,
+      rightToMarket: seed.rightToMarket,
+      availableAt: seed.availableAt,
+      photoCount: seed.stored.photos,
+      documentCount: seed.stored.documents,
+      hasFloorplanFile: seed.stored.floorplans > 0,
+    });
+    return resumeStepId(studioSteps(seed.f.asset_type), assessListing(facts0, ASSESSED_AT));
+  });
 
-  const set = (k: string, v: string) => setF((p) => ({ ...p, [k]: v }));
-  const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
+  // Any change after a save makes the "saved" note stale, so the note is retired
+  // the moment the listing stops matching what the server holds.
+  const touch = () => setSaved(false);
+  const set = (k: string, v: string) => { touch(); setF((p) => ({ ...p, [k]: v })); };
+  const setAttr = (k: string, v: unknown) => { touch(); setAttrs((p) => ({ ...p, [k]: v })); };
   const isBroker = f.lister_type === "broker_authorized";
 
   // The asset type decides which facts every later step asks for, so changing it
@@ -118,51 +306,18 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
   const photoUrls = useMemo(() => photos.split(/\n+/).map((s) => s.trim()).filter(Boolean), [photos]);
   const steps = useMemo(() => studioSteps(f.asset_type), [f.asset_type]);
 
-  // The facts as the model reads them. Registry values are entered under their
-  // field key, so column-backed fields are also projected onto their column name,
-  // which is where fieldValue() looks for them. The authoritative platform facts
-  // are written last so a registry field can never displace one.
-  const facts: ListingFacts = useMemo(() => {
-    const columns: Record<string, unknown> = {};
-    for (const field of intakeFields(f.asset_type)) {
-      if (field.column && attrs[field.key] !== undefined && attrs[field.key] !== "") {
-        columns[field.column] = attrs[field.key];
-      }
-    }
-    const price = Number(f.price);
-    const isSale = f.deal_type === "sale";
-    return {
-      ...columns,
-      asset_type: f.asset_type,
-      deal_type: f.deal_type,
-      title_en: f.title_en,
-      title_ar: f.title_ar,
-      description_en: f.description_en,
-      description_ar: f.description_ar,
-      area_sqm: Number.isFinite(Number(f.area_sqm)) && f.area_sqm !== "" ? Number(f.area_sqm) : null,
-      asking_rent_sqm: !isSale && Number.isFinite(price) && f.price !== "" ? price : null,
-      sale_price: isSale && Number.isFinite(price) && f.price !== "" ? price : null,
-      lat: place.lat,
-      lng: place.lng,
-      district_id: place.districtId,
-      building_id: null,
-      contact_phone: f.contact_phone,
-      contact_email: f.contact_email,
-      ad_permit_no: f.ad_permit_no,
-      ad_permit_expires_at: f.ad_permit_expires_at || null,
-      right_to_market_confirmed: rightToMarket,
-      availability_confirmed_at: availableAt || null,
-      published_at: null,
-      // A selected plan file counts as a floor plan even before it is uploaded,
-      // so the step does not report as missing something the lister just chose.
-      // This value is local to the assessment and is never sent to the server.
-      floorplan_url: f.floorplan_url || (floorFiles.length > 0 ? "selected-file" : null),
-      video_url: f.video_url,
-      attributes: attrs,
-      photo_count: photoUrls.length + files.length,
-      document_count: docFiles.length + (brochureFile ? 1 : 0),
-    };
-  }, [f, attrs, place, rightToMarket, availableAt, photoUrls, files, floorFiles, docFiles, brochureFile]);
+  // The facts as the model reads them: what is already on the server plus what
+  // has been chosen on this visit and not uploaded yet.
+  const facts: ListingFacts = useMemo(() => factsFrom({
+    f,
+    attrs,
+    place,
+    rightToMarket,
+    availableAt,
+    photoCount: stored.photos + photoUrls.length + files.length,
+    documentCount: stored.documents + docFiles.length + (brochureFile ? 1 : 0),
+    hasFloorplanFile: floorFiles.length > 0 || stored.floorplans > 0,
+  }), [f, attrs, place, rightToMarket, availableAt, stored, photoUrls, files, floorFiles, docFiles, brochureFile]);
 
   const quality = useMemo(() => assessListing(facts, ASSESSED_AT), [facts]);
   const progress = useMemo(() => studioProgress(steps, quality), [steps, quality]);
@@ -305,7 +460,7 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
             <input
               type="checkbox"
               checked={availableAt !== ""}
-              onChange={(e) => setAvailableAt(e.target.checked ? new Date().toISOString() : "")}
+              onChange={(e) => { touch(); setAvailableAt(e.target.checked ? new Date().toISOString() : ""); }}
               className="mt-0.5"
             />
             <span>{t("This space is available today, and I am affirming that now.", "هذه المساحة متاحة اليوم، وأؤكد ذلك الآن.")}</span>
@@ -345,7 +500,7 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
               </select>
             </div>
             <label className="flex items-start gap-2 text-[13px]">
-              <input type="checkbox" checked={rightToMarket} onChange={(e) => setRightToMarket(e.target.checked)} className="mt-0.5" />
+              <input type="checkbox" checked={rightToMarket} onChange={(e) => { touch(); setRightToMarket(e.target.checked); }} className="mt-0.5" />
               <span>{t("I confirm I have the right to market this property.", "أقرّ بأن لدي حق تسويق هذا العقار.")} *</span>
             </label>
           </div>
@@ -362,12 +517,18 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
                 {t("As a broker, include your authorization to market and set its type below.", "بصفتك وسيطاً، أرفق تفويض التسويق واختر نوعه أدناه.")}
               </p>
             )}
+            {stored.documents > 0 && (
+              <p className="text-[11px] text-charcoal/60">
+                {t(`${stored.documents} already attached. Anything you add here is added to those.`, `${stored.documents} مرفقة بالفعل. ما تضيفه هنا يُضاف إليها.`)}
+              </p>
+            )}
             <input
+              key={`doc-${uploadRound}`}
               id="doc_files"
               type="file"
               accept="application/pdf,image/jpeg,image/png,image/webp"
               multiple
-              onChange={(e) => { const arr = Array.from(e.target.files ?? []); setDocFiles(arr); setDocKinds(arr.map(() => "deed" as DocumentKind)); }}
+              onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setDocFiles(arr); setDocKinds(arr.map(() => "deed" as DocumentKind)); }}
               className="text-[13px]"
             />
             {docFiles.map((file, i) => (
@@ -391,24 +552,30 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
           <div key={key} className="space-y-2">
             <div>
               <label className={lbl} htmlFor="photo_files">{t("Upload photographs", "ارفع الصور")} *</label>
+              {stored.photos > 0 && (
+                <p className="text-[11px] text-charcoal/60 mb-1">
+                  {t(`${stored.photos} photographs are already saved to this listing.`, `${stored.photos} صور محفوظة بالفعل في هذا العرض.`)}
+                </p>
+              )}
               <input
+                key={`photo-${uploadRound}`}
                 id="photo_files"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+                onChange={(e) => { touch(); setFiles(Array.from(e.target.files ?? [])); }}
                 className="text-[13px]"
               />
               <p className={help}>{t("JPEG, PNG or WebP, up to 4MB each. Images are processed and their metadata stripped.", "JPEG أو PNG أو WebP، حتى 4 ميغابايت لكل صورة. تُعالَج الصور وتُزال بياناتها الوصفية.")}</p>
             </div>
             <div>
               <label className={lbl} htmlFor="photo_urls">{t("Or paste photo links, one per line", "أو ألصق روابط الصور، رابط في كل سطر")}</label>
-              <textarea id="photo_urls" dir="ltr" rows={3} value={photos} onChange={(e) => setPhotos(e.target.value)} className={inp} />
+              <textarea id="photo_urls" dir="ltr" rows={3} value={photos} onChange={(e) => { touch(); setPhotos(e.target.value); }} className={inp} />
             </div>
           </div>
         );
       case "photo_set": {
-        const n = photoUrls.length + files.length;
+        const n = stored.photos + photoUrls.length + files.length;
         return (
           <p key={key} className="text-[12px] text-charcoal/60">
             {n >= PHOTO_SET_MIN
@@ -422,12 +589,18 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
           <div key={key} className="space-y-2">
             <div>
               <label className={lbl} htmlFor="floor_files">{t("Floor plans (image or PDF)", "المخططات (صورة أو PDF)")}</label>
+              {stored.floorplans > 0 && (
+                <p className="text-[11px] text-charcoal/60 mb-1">
+                  {t(`${stored.floorplans} plans are already saved to this listing.`, `${stored.floorplans} مخططات محفوظة بالفعل في هذا العرض.`)}
+                </p>
+              )}
               <input
+                key={`floor-${uploadRound}`}
                 id="floor_files"
                 type="file"
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 multiple
-                onChange={(e) => { const arr = Array.from(e.target.files ?? []); setFloorFiles(arr); setFloorTypes(arr.map(() => defaultPlanType(f.asset_type))); }}
+                onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setFloorFiles(arr); setFloorTypes(arr.map(() => defaultPlanType(f.asset_type))); }}
                 className="text-[13px]"
               />
               {floorFiles.map((file, i) => (
@@ -453,7 +626,7 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
               <label className={lbl} htmlFor="brochure">
                 {f.deal_type === "sale" ? t("Offering memorandum (PDF)", "مذكرة العرض (PDF)") : t("Marketing brochure (PDF)", "الكتيّب التسويقي (PDF)")}
               </label>
-              <input id="brochure" type="file" accept="application/pdf" onChange={(e) => setBrochureFile(e.target.files?.[0] ?? null)} className="text-[13px]" />
+              <input key={`brochure-${uploadRound}`} id="brochure" type="file" accept="application/pdf" onChange={(e) => { touch(); setBrochureFile(e.target.files?.[0] ?? null); }} className="text-[13px]" />
               {brochureFile && <p className="text-[11px] text-charcoal/55 mt-1">{brochureFile.name.slice(0, 40)}</p>}
             </div>
           </div>
@@ -470,7 +643,7 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
         return (
           <div key={key}>
             <div className={lbl}>{t("Place the building on the map", "حدّد موقع المبنى على الخريطة")} *</div>
-            <LocationPicker locale={loc} districts={districts} value={place} onChange={setPlace} />
+            <LocationPicker locale={loc} districts={districts} value={place} onChange={(v) => { touch(); setPlace(v); }} />
           </div>
         );
       case "district":
@@ -502,7 +675,7 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
               <legend className={lbl}>{t("How viewers may reach you", "كيف يصل إليك الزائر")}</legend>
               {(([["whatsapp", "WhatsApp", "واتساب"], ["call", "Call", "اتصال"], ["email", "Email", "بريد إلكتروني"], ["message", "Message on SAT", "رسالة عبر سات"]]) as [string, string, string][]).map(([k, en, arLab]) => (
                 <label key={k} className="flex items-center gap-1.5">
-                  <input type="checkbox" checked={(ch as Record<string, boolean>)[k]} onChange={(e) => setCh((p) => ({ ...p, [k]: e.target.checked }))} />
+                  <input type="checkbox" checked={(ch as Record<string, boolean>)[k]} onChange={(e) => { touch(); setCh((p) => ({ ...p, [k]: e.target.checked })); }} />
                   {t(en, arLab)}
                 </label>
               ))}
@@ -568,25 +741,38 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
     }
 
     setBusy(true);
-    const res = await fetch(`/api/listings`, {
-      method: "POST",
+    // Create once, patch after. The fields differ because they must: creation
+    // states the asset type and affirms the right to market, and neither of those
+    // is something a lister may change afterwards (src/lib/listingEdit.ts), so a
+    // patch does not carry them and the server would refuse them if it did.
+    const shared = {
+      deal_type: f.deal_type,
+      district_id: place.districtId, lat: place.lat, lng: place.lng,
+      area_sqm: f.area_sqm, price: f.price,
+      title_en: f.title_en, title_ar: f.title_ar,
+      description_en: f.description_en, description_ar: f.description_ar,
+      contact_phone: f.contact_phone, contact_email: f.contact_email,
+      contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
+      lister_type: f.lister_type,
+      video_url: f.video_url, floorplan_url: f.floorplan_url,
+      ad_permit_no: f.ad_permit_no.trim(), ad_permit_expires_at: f.ad_permit_expires_at,
+      // An empty string, not null: on a patch that is how the lister withdraws a
+      // confirmation they made earlier, and on a create it reads the same as absent.
+      availability_confirmed_at: availableAt,
+      attributes: attrs,
+      // Only the links typed on this visit. The box is cleared after a save, so a
+      // link that is already a media row is never sent twice.
+      photos: photoUrls,
+    };
+    const existing = listingId;
+    const res = await fetch(existing ? `/api/listings/${existing}` : `/api/listings`, {
+      method: existing ? "PATCH" : "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        title_en: f.title_en, title_ar: f.title_ar,
-        asset_type: f.asset_type, deal_type: f.deal_type,
-        district_id: place.districtId, lat: place.lat, lng: place.lng,
-        area_sqm: f.area_sqm, price: f.price,
-        description_en: f.description_en, description_ar: f.description_ar,
-        contact_phone: f.contact_phone, contact_email: f.contact_email,
-        contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
-        lister_type: f.lister_type,
-        video_url: f.video_url, floorplan_url: f.floorplan_url,
-        ad_permit_no: f.ad_permit_no.trim(), ad_permit_expires_at: f.ad_permit_expires_at,
-        right_to_market_confirmed: rightToMarket,
-        availability_confirmed_at: availableAt || null,
-        attributes: attrs,
-        photos: photoUrls,
-      }),
+      body: JSON.stringify(
+        existing
+          ? shared
+          : { ...shared, asset_type: f.asset_type, right_to_market_confirmed: rightToMarket },
+      ),
     });
     const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
     if (!res.ok) {
@@ -594,40 +780,84 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
       setBusy(false);
       return;
     }
+    const id = existing ?? json.id ?? null;
+    if (!id) {
+      setError(t("The listing saved but its reference came back empty.", "حُفظ العرض لكن مرجعه عاد فارغاً."));
+      setBusy(false);
+      return;
+    }
     // Arabic the lister wrote is already stamped as current by the write path, so
     // this fills only what was left empty and never overwrites their words.
     try {
-      if (json.id) fetch(`/api/listings/${json.id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) });
+      fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) });
     } catch {}
-    if (json.id) {
-      for (const file of files) {
-        const fd = new FormData();
-        fd.append("file", file);
-        try { await fetch(`/api/listings/${json.id}/media`, { method: "POST", body: fd }); } catch {}
-      }
-      for (let i = 0; i < floorFiles.length; i++) {
-        const file = floorFiles[i];
-        const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
-        const fd = new FormData();
-        fd.append("file", file);
-        fd.append("kind", "floorplan");
-        fd.append("plan_type", floorTypes[i] ?? defaultPlanType(f.asset_type));
-        try { await fetch(`/api/listings/${json.id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd }); } catch {}
-      }
-      if (brochureFile) {
-        const fd = new FormData();
-        fd.append("file", brochureFile);
-        fd.append("kind", "brochure");
-        try { await fetch(`/api/listings/${json.id}/docs`, { method: "POST", body: fd }); } catch {}
-      }
-      for (let i = 0; i < docFiles.length; i++) {
-        const fd = new FormData();
-        fd.append("file", docFiles[i]);
-        fd.append("kind", docKinds[i] ?? "other");
-        try { await fetch(`/api/listings/${json.id}/documents`, { method: "POST", body: fd }); } catch {}
-      }
+
+    // Files chosen on this visit, and only those. Each array is emptied after the
+    // round, so returning to this step and saving again does not upload the same
+    // photograph a second time.
+    let addedPhotos = 0;
+    let addedPlans = 0;
+    let addedDocs = 0;
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        const r = await fetch(`/api/listings/${id}/media`, { method: "POST", body: fd });
+        if (r.ok) addedPhotos++;
+      } catch {}
     }
-    router.push(`/${locale}/dashboard`);
+    for (let i = 0; i < floorFiles.length; i++) {
+      const file = floorFiles[i];
+      const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("kind", "floorplan");
+      fd.append("plan_type", floorTypes[i] ?? defaultPlanType(f.asset_type));
+      try {
+        const r = await fetch(`/api/listings/${id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd });
+        if (r.ok) addedPlans++;
+      } catch {}
+    }
+    if (brochureFile) {
+      const fd = new FormData();
+      fd.append("file", brochureFile);
+      fd.append("kind", "brochure");
+      try {
+        const r = await fetch(`/api/listings/${id}/docs`, { method: "POST", body: fd });
+        if (r.ok) addedDocs++;
+      } catch {}
+    }
+    for (let i = 0; i < docFiles.length; i++) {
+      const fd = new FormData();
+      fd.append("file", docFiles[i]);
+      fd.append("kind", docKinds[i] ?? "other");
+      try {
+        const r = await fetch(`/api/listings/${id}/documents`, { method: "POST", body: fd });
+        if (r.ok) addedDocs++;
+      } catch {}
+    }
+
+    setStored((p) => ({
+      photos: p.photos + addedPhotos + photoUrls.length,
+      floorplans: p.floorplans + addedPlans,
+      documents: p.documents + addedDocs,
+    }));
+    setFiles([]);
+    setFloorFiles([]);
+    setFloorTypes([]);
+    setBrochureFile(null);
+    setDocFiles([]);
+    setDocKinds([]);
+    setPhotos("");
+    setUploadRound((n) => n + 1);
+    setListingId(id);
+    setSaved(true);
+    setBusy(false);
+    // The lister stays in the Studio rather than being thrown out to the
+    // dashboard: saving is a checkpoint, not an exit. replace() rather than
+    // push() so the address becomes the resumable one without leaving a blank
+    // new listing behind in the history.
+    if (!existing) router.replace(`/${locale}/dashboard/new?draft=${id}`);
   }
 
   const missing = missingChecks(quality);
@@ -699,9 +929,23 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
             <>
               <div>
                 <label className={lbl} htmlFor="asset_type">{t("Asset type", "نوع الأصل")}</label>
-                <select id="asset_type" value={f.asset_type} onChange={(e) => onAssetChange(e.target.value)} className={inp}>
+                <select
+                  id="asset_type"
+                  value={f.asset_type}
+                  disabled={listingId !== null}
+                  onChange={(e) => onAssetChange(e.target.value)}
+                  className={inp + (listingId !== null ? " bg-charcoal/5 text-charcoal/60" : "")}
+                >
                   {ASSET_TYPES.map((a) => <option key={a} value={a}>{assetLabel(a, loc)}</option>)}
                 </select>
+                {listingId !== null && (
+                  <p className={help}>
+                    {t(
+                      "The asset type decides which facts this listing carries, so it is fixed once the listing is saved. A different asset type is a different listing.",
+                      "نوع الأصل يحدد الحقائق التي يحملها هذا العرض، ولذلك يثبت بعد حفظ العرض. نوع أصل مختلف يعني عرضاً مختلفاً.",
+                    )}
+                  </p>
+                )}
               </div>
               <div>
                 <label className={lbl} htmlFor="deal_type">{t("Offer type", "نوع العرض")}</label>
@@ -772,6 +1016,24 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
 
       {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
 
+      {/* Saving keeps the lister here. The note says what was saved and where it
+          can be picked up again, which is the address in the browser bar, and it
+          disappears the moment anything changes, because from then on the server
+          no longer holds what is on the screen. Nothing here reads as a
+          confirmation by SAT (D24): it is a draft, and it says so. */}
+      {saved && (
+        <div role="status" className="mt-3 rounded border border-line bg-ivory-2/40 p-3 text-[12px] text-charcoal/70">
+          <p>{t("Saved as a draft. You can close this page and come back to this address to continue.", "حُفظ كمسودة. يمكنك إغلاق الصفحة والعودة إلى هذا العنوان للمتابعة.")}</p>
+          <button
+            type="button"
+            onClick={() => router.push(`/${locale}/dashboard`)}
+            className="mt-1.5 text-signal underline min-h-[44px]"
+          >
+            {t("Go to your listings", "انتقل إلى عروضك")}
+          </button>
+        </div>
+      )}
+
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -796,7 +1058,11 @@ export default function ListingStudio({ locale, districts }: { locale: string; d
           onClick={save}
           className="rounded bg-signal px-4 py-2 min-h-[44px] text-[13px] text-white disabled:opacity-60"
         >
-          {busy ? t("Saving...", "جارٍ الحفظ...") : t("Save draft", "حفظ المسودة")}
+          {busy
+            ? t("Saving...", "جارٍ الحفظ...")
+            : listingId !== null
+              ? t("Save changes", "حفظ التغييرات")
+              : t("Save draft", "حفظ المسودة")}
         </button>
         <span className="text-[11px] text-charcoal/50">
           {saveBlockers.length === 0
