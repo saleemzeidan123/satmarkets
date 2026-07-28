@@ -228,6 +228,38 @@ meaning. Verification rendering satisfies D24 in **both** directions.
 
 ### ADV-2. Professional supply and demand workflow
 
+**Delivered** in `ca8e13e`, `c0a4d91`, `db7dd28`, `1eeabdc`, `0dc184a`, `5b0d864`,
+`1842539`, `06ec9be`, `d376729`, `80ea746`, `919eb63`, `023b4d1`, `81901cc`, `f7c522d`
+and `dc780e3`. Closure record and handback: `docs/adv-2-closure.md`. Artefacts:
+`src/lib/listingQuality.ts` (completeness with the reason attached to the score, and
+`contradictionsOf`), `src/lib/factScope.ts` (whose fact it is, resolved per asset type and
+per field, with ADV-1 attribution asymmetry at field level), `src/lib/listingStudio.ts`
+and `src/components/ListingStudio.tsx` (short steps partitioning every fact onto exactly
+one step, replacing `NewListingForm.tsx`), `src/lib/listingEdit.ts` (save, resume and
+per-stage editability), `src/lib/matching.ts` (named dimensions, declared tolerance,
+eligibility before comparison, no verdict without reasons), `src/lib/decisionPack.ts` with
+`src/components/DecisionPackPanel.tsx` (what a shortlist can compare and what it must ask
+first), `src/lib/mediaStandard.ts` with `src/components/MediaBrief.tsx` (44 shots across 15
+asset types as a brief, and a status over the three countable facts), and two migrations:
+`20260728b` (the requester can read the viewing they booked, with the null guard and the
+ALTERed insert check) and `20260728c` (a shortlist is a saved listing with a name, on the
+account). 155 new tests, 681 total. 37 files, 7,885 insertions.
+
+Every item in the owner directive's step 4 is delivered. Six items from the wider scope
+paragraph below are not, each for a stated reason recorded in the closure: AI-supported
+drafting inside the Studio (sequenced to ADV-3, where the provider boundary and the
+classification that governs it are built); organizations, teams, roles and brand profiles,
+and RFP, which sits on them (both blocked on O14); secure progressive disclosure and
+mutual-interest contact release (O14); consent receipts, the recording half of the consent
+controls (specified, and arriving with the ADV-6 permission model; external channels stay
+disabled in code under O12 as they did throughout); blur and duplicate detection over image
+content (deliberately deferred for the same reason the media standard refuses to score
+image content, with metadata and text duplicate detection a candidate for ADV-3); and the
+exact EN and AR public preview (queued, not blocked). The gate is met except for the word
+"mobile": the journey is built and tested and has not yet been measured at 320, 360, 390,
+430, 768 and 1280 pixels in both locales, and the nine private surfaces cannot be fetched
+anonymously, so seven probe fragments are owed and open ADV-3.
+
 Deliver: the asset-specific Listing Studio (short progressive steps, save and resume,
 building facts separate from offered-space facts, media missions, quality scoring, blur
 and duplicate and contradiction detection, originals preserved, public marketing media
