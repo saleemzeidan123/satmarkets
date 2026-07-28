@@ -183,6 +183,31 @@ note, storage policy, redisplay policy and licence reference across nine sources
 
 ### ADV-1. Evidence and entity foundation
 
+**Delivered** in `1047ee6`, `bbed926`, `0625309` and `0c4e615`, after the owner ruling 3
+and 4 precondition closed in `41f4f8f`, `726b72b`, `0d07cb8`, `b94b6b4`, `f6368c4`,
+`11c9518` and `6c2e1fa`. Closure record and handback: `docs/adv-1-closure.md`. Artefacts:
+`src/lib/evidence.ts` (Evidence Passport, entity kinds, asymmetric `attribution`,
+`isKnown`, `publishability`), `src/lib/listingVerification.ts` (the five verification
+dimensions, the four independent fail-closed conditions, `relationConsistency`),
+`src/components/VerificationState.tsx`, the value-level dictionary guards in
+`src/lib/claims.test.ts`, with `src/lib/evidence.test.ts` and
+`src/lib/listingVerification.test.ts`. 179 new tests, 526 total.
+
+The gate is met in one half and honestly open in the other. Verification rendering
+satisfies D24 in both directions and is enforced by test: no published row can draw a
+badge, because the resolver requires a non-fixture record, a method naming a check
+outside this database, a date of check and a countersigning actor, and every one of the
+88 published rows fails at least one; and where a dimension does resolve, the reserved
+green is used and nothing else is. Traceability is met for verification claims and for
+the cited rent band, and is not yet met for every Rent Index reference on the platform:
+36 English and 59 Arabic dictionary values name the index with no attribution, most of
+them labels and page descriptions that cannot structurally hold a 44-character Arabic
+citation. That is findings rank 45 and open decision O15, which needs an owner scope
+line before a sweep can be written. Two specified items remain and neither blocks ADV-2:
+the append-only corrections WRITE path (the read path is complete and `publishability`
+already refuses a retracted passport; the write path arrives with ADV-6, where
+corrections originate), and PD4 deed checks, blocked on O13 and O10.
+
 Precondition, sequenced first because a passport on an over-claiming page is decorative:
 **owner ruling 3**, audit and correct the roughly 100 remaining over-broad claims from
 record-level evidence, `/invest` first, then public discovery, listing, lister,
