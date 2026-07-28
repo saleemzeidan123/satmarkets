@@ -10,6 +10,7 @@
 
 import { createHash } from "crypto";
 import { DNT_LITERALS, PROPER_NOUNS, RE_GLOSSARY } from "./glossary";
+import { callModel, instruction, userWords } from "@/lib/ai";
 
 export type Tier = "fast" | "quality";
 
@@ -36,9 +37,6 @@ const MODELS: Record<Tier, string> = {
   fast: process.env.SAT_TRANSLATE_MODEL_FAST || "claude-haiku-4-5-20251001",
   quality: process.env.SAT_TRANSLATE_MODEL_QUALITY || "claude-sonnet-4-6",
 };
-
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const ANTHROPIC_VERSION = "2023-06-01";
 
 /** Stable hash of a source field. Any single-character edit flips it. */
 export function hashSource(text: string): string {
@@ -146,35 +144,44 @@ function cacheKey(src: string, model: string): string {
   return createHash("sha256").update(model + "::ar::" + src, "utf8").digest("hex");
 }
 
-async function callClaude(system: string, userText: string, model: string, signal?: AbortSignal): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+// ADV-3A. The translator no longer opens its own socket.
+//
+// It used to POST straight to the provider from here, with its own key read, its
+// own error shapes and no boundary call at all. The material it sends is the
+// signed-in listing owner's own copy, submitted by that same owner under their own
+// row-level security, so it was always permitted. But "permitted" was never
+// established: nothing asked. A second path around a boundary is a defect even
+// when the material on it happens to be allowed, because what travels on a path
+// changes and the absence of a check does not.
+//
+// The tier is a deliberate choice about output quality, so it is expressed as a
+// named candidate with no failover. A quality translation quietly answered by the
+// fast tier would be a worse outcome than a failed one: the caller writes
+// `ar_translation_status = 'machine'` either way and nobody could tell afterwards
+// which model produced the Arabic on the page.
+async function callTranslator(system: string, userText: string, tier: Tier, model: string, signal?: AbortSignal): Promise<string> {
+  const r = await callModel({
+    profile: "bilingual_translation",
+    candidate: tier === "quality" ? "claude-sonnet" : "claude-haiku",
+    modelId: model,
+    messages: [
+      instruction("arabic house style", system),
+      // The owner's own listing copy, sent for processing on their behalf. Not a
+      // platform record about them: text they wrote and submitted themselves.
+      userWords(userText, "listing copy the owner wrote"),
+    ],
+    maxTokens: 2048,
+    temperature: 0.2,
+    signal,
+  });
+  if (r.ok) return r.text;
+  if (r.failure === "boundary") {
+    throw new Error("The AI data boundary refused this translation: " + r.denials.join("; "));
+  }
+  if (r.failure === "no_provider") {
     throw new Error("ANTHROPIC_API_KEY is not set. Add it to the server environment (Vercel env, not NEXT_PUBLIC).");
   }
-  const res = await fetch(ANTHROPIC_URL, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": ANTHROPIC_VERSION,
-    },
-    signal,
-    body: JSON.stringify({
-      model,
-      max_tokens: 2048,
-      temperature: 0.2,
-      system,
-      messages: [{ role: "user", content: userText }],
-    }),
-  });
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error("Anthropic API error " + res.status + ": " + detail.slice(0, 500));
-  }
-  const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-  const out = (data.content || []).filter((b) => b.type === "text").map((b) => b.text || "").join("").trim();
-  if (!out) throw new Error("Anthropic API returned empty content.");
-  return out;
+  throw new Error("Translation provider error: " + r.reasons.slice(-1).join(""));
 }
 
 /** Translate one English field to professional Saudi MSA Arabic. */
@@ -196,7 +203,7 @@ export async function translateToArabic(source: string, opts: TranslateOptions =
 
   const { text: masked, map } = protect(source);
   const system = buildSystem(source);
-  const raw = await callClaude(system, masked, model, opts.signal);
+  const raw = await callTranslator(system, masked, tier, model, opts.signal);
   const arabic = restore(raw, map);
 
   await cache.set(key, arabic);

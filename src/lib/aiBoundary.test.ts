@@ -4,7 +4,6 @@ import { readFileSync } from "node:fs";
 import {
   AI_AGREEMENT_IN_FORCE,
   AGGREGATE_MIN,
-  ADVISOR_PROMPT_PARTS,
   buildExternalPrompt,
   mayLeaveProcess,
   type PromptPart,
@@ -206,24 +205,38 @@ test("every allow and every denial produces a reason line", () => {
   for (const line of r.reasons) assert.ok(line.length > 0);
 });
 
-// 7. The live advisor surface.
+// 7. The live surface, which is now derived rather than declared.
 
-test("the declared advisor context passes the boundary today", () => {
-  const r = buildExternalPrompt(ADVISOR_PROMPT_PARTS);
-  assert.equal(r.allowed, true);
+test("the class our own system prompts carry is permitted unconditionally", () => {
+  // A system prompt is the one part of a request that used to carry no
+  // declaration at all. It carries no party data, no platform record and no
+  // licensed figure, so it passes both gates, and saying so out loud is the point:
+  // an undeclared part has no route out of the process.
+  const d = ext({ label: "advisor system prompt", dataClass: "own_instruction" });
+  assert.equal(d.allowed, true);
+  assert.match(d.reason, /our own instruction/);
 });
 
-test("the declared advisor context carries no licensed or private material", () => {
-  for (const p of ADVISOR_PROMPT_PARTS) {
-    assert.ok(
-      ["user_own_words", "aggregate_count", "public_published"].includes(p.dataClass),
-      `${p.label} is ${p.dataClass}`
-    );
-  }
+test("an instruction class does not launder what it quotes", () => {
+  // The instruction itself passes. A count of parties below the minimum group
+  // size, quoted into that instruction through a slot, still fails the whole
+  // request. The structural half of this lives in src/lib/ai/message.ts, which
+  // will not interpolate a value into a prompt except through a slot that
+  // declares its own parts; this is the boundary half.
+  const r = buildExternalPrompt([
+    { label: "advisor system prompt", dataClass: "own_instruction" },
+    { label: "landlord count", dataClass: "aggregate_count", overParties: true, n: 3 },
+  ]);
+  assert.equal(r.allowed, false);
+  assert.equal(r.allowed === false && r.denials.length, 1);
 });
 
-test("no advisor aggregate counts parties", () => {
-  for (const p of ADVISOR_PROMPT_PARTS) {
-    if (p.dataClass === "aggregate_count") assert.notEqual(p.overParties, true, p.label);
-  }
+test("there is no hand-written declaration of what the advisor sends", () => {
+  // There used to be: ADVISOR_PROMPT_PARTS, checked by the boundary while a
+  // different array went to the provider. Nothing tied the two together, so the
+  // declaration was true only while somebody remembered. The gateway now derives
+  // the checked parts from the sent messages. If a future edit reintroduces a
+  // standing list of parts for a route, this is the test that argues with it.
+  const src = readFileSync("src/lib/aiBoundary.ts", "utf8");
+  assert.doesNotMatch(src, /export const [A-Z_]*PROMPT_PARTS/);
 });

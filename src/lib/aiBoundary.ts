@@ -66,8 +66,32 @@ export type ModelDestination = "internal" | "external";
 export type DataClass =
   /** Already rendered on a public page. Sending it to a model discloses nothing new. */
   | "public_published"
-  /** The user's own message, or their own earlier turns, going back on their behalf. */
+  /**
+   * The user's own message, their own earlier turns, or copy they authored
+   * themselves and submitted themselves for processing, going back on their
+   * behalf. The test is authorship plus submission by the same party, not the
+   * shape of the text: a lister who writes a listing description and asks for it
+   * in Arabic is sending their own words exactly as a chat user is.
+   */
   | "user_own_words"
+  /**
+   * Text SAT itself authored as an instruction to the model. A system prompt, a
+   * schema description, a house-style rule.
+   *
+   * This class exists so that a system prompt has an honest name. Before it, the
+   * prompt was the one part of a request that carried no declaration at all,
+   * which is a strange hole in a boundary whose whole argument is that undeclared
+   * material has no route out. It carries no party data, no platform record and
+   * no licensed figure, so it is permitted unconditionally, and what it discloses
+   * to the provider is our own prompt engineering.
+   *
+   * The laundering risk is obvious and is closed structurally rather than by
+   * care: `src/lib/ai/message.ts` will not interpolate a value into an
+   * instruction except through a slot, and a slot carries its own declared parts.
+   * So an instruction that quotes live data declares that data separately, and an
+   * instruction with an unfilled placeholder throws instead of being sent.
+   */
+  | "own_instruction"
   /** A count or aggregate over platform data. Governed by AGGREGATE_MIN when it is over parties. */
   | "aggregate_count"
   /** Operational platform data that is real but unpublished. Enquiry volumes, internal status, drafts. */
@@ -133,6 +157,9 @@ export function mayLeaveProcess(
 
     case "user_own_words":
       return { allowed: true, reason: `${part.label}: the users own words, sent on their behalf` };
+
+    case "own_instruction":
+      return { allowed: true, reason: `${part.label}: our own instruction to the model, carrying no party or licensed material` };
 
     case "aggregate_count": {
       if (!part.overParties) {
@@ -221,23 +248,21 @@ export function buildExternalPrompt(
   return { allowed: true, parts, reasons };
 }
 
-/**
- * The advisor's current context, declared.
- *
- * Recorded here rather than inline at the call site so that the classification
- * of the live surface is visible next to the rules, and so that a change to what
- * the advisor sends is a change to a declared list rather than an edit buried in
- * a route handler.
- *
- * `/api/advisor` sends three things and no more: the user's message, up to six
- * of their own prior turns, and a counts-only platform context. All three are
- * permitted at the boundary today, and none of them is a licensed figure. Every
- * rent and price still comes from the deterministic layer, never from the model,
- * which is Law 3 enforced separately by the unsourced-figure guard.
- */
-export const ADVISOR_PROMPT_PARTS: PromptPart[] = [
-  { label: "user message", dataClass: "user_own_words" },
-  { label: "conversation history", dataClass: "user_own_words" },
-  { label: "published listing count", dataClass: "aggregate_count", overParties: false },
-  { label: "published index segment count", dataClass: "aggregate_count", overParties: false },
-];
+// WHY THERE IS NO LONGER A DECLARED LIST OF ADVISOR PROMPT PARTS.
+//
+// There used to be one: `ADVISOR_PROMPT_PARTS`, a hand-written array naming the
+// four things `/api/advisor` sends. `llm()` passed that array to
+// `buildExternalPrompt` and, if it came back allowed, sent an entirely separate
+// `messages` array to the provider.
+//
+// So the boundary checked a description of the request rather than the request.
+// Nothing tied the two together. Adding a field to the messages array did not
+// change the declaration, adding a class to the declaration did not change the
+// messages, and neither the type checker nor a test could see the two drift
+// apart. The declaration was a claim about the code, kept true by remembering.
+//
+// ADV-3A replaced it with derivation. A message carries its own parts
+// (`src/lib/ai/message.ts`), the gateway derives the parts it checks from the
+// messages it is about to send (`src/lib/ai/gateway.ts`), and a message with no
+// declared parts cannot be constructed. The checked list and the sent list are
+// now the same object, so they cannot disagree.

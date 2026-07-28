@@ -289,11 +289,30 @@ sending an unauthorized message.
 
 ### ADV-3. Model-agnostic AI platform
 
+**ADV-3A delivered**: one boundary-enforcing gateway for every external model call, and
+the closure of finding 54. Artefacts: `src/lib/ai/message.ts` (a message carries its own
+data classification, and a system prompt fills its live values through named slots, so
+nothing reaches a prompt without being declared), `src/lib/ai/router.ts` (task profiles, a
+candidate register in which every candidate states an explicit evaluation status, and a
+failover chain), `src/lib/ai/transport.ts` (the only module in the repository that opens a
+socket to a provider), `src/lib/ai/gateway.ts` (the one door: the boundary runs before
+selection, so a denial can never be recorded as a provider failure or retried against a
+different vendor, and the parts checked are derived from the messages sent) and
+`src/lib/ai/index.ts`, which deliberately does not re-export the transport. All three
+provider call sites are rewired onto it: the advisor, the search intent parser and the
+Arabic translator, the last of which keeps its no-failover contract through a named
+candidate so a quality translation is never quietly answered by the fast tier. Kimi is
+registered with an honest unevaluated status and no configured key, so considering it is
+on the record and selecting it is not automatic. No provider is chosen on token price:
+the candidate type carries no price field, so the ordering function cannot reach one, and
+a source scan over `router.ts` with the comments removed fails if a price-shaped key ever
+appears. 24 new tests, 705 total.
+
 Deliver: the six agents (discovery, listing copilot, opportunity matching, evidence
 auditor, deal analyst, operations); typed SAT tools; the deterministic calculation layer;
-the evaluation gold set and the cost-aware router. Kimi may be evaluated and is not
-automatically selected; DeepSeek, Gemini and others go through the same evaluation; no
-provider is chosen on token price.
+the evaluation gold set that would let the router report an evaluated basis rather than a
+configured default. Kimi may be evaluated and is not automatically selected; DeepSeek,
+Gemini and others go through the same evaluation; no provider is chosen on token price.
 
 Constraints: calculations, permissions, ranking eligibility, verification and transaction
 state stay deterministic. The discovery agent sits on top of `queryParse.ts` and may not

@@ -86,6 +86,26 @@ degrading to a written deterministic sentence, so a closed boundary produces a p
 advisor and never a silent send. This is what makes the module an enforcement point
 rather than a dormant policy file.
 
+**Correction, recorded as finding 54.** The paragraph above is left standing because it
+is what this record claimed on the day it was written, and the claim is exactly what was
+wrong. `llm()` was the single choke point of the advisor route, not of the platform.
+`src/app/api/search/route.ts` reached two providers from an inline array of base-url, key
+and model tuples, and `src/lib/translate/translateToArabic.ts` reached one from its own
+key read and its own headers. Neither file imported this module at all. Both sent material
+that was in fact permitted, which is why the error survived a closure review: there was no
+failure to find, only a check that was never made. The declaration was drifting too, since
+`ADVISOR_PROMPT_PARTS` was written by hand next to a separately written send.
+
+ADV-3A closes all three by construction rather than by correction. `src/lib/ai/transport.ts`
+is now the only module in the repository that opens a socket to a provider, `src/lib/ai/gateway.ts`
+is the only module that may reach it, the boundary runs inside the gateway before any
+candidate is selected, and the parts the boundary checks are derived from the messages
+being sent rather than described alongside them. `ADVISOR_PROMPT_PARTS` is deleted. What
+made the old claim unverifiable was that it was a claim about every file in the tree
+stated from inside one module, so the replacement claim is tested from outside: three
+structural tests walk `src` and fail on any file that reaches a provider, imports the
+transport, or re-exports it.
+
 **6. The procurement backlog.** `docs/procurement-backlog.md` orders the eight open
 items by leverage rather than by package, states what each costs the product while it
 stays open, and records what changes in this repository on the day an answer arrives.
