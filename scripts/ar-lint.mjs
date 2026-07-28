@@ -4,7 +4,13 @@ import path from "node:path";
 // The automatic Arabic voice gate. Fails the build on robotic constructions,
 // calqued marketing idioms, non-Western numerals, forbidden dashes, wrong FAL.
 const BANNED = [
-  { re: /قم ب|قومي ب|قوموا ب|يقوم ب/g, why: "qum-bi construction; use the direct verb" },
+  // The imperative starts a word, so the rule has to start at one. Without the left
+  // boundary this fired on الرقم بلا and on any other word ending in قم that happens
+  // to be followed by a preposition, which is a false accusation of robotic Arabic
+  // against ordinary prose, and the only way past it is to write worse Arabic. The
+  // optional و and ف are the conjunctions Arabic attaches to the front of the verb
+  // itself (وقم بـ), so they stay inside the match rather than defeating it.
+  { re: /(?<!\p{L})[وف]?(?:قم|قومي|قوموا|يقوم) ب/gu, why: "qum-bi construction; use the direct verb" },
   { re: /الخاصة? بك/g, why: "analytic possessive; use a pronoun suffix (مساحتك)" },
   { re: /رحلتك|لا تتردد|لا تفوت|عالم من/g, why: "calqued marketing idiom" },
   { re: /[٠-٩]/g, why: "Arabic-Indic numeral; Western numerals only" },

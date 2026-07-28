@@ -2,7 +2,10 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { assetLabel, dealLabel, cityLabel, gradeLabel, fitoutLabel, segmentLabel } from "@/lib/labels";
+import { assetLabel, dealLabel, cityLabel, cityKey, gradeLabel, gradePhrase, fitoutLabel, segmentLabel } from "@/lib/labels";
+// Discovery search. Deterministic, no model: the box has promised to understand a
+// stated requirement since the day it shipped, and until now it did nothing at all.
+import { parseQuery, dropKeys, matchesQuery, type QueryVocab } from "@/lib/search/queryParse";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import dynamic from "next/dynamic";
@@ -37,7 +40,7 @@ const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "service
 const GRADES = ["a_plus", "a", "b", "c"];
 const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
-type SP = { asset?: string; deal?: string; q?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string; bbox?: string };
+type SP = { asset?: string; deal?: string; q?: string; qx?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string; bbox?: string };
 
 export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
@@ -133,7 +136,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     .sort((a, b) => (b === "Riyadh" ? 1 : 0) - (a === "Riyadh" ? 1 : 0) || (cityTotals.get(b) ?? 0) - (cityTotals.get(a) ?? 0))
     .map((k) => ({ key: k, label: cityLabel(k, locale) }));
 
-  const cityIds = new Set(searchParams.city ? locations.filter((l) => l.city === searchParams.city).map((l) => l.id) : []);
+  // The city parameter is a slug in every link a person is likely to type or share,
+  // and the column stores "Riyadh". Comparing them raw returned an empty page for
+  // ?city=riyadh while the heading printed the slug back (owner ruling 5).
+  const cityParam = searchParams.city ? (cityKey(searchParams.city) ?? searchParams.city) : null;
+  const cityIds = new Set(cityParam ? locations.filter((l) => l.city === cityParam).map((l) => l.id) : []);
   const placeIds = searchParams.place ? new Set(locations.filter((l) => l.en.toLowerCase() === searchParams.place!.toLowerCase() || (l.ar || "") === searchParams.place).map((l) => l.id)) : null;
   let shown = listings.slice();
   if (searchParams.district) shown = shown.filter((l: any) => l.district_id === searchParams.district);
@@ -141,6 +148,33 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   else if (searchParams.city) shown = shown.filter((l: any) => l.district_id && cityIds.has(l.district_id));
   const bbox = (() => { if (!searchParams.bbox) return null; const p = searchParams.bbox.split(",").map(Number); return p.length === 4 && p.every((n) => Number.isFinite(n)) ? p : null; })();
   if (bbox) { const [w, so, e, no] = bbox; shown = shown.filter((l: any) => { const c = coordByListing.get(l.id); return !!c && c.lng >= w && c.lng <= e && c.lat >= so && c.lat <= no; }); }
+
+  // ------------------------------------------------------------- the search
+  // The vocabulary handed to the parser is the vocabulary this page already renders:
+  // the same asset, grade, fitout, deal and city tables the filter bar is built from,
+  // plus the districts loaded above. Nothing can be understood that is not selectable,
+  // which is what keeps the parse explainable back to the person who typed it.
+  const qVocab: QueryVocab = {
+    assets: ASSETS.map((v) => ({ value: v, en: assetLabel(v, "en"), ar: assetLabel(v, "ar") })),
+    grades: GRADES.map((v) => ({ value: v, en: gradeLabel(v, "en"), ar: gradeLabel(v, "ar") })),
+    fitouts: FITS.map((v) => ({ value: v, en: fitoutLabel(v, "en"), ar: fitoutLabel(v, "ar") })),
+    deals: ["lease", "sale"].map((v) => ({ value: v, en: dealLabel(v, "en"), ar: dealLabel(v, "ar") })),
+    cities: Array.from(new Set(locations.map((l) => l.city))).filter((c) => c && c !== "Other")
+      .map((v) => ({ value: v, en: cityLabel(v, "en"), ar: cityLabel(v, "ar") })),
+    places: locations.map((l) => ({ id: l.id, en: l.en, ar: l.ar || l.en })),
+  };
+  const parsedFull = searchParams.q && searchParams.q.trim() ? parseQuery(searchParams.q, qVocab) : null;
+  const qDropped = list(searchParams.qx);
+  const q = parsedFull ? dropKeys(parsedFull, qDropped) : null;
+  const qCityIds = q?.city ? new Set(locations.filter((l) => l.city === q.city).map((l) => l.id)) : null;
+  if (q && !q.empty) {
+    shown = shown.filter((l: any) => matchesQuery(l, q, {
+      // Identifying fields only. A description is prose, some of it assembled, and a
+      // result nobody can explain from what they typed is worse than no result.
+      text: [l.title_en, l.title_ar, l.reference_code, l.districts?.name_en, l.districts?.name_ar, l.districts?.city],
+      cityDistrictIds: qCityIds,
+    }));
+  }
 
   // Registry-driven per-asset facets, only when exactly one asset type is selected
   // (facets are asset-specific). Coverage-gated over the fetched listings of that
@@ -153,7 +187,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   if (facetAsset) for (const f of facets) facetValues[f.key] = (searchParams as Record<string, string | undefined>)[`f_${f.key}`];
   if (facets.length) shown = shown.filter((l: any) => matchesAssetFacets(l, facetAsset!, facetValues));
 
-  const szT = searchParams.sz ? Number(searchParams.sz) : null;
+  // "around 300 m²" is a preference, not a bound. It orders the results by closeness
+  // rather than narrowing them, because inventing a tolerance the person never stated
+  // would either hide reasonable spaces or empty the page. An explicit sort still wins.
+  const qSizeT = !searchParams.sz && !searchParams.sort && q?.areaTarget != null ? q.areaTarget : null;
+  const szT = searchParams.sz ? Number(searchParams.sz) : qSizeT;
   const rtT = searchParams.rt ? Number(searchParams.rt) : null;
   const spT = searchParams.sp ? Number(searchParams.sp) : null;
   const sort = searchParams.sort || (szT || rtT || spT ? "best" : "new");
@@ -184,6 +222,41 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const s = p.toString();
     return s ? `?${s}` : "";
   };
+
+  // ------------------------------------------------- the transparency row
+  // A search that quietly drops half of what was typed is the same defect class as
+  // an unattributed figure: the person cannot tell what the answer is an answer to.
+  // Every reading the parser made is shown back, and every one of them can be taken
+  // away again by name, through `qx`.
+  const qChips: { key: string; label: string }[] = [];
+  if (q) {
+    const money = (v: number) =>
+      `${formatNumber(v, locale)}${q.deal === "sale" ? ` ${formatUnit("sar", locale, "short")}` : q.deal === "lease" ? ` ${formatUnit("sar_sqm_year", locale, "short")}` : ""}`;
+    if (q.asset) qChips.push({ key: "asset", label: assetLabel(q.asset, locale) });
+    if (q.deal) qChips.push({ key: "deal", label: dealLabel(q.deal, locale) });
+    if (q.grade) qChips.push({ key: "grade", label: gradePhrase(q.grade, locale) });
+    if (q.fitout) qChips.push({ key: "fitout", label: fitoutLabel(q.fitout, locale) });
+    if (q.place) qChips.push({ key: "place", label: ar ? q.place.ar : q.place.en });
+    if (q.city) qChips.push({ key: "city", label: cityLabel(q.city, locale) });
+    if (q.priceMin != null) qChips.push({ key: "priceMin", label: fill(dl.qFrom, { v: money(q.priceMin) }) });
+    if (q.priceMax != null) qChips.push({ key: "priceMax", label: fill(dl.qUpTo, { v: money(q.priceMax) }) });
+    if (q.areaMin != null) qChips.push({ key: "areaMin", label: fill(dl.qFrom, { v: formatArea(q.areaMin, locale) }) });
+    if (q.areaMax != null) qChips.push({ key: "areaMax", label: fill(dl.qUpTo, { v: formatArea(q.areaMax, locale) }) });
+    if (q.areaTarget != null) qChips.push({ key: "area", label: fill(dl.qAbout, { v: formatArea(q.areaTarget, locale) }) });
+    if (q.terms.length) qChips.push({ key: "terms", label: fill(dl.qText, { v: q.terms.join(" ") }) });
+  }
+  const qxHref = (key: string) => {
+    const p = new URLSearchParams();
+    Object.entries(fparams).forEach(([k, v]) => { if (k !== "qx") p.set(k, v); });
+    p.set("qx", Array.from(new Set([...qDropped, key])).join(","));
+    return `/${locale}/listings?${p.toString()}`;
+  };
+  const qClearHref = (() => {
+    const p = new URLSearchParams();
+    Object.entries(fparams).forEach(([k, v]) => { if (k !== "q" && k !== "qx") p.set(k, v); });
+    const s = p.toString();
+    return s ? `/${locale}/listings?${s}` : `/${locale}/listings`;
+  })();
 
   let idx: any[] = [];
   if (sb && insightsView) {
@@ -229,10 +302,45 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
       <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
+        {/* A GET form submits only the fields it carries, so without these the box
+            silently discarded the deal, city, district, grade, fitout, facet, sort
+            and map area a person had already chosen. Typing a sentence should narrow
+            what is on screen, not reset it. `q` is excluded because the input below
+            supplies it, and `qx` because withdrawn readings belong to the sentence
+            they were withdrawn from: a new search starts from the whole parse. */}
+        {Object.entries(fparams).filter(([k]) => k !== "q" && k !== "qx").map(([k, v]) => (
+          <input key={k} type="hidden" name={k} value={v} />
+        ))}
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
         <input name="q" defaultValue={searchParams.q || ""} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{dl.search}</button>
       </form>
+      {/* ------------------------------------------------- the transparency row
+          A search that quietly drops half of what was typed is the same defect class
+          as an unattributed figure: the person cannot tell what the answer is an
+          answer to. Every reading is shown back, and every one can be taken away. */}
+      {parsedFull && (
+        <div className="row gap8 wrap" style={{ marginTop: 10, alignItems: "center" }}>
+          {qChips.length > 0 && <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{dl.qUnderstood}:</span>}
+          {qChips.map((c) => (
+            <Link key={c.key} href={qxHref(c.key)} className="chip on" style={{ textDecoration: "none" }} aria-label={fill(dl.qRemove, { what: c.label })}>
+              {c.label} <span aria-hidden="true">✕</span>
+            </Link>
+          ))}
+          {/* Only when the parser genuinely understood nothing. A person who has
+              withdrawn every chip themselves is not owed an explanation of why. */}
+          {parsedFull.empty && <span className="muted" style={{ fontSize: 12.5 }}>{dl.qNothing}</span>}
+          <Link href={qClearHref} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dl.qClearSearch}</Link>
+        </div>
+      )}
+      {parsedFull && parsedFull.ignored.length > 0 && (
+        <p className="muted" style={{ marginTop: 6, fontSize: 12, lineHeight: 1.6, maxWidth: 720 }}>
+          {fill(dl.qNotUsed, { what: parsedFull.ignored.join(ar ? "، " : ", ") })} {dl.qNotUsedWhy}
+        </p>
+      )}
+      {qSizeT != null && (
+        <p className="muted" style={{ marginTop: 4, fontSize: 12, lineHeight: 1.6 }}>{fill(dl.qOrderedBySize, { v: formatArea(qSizeT, locale) })}</p>
+      )}
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
       </div>

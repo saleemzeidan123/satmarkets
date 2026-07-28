@@ -9,7 +9,7 @@ import ChromeGate from "@/components/ChromeGate";
 import TabBar from "@/components/TabBar";
 import AdvisorWidget from "@/components/AdvisorWidget";
 import HtmlLangDir from "@/components/HtmlLangDir";
-import JsonLd, { ORG } from "@/components/JsonLd";
+import JsonLd, { ORG, website } from "@/components/JsonLd";
 
 // Preview containment (SM-P0-006). Everything on this deployment is sample data
 // until the owner sets SITE_ENV=production, so the notice is persistent and site
@@ -53,6 +53,10 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       <a href="#main" className="skip-link">{dict.layout.skip}</a>
       <HtmlLangDir locale={locale} />
       <JsonLd data={ORG} />
+      {/* Emitted per locale so the Arabic document never advertises an English
+          entry point. The SearchAction is only honest now that /listings actually
+          narrows on `q`. */}
+      <JsonLd data={website(locale as "en" | "ar")} />
       <ChromeGate header={<>
       {PREVIEW ? (
       <div role="status" className="topnotice preview-notice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFBEB", color: "#78350F", borderBottom: "1px solid #FCD34D", padding: "8px 24px", fontSize: 12.5, lineHeight: 1.5, flexWrap: "wrap", textAlign: "center" }}>

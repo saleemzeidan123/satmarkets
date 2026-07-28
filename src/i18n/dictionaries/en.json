@@ -371,7 +371,18 @@
     "no": "No",
     "any": "Any",
     "apply": "Apply",
-    "clear": "Clear"
+    "clear": "Clear",
+    "qUnderstood": "From your search",
+    "qRemove": "Remove {what}",
+    "qNotUsed": "Not used: {what}",
+    "qNotUsedWhy": "A figure with no direction and no unit could be a rent or a floor area, so it was left out rather than guessed at.",
+    "qNothing": "Nothing in your search matched the vocabulary on this page, so every space is still shown.",
+    "qClearSearch": "Clear search",
+    "qUpTo": "Up to {v}",
+    "qFrom": "From {v}",
+    "qAbout": "About {v}",
+    "qOrderedBySize": "Ordered by closeness to {v}.",
+    "qText": "Text: {v}"
   },
   "pricing": {
     "na": "n/a",

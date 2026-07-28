@@ -31,16 +31,11 @@ export type NumericIntent = {
   requestedPeriod: string | null;
 };
 
-const AR_INDIC = /[٠-٩۰-۹]/g;
-
-/** Arabic-Indic digits normalized to Western for PARSING only. Display stays Western (global law). */
-function toWesternDigits(s: string): string {
-  return s.replace(AR_INDIC, (d) => {
-    const c = d.charCodeAt(0);
-    const base = c >= 0x06f0 ? 0x06f0 : 0x0660;
-    return String(c - base);
-  });
-}
+// The digit fold now lives in `textFold.ts` so the advisor, the discovery parser and
+// the label tables all read a figure by the same rule. Re-exported here because this
+// module is where callers have always found it.
+export { toWesternDigits } from "@/lib/textFold";
+import { toWesternDigits } from "@/lib/textFold";
 
 // A number token: Western digits with optional thousands separators and decimal.
 const NUM = /\d[\d,]*(?:\.\d+)?/g;

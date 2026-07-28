@@ -1,3 +1,5 @@
+import { foldText, prettifyKey } from "@/lib/textFold";
+
 type L = "en" | "ar";
 const ASSET: Record<string, [string,string]> = {
   office:["Office","مكاتب"], retail:["Retail & F&B","تجزئة ومطاعم"], medical:["Medical","رعاية صحية"],
@@ -21,7 +23,57 @@ export const dealLabel = (t: string, l: L) => (DEAL[t]?.[idx(l)]) ?? t;
 export const gradeLabel = (t: string, l: L) => (GRADE[t]?.[idx(l)]) ?? t;
 export const fitoutLabel = (t: string, l: L) => (FITOUT[t]?.[idx(l)]) ?? t;
 export const confLabel = (t: string, l: L) => (CONF[t]?.[idx(l)]) ?? t;
-export const cityLabel = (t: string | null | undefined, l: L) => (t ? (CITY[t]?.[idx(l)] ?? t) : "");
+
+/**
+ * Spellings that mean the same city, beyond the two the CITY table renders.
+ *
+ * THE DEFECT THIS EXISTS TO KILL (owner ruling 5). `cityLabel` ended in `?? t`, and
+ * the `city` search parameter is a slug in every link a person is likely to type or
+ * share. So `/listings?city=riyadh` published "Commercial spaces in riyadh" as an H1
+ * and "مساحات تجارية في riyadh" as an Arabic meta description, with a Latin slug
+ * sitting inside an Arabic sentence. The lookup below is case, separator, transliteration
+ * and Arabic tolerant, so the one lower-case letter that broke it cannot break it again.
+ */
+const CITY_ALIAS: Record<string, string[]> = {
+  Riyadh: ["riyad", "ar riyadh", "al riyadh", "arriyadh", "رياض"],
+  Jeddah: ["jiddah", "jedda", "jed", "جده"],
+  Dammam: ["ad dammam", "al dammam", "eastern dammam"],
+  Khobar: ["al khobar", "alkhobar", "el khobar", "خبر"],
+  Makkah: ["mecca", "makkah al mukarramah", "makkah almukarramah", "مكه", "مكه المكرمه"],
+  Madinah: ["medina", "al madinah", "almadinah", "madinah al munawwarah", "المدينه", "المدينه المنوره"],
+};
+
+const CITY_BY_FOLD: Record<string, string> = (() => {
+  const m: Record<string, string> = {};
+  const add = (k: string, spelling: string) => {
+    const f = foldText(spelling);
+    if (f && !m[f]) m[f] = k;
+  };
+  for (const k of Object.keys(CITY)) {
+    add(k, k);
+    add(k, CITY[k][0]);
+    add(k, CITY[k][1]);
+    for (const a of CITY_ALIAS[k] ?? []) add(k, a);
+  }
+  return m;
+})();
+
+/**
+ * The canonical city key for anything a person or a link might carry, or null.
+ *
+ * Display was not the only casualty of the missing fold: `/listings` narrows by
+ * `district.city === searchParams.city`, so a slug returned an empty result set as
+ * well as a raw heading. Both call this, so both agree about what a city is.
+ */
+export const cityKey = (t: string | null | undefined): string | null =>
+  t ? (CITY_BY_FOLD[foldText(t)] ?? null) : null;
+
+export const cityLabel = (t: string | null | undefined, l: L) => {
+  if (!t) return "";
+  const k = cityKey(t);
+  // An unknown key stays unknown, but it is never published as machine punctuation.
+  return k ? CITY[k][idx(l)] : prettifyKey(t);
+};
 
 /**
  * The grade as it belongs INSIDE a sentence, or nothing at all.

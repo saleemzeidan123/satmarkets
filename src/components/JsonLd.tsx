@@ -27,3 +27,34 @@ export const ORG = {
   },
   knowsLanguage: ["ar", "en"],
 };
+
+/**
+ * The site itself, and the one query the site can actually answer.
+ *
+ * Finding 36. `SearchAction` was withheld until the search box did something: a
+ * declared search endpoint that returns the same unfiltered page for every term is
+ * a claim the platform cannot honour, and the discovery parser is what makes it
+ * true. The target is the listings route because that is the only surface that
+ * narrows on `q`.
+ *
+ * The locale is baked into the URL rather than negotiated, so the schema is emitted
+ * per locale from the locale layout and each one points at its own language. The
+ * `inLanguage` field is what stops the Arabic document advertising an English entry
+ * point, which is the same parity rule every other head field on the site follows.
+ */
+export const website = (locale: "en" | "ar") => ({
+  "@type": "WebSite",
+  "@id": `${SITE}/${locale}#website`,
+  url: `${SITE}/${locale}`,
+  name: "SAT Markets",
+  inLanguage: locale === "ar" ? "ar-SA" : "en",
+  publisher: { "@id": `${SITE}#org` },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${SITE}/${locale}/listings?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+});
