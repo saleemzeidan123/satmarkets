@@ -169,6 +169,46 @@ this owner is this owner. That distinction is the whole product.
 Competing there gets us a consumer product we did not want and margins we cannot fund
 verification from.
 
+## 7a. The Etimad tender, now opened and confirmed
+
+FACT. The CAPTCHA did not reappear on a later attempt and the announcement rendered in
+full. It is real, and Paseetah is named in it.
+
+| Field | Value |
+| --- | --- |
+| Announcement | الإشتراك في منصات توفر بيانات الأصول العقارية ("Subscription to platforms providing real-estate asset data") |
+| Buyer | مركز الإسناد و التصفية (the Bankruptcy Assignment and Liquidation Center) |
+| Reference | 240141005052 |
+| Type | منافسة محدودة (limited competition) |
+| Scope, verbatim | الإشتراك في منصات توفر بيانات الأصول العقارية (منصة ساس - منصة سهيل - منصة بسيطة) |
+| Execution detail | الاشتراك في منصات توفر عمليات البحث للأصول العقارية وتحديد الفترات الزمنية ومعلومات عن الأصول المباعة |
+| Region | Riyadh |
+| Published | 11/01/2024 (29/06/1445) |
+| Join deadline | 31/01/2024 (19/07/1445) |
+| Status | منتهي (closed) |
+| URL | tenders.etimad.sa/Announcement/SupplierAnnouncementDetails?announcmentIdString=XMnrJuW28HLeziIRrM4o5w%3D%3D |
+
+INFERENCE, and it revises the dossier. This is a **limited** competition, which means the
+buying entity named its permitted platforms rather than opening the field. It named
+three: منصة ساس (Sas), منصة سهيل (Suhail, the Ministry of Justice's own), and منصة بسيطة
+(Paseetah). Being written into a restricted government tender alongside the Ministry's
+own product is not a data moat, but it is a **procurement moat**: Paseetah is already
+inside at least one government buyer's list of recognised real-estate asset data
+platforms, and a limited competition is precisely the mechanism a newcomer cannot bid
+into.
+
+Two consequences for us. First, the earlier reading that Paseetah has nothing genuinely
+non-copyable needs one amendment: recognition by a government buyer is the asset, and it
+was acquired by being early and visible, not by holding a licence. Second, the buyer
+itself is a lead. مركز الإسناد و التصفية liquidates insolvent estates and therefore needs
+exactly what SAT Markets is built to produce: verified ownership, asset search, and
+evidence of what comparable assets actually transacted at. The tender closed in January
+2024, so the useful move is not this competition but getting onto the recognised-platform
+list before the next one.
+
+The third name, منصة ساس, did not appear anywhere else in the research and should be
+looked into as a fourth competitor.
+
 ## 8. What could not be reached, and why
 
 Stated so the gaps are not mistaken for absences. The web-content restriction in force
@@ -178,16 +218,15 @@ Paseetah SPA page bodies (terms, privacy, FAQ, whatsnew, get-deed-data), Crunchb
 LinkedIn, follower counts on X, Instagram and TikTok, srem.moj.gov.sa, and the
 open.data.gov.sa licence text.
 
-One item is worth a human look: an **Etimad tender detail page** surfaced that appears to
-involve Paseetah, but it is CAPTCHA-gated and was not opened. If Paseetah holds a
-government contract, that page is where it would show. Worth checking manually, since a
-public-sector contract would be the one thing in this dossier that is genuinely not
-copyable.
+The Etimad tender page was CAPTCHA-gated during the original research. It was opened
+successfully afterwards and is now written up in full in section 7a, so that gap is
+closed.
 
 ## 9. Bottom line
 
-They are not ahead of us on data. They are ahead of us on shipping, and behind us on
-everything that makes a real-estate number trustworthy: no methodology, no verification,
-no supply side, no public surface. Their attribution sentence is a list of doors we can
-walk through today. The plan is to walk through them, and then do the thing they chose
-not to do, which is show our work.
+They are not ahead of us on data. They are ahead of us on shipping and on procurement
+recognition, and behind us on everything that makes a real-estate number trustworthy: no
+methodology, no verification, no supply side, no public surface. Their attribution
+sentence is a list of doors we can walk through today. The plan is to walk through them,
+do the thing they chose not to do (show our work), and treat the government buyer list
+as a target rather than a surprise.
