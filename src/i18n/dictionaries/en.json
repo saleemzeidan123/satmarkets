@@ -1520,7 +1520,18 @@
     "yours": "Your response",
     "metaTitle": "Requirement | SAT Markets",
     "metaDesc": "An occupier requirement published on SAT Markets. Owners and licensed brokers can register interest directly, with no assumed commission.",
-    "metaTitleEntity": "{title} | SAT Markets"
+    "metaTitleEntity": "{title} | SAT Markets",
+    "matchesH": "Your listings against this requirement",
+    "matchesP": "Checked against the facts each record states. A fact neither record states is shown as an open question, never as a pass.",
+    "matchesLoading": "Checking your listings",
+    "matchesNone": "None of your published listings answer this requirement.",
+    "matchesWhy": "Why this result",
+    "matchesRemedy": "What would settle it",
+    "matchesAttach": "Attach this listing to your response",
+    "matchesAttached": "Attached to your response",
+    "matchesExcluded": "listings of yours are not offerable yet, so they were not compared. Drafts and expired advertising licences are never matched.",
+    "matchesMargins": "Published margins: size {size} percent, budget {budget} percent.",
+    "matchesTruncated": "Showing the closest results only."
   },
   "locFacts": {
     "title": "Location facts",

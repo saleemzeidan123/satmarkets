@@ -49,10 +49,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const body = (await req.json().catch(() => ({}))) as { message?: unknown; listing_id?: unknown };
   const message = typeof body.message === "string" && body.message.trim() ? body.message.trim().slice(0, 2000) : null;
-  const listing_id =
+  const claimed =
     typeof body.listing_id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.listing_id)
       ? body.listing_id
       : null;
+
+  // A well formed id is not a right to attach it. The responder may point at one
+  // of their OWN published listings and at nothing else, so the id is checked
+  // against this account before it is stored. Anything else is dropped rather
+  // than rejected: the response itself is still valid, and failing the whole
+  // registration over a stale attachment would lose the message with it.
+  let listing_id: string | null = null;
+  if (claimed) {
+    const { data: own } = await sb
+      .from("listings")
+      .select("id")
+      .eq("id", claimed)
+      .eq("account_id", acct.id)
+      .eq("status", "published")
+      .maybeSingle();
+    listing_id = own ? claimed : null;
+  }
 
   const { data, error } = await sb
     .from("requirement_interests")
