@@ -316,6 +316,179 @@ for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
   });
 }
 
+// --- ruling 3: the verification vocabulary, everywhere else ---
+//
+// Record read 2026-07-28, project ltqgwpivmumfwqdxwwgo:
+//
+//   listings                93 rows, every one is_demo. 88 published, all 88 carrying
+//                           ownership_verified and authorization_verified, 0 carrying
+//                           an ad_permit_number.
+//   accounts                10 rows, every one is_demo, 9 of them stamped
+//                           verification_status 'verified'. There is no licence-number
+//                           column on the table.
+//   account_verifications   0 rows.
+//   requirements_public     6 rows, and the table has no verification column at all,
+//                           so "verified occupiers" had no field to rest on even in
+//                           principle.
+//   buildings               75 rows, every one is_demo, no verification column.
+//   rent_index_published    7 rows, period 2026-Q2, source "REGA Rental Index (Ejar)",
+//                           data_class 'synthetic', is_demo true, stat_kind 'average'.
+//
+// So the verified flags exist, and every one of them was seeded rather than earned.
+// A per-record badge is still honest: it renders when that row's own field is true,
+// which is exactly what gate.ts says the badge means, and the global preview notice
+// says the corpus is sample data. What is not honest is the aggregate voice, which is
+// where the copy was: a verified index, verified stock, verified occupiers, verified
+// space counts, every listing verified before it publishes. Those describe the corpus,
+// and no record supports them.
+//
+// Three corrections follow, and this guard pins all three.
+//
+//   1. Corpus assertions become either the launch standard or a plain description of
+//      what the record holds: listed, posted, platform records.
+//   2. "verified rent band" becomes "published rent band". The band is REGA's and we
+//      republish it; attaching our own verification vocabulary to someone else's data
+//      is its own small false claim, and owner ruling 2 blesses the published wording.
+//   3. Any string that names the Rent Index as a source carries the REGA Rental Index
+//      (Ejar) attribution owner ruling 2 requires.
+
+const CORPUS_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
+  en: [
+    [/verified (rent )?band/i, "the band is REGA's, republished, not verified by us"],
+    [/the verified index/i, "no index on the platform has been verified"],
+    [/verified (stock|space|spaces|inventory|listings|data|matches|facts)/i, "asserts a verified corpus"],
+    [/verified (occupiers|participants|listers|platform)/i, "asserts a verified class of actor"],
+    [/every listing is verified|owners are verified before|we verify (the parties|every)/i, "universal present-tense verification"],
+    [/verified commercial (real estate )?(intelligence|exchange)/i, "verified as a positioning claim"],
+    [/verified owners and licensed brokers|verified owners, brokers/i, "asserts the lister set has been checked"],
+    [/faster verification/i, "a turnaround claim we have not measured"],
+  ],
+  ar: [
+    [/نطاق الإيجار الموثق|النطاق الموثق/, "the band is REGA's, republished, not verified by us"],
+    [/المؤشر الموثّق|المؤشر الموثق/, "no index on the platform has been verified"],
+    [/مساحات موثقة|مساحات موثّقة|مساحة موثّقة|العروض الموثّقة|عروضك الموثّقة|قوائم موثقة|بيانات موثقة|بيانات موثّقة|حقائق موثّقة/, "asserts a verified corpus"],
+    [/مستأجرون موثّقون|مؤشرات المنصّة الموثّقة|المُدرِجين الموثّقين/, "asserts a verified class of actor"],
+    [/توثّق سات كل|يتم توثيق الملاك قبل/, "universal present-tense verification"],
+    [/ذكاء عقاري تجاري موثوق|المنصة التجارية الموثّقة|المنصة الموثّقة/, "verified as a positioning claim"],
+    [/أسرع التوثيق/, "a turnaround claim we have not measured"],
+  ],
+};
+
+// Four strings keep the phrase deliberately, and none of them describes the corpus.
+// They are restrictions on who receives a requirement, including the consent label the
+// person actually agrees to. Rewriting "verified owners and licensed brokers" out of a
+// consent label would widen a data-sharing promise rather than correct a claim, which
+// is the wrong direction to move a privacy commitment. They are listed by path so that
+// keeping them is a decision on the record rather than a hole in the pattern.
+const RECIPIENT_RESTRICTIONS = new Set([
+  "postReq.intro",
+  "postReq.postsToNote",
+  "postReq.privacyNote",
+  "postReq.consentLabel",
+  "reqDetail.appearAs",
+  "reqDetail.none",
+]);
+
+for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+  test(`ruling 3: no surface claims a verified corpus (${locale})`, () => {
+    const offenders: string[] = [];
+    for (const [path, s] of dictStrings(dict)) {
+      const key = path.replace(/\.\d+$/, "");
+      if (RECIPIENT_RESTRICTIONS.has(key)) continue;
+      for (const [re, why] of CORPUS_BANNED[locale]) if (re.test(s)) offenders.push(`${path}: ${why}`);
+    }
+    assert.deepEqual(offenders, [], `claims beyond the record (${locale}):\n${offenders.join("\n")}`);
+  });
+
+  test(`ruling 2: the rent band reads as published, not verified (${locale})`, () => {
+    // Arabic: the participle is matched bare, without the article, because
+    // building.noBand negates an indefinite band ("لا نطاق إيجار منشور") and
+    // requiring the definite form there would force ungrammatical copy.
+    const published = locale === "en" ? /published/i : /منشور/;
+    for (const k of ["rentBand", "rentCheckTitle", "rentAbove", "rentBelow"] as const) {
+      assert.match(String(dict.listing[k]), published, `listing.${k} (${locale}) must name the band as published`);
+    }
+    for (const k of ["rentBand", "noBand", "metaDesc"] as const) {
+      assert.match(String(dict.building[k]), published, `building.${k} (${locale}) must name the band as published`);
+    }
+  });
+
+  test(`ruling 2: every string naming the Rent Index as a source attributes it (${locale})`, () => {
+    // The attribution is the whole point of the index being publishable at all, and
+    // these are the strings that tell a reader where a figure came from.
+    const attribution = locale === "en"
+      ? /REGA Rental Index \(Ejar\)/
+      : /المؤشر الإيجاري للهيئة العامة للعقار \(إيجار\)/;
+    const sourceStrings: [string, string][] = [
+      ["advisor.groundedNote", String(dict.advisor.groundedNote)],
+      ["advisor.metaDesc", String(dict.advisor.metaDesc)],
+      ["advisorWidget.footer", String(dict.advisorWidget.footer)],
+      ["map.footer", String(dict.map.footer)],
+      ["map.metaDesc", String(dict.map.metaDesc)],
+      ["marketPage.intro", String(dict.marketPage.intro)],
+      ["locations.intro", String(dict.locations.intro)],
+      ["locations.metaDesc", String(dict.locations.metaDesc)],
+      ["compare.note", String(dict.compare.note)],
+      ["pricing.sub", String(dict.pricing.sub)],
+      ["home.ownB", String(dict.home.ownB)],
+    ];
+    for (const [path, s] of sourceStrings) {
+      assert.match(s, attribution, `${path} (${locale}) names the Rent Index as a source without attributing it`);
+    }
+  });
+
+  test(`ruling 3: the launch-scoped surfaces say when the standard applies (${locale})`, () => {
+    // Same reasoning as /about. A weaker claim is only honest if the reader is told
+    // what the weaker claim is, so each of these names launch and says what the
+    // preview holds instead.
+    const launch = locale === "en" ? /at launch/i : /عند الإطلاق/;
+    for (const k of ["trustBody"] as const) {
+      assert.match(String(dict.listing[k]), launch, `listing.${k} (${locale}) must scope the check to launch`);
+    }
+    for (const k of ["intro", "avgTimeValue", "avgTimeNote"] as const) {
+      assert.match(String(dict.list[k]), launch, `list.${k} (${locale}) must scope the check to launch`);
+    }
+    const preview = locale === "en" ? /preview/i : /المعاينة/;
+    assert.match(String(dict.listing.trustBody), preview, "listing.trustBody must say preview inventory has not been checked");
+    assert.match(String(dict.list.avgTimeNote), preview, "list.avgTimeNote must say preview inventory has not been checked");
+  });
+
+  test(`ruling 3: requirements claim no verification the table cannot hold (${locale})`, () => {
+    // requirements_public has no verification column. Not an empty one, none at all.
+    const verified = locale === "en" ? /verified/i : /موثّق|موثق/;
+    assert.doesNotMatch(String(dict.req.h1), verified, `req.h1 (${locale}) claims a state requirements_public cannot record`);
+    assert.doesNotMatch(String(dict.req.metaDesc), verified, `req.metaDesc (${locale}) claims a state requirements_public cannot record`);
+  });
+
+  test(`ruling 3: SAT does not claim to verify the parties to a deal (${locale})`, () => {
+    const s = String(dict.deal.disclaimer);
+    if (locale === "en") assert.doesNotMatch(s, /we verify the parties/i);
+    else assert.doesNotMatch(s, /نتحقّق من الأطراف|نتحقق من الأطراف/);
+  });
+}
+
+test("ruling 3: the locations count is named for what it counts", () => {
+  // The key was verifiedSpace and the page rendered it next to a listing count. Both
+  // the value and the key are renamed, because a key called verifiedSpace holding the
+  // word "listed" is a trap for whoever reads it next.
+  for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+    assert.equal("verifiedSpace" in dict.locations, false, `locations.verifiedSpace still present (${locale})`);
+    assert.equal("verifiedSpaces" in dict.locations, false, `locations.verifiedSpaces still present (${locale})`);
+    assert.ok(String(dict.locations.listedSpace ?? "").length > 0, `locations.listedSpace missing (${locale})`);
+    assert.ok(String(dict.locations.listedSpaces ?? "").length > 0, `locations.listedSpaces missing (${locale})`);
+  }
+  const page = readFileSync(join(ROOT, "app/[locale]/locations/page.tsx"), "utf8");
+  assert.doesNotMatch(page, /verifiedSpaces?\b/, "the locations page still reads the retired key");
+});
+
+test("ruling 3: the unreferenced home chips stay deleted", () => {
+  // Same defect as the seven sections below, one level in. Nothing outside the
+  // dictionaries read home.chips, and its first element said "Verified, owner-direct".
+  for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+    assert.equal("chips" in dict.home, false, `home.chips is back in ${locale}.json`);
+  }
+});
+
 test("ruling 3: the retired recency chip is gone from both pages and both dictionaries", () => {
   // "Last 6 months" described a query over transaction records. There is no such
   // query and there are no such records, so the key is removed rather than reworded,

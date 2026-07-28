@@ -26,7 +26,7 @@
   },
   "listing": {
     "verified": "Verified",
-    "rentBand": "Verified rent band",
+    "rentBand": "Published rent band",
     "medianAsking": "Average asking",
     "medianAchieved": "Average achieved",
     "contactDirectly": "Contact directly",
@@ -41,14 +41,14 @@
     "floorplan": "Floor plan",
     "documents": "Documents",
     "trustTitle": "Why you can trust this listing",
-    "trustBody": "Every listing is verified by SAT before it publishes. Owners confirm ownership; brokers must upload written authorization to market, reviewed by SAT. Listings are structured, not classifieds.",
-    "rentCheckTitle": "Asking vs verified band",
+    "trustBody": "At launch every listing is checked by SAT before it publishes: owners confirm ownership, and brokers upload written authorization to market for SAT to review. Listings are structured, not classifieds. Preview inventory is sample data and has not been through those checks.",
+    "rentCheckTitle": "Asking vs published band",
     "rentInLine": "In line with the market band",
-    "rentAbove": "above the verified band",
-    "rentBelow": "below the verified band"
+    "rentAbove": "above the published band",
+    "rentBelow": "below the published band"
   },
   "common": {
-    "poweredBy": "SAT Markets, verified commercial real estate intelligence",
+    "poweredBy": "SAT Markets, commercial real estate intelligence",
     "sqm": "m²",
     "perSqm": "SAR / m²",
     "na": "n/a"
@@ -59,7 +59,7 @@
     "interpreted": "Interpreted as",
     "go": "Search",
     "none": "No matches yet. Try a different brief.",
-    "grounded": "Results come from verified listings. The assistant explains and filters, it never invents a rent figure."
+    "grounded": "Results come from listing records on the platform. The assistant explains and filters, it never invents a rent figure."
   },
   "dash": {
     "verifyPending": "Your account is not verified yet. Listings stay in draft until SAT verifies ownership.",
@@ -91,41 +91,35 @@
     "allListings": "All listings",
     "results": "results",
     "noMatch": "No listings match these filters.",
-    "notEnough": "not enough verified data yet",
+    "notEnough": "not enough data yet",
     "browse": "Browse",
     "searching": "Searching..."
   },
   "footer": {
-    "tagline": "Verified commercial real estate intelligence for Saudi Arabia. Open to the market.",
+    "tagline": "Commercial real estate intelligence for Saudi Arabia, built so every figure can name its source. Open to the market.",
     "map": "Map",
     "listings": "Listings",
     "search": "AI search",
     "rentIndex": "Rent index",
     "listSpace": "List your space",
-    "legal": "SAT Markets, verified commercial real estate intelligence, Saudi Arabia."
+    "legal": "SAT Markets, commercial real estate intelligence, Saudi Arabia."
   },
   "home": {
     "lens": "Explore by asset class",
     "mapTitle": "Every building, on one map",
-    "mapBody": "Explore the Kingdom's commercial buildings as clickable objects, verified rent bands, available space, and area intelligence. Live now in Riyadh, expanding nationwide. The intelligence platform, with the transaction built in.",
+    "mapBody": "Explore the Kingdom's commercial buildings as clickable objects, published rent bands, available space, and area intelligence. Live now in Riyadh, expanding nationwide. The intelligence platform, with the transaction built in.",
     "mapCta": "Open the map",
     "forTitle": "Built for every decision",
     "forSub": "One platform, three journeys. Each sees the intelligence relevant to it.",
     "occT": "Occupiers & brokers",
-    "occB": "Find and lease verified space with full context: rent bands, accessibility, and asset-relevant signals before you commit.",
+    "occB": "Find and lease listed space with full context: rent bands, accessibility, and asset-relevant signals before you commit.",
     "occC": "Find space",
     "ownT": "Owners & developers",
-    "ownB": "List owner-direct, benchmark your asset against the verified rent index, and see live demand for your building and district.",
+    "ownB": "List owner-direct, benchmark your asset against the published Rent Index, derived from the REGA Rental Index (Ejar), and see the demand posted for your building and district.",
     "ownC": "List your space",
     "invT": "Investors & retailers",
     "invB": "Site selection and highest-and-best-use: take a parcel and see, with data, whether to build office, retail, hospitality, or mixed-use.",
     "invC": "Explore the map",
-    "chips": [
-      "Verified, owner-direct",
-      "Riyadh, commercial only",
-      "Lease & sale",
-      "English / Arabic"
-    ],
     "cityBars": [
       "KAFD",
       "Olaya",
@@ -160,8 +154,8 @@
     "tabDecide": "Decide with data",
     "tabTransact": "Transact with trust",
     "findSpace": "Find your space",
-    "metaTitle": "SAT Markets | Commercial spaces, verified owners and licensed brokers",
-    "metaDesc": "The neutral commercial exchange for Riyadh: spaces listed by verified owners and licensed brokers, a source-attributed rent index, and AI that never invents a figure.",
+    "metaTitle": "SAT Markets | Commercial spaces from owners and licensed brokers",
+    "metaDesc": "The neutral commercial exchange for Riyadh: spaces listed by owners and licensed brokers, a source-attributed rent index, and AI that never invents a figure.",
     "onRequest": "On request"
   },
   "ld": {
@@ -175,7 +169,7 @@
     "availableNow": "Available now",
     "overview": "Overview",
     "locationIntel": "Location intelligence",
-    "locNote": "SAT does not publish a location score. What suits a space depends on your use, your budget, and who you serve. We show verified facts and leave the judgment to you.",
+    "locNote": "SAT does not publish a location score. What suits a space depends on your use, your budget, and who you serve. We show the facts on the record and leave the judgment to you.",
     "investment": "Investment",
     "comparableRents": "Comparable rents",
     "area": "Area",
@@ -271,7 +265,7 @@
   },
   "listings": {
     "metaTitle": "Commercial spaces in Saudi Arabia | SAT Markets",
-    "metaDesc": "Commercial spaces listed by verified owners and licensed brokers across Saudi Arabia, with published Rent Index context where available.",
+    "metaDesc": "Commercial spaces listed by owners and licensed brokers across Saudi Arabia, with published Rent Index context where available.",
     "allSpaces": "All spaces",
     "exchange": "The exchange",
     "h1": "Commercial spaces across the Kingdom",
@@ -309,7 +303,7 @@
     "newBadge": "New",
     "metaTitleIn": "{what} in {place} | SAT Markets",
     "metaWhatFallback": "Commercial spaces",
-    "metaDescIn": "Commercial spaces in {place} on SAT Markets, listed by verified owners and licensed brokers, with published Rent Index context where available.",
+    "metaDescIn": "Commercial spaces in {place} on SAT Markets, listed by owners and licensed brokers, with published Rent Index context where available.",
     "sortNewest": "Newest",
     "sortPriceAsc": "Price, low to high",
     "sortPriceDesc": "Price, high to low",
@@ -341,7 +335,7 @@
     "na": "n/a",
     "membership": "Membership",
     "h1": "Plans that scale with how you use the exchange",
-    "sub": "Every grade includes verified listings and the Rent Index. Higher grades raise your limits, listings, leads, data and seats.",
+    "sub": "Every grade includes full listing access and the Rent Index, derived from the REGA Rental Index (Ejar). Higher grades raise your limits, listings, leads, data and seats.",
     "monthly": "Monthly",
     "annual": "Annual · save 2 months",
     "mostPopular": "Most popular",
@@ -367,7 +361,7 @@
     "priceCustom": "Custom",
     "pE1": "<b>1</b> active listing",
     "pE2": "<b>2</b> requirement posts",
-    "pE3": "Contact verified listers",
+    "pE3": "Contact listers directly",
     "pE4": "Rent Index, district averages",
     "pE5": "<b>10</b> AI Advisor queries / mo",
     "pS1": "<b>5</b> active listings",
@@ -422,7 +416,7 @@
   },
   "req": {
     "openReqs": "Open requirements",
-    "h1": "Verified occupiers looking for space",
+    "h1": "Occupiers looking for space",
     "sub": "The reverse of a listing. If you are an owner or broker with a match, register interest, the occupier sees who responded and chooses who to talk to.",
     "postReq": "Post a requirement",
     "loading": "Loading requirements…",
@@ -434,7 +428,7 @@
     "sampleTag": "Sample",
     "rangeTo": "to",
     "metaTitle": "Requirements | SAT Markets",
-    "metaDesc": "Post what you need and let verified owners and licensed brokers come to you. The demand board for Riyadh commercial space."
+    "metaDesc": "Post what you need and let owners and licensed brokers come to you. The demand board for Riyadh commercial space."
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence",
@@ -651,16 +645,16 @@
     "sellPriced": "Priced against the Rent Index",
     "sellDirect": "Direct enquiries, no middleman",
     "eyebrow": "For owners",
-    "h1": "List your space on the verified exchange",
-    "intro": "Owners are verified before listing. No commission and no mandate: SAT Markets does not act for anyone.",
+    "h1": "List your space on the neutral exchange",
+    "intro": "At launch owners are checked before listing. No commission and no mandate: SAT Markets does not act for anyone.",
     "avgTimeLabel": "BEFORE IT GOES LIVE",
-    "avgTimeValue": "Every listing is checked",
+    "avgTimeValue": "Checked at launch",
     "stepAsset": "Asset",
     "stepDetails": "Details & media",
     "stepPricing": "Pricing",
     "stepPublish": "Verify & publish",
     "detailsTitle": "Space details & media",
-    "detailsSub": "The more complete, the faster verification, and the better it ranks.",
+    "detailsSub": "The more complete the record, the less we have to come back for, and the better it ranks.",
     "fTitle": "Listing title",
     "fTitlePh": "Grade A office floor, building name",
     "fAssetType": "Asset type",
@@ -689,7 +683,7 @@
     "back": "Back",
     "continuePricing": "Continue to pricing",
     "pricePlaceholder": "Your price",
-    "avgTimeNote": "We confirm you hold the right to market the space before it publishes. We do not quote a turnaround time we have not measured."
+    "avgTimeNote": "At launch we confirm you hold the right to market the space before it publishes. Preview inventory has not been through that check, and we do not quote a turnaround time we have not measured."
   },
   "dashboard": {
     "acctNameFallback": "Sample Owner Co.",
@@ -742,7 +736,7 @@
     "whatICanDo": "What I can do",
     "backHome": "Back to home",
     "title": "SAT Advisor",
-    "subtitle": "Your guide to Riyadh commercial space. Ask in your own words, I answer from verified data.",
+    "subtitle": "Your guide to Riyadh commercial space. Ask in your own words, I answer from platform records and name what I used.",
     "beta": "Beta",
     "welcome": "Welcome",
     "welcomeTitle": "How can I help you today?",
@@ -765,12 +759,12 @@
     "sizeLabel": "Size m² (optional)",
     "analyse": "Analyse",
     "analyserNote": "I grade your numbers against sample indicative ranges, with the REGA average attributed. The index grades prices, never people. Indicative, not advice.",
-    "searching": "Searching the verified index…",
+    "searching": "Searching the platform index…",
     "keepExploring": "Keep exploring",
     "tryAsking": "Try asking",
     "inputPh": "Ask about rents, find a space, analyse a lease…",
     "send": "Send",
-    "groundedNote": "Grounded in the Rent Index and verified listings. SAT Advisor explains the data, it doesn't invent it.",
+    "groundedNote": "Grounded in the Rent Index, derived from the REGA Rental Index (Ejar), and in listing records. SAT Advisor explains the data, it does not invent it.",
     "marketSnapshot": "Market snapshot · sample data",
     "medianGradeA": "Average Grade A (published)",
     "yoyGradeA": "YoY · Grade A",
@@ -778,12 +772,12 @@
     "daytimeCatchment": "Daytime catchment",
     "sourcesUsed": "Sources used",
     "sourceRentIndex": "Rent Index Q2 2026",
-    "sourceRega": "SAT verification records",
-    "sourceListings": "Verified platform listings",
+    "sourceRega": "REGA Rental Index (Ejar)",
+    "sourceListings": "Platform listing records",
     "metaTitle": "AI Advisor | SAT Markets",
-    "metaDesc": "Ask about any Riyadh commercial space and get an answer grounded in the verified Rent Index, never a figure from a model.",
+    "metaDesc": "Ask about any Riyadh commercial space and get an answer grounded in the Rent Index, derived from the REGA Rental Index (Ejar), never a figure from a model.",
     "jobFindT": "Find a space",
-    "jobFindS": "Describe what you need in your own words, I search verified stock",
+    "jobFindS": "Describe what you need in your own words, I search the listed stock",
     "jobFindP": "Fitted Grade A office in Granada, around 300 m², under 1,600 SAR/m²",
     "jobDraftT": "Draft a listing",
     "jobDraftS": "Give me your space's details and I write the whole listing",
@@ -798,7 +792,7 @@
     "chipFair": "Is 1,600 SAR/m² fair for Granada offices?",
     "chipWatch": "Watch KAFD Grade A offices",
     "tryAgain": "Try again",
-    "handoffSeeIn": "See verified listings in {district}",
+    "handoffSeeIn": "See listings in {district}",
     "handoffThisDistrict": "this district",
     "bandLine": "Sample indicative range (test data): {range} {unit}. Rent Index (Ejar) average {avg}, {period}.",
     "snapshotNote": "Index figures come from the REGA Rental Index (Ejar): averages of registered rental contracts. Ask about a district and an asset type and the Advisor will show the band with its source."
@@ -839,8 +833,8 @@
     "ageMixSub": "Daytime visitors · skews working-age professional",
     "aged2544": "aged 25-44",
     "coTenancy": "Co-tenancy mix in trade area",
-    "coTenancySub": "Verified occupiers within 10-min drive",
-    "coTenancyNote": "Occupier mix is drawn from verified SAT listings (live). Mobility, dwell and spend figures shown here are representative samples, the live Saudi data partnerships behind them are described below.",
+    "coTenancySub": "Occupiers listed within 10-min drive",
+    "coTenancyNote": "Occupier mix is drawn from SAT listing records. Mobility, dwell and spend figures shown here are representative samples, the live Saudi data partnerships behind them are described below.",
     "howTitle": "How SAT builds location intelligence",
     "howH": "Built for Saudi Arabia, because no global panel covers it",
     "howBody": "Most global footfall and site-selection platforms are built for US and European markets. For reliable, market-wide site selection in the Kingdom, SAT sources locally and scores transparently, so you can defend every decision.",
@@ -992,7 +986,7 @@
     "district": "District",
     "owner": "Owner",
     "viewContact": "View & contact",
-    "note": "Price, area and grade are from verified listing data. \"vs district average\" is from the SAT published Rent Index. Indicative, not advice."
+    "note": "Price, area and grade are from listing records. \"vs district average\" is from the published Rent Index, derived from the REGA Rental Index (Ejar). Indicative, not advice."
   },
   "messages": {
     "c1Name": "Sample Owner Co.",
@@ -1002,7 +996,7 @@
     "c2Prev": "The floor is available from March.",
     "c2Time": "1h",
     "c3Name": "SAT Advisor",
-    "c3Prev": "3 verified matches in Al Olaya.",
+    "c3Prev": "3 matches in Al Olaya.",
     "c3Time": "3h",
     "c4Name": "Sample Holdings Co.",
     "c4Prev": "I'll send the brochure shortly.",
@@ -1038,13 +1032,13 @@
     "appointNote": "Keep it on-platform, SAT verifies both parties and tracks every milestone. The Ejar contract is signed directly with the owner or their licensed broker.",
     "c2m1": "The whole floor is available from March. 1,200 m², fitted, with parking for eighteen.",
     "c2m2": "Understood. Could you send the floor plan and the service charge breakdown?",
-    "c3m1": "I found 3 verified matches in Al Olaya inside your size and budget. Open the shortlist to compare them against the Rent Index.",
+    "c3m1": "I found 3 matches in Al Olaya inside your size and budget. Open the shortlist to compare them against the Rent Index.",
     "c4m1": "Thanks for the enquiry. I will send the brochure shortly.",
     "c4m2": "Perfect, no rush. We are looking at a Q2 move.",
     "s2Title": "Full floor, sample building",
     "s2Spec": "3,700 SAR/m²·yr · 1,200 m² · KAFD",
     "s3Title": "Shortlist, Al Olaya",
-    "s3Spec": "3 verified matches · Al Olaya",
+    "s3Spec": "3 matches · Al Olaya",
     "s4Title": "Retail Unit, Tahlia",
     "s4Spec": "2,600 SAR/m²·yr · 180 m² · Al Tahlia"
   },
@@ -1054,8 +1048,8 @@
     "overview": "Overview",
     "units": "Available units",
     "grade": "Grade",
-    "rentBand": "Verified rent band",
-    "noBand": "No verified rent band for this use yet.",
+    "rentBand": "Published rent band",
+    "noBand": "No published rent band for this use yet.",
     "visitors": "Weekly visitors",
     "dwell": "Avg dwell",
     "min": "min",
@@ -1089,7 +1083,7 @@
     "crumbHome": "Home",
     "crumbListings": "Listings",
     "metaTitle": "{name}, {place} | SAT Markets",
-    "metaDesc": "{name}: {grade} {type} building in {place}. Available units, verified rent band and location intelligence on SAT Markets. Indicative, not advice."
+    "metaDesc": "{name}: {grade} {type} building in {place}. Available units, published rent band and location intelligence on SAT Markets. Indicative, not advice."
   },
   "docs": {
     "sheet1": "Floor plate · L18",
@@ -1213,14 +1207,14 @@
     "messageOwner": "Message the owner",
     "parties": "Parties",
     "whatNext": "What happens next",
-    "disclaimer": "The Ejar contract, deposit and registration are handled directly between you and the owner or their licensed broker. SAT does not sign or hold funds, we verify the parties and track the deal."
+    "disclaimer": "The Ejar contract, deposit and registration are handled directly between you and the owner or their licensed broker. SAT does not sign or hold funds. Our role is the workspace: the documents, the timeline and the record of what was agreed."
   },
   "map": {
     "back": "← Back to listings",
     "eyebrow": "Commercial intelligence map",
     "title": "Saudi commercial buildings",
-    "desc": "Every building is a clickable object with an intelligence profile: asset class, grade, the verified rent band, and available space. Click any building for its verified rent band, grade and available space.",
-    "footer": "Verified building and rent data from the verified index. Free, open-source map tiles.",
+    "desc": "Every building is a clickable object with an intelligence profile: asset class, grade, the published rent band, and available space. Click any building for its published rent band, grade and available space.",
+    "footer": "Building records and rent bands from the Rent Index, derived from the REGA Rental Index (Ejar). Free, open-source map tiles.",
     "all": "All",
     "available": "available",
     "viewListings": "View listings",
@@ -1229,12 +1223,12 @@
     "close": "Close",
     "clusterUnit": "buildings",
     "metaTitle": "Commercial space map, Saudi Arabia | SAT Markets",
-    "metaDesc": "Every verified building SAT Markets covers, mapped by district and asset type, with the published Rent Index band where the sample is sufficient. Indicative, not advice."
+    "metaDesc": "Every building SAT Markets covers, mapped by district and asset type, with the published Rent Index band, derived from the REGA Rental Index (Ejar), where the sample is sufficient. Indicative, not advice."
   },
   "locations": {
     "directory": "The directory",
     "title": "Commercial locations across the Kingdom",
-    "intro": "The districts, developments and areas the exchange covers, with verified space counts and the SAT office index average where the data is sufficient.",
+    "intro": "The districts, developments and areas the exchange covers, with listed space counts and the office Rent Index average, derived from the REGA Rental Index (Ejar), where the data is sufficient.",
     "marketPulse": "Market pulse",
     "kDistrict": "Districts",
     "kDistrictSub": "Established commercial districts.",
@@ -1243,8 +1237,8 @@
     "kArea": "Areas",
     "kAreaSub": "Broader commercial areas.",
     "projectSuffix": " · project",
-    "verifiedSpace": "verified space",
-    "verifiedSpaces": "spaces",
+    "listedSpace": "listed space",
+    "listedSpaces": "listed spaces",
     "officeMedianPre": "Office average ",
     "officeMedianSuf": " SAR/m²·yr",
     "footer": "Averages come from the Rent Index, platform sample, sufficient segments only. Indicative, not advice.",
@@ -1252,12 +1246,12 @@
     "crumbHome": "Home",
     "crumbLocations": "Locations",
     "itemListName": "Commercial locations in Saudi Arabia",
-    "metaDesc": "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with verified space counts and the office Rent Index average where the data is sufficient."
+    "metaDesc": "The commercial districts, developments and areas SAT Markets covers across Saudi Arabia, with listed space counts and the office Rent Index average, derived from the REGA Rental Index (Ejar), where the data is sufficient."
   },
   "enquiry": {
     "errSend": "Could not send the request. Please try again.",
     "enquirySent": "Enquiry sent",
-    "enquiryBody": "The verified lister has your enquiry. You can keep the conversation on-platform, SAT tracks every milestone to handover.",
+    "enquiryBody": "The lister has your enquiry. You can keep the conversation on-platform, and each milestone to handover is recorded here.",
     "openConversation": "Open the conversation",
     "trackDeal": "Track this deal",
     "onRequest": "On request",
@@ -1361,8 +1355,8 @@
     "perfLabel": "Performance in the open",
     "perfBody": "Response time and coverage show on the storefront, from real activity, never self-declared.",
     "eyebrow": "Broker storefronts",
-    "title": "A verified storefront for every licensed broker",
-    "intro": "A public page under your name, your licence and your verified listings. Storefronts activate with real accounts; what you see below is a sample illustrating the mechanism.",
+    "title": "A neutral storefront for every licensed broker",
+    "intro": "A public page under your name, your licence and your listings. Storefronts activate with real accounts; what you see below is a sample illustrating the mechanism.",
     "sampleTag": "Sample storefront",
     "sampleName": "Northern Gate Realty · sample",
     "falAppears": "The FAL number appears here once SAT has checked it against the REGA register",
@@ -1376,7 +1370,7 @@
     "rentUnit": "SAR/m²·yr",
     "onRequest": "On request",
     "metaTitle": "For Brokers | SAT Markets",
-    "metaDesc": "A neutral exchange for licensed brokers: verified demand, honest pricing context, and no assumed commission."
+    "metaDesc": "A neutral exchange for licensed brokers: posted demand, honest pricing context, and no assumed commission."
   },
   "layout": {
     "couplet": "The space is yours. So are the numbers.",
@@ -1402,12 +1396,12 @@
     "newChat": "New",
     "fullPage": "Full page",
     "close": "Close",
-    "welcome": "Welcome. Ask about rents, find a space, or value a lease. I answer from the verified index only.",
+    "welcome": "Welcome. Ask about rents, find a space, or value a lease. I answer from the platform index only.",
     "na": "n/a",
-    "searching": "Searching the verified index…",
+    "searching": "Searching the platform index…",
     "placeholder": "Ask about rents, find a space…",
     "send": "Send",
-    "footer": "Grounded in the Rent Index and verified listings. It explains the data, it doesn't invent it."
+    "footer": "Grounded in the Rent Index, derived from the REGA Rental Index (Ejar), and in listing records. It explains the data, it does not invent it."
   },
   "locationFilter": {
     "clearLocation": "Clear location",
@@ -1420,7 +1414,7 @@
   },
   "findPage": {
     "assetNeeds": "Asset-specific needs",
-    "needsNote": "These needs are attached to your brief for SAT's advisor. Ranking today uses verified size, grade and budget.",
+    "needsNote": "These needs are attached to your brief for SAT's advisor. Ranking today uses the size, grade and budget on each listing record.",
     "sarSqm": "SAR/m²",
     "yieldWord": "yield"
   },
@@ -1431,7 +1425,7 @@
     "beyondSuf": "% mark"
   },
   "signupPage": {
-    "hero": "The verified commercial exchange for Saudi Arabia.",
+    "hero": "The neutral commercial real estate exchange for Saudi Arabia.",
     "byFamily": "by SAT Real Estate",
     "createAccount": "Create your account",
     "pickRole": "Pick your role; the rest takes two minutes.",
@@ -1440,11 +1434,11 @@
   },
   "marketPage": {
     "metaTitle": "Riyadh commercial market pulse | SAT Markets",
-    "metaDesc": "The Riyadh commercial market at a glance: published, attributed Rent Index bands and verified platform indicators. Indicative, not advice.",
+    "metaDesc": "The Riyadh commercial market at a glance: published, attributed Rent Index bands and indicators computed from platform records. Indicative, not advice.",
     "home": "Home",
     "eyebrow": "Market pulse",
     "h1": "The Riyadh commercial market, at a glance",
-    "intro": "Every figure on this page comes from verified platform data or the Rent Index, platform sample. No estimates, no unsourced numbers.",
+    "intro": "Every figure on this page comes from platform records or the Rent Index, derived from the REGA Rental Index (Ejar), on the platform sample. No estimates, no unsourced numbers.",
     "kpiSpaces": "spaces live",
     "kpiLocations": "locations covered",
     "kpiSegments": "index segments with sufficient data",
@@ -1600,7 +1594,7 @@
     "metaTitle": "{name} | SAT Markets",
     "metaDesc": "Commercial spaces listed by {name} on SAT Markets, with published Rent Index context where available.",
     "metaTitleFallback": "Lister | SAT Markets",
-    "metaDescFallback": "Verified owners and licensed brokers listing commercial space on SAT Markets.",
+    "metaDescFallback": "Owners and licensed brokers listing commercial space on SAT Markets.",
     "roleBroker": "Licensed broker",
     "roleOwner": "Owner",
     "spaces": "Spaces on the market",
@@ -1625,7 +1619,7 @@
   },
   "appMeta": {
     "title": "SAT Markets | Commercial real estate, Saudi Arabia",
-    "description": "Riyadh-first commercial leasing and sales exchange. Commercial spaces listed by verified owners and licensed brokers, a source-attributed rent index, and AI search. A neutral commercial real estate intelligence platform.",
+    "description": "Riyadh-first commercial leasing and sales exchange. Commercial spaces listed by owners and licensed brokers, a source-attributed rent index, and AI search. A neutral commercial real estate intelligence platform.",
     "appName": "SAT Markets"
   },
   "notFound": {

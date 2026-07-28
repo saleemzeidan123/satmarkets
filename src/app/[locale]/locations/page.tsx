@@ -69,7 +69,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
                 <Link key={l.id} href={`/${locale}/listings?district=${l.id}`} className="card lift" style={{ textDecoration: "none", color: "inherit", padding: "16px 18px", display: "block" }}>
                   <div style={{ fontSize: 15.5, fontWeight: 700 }}>{(ar ? l.name_ar : l.name_en) || l.name_en}</div>
                   <div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{cityLabel(l.city, locale as "en" | "ar")}{k === "development" ? d.projectSuffix : ""}</div>
-                  <div className="mono" style={{ fontSize: 12.5, marginTop: 10, color: "var(--harbor)", fontWeight: 600 }}>{`${l.count} ${l.count === 1 ? d.verifiedSpace : d.verifiedSpaces}`}</div>
+                  <div className="mono" style={{ fontSize: 12.5, marginTop: 10, color: "var(--harbor)", fontWeight: 600 }}>{`${l.count} ${l.count === 1 ? d.listedSpace : d.listedSpaces}`}</div>
                   {l.officeMedian != null && (
                     <div className="mono muted" style={{ fontSize: 11.5, marginTop: 4 }}>{`${d.officeMedianPre}${l.officeMedian.toLocaleString("en-US")}${d.officeMedianSuf}`}</div>
                   )}
