@@ -33,8 +33,11 @@ export default async function OccupierHome({ params }: { params: { locale: strin
   let viewings: any[] = [];
   const savedSearches: SavedSearchRow[] = [];
   if (sb) {
-    const { data: saved } = await sb.from("saved_listings").select("listing_id").order("created_at", { ascending: false });
+    const { data: saved } = await sb.from("saved_listings").select("listing_id,shortlist").order("created_at", { ascending: false });
     const ids = (saved ?? []).map((r: any) => r.listing_id);
+    // The shortlist name a space is filed under, if any. It travels with the row now
+    // rather than living in this browser, so it is the same list on the next device.
+    const filed = new Map<string, string | null>((saved ?? []).map((r: any) => [r.listing_id, r.shortlist ?? null]));
     if (ids.length) {
       const { data: ls } = await sb
         .from("listings")
@@ -43,7 +46,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
         .eq("status", "published");
       // Preserve saved order (newest first).
       const byId = new Map((ls ?? []).map((l: any) => [l.id, l]));
-      rows = ids.map((id: string) => byId.get(id)).filter(Boolean);
+      rows = ids.map((id: string) => byId.get(id)).filter(Boolean).map((l: any) => ({ ...l, shortlist: filed.get(l.id) ?? null }));
     }
     const { count } = await sb.from("conversations").select("id", { count: "exact", head: true });
     threadCount = count ?? 0;
@@ -143,12 +146,23 @@ export default async function OccupierHome({ params }: { params: { locale: strin
         enquiries: "استفساراتك", enquiriesSub: "المساحات التي تواصلت بشأنها", noEnq: "لم ترسل أي استفسار بعد.", enquiredOn: "استفسار", sentDirect: "أُرسل للمُعلن",
         viewings: "معايناتك", viewingsSub: "المواعيد التي طلبتها وما استقر عليه الأمر", vPast: "موعد مضى",
         vRequested: "بانتظار رد المُعلن", vConfirmed: "مؤكد", vCancelled: "ملغاة", vCompleted: "تمت", vNoShow: "مسجّلة كعدم حضور",
+        unfiled: "غير مدرجة في قائمة",
         searches: "عمليات البحث المحفوظة", searchesSub: "احفظ بحثاً وتابع المساحات الجديدة المطابقة له.", noSearch: "لم تحفظ أي بحث بعد. احفظ بحثاً من صفحة المساحات لتتابعه هنا.", matches: "مساحة مطابقة", newSince: "جديدة", view: "عرض", remove: "حذف" }
     : { hi: "Welcome", sub: "Your space on SAT Markets: your saved listings and messages in one place.", saved: "Saved", none: "You have not saved any spaces yet.", browse: "Browse spaces", messages: "Messages", msgSub: "Your conversations with listers", onReq: "On request", openMsgs: "Open messages", explore: "Explore the market",
         enquiries: "Your enquiries", enquiriesSub: "The spaces you have contacted", noEnq: "You have not made an enquiry yet.", enquiredOn: "enquired", sentDirect: "sent to lister",
         viewings: "Your viewings", viewingsSub: "The slots you asked for, and what was decided", vPast: "slot has passed",
         vRequested: "Awaiting the lister", vConfirmed: "Confirmed", vCancelled: "Cancelled", vCompleted: "Completed", vNoShow: "Recorded as not attended",
+        unfiled: "Not on a shortlist",
         searches: "Saved searches", searchesSub: "Save a search and track new spaces that match it.", noSearch: "No saved searches yet. Save a search from the listings page to track it here.", matches: "spaces match", newSince: "new", view: "View", remove: "Remove" };
+
+  // Saved spaces, grouped by the shortlist they are filed under. Named shortlists first
+  // in a stable order, then everything still unfiled. A person with no shortlists sees
+  // exactly what they saw before: one group, no header, no new vocabulary to learn.
+  const shortlistNames = Array.from(new Set(rows.map((l: any) => l.shortlist).filter(Boolean) as string[])).sort();
+  const savedGroups: { name: string | null; items: any[] }[] = [
+    ...shortlistNames.map((name) => ({ name, items: rows.filter((l: any) => l.shortlist === name) })),
+    { name: null, items: rows.filter((l: any) => !l.shortlist) },
+  ].filter((g) => g.items.length > 0);
 
   // A confirmed viewing is harbor, not green. Green states that evidence was checked, and
   // a lister agreeing to a time is an agreement, not a verification.
@@ -253,22 +267,32 @@ export default async function OccupierHome({ params }: { params: { locale: strin
             <Link href={`/${lp}/listings`} className="btn secondary sm" style={{ marginTop: 12, textDecoration: "none" }}>{t.browse}</Link>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16, marginTop: 14 }}>
-            {rows.map((l: any) => {
-              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
-              const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
-              return (
-                <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-                  <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
-                  <div className="body" style={{ padding: "10px 12px 12px" }}>
-                    <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price != null ? Number(price).toLocaleString("en-US") : t.onReq}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{price != null ? (l.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
-                    <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
-                    <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          savedGroups.map((g) => (
+            <div key={g.name ?? "__unfiled"} style={{ marginTop: 14 }}>
+              {savedGroups.length > 1 && (
+                <div className="row gap12" style={{ alignItems: "baseline", marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: g.name ? "var(--harbor)" : "var(--slate)" }}>{g.name ?? t.unfiled}</span>
+                  <span className="muted" style={{ fontSize: 12 }}>{g.items.length}</span>
+                </div>
+              )}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16 }}>
+                {g.items.map((l: any) => {
+                  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
+                  const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+                  return (
+                    <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
+                      <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
+                      <div className="body" style={{ padding: "10px 12px 12px" }}>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price != null ? Number(price).toLocaleString("en-US") : t.onReq}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{price != null ? (l.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
+                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
