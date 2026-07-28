@@ -243,7 +243,9 @@ first), `src/lib/mediaStandard.ts` with `src/components/MediaBrief.tsx` (44 shot
 asset types as a brief, and a status over the three countable facts), and two migrations:
 `20260728b` (the requester can read the viewing they booked, with the null guard and the
 ALTERed insert check) and `20260728c` (a shortlist is a saved listing with a name, on the
-account). 155 new tests, 681 total. 37 files, 7,885 insertions.
+account). 155 new tests, 681 total. 37 files, 7,885 insertions. Closed out in `f47be8c`
+with the seven owed responsive fragments, one defect found and fixed, four findings
+recorded.
 
 Every item in the owner directive's step 4 is delivered. Six items from the wider scope
 paragraph below are not, each for a stated reason recorded in the closure: AI-supported
@@ -255,10 +257,13 @@ controls (specified, and arriving with the ADV-6 permission model; external chan
 disabled in code under O12 as they did throughout); blur and duplicate detection over image
 content (deliberately deferred for the same reason the media standard refuses to score
 image content, with metadata and text duplicate detection a candidate for ADV-3); and the
-exact EN and AR public preview (queued, not blocked). The gate is met except for the word
-"mobile": the journey is built and tested and has not yet been measured at 320, 360, 390,
-430, 768 and 1280 pixels in both locales, and the nine private surfaces cannot be fetched
-anonymously, so seven probe fragments are owed and open ADV-3.
+exact EN and AR public preview (queued, not blocked). The gate is now met in full,
+including the word "mobile": `f47be8c` added the seven owed probe fragments and measured
+all seven surfaces at 320, 360, 390, 430, 768 and 1280 pixels in both locales, 120
+measurements, 0 document overflow, no item wider than its content box. The run found and
+fixed one real defect (finding 51, the decision pack dimension rows overflowing their card
+by 16 px at 320 px in both locales) and recorded three further findings, 50, 52 and 53.
+The amendment is in `docs/adv-2-closure.md` under Responsive.
 
 Deliver: the asset-specific Listing Studio (short progressive steps, save and resume,
 building facts separate from offered-space facts, media missions, quality scoring, blur

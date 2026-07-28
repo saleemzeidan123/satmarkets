@@ -233,15 +233,47 @@ fetch of them is possible.
 
 ### Responsive
 
-Owed and not yet collected at 320, 360, 390, 430, 768 and 1280 pixels in both locales for
-the seven surfaces this package changed: the Studio step surface, the media brief, the
-requirement match reason list, the `/me` viewings section, the `/me` shortlist grouping,
-the `/saved` shortlist chooser and the `/compare` decision pack panel. `scripts/responsive-probe.mjs`
-is the available channel, because the Chrome extension bridge is down and the container's
-Chromium cannot reach production, and it reproduces a surface character for character
-against the compiled stylesheet and the real font files rather than measuring the deployed
-DOM. Adding seven fragments to it is the first item of the next package rather than a
-claim made here.
+Owed at the time this record was written, and collected in `f47be8c`. This paragraph is
+the amendment; the debt above did not travel past one package.
+
+Seven fragments were added to `scripts/responsive-probe.mjs`, one per surface: the Studio
+step surface, the media brief, the requirement match reason list, the `/me` viewings
+section, the `/me` shortlist grouping, the `/saved` shortlist chooser and the `/compare`
+decision pack panel. Each was measured at 320, 360, 390, 430, 768 and 1280 pixels in both
+locales, which is 120 measurements. The probe is the available channel because the Chrome
+extension bridge is down and the container's Chromium cannot reach production; it
+reproduces a surface character for character against the compiled stylesheet and the real
+font files rather than measuring the deployed DOM.
+
+Every string in the seven fragments was dumped from the model that emits it rather than
+written for the probe. A scratch script ran `studioSteps`, `assessMedia`, `matchListing`
+and `decisionPack` over one office lease scenario (520 sqm, 1,350 SAR per square metre per
+year, fitted, three photographs, no plan, no video) against an office brief of 400 to 600
+sqm with a 1,200 ceiling, and the EN and AR output was copied in verbatim. String length is
+the entire thing a responsive measurement measures, so plausible-looking invented copy
+would have measured nothing.
+
+The run found one real defect, in the surface with the tightest constraint. The decision
+pack dimension rows overflowed their 230 px card by 16 px at 320 px in both locales, because
+the detail span was declared `flex: 1` with `min-width: 200`: `flex: 1` is `flex: 1 1 0%`,
+so the wrap was decided as though the span were zero wide and the minimum was applied after
+the line had already been assembled. Corrected in `src/components/DecisionPackPanel.tsx` to
+`flex: 1 1 200px`, so the same 200 that constrains the span is the number the break is
+decided on. Recorded as finding 51.
+
+Result after the fix: 120 measurements, 0 document overflow, no item wider than its content
+box, 22 inside a declared scroll rail. The 22 are the Studio step rail, which is a
+`nav.overflow-x-auto` over an `ol.min-w-max` at every width by design, so a row wider than
+its box is the intended behaviour and the document not overflowing is the assertion that
+matters. One limit on that reading is recorded as finding 53: `sat-platform.css:550` sets
+`html,body{overflow-x:clip}`, which clamps `documentElement.scrollWidth`, so the
+document-level column cannot fail and the load-bearing assertions are the element-level
+ones. That is exactly how this defect surfaced, as `row ovf 16` with `doc ovf 0`.
+
+Three dead Tailwind numeric-shade classes were fixed in the same commit because they were
+ADV-2's own error states rendering with no colour at all: the blocked-step marker, the
+contradictions panel border and the error paragraph in `src/components/ListingStudio.tsx`.
+The other 152 sites are finding 50.
 
 ## What remains in ADV-2 scope
 
