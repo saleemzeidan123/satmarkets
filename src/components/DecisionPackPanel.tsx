@@ -146,7 +146,13 @@ export default function DecisionPackPanel({
                   .map((d) => (
                     <div key={d.kind} className="row gap12 wrap" style={{ alignItems: "baseline" }}>
                       <span style={{ fontSize: 12, fontWeight: 600, minWidth: 140 }}>{ar ? d.label_ar : d.label_en}</span>
-                      <span className="muted" style={{ fontSize: 12, flex: 1, minWidth: 200, lineHeight: 1.55 }}>
+                      {/* flex: "1 1 200px", not flex:1 with minWidth:200. With a zero
+                          basis the wrap decision is made as though this span were zero
+                          wide, so the state label was kept on the same line and the
+                          min width then pushed the row 16px past its card at 320px, in
+                          both locales. Declaring the 200 as the basis makes the same
+                          200 the number the line break is decided on. */}
+                      <span className="muted" style={{ fontSize: 12, flex: "1 1 200px", lineHeight: 1.55 }}>
                         {ar ? d.detail_ar : d.detail_en}
                       </span>
                       <span

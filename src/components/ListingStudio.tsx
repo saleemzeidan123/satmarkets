@@ -919,7 +919,11 @@ export default function ListingStudio({
                   }
                 >
                   <span>{ar ? s.title_ar : s.title_en}</span>
-                  {p && p.state === "blocked" && <span className="ms-1.5 text-red-600" aria-hidden="true">!</span>}
+                  {/* text-red, not text-red-600. tailwind.config.ts sets colors.red to a
+                      single hex string, which replaces Tailwind's default red scale
+                      object wholesale, so every numeric shade of it stops existing and
+                      the class compiles to nothing. This marker was invisible. */}
+                  {p && p.state === "blocked" && <span className="ms-1.5 text-red" aria-hidden="true">!</span>}
                   <span className="sr-only">{p ? ` ${stateLabel(p.state, ar)}` : ""}</span>
                 </button>
               </li>
@@ -983,7 +987,7 @@ export default function ListingStudio({
           {step.kind === "review" && (
             <div className="space-y-4">
               {quality.contradictions.length > 0 && (
-                <div className="rounded border border-red-600/40 p-3">
+                <div className="rounded border border-red/40 p-3">
                   <div className="text-[12px] font-medium text-charcoal/80">{t("These cannot both be true", "لا يمكن أن يصحّ هذان معاً")}</div>
                   <ul className="mt-1.5 space-y-1 text-[12px] text-charcoal/70">
                     {quality.contradictions.map((c) => <li key={c.kind + c.fields.join()}>{ar ? c.statement_ar : c.statement_en}</li>)}
@@ -1034,7 +1038,7 @@ export default function ListingStudio({
         )}
       </section>
 
-      {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-red">{error}</p>}
 
       {/* Saving keeps the lister here. The note says what was saved and where it
           can be picked up again, which is the address in the browser bar, and it
