@@ -3,7 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { redirect } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
-import NewListingForm from "@/components/NewListingForm";
+import ListingStudio from "@/components/ListingStudio";
 
 export default async function NewListingPage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
@@ -16,7 +16,8 @@ export default async function NewListingPage({ params }: { params: { locale: str
   const su = await getSessionUser();
   if (!su) redirect(`/${locale}/login`);
   if (!su.accountId) redirect(`/${locale}/signup`);
-  const acctId = su.accountId;
+  // The Studio never carries the account id. The write path derives it from the
+  // session, so a value in the browser could only ever be decoration or a lie.
   // District centroids (with coordinates) power the map location picker: the lister
   // pins the building and the nearest centroid derives the district.
   const { data: districts } = await sb.from("districts_geo").select("id, name_en, name_ar, city, lat, lng").order("city");
@@ -24,7 +25,7 @@ export default async function NewListingPage({ params }: { params: { locale: str
     <section className="py-6">
       <h1 className="font-display text-2xl text-charcoal">{locale === "ar" ? "عرض جديد" : "New listing"}</h1>
       <div className="mt-6">
-        <NewListingForm accountId={acctId} locale={locale} districts={(districts as any) ?? []} />
+        <ListingStudio locale={locale} districts={(districts as any) ?? []} />
       </div>
     </section>
   );

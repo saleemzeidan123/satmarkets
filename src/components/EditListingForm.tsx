@@ -10,8 +10,8 @@ import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from 
 // uses and validated server-side by the same pipeline. The licence and verification
 // live elsewhere and are read-only. On save it PATCHes and refreshes.
 //
-// The registry renderer here is a deliberate sibling of NewListingForm's: same
-// registry, same field types, dashboard styling instead of the intake form's.
+// The registry renderer here is a deliberate sibling of the Listing Studio's:
+// same registry, same field types, dashboard styling instead of the Studio's.
 type Init = {
   title_en: string;
   description_en: string;

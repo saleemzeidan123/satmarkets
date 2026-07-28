@@ -300,3 +300,29 @@ export function resumeStepId(steps: StudioStep[], quality: ListingQuality): stri
 export function stepKindLabel(kind: StudioStepKind, ar: boolean): string {
   return titleOf(kind, ar);
 }
+
+/**
+ * The facts the write path itself refuses, stated as check keys of the
+ * completeness model rather than as a second list of rules in a form.
+ *
+ * A draft that cannot be saved cannot be resumed, so the Studio has to know the
+ * difference between what the server will not accept and what publication will
+ * later want. This is deliberately a strict subset of the essential checks: a
+ * lister can save with no photograph and no Arabic title and come back to them,
+ * and cannot save with no licence number at all.
+ */
+export const DRAFT_REQUIRED_CHECK_KEYS: readonly string[] = [
+  "title_en",
+  "area_sqm",
+  "price",
+  "coordinates",
+  "ad_permit",
+  "permit_expiry",
+  "right_to_market",
+];
+
+/** Of the facts the write path refuses to save without, the ones still absent. */
+export function draftBlockers(quality: ListingQuality): QualityCheck[] {
+  const need = new Set(DRAFT_REQUIRED_CHECK_KEYS);
+  return quality.checks.filter((c) => need.has(c.key) && c.state === "missing");
+}

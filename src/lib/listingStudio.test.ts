@@ -16,7 +16,9 @@ import {
 } from "./listingQuality";
 import * as mod from "./listingStudio";
 import {
+  DRAFT_REQUIRED_CHECK_KEYS,
   STEP_MAX_FIELDS,
+  draftBlockers,
   resumeStepId,
   stepKindLabel,
   stepProgress,
@@ -397,6 +399,50 @@ test("the studio's vocabulary never reads as verification", () => {
       assert.ok(!forbidden.test(text), `${step.id}: ${text}`);
     }
   }
+});
+
+test("every fact the write path refuses is an essential check the model emits", () => {
+  const byKey = new Map(assessListing({ asset_type: "office" }).checks.map((c) => [c.key, c]));
+  assert.ok(DRAFT_REQUIRED_CHECK_KEYS.length > 0);
+  for (const key of DRAFT_REQUIRED_CHECK_KEYS) {
+    const check = byKey.get(key);
+    assert.ok(check, `${key} is required to save yet the model never emits it`);
+    assert.equal(check.weight, "essential", `${key} is required to save yet is not essential`);
+  }
+  // And each one is asked for somewhere, or it is a demand made of nobody.
+  const covered = new Set(studioSteps("office").flatMap((s) => s.checkKeys));
+  for (const key of DRAFT_REQUIRED_CHECK_KEYS) assert.ok(covered.has(key), `${key} is on no step`);
+});
+
+test("saving names only the facts that are missing, and nothing when they are all there", () => {
+  const steps = studioSteps("office");
+  const present = qualityFrom(allChecksIn(steps, "present", "essential"));
+  assert.deepEqual(draftBlockers(present), []);
+
+  const held = "coordinates";
+  const partial = qualityFrom(
+    steps.flatMap((s) => s.checkKeys).map((k) => chk(k, k === held ? "missing" : "present", "essential")),
+  );
+  assert.deepEqual(draftBlockers(partial).map((c) => c.key), [held]);
+
+  // A missing essential the write path does not ask for is not a saving blocker.
+  const later = qualityFrom(
+    steps.flatMap((s) => s.checkKeys).map((k) => chk(k, k === "title_ar" ? "missing" : "present", "essential")),
+  );
+  assert.deepEqual(draftBlockers(later), []);
+});
+
+test("saving asks for strictly less than publishing, so an unfinished draft can be resumed", () => {
+  const quality = assessListing({ asset_type: "office" });
+  const essential = new Set(quality.checks.filter((c) => c.weight === "essential").map((c) => c.key));
+  for (const key of DRAFT_REQUIRED_CHECK_KEYS) assert.ok(essential.has(key), key);
+  assert.ok(
+    DRAFT_REQUIRED_CHECK_KEYS.length < essential.size,
+    "a draft that demanded everything publication demands could never be saved part way",
+  );
+  // The empty listing above is blocked from saving, which is what makes the
+  // subset meaningful rather than vacuous.
+  assert.ok(draftBlockers(quality).length > 0);
 });
 
 test("the module arranges questions and never produces a colour", () => {

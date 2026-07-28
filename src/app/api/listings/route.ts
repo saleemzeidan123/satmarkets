@@ -3,6 +3,7 @@ import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { coerceAndValidateAttributes } from "@/lib/intakeValidation";
+import { hashSource } from "@/lib/translate/translateToArabic";
 
 const CONTACT_CHANNELS = ["whatsapp", "call", "email", "message"];
 
@@ -86,6 +87,40 @@ export async function POST(req: NextRequest) {
     ? (body.contact_channels as unknown[]).map(String).filter((c) => CONTACT_CHANNELS.includes(c))
     : [];
 
+  // ARABIC THE LISTER WROTE THEMSELVES, AND WHY IT IS STAMPED ON THE WAY IN.
+  //
+  // The completeness model treats an Arabic title as essential, so a surface that
+  // asks for one has to be able to save one. This route could not: it accepted
+  // title_en and description_en and silently dropped their Arabic counterparts,
+  // which left the Arabic identity of every new listing permanently blocked.
+  //
+  // Accepting the text is only half of it. /api/listings/[id]/translate rewrites
+  // title_ar whenever hashSource(title_en) !== title_ar_src_hash, and a row saved
+  // with lister-written Arabic and a null hash matches that condition. The very
+  // translate call the Studio fires after saving would overwrite the lister's own
+  // words with a machine rendering of the English. So the hash of the English is
+  // stamped here, at the moment the Arabic is accepted, which makes every later
+  // translate run read that Arabic as current and leave it alone. Editing the
+  // English afterwards flips the hash again, which is the behaviour we want.
+  //
+  // ar_translation_status is deliberately left at its default of 'pending'. The
+  // Arabic here is neither machine output nor anything SAT has reviewed, and
+  // 'approved' would claim a review that did not happen.
+  const title_ar = String(body.title_ar ?? "").trim();
+  const description_ar = String(body.description_ar ?? "").trim();
+
+  // The date the lister affirmed the space is actually available. Optional, but a
+  // confirmation dated in the future is not a confirmation, so it is refused
+  // rather than stored as a fact the availability label would later read.
+  const availabilityRaw = String(body.availability_confirmed_at ?? "").trim();
+  let availability_confirmed_at: string | null = null;
+  if (availabilityRaw) {
+    const ms = Date.parse(availabilityRaw);
+    if (Number.isNaN(ms)) return NextResponse.json({ error: "That availability date could not be read." }, { status: 400 });
+    if (ms > Date.now() + 60_000) return NextResponse.json({ error: "Availability is confirmed as of today, not a future date." }, { status: 400 });
+    availability_confirmed_at = new Date(ms).toISOString();
+  }
+
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
 
@@ -107,6 +142,12 @@ export async function POST(req: NextRequest) {
       asking_rent_sqm: deal_type === "lease" ? price : null,
       sale_price: deal_type === "sale" ? price : null,
       description_en: (body.description_en as string) || null,
+      title_ar: title_ar || null,
+      description_ar: description_ar || null,
+      title_ar_src_hash: title_ar ? hashSource(title_en) : null,
+      description_ar_src_hash:
+        description_ar && body.description_en ? hashSource(String(body.description_en)) : null,
+      availability_confirmed_at,
       contact_phone: (body.contact_phone as string) || null,
       contact_email: (body.contact_email as string) || null,
       contact_channels,
