@@ -7,7 +7,7 @@ import Reveal from "@/components/Reveal";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 
-export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; verified: boolean; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
+export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; badges: string[]; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
 type Stats = { listings: string | null; buildings: string | null; districts: string | null; verifiedPct: string | null };
 
@@ -38,7 +38,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const band = bands[bi] || bands[0] || null;
  const [q, setQ] = useState("");
  const [assetType, setAssetType] = useState("");
- const [sug, setSug] = useState<{ label: string; sub: string; did?: string; verified?: boolean }[]>([]);
+ const [sug, setSug] = useState<{ label: string; sub: string; did?: string; indexed?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
  const assetRef = useRef<HTMLDivElement>(null);
@@ -208,7 +208,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
  const f0 = featured[0];
  const rest = featured.slice(1);
- const vtxt = H.verifiedOwner;
  const idxBar = (f: FeaturedListing) => f.idx ? (
   <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (H.idxWithin) : f.idx.v === "below" ? (H.idxBelow) : (H.idxAbove)}</div></div>
  ) : null;
@@ -267,7 +266,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
           style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "var(--paper)", color: "var(--ink)", fontSize: "var(--fs-base)", fontFamily: "var(--sans)", textAlign: "inherit" }}>
           <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 600 }}>{o.label}</span>
-          {o.verified ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--green)", border: "1px solid var(--green-line)", background: "var(--green-wash)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{H.verifiedShort}</span> : null}
+          {/* ADV-1, and D24 in the direction that is easier to miss. This chip was
+              green and read "verified" for any place found in our own districts
+              table, which means only that we hold a record of the place: nothing
+              about it had been checked by anyone. It now says the thing that is
+              true, in a colour that claims nothing. */}
+          {o.indexed ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)", border: "1px solid var(--silver-2)", background: "var(--paper)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{H.indexedShort}</span> : null}
           {o.sub ? <span className="muted" style={{ fontSize: "var(--fs-xs)" }}>{o.sub}</span> : null}
          </button>
         ))}
@@ -320,7 +324,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
       </div>
       <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
-       <Ph src={f0.img} label={f0.ph} h={284} badges={[f0.verified ? <Verified key="v" text={vtxt} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>].filter(Boolean)} />
+       <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]} />
        <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
         <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{T.unit}</small></div>
         <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
@@ -332,7 +336,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <div className="snap-row" style={{ marginTop: 18 }}>
        {rest.map((f) => (
         <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-         <Ph src={f.img} label={f.ph} h={150} badges={[f.verified ? <Verified key="v" text={vtxt} /> : null, <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>].filter(Boolean)} />
+         <Ph src={f.img} label={f.ph} h={150} badges={[...f.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>]} />
          <div className="body">
           <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
           <div className="ttl">{f.title}</div>

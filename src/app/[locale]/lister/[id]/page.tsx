@@ -7,6 +7,10 @@ import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
 import { fill, formatArea, formatCounted, formatMoney, formatWithUnit } from "@/lib/format";
+// ADV-1. accounts.verification_status is a workflow status, and account_verifications
+// holds zero rows, so no account on the platform has a document behind it. The badge,
+// the sentence under it and the page description all used to run off that status.
+import { filingAccountOf, listerIdentityVerified, verifiedBadgeText } from "@/lib/listingVerification";
 
 // A lister's PUBLIC profile: who they are, and every space they have live. Reads the
 // listers_public view (the safe projection, only for accounts with a published
@@ -25,10 +29,10 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   let verified = false;
   const sb = getSupabaseServer();
   if (sb) {
-    const { data } = await sb.from("listers_public").select("name_en,name_ar,is_verified").eq("id", params.id).maybeSingle();
+    const { data } = await sb.from("listers_public").select("name_en,name_ar,lister_type,is_operator,is_verified,is_demo").eq("id", params.id).maybeSingle();
     if (data) {
       name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
-      verified = (data as any).is_verified === true;
+      verified = listerIdentityVerified(filingAccountOf(data as any));
     }
   }
   // The Open Graph type is not passed from here. It comes from the route policy
@@ -55,11 +59,15 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
 
   const { data: lister } = await sb
     .from("listers_public")
-    .select("id,name_en,name_ar,lister_type,is_operator,is_verified,about_en,about_ar,website,public_email,public_phone,logo_url,member_since")
+    .select("id,name_en,name_ar,lister_type,is_operator,is_verified,is_demo,about_en,about_ar,website,public_email,public_phone,logo_url,member_since")
     .eq("id", params.id)
     .maybeSingle();
   if (!lister) notFound();
   const p: any = lister;
+  // The badge below is an IDENTITY claim and nothing more. It never implied that the
+  // spaces this lister publishes are verified, and now it does not imply that anyone
+  // checked the lister either, unless someone did.
+  const identityVerified = listerIdentityVerified(filingAccountOf(p));
 
   const { data: listings } = await sb
     .from("listings")
@@ -97,11 +105,11 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
           <div className="row gap10 wrap" style={{ alignItems: "center" }}>
             <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: 0 }}>{name}</h1>
             <span className="tag">{role}</span>
-            {p.is_verified && <span className="verified"><span className="dot" />{t.verified}</span>}
+            {identityVerified && <span className="verified"><span className="dot" />{verifiedBadgeText("identity", ar)}</span>}
           </div>
           {/* Verification is the whole brand: state plainly that SAT checked the
               identity, when the lister is verified. A binary fact, not a rank. */}
-          {p.is_verified && (
+          {identityVerified && (
             <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "var(--verified)", fontSize: 12.5 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
               <span style={{ fontWeight: 600 }}>{t.verifiedBy}</span>

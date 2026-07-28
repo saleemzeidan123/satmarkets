@@ -6,12 +6,15 @@ import { cityLabel } from "@/lib/labels";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Item = { label: string; sub: string; kind: string; did?: string; verified?: boolean };
+// The indexed flag means one thing only: SAT Markets holds a record of this place. It is
+// not a verification of the place, of anything in it, or of any listing at it, and
+// the chip that renders it must not be green (D24).
+type Item = { label: string; sub: string; kind: string; did?: string; indexed?: boolean };
 
 const GKEY = process.env.GOOGLE_MAPS_API_KEY || process.env.google_places_key || "";
 const MBOX = process.env.MAPBOX_TOKEN || process.env.mapbox_token || "";
 
-async function verified(q: string, lang: "en" | "ar"): Promise<Item[]> {
+async function indexedPlaces(q: string, lang: "en" | "ar"): Promise<Item[]> {
   try {
     const sb = getSupabaseServer();
     if (!sb) return [];
@@ -23,7 +26,7 @@ async function verified(q: string, lang: "en" | "ar"): Promise<Item[]> {
       sub: cityLabel(d.city, lang),
       kind: d.kind === "development" ? "development" : d.kind === "area" ? "place" : "district",
       did: d.id as string,
-      verified: true,
+      indexed: true,
     }));
   } catch {
     return [];
@@ -140,12 +143,12 @@ export async function GET(req: Request) {
   const q = (url.searchParams.get("q") || "").trim();
   if (q.length < 2) return NextResponse.json({ items: [] });
   const lang = url.searchParams.get("lang") === "ar" ? "ar" : "en";
-  const v = url.searchParams.get("v") === "1" ? await verified(q, lang) : [];
+  const v = url.searchParams.get("v") === "1" ? await indexedPlaces(q, lang) : [];
   let ext = await google(q);
   if (!ext || !ext.length) ext = await mapbox(q);
   if (!ext || !ext.length) ext = await photon(q);
   ext = ext || [];
   const seen = new Set(v.map((x) => x.label.toLowerCase()));
   const items = [...v, ...ext.filter((e) => !seen.has(e.label.toLowerCase()))].slice(0, 8);
-  return NextResponse.json({ items, src: (v.length ? "verified+" : "") + (GKEY ? "google" : MBOX ? "mapbox" : "osm") });
+  return NextResponse.json({ items, src: (v.length ? "indexed+" : "") + (GKEY ? "google" : MBOX ? "mapbox" : "osm") });
 }

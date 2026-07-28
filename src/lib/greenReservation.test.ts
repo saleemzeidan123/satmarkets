@@ -39,7 +39,11 @@ const AVAILABILITY = /verif|availab|av\.state|"fresh"|"aging"|"stale"/i;
 
 const ALLOW: Record<string, Allow> = {
   "src/lib/releaseState.ts": { reason: "token definition: the verified release-state tone", context: VERIFICATION },
-  "src/components/MarketingHome.tsx": { reason: "verification: verified-owner badge", context: VERIFICATION },
+  // ADV-1 added the one component whose job is to decide what a record has earned,
+  // and removed MarketingHome from this list: its remaining chips are drawn by
+  // satkit's .verified class, and the suggestion chip that used to be green now says
+  // "in the index", which is a record we hold and not a check anyone ran (D24).
+  "src/components/VerificationState.tsx": { reason: "verification: the resolved dimension list", context: VERIFICATION },
   "src/components/SignupActions.tsx": { reason: "verification: approve-to-verified action", context: VERIFICATION },
   "src/components/FilterBar.tsx": { reason: "verification: verified-owners filter", context: VERIFICATION },
   "src/app/[locale]/proto/page.tsx": { reason: "verification: design-system verified swatches", context: VERIFICATION },

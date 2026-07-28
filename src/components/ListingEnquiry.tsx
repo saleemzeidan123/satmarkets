@@ -79,10 +79,13 @@ const QUAL_SALE: Q[] = [{ k: "ticket", en: "Ticket", ar: "قيمة الصفقة"
 const QUAL_DEFAULT: Q[] = [Q_ROLE, Q_TIME];
 
 export default function ListingEnquiry({
- listingId, price, lease, unit, type, area, district, locale, permit, assetType, satListed, contact,
+ listingId, price, lease, unit, type, area, district, locale, permit, assetType, satListed, contact, badges = [],
 }: {
  listingId: string; price: number | null; lease: boolean; unit: string;
  type: string; area: number; district: string; locale: string; permit?: string | null; assetType?: string; satListed?: boolean;
+ // Resolved on the server by src/lib/listingVerification.ts. Each string names the
+ // gate it rests on; an empty list means the record has earned no badge (ADV-1).
+ badges?: string[];
  contact?: { phone?: string | null; email?: string | null; channels: string[]; refCode: string; title: string; url: string; messageHref: string };
 }) {
  const L = (p: string) => `/${locale}${p}`;
@@ -216,7 +219,13 @@ export default function ListingEnquiry({
    </div>
 
    <div className="row gap8 wrap" style={{ marginTop: 14 }}>
-    <span className="verified"><span className="dot" />{t.verifiedOwner}</span>
+    {/* ADV-1, finding 3, decision O3. This chip was unconditional: every listing
+        on the platform carried a green "Verified owner" right above the enquiry
+        form, on rows whose own record says no check has been run. It now shows
+        only what the record has earned, and today that is nothing. */}
+    {badges.map((b, i) => (
+     <span key={`v${i}`} className="verified"><span className="dot" />{b}</span>
+    ))}
     {permit && <span className="tag">{t.permit}{permit}</span>}
    </div>
 

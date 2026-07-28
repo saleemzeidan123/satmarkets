@@ -8,7 +8,7 @@ import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, fillProse, formatArea, formatCounted, formatMoney, formatNumber, formatUnit, formatWithUnit } from "@/lib/format";
-import { Photo, Verified, Icon } from "@/components/satkit";
+import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
@@ -16,7 +16,8 @@ import SaveButton from "@/components/SaveButton";
 import { getListingById, getLister, getBuildingById } from "@/lib/queries/listings";
 import ListerBadge from "@/components/ListerBadge";
 import { getDictionary } from "@/i18n/getDictionary";
-import { ownerVerified } from "@/lib/gate";
+import { filingAccountOf, listingDimensionState, verifiedBadgeTexts } from "@/lib/listingVerification";
+import VerificationSummary, { verifiedBadges } from "@/components/VerificationState";
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import ReportListing from "@/components/ReportListing";
@@ -65,7 +66,12 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   // Index" claimed two things at once that the data does not carry: that the
   // listing itself is verified rather than its owner, and that the figure above
   // was derived from the index rather than sitting next to its context.
-  const descTemplate = ownerVerified(l) ? dict.ld.metaDescOwnerVerified : dict.ld.metaDesc;
+  // ADV-1: the owner sentence needs the ownership DIMENSION to resolve verified,
+  // which takes a real method, a date and a reviewer, not the flag on its own.
+  const descTemplate =
+    listingDimensionState(l, "ownership") === "verified"
+      ? dict.ld.metaDescOwnerVerified
+      : dict.ld.metaDesc;
   const description = fillProse(descTemplate, { grade, type, place: dn, area: formatArea(l.area_sqm, loc), price: priceStr });
   return localeMeta(params.locale, `/listings/${params.id}`, title, description);
 }
@@ -195,13 +201,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           {mediaPhotos.length > 1 ? (
             <div style={{ position: "relative" }}>
               <div style={{ position: "absolute", top: 12, insetInlineStart: 12, zIndex: 3, display: "flex", gap: 8 }}>
-                {ownerVerified(l as any) ? <Verified text={dict.ld.verifiedOwner} /> : null}
+                {verifiedBadges(l as any, filingAccountOf(lister), ar)}
                 <span className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>
               </div>
               <Gallery images={mediaPhotos} title={`${type}, ${dn}`} photosLabel={ar ? "صور" : "photos"} />
             </div>
           ) : (
-            <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dict.ld.verifiedOwner} />] : []), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+            <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...verifiedBadges(l as any, filingAccountOf(lister), ar), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
           )}
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
@@ -219,29 +225,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               the contact rail. Moving it here also removed the last reason the rail
               carried a second block, which is what let the rail stop being nested-sticky. */}
           <ListerBadge lister={lister} ar={ar} locale={locale} />
-          {/* Honest verification freshness (Q8 + decay). Shows the real check date; once
-              the check is a year or older the badge desaturates and we append the check's
-              AGE as a plain fact ("over a year ago"). We still assert NO expiry / valid-until,
-              because there is no re-verification cadence to back such a promise (Law 3). */}
-          {ownerVerified(l as any) && (l as any).verified_at ? (() => {
-            const dt = new Date((l as any).verified_at);
-            const dtxt = isFinite(dt.getTime()) ? dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }) : null;
-            const vt = Date.parse((l as any).verified_at);
-            const months = Number.isFinite(vt) ? Math.max(0, Math.floor((Date.now() - vt) / 2629800000)) : 0;
-            const stale = months >= 12;
-            const yrs = Math.floor(months / 12);
-            // The Arabic side printed "سنوات" after every number, which is right
-            // for three to ten and wrong for eleven and up. The counted noun knows
-            // the rule; the sentence around it lives in the dictionaries.
-            const ageTxt = !stale ? null : (yrs >= 2 ? fill(dict.ld.verifiedAgeYears, { age: formatCounted(yrs, "year", lp) }) : dict.ld.verifiedAgeYear);
-            return dtxt ? (
-              <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: stale ? "var(--slate)" : "var(--verified)", fontSize: 12.5 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-                <span style={{ fontWeight: 600 }}>{dict.ld.verifiedOwner}</span>
-                <span className="mono" style={{ color: "var(--slate)", fontWeight: 400 }}>· {dict.ld.checkedOn} <bdi dir="ltr">{dtxt}</bdi>{ageTxt ? ` · ${ageTxt}` : ""}</span>
-              </div>
-            ) : null;
-          })() : null}
+          {/* WHAT IS ACTUALLY CHECKED HERE (ADV-1, finding 3, decision O3).
+              Four dimensions, four answers, each with the reason its answer is
+              what it is. This replaced a single line that read "Verified owner"
+              with a check date, drawn from one boolean and dated to the run of
+              the loader that inserted the row. No expiry or valid-until is
+              asserted, because there is still no re-verification cadence to back
+              one (Law 3). */}
+          <VerificationSummary listing={l as any} account={filingAccountOf(lister)} ar={ar} />
 
           {/* Honest availability freshness (Fable 5: own freshness, not just
               provenance). Reads availability_confirmed_at, the real date the lister
@@ -553,7 +544,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <ReportListing listingId={l.id} locale={locale as "en" | "ar"} />
         </div>
         <div className="ld-side">
-          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={formatUnit(lease ? "sar_sqm_year" : "sar", lp, "short")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
+          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} badges={verifiedBadgeTexts(l as any, filingAccountOf(lister), ar)} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={formatUnit(lease ? "sar_sqm_year" : "sar", lp, "short")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>

@@ -48,7 +48,10 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
       <Section title={t("Verification capsule", "كبسولة التوثيق")}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--verified-wash)", color: "var(--verified)", border: "1px solid var(--green-line)", borderRadius: 999, paddingBlock: 6, paddingInline: 12, fontSize: 13, fontWeight: 600 }}>
           <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--verified)" }} />
-          {t("Verified owner · checked 29 Jun 2026", "مالك موثّق · روجع 29 يونيو 2026")}
+          {/* ADV-1. This read "Verified owner" plus a check date, which is the exact
+              claim owner decision O3 retires, on the page a designer copies from. A
+              reference that shows a retired badge puts it back into the product. */}
+          {t("Ownership verified", "الملكية موثّقة")}
         </span>
       </Section>
 
@@ -71,7 +74,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
         <div style={{ maxWidth: 320, borderRadius: "var(--r-md)", border: "1px solid var(--silver)", overflow: "hidden", background: "var(--paper)" }}>
           <div style={{ height: 150, background: "linear-gradient(135deg,var(--harbor-d),var(--harbor))" }} />
           <div style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Verified owner", "مالك موثّق")}</span>
+            <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Ownership verified", "الملكية موثّقة")}</span>
             <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t("SAR/m²·yr", "ريال/م²·سنة")}</span></div>
             <div style={{ fontWeight: 600 }}>{t("Grade A Office, Al Olaya", "مكتب الفئة A، العليا")}</div>
             <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · 850 m²", "العليا · 850 m²")}</div>

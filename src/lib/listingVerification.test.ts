@@ -13,11 +13,15 @@ import {
   listingHasVerifiedDimension,
   listingVerifiedDimensions,
   listingVerification,
+  filingAccountOf,
   normalizeAccountType,
   normalizeListerRelation,
   notVerifiedReasonText,
   relationConsistency,
   unverifiedNoticeText,
+  verificationHeadingText,
+  verifiedBadgeText,
+  verifiedBadgeTexts,
   type AccountType,
   type FilingAccount,
   type ListerRelation,
@@ -554,4 +558,164 @@ test("no copy in this module carries an em dash or an Arabic-Indic numeral", () 
     assert.doesNotMatch(s, /[\u2014\u2013]/, `dash in ${s}`);
     assert.doesNotMatch(s, /[\u0660-\u0669]/, `Arabic-Indic numeral in ${s}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// filingAccountOf: reading the public view without believing its cover story
+// ---------------------------------------------------------------------------
+
+test("filingAccountOf returns null for a missing lister rather than an empty account", () => {
+  // An absent account is not an unverified one. Manufacturing a record here would
+  // hand the resolver a fact it was never given, which is the failure mode ADV-1
+  // exists to prevent: AI, or code, converting unknown data into known data.
+  assert.equal(filingAccountOf(null), null);
+  assert.equal(filingAccountOf(undefined), null);
+});
+
+test("filingAccountOf recovers SAT's own account type from is_operator", () => {
+  // listers_public rewrites type 'sat' to 'broker' so the public byline reads
+  // sensibly. Reading lister_type alone would tell the finding 24 contradiction
+  // check that our own inventory was filed by a third party, which is the one
+  // thing it is not.
+  const a = filingAccountOf({ lister_type: "broker", is_operator: true, is_verified: true, is_demo: true });
+  assert.equal(a?.type, "sat");
+  assert.equal(relationConsistency("broker_authorized", normalizeAccountType(a?.type)), "consistent");
+  assert.equal(relationConsistency("owner_direct", normalizeAccountType(a?.type)), "contradicted");
+});
+
+test("filingAccountOf leaves a third party broker as a broker", () => {
+  const a = filingAccountOf({ lister_type: "broker", is_operator: false, is_verified: false, is_demo: false });
+  assert.equal(a?.type, "broker");
+  assert.equal(a?.verification_status, "unverified");
+  assert.equal(a?.is_demo, false);
+});
+
+test("filingAccountOf carries the account status across as a status, never as a check", () => {
+  const a = filingAccountOf({ lister_type: "owner", is_operator: false, is_verified: true, is_demo: false });
+  assert.equal(a?.verification_status, "verified");
+  // account_verifications holds zero rows, so the status has no document behind it
+  // and the identity dimension still resolves to not verified.
+  assert.equal(listerIdentityVerified(a), false);
+});
+
+test("filingAccountOf leaves an absent flag absent instead of guessing false", () => {
+  const a = filingAccountOf({});
+  assert.equal(a?.type, null);
+  assert.equal(a?.is_demo, null);
+});
+
+// ---------------------------------------------------------------------------
+// Badge wording: every badge names the gate it rests on
+// ---------------------------------------------------------------------------
+
+test("every dimension has badge wording in both locales, and the two differ", () => {
+  for (const d of LISTING_DIMENSIONS) {
+    const en = verifiedBadgeText(d, false);
+    const ar = verifiedBadgeText(d, true);
+    assert.ok(en.length > 0, `no English badge for ${d}`);
+    assert.ok(ar.length > 0, `no Arabic badge for ${d}`);
+    assert.notEqual(en, ar, `${d} has the same badge in both locales`);
+  }
+  assert.ok(verifiedBadgeText("identity", false).length > 0);
+});
+
+test("no two dimensions share a badge, in either locale", () => {
+  // A badge that cannot be told apart from another badge is the broad claim again
+  // wearing a longer label.
+  for (const ar of [false, true]) {
+    const seen = new Set<string>();
+    for (const d of LISTING_DIMENSIONS) {
+      const t = verifiedBadgeText(d, ar);
+      assert.ok(!seen.has(t), `${d} repeats the badge "${t}"`);
+      seen.add(t);
+    }
+  }
+});
+
+test("no badge is the bare claim owner decision O3 removes", () => {
+  // The retired wording, written as escapes because ar-lint reads this file.
+  for (const d of LISTING_DIMENSIONS) {
+    assert.notEqual(verifiedBadgeText(d, false), "Verified");
+    assert.notEqual(verifiedBadgeText(d, false), "Verified owner");
+    assert.notEqual(verifiedBadgeText(d, true), "\u0645\u0648\u062b\u0651\u0642");
+    assert.notEqual(verifiedBadgeText(d, true), "\u0645\u0627\u0644\u0643 \u0645\u0648\u062b\u0651\u0642");
+  }
+});
+
+test("the verification heading exists in both locales and is not a badge", () => {
+  assert.ok(verificationHeadingText(false).length > 0);
+  assert.ok(verificationHeadingText(true).length > 0);
+  assert.notEqual(verificationHeadingText(false), verificationHeadingText(true));
+  assert.notEqual(verificationHeadingText(false), verifiedBadgeText("ownership", false));
+});
+
+test("badge copy carries no em dash and no Arabic-Indic numeral", () => {
+  const all = [
+    ...LISTING_DIMENSIONS.flatMap((d) => [verifiedBadgeText(d, false), verifiedBadgeText(d, true)]),
+    verificationHeadingText(false),
+    verificationHeadingText(true),
+  ];
+  for (const s of all) {
+    assert.doesNotMatch(s, /[\u2014\u2013]/, `dash in ${s}`);
+    assert.doesNotMatch(s, /[\u0660-\u0669]/, `Arabic-Indic numeral in ${s}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// verifiedBadgeTexts: what a surface is actually handed
+// ---------------------------------------------------------------------------
+
+test("a seeded row earns no badge at all, in either locale", () => {
+  // 50 of the 88 published rows look like this. An empty list is the correct
+  // output, and it is what every published listing gets today.
+  const l = seededRow();
+  assert.deepEqual(verifiedBadgeTexts(l, ownerAccount(), false, NOW), []);
+  assert.deepEqual(verifiedBadgeTexts(l, ownerAccount(), true, NOW), []);
+});
+
+test("badge texts and verified dimensions are the same list, in the same order", () => {
+  const l = good();
+  const dims = listingVerifiedDimensions(l, brokerAccount(), NOW);
+  assert.ok(dims.length > 0, "the constructed fixture should verify something");
+  assert.deepEqual(
+    verifiedBadgeTexts(l, brokerAccount(), false, NOW),
+    dims.map((d) => verifiedBadgeText(d, false))
+  );
+  assert.deepEqual(
+    verifiedBadgeTexts(l, brokerAccount(), true, NOW),
+    dims.map((d) => verifiedBadgeText(d, true))
+  );
+});
+
+test("badge texts and the ownership dimension cannot disagree", () => {
+  // The listings filter, the card badge and the home count are all this question.
+  // If they ever answer differently a reader ticks "verified" and receives rows
+  // carrying nothing, which is the disagreement C4 was raised to end.
+  for (const l of [good(), seededRow(), good({ verified_by: null }), good({ is_demo: true })]) {
+    const owned = listingDimensionState(l, "ownership", brokerAccount(), NOW) === "verified";
+    const texts = verifiedBadgeTexts(l, brokerAccount(), false, NOW);
+    assert.equal(
+      texts.includes(verifiedBadgeText("ownership", false)),
+      owned,
+      "the ownership badge must appear exactly when the ownership dimension is verified"
+    );
+  }
+});
+
+test("both locales return the same number of badges for the same record", () => {
+  for (const l of [good(), seededRow(), good({ ad_permit_expires_at: PAST })]) {
+    assert.equal(
+      verifiedBadgeTexts(l, brokerAccount(), false, NOW).length,
+      verifiedBadgeTexts(l, brokerAccount(), true, NOW).length,
+      "bilingual parity: one locale must never show a badge the other withholds"
+    );
+  }
+});
+
+test("an expired advertising permit withdraws its own badge and no other", () => {
+  const before = verifiedBadgeTexts(good(), brokerAccount(), false, NOW);
+  const after = verifiedBadgeTexts(good({ ad_permit_expires_at: PAST }), brokerAccount(), false, NOW);
+  assert.ok(before.includes(verifiedBadgeText("ad_permit", false)));
+  assert.ok(!after.includes(verifiedBadgeText("ad_permit", false)));
+  for (const t of after) assert.ok(before.includes(t), `${t} appeared only after expiry`);
 });

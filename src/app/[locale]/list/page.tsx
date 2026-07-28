@@ -93,7 +93,9 @@ export default function ListPage({ params }: { params: { locale: string } }) {
     <div className="card pad" style={{ marginTop: 28, maxWidth: 720, background: "var(--cool)", boxShadow: "none" }}>
      <div className="eyebrow">{lp.livePreview}</div>
      <div className="row gap14 wrap" style={{ marginTop: 14 }}>
-      <Ph label={lp.gradeAOffice} h={84} style={{ width: 130, borderRadius: 9 }} badges={[<Verified key="v" text="V" />]} />
+      {/* The preview used to carry a green tick, which promised a lister a badge
+          before anything about their listing had been checked. */}
+      <Ph label={lp.gradeAOffice} h={84} style={{ width: 130, borderRadius: 9 }} />
       <div style={{ flex: 1, minWidth: 200 }}>
        <div className="price muted" style={{ fontSize: 16 }}>{lp.pricePlaceholder} <small>{lp.unitSar}</small></div>
        <div className="ttl">{lp.fTitlePh}</div>

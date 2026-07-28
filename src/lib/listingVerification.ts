@@ -2,6 +2,8 @@ import {
   type VerificationDimension,
   type VerificationRecord,
   type VerificationState,
+  verificationDimensionLabel as dimensionLabel,
+  verificationStateLabel as stateLabel,
   verificationStateOf,
   verifiedDimensions,
 } from "@/lib/evidence";
@@ -118,7 +120,7 @@ export type FilingAccount = {
  * rows, but it names the fixture loader, not an act of verification. Treating
  * it as a check is precisely how a demo corpus came to render as a verified one.
  */
-const CHECK_METHODS: readonly string[] = ["nafath", "manual_review", "rega_match", "ejar_match"];
+export const CHECK_METHODS: readonly string[] = ["nafath", "manual_review", "rega_match", "ejar_match"];
 
 export function isCheckMethod(v: unknown): boolean {
   return typeof v === "string" && CHECK_METHODS.includes(v);
@@ -384,6 +386,36 @@ export function listerIdentityReasons(
   return reasons;
 }
 
+/**
+ * The account that filed a listing, as this module needs to see it.
+ *
+ * `listers_public` rewrites SAT's own account type to `broker` so the public
+ * byline reads sensibly, and exposes the real answer only through `is_operator`.
+ * Reading `lister_type` alone would therefore tell the finding 24 contradiction
+ * check that our own inventory was filed by a third-party broker, which is the one
+ * thing it is not. `is_verified` is carried across as a STATUS, never as a check:
+ * it is `accounts.verification_status`, and the resolver above is what decides
+ * that a status with no document behind it earns nothing.
+ */
+export function filingAccountOf(
+  l:
+    | {
+        lister_type?: string | null;
+        is_operator?: boolean | null;
+        is_verified?: boolean | null;
+        is_demo?: boolean | null;
+      }
+    | null
+    | undefined
+): FilingAccount | null {
+  if (!l) return null;
+  return {
+    type: l.is_operator ? "sat" : l.lister_type ?? null,
+    verification_status: l.is_verified ? "verified" : "unverified",
+    is_demo: l.is_demo ?? null,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // What a surface says when nothing is verified
 // ---------------------------------------------------------------------------
@@ -399,4 +431,48 @@ export function unverifiedNoticeText(ar: boolean): string {
   return ar
     ? "لم تُجرَ فحوصات التوثيق على هذا السجل بعد."
     : "The verification checks have not been run on this record yet.";
+}
+
+/** The heading over the dimension list on a listing page. */
+export function verificationHeadingText(ar: boolean): string {
+  return ar ? "حالة التوثيق" : "Verification status";
+}
+
+const BADGE_TEXT: Partial<Record<VerificationDimension, [string, string]>> = {
+  ownership: ["Ownership verified", "الملكية موثّقة"],
+  authorization: ["Authorisation verified", "التفويض موثّق"],
+  right_to_market: ["Right to market verified", "حق التسويق موثّق"],
+  ad_permit: ["Advertising permit verified", "تصريح الإعلان موثّق"],
+  identity: ["Identity verified", "الهوية موثّقة"],
+};
+
+/**
+ * What a badge says when a dimension has genuinely earned one.
+ *
+ * Each names its own gate. The bare word "Verified" is deliberately not
+ * available here: it is the claim that stood in for all four and is what owner
+ * decision O3 removes. A dimension with no phrasing of its own falls back to
+ * its label plus the resolved state, which still names the gate.
+ */
+export function verifiedBadgeText(d: VerificationDimension, ar: boolean): string {
+  const t = BADGE_TEXT[d];
+  return t ? t[ar ? 1 : 0] : `${dimensionLabel(d, ar)}: ${stateLabel("verified", ar)}`;
+}
+
+/**
+ * Every badge a listing has earned, already worded.
+ *
+ * Strings rather than nodes, because the surfaces that need this include a
+ * client component, a print flyer and an owner dashboard, and none of them
+ * should be reaching into the resolver to decide for itself what counts. The
+ * server hands the finished list down; an empty list means no badge, which is
+ * the answer on every published row today.
+ */
+export function verifiedBadgeTexts(
+  l: VerifiableListing,
+  account: FilingAccount | null | undefined,
+  ar: boolean,
+  now: number = Date.now()
+): string[] {
+  return listingVerifiedDimensions(l, account ?? null, now).map((d) => verifiedBadgeText(d, ar));
 }

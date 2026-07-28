@@ -23,7 +23,8 @@ export type Lister = {
   name_ar: string | null;
   lister_type: string;   // "owner" | "broker" | "investor" | "occupier"
   is_operator: boolean;  // SAT Real Estate, the company that runs this exchange
-  is_verified: boolean;
+  is_verified: boolean;  // accounts.verification_status = 'verified', which is a STATUS
+  is_demo: boolean;      // and this is why that status cannot carry a badge (ADV-1)
 };
 
 // Who is listing this, and are they us?
@@ -42,7 +43,7 @@ export const getLister = cache(async (accountId: string | null | undefined): Pro
   if (!sb) return null;
   const { data } = await sb
     .from("listers_public")
-    .select("id,name_en,name_ar,lister_type,is_operator,is_verified")
+    .select("id,name_en,name_ar,lister_type,is_operator,is_verified,is_demo")
     .eq("id", accountId)
     .maybeSingle();
   return (data as Lister) ?? null;

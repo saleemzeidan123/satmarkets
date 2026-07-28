@@ -43,9 +43,12 @@ export default async function DashboardLayout({
     if (acct) {
       const a: any = acct;
       acctName = (ar ? a.name_ar : a.name_en) || a.name_en || acctName;
-      acctRole = a.type === "sat"
-        ? (ar ? "فريق سات" : "SAT team")
-        : a.verification_status === "verified" ? (ar ? "مالك موثّق" : "Verified owner") : (ar ? "مالك" : "Owner");
+      // ADV-1. This read accounts.verification_status, a workflow status with zero
+      // rows behind it in account_verifications, and printed "Verified owner" beside
+      // the user's own name in their sidebar. The label states the ROLE, which is a
+      // fact about the account; whether anything about it has been checked is the
+      // identity dimension, and it is answered where a badge is actually earned.
+      acctRole = a.type === "sat" ? (ar ? "فريق سات" : "SAT team") : (ar ? "مالك" : "Owner");
     }
     // SAT sees every lead, an owner only their own. In BOTH cases the badge counts
     // only enquiries still marked "new": one the owner has already handled must stop

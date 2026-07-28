@@ -3,11 +3,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
-import { Photo, Verified, Icon } from "@/components/satkit";
+import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { getDictionary } from "@/i18n/getDictionary";
-import { ownerVerified } from "@/lib/gate";
+import { verifiedBadges } from "@/components/VerificationState";
+import { listingDimensionState } from "@/lib/listingVerification";
 
 type SP = { ids?: string };
 
@@ -104,7 +105,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 {items.map((l, i) => (
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
-                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={(ownerVerified(l) ? [<Verified key="v" text={cp.verified} />] : [])} />
+                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={verifiedBadges(l, null, ar)} />
                       <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
                       <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>
@@ -128,7 +129,10 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--dv-quote-below)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
               }} />
               <HeaderRow label={cp.district} render={(l) => <span>{dn(l)}</span>} />
-              <HeaderRow label={cp.owner} render={(l) => (l.ownership_verified || l.authorization_verified || l.is_sat_listed) ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{cp.verified}</span> : <span className="muted">–</span>} />
+              {/* C4, then ADV-1. Ownership OR authorisation OR the row being our own
+                  stock, all printed as one green "Verified" in the row a reader uses to
+                  pick between spaces. It is now the ownership dimension itself. */}
+              <HeaderRow label={cp.owner} render={(l) => listingDimensionState(l as any, "ownership") === "verified" ? <span style={{ color: "var(--green)", fontWeight: 600 }}>{cp.verified}</span> : <span className="muted">–</span>} />
 
               <div style={{ display: "grid", gridTemplateColumns: GRID, borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
                 <div style={{ padding: 16, borderRight: "1px solid var(--silver)" }} />

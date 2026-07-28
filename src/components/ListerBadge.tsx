@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import type { Lister } from "@/lib/queries/listings";
+import { filingAccountOf, listerIdentityVerified } from "@/lib/listingVerification";
 
 // WHO IS LISTING THIS, AND ARE THEY US.
 //
@@ -56,8 +57,13 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
           </div>
           <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 2 }}>
             <Link href={`/${lp}/lister/${lister.id}`} style={{ fontSize: 15.5, fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
-            {lister.is_verified && (
-              <span className="verified"><span className="dot" />{ar ? "موثّق" : "Verified"}</span>
+            {/* ADV-1. This drew a bare green "Verified" from
+                accounts.verification_status, which is a workflow status and not a
+                check: account_verifications holds zero rows, so no account on the
+                platform has a document behind it. A status is not evidence, and a
+                badge with no named dimension is the claim O3 removes. */}
+            {listerIdentityVerified(filingAccountOf(lister)) && (
+              <span className="verified"><span className="dot" />{ar ? "الهوية موثّقة" : "Identity verified"}</span>
             )}
             <span className="tag">{role}</span>
           </div>

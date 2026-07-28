@@ -30,7 +30,9 @@ import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
 // trust mark it had not earned, on the platform that publishes /neutrality.
-import { ownerVerified } from "@/lib/gate";
+// ADV-1: the badge now names its own gate and no longer reads a single boolean.
+import { CHECK_METHODS } from "@/lib/listingVerification";
+import { verifiedBadges } from "@/components/VerificationState";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, formatArea, formatCounted, formatNumber, formatUnit } from "@/lib/format";
@@ -38,6 +40,19 @@ import { getDictionary } from "@/i18n/getDictionary";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const GRADES = ["a_plus", "a", "b", "c"];
+
+// ADV-1. The verified filter expressed as a query, in the same four parts the
+// badge is resolved from: the flag is set, the record is not a fixture, the
+// method names a real check rather than the loader that inserted the row, and an
+// actor signed it. Anything looser and the chip returns rows the card cannot
+// badge, which is the disagreement C4 was meant to end.
+function verifiedOnly<T>(q: T): T {
+  return (q as any)
+    .eq("ownership_verified", true)
+    .eq("is_demo", false)
+    .not("verified_by", "is", null)
+    .in("verification_method", [...CHECK_METHODS]) as T;
+}
 const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
 type SP = { asset?: string; deal?: string; q?: string; qx?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string; bbox?: string };
@@ -101,11 +116,12 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (gradeArr.length) query = query.in("building_grade", gradeArr);
     const fitArr = list(searchParams.fit);
     if (fitArr.length) query = query.in("fitout_condition", fitArr);
-    // C4. The verified chip filtered on owner OR authorisation OR our own stock, while
-    // the card badge below calls ownerVerified(l), which is ownership_verified alone.
-    // A reader could therefore tick "verified" and receive rows carrying no badge. The
-    // filter now matches the badge, and both match src/lib/gate.ts.
-    if (searchParams.verified) query = query.eq("ownership_verified", true);
+    // C4, then ADV-1. The chip and the badge have to agree, or a reader ticks
+    // "verified" and receives rows carrying nothing. The badge is now the four-part
+    // chain in src/lib/listingVerification.ts, so the filter is the same chain
+    // expressed as a query: the flag, a real record, a method that names a check and
+    // an actor who signed it. It returns nothing today, which is the true answer.
+    if (searchParams.verified) query = verifiedOnly(query);
     const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
@@ -117,7 +133,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     else { if (searchParams.spmin) fq = fq.gte("sale_price", Number(searchParams.spmin)); if (searchParams.spmax) fq = fq.lte("sale_price", Number(searchParams.spmax)); }
     // Same predicate as the result query above, for the same reason: a facet count
     // that disagrees with the list it describes is its own small false claim.
-    if (searchParams.verified) fq = fq.eq("ownership_verified", true);
+    if (searchParams.verified) fq = verifiedOnly(fq);
     const { data: fdata } = await fq;
     (fdata ?? []).forEach((r: any) => { if (r.asset_type) assetCounts[r.asset_type] = (assetCounts[r.asset_type] || 0) + 1; if (r.building_grade) gradeCounts[r.building_grade] = (gradeCounts[r.building_grade] || 0) + 1; if (r.fitout_condition) fitCounts[r.fitout_condition] = (fitCounts[r.fitout_condition] || 0) + 1; });
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
@@ -450,7 +466,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const type = assetLabel(l.asset_type, locale);
             return (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...(ownerVerified(l as any) ? [<Verified key="v" text={dl.verifiedOwner} />] : []), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dl.newBadge}</span>] : [])]} />
+                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...verifiedBadges(l as any, null, ar), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dl.newBadge}</span>] : [])]} />
                 <div className="body">
                   {(() => {
                     const ls = listedSince((l as any).created_at);

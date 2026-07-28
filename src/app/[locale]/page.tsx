@@ -9,6 +9,7 @@ import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 import { getPublishedKpis } from "@/lib/market/published";
+import { CHECK_METHODS, listingVerifiedDimensions, verifiedBadgeText } from "@/lib/listingVerification";
 
 export const revalidate = 600;
 
@@ -46,7 +47,20 @@ export default async function HomePage({ params }: { params: { locale: string } 
     // our own stock. src/lib/gate.ts is the truth source and says the first of those
     // is the only one that carries the claim, so the KPI now counts exactly what its
     // label says. Guarded by src/lib/claims.test.ts.
-    const { count: vc } = await sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published").eq("ownership_verified", true);
+    // ADV-1. C4 made this count the right FIELD; it still counted the wrong thing,
+    // because the field is set on all 88 published rows and none of them has been
+    // checked by anyone. The count is now the same four-part chain the badge is
+    // resolved from, so the number on the home page and the badge on the card can
+    // never disagree. It reads zero today, which is the true answer and is why the
+    // tile drops out below rather than publishing a rate.
+    const { count: vc } = await sb
+      .from("listings")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "published")
+      .eq("ownership_verified", true)
+      .eq("is_demo", false)
+      .not("verified_by", "is", null)
+      .in("verification_method", [...CHECK_METHODS]);
     verified = vc ?? 0;
     const { count: dc } = await sb.from("districts").select("*", { count: "exact", head: true });
     districts = dc ?? 0;
@@ -94,11 +108,10 @@ export default async function HomePage({ params }: { params: { locale: string } 
       district: dn || city,
       area: formatArea(l.area_sqm, locale),
       type,
-      // C4 again, in JS rather than in a query. The badge this feeds is labelled
-      // "Verified owner", and src/lib/gate.ts says ownership_verified is the only
-      // field that carries that claim. A broker's authorisation to market and the
-      // row being our own stock are different facts and do not earn this badge.
-      verified: !!(l as any).ownership_verified,
+      // ADV-1. A boolean here produced one badge that stood for four separate
+      // checks. The card now carries the badges the record has actually earned,
+      // each naming its own gate, which is an empty list on every published row.
+      badges: listingVerifiedDimensions(l as any, null).map((d) => verifiedBadgeText(d, ar)),
       ph: `${type}, ${dn || city}`,
       img: photoFor(l.asset_type, l.id),
       idx,
@@ -112,7 +125,10 @@ export default async function HomePage({ params }: { params: { locale: string } 
     listings: listings > 0 ? `${listings}` : null,
     buildings: buildings > 0 ? `${buildings}` : null,
     districts: districts > 0 ? `${districts}` : null,
-    verifiedPct: listings > 0 ? `${Math.round((verified / listings) * 100)}%` : null,
+    // A proportion of nothing is not a proportion. The strip already drops a tile
+    // whose count is zero; a verification rate has the same rule, and printing "0%"
+    // would state a rate the corpus cannot support in either direction.
+    verifiedPct: verified > 0 && listings > 0 ? `${Math.round((verified / listings) * 100)}%` : null,
   };
 
   return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;

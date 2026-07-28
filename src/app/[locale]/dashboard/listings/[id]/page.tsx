@@ -10,6 +10,7 @@ import EditListingForm from "@/components/EditListingForm";
 import ListingMediaManager from "@/components/ListingMediaManager";
 import ListingDocsManager from "@/components/ListingDocsManager";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
+import { listingDimensionState, verifiedBadgeText } from "@/lib/listingVerification";
 import { intakeFields } from "@/lib/assetFields";
 
 const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
@@ -102,13 +103,13 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
     lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدَّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
-    permit: "رخصة الإعلان", expires: "تنتهي", verifiedOwner: "مالك موثّق", pendingV: "قيد التحقّق",
+    permit: "رخصة الإعلان", expires: "تنتهي", pendingV: "قيد التحقّق",
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ", cannot: "تعذّرت إعادة النشر:",
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string, string>,
   } : {
     back: "My listings", edit: "Edit details", viewPublic: "View public listing", locked: "Licence and verification",
     lockedNote: "The advertising licence number and ownership verification are not edited here; changing them goes through SAT review and protects the Verified badge.",
-    permit: "Advertising licence", expires: "Expires", verifiedOwner: "Verified owner", pendingV: "Pending verification",
+    permit: "Advertising licence", expires: "Expires", pendingV: "Pending verification",
     pause: "Pause", resume: "Republish", working: "Working", cannot: "Cannot republish:",
     st: { published: "Published", archived: "Paused", draft: "Draft", pending_review: "In review", approved: "Approved", rejected: "Rejected" } as Record<string, string>,
   };
@@ -118,7 +119,11 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   const blocked = fails.length ? gateReasonsText(fails, ar) : null;
   const price = L.deal_type === "lease" ? L.asking_rent_sqm : L.sale_price;
   const title = (ar ? L.title_ar : L.title_en) || L.title_en;
-  const verified = L.ownership_verified || L.authorization_verified || L.is_sat_listed;
+  // C4, then ADV-1. The owner was told their listing was verified when it was our
+  // own stock, or when a broker had declared an authorisation. The dashboard is
+  // where an owner learns what still has to happen, so it now reports the ownership
+  // dimension itself: a real method, a date and a reviewer, or it is still pending.
+  const verified = listingDimensionState(L as any, "ownership") === "verified";
   const expiry = L.ad_permit_expires_at ? new Date(L.ad_permit_expires_at).toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric" }) : null;
 
   return (
@@ -187,7 +192,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
           <div>
             <div className="muted" style={{ fontSize: 11.5 }}>{ar ? "التحقّق" : "Verification"}</div>
             <div style={{ marginTop: 5 }}>
-              <span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: 13 }}>{verified ? t.verifiedOwner : t.pendingV}</span>
+              <span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: 13 }}>{verified ? verifiedBadgeText("ownership", ar) : t.pendingV}</span>
             </div>
           </div>
         </div>

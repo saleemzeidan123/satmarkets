@@ -115,7 +115,12 @@ export function Ph({ src, label, alt, h = 158, dark = false, style, badges, chil
   );
 }
 
-export function Verified({ text = "Verified owner" }: { text?: string }) {
+// The green chip. It names WHAT was verified, never the bare fact of it, so the
+// text is required: a default of "Verified owner" is how one boolean came to
+// stand in for four separate checks on every card in the product (O3).
+// Draw it only from src/components/VerificationState.tsx, which decides whether
+// a record has earned one at all.
+export function Verified({ text }: { text: string }) {
   return <span className="verified"><span className="dot" />{text}</span>;
 }
 

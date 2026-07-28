@@ -101,6 +101,156 @@ for (const section of ["invest", "hbu"] as const) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// ADV-1, findings 3 and 24, owner decision O3, decision D24 in both directions
+//
+// A badge names its own gate, and no badge is the correct output for a record
+// nobody has checked. Neither statement can be enforced by a typecheck: every
+// defect this section pins compiled cleanly, rendered correctly and shipped. So
+// the guard is written against the surfaces themselves, and it fails the moment
+// a page starts deciding for itself what "verified" means.
+// ---------------------------------------------------------------------------
+
+function surfaceFiles(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) surfaceFiles(full, out);
+    else if (/\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name)) out.push(full);
+  }
+  return out;
+}
+
+const SURFACES = [...surfaceFiles(join(ROOT, "app")), ...surfaceFiles(join(ROOT, "components"))];
+const rel = (f: string) => f.slice(ROOT.length + 1);
+
+// The chip primitive, the resolver's own renderer, and the surfaces handed an
+// already-resolved list by the server. Anything else drawing this chip is drawing
+// it from a field it read and interpreted itself, which is finding 3.
+const CHIP_ALLOWED = new Set([
+  "components/satkit.tsx",
+  "components/VerificationState.tsx",
+  "components/ListingEnquiry.tsx",
+  "components/ListerBadge.tsx",
+  "app/[locale]/lister/[id]/page.tsx",
+]);
+
+test("ADV-1: the verified chip is drawn only where the resolver decides it", () => {
+  for (const f of SURFACES) {
+    if (CHIP_ALLOWED.has(rel(f))) continue;
+    assert.doesNotMatch(
+      code(readFileSync(f, "utf8")),
+      /className="verified"/,
+      `${rel(f)} draws the verified chip without going through src/lib/listingVerification.ts`
+    );
+  }
+});
+
+test("ADV-1: no rendering surface resolves a badge from ownerVerified", () => {
+  // gate.ts stays the truth source and ADV-1 extends rather than replaces it. But a
+  // page calling ownerVerified renders one boolean as one badge, and that boolean is
+  // set on all 88 published rows, none of which anybody has checked.
+  for (const f of SURFACES) {
+    assert.doesNotMatch(code(readFileSync(f, "utf8")), /\bownerVerified\b/, rel(f));
+  }
+});
+
+test("ADV-1: no surface carries the retired bare owner claim", () => {
+  for (const f of SURFACES) {
+    const c = code(readFileSync(f, "utf8"));
+    assert.doesNotMatch(c, /"Verified owner"/, `${rel(f)} still prints the retired claim`);
+    assert.doesNotMatch(c, /\bverifiedOwner\b/, `${rel(f)} still reads the retired string key`);
+  }
+});
+
+test("ADV-1: neither dictionary can hand a surface the retired claim back", () => {
+  for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
+    const flat = JSON.stringify(dict);
+    assert.doesNotMatch(flat, /"verifiedOwner"/, `${locale}.json still defines verifiedOwner`);
+    for (const k of ["checkedOn", "verifiedAgeYear", "verifiedAgeYears"]) {
+      assert.ok(!(k in (dict.ld ?? {})), `${locale}.json ld.${k} outlived the freshness line it fed`);
+    }
+  }
+});
+
+test("ADV-1: the chip component refuses to supply its own wording", () => {
+  // The default was "Verified owner". A default is how one boolean came to stand in
+  // for four separate checks on every card in the product.
+  const kit = readFileSync(join(ROOT, "components/satkit.tsx"), "utf8");
+  assert.match(kit, /export function Verified\(\{ text \}: \{ text: string \}\)/);
+  assert.doesNotMatch(code(kit), /text\s*=\s*"/, "satkit's Verified must not default its wording");
+});
+
+test("ADV-1: the listings filter is the same four part chain as the badge", () => {
+  const c = code(readFileSync(join(ROOT, "app/[locale]/listings/page.tsx"), "utf8"));
+  // One place expresses the chain, and both filters route through it.
+  assert.equal(
+    c.split("verifiedOnly(").length - 1,
+    2,
+    "both the primary and the fallback query must use the shared verified filter"
+  );
+  assert.equal(
+    c.split('eq("ownership_verified"').length - 1,
+    1,
+    "the flag is read in exactly one place, inside verifiedOnly"
+  );
+  for (const part of ['eq("is_demo", false)', 'not("verified_by", "is", null)', 'in("verification_method"']) {
+    assert.ok(c.includes(part), `the verified filter is missing ${part}`);
+  }
+  assert.match(c, /verifiedBadges\(/, "the card badge must come from the resolver");
+});
+
+test("ADV-1: the home verified count cannot outrun the badge on the card", () => {
+  const c = code(readFileSync(join(ROOT, "app/[locale]/page.tsx"), "utf8"));
+  for (const part of [
+    'eq("ownership_verified", true)',
+    'eq("is_demo", false)',
+    'not("verified_by", "is", null)',
+    'in("verification_method"',
+  ]) {
+    assert.ok(c.includes(part), `the home KPI count is missing ${part}`);
+  }
+  // A proportion of nothing is not a proportion, and printing 0% states a rate.
+  assert.match(c, /verifiedPct:\s*verified > 0 &&/, "the verification rate must suppress at zero");
+});
+
+test("ADV-1, D24: a record in our own tables is indexed, not verified", () => {
+  // The place autocomplete returned verified: true for any row in our districts
+  // table, which means only that we hold a record of the place. D24 runs in both
+  // directions: green must appear for evidence-backed verification, and must not
+  // appear for anything else.
+  const places = code(readFileSync(join(ROOT, "app/api/places/route.ts"), "utf8"));
+  assert.doesNotMatch(places, /\bverified\b/, "the places API must not describe a record as verified");
+  const mh = code(readFileSync(join(ROOT, "components/MarketingHome.tsx"), "utf8"));
+  assert.doesNotMatch(mh, /o\.verified/, "the suggestion chip must not read a verified flag");
+  assert.match(mh, /o\.indexed/, "the suggestion chip must read the indexed flag");
+});
+
+test("ADV-1: the enquiry rail badge is conditional on the record", () => {
+  // This chip was unconditional. Every listing on the platform carried a green
+  // "Verified owner" directly above the enquiry form, reading no field at all.
+  const c = code(readFileSync(join(ROOT, "components/ListingEnquiry.tsx"), "utf8"));
+  assert.match(c, /badges\.map\(/, "the enquiry badges must come from a resolved list");
+  assert.match(c, /badges\?:\s*string\[\]/, "the resolved list is passed in, never computed here");
+});
+
+test("ADV-1: the print flyer and the owner dashboard resolve like every other surface", () => {
+  for (const [file, needle] of [
+    ["app/[locale]/listings/[id]/flyer/page.tsx", /verifiedBadgeTexts\(/],
+    ["app/[locale]/dashboard/listings/[id]/page.tsx", /listingDimensionState\(/],
+    ["app/[locale]/compare/page.tsx", /listingDimensionState\(/],
+  ] as const) {
+    const c = code(readFileSync(join(ROOT, file), "utf8"));
+    assert.match(c, needle, `${file} must resolve verification through the shared module`);
+    // The C4 three way OR: ownership, or authorisation, or the row being our own
+    // stock, all printed as one green claim.
+    assert.doesNotMatch(
+      c,
+      /ownership_verified\s*\|\|\s*\w+\.authorization_verified/,
+      `${file} still runs the C4 three way OR`
+    );
+  }
+});
+
 test("ruling 3: neither modelling page renders the verified badge", () => {
   // Verified green is reserved for evidence-backed verification. On these two pages
   // there is no record to back it, so the component must not be reachable at all.
@@ -207,14 +357,23 @@ test("ruling 4: no page source hardcodes a real building or company", () => {
   assert.deepEqual(offenders, [], `named entities hardcoded in page source:\n${offenders.join("\n")}`);
 });
 
-test("C4: the verified surfaces filter on ownership_verified alone", () => {
+test("C4, narrowed by ADV-1: the verified surfaces filter no wider than ownership_verified", () => {
+  // C4 required these queries to stop widening past ownership_verified. ADV-1 then
+  // narrowed them further, because the flag is set on all 88 published rows and
+  // none of them has been checked by anyone, so the predicate is now the four part
+  // chain. The original requirement survives inside it: nothing here may match a
+  // row on authorisation or on the listing being our own stock.
   const home = readFileSync(join(ROOT, "app/[locale]/page.tsx"), "utf8");
   const listings = readFileSync(join(ROOT, "app/[locale]/listings/page.tsx"), "utf8");
   assert.match(home, /\.eq\("ownership_verified",\s*true\)/, "home owner-verified KPI must count ownership_verified rows");
-  // Two of them: the result query and the facet-count query. A facet count that
-  // disagrees with the list it describes is its own small false claim.
-  const hits = listings.match(/\.eq\("ownership_verified",\s*true\)/g) ?? [];
-  assert.equal(hits.length, 2, "both the /listings result query and its facet counts must use the same predicate");
+  for (const [name, src] of [["home", code(home)], ["listings", code(listings)]] as const) {
+    assert.doesNotMatch(src, /\.or\(\s*"[^"]*authorization_verified/, `${name} widens the verified predicate past ownership`);
+    assert.doesNotMatch(src, /\.or\(\s*"[^"]*is_sat_listed/, `${name} counts our own stock as verified`);
+  }
+  // The result query and the facet-count query still have to agree with each other:
+  // a facet count that disagrees with the list it describes is its own false claim.
+  // They agree by sharing one predicate rather than by repeating it.
+  assert.equal(code(listings).split("verifiedOnly(").length - 1, 2, "both /listings queries must use the shared predicate");
 });
 
 // --- ruling 3: /about describes a standard, not a corpus ---
@@ -562,10 +721,16 @@ test("C4: the featured card verification flag is exactly ownership_verified", ()
   // computed its badge from ownership_verified || authorization_verified ||
   // is_sat_listed and then labelled it "Verified owner". A scan for .or() cannot
   // see that, so the flag is asserted directly.
+  //
+  // ADV-1 removed the boolean entirely: the card is handed the list of badges the
+  // record has earned, each naming its own gate. The widening this test was written
+  // to catch is therefore no longer expressible on this page, and the assertion is
+  // that it stays that way.
   const home = code(readFileSync(join(ROOT, "app/[locale]/page.tsx"), "utf8"));
-  assert.doesNotMatch(home, /verified:\s*!!\([^)]*authorization_verified/, "the featured card badge counts more than ownership_verified");
-  assert.doesNotMatch(home, /verified:\s*!!\([^)]*is_sat_listed/, "the featured card badge counts our own stock as owner-verified");
-  assert.match(home, /verified:\s*!!\(l as any\)\.ownership_verified/, "the featured card badge must read ownership_verified alone");
+  assert.doesNotMatch(home, /verified:\s*!!/, "the featured card must not compute a verification boolean of its own");
+  assert.doesNotMatch(home, /authorization_verified/, "the featured card badge counts more than ownership");
+  assert.doesNotMatch(home, /is_sat_listed/, "the featured card badge counts our own stock as verified");
+  assert.match(home, /badges:\s*listingVerifiedDimensions\(/, "the featured card badges must come from the resolver");
 });
 
 test("ruling 3: the dead year-on-year band caption stays deleted", () => {

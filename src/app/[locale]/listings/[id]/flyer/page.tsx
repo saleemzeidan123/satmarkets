@@ -13,6 +13,7 @@ import { SITE } from "@/components/JsonLd";
 import QRCode from "qrcode";
 import { getDictionary } from "@/i18n/getDictionary";
 import { getListingById } from "@/lib/queries/listings";
+import { verifiedBadgeTexts } from "@/lib/listingVerification";
 import { localeMeta } from "@/lib/meta";
 
 // Branded property flyer: the landlord outreach artifact. Print-to-PDF via the
@@ -67,7 +68,11 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
   const unit = lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR");
-  const verified = l.ownership_verified || l.authorization_verified || l.is_sat_listed;
+  // C4, then ADV-1. This read ownership OR authorisation OR the row being our own
+  // stock, and printed one green "Verified owner" tag for any of the three, onto a
+  // document a landlord takes into a meeting. It now prints the badges the record
+  // has earned, each naming its own gate, which today is none of them.
+  const badges = verifiedBadgeTexts(l as any, null, ar);
   const row = lease ? pickIndexRow(idxRows, l.asset_type, l.building_grade) : null;
   const v = lease ? marketVerdict(l.asking_rent_sqm, row, l.districts?.name_en, l.districts?.name_ar) : null;
   const today = new Date().toISOString().slice(0, 10);
@@ -92,7 +97,11 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
         <img src={photoFor(l.asset_type, l.id)} alt={title} style={{ width: "100%", height: 260, objectFit: "cover", display: "block" }} />
         <div style={{ padding: "22px 26px" }}>
           <div className="row gap8 wrap">
-            {verified && <span className="tag" style={{ color: "var(--green)", background: "var(--green-wash)", borderColor: "var(--green-line)" }}>{t.verifiedOwner}</span>}
+            {/* Verified badges only. Each string names the dimension it rests on and
+                is resolved on the server; confirmed green is reserved for exactly this. */}
+            {badges.map((b, i) => (
+              <span key={`v${i}`} className="tag" style={{ color: "var(--green)", background: "var(--green-wash)", borderColor: "var(--green-line)" }}>{b}</span>
+            ))}
             <span className="tag">{type} · {lease ? t.lease : t.sale}</span>
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
             <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
