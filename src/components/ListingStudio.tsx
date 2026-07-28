@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import MediaBrief from "@/components/MediaBrief";
 import LocationPicker from "@/components/LocationPicker";
 import { intakeFields, type AssetField } from "@/lib/assetFields";
 import { assetLabel, dealLabel } from "@/lib/labels";
@@ -105,6 +106,10 @@ export type StudioInitial = {
   attributes: Record<string, unknown>;
   photo_count: number;
   floorplan_count: number;
+  // The plan_type recorded against each plan already attached. Counted alone, a plan
+  // is a plan; the media standard also asks whether it is a plan of the kind this
+  // asset is shown by, and that question needs the recorded type, not the count.
+  floorplan_types: (string | null)[];
   document_count: number;
 };
 
@@ -158,6 +163,7 @@ function seedFrom(initial: StudioInitial | null | undefined) {
     stored: {
       photos: initial?.photo_count ?? 0,
       floorplans: initial?.floorplan_count ?? 0,
+      planTypes: (initial?.floorplan_types ?? []) as (string | null)[],
       documents: initial?.document_count ?? 0,
     },
   };
@@ -806,6 +812,7 @@ export default function ListingStudio({
         if (r.ok) addedPhotos++;
       } catch {}
     }
+    const addedPlanTypes: (string | null)[] = [];
     for (let i = 0; i < floorFiles.length; i++) {
       const file = floorFiles[i];
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
@@ -815,7 +822,7 @@ export default function ListingStudio({
       fd.append("plan_type", floorTypes[i] ?? defaultPlanType(f.asset_type));
       try {
         const r = await fetch(`/api/listings/${id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd });
-        if (r.ok) addedPlans++;
+        if (r.ok) { addedPlans++; addedPlanTypes.push(floorTypes[i] ?? defaultPlanType(f.asset_type)); }
       } catch {}
     }
     if (brochureFile) {
@@ -840,6 +847,7 @@ export default function ListingStudio({
     setStored((p) => ({
       photos: p.photos + addedPhotos + photoUrls.length,
       floorplans: p.floorplans + addedPlans,
+      planTypes: [...p.planTypes, ...addedPlanTypes],
       documents: p.documents + addedDocs,
     }));
     setFiles([]);
@@ -955,6 +963,18 @@ export default function ListingStudio({
                 </select>
               </div>
             </>
+          )}
+
+          {step.kind === "media" && (
+            <MediaBrief
+              assetType={f.asset_type}
+              held={{
+                photos: stored.photos + photoUrls.length + files.length,
+                planTypes: [...stored.planTypes, ...floorTypes.slice(0, floorFiles.length)],
+                video: f.video_url.trim().length > 0,
+              }}
+              ar={ar}
+            />
           )}
 
           {step.platformKeys.map(renderPlatform)}

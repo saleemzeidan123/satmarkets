@@ -77,7 +77,10 @@ export default async function NewListingPage({
       // managing existing media is the dashboard editor's job.
       const [photos, floorplans, brochures, documents] = await Promise.all([
         sb.from("listing_media").select("id", { count: "exact", head: true }).eq("listing_id", draftId).eq("kind", "photo"),
-        sb.from("listing_media").select("id", { count: "exact", head: true }).eq("listing_id", draftId).eq("kind", "floorplan"),
+        // Plans are read as rows rather than counted, because the media standard asks
+        // whether an attached plan is of a kind this asset is shown by, and the recorded
+        // type is the only thing that answers it. A row with no recorded type stays null.
+        sb.from("listing_media").select("plan_type").eq("listing_id", draftId).eq("kind", "floorplan"),
         sb.from("listing_media").select("id", { count: "exact", head: true }).eq("listing_id", draftId).eq("kind", "brochure"),
         sb.from("listing_documents").select("id", { count: "exact", head: true }).eq("listing_id", draftId).is("deleted_at", null),
       ]);
@@ -110,7 +113,8 @@ export default async function NewListingPage({
         district_id: L.district_id ? String(L.district_id) : null,
         attributes,
         photo_count: photos.count ?? 0,
-        floorplan_count: floorplans.count ?? 0,
+        floorplan_count: floorplans.data?.length ?? 0,
+        floorplan_types: (floorplans.data ?? []).map((r: any) => (r?.plan_type == null ? null : String(r.plan_type))),
         document_count: (brochures.count ?? 0) + (documents.count ?? 0),
       };
     }
