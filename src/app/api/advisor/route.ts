@@ -5,6 +5,7 @@ import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
 import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type PeriodStatus } from "@/lib/market/valueEvidence";
 import { readNumericIntent } from "@/lib/market/numericIntent";
+import { buildExternalPrompt, ADVISOR_PROMPT_PARTS } from "@/lib/aiBoundary";
 
 const key = () => process.env.AI_API_KEY || process.env.deepseek_key;
 const base = () => process.env.AI_BASE_URL || "https://api.deepseek.com";
@@ -107,7 +108,19 @@ async function callProvider(baseUrl: string, k: string, mdl: string, messages: a
 // Primary: the configured provider (DeepSeek by default). Fallback: the Anthropic
 // key already in the environment, via Anthropic's OpenAI-compatible endpoint, so
 // the advisor stays alive when one provider is down (two-provider resilience).
+//
+// ADV-0 enforcement point. Both providers are third parties outside our process,
+// so every call through here crosses the external boundary. What the advisor is
+// permitted to send is declared once, in ADVISOR_PROMPT_PARTS, and checked here
+// rather than described in a system prompt: a system prompt asks a model to
+// behave, a boundary decides what the model receives.
+//
+// A denial returns null, which is the same value every caller below already
+// handles by degrading to a written deterministic sentence. So the failure mode
+// of a closed boundary is a slightly plainer advisor, never a silent send.
 async function llm(messages: any[], json: boolean): Promise<string | null> {
+  const boundary = buildExternalPrompt(ADVISOR_PROMPT_PARTS);
+  if (!boundary.allowed) return null;
   const k = key();
   if (k) {
     const out = await callProvider(base(), k, model(), messages, json);
