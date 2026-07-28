@@ -5,6 +5,7 @@ import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isLocale } from "@/i18n/config";
 import { assetLabel, dealLabel, gradeLabel, cityLabel } from "@/lib/labels";
+import { fetchAccountSaved, promoteDeviceFolders, setShortlist } from "@/lib/saved";
 import type { Listing } from "@/lib/types";
 
 const KEY = "satm_saved";
@@ -20,6 +21,28 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const [folders, setFolders] = useState<Record<string, string>>({});
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [px, setPx] = useState<Record<string, { was: number; now: number }>>({});
+  // Whether the shortlist names on this page live on the account or only in this browser.
+  // The page says which, because a person filing four spaces into a shortlist deserves to
+  // know whether that survives opening the site on their phone.
+  const [onAccount, setOnAccount] = useState(false);
+
+  // ADV-2D. The shortlist moves to the account for a signed-in person, and the device map
+  // is promoted into it once. A signed-out visitor keeps exactly the page they had.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const account = await fetchAccountSaved();
+      if (cancelled || !account) return;
+      const promoted = await promoteDeviceFolders(account);
+      if (cancelled) return;
+      const filed: Record<string, string> = {};
+      account.forEach((i) => { if (i.shortlist) filed[i.listing_id] = i.shortlist; });
+      Object.assign(filed, promoted);
+      setOnAccount(true);
+      setFolders(filed);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let saved: string[] = [];
@@ -55,6 +78,9 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     const next = { ...folders };
     if (name) next[id] = name; else delete next[id];
     setFolders(next);
+    // Signed in: the name belongs on the row, and this browser stops being a second store
+    // of it. Signed out: nothing changes, the map stays where it always was.
+    if (onAccount) { void setShortlist(id, name || null); return; }
     try { localStorage.setItem(FKEY, JSON.stringify(next)); } catch {}
   };
   const folderNames = Array.from(new Set(Object.values(folders))).sort();
@@ -115,7 +141,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
             {folderNames.map((n) => (
               <button key={n} onClick={() => setActiveFolder(n)} className={activeFolder === n ? "chip on" : "chip"}>{n} · {listings.filter((l) => folders[l.id] === n).length}</button>
             ))}
-            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/40">{T.fDevice}</span>}
+            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/40">{onAccount ? T.fAccount : T.fDevice}</span>}
           </div>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {shownL.map((l) => (
