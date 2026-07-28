@@ -9,6 +9,8 @@ import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict
 import { getDictionary } from "@/i18n/getDictionary";
 import { verifiedBadges } from "@/components/VerificationState";
 import { listingDimensionState } from "@/lib/listingVerification";
+import DecisionPackPanel from "@/components/DecisionPackPanel";
+import type { PackListing } from "@/lib/decisionPack";
 
 type SP = { ids?: string };
 
@@ -75,6 +77,13 @@ export default async function ComparePage({ params, searchParams }: { params: { 
   // best value = most below its district median (lease with a verdict)
   let bestIdx = -1, bestDelta = Infinity;
   items.forEach((l, i) => { const v = l.__verdict; if (v && v.deltaPct != null && v.deltaPct < bestDelta) { bestDelta = v.deltaPct; bestIdx = i; } });
+
+  // How the decision pack names a candidate. The model holds ids only, on purpose, so the
+  // naming rule lives here beside the one the table headers already use: the title in the
+  // reader's language, and the reference code when the title is missing rather than a
+  // truncated id, which names nothing to the person reading it.
+  const titleById = new Map<string, string>(items.map((l: any) => [l.id, (ar ? l.title_ar : l.title_en) || l.reference_code || ""]));
+  const titleOf = (id: string) => titleById.get(id) || id;
 
   const GRID = `232px ${items.map(() => "1fr").join(" ")}`;
   const HeaderRow = ({ label, render }: { label: string; render: (l: any, i: number) => React.ReactNode }) => (
@@ -149,6 +158,11 @@ export default async function ComparePage({ params, searchParams }: { params: { 
             <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>
             <span className="muted" style={{ fontSize: 12.5 }}>{cp.note}</span>
           </div>
+
+          {/* ADV-2D. The table above arranges the figures. This states which of those
+              arrangements is a comparison, which is withheld and why, and what is missing
+              from each record. It reads the same rows; it computes nothing of its own. */}
+          <DecisionPackPanel listings={items as PackListing[]} titleOf={titleOf} ar={ar} />
         </div>
       </div>
     </div>
