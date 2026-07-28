@@ -289,8 +289,9 @@ sending an unauthorized message.
 
 ### ADV-3. Model-agnostic AI platform
 
-**ADV-3A delivered**: one boundary-enforcing gateway for every external model call, and
-the closure of finding 54. Artefacts: `src/lib/ai/message.ts` (a message carries its own
+**ADV-3A delivered** in `6e9b19f`. Closure record and handback: `docs/adv-3a-closure.md`.
+One boundary-enforcing gateway for every external model call, and the closure of finding 54.
+Artefacts: `src/lib/ai/message.ts` (a message carries its own
 data classification, and a system prompt fills its live values through named slots, so
 nothing reaches a prompt without being declared), `src/lib/ai/router.ts` (task profiles, a
 candidate register in which every candidate states an explicit evaluation status, and a
