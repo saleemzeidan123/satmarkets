@@ -127,7 +127,14 @@ export interface ListingFacts {
 
 // The two registry keys the platform-level price check already owns, so they are
 // not counted twice. Same set as the intake form's BASE_OWNED, deliberately.
-const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
+// Exported because a surface that asks for these fields must not also claim a
+// `field:` check for them: the check does not exist, and a step that counted one
+// would report a denominator it can never fill.
+export const PLATFORM_OWNED_FIELD_KEYS: ReadonlySet<string> = new Set([
+  "asking_rent_sqm",
+  "sale_price",
+]);
+const BASE_OWNED = PLATFORM_OWNED_FIELD_KEYS;
 
 // A professional set, not a gallery. Six is the point past which a viewer can see
 // the space rather than a photograph of it.

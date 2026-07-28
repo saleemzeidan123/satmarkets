@@ -7,11 +7,14 @@ import LocationPicker from "@/components/LocationPicker";
 import type { DistrictPoint } from "@/lib/nearestDistrict";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
+import { PLATFORM_OWNED_FIELD_KEYS } from "@/lib/listingQuality";
 
 // These are captured by the base fields above (Area / Asking or Sale price), so
 // they are not shown again in the per-asset section even though the registry
-// carries them as commercial fields.
-const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
+// carries them as commercial fields. The same set the completeness model excludes
+// from its registry checks, imported rather than restated so the form and the
+// score cannot drift into counting one field twice.
+const BASE_OWNED = PLATFORM_OWNED_FIELD_KEYS;
 const SECTION_ORDER: DisplaySection[] = ["space", "commercial", "compliance"];
 const sectionLabel = (s: DisplaySection, ar: boolean): string => {
   if (s === "commercial") return ar ? "الشروط التجارية" : "Commercial terms";
