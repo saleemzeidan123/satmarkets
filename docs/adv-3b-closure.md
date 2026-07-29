@@ -197,7 +197,7 @@ The claim holds, and the first new caller of the API was the thing that checked 
 | `node scripts/prose-scan.mjs` | 0 hardcoded prose strings in 0 files, exit 0 |
 | `npm run eval` | 12 pass, 0 fail, 10 unavailable |
 | `npm run eval -- --subject=model` | 0 pass, 0 fail, 10 unavailable, no provider configured |
-| Production build | Vercel deployment READY |
+| Production build | Vercel `dpl_FuD9dCouWC4DgNw6GvxTVz5kJP5X` READY (`97d1c1e`) |
 
 The local `npm run build` fails for an environmental reason only: `next/font` cannot reach
 fonts.googleapis.com from this container, so Hanken Grotesk, IBM Plex Mono, IBM Plex Sans
@@ -220,6 +220,41 @@ test suite quietly stop being one.
 | No real private data sent to any provider | Gold set is invented throughout; `gold.test.ts` asserts the registration and the invented vocabulary; nothing outside `src/lib/eval/` imports the harness |
 | No provider selected merely because it is inexpensive | Three firewall tests in `run.test.ts`; the candidate type still carries no price field |
 | No autonomous consequential writes | Every tool declares `effect: "read"`; there is no write tool |
+
+## Live evidence
+
+Commits: `3e36d52` (tools, permission, agents) and `97d1c1e` (gold set, graders, harness,
+the two parser fixes). Deployment `dpl_FuD9dCouWC4DgNw6GvxTVz5kJP5X`, READY, production.
+
+Most of this package is server-side library code with no rendered surface, so there is nothing
+to look at for the tools, the permission layer or the agent boundaries beyond their tests. The
+two parser fixes are different: they sit directly under `/listings`, and they are what the gold
+set found, so they are the thing worth exercising on the deployed build rather than only in a
+test runner.
+
+**Candidate ordering, EN.** `/en/listings?q=office for lease in Riyadh for the Northwind
+Logistics expansion` renders the chips Office, Lease, Riyadh and `Text: northwind logistics
+expansion`. Before the fix the asset chip read Warehouse, because "logistics" inside a company
+name outranked the word the person led with. The result count is zero, which is correct and not
+a defect: the free terms are conjunctive and no sample listing is titled for an invented
+company, so the honest answer to that query is that nothing matches.
+
+**Candidate ordering, AR.** `/ar/listings?q=مكتب للإيجار في الرياض للتوسعة اللوجستية` renders
+مكاتب, إيجار, الرياض and `نص: للتوسعه اللوجستيه`. The warehouse synonym لوجستي did not take the
+asset slot. The Arabic path was fixed by the same ordering function rather than by a second
+rule, which is why it behaves identically.
+
+**Ranges, EN.** `/en/listings?q=office 200 to 400 m2 in Riyadh` renders Office, Riyadh,
+`From 200 m²` and `Up to 400 m²`, and returns four spaces at 320, 400 and 250 m². Before the
+fix this read as a single target of 400 with 200 disclosed in `ignored`.
+
+**Ranges, AR.** `/ar/listings?q=مكتب من 200 إلى 400 م2 في الرياض` renders مكاتب, الرياض,
+`من 200 م²` and `حتى 400 م²`, four مساحات, the same three areas. The standard spelling إلى
+reaches the joiner through `foldText`, which folds إ to ا and ى to ي, so the joiner list does
+not have to carry every orthography separately.
+
+Arabic renders as readable script in the DOM and in the screenshots, in true RTL, with Western
+numerals in both locales, which is the evidence form Codex item 5 asked for.
 
 ## Blockers, unchanged and owner-side
 
