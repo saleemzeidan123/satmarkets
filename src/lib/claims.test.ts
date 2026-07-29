@@ -680,14 +680,52 @@ test("ruling 3: the retired recency chip is gone from both pages and both dictio
 // seen will not find the same defect one field over, so this one is scoped to the
 // claim rather than to the file.
 
+// C19 a third time, and this is the version that was measured rather than
+// assumed. The guard above reached `src/components`, `src/app`, `src/lib/meta.ts`
+// and `scripts/og-cards.mjs`, which is where the claims had been FOUND, and 147
+// source files sat outside it. Running these same frames over those 147 turned up
+// three shipped modules carrying corpus claims:
+//
+//   src/lib/search/searchNote.ts   the sentence above every advisor search result,
+//                                  in both languages: "7 verified matches,
+//                                  owner-verified and deduplicated". /api/search
+//                                  filters on `status = published`, never on
+//                                  `ownership_verified`.
+//   src/lib/format.ts              the `verifiedMatch` counted noun that sentence
+//                                  was built from, now deleted with its last caller.
+//   src/lib/legalContent.ts        the draft terms, privacy and contact documents:
+//                                  "verified owners and licensed brokers", "publish
+//                                  verified listings", "grounded in the verified
+//                                  index" and its Arabic twin.
+//
+// None of the three is a page or a component, so none was ever in reach. The scope
+// is therefore the claim and not the folder: every non-test source file under `src`
+// and under `scripts`.
+//
+// Test sources are excluded as a set rather than one by one, and the reason is
+// structural: a guard has to be able to write down what it forbids, and a test of a
+// correction has to be able to write down the wording it corrected. Both files that
+// quote these needles today do exactly that, `claims.test.ts` in `CORPUS_BANNED`
+// itself and `agents.test.ts` feeding "3 verified matches" to `unvouchedFigures` as
+// input. No string in a test file reaches a reader.
+function claimSources(dir: string, exts: RegExp, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    if (statSync(full).isDirectory()) claimSources(full, exts, out);
+    else if (exts.test(name) && !/\.test\.[cm]?tsx?$/.test(name)) out.push(full);
+  }
+  return out;
+}
+
 const CLAIM_SOURCES: string[] = [
-  ...[...sourceFiles(join(ROOT, "components"))],
-  ...[...sourceFiles(join(ROOT, "app"))],
-  join(ROOT, "lib/meta.ts"),
-  join(ROOT, "..", "scripts/og-cards.mjs"),
+  ...claimSources(ROOT, /\.(ts|tsx)$/),
+  ...claimSources(join(ROOT, "..", "scripts"), /\.(mjs|cjs|js|ts)$/),
 ];
 
-test("ruling 3: no component or script source carries a corpus claim", () => {
+test("ruling 3: no source file anywhere carries a corpus claim", () => {
+  // The count is asserted so that a future refactor which moves a folder out of the
+  // walk fails here rather than silently shrinking the guard back to where it was.
+  assert.ok(CLAIM_SOURCES.length > 200, `the claim scan reaches only ${CLAIM_SOURCES.length} files`);
   const offenders: string[] = [];
   for (const f of CLAIM_SOURCES) {
     const src = code(readFileSync(f, "utf8"));
@@ -700,6 +738,19 @@ test("ruling 3: no component or script source carries a corpus claim", () => {
     }
   }
   assert.deepEqual(offenders, [], `claims beyond the record in source:\n${offenders.join("\n")}`);
+});
+
+test("ruling 3: the claim scan reaches the three modules that were outside it", () => {
+  // Naming them is the point. A scan that reports zero offenders proves nothing
+  // about its own reach, and the previous scan reported zero for weeks while these
+  // three carried claims.
+  const rel = new Set(CLAIM_SOURCES.map((f) => f.replace(join(ROOT, ".."), "").replace(/^\//, "")));
+  for (const f of ["src/lib/search/searchNote.ts", "src/lib/format.ts", "src/lib/legalContent.ts", "src/lib/agents/agents.ts", "src/middleware.ts", "scripts/seed-demo.mjs"]) {
+    assert.ok(rel.has(f), `${f} is outside the claim scan`);
+  }
+  for (const f of ["src/lib/claims.test.ts", "src/lib/agents/agents.test.ts"]) {
+    assert.equal(rel.has(f), false, `${f} is a test source and must stay outside the claim scan`);
+  }
 });
 
 test("ruling 3: the social card and its alt text describe the card, not the corpus", () => {

@@ -382,6 +382,25 @@ approximation but not a pair, so "200 to 400 m2" read as a single target of 400;
 now read once on the gap between two figures, in every form it is written including both
 dashes, "الي" and "و". Both carry regression tests. 1021 tests.
 
+**Owner ruling 3 residual delivered.** Closure record: `docs/ruling-3-residual-closure.md`.
+The item `docs/ruling-3-4-closure.md` left open at its own lines 316 to 321: the claims guard
+reached `src/components`, `src/app`, `src/lib/meta.ts` and `scripts/og-cards.mjs` only, so a
+corpus claim in a library module or a generated content file sat outside every gate. It was
+measured before it was scoped, by extracting the live `CORPUS_BANNED` frames out of
+`src/lib/claims.test.ts` and running them over the 147 files the guard did not reach, and it was
+real: 20 offenders, of which three were shipped modules. The advisor search note said "7 verified
+matches, owner-verified and deduplicated" above rows the search had filtered on `status =
+published` alone, with an Arabic twin additionally asserting a licence authorisation that 0 of 88
+published listings carry; it now counts matches and reports the owner-verified subset separately,
+only when the caller has counted it off the rows it rendered, with the Arabic clause written as a
+prepositional phrase so it stays invariant across the dual. Five claim sites and their Arabic
+twins in the legal draft were corrected with the Rent Index attribution restored per owner ruling
+2. `CLAIM_SOURCES` now reaches every non-test source under `src` and `scripts` and asserts its own
+reach so it cannot silently shrink. The remaining 13 hits are the two test files that quote the
+needles as needles. The wrong "Next" section that shipped in `1cb0bd5` in both
+`docs/handback-adv-3b.md` and `docs/adv-3b-closure.md` is corrected on the record rather than
+overwritten. 1028 tests.
+
 Deliver: the six agents (discovery, listing copilot, opportunity matching, evidence
 auditor, deal analyst, operations); typed SAT tools; the deterministic calculation layer;
 the evaluation gold set that would let the router report an evaluated basis rather than a

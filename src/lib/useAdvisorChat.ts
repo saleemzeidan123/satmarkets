@@ -4,7 +4,7 @@ import { addWatch } from "@/lib/watches";
 import { formatPeriod } from "@/lib/market/period";
 import { searchNote } from "@/lib/search/searchNote";
 
-export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
+export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; ownership_verified?: boolean | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string; }
 
 /**
@@ -139,7 +139,12 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
    // Arabic lint can see it. It was written inline here, which is how an English
    // relaxation phrase came to sit inside an Arabic sentence and how "6 مطابقة"
    // shipped without counted-noun agreement.
-   const note = searchNote(j, results.length, locale, all.length);
+   // The verified count is taken from the rows that will be rendered, by the same
+   // rule finding 65 settled for the total: the sentence counts what is on the
+   // screen. `/api/search` filters on `status = published` and never on
+   // `ownership_verified`, so the badge has to be counted off the returned rows;
+   // it is not a property the query selected for.
+   const note = searchNote(j, results.length, locale, all.length, results.filter((r) => r.ownership_verified === true).length);
    setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
   } catch (e) {
    failed(isAbort(e));

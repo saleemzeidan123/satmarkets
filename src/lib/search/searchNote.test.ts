@@ -86,15 +86,80 @@ test("a budget relaxation with no usable cap falls back rather than printing an 
 // counted-noun formatter has to cross is asserted here, in the sentence people
 // actually read, not only in the formatter's own test.
 
-test("Arabic counted-noun agreement holds at 1, 2, 3, 10, 11, 99 and 100 verified matches", () => {
+test("Arabic counted-noun agreement holds at 1, 2, 3, 10, 11, 99 and 100 matches", () => {
   const a = answer({});
-  assert.equal(searchNote(a, 1, "ar").startsWith("مطابقة واحدة موثّقة"), true);
-  assert.equal(searchNote(a, 2, "ar").startsWith("مطابقتان موثّقتان"), true);
-  assert.equal(searchNote(a, 3, "ar").startsWith("3 مطابقات موثّقة"), true);
-  assert.equal(searchNote(a, 10, "ar").startsWith("10 مطابقات موثّقة"), true);
-  assert.equal(searchNote(a, 11, "ar").startsWith("11 مطابقة موثّقة"), true);
-  assert.equal(searchNote(a, 99, "ar").startsWith("99 مطابقة موثّقة"), true);
-  assert.equal(searchNote(a, 100, "ar").startsWith("100 مطابقة موثّقة"), true);
+  assert.equal(searchNote(a, 1, "ar").startsWith("مطابقة واحدة"), true);
+  assert.equal(searchNote(a, 2, "ar").startsWith("مطابقتان"), true);
+  assert.equal(searchNote(a, 3, "ar").startsWith("3 مطابقات"), true);
+  assert.equal(searchNote(a, 10, "ar").startsWith("10 مطابقات"), true);
+  assert.equal(searchNote(a, 11, "ar").startsWith("11 مطابقة"), true);
+  assert.equal(searchNote(a, 99, "ar").startsWith("99 مطابقة"), true);
+  assert.equal(searchNote(a, 100, "ar").startsWith("100 مطابقة"), true);
+});
+
+// ------------------------------------------------------------ owner ruling 3
+// The head sentence used to read "7 verified matches, owner-verified and
+// deduplicated" and, in Arabic, "7 مطابقات موثّقة. التحقق من المالك مباشرة، بلا
+// تكرار، مع سند الترخيص". `/api/search` filters on `status = published` and on
+// what was asked for, never on `ownership_verified`, so none of the three
+// assertions was supported by the query that produced the rows. The count now
+// counts matches, and the owner-verified subset is a separate clause that the
+// caller has to have counted.
+
+test("the corrected head asserts nothing about the corpus that the search did not select for", () => {
+  for (const n of [1, 2, 4, 11]) {
+    const en = searchNote(answer({}), n, "en");
+    assert.equal(/verified/.test(en), false, en);
+    assert.equal(/deduplicated/.test(en), false, en);
+    const ar = searchNote(answer({}), n, "ar");
+    assert.equal(ar.includes("موثّق"), false, ar);
+    assert.equal(ar.includes("سند الترخيص"), false, ar);
+    assert.equal(ar.includes("بلا تكرار"), false, ar);
+  }
+});
+
+test("a caller that has not counted the badge gets no verification clause invented for it", () => {
+  assert.equal(searchNote(answer({}), 4, "en"), "4 matches.");
+  assert.equal(searchNote(answer({}), 4, "ar"), "4 مطابقات.");
+  for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+    assert.equal(searchNote(answer({}), 4, "en", undefined, bad), "4 matches.", `verified=${String(bad)}`);
+    assert.equal(searchNote(answer({}), 4, "ar", undefined, bad), "4 مطابقات.", `verified=${String(bad)}`);
+  }
+});
+
+test("none verified reads as none, rather than as an absent clause", () => {
+  assert.equal(searchNote(answer({}), 4, "en", undefined, 0), "4 matches, none with a verified owner.");
+  assert.equal(searchNote(answer({}), 4, "ar", undefined, 0), "4 مطابقات، ولا واحدة بمالك موثّق.");
+});
+
+test("a partial verified count is reported as the subset it is, in both languages", () => {
+  assert.equal(searchNote(answer({}), 4, "en", undefined, 3), "4 matches, 3 with a verified owner.");
+  assert.equal(searchNote(answer({}), 4, "ar", undefined, 3), "4 مطابقات، منها 3 بمالك موثّق.");
+  assert.equal(searchNote(answer({}), 1, "en", undefined, 1), "1 match, 1 with a verified owner.");
+});
+
+test("the Arabic verification clause is invariant across every count boundary and stays Arabic", () => {
+  // The clause is a prepositional phrase and not an adjective on purpose: an
+  // adjective agrees with its noun, so a dual count would demand a dual
+  // adjective, which is exactly the agreement defect finding 57 was about.
+  for (const n of [1, 2, 3, 10, 11, 99, 100]) {
+    for (const v of [0, 1, 2, n]) {
+      const s = searchNote(answer({}), n, "ar", undefined, v);
+      assert.equal(LATIN.test(s), false, s);
+      assert.equal(ARABIC_INDIC.test(s), false, s);
+      assert.equal(/[\u2014\u2013]/.test(s), false, s);
+      assert.ok(s.includes("بمالك موثّق"), s);
+    }
+  }
+});
+
+test("the verification clause counts the rendered rows, so it can never exceed the head count", () => {
+  // The hook counts the badge off the rows it slices to, by the same rule
+  // finding 65 settled for the total. A clause larger than the head would mean
+  // the two numbers were counted from different arrays again.
+  const s = searchNote(answer({}), 4, "en", 7, 2);
+  assert.ok(s.startsWith("4 matches, 2 with a verified owner."), s);
+  assert.ok(s.includes("These are the closest 4 results of 7."), s);
 });
 
 test("the defect sentence itself is gone: no count above two is followed by the singular", () => {
@@ -109,9 +174,9 @@ test("the dual carries no numeral, in the note as well as in the formatter", () 
 });
 
 test("English pluralises the same phrase", () => {
-  assert.ok(searchNote(answer({}), 1, "en").startsWith("1 verified match,"));
-  assert.ok(searchNote(answer({}), 2, "en").startsWith("2 verified matches,"));
-  assert.ok(searchNote(answer({}), 100, "en").startsWith("100 verified matches,"));
+  assert.ok(searchNote(answer({}), 1, "en").startsWith("1 match"));
+  assert.ok(searchNote(answer({}), 2, "en").startsWith("2 matches"));
+  assert.ok(searchNote(answer({}), 100, "en").startsWith("100 matches"));
 });
 
 test("the relaxed sentence counts results with the oblique dual, because it follows a governing noun", () => {
@@ -132,14 +197,14 @@ test("clarify wins over every other state", () => {
 
 test("a relaxation that returned nothing reads as an empty result, not as a widened one", () => {
   const a = answer({ relaxed: true, relaxedBy: "place", place: { kind: "city", en: "Riyadh", ar: "الرياض" } });
-  assert.ok(searchNote(a, 0, "en").startsWith("No verified matches yet"));
-  assert.ok(searchNote(a, 0, "ar").startsWith("لا توجد مطابقات موثّقة لذلك بعد"));
+  assert.ok(searchNote(a, 0, "en").startsWith("No matches yet"));
+  assert.ok(searchNote(a, 0, "ar").startsWith("لا توجد مطابقات لذلك بعد"));
 });
 
 test("the sentence counts what the caller renders, not what the server said it found", () => {
   // The count is a parameter for this reason: a note that claims six while three
   // rows are on screen is the same class of untruth as an invented figure.
-  assert.ok(searchNote(answer({}), 3, "en").startsWith("3 verified matches"));
+  assert.ok(searchNote(answer({}), 3, "en").startsWith("3 matches"));
 });
 
 // ---------------------------------------------------------------- finding 65
@@ -151,10 +216,10 @@ test("the sentence counts what the caller renders, not what the server said it f
 
 test("the note counts the rendered rows, never the server total, in both languages", () => {
   const en = searchNote(answer({}), 4, "en", 7);
-  assert.ok(en.startsWith("4 verified matches"), en);
+  assert.ok(en.startsWith("4 matches"), en);
   assert.equal(en.startsWith("7"), false, "the live defect sentence");
   const ar = searchNote(answer({}), 4, "ar", 7);
-  assert.ok(ar.startsWith("4 مطابقات موثّقة"), ar);
+  assert.ok(ar.startsWith("4 مطابقات"), ar);
   assert.equal(ar.startsWith("7"), false, "the live Arabic defect sentence");
 });
 
@@ -169,7 +234,7 @@ test("English does not print the numeral one in front of a singular result", () 
   // "These are the closest 1 result of 7" is what a formatter writes and nobody
   // says. The count is still one; the sentence just stops counting out loud.
   const s = searchNote(answer({}), 1, "en", 7);
-  assert.ok(s.startsWith("1 verified match,"), s);
+  assert.ok(s.startsWith("1 match."), s);
   assert.ok(s.includes("This is the closest result of 7."), s);
 });
 
@@ -193,13 +258,13 @@ test("Arabic agreement still holds at every boundary when the total clause is pr
   // The clause carries a second numeral, and "من أصل" governs a bare one, so the
   // counted noun in front of it must not change its agreement.
   const cases: [number, string, string][] = [
-    [1, "مطابقة واحدة موثّقة", "هذه أقرب نتيجة واحدة من أصل 400."],
-    [2, "مطابقتان موثّقتان", "هذه أقرب نتيجتين من أصل 400."],
-    [3, "3 مطابقات موثّقة", "هذه أقرب 3 نتائج من أصل 400."],
-    [10, "10 مطابقات موثّقة", "هذه أقرب 10 نتائج من أصل 400."],
-    [11, "11 مطابقة موثّقة", "هذه أقرب 11 نتيجة من أصل 400."],
-    [99, "99 مطابقة موثّقة", "هذه أقرب 99 نتيجة من أصل 400."],
-    [100, "100 مطابقة موثّقة", "هذه أقرب 100 نتيجة من أصل 400."],
+    [1, "مطابقة واحدة.", "هذه أقرب نتيجة واحدة من أصل 400."],
+    [2, "مطابقتان.", "هذه أقرب نتيجتين من أصل 400."],
+    [3, "3 مطابقات.", "هذه أقرب 3 نتائج من أصل 400."],
+    [10, "10 مطابقات.", "هذه أقرب 10 نتائج من أصل 400."],
+    [11, "11 مطابقة.", "هذه أقرب 11 نتيجة من أصل 400."],
+    [99, "99 مطابقة.", "هذه أقرب 99 نتيجة من أصل 400."],
+    [100, "100 مطابقة.", "هذه أقرب 100 نتيجة من أصل 400."],
   ];
   for (const [n, head, tail] of cases) {
     const s = searchNote(answer({}), n, "ar", 400);
@@ -221,7 +286,7 @@ test("the total clause introduces no Latin script, no Arabic-Indic numeral and n
 });
 
 test("a total is never printed when the caller rendered nothing, or when the answer asks for more detail", () => {
-  assert.ok(searchNote(answer({}), 0, "en", 7).startsWith("No verified matches yet"));
+  assert.ok(searchNote(answer({}), 0, "en", 7).startsWith("No matches yet"));
   assert.equal(searchNote(answer({}), 0, "en", 7).includes("7"), false);
   assert.equal(searchNote(answer({ clarify: true }), 0, "ar", 7).includes("7"), false);
 });

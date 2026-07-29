@@ -207,10 +207,22 @@ than an oversight.
 
 ## Next
 
-Owner ruling 3: audit and correct the remaining over-broad claims across the platform,
-prioritising `/invest`, then public discovery, listing, lister, requirement, research and
-advisory surfaces, with each claim determined from record-level evidence rather than inferred
-from route type or generic wording. Owner ruling 5, the `/listings?city=riyadh` raw-slug
-display defect in both languages, is small and belongs in the same package.
+**Correction to this section, made after it shipped in `1cb0bd5`.** As written it named owner
+ruling 3 and owner ruling 5 as the next package. Both were already closed, ruling 3 and ruling 4
+in `41f4f8f`, `726b72b`, `0d07cb8`, `b94b6b4`, `f6368c4` and `11c9518`, and ruling 5 in `b3e2dfa`
+during PKG-2A, all recorded in `docs/ruling-3-4-closure.md`. Writing them up as still owed was
+wrong on the record, and it is corrected here rather than quietly overwritten, because the same
+handback is the thing Codex reads to decide what is outstanding. `docs/adv-3b-closure.md` carried
+the identical error and is corrected the same way.
 
-Continuing into it without waiting, per the directive.
+What was actually outstanding is the residual `docs/ruling-3-4-closure.md` records at its own
+lines 316 to 321: a claims-only strict mode over the tier `scripts/prose-scan.mjs` reports but
+does not enforce. That residual was measured before any scope was claimed, by extracting the live
+`CORPUS_BANNED` frames out of `src/lib/claims.test.ts` and running them over the 147 source files
+the guard did not reach. It is real: three shipped modules carried corpus claims. That is the
+package that followed, and its record is `docs/ruling-3-residual-closure.md`.
+
+The next package after it is ADV-4, evidence half only under owner ruling 1: the bilingual Riyadh
+commercial bulletin with published methodology, definitions, source, period, geography, statistic
+type, sufficiency, limitations and corrections history, the canonical AI-facts pages and the
+structured data, absorbing PD1, PD2 and PD3. The indexing half stays held on owner decision O11.

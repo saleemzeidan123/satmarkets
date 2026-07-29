@@ -84,6 +84,41 @@ function ofTotal(total: number | undefined, count: number, ar: boolean): string 
 }
 
 /**
+ * How many of the rendered rows carry the owner-verified badge, as a clause.
+ *
+ * THE CLAIM THIS EXISTS TO KILL (owner ruling 3, found by extending the claims
+ * guard past `src/components` and `src/app`). The head sentence used to read
+ * "7 verified matches, owner-verified and deduplicated" and, in Arabic,
+ * "7 مطابقات موثّقة. التحقق من المالك مباشرة، بلا تكرار، مع سند الترخيص". Three
+ * assertions, none of them supported by the query that produced the rows:
+ *
+ *   1. `/api/search` filters on `status = published` and on what the person
+ *      asked for. It has never filtered on `ownership_verified`, so calling
+ *      every returned row a verified match asserted a property of the corpus
+ *      that the search did not select for. `src/lib/gate.ts` is the truth
+ *      source and `ownerVerified` is `ownership_verified === true` alone.
+ *   2. Deduplication is not measured anywhere in this repository.
+ *   3. "مع سند الترخيص", a licence authorisation, is a permit claim. No listing
+ *      row carries an advertising permit number.
+ *
+ * So the count now counts matches, which is what the search returned, and the
+ * verified subset is reported separately and only when the caller counted it.
+ * This is the same correction `726b72b` made to the home Owner-verified KPI: a
+ * count has to count the thing its label names.
+ *
+ * Arabic takes a prepositional phrase rather than an adjective on purpose. An
+ * adjective agrees with its noun, so a dual count would need a dual adjective,
+ * and "بمالك موثّق" governs the badge rather than the count and is invariant.
+ */
+function verifiedClause(verified: number | undefined, ar: boolean): string {
+  if (typeof verified !== "number" || !isFinite(verified) || verified < 0) return ".";
+  if (verified === 0) return ar ? "، ولا واحدة بمالك موثّق." : ", none with a verified owner.";
+  return ar
+    ? `، منها ${formatInteger(verified, "ar")} بمالك موثّق.`
+    : `, ${formatInteger(verified, "en")} with a verified owner.`;
+}
+
+/**
  * The whole sentence above a set of search results.
  *
  * `count` is passed rather than read off the answer because the caller renders
@@ -97,8 +132,13 @@ function ofTotal(total: number | undefined, count: number, ar: boolean): string 
  * rows, because the hook passed the server total while the two renderers sliced
  * to four and to three. The formatter honoured the number it was given. Nobody
  * was counting the same thing.
+ *
+ * `verified` is how many of those same rendered rows carry the owner-verified
+ * badge. It is optional because a caller that has not counted must not have a
+ * claim invented on its behalf: an absent count prints no verification clause at
+ * all, rather than defaulting to the flattering reading.
  */
-export function searchNote(a: SearchAnswer, count: number, locale: Loc, total?: number): string {
+export function searchNote(a: SearchAnswer, count: number, locale: Loc, total?: number, verified?: number): string {
   const ar = locale === "ar";
   if (a.clarify) {
     return ar
@@ -113,11 +153,7 @@ export function searchNote(a: SearchAnswer, count: number, locale: Loc, total?: 
       : `No exact matches, so here are the closest ${formatCounted(count, "result", "en")}${of}, some are ${why}. Adjust the budget, size, or location to tighten it.`;
   }
   if (count > 0) {
-    // The descriptors are verbal nouns in Arabic on purpose: an adjective would
-    // have to agree with the count, and the dual would then be wrong.
-    const head = ar
-      ? `${formatCounted(count, "verifiedMatch", "ar")}. التحقق من المالك مباشرة، بلا تكرار، مع سند الترخيص.`
-      : `${formatCounted(count, "verifiedMatch", "en")}, owner-verified and deduplicated.`;
+    const head = `${formatCounted(count, "match", locale)}${verifiedClause(verified, ar)}`;
     if (!withheld(count, total)) return head;
     // The leading count is what is on the screen. This sentence is the only place
     // the larger number may appear, and it says plainly which of the two it is.
@@ -130,6 +166,6 @@ export function searchNote(a: SearchAnswer, count: number, locale: Loc, total?: 
       : `${head} These are the closest ${formatCounted(count, "result", "en")}${of}.`;
   }
   return ar
-    ? "لا توجد مطابقات موثّقة لذلك بعد. جرّب موقعاً أو مساحة أو ميزانية مختلفة وسأبحث مجدداً."
-    : "No verified matches yet for that. Try a different location, size, or budget and I'll search again.";
+    ? "لا توجد مطابقات لذلك بعد. جرّب موقعاً أو مساحة أو ميزانية مختلفة وسأبحث مجدداً."
+    : "No matches yet for that. Try a different location, size, or budget and I'll search again.";
 }

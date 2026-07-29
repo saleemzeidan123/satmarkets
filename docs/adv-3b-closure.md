@@ -276,8 +276,16 @@ blocks all access, so it is an owner decision with a rollback plan.
 
 ## Next
 
-Owner ruling 3: audit and correct the remaining over-broad claims across the platform,
-prioritising `/invest`, then public discovery, listing, lister, requirement, research and
-advisory surfaces, with each claim determined from record-level evidence rather than inferred
-from route type or wording. Owner ruling 5, the `/listings?city=riyadh` raw-slug display defect
-in both languages, is small and belongs in the same package.
+**Corrected after `1cb0bd5`.** This section named owner ruling 3 and owner ruling 5 as the next
+package. Both were closed packages earlier, ruling 3 and ruling 4 in `41f4f8f`, `726b72b`,
+`0d07cb8`, `b94b6b4`, `f6368c4` and `11c9518`, and ruling 5 in `b3e2dfa` during PKG-2A, all
+recorded in `docs/ruling-3-4-closure.md`. The error is corrected in place rather than deleted,
+because a closure record whose Next line was wrong is itself a fact about how the programme was
+being tracked.
+
+What was outstanding is the residual recorded at `docs/ruling-3-4-closure.md` lines 316 to 321,
+a claims-only strict mode over the tier `scripts/prose-scan.mjs` reports but does not enforce.
+It was measured before it was claimed as scope, and it was real. Closed in
+`docs/ruling-3-residual-closure.md`.
+
+After that, ADV-4, evidence half only under owner ruling 1. The indexing half stays held on O11.
