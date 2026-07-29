@@ -19,6 +19,7 @@
 //
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/satkit";
+import { formatCounted } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 
 const fmtM = (v: number) => (v / 1e6).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "M";
@@ -205,7 +206,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
      <div className="col gap20">
       <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
        <div className="row between wrap" style={{ alignItems: "flex-start", gap: 12 }}>
-        <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{iv.noiProjection}</div><div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? `ريال/سنة · تصعيد مفتوح مقابل مسقوف · مدة ${term} سنة` : `SAR/yr · open vs capped escalation · ${term}yr term`}</div></div>
+        <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{iv.noiProjection}</div><div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{ar ? `ريال/سنة · تصعيد مفتوح مقابل مسقوف · مدة ${formatCounted(term, "year", "ar", { oblique: true })}` : `SAR/yr · open vs capped escalation · ${term}yr term`}</div></div>
         <div className="col gap8">
          <span className="lgd"><span className="sw" /> {iv.openLegend}</span>
          <span className="lgd"><span className="sw amber" /> {iv.cappedLegend}</span>

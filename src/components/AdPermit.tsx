@@ -1,3 +1,4 @@
+import { formatCounted } from "@/lib/format";
 import { permitOf } from "@/lib/gate";
 
 // The advertising licence, displayed as the REGA marketing rules require.
@@ -76,7 +77,7 @@ export default function AdPermit({
           </div>
           {daysLeft != null && daysLeft >= 0 && (
             <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
-              {ar ? `خلال ${daysLeft} يوماً` : `in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`}
+              {ar ? `خلال ${formatCounted(daysLeft, "day", "ar", { oblique: true })}` : `in ${formatCounted(daysLeft, "day", "en")}`}
             </div>
           )}
         </div>

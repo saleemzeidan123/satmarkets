@@ -4,6 +4,7 @@
 // the asking sale price. Transparent math on verified inputs (index rent +
 // listing price). Indicative, not advice. No invented benchmark yields.
 
+import { formatCounted } from "../format";
 import type { IndexRow } from "./verdict";
 
 export interface Underwrite {
@@ -78,6 +79,6 @@ export function underwrite(
     paybackYears: Number(pb),
     period: per,
     line_en: `${num(salePriceSqm)} SAR/m² asking. At the ${per} market rent of ${num(marketRentSqm)} SAR/m² for ${dist}, implied gross yield ~${g}%${netEn}, about a ${pb}-year payback. Indicative, not advice.`,
-    line_ar: `${num(salePriceSqm)} ريال/م² سعر الطلب. عند إيجار السوق لـ${per} البالغ ${num(marketRentSqm)} ريال/م² في ${distAr}، عائد إجمالي ضمني ~${g}%${netAr}، استرداد خلال ${pb} سنة تقريباً. مؤشر استرشادي وليس نصيحة.`,
+    line_ar: `${num(salePriceSqm)} ريال/م² سعر الطلب. عند إيجار السوق لـ${per} البالغ ${num(marketRentSqm)} ريال/م² في ${distAr}، عائد إجمالي ضمني ~${g}%${netAr}، استرداد خلال ${formatCounted(Number(pb), "year", "ar", { oblique: true })} تقريباً. مؤشر استرشادي وليس نصيحة.`,
   };
 }

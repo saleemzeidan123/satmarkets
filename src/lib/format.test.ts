@@ -188,6 +188,60 @@ test("every counted noun declares all six Arabic forms and both English forms", 
   }
 });
 
+test("the boundaries the finding names, at 1, 2, 3, 10, 11, 99 and 100", () => {
+  // Finding 52 named these seven. They are the points where the Arabic rule
+  // changes: the dual at 2, the plural from 3 to 10, the accusative singular
+  // from 11 to 99, and the bare singular from 100.
+  assert.deepEqual(
+    [1, 2, 3, 10, 11, 99, 100].map((n) => formatCounted(n, "day", "ar")),
+    ["يوم واحد", "يومان", "3 أيام", "10 أيام", "11 يوماً", "99 يوماً", "100 يوم"]
+  );
+  assert.deepEqual(
+    [1, 2, 3, 10, 11, 99, 100].map((n) => formatCounted(n, "month", "ar")),
+    ["شهر واحد", "شهران", "3 أشهر", "10 أشهر", "11 شهراً", "99 شهراً", "100 شهر"]
+  );
+  assert.deepEqual(
+    [1, 2, 3, 10, 11, 99, 100].map((n) => formatCounted(n, "day", "en")),
+    ["1 day", "2 days", "3 days", "10 days", "11 days", "99 days", "100 days"]
+  );
+});
+
+test("the dual takes its oblique form after a preposition, and nothing else moves", () => {
+  // "قبل يومان" is wrong Arabic. Everything either side of the dual already read
+  // correctly in both positions, so the option must change the dual and only the
+  // dual: a silent shift at 3 or at 11 would be a new defect wearing the fix.
+  assert.equal(formatCounted(2, "day", "ar"), "يومان");
+  assert.equal(formatCounted(2, "day", "ar", { oblique: true }), "يومين");
+  assert.equal(formatCounted(2, "month", "ar", { oblique: true }), "شهرين");
+  assert.equal(formatCounted(2, "rentFreeMonth", "ar", { oblique: true }), "شهرين بلا إيجار");
+  for (const n of [0, 1, 3, 10, 11, 99, 100]) {
+    assert.equal(
+      formatCounted(n, "day", "ar", { oblique: true }),
+      formatCounted(n, "day", "ar"),
+      `${n} must not move`
+    );
+  }
+  assert.equal(formatCounted(2, "day", "en", { oblique: true }), "2 days", "English has no such case");
+});
+
+test("every Arabic dual declares its oblique form, and the two are different", () => {
+  // The invariant, rather than a list. A counted noun added later without an
+  // oblique dual fails here instead of shipping "قبل قائمتان" to a page.
+  for (const [noun, byLoc] of Object.entries(COUNTED)) {
+    const ar = byLoc.ar as Record<string, string | undefined>;
+    assert.ok(ar.twoOblique, `${noun}.ar.twoOblique missing`);
+    assert.notEqual(ar.twoOblique, ar.two, `${noun}: the oblique dual is not the nominative one`);
+  }
+});
+
+test("a fractional count keeps its fraction instead of being rounded into another number", () => {
+  // formatInteger rounds, which is right for a whole count and wrong for a
+  // figure. 1.5 months is not 2 months, and a decision pack that says it is has
+  // changed the term.
+  assert.equal(formatCounted(1.5, "month", "en"), "1.5 months");
+  assert.equal(formatCounted(1.5, "month", "ar"), "1.5 شهر");
+});
+
 test("plural() falls back to `other` when a category is not declared", () => {
   assert.equal(plural(3, { other: "items" }, "ar"), "items");
   assert.equal(plural(1, { one: "item", other: "items" }, "en"), "item");

@@ -8,6 +8,7 @@
 // duplication). No em dashes (Law 2). Western numerals in both locales.
 
 import { fieldsFor, type AssetField } from "./assetFields";
+import { formatCounted } from "./format";
 
 function num(n: unknown, ar: boolean): string {
   return Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
@@ -20,8 +21,6 @@ function unitLabel(unit: string | undefined, ar: boolean): string {
   const map: Record<string, string> = {
     "m": "م",
     "m²": "م²",
-    "months": "شهراً",
-    "years": "سنة",
     "t/m²": "طن/م²",
     "SAR": "ريال",
     "SAR/m²": "ريال/م²",
@@ -41,6 +40,16 @@ export function formatFieldValue(field: AssetField, value: unknown, ar: boolean)
     case "integer": {
       const n = Number(value);
       if (!Number.isFinite(n)) return null;
+      // ADV-3A.1, finding 52. A month and a year are counted nouns, not units.
+      // Appending a fixed word gave "1 months" in English and "3 شهراً" in
+      // Arabic, where the Arabic form used was the 11-to-99 one and the counts
+      // these fields actually hold (a deposit, a rent free period, a minimum
+      // term) are almost always 1 to 10. Nineteen registry fields carry one of
+      // these two units, so the fix belongs here and not in the registry.
+      //
+      // An attribute row is a standalone cell, so the dual is nominative.
+      if (field.unit === "months") return formatCounted(n, "month", ar ? "ar" : "en");
+      if (field.unit === "years") return formatCounted(n, "year", ar ? "ar" : "en");
       const u = unitLabel(field.unit, ar);
       return u ? `${num(n, ar)} ${u}` : num(n, ar);
     }

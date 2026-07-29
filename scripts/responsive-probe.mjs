@@ -698,13 +698,30 @@ for (const r of rows) {
 // introduces: an item that cannot fit even on a line of its own.
 //
 // Row overflow is a failure everywhere EXCEPT inside a declared scroll rail, where
-// the row is built to be wider than its box and the reader swipes it. The rail
-// still has to keep that width to itself: if the document scrolls, the rail has
-// leaked, and that is caught by the first clause rather than excused by this one.
+// the row is built to be wider than its box and the reader swipes it.
+//
+// ADV-3A.1, finding 53. `docOverflow` IS NOT A CHECK. `sat-platform.css:550` sets
+// `html,body{overflow-x:clip}`, which is right for the product and means
+// `documentElement.scrollWidth` can never exceed `clientWidth`. So the first
+// clause below is structurally incapable of firing, and the `doc ovf` column is
+// zero whether or not anything overflows. It is kept as a backstop against a
+// future change to that CSS rule, and named here so that nobody reads a clean
+// column as evidence.
+//
+// The assertions that actually decide this run are the two element-level ones:
+// a row wider than its box outside a rail, and any measured item wider than the
+// content box it sits in. Both read element geometry. The decision pack defect
+// at finding 51 is the worked example: it surfaced as `row ovf 16` with
+// `doc ovf 0`, so a probe trusting the document measurement would have passed
+// it. Any assertion added later belongs with the element-level pair.
+//
+// A leaking scroll rail is therefore caught by `widest > innerW`, not by the
+// document clause, because the rail's own items are measured.
 const bad = rows.filter((r) => r.docOverflow > 0 || (r.rowOverflow > 0 && !r.rail) || r.widest > r.innerW);
 const rails = rows.filter((r) => r.rail && r.rowOverflow > 0).length;
 console.log(bad.length === 0
-  ? `\nPASS  ${rows.length} measurements, 0 document overflow, no item wider than its content box`
-    + (rails ? `, ${rails} inside a declared scroll rail (row wider than its box by design, document not)` : "")
+  ? `\nPASS  ${rows.length} measurements, no row past its box, no item wider than its content box`
+    + ` (document overflow is not measurable under overflow-x:clip and is not claimed)`
+    + (rails ? `, ${rails} inside a declared scroll rail (row wider than its box by design)` : "")
   : `\nFAIL  ${bad.length} of ${rows.length}: ` + bad.map((b) => `${b.name} ${b.loc}@${b.width}`).join(", "));
 process.exit(bad.length === 0 ? 0 : 1);

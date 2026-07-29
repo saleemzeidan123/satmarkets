@@ -21,6 +21,30 @@ test("numbers render with their unit, localised", () => {
   assert.equal(formatFieldValue(field({ type: "money", unit: "SAR/m²·yr" }), 1500, true), "1,500 ريال/م²·سنة");
 });
 
+// ADV-3A.1, finding 52. A month and a year are counted nouns. Nineteen registry
+// fields carry one of these two units, and the counts they hold (a deposit, a
+// rent free period, a minimum term, a ground lease remainder) sit exactly where
+// Arabic changes form. The old code appended a fixed word, so English produced
+// "1 months" and Arabic produced the 11-to-99 form for every count.
+test("a months or years field is counted, not suffixed, at every boundary", () => {
+  const months = (n: number, ar: boolean) => formatFieldValue(field({ type: "integer", unit: "months" }), n, ar);
+  const years = (n: number, ar: boolean) => formatFieldValue(field({ type: "integer", unit: "years" }), n, ar);
+
+  assert.deepEqual(
+    [1, 2, 3, 10, 11, 99, 100].map((n) => months(n, true)),
+    ["شهر واحد", "شهران", "3 أشهر", "10 أشهر", "11 شهراً", "99 شهراً", "100 شهر"]
+  );
+  assert.deepEqual(
+    [1, 2, 3, 10, 11, 99, 100].map((n) => years(n, true)),
+    ["سنة واحدة", "سنتان", "3 سنوات", "10 سنوات", "11 سنة", "99 سنة", "100 سنة"]
+  );
+
+  assert.equal(months(1, false), "1 month", "one month is not months");
+  assert.equal(months(6, false), "6 months");
+  assert.equal(years(1, false), "1 year");
+  assert.equal(years(5, false), "5 years");
+});
+
 test("true boolean renders Yes / نعم", () => {
   assert.equal(formatFieldValue(field({ type: "boolean" }), true, false), "Yes");
   assert.equal(formatFieldValue(field({ type: "boolean" }), true, true), "نعم");

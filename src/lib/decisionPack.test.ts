@@ -78,6 +78,61 @@ test("a stated incentive names the half of the pair that is still missing", () =
   assert.match(noContribution.detail_en, /No fit out contribution is recorded\./);
 });
 
+// ADV-3A.1, finding 52. The pack is the surface where a counted noun is most
+// visible and least forgiving: a decision pack that reads "قبل 3 يوماً" is
+// arguing for its own carelessness while asking a tenant to trust its figures.
+//
+// These assert the RENDERED sentence, not the formatter. The formatter is
+// already tested in format.test.ts; what can still go wrong here is a site that
+// was missed, or one where the wrong position was chosen and the dual comes out
+// nominative after a preposition.
+test("the pack counts days and months the way Arabic counts them, at every boundary", () => {
+  const days = (n: number) => of({ ...FULL, availability_confirmed_at: daysAgo(n) }, "availability");
+  assert.match(days(1).detail_ar, /قبل يوم واحد/);
+  assert.match(days(2).detail_ar, /قبل يومين/);
+  assert.match(days(3).detail_ar, /قبل 3 أيام/);
+  assert.match(days(10).detail_ar, /قبل 10 أيام/);
+  assert.match(days(11).detail_ar, /قبل 11 يوماً/);
+  assert.match(days(99).detail_ar, /قبل 99 يوماً/);
+  assert.match(days(100).detail_ar, /قبل 100 يوم/);
+  for (const n of [1, 2, 3, 10, 11, 99, 100]) {
+    assert.ok(!/يومان/.test(days(n).detail_ar), `${n}: the dual after قبل is oblique`);
+  }
+  assert.match(days(1).detail_en, /1 day ago/);
+  assert.match(days(3).detail_en, /3 days ago/);
+});
+
+test("the lease term and the break option agree with their numbers in both languages", () => {
+  const t = (term: number, brk: number | null) => of({ ...FULL, lease_term_months: term, break_option_months: brk }, "tenure");
+  assert.match(t(2, null).detail_ar, /^شهران،/, "a term opening its own sentence is nominative");
+  assert.match(t(3, null).detail_ar, /^3 أشهر،/);
+  assert.match(t(36, null).detail_ar, /^36 شهراً،/);
+  assert.match(t(36, 2).detail_ar, /عند شهرين\./, "after عند the dual is oblique");
+  assert.match(t(36, 3).detail_ar, /عند 3 أشهر\./);
+  assert.match(t(36, 24).detail_ar, /عند 24 شهراً\./);
+  assert.match(t(1, null).detail_en, /^1 month, stated by the lister\./);
+  assert.match(t(36, 1).detail_en, /A break option is stated at 1 month\./);
+  assert.match(t(36, 24).detail_en, /A break option is stated at 24 months\./);
+});
+
+test("a rent free period is counted, not concatenated, in both languages", () => {
+  const inc = (free: number) => of({ ...FULL, rent_free_months: free }, "incentives");
+  assert.match(inc(1).detail_en, /1 rent free month\b/, "one month is not months");
+  assert.match(inc(2).detail_en, /2 rent free months/);
+  assert.match(inc(1).detail_ar, /شهر واحد بلا إيجار/);
+  assert.match(inc(2).detail_ar, /شهران بلا إيجار/);
+  assert.match(inc(3).detail_ar, /3 أشهر بلا إيجار/);
+  assert.match(inc(12).detail_ar, /12 شهراً بلا إيجار/);
+
+  // And the same phrase inside the effective rent basis, where the term that
+  // follows it IS governed and so takes the oblique dual.
+  const basis = (free: number, term: number) => effectiveRentSqm({ ...FULL, rent_free_months: free, lease_term_months: term });
+  assert.match(String(basis(3, 36)?.basis_ar), /3 أشهر بلا إيجار ضمن مدة 36 شهراً/);
+  assert.match(String(basis(2, 24)?.basis_ar), /شهران بلا إيجار ضمن مدة 24 شهراً/);
+  assert.match(String(basis(1, 2)?.basis_ar), /شهر واحد بلا إيجار ضمن مدة شهرين/);
+  assert.match(String(basis(1, 36)?.basis_en), /1 rent free month over a 36 month term/);
+});
+
 test("incentives and tenure do not arise on a purchase", () => {
   const sale: PackListing = { ...FULL, deal_type: "sale", sale_price: 42000000, sale_price_sqm: 70000 };
   assert.equal(of(sale, "incentives").state, "not_applicable");

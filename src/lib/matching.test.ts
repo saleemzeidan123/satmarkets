@@ -158,6 +158,30 @@ test("availability is only asked about when the timeline makes it part of the qu
   assert.equal(by(matchListing(urgent, { ...LST, availability_confirmed_at: null }, NOW), "timeline")?.state, "unknown");
 });
 
+// ADV-3A.1, finding 52. The timeline reason is written for a person deciding
+// whether an affirmation is fresh enough to act on, so the number and the noun
+// have to agree. `قبل` governs what follows, so the dual is oblique.
+test("the availability reason counts days the way each language counts them", () => {
+  const urgent = { ...REQ, timeline: "ASAP" };
+  const at = (d: number) => by(matchListing(urgent, { ...LST, availability_confirmed_at: daysAgo(d) }, NOW), "timeline")!;
+
+  assert.match(at(1).reason_ar, /قبل يوم واحد/);
+  assert.match(at(2).reason_ar, /قبل يومين/);
+  assert.match(at(3).reason_ar, /قبل 3 أيام/);
+  assert.match(at(10).reason_ar, /قبل 10 أيام/);
+  assert.match(at(11).reason_ar, /قبل 11 يوماً/);
+  assert.match(at(99).reason_ar, /قبل 99 يوماً/);
+  assert.match(at(100).reason_ar, /قبل 100 يوم/);
+  for (const n of [1, 2, 3, 10, 11, 99, 100]) {
+    assert.ok(!/يومان/.test(at(n).reason_ar), `${n}: the dual after قبل is oblique`);
+  }
+
+  assert.match(at(1).reason_en, /affirmed 1 day ago/);
+  assert.match(at(2).reason_en, /affirmed 2 days ago/);
+  assert.match(at(200).reason_en, /200 days ago/);
+  assert.match(at(200).reason_ar, /قبل 200 يوم/);
+});
+
 test("a free-text must-have is never inferred, so a brief that lists one has no exact match", () => {
   const r = matchListing({ ...REQ, must_haves: ["Heavy power", "Dock doors"] }, LST, NOW);
   const musts = r.reasons.filter((x) => x.dimension === "must_have");

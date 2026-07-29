@@ -281,6 +281,33 @@ test("the corpus as it stands reads incomplete with nothing contradicted", () =>
   assert.ok(missing.includes("description_en") && missing.includes("description_ar"));
 });
 
+// ADV-3A.1, finding 52. A contradiction statement is shown to the lister as the
+// reason their listing is held back, so it is read closely and its own grammar
+// is part of whether it is believed. `عند` and `البالغة` both govern what
+// follows, so every counted phrase here is oblique.
+test("contradiction statements count their months correctly in both languages", () => {
+  const of = (facts: ListingFacts, kind: ContradictionKind) =>
+    contradictionsOf(facts, NOW).find((c) => c.kind === kind)!;
+
+  const brk = (term: number, b: number) =>
+    of({ ...complete(), lease_term_months: term, break_option_months: b }, "break_after_lease_term");
+  assert.match(brk(1, 2).statement_ar, /عند شهرين يقع بعد مدة العقد البالغة شهر واحد/);
+  assert.match(brk(2, 3).statement_ar, /عند 3 أشهر يقع بعد مدة العقد البالغة شهرين/);
+  assert.match(brk(24, 36).statement_ar, /عند 36 شهراً يقع بعد مدة العقد البالغة 24 شهراً/);
+  assert.match(brk(1, 2).statement_en, /break option at 2 months falls after the lease term of 1 month\./);
+
+  const free = (term: number, f: number) =>
+    of({ ...complete(), lease_term_months: term, rent_free_months: f, break_option_months: null }, "rent_free_over_lease_term");
+  assert.match(free(1, 2).statement_ar, /البالغة شهرين أطول من مدة العقد البالغة شهر واحد/);
+  assert.match(free(2, 3).statement_ar, /البالغة 3 أشهر أطول من مدة العقد البالغة شهرين/);
+  assert.match(free(1, 2).statement_en, /rent free period of 2 months is longer than the lease term of 1 month\./);
+  assert.match(free(2, 3).statement_en, /rent free period of 3 months is longer than the lease term of 2 months\./);
+
+  for (const st of [brk(1, 2).statement_ar, brk(2, 3).statement_ar, free(1, 2).statement_ar, free(2, 3).statement_ar]) {
+    assert.ok(!/شهران/.test(st), "a governed dual is oblique, never nominative");
+  }
+});
+
 test("each contradiction kind fires on its own case and on nothing else", () => {
   const cases: Array<[ContradictionKind, ListingFacts]> = [
     ["rent_total_vs_rate", { ...complete(), area_sqm: 500, asking_rent_sqm: 1400, asking_rent_total: 500000 }],

@@ -165,8 +165,36 @@ export function formatMoney(n: number, locale: Loc = "en"): string {
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other";
 
-/** The six CLDR forms. English fills only `one` and `other`; the rest fall back to `other`. */
-export type PluralForms = Partial<Record<PluralCategory, string>> & { other: string };
+/**
+ * The six CLDR forms, plus one form CLDR does not have.
+ *
+ * ADV-3A.1. CLDR gives Arabic a single `two` form, and for a phrase standing on
+ * its own that form is right: "شهران". But Arabic marks the dual for case,
+ * and every counted phrase that follows a preposition or sits in a construct is
+ * oblique, where the ending is different and visible: "قبل يومين", never
+ * "قبل يومان". No other category is affected, because the plural
+ * ("أيام") and the accusative singular ("يوماً") already read correctly in
+ * both positions.
+ *
+ * The alternative was to rewrite each sentence so the dual never lands after a
+ * preposition. That is patching individual sentences, which is the thing the
+ * finding exists to stop, and it would have to be done again for every sentence
+ * written afterwards.
+ */
+export type PluralForms = Partial<Record<PluralCategory, string>> & {
+  other: string;
+  /** The Arabic dual after a preposition or in a construct. Ignored elsewhere. */
+  twoOblique?: string;
+};
+
+/** Where the counted phrase sits in the sentence. Only Arabic reads this. */
+export type CountOptions = {
+  /**
+   * True when the phrase follows a preposition (قبل, عند, في, لـ) or a governing
+   * noun (مدة, خلال). Default false: the phrase stands on its own.
+   */
+  oblique?: boolean;
+};
 
 /**
  * CLDR plural category for a cardinal. Implemented directly rather than read off
@@ -197,62 +225,81 @@ export function plural(n: number, forms: PluralForms, locale: Loc): string {
  * no numeral in natural Arabic ("شهران", not "2 شهران"), which is why this
  * returns the whole phrase rather than a suffix the caller concatenates.
  */
-export function formatCount(n: number, forms: PluralForms, locale: Loc): string {
+export function formatCount(n: number, forms: PluralForms, locale: Loc, opts: CountOptions = {}): string {
   const cat = pluralCategory(n, locale);
-  const word = forms[cat] ?? forms.other;
+  const oblique = locale === "ar" && cat === "two" && opts.oblique === true && forms.twoOblique !== undefined;
+  const word = oblique ? (forms.twoOblique as string) : (forms[cat] ?? forms.other);
   if (locale === "ar" && (cat === "one" || cat === "two")) return word;
-  return `${formatInteger(n, locale)} ${word}`;
+  // A whole count is a whole number; a fractional one keeps its fraction rather
+  // than being rounded into a different figure on the way to a noun.
+  const num = Number.isInteger(n) ? formatInteger(n, locale) : formatDecimal(n, locale, 2);
+  return `${num} ${word}`;
 }
 
 /** The counted nouns the public surfaces use. Arabic carries all six forms. */
 export const COUNTED = {
   month: {
     en: { one: "month", other: "months" },
-    ar: { zero: "شهر", one: "شهر واحد", two: "شهران", few: "أشهر", many: "شهراً", other: "شهر" },
+    ar: { zero: "شهر", one: "شهر واحد", two: "شهران", twoOblique: "شهرين", few: "أشهر", many: "شهراً", other: "شهر" },
   },
   year: {
     en: { one: "year", other: "years" },
-    ar: { zero: "سنة", one: "سنة واحدة", two: "سنتان", few: "سنوات", many: "سنة", other: "سنة" },
+    ar: { zero: "سنة", one: "سنة واحدة", two: "سنتان", twoOblique: "سنتين", few: "سنوات", many: "سنة", other: "سنة" },
   },
   day: {
     en: { one: "day", other: "days" },
-    ar: { zero: "يوم", one: "يوم واحد", two: "يومان", few: "أيام", many: "يوماً", other: "يوم" },
+    ar: { zero: "يوم", one: "يوم واحد", two: "يومان", twoOblique: "يومين", few: "أيام", many: "يوماً", other: "يوم" },
   },
   listing: {
     en: { one: "listing", other: "listings" },
-    ar: { zero: "قائمة", one: "قائمة واحدة", two: "قائمتان", few: "قوائم", many: "قائمة", other: "قائمة" },
+    ar: { zero: "قائمة", one: "قائمة واحدة", two: "قائمتان", twoOblique: "قائمتين", few: "قوائم", many: "قائمة", other: "قائمة" },
   },
   space: {
     en: { one: "space", other: "spaces" },
-    ar: { zero: "مساحة", one: "مساحة واحدة", two: "مساحتان", few: "مساحات", many: "مساحة", other: "مساحة" },
+    ar: { zero: "مساحة", one: "مساحة واحدة", two: "مساحتان", twoOblique: "مساحتين", few: "مساحات", many: "مساحة", other: "مساحة" },
   },
   match: {
     en: { one: "match", other: "matches" },
-    ar: { zero: "مطابقة", one: "مطابقة واحدة", two: "مطابقتان", few: "مطابقات", many: "مطابقة", other: "مطابقة" },
+    ar: { zero: "مطابقة", one: "مطابقة واحدة", two: "مطابقتان", twoOblique: "مطابقتين", few: "مطابقات", many: "مطابقة", other: "مطابقة" },
   },
   district: {
     en: { one: "district", other: "districts" },
-    ar: { zero: "حي", one: "حي واحد", two: "حيان", few: "أحياء", many: "حياً", other: "حي" },
+    ar: { zero: "حي", one: "حي واحد", two: "حيان", twoOblique: "حيين", few: "أحياء", many: "حياً", other: "حي" },
   },
   result: {
     en: { one: "result", other: "results" },
-    ar: { zero: "نتيجة", one: "نتيجة واحدة", two: "نتيجتان", few: "نتائج", many: "نتيجة", other: "نتيجة" },
+    ar: { zero: "نتيجة", one: "نتيجة واحدة", two: "نتيجتان", twoOblique: "نتيجتين", few: "نتائج", many: "نتيجة", other: "نتيجة" },
   },
   leaseListing: {
     en: { one: "lease listing", other: "lease listings" },
-    ar: { zero: "عرض إيجار", one: "عرض إيجار واحد", two: "عرضا إيجار", few: "عروض إيجار", many: "عرض إيجار", other: "عرض إيجار" },
+    ar: { zero: "عرض إيجار", one: "عرض إيجار واحد", two: "عرضا إيجار", twoOblique: "عرضي إيجار", few: "عروض إيجار", many: "عرض إيجار", other: "عرض إيجار" },
   },
   liveSpace: {
     en: { one: "space on the market", other: "spaces on the market" },
-    ar: { zero: "مساحة معروضة", one: "مساحة معروضة واحدة", two: "مساحتان معروضتان", few: "مساحات معروضة", many: "مساحة معروضة", other: "مساحة معروضة" },
+    ar: { zero: "مساحة معروضة", one: "مساحة معروضة واحدة", two: "مساحتان معروضتان", twoOblique: "مساحتين معروضتين", few: "مساحات معروضة", many: "مساحة معروضة", other: "مساحة معروضة" },
+  },
+  rentFreeMonth: {
+    en: { one: "rent free month", other: "rent free months" },
+    ar: {
+      zero: "شهر بلا إيجار",
+      one: "شهر واحد بلا إيجار",
+      two: "شهران بلا إيجار",
+      twoOblique: "شهرين بلا إيجار",
+      few: "أشهر بلا إيجار",
+      many: "شهراً بلا إيجار",
+      other: "شهر بلا إيجار",
+    },
   },
 } as const satisfies Record<string, { en: PluralForms; ar: PluralForms }>;
 
 export type CountedNoun = keyof typeof COUNTED;
 
-/** formatCounted(3, "month", "ar") is "3 أشهر"; formatCounted(2, "month", "ar") is "شهران". */
-export const formatCounted = (n: number, noun: CountedNoun, locale: Loc): string =>
-  formatCount(n, COUNTED[noun][locale], locale);
+/**
+ * formatCounted(3, "month", "ar") is "3 أشهر"; formatCounted(2, "month", "ar") is
+ * "شهران", and formatCounted(2, "month", "ar", { oblique: true }) is "شهرين".
+ */
+export const formatCounted = (n: number, noun: CountedNoun, locale: Loc, opts: CountOptions = {}): string =>
+  formatCount(n, COUNTED[noun][locale], locale, opts);
 
 // ---------------------------------------------------------------- templates
 

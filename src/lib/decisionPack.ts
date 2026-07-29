@@ -45,6 +45,7 @@
 // Pure: no I/O, no React, no clock of its own beyond an injected `now`.
 
 import { availabilityOf } from "./availability";
+import { formatCounted } from "./format";
 import { dealLabel, fitoutLabel } from "./labels";
 
 // How well the record holds a fact.
@@ -231,12 +232,24 @@ export function effectiveRentSqm(l: PackListing): EffectiveRent | null {
     value = value - perSqmPerYear;
   }
 
+  // ADV-3A.1, finding 52. Every counted noun below goes through `formatCounted`.
+  //
+  // The English was wrong too, and less visibly: a single rent free month read
+  // "1 rent free months". The Arabic was wrong at the numbers that actually
+  // occur, since a rent free period is typically 1 to 6 and the sentence emitted
+  // the 11-to-99 form for all of them.
+  //
+  // `ضمن مدة` governs what follows, so the term is oblique; the rent free phrase
+  // is coordinated with the asking price and stands on its own.
+  const freeMonths_en = formatCounted(free, "rentFreeMonth", "en");
+  const freeMonths_ar = formatCounted(free, "rentFreeMonth", "ar");
+  const termOblique_ar = formatCounted(term, "month", "ar", { oblique: true });
   const basis_en = withContribution
-    ? `Asking ${fmt(rent)}, ${fmt(free)} rent free months over a ${fmt(term)} month term, less the stated fit out contribution spread over that term.`
-    : `Asking ${fmt(rent)}, ${fmt(free)} rent free months over a ${fmt(term)} month term.`;
+    ? `Asking ${fmt(rent)}, ${freeMonths_en} over a ${fmt(term)} month term, less the stated fit out contribution spread over that term.`
+    : `Asking ${fmt(rent)}, ${freeMonths_en} over a ${fmt(term)} month term.`;
   const basis_ar = withContribution
-    ? `السعر المعلن ${fmt(rent)}، و${fmt(free)} شهراً بلا إيجار ضمن مدة ${fmt(term)} شهراً، مخصوماً منها مساهمة التجهيز المذكورة موزعة على المدة.`
-    : `السعر المعلن ${fmt(rent)}، و${fmt(free)} شهراً بلا إيجار ضمن مدة ${fmt(term)} شهراً.`;
+    ? `السعر المعلن ${fmt(rent)}، و${freeMonths_ar} ضمن مدة ${termOblique_ar}، مخصوماً منها مساهمة التجهيز المذكورة موزعة على المدة.`
+    : `السعر المعلن ${fmt(rent)}، و${freeMonths_ar} ضمن مدة ${termOblique_ar}.`;
 
   return { value: Math.round(value * 10) / 10, basis_en, basis_ar };
 }
@@ -321,14 +334,14 @@ export function packDimensions(l: PackListing, now: number = Date.now()): PackDi
         ar: "اطلب من المُدرِج تأكيد أن المساحة ما زالت متاحة وتاريخ ذلك التأكيد.",
       }));
     } else if (av.state === "stale") {
-      out.push(dim("availability", "stale", "Availability", "التوفر", `Availability was last affirmed ${fmt(av.days)} days ago, which is past the published window.`, `آخر تأكيد للتوفر كان قبل ${fmt(av.days)} يوماً، وهو خارج النافذة المنشورة.`, {
+      out.push(dim("availability", "stale", "Availability", "التوفر", `Availability was last affirmed ${formatCounted(av.days, "day", "en")} ago, which is past the published window.`, `آخر تأكيد للتوفر كان قبل ${formatCounted(av.days, "day", "ar", { oblique: true })}، وهو خارج النافذة المنشورة.`, {
         en: "Ask the lister to re confirm availability before this candidate is compared on it.",
         ar: "اطلب من المُدرِج إعادة تأكيد التوفر قبل مقارنة هذا الخيار على أساسه.",
       }));
     } else if (av.state === "aging") {
-      out.push(dim("availability", "stated", "Availability", "التوفر", `Availability was affirmed ${fmt(av.days)} days ago.`, `تم تأكيد التوفر قبل ${fmt(av.days)} يوماً.`));
+      out.push(dim("availability", "stated", "Availability", "التوفر", `Availability was affirmed ${formatCounted(av.days, "day", "en")} ago.`, `تم تأكيد التوفر قبل ${formatCounted(av.days, "day", "ar", { oblique: true })}.`));
     } else {
-      out.push(dim("availability", "known", "Availability", "التوفر", `Availability was affirmed ${fmt(av.days)} days ago and is inside the published window.`, `تم تأكيد التوفر قبل ${fmt(av.days)} يوماً وهو ضمن النافذة المنشورة.`));
+      out.push(dim("availability", "known", "Availability", "التوفر", `Availability was affirmed ${formatCounted(av.days, "day", "en")} ago and is inside the published window.`, `تم تأكيد التوفر قبل ${formatCounted(av.days, "day", "ar", { oblique: true })} وهو ضمن النافذة المنشورة.`));
     }
   }
 
@@ -429,7 +442,7 @@ export function packDimensions(l: PackListing, now: number = Date.now()): PackDi
       } else {
         const parts_en: string[] = [];
         const parts_ar: string[] = [];
-        if (free !== null) { parts_en.push(`${fmt(free)} rent free months`); parts_ar.push(`${fmt(free)} شهراً بلا إيجار`); }
+        if (free !== null) { parts_en.push(formatCounted(free, "rentFreeMonth", "en")); parts_ar.push(formatCounted(free, "rentFreeMonth", "ar")); }
         if (contribution !== null) { parts_en.push(`a fit out contribution of ${fmt(contribution)} SAR`); parts_ar.push(`مساهمة في التجهيز قدرها ${fmt(contribution)} ريال`); }
         const missing_en = free === null ? " No rent free period is recorded." : contribution === null ? " No fit out contribution is recorded." : "";
         const missing_ar = free === null ? " ولم تُسجل فترة بلا إيجار." : contribution === null ? " ولم تُسجل مساهمة في التجهيز." : "";
@@ -451,9 +464,11 @@ export function packDimensions(l: PackListing, now: number = Date.now()): PackDi
           ar: "اطلب من المُدرِج مدة العقد وما إذا كان هناك خيار إنهاء مبكر.",
         }));
       } else {
-        const brk_en = brk !== null ? ` A break option is stated at ${fmt(brk)} months.` : " No break option is recorded.";
-        const brk_ar = brk !== null ? ` وهناك خيار إنهاء مبكر عند ${fmt(brk)} شهراً.` : " ولم يُسجل خيار إنهاء مبكر.";
-        out.push(dim("tenure", "stated", "Lease term", "مدة العقد", `${fmt(term)} months, stated by the lister.${brk_en}`, `${fmt(term)} شهراً، بحسب ما ذكره المُدرِج.${brk_ar}`));
+        // `عند` is a preposition, so the break option is oblique. The lease term
+        // opens its own sentence and is not governed by anything.
+        const brk_en = brk !== null ? ` A break option is stated at ${formatCounted(brk, "month", "en")}.` : " No break option is recorded.";
+        const brk_ar = brk !== null ? ` وهناك خيار إنهاء مبكر عند ${formatCounted(brk, "month", "ar", { oblique: true })}.` : " ولم يُسجل خيار إنهاء مبكر.";
+        out.push(dim("tenure", "stated", "Lease term", "مدة العقد", `${formatCounted(term, "month", "en")}, stated by the lister.${brk_en}`, `${formatCounted(term, "month", "ar")}، بحسب ما ذكره المُدرِج.${brk_ar}`));
       }
     }
   }

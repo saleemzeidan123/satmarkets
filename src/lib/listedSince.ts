@@ -6,6 +6,8 @@
 // "Under offer" or "Leased": there is no price history and no such status in the
 // schema, and SAT never shows a signal it cannot back with data.
 
+import { formatCounted } from "./format";
+
 export interface ListedSince {
   days: number;   // whole days since first seen, never negative
   isNew: boolean; // first-seen within the last 14 days
@@ -23,7 +25,13 @@ export function listedSince(createdAt: string | null | undefined, now: number = 
 }
 
 // Bilingual label for the day count. Western numerals in both locales (Law 7).
+//
+// ADV-3A.1, finding 52. This label used to emit `${days} يوماً` for every count,
+// which is the 11-to-99 form. The badge it feeds is shown for the first fourteen
+// days, so the wrong form was the one almost every reader saw: a listing three
+// days old read "أُدرج قبل 3 يوماً". `قبل` governs what follows, so the dual is
+// oblique: "أُدرج قبل يومين", not "يومان".
 export function listedLabel(days: number, ar: boolean): string {
-  if (ar) return days === 0 ? "أُدرج اليوم" : `أُدرج قبل ${days} يوماً`;
-  return days === 0 ? "Listed today" : days === 1 ? "Listed 1 day ago" : `Listed ${days} days ago`;
+  if (ar) return days === 0 ? "أُدرج اليوم" : `أُدرج قبل ${formatCounted(days, "day", "ar", { oblique: true })}`;
+  return days === 0 ? "Listed today" : `Listed ${formatCounted(days, "day", "en")} ago`;
 }

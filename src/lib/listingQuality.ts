@@ -32,6 +32,7 @@
 // decides which of the two is right, because that is a correction (ADV-6), not a
 // reading. No em dashes (Law 2). Western numerals in both locales (Law 7).
 
+import { formatCounted } from "./format";
 import { fieldsFor, hasRegistry, type AssetField, type DisplaySection } from "./assetFields";
 
 export type QualityScope =
@@ -430,16 +431,16 @@ export function contradictionsOf(facts: ListingFacts, now: number = Date.now()):
     out.push({
       kind: "break_after_lease_term",
       fields: ["break_option_months", "lease_term_months"],
-      statement_en: `The break option at ${fmt(brk)} months falls after the lease term of ${fmt(term)} months.`,
-      statement_ar: `خيار الإنهاء عند ${fmt(brk)} شهراً يقع بعد مدة العقد البالغة ${fmt(term)} شهراً.`,
+      statement_en: `The break option at ${formatCounted(brk, "month", "en")} falls after the lease term of ${formatCounted(term, "month", "en")}.`,
+      statement_ar: `خيار الإنهاء عند ${formatCounted(brk, "month", "ar", { oblique: true })} يقع بعد مدة العقد البالغة ${formatCounted(term, "month", "ar", { oblique: true })}.`,
     });
   }
   if (term !== null && free !== null && free > term) {
     out.push({
       kind: "rent_free_over_lease_term",
       fields: ["rent_free_months", "lease_term_months"],
-      statement_en: `The rent free period of ${fmt(free)} months is longer than the lease term of ${fmt(term)} months.`,
-      statement_ar: `فترة الإعفاء من الإيجار البالغة ${fmt(free)} شهراً أطول من مدة العقد البالغة ${fmt(term)} شهراً.`,
+      statement_en: `The rent free period of ${formatCounted(free, "month", "en")} is longer than the lease term of ${formatCounted(term, "month", "en")}.`,
+      statement_ar: `فترة الإعفاء من الإيجار البالغة ${formatCounted(free, "month", "ar", { oblique: true })} أطول من مدة العقد البالغة ${formatCounted(term, "month", "ar", { oblique: true })}.`,
     });
   }
 

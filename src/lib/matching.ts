@@ -31,6 +31,7 @@
 // Pure: no I/O, no React, no clock of its own beyond an injected `now`.
 
 import { foldText } from "./textFold";
+import { formatCounted } from "./format";
 import { availabilityOf } from "./availability";
 import { assetLabel, cityLabel, dealLabel } from "./labels";
 
@@ -397,8 +398,8 @@ export function matchReasons(
       out.push(reason({
         key: "timeline", dimension: "timeline", state: "unknown",
         label_en: "Timeline", label_ar: "الإطار الزمني",
-        reason_en: `The requirement is ${tl.en}. Availability was last affirmed ${fmt(a.days)} days ago, which is too old to answer it.`,
-        reason_ar: `المتطلب ${tl.ar}. آخر تأكيد للتوفر كان قبل ${fmt(a.days)} يوماً، وهو أقدم من أن يجيب عليه.`,
+        reason_en: `The requirement is ${tl.en}. Availability was last affirmed ${formatCounted(a.days, "day", "en")} ago, which is too old to answer it.`,
+        reason_ar: `المتطلب ${tl.ar}. آخر تأكيد للتوفر كان قبل ${formatCounted(a.days, "day", "ar", { oblique: true })}، وهو أقدم من أن يجيب عليه.`,
         remedy_en: "The lister confirms the space is still available.",
         remedy_ar: "يؤكد المُدرِج أن المساحة ما زالت متاحة.",
       }));
@@ -406,15 +407,15 @@ export function matchReasons(
       out.push(reason({
         key: "timeline", dimension: "timeline", state: "tolerance",
         label_en: "Timeline", label_ar: "الإطار الزمني",
-        reason_en: `The requirement is ${tl.en} and availability was affirmed ${fmt(a.days)} days ago.`,
-        reason_ar: `المتطلب ${tl.ar} وقد تأكد التوفر قبل ${fmt(a.days)} يوماً.`,
+        reason_en: `The requirement is ${tl.en} and availability was affirmed ${formatCounted(a.days, "day", "en")} ago.`,
+        reason_ar: `المتطلب ${tl.ar} وقد تأكد التوفر قبل ${formatCounted(a.days, "day", "ar", { oblique: true })}.`,
       }));
     } else {
       out.push(reason({
         key: "timeline", dimension: "timeline", state: "met",
         label_en: "Timeline", label_ar: "الإطار الزمني",
-        reason_en: `The requirement is ${tl.en} and availability was affirmed ${fmt(a.days)} days ago.`,
-        reason_ar: `المتطلب ${tl.ar} وقد تأكد التوفر قبل ${fmt(a.days)} يوماً.`,
+        reason_en: `The requirement is ${tl.en} and availability was affirmed ${formatCounted(a.days, "day", "en")} ago.`,
+        reason_ar: `المتطلب ${tl.ar} وقد تأكد التوفر قبل ${formatCounted(a.days, "day", "ar", { oblique: true })}.`,
       }));
     }
   }
