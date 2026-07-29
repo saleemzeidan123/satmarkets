@@ -309,6 +309,35 @@ the candidate type carries no price field, so the ordering function cannot reach
 a source scan over `router.ts` with the comments removed fails if a price-shaped key ever
 appears. 24 new tests, 705 total.
 
+**ADV-3A.1 delivered** in `f984201`, `0600934`, `1981317`, `259792d`, `2040a50`, `411f205`
+and `7a3c995`. Closure record and handback: `docs/adv-3a1-closure.md`. The gateway
+architecture was accepted and retained; what was corrected is the set of claims that ran
+ahead of what the code enforced. Six items: the boundary now denies unstructured user text,
+requirements, conversation history and draft listings before any network access while the
+agreement gate is closed, with search, advisor and translation each holding a controlled
+deterministic behaviour and a test proving each stops before the socket (see
+`docs/regulatory-register.md` Part D1); `instruction()` became a tagged-template builder so
+every interpolation is structurally observed and a raw dynamic value cannot enter a message,
+with `ClassifiedMessage` and `ClassifiedSlot` nominally branded by a private symbol; the
+assistant's own turns stopped being classified as the user's words and stopped being an
+allowed source for a figure, so a number that appeared only in a previous model reply stays
+unsupported; the transport source scan widened to provider SDK imports, provider hostnames,
+model environment keys, `/responses`, `/messages` and `/chat/completions`, and the closure
+wording narrowed to the truthful claim that all currently known and registered provider
+integrations are centralized and guarded; the deployed search and advisor paths were
+exercised live in EN and AR, which found nine defects the unit tests had not (findings 55 to
+61, 65 and 66); and finding 52 was closed with a tested Arabic counted-noun formatter
+carrying an oblique dual, asserted at 1, 2, 3, 10, 11, 99 and 100 against rendered sentences.
+856 tests.
+
+**Follow-up, not yet scheduled: import-boundary lint enforcement.** Codex item 4 asks for
+import-boundary or lint enforcement of the transport rule "where practical". It is currently
+enforced by three source-tree tests rather than by the module system, because there is no
+ESLint configuration in this repository at all, so the honest cost is adopting and tuning a
+linter across the whole tree rather than adding one rule. Recorded here as its own package so
+the closure wording and the enforcement stay in agreement in the meantime: the claim made is
+the narrower one, and it is what the tests actually check.
+
 Deliver: the six agents (discovery, listing copilot, opportunity matching, evidence
 auditor, deal analyst, operations); typed SAT tools; the deterministic calculation layer;
 the evaluation gold set that would let the router report an evaluated basis rather than a

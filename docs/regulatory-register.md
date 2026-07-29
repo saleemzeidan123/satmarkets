@@ -282,6 +282,43 @@ instruction to a model. A classification boundary is a property of the code path
 
 Status: **unknown**. Owner action, and it is the binding constraint on ADV-3.
 
+### D1. What "public information" excludes, settled in ADV-3A.1
+
+The boundary previously permitted a class named `user_own_words` unconditionally, on the
+reasoning that a person may send their own text wherever they like. Codex rejected that
+reading and it was wrong. A person typing a sentence does not establish that the sentence
+contains no personal, third-party, confidential or commercially sensitive information, and
+the material travelling on that class was: search queries, advisor messages and their
+history, tenant requirements, company, brand, budget and expansion details typed into a
+query, and unpublished listing titles and descriptions sent for translation. None of that
+is public information, a constructed sample or redacted material, so none of it was
+permitted by the paragraph above.
+
+While `AI_AGREEMENT_IN_FORCE` is false, the boundary now permits exactly four classes:
+`own_instruction` (fixed text this repository authored), `public_published` (material
+already published by us and attributable), properly constructed synthetic samples, and
+approved redacted material. Unstructured user text, requirements, conversation history and
+draft listings are denied before any network access.
+
+The consequence in each of the three paths, which is behaviour rather than intention:
+
+* Search uses its deterministic parser, `src/lib/search/queryParse.ts`.
+* The advisor uses its deterministic fallback.
+* Translation returns a controlled unavailable or agreement-required state. It does not
+  call a provider and it does not write a success state it did not earn.
+
+`preAgreement.test.ts` proves all three stop before the socket. It installs a throwing
+`fetch` **with provider keys present**, so a stop cannot be mistaken for a missing key.
+
+One exception is recorded and bounded: the evaluation harness may call providers using a
+deliberately synthetic gold set that contains no real user or platform data. The set is
+registered as `adv3-eval-gold` in `SYNTHETIC_SETS`. No provider has been called under it,
+because activation still waits on this Part.
+
+Activation requires the owner to record four things, not one: the provider agreement, the
+processing terms, the cross-border basis (Part C4), and the user disclosure or consent
+position. Three of the four are already open decisions in this file.
+
 ---
 
 ## Part E. Contract and procurement requirements
