@@ -209,6 +209,22 @@ const AREA_BEFORE = /(?:size|area|floorplate|مساحه|بمساحه)\s*(?:of\s*
 const IDENT_BEFORE = /[\p{L}][-_/#]?$/u;
 const IDENT_AFTER = /^[-_/#][\p{L}]/u;
 
+// A figure joined to another figure states both bounds at once, which is how people
+// write a size or a budget they are flexible about. The joiner is written every way
+// it is written, including the two dashes, which are built from their code points
+// because the em dash may not appear literally in shipped source. /* em-dash-law */
+const EN_DASH = String.fromCharCode(8211);
+const EM_DASH = String.fromCharCode(8212);
+const RANGE_JOIN = new RegExp(`^\\s*(?:to|and|[-${EN_DASH}${EM_DASH}]|الي|و)\\s*$`, "i");
+
+// The money counterpart of AREA_AFTER and AREA_BEFORE. A range carries its own
+// direction but not its own axis: "200 to 400" says which way each bound points and
+// says nothing about whether it is metres or riyals. A pair with no unit and no
+// currency around it is therefore still two undirected figures, and is still
+// disclosed in `ignored` rather than assigned to the axis that seems likelier.
+const MONEY_AFTER = new RegExp(`^[\\s,]*(?:sar|sr|ريال)${UNIT_END}`, "i");
+const MONEY_BEFORE = /(?:budget|price|rent|sar|sr|ريال|ميزانيه|بميزانيه|سعر|بسعر|ايجار)\s*(?:of\s*)?\D{0,4}$/i;
+
 const isYearValue = (n: number) => Number.isInteger(n) && n >= 1900 && n <= 2100;
 
 type Numerics = {
@@ -233,16 +249,53 @@ type Numerics = {
 function readNumerics(base: string): Numerics {
   const out: Numerics = { priceMax: null, priceMin: null, areaTarget: null, areaMin: null, areaMax: null, spans: [], ignored: [] };
   NUM.lastIndex = 0;
+  const found: { token: string; value: number; start: number; end: number }[] = [];
   let m: RegExpExecArray | null;
   while ((m = NUM.exec(base)) !== null) {
     const token = m[0];
     const value = parseFloat(token.replace(/,/g, ""));
     if (!Number.isFinite(value) || value <= 0) continue;
-    const before = base.slice(Math.max(0, m.index - 30), m.index);
-    const after = base.slice(m.index + token.length, m.index + token.length + 30);
-    const span: [number, number] = [m.index, m.index + token.length];
+    found.push({ token, value, start: m.index, end: m.index + token.length });
+  }
+
+  let skip = false;
+  for (let i = 0; i < found.length; i++) {
+    if (skip) { skip = false; continue; }
+    const { token, value, start, end } = found[i];
+    const before = base.slice(Math.max(0, start - 30), start);
+    const after = base.slice(end, end + 30);
+    const span: [number, number] = [start, end];
     // Left untouched and unmasked, so the whole identifier survives into the terms.
     if (IDENT_BEFORE.test(before) || IDENT_AFTER.test(after)) continue;
+
+    // A pair before a single direction word. The joiner is read once, on the gap
+    // between the two figures, so the second figure is never also read alone: it is
+    // the second figure that carries the unit, and reading it alone is what turned
+    // "200 to 400 m2" into a single 400 with a discarded 200.
+    const next = found[i + 1];
+    if (next) {
+      const join = base.slice(end, next.start);
+      const nAfter = base.slice(next.end, next.end + 30);
+      // The left-hand identifier rule is deliberately not applied to the second
+      // figure: the letter before it is the joiner itself, as in the Arabic "و400".
+      if (RANGE_JOIN.test(join) && value < next.value && !IDENT_AFTER.test(nAfter)) {
+        const pairIsArea = AREA_AFTER.test(nAfter) || AREA_BEFORE.test(before);
+        const pairIsMoney = !pairIsArea && (MONEY_AFTER.test(nAfter) || MONEY_BEFORE.test(before));
+        if (pairIsArea || pairIsMoney) {
+          if (pairIsArea) {
+            out.areaMin = out.areaMin ?? value;
+            out.areaMax = out.areaMax ?? next.value;
+          } else {
+            out.priceMin = out.priceMin ?? value;
+            out.priceMax = out.priceMax ?? next.value;
+          }
+          out.spans.push(span, [next.start, next.end]);
+          skip = true;
+          continue;
+        }
+      }
+    }
+
     const isArea = AREA_AFTER.test(after) || AREA_BEFORE.test(before);
     const dir = MAX_BEFORE.test(before) ? "max" : MIN_BEFORE.test(before) ? "min" : ABOUT_BEFORE.test(before) ? "about" : null;
 
@@ -311,6 +364,42 @@ function buildCandidates(vocab: QueryVocab): Candidate[] {
   return out.sort((a, b) => b.phrase.length - a.phrase.length);
 }
 
+/**
+ * Order the candidates against the string actually typed.
+ *
+ * THE DEFECT THIS EXISTS TO KILL. Longest phrase first is the right rule for two
+ * phrases that overlap, and the wrong rule for two that do not. "office for lease in
+ * Riyadh for the Northwind Logistics expansion" resolved to a warehouse, because
+ * "logistics" is nine characters of warehouse vocabulary and "office" is six, so a
+ * word inside a company name beat the word the person led with. The asset slot was
+ * then full, "office" fell through into free text, and the search looked for the
+ * literal word "office" among warehouses. Found by the ADV-3B evaluation gold set,
+ * which is the argument for having one.
+ *
+ * THE RULE. Earliest match wins. Length still decides between two phrases that start
+ * at the same place, which is exactly the overlap case the length rule was written
+ * for and the only case it was ever right about: "serviced office" and "serviced"
+ * both begin at zero, "مكه المكرمه" and "مكه" both begin at zero. The sort is
+ * stable, so the incoming length order survives untouched inside each tie.
+ *
+ * A phrase that is not present is sorted last rather than dropped, because a cut can
+ * leave two previously separated words adjacent and a phrase can appear that was not
+ * there when this ran.
+ */
+function orderCandidates(cands: Candidate[], text: string): Candidate[] {
+  const hay = ` ${text} `;
+  const pos = new Map<string, number>();
+  const at = (phrase: string): number => {
+    const cached = pos.get(phrase);
+    if (cached !== undefined) return cached;
+    const i = hay.indexOf(` ${phrase} `);
+    const v = i < 0 ? Number.MAX_SAFE_INTEGER : i;
+    pos.set(phrase, v);
+    return v;
+  };
+  return [...cands].sort((a, b) => at(a.phrase) - at(b.phrase));
+}
+
 /** Whole-token containment: " olaya " inside " office in olaya ", never "olayat". */
 function cut(hay: string, phrase: string): string | null {
   const h = ` ${hay} `;
@@ -365,7 +454,7 @@ export function parseQuery(raw: string, vocab: QueryVocab): ParsedQuery {
   masked += base.slice(cursor);
 
   let rest = normalize(masked);
-  for (const c of buildCandidates(vocab)) {
+  for (const c of orderCandidates(buildCandidates(vocab), rest)) {
     if (c.kind === "asset" && out.asset) continue;
     if (c.kind === "grade" && out.grade) continue;
     if (c.kind === "fitout" && out.fitout) continue;

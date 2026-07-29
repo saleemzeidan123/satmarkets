@@ -338,6 +338,50 @@ linter across the whole tree rather than adding one rule. Recorded here as its o
 the closure wording and the enforcement stay in agreement in the meantime: the claim made is
 the narrower one, and it is what the tests actually check.
 
+**ADV-3B delivered** in `3e36d52` and the commit carrying `src/lib/eval/`. Closure record:
+`docs/adv-3b-closure.md`. Six pieces. Typed SAT tools, where a tool declares its effect, the
+capability required to call it, a written parser and a bilingual summary, and where every
+result carries its own classified parts so provenance travels inside the result rather than
+alongside it. A deterministic permission layer whose grant table falls back to the signed out
+grants for an unknown role, requires an actual party id before a capability over the actor's
+own records opens anything, never names a tool the caller may not use, and runs the permission
+check before the parser so a refused caller never learns the schema. The six agent boundaries
+(discovery, listing copilot, opportunity matching, evidence auditor, deal analyst, operations),
+each with a bounded tool list, a maximum capability, a call ceiling per turn so a loop cannot
+become a spend, a permitted data class list narrower than the global boundary, and a figure
+policy of either `none` or `tool_vouched`; no agent may hold personal data or verification
+evidence whether or not the agreement exists, and every agent's mode is deterministic today
+because it is a function of `AI_AGREEMENT_IN_FORCE` and of nothing else. A synthetic bilingual
+gold set of 22 cases across three profiles in both languages, registered in `SYNTHETIC_SETS` as
+`adv3-eval-gold`, invented throughout down to the districts and the companies, which is the
+permission Codex granted in item 1 and the only content that may reach a provider while the
+gate is closed. Deterministic graders that apply the dash law, Law 7, the licence law and the
+script check to every text answer, reuse `unvouchedFigures` from the agent layer so an
+evaluation pass and a runtime refusal cannot disagree, and grade a translation in the language
+it is going into. And a harness, `npm run eval`, that runs a subject rather than a model, so
+the deterministic parser is measured today rather than the harness first being exercised on the
+day a provider arrives.
+
+`unavailable` is a first class third outcome and is never folded into pass or fail: counting it
+as a failure makes the baseline look broken and counting it as a pass makes an unconfigured
+provider look perfect. The model subject today reports that no provider is configured, which is
+deliberately not the same fact as a boundary denial and is asserted as a distinct sentence.
+Cost is measured as requests and characters, not tokens or money, because `transport.ts`
+surfaces no usage from either transport; the limitation is named rather than estimated. The
+cost firewall is structural rather than documentary: the router imports nothing from the
+evaluation package, no module outside `src/lib/eval/` imports the harness so a provider run is
+always deliberate, and the router still carries no price shaped key.
+
+The set found two real defects on its first pass against the shipped parser, which is the
+argument for having written it. `buildCandidates()` ended with a global longest phrase first
+sort, so "logistics" inside a company name beat the word "office" the person led with and the
+asset slot filled with the wrong value; `orderCandidates` now gives earliest match wins with
+length as the tie break between phrases starting in the same place, which is the overlap case
+the length rule was ever right about. And `readNumerics` recognised a maximum, a minimum and an
+approximation but not a pair, so "200 to 400 m2" read as a single target of 400; the joiner is
+now read once on the gap between two figures, in every form it is written including both
+dashes, "الي" and "و". Both carry regression tests. 1021 tests.
+
 Deliver: the six agents (discovery, listing copilot, opportunity matching, evidence
 auditor, deal analyst, operations); typed SAT tools; the deterministic calculation layer;
 the evaluation gold set that would let the router report an evaluated basis rather than a
