@@ -154,3 +154,89 @@ test("the exemptions are real files, so a rename cannot silently disable the sca
   // A Set of paths that no longer exist would exempt nothing and be invisible.
   for (const path of SCAN_EXEMPT) assert.ok(readFileSync(path, "utf-8").length > 0, path);
 });
+
+// ------------------------------------------------- ADV-3A.1, second layer
+// The source-tree scan above closed five runtime composers and then the live
+// Arabic advisor showed a sixth reference, in the market-glimpse card, still
+// reading "المؤشر الإيجاري (إيجار)" with no authority named. It was not a
+// composer. It was a shipped dictionary string, and the scan reads .ts and .tsx
+// only, so it could not have seen it.
+//
+// Eight keys carried it. In seven of the eight the English named REGA and the
+// Arabic did not, which is the same bilingual-parity failure as the composers,
+// one layer up. The eighth, advisor.bandLine, named no authority in either
+// language. So the guard now scans the dictionaries with the same rule: strip
+// the canonical clause, and anything still citing the index is an offender.
+//
+// The needle is the PARENTHESISED form. Ejar is also a tenancy registry and a
+// contract, and "the Ejar lease", "Ejar registration" and the /about glossary
+// line are references to that registry rather than to the Rent Index. Those are
+// correct as written and must not be swept into the canonical name.
+
+const INDEX_CITATION = { en: "Index (Ejar)", ar: "(إيجار)" } as const;
+
+/** Every string value in a dictionary, with its dotted key path. */
+function dictStrings(o: unknown, path = "", out: [string, string][] = []): [string, string][] {
+  if (typeof o === "string") out.push([path, o]);
+  else if (o && typeof o === "object")
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) dictStrings(v, path ? `${path}.${k}` : k, out);
+  return out;
+}
+
+test("no shipped dictionary string cites the Rent Index without naming the authority", () => {
+  for (const loc of ["en", "ar"] as const) {
+    const d = JSON.parse(readFileSync(join("src", "i18n", "dictionaries", `${loc}.json`), "utf-8"));
+    const offenders = dictStrings(d)
+      .filter(([, v]) => v.split(RENT_INDEX_SOURCE[loc]).join("").includes(INDEX_CITATION[loc]))
+      .map(([k]) => k);
+    assert.deepEqual(offenders, [], `${loc}: ${offenders.join(", ")}`);
+  }
+});
+
+test("the eight keys that actually shipped the defect now carry the full attribution", () => {
+  // Named individually rather than left to the scan, because a future edit that
+  // deletes a key would pass a scan and still lose the attribution from a
+  // sentence a reader sees.
+  const KEYS = [
+    "ld.sourceStrip",
+    "advisor.bandLine",
+    "advisor.snapshotNote",
+    "rentIndex.intro",
+    "rentIndex.metaDesc",
+    "rentIndex.dsDesc",
+    "rentIndex.dsBasedOn",
+    "flyer.indexSource",
+  ];
+  for (const loc of ["en", "ar"] as const) {
+    const d = JSON.parse(readFileSync(join("src", "i18n", "dictionaries", `${loc}.json`), "utf-8"));
+    const byPath = new Map(dictStrings(d));
+    for (const k of KEYS) {
+      const v = byPath.get(k);
+      assert.equal(typeof v, "string", `${loc}.${k} is missing`);
+      assert.ok(v!.includes(RENT_INDEX_SOURCE[loc]), `${loc}.${k}: ${v}`);
+    }
+  }
+});
+
+test("the Ejar tenancy registry is still named as itself, not relabelled as the index", () => {
+  // The correction above must not have swept the contract and glossary lines.
+  const en = JSON.parse(readFileSync(join("src", "i18n", "dictionaries", "en.json"), "utf-8"));
+  const byPath = new Map(dictStrings(en));
+  for (const k of ["deal.term5Label", "deal.next2Title", "messages.tlContract"]) {
+    const v = byPath.get(k);
+    assert.equal(typeof v, "string", k);
+    assert.equal(v!.includes(RENT_INDEX_SOURCE.en), false, `${k} was wrongly rewritten: ${v}`);
+    assert.ok(/Ejar/.test(v!), k);
+  }
+});
+
+test("no source file cites the Rent Index in English without naming the authority either", () => {
+  // The Arabic half of this rule is the scan above. The English half was never
+  // checked, and advisor.bandLine proved the defect is not Arabic-only.
+  const offenders: string[] = [];
+  for (const [path, text] of sourceFiles(SRC)) {
+    if (SCAN_EXEMPT.has(path)) continue;
+    if (text.split(RENT_INDEX_SOURCE.en).join("").includes(INDEX_CITATION.en)) offenders.push(path);
+  }
+  assert.deepEqual(offenders, [], `these files cite the Rent Index in English without REGA: ${offenders.join(", ")}`);
+});

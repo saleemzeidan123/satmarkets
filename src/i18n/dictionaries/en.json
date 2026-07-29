@@ -756,7 +756,7 @@
     "tryAgain": "Try again",
     "handoffSeeIn": "See listings in {district}",
     "handoffThisDistrict": "this district",
-    "bandLine": "Sample indicative range (test data): {range} {unit}. Rent Index (Ejar) average {avg}, {period}.",
+    "bandLine": "Sample indicative range (test data): {range} {unit}. REGA Rental Index (Ejar) average {avg}, {period}.",
     "snapshotNote": "Index figures come from the REGA Rental Index (Ejar): averages of registered rental contracts. Ask about a district and an asset type and the Advisor will show the band with its source."
   },
   "area": {

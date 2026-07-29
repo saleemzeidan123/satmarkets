@@ -43,6 +43,17 @@ what it carries. `instruction()` throws if a template has an unfilled placeholde
 names a placeholder the template does not contain, or if a slot declares no class. There is
 therefore no way to interpolate a value into a prompt without saying what the value is.
 
+> **Correction, ADV-3A.1 item 2.** The last sentence was too strong for the API that shipped
+> here. `instruction(label, text)` took an already composed string, so a caller could write
+> `instruction("x", someDynamicValue)`, or interpolate into the string before calling, and the
+> gateway would see one part classified `own_instruction`. The check was on the argument, not
+> on the interpolation. `f984201` replaced it with a tagged template,
+> ``instruction("label")`fixed text ${classifiedSlot(...)}` ``, so every interpolation is
+> observed structurally and a raw interpolated value throws. `ClassifiedMessage` and
+> `ClassifiedSlot` are now branded with module-private symbols, so an object literal cannot
+> impersonate one. The sentence above is true of the current code and was not true of the code
+> this record was written about.
+
 `src/lib/ai/router.ts`. Task profiles, and a candidate register in which every candidate
 states an explicit evaluation status. All four currently state `unevaluated` with a reason,
 because no gold set exists yet, so `selectChain` reports a basis of
@@ -89,6 +100,19 @@ package index re-exports it. Their needles are assembled from fragments so the t
 does not match its own scan; a scan that has to exempt itself has lost some of its
 authority.
 
+> **Correction, ADV-3A.1 item 4.** "The only module in the repository that opens a socket to a
+> provider" was a claim about every file that could ever be written, and the scan behind it
+> looked for three needles. A new file could have reached a provider through a vendor SDK,
+> through a `/responses` or `/messages` endpoint, through a hostname, through a differently
+> named authorization header, or through a generic fetch to a configured URL, and passed.
+> `f984201` widened the scan to endpoints, provider hostnames, SDK package names, provider
+> authorization headers and model-related environment-key reads. It is still a source scan, so
+> a hostname assembled from fragments would evade it, exactly as this test assembles its own
+> needles to avoid matching itself. The truthful claim, and the one the record now makes, is
+> the narrower one Codex asked for: **all currently known and registered provider integrations
+> are centralized in `transport.ts` and guarded.** Absolute enforcement is not proven here, and
+> import-boundary lint enforcement is recorded in `docs/roadmap.md` rather than claimed.
+
 ## Gate
 
 `npx tsc --noEmit` clean. `npm test` 705 pass, 0 fail. `npm run ar-lint` clean.
@@ -108,6 +132,21 @@ cannot run from here, and the fetch tool available to this session issues GET on
 two routes are covered by unit tests against a stubbed transport, which is weaker evidence
 than a live POST and is being recorded as weaker rather than described as equivalent. The
 first live exercise of either endpoint should be treated as the real confirmation.
+
+> **Correction and replacement, ADV-3A.1 item 5.** Two things in that paragraph.
+>
+> The cause was misattributed. The 403 is the container's own egress allowlist answering
+> `x-deny-reason: host_not_allowed` before the request leaves, not Vercel deployment protection
+> answering it on arrival. The distinction matters because it says where the limit is and what
+> would lift it, and a wrong cause in a closure record is a wrong instruction to whoever reads
+> it next.
+>
+> Both endpoints have since been exercised live, in English and Arabic, through a browser that
+> holds the deployment-protection cookie. See `docs/adv-3a1-closure.md`, section "Live
+> evidence", for the transcripts, the network traces and what each turn proves. The claim that
+> the first live exercise should be treated as the real confirmation stands, and that
+> confirmation found three routing defects and one attribution defect that the unit tests had
+> not, which is the reason the distinction was worth keeping.
 
 ## Responsive evidence
 
