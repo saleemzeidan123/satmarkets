@@ -121,6 +121,13 @@ const PLACE_STOP = new Set([
   "ريال", "متر", "مربع", "سنه", "شهر", "ايجار", "ايجارات", "سعر", "اسعار", "مساحه",
   "وحده", "عرض", "عروض", "السوق", "المؤشر", "مؤشر", "من", "الي", "علي", "عن", "هل",
   "كم", "ما", "هي", "هو", "لدي", "عندكم", "عندك",
+  // Movement and comparison words. Without these the watch prompt "Alert me when
+  // office rents in [location] move more than 3%" captured "[location] move more
+  // than" as the district and sent it to the districts table.
+  "move", "moves", "moved", "moving", "more", "than", "up", "down", "when", "if",
+  "changes", "change", "rises", "falls", "goes",
+  "تتحرك", "تحرك", "يتحرك", "اكثر", "اقل", "عندما", "اذا", "تغيرت", "تغير",
+  "ارتفعت", "انخفضت", "ترتفع", "تنخفض",
 ]);
 
 const WATCH_WORDS = [
@@ -145,7 +152,29 @@ const VALUE_WORDS = [
   "ايجارات",
   "مناسب", "معقول", "تقييم", "قيمه سوقيه", "غالي", "مرتفع", "منخفض", "متوسط الايجار",
   "سعر السوق", "كم ايجار", "كم الايجار", "المعدل", "هل السعر",
+  // The band vocabulary. Two of the platform's own four suggestion chips are band
+  // and pricing requests, and both classified as `search`: the advisor answered
+  // "What's within band in KAFD?" with a list of KAFD offices and never showed the
+  // band. A question about the indicative range is the value path by definition,
+  // and it is the path that answers with published evidence and no model at all.
+  "band", "bands", "in band", "within band", "indicative band", "indicative range",
+  "indicative ranges", "guide range", "price band", "rent band", "rental band",
+  "price a", "price an", "price my", "price this", "price the", "what should i charge",
+  "how should i price", "what is it worth", "whats it worth",
+  "نطاق", "نطاقات", "النطاق الاسترشادي", "النطاقات الاسترشاديه", "نطاق استرشادي",
+  "النطاق السعري", "نطاق الاسعار", "كم يساوي", "كم تساوي", "بكم اعرض",
 ];
+
+/**
+ * The Arabic pricing imperative, anchored to the start of the message.
+ *
+ * "سعّر مكتب فئة أ في العليا" is the platform's own suggested prompt. Folding
+ * removes the shadda, so the imperative "سعّر" and the ordinary noun "سعر"
+ * collapse to one token, and the noun is unremarkable inside a search ("بسعر
+ * معقول"). Only a sentence that OPENS with it is the command, so the test is
+ * anchored rather than added to the word list.
+ */
+const AR_PRICE_IMPERATIVE = /^(?:و)?سعر(?=\s)/;
 
 const SEARCH_WORDS = [
   "find", "looking for", "look for", "show me", "browse", "available", "availability",
@@ -239,6 +268,9 @@ function readPlacePhrase(raw: string): string | null {
       if (!f) break;
       if (PLACE_STOP.has(f)) break;
       if (/\d/.test(f)) break;
+      // A bracketed placeholder is the prompt template asking the person to fill
+      // it in, not a place. The shipped watch prompt carries one.
+      if (/[[\]{}<>]/.test(tokens[j])) break;
       taken.push(tokens[j]);
     }
     if (taken.length) return taken.join(" ");
@@ -253,7 +285,7 @@ function readMode(folded: string, hasRentFigure: boolean, asset: string | null, 
   // which is the same default the model-backed classifier used.
   if (hasAny(folded, WATCH_WORDS)) return "watch";
   if (hasAny(folded, DRAFT_WORDS)) return "draft";
-  if (hasRentFigure || hasAny(folded, VALUE_WORDS)) return "value";
+  if (hasRentFigure || hasAny(folded, VALUE_WORDS) || AR_PRICE_IMPERATIVE.test(folded)) return "value";
   if (hasAny(folded, SEARCH_WORDS)) return "search";
   // A capability or identity question only counts as chat when the person is not
   // also naming a place or an asset. "What can you tell me about offices in

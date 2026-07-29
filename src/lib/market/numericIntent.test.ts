@@ -140,3 +140,60 @@ test("a thousands-separated quantity is not mistaken for a year", () => {
   assert.deepEqual(readNumericIntent("2,000 m² please").years, []);
   assert.deepEqual(readNumericIntent("in 2026").years, [2026]);
 });
+
+// ------------------------------------------------------- ADV-3A.1, item 5
+// A bound the person put on a search is not a figure they offered for judgement.
+// "under 1,600 SAR/m2" is the most they will pay. It is kept in `caps` rather than
+// discarded, so a later search layer can still filter by it.
+
+test("a per-area ceiling is a cap, not an offered rent", () => {
+  const n = readNumericIntent("Fitted Grade A office in Granada, around 300 m², under 1,600 SAR/m²");
+  assert.equal(n.rent, null);
+  assert.deepEqual(n.caps, [1600]);
+  assert.deepEqual(n.areas, [300]);
+});
+
+test("every ordinary way of writing a bound is recognised, in both languages", () => {
+  for (const q of [
+    "office below 1,200 SAR per sqm",
+    "office up to 1,200 SAR/m²",
+    "office no more than 1,200 SAR/m²",
+    "office at most 1,200 SAR/m²",
+    "office max 1,200 SAR/m²",
+    "مكتب بأقل من 1,200 ريال/م²",
+    "مكتب لا يزيد عن 1,200 ريال/م²",
+    "مكتب بحد أقصى 1,200 ريال/م²",
+  ]) {
+    const n = readNumericIntent(q);
+    assert.equal(n.rent, null, q);
+    assert.deepEqual(n.caps, [1200], q);
+  }
+});
+
+test("a floor is a bound too, so it does not become an offered rent", () => {
+  const n = readNumericIntent("warehouse over 400 SAR/m² in Sulay");
+  assert.equal(n.rent, null);
+  assert.deepEqual(n.caps, [400]);
+});
+
+test("a bound inside an explicit comparison is still the rent they pay", () => {
+  const n = readNumericIntent("we pay under 1,600 SAR/m2, is that fair");
+  assert.equal(n.rent, 1600);
+  assert.equal(n.rentBasis, "unit");
+  assert.deepEqual(n.caps, []);
+});
+
+test("the cap rule touches only per-area rents, never a budget, an area, a percent or a year", () => {
+  const b = readNumericIntent("My budget is 900,000 SAR for an office in Al Olaya");
+  assert.deepEqual(b.budgets, [900000]);
+  assert.deepEqual(b.caps, []);
+  const a = readNumericIntent("office under 300 m² in Hittin");
+  assert.deepEqual(a.areas, [300]);
+  assert.deepEqual(a.caps, []);
+  const p = readNumericIntent("alert me when rents move more than 3%");
+  assert.deepEqual(p.percents, [3]);
+  assert.deepEqual(p.caps, []);
+  const y = readNumericIntent("what happened after 2024");
+  assert.deepEqual(y.years, [2024]);
+  assert.deepEqual(y.caps, []);
+});

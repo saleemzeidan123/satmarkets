@@ -117,3 +117,74 @@ test("a threshold is only kept where it means something", () => {
   assert.equal(v.mode, "value");
   assert.equal(v.threshold, null);
 });
+
+// ------------------------------------------------------- ADV-3A.1, item 5
+// Found by exercising the deployed Arabic advisor. The vocabulary the value path
+// recognised carried no word for the indicative band and no word for pricing, so
+// two of the four suggestion chips on the platform's own page fell through to
+// `search`. The mirror fault sat on the search side: a ceiling written into the
+// suggested discovery prompt was read as a rent the person had offered for
+// judgement, so the discovery prompt answered with a valuation.
+
+test("a question about the indicative band is a valuation, in both languages", () => {
+  for (const q of [
+    "What's within band in KAFD?",
+    "what is the indicative band for offices in Hittin",
+    "what is the price band for Al Olaya offices",
+    "ما النطاق الاسترشادي في كافد؟",
+    "ما النطاق الاسترشادي لمكاتب فئة أ في كافد؟",
+    "ما النطاق السعري لمكاتب العليا",
+  ]) {
+    assert.equal(readAdvisorIntent(q).mode, "value", q);
+  }
+});
+
+test("a request to price something is a valuation", () => {
+  assert.equal(readAdvisorIntent("Price a Grade A office in Al Olaya").mode, "value");
+  assert.equal(readAdvisorIntent("price my warehouse in Sulay").mode, "value");
+  assert.equal(readAdvisorIntent("what should I charge for an office in Hittin").mode, "value");
+  assert.equal(readAdvisorIntent("سعّر مكتب فئة أ في العليا").mode, "value");
+});
+
+test("the Arabic pricing imperative is read only where it is a command", () => {
+  // Folding removes the shadda, so the imperative "سعّر" and the ordinary noun
+  // "سعر" collapse to one token. Only a sentence that opens with it is the
+  // command; a search that mentions a reasonable price is still a search.
+  assert.equal(readAdvisorIntent("مستودع للايجار في السلي 800 متر مربع").mode, "search");
+  assert.equal(readAdvisorIntent("مكتب للايجار في العليا بسعر شامل الخدمات").mode, "search");
+  assert.equal(readAdvisorIntent("مستودع في السلي سعر الايجار شهري").mode, "search");
+});
+
+test("a ceiling is a constraint on a search, not a figure offered for judgement", () => {
+  for (const q of [
+    "Fitted Grade A office in Granada, around 300 m², under 1,600 SAR/m²",
+    "office in Al Olaya below 1,200 SAR per sqm",
+    "مكتب في العليا بأقل من 1,600 ريال/م²",
+    "مستودع في السلي لا يزيد عن 400 ريال/م²",
+  ]) {
+    const i = readAdvisorIntent(q);
+    assert.equal(i.mode, "search", q);
+    assert.equal(i.figure, null, q);
+  }
+});
+
+test("a ceiling inside an explicit comparison is still the rent the person pays", () => {
+  const i = readAdvisorIntent("we pay under 1,600 SAR/m2, is that fair for Hittin offices");
+  assert.equal(i.mode, "value");
+  assert.equal(i.figure, 1600);
+});
+
+test("a bracketed placeholder is never captured as a district", () => {
+  // The shipped watch prompt carries "[location]" for the person to replace, and
+  // the words after it used to be sent to the districts table as their district.
+  assert.equal(readAdvisorIntent("Alert me when office rents in [location] move more than 3%").district, null);
+  assert.equal(readAdvisorIntent("نبّهني عندما تتحرك إيجارات المكاتب في [الموقع] أكثر من 3%").district, null);
+});
+
+test("the movement words in a watch sentence do not become part of the place", () => {
+  const i = readAdvisorIntent("Alert me when office rents in Hittin move more than 3%");
+  assert.equal(i.mode, "watch");
+  assert.equal(i.threshold, 3);
+  assert.match(String(i.district), /Hittin/i);
+  assert.equal(/move|more|than/i.test(String(i.district)), false);
+});

@@ -27,6 +27,12 @@ export type NumericIntent = {
   percents: number[];
   years: number[];
   budgets: number[];
+  /**
+   * Per-area rent figures the person set as a CEILING or a FLOOR rather than
+   * offered for judgement. "under 1,600 SAR/m2" is what they will pay at most; it
+   * is a constraint on a search, not a number they asked us to grade.
+   */
+  caps: number[];
   /** "2025" or "2025-Q3" when the user asked about a specific reporting period. */
   requestedPeriod: string | null;
 };
@@ -57,6 +63,18 @@ const AREA_BEFORE = /(?:size|area|floorplate|مساحة|بمساحة)\s*(?:of\s*
 // "1,600 ريال/م²", "1600/m2".
 const RENT_UNIT_AFTER = /^[\s,]*(?:sar|sr|riyals?|ريال|ر\.?س)?\s*(?:\/|per\s|لكل\s|لل)\s*(?:m2|m²|sqm|sq\.?\s?m|square\s+met(?:er|re)s?|متر|م²|م2)/i;
 const RENT_BEFORE = /(?:rent\s+of|rent\s+is|paying|pay|asking|quoted|offered|إيجار|ايجار|أدفع|ادفع|يطلبون)\s*\D{0,6}$/i;
+
+// A bound the person put on a search, immediately before the figure.
+//
+// THE DEFECT THIS EXISTS TO KILL. The advisor's own suggested search prompt is
+// "Fitted Grade A office in Granada, around 300 m2, under 1,600 SAR/m2". The unit
+// rule below reads "1,600 SAR/m2" as a rent, correctly, and the advisor then
+// treated a rent as a figure offered for comparison and answered the platform's
+// own discovery prompt with a valuation instead of listings. A ceiling is not an
+// offer. The Arabic alternatives carry both hamza spellings because this pattern
+// runs on the source text, which is not folded.
+const BOUND_BEFORE =
+  /(?:under|below|less\s+than|no\s+more\s+than|not\s+more\s+than|up\s*to|max(?:imum)?|at\s+most|over|above|more\s+than|at\s+least|min(?:imum)?|starting\s+(?:at|from))\s*(?:sar|sr|riyals?)?\s*\D{0,4}$|(?:[أا]قل\s+من|ب[أا]قل\s+من|تحت|حت[ىي]|دون|بحد\s+[أا]قص[ىي]|لا\s+يزيد\s*(?:عن)?|[أا]كثر\s+من|فوق|بحد\s+[أا]دن[ىي]|لا\s+يقل\s*(?:عن)?)\s*\D{0,6}$/i;
 
 // Budget: a currency amount with NO per-area unit, or an explicit budget word.
 const CURRENCY_AFTER = /^[\s,]*(?:sar|sr|riyals?|ريال|ر\.?س)\b/i;
@@ -114,6 +132,7 @@ export function readNumericIntent(raw: string): NumericIntent {
   const percents: number[] = [];
   const years: number[] = [];
   const budgets: number[] = [];
+  const caps: number[] = [];
   const unclaimed: { value: number; hasSep: boolean }[] = [];
   let rent: number | null = null;
   let rentBasis: "unit" | "comparison" | null = null;
@@ -134,6 +153,10 @@ export function readNumericIntent(raw: string): NumericIntent {
     // "unit" means the user wrote a per-area rent unit; "comparison" means they said
     // in words that the number IS a rent ("we pay", "they're asking", "إيجاري").
     if (RENT_UNIT_AFTER.test(after)) {
+      // A bound only diverts the figure when the sentence is not ALSO an explicit
+      // rent comparison: "we pay under 1,600 SAR/m2, is that fair" is still a
+      // question about a rent they actually pay.
+      if (!comparison && BOUND_BEFORE.test(before)) { caps.push(value); continue; }
       if (rent === null || rentBasis !== "unit") { rent = value; rentBasis = "unit"; }
       continue;
     }
@@ -171,6 +194,7 @@ export function readNumericIntent(raw: string): NumericIntent {
     percents,
     years,
     budgets,
+    caps,
     requestedPeriod: detectRequestedPeriod(src, years),
   };
 }
