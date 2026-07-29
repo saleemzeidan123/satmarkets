@@ -25,10 +25,10 @@ export default function SignupFlow({ locale }: Props) {
   const [busy, setBusy] = useState(false); const [done, setDone] = useState(false); const [err, setErr] = useState("");
 
   const roles: { v: Role; h: string; p: string }[] = [
-    { v: "occupier", h: t("I need a space", "أحتاج مساحة"), p: t("Find and lease or buy verified commercial space", "ابحث واستأجر أو اشترِ مساحة تجارية موثّقة") },
+    { v: "occupier", h: t("I need a space", "أحتاج مساحة"), p: t("Find, compare and lease or buy commercial space", "ابحث وقارن واستأجر أو اشترِ مساحة تجارية") },
     { v: "owner", h: t("I own property", "أملك عقاراً"), p: t("List your spaces and reach serious occupiers", "اعرض مساحاتك وصل إلى مستأجرين جادّين") },
     { v: "broker", h: t("I am a licensed broker", "أنا وسيط مرخّص"), p: t("Work the exchange with your FAL licence", "اعمل في المنصة برخصة فال الخاصة بك") },
-    { v: "investor", h: t("I invest in real estate", "أستثمر في العقار"), p: t("Underwrite verified assets with sourced data", "قيّم أصولاً موثّقة ببيانات مُسندة") },
+    { v: "investor", h: t("I invest in real estate", "أستثمر في العقار"), p: t("Underwrite assets with sourced data", "قيّم الأصول ببيانات مُسندة") },
   ];
   const ASSET = [["office", t("Office", "مكاتب")], ["retail", t("Retail & F&B", "تجزئة ومطاعم")], ["medical", t("Medical", "طبي")], ["warehouse", t("Warehouse", "مستودعات")], ["showroom", t("Showroom", "معارض")], ["serviced", t("Serviced", "مكاتب مخدومة")], ["land", t("Land", "أراضٍ")], ["other", t("Other", "أخرى")]] as const;
   const toggleChip = (v: string) => setChips((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));

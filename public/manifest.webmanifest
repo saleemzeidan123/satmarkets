@@ -1,7 +1,7 @@
 {
   "name": "SAT Markets",
   "short_name": "SAT Markets",
-  "description": "Verified commercial real estate exchange for Saudi Arabia. Riyadh-first leasing and sales, a decision-grade rent index, and AI search.",
+  "description": "Commercial real estate exchange for Saudi Arabia. Riyadh-first leasing and sales, a rent index republished from the REGA Rental Index (Ejar), and search that never invents a figure.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

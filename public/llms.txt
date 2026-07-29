@@ -1,12 +1,30 @@
 # SAT Markets (satmarkets.sa)
 
-Verified commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL licence 1200025510). Arabic-first with a full English mirror.
+Commercial real estate exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL licence 1200025510). Arabic-first with a full English mirror: every published route exists at both /en/... and /ar/....
+
+## Status of the data on this site
+
+This is a preview environment. Listings, requirements and figures shown here are sample data for testing, not live market inventory. Do not quote a listing, a requirement, a price or a platform count from this site as real market activity.
+
+The exception is the Rent Index, which republishes benchmarks derived from the REGA Rental Index (Ejar), averages of registered lease contracts. SAT does not originate those figures.
 
 ## What this site offers
-- /en/listings and /ar/listings: verified commercial listings (office, retail, medical, warehouse, showroom, serviced, education, land), lease and sale.
-- /en/rent-index and /ar/rent-index: the SAT Riyadh Commercial Rent Index, benchmarks derived from the REGA Rental Index (Ejar), averages of registered lease contracts. Indicative market context, not advice. SAT does not originate these figures.
-- /en/area: location intelligence methodology for Saudi trade areas.
-- /en/find: requirement-based matching graded against published benchmarks.
+
+- /en/listings and /ar/listings: commercial spaces listed by owners and licensed brokers, with published Rent Index context, derived from the REGA Rental Index (Ejar), where available. Office, retail, medical, warehouse, showroom, serviced, education and land, for lease and for sale.
+- /en/rent-index and /ar/rent-index: the SAT Riyadh Commercial Rent Index. Figures by district and asset type, derived from the REGA Rental Index (Ejar), averages of registered contracts, with blanks left where the sample is too thin. Indicative market context, not advice.
+- /en/market and /ar/market: the Riyadh commercial market at a glance. Published Rent Index bands, derived from the REGA Rental Index (Ejar), alongside indicators computed from platform records.
+- /en/map and /ar/map: buildings mapped by district and asset type, carrying the published Rent Index band, derived from the REGA Rental Index (Ejar), where the sample is sufficient.
+- /en/locations and /ar/locations: the districts, developments and areas covered, with listed space counts. A development is not a district and the two are labelled separately.
+- /en/requirements and /ar/requirements: the demand board. Occupiers post what they need and owners and licensed brokers respond.
+- /en/advisor and /ar/advisor: a question and answer surface grounded in the Rent Index, derived from the REGA Rental Index (Ejar). It never originates a rent figure, a price or a market statistic.
+- /en/brokers and /ar/brokers: how licensed brokers work the exchange, with no assumed commission.
 
 ## Citation
-Cite figures with their attribution as shown on the page: the REGA Rental Index (Ejar), averages of registered contracts. Do not present these benchmarks as SAT's own primary data.
+
+Cite figures with the attribution shown on the page: the REGA Rental Index (Ejar), averages of registered contracts. Do not present these benchmarks as SAT's own primary data.
+
+Average and median are distinct throughout this site and must not be substituted for one another.
+
+Numerals are Western in both languages. Reproduce them as shown.
+
+Only the routes listed above are published for citation. Any other path on this domain is either held pending its own review or a private account surface, and must not be cited or linked as a public source.

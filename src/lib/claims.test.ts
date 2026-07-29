@@ -511,11 +511,35 @@ for (const [locale, dict] of [["en", EN], ["ar", AR]] as const) {
 //   3. Any string that names the Rent Index as a source carries the REGA Rental Index
 //      (Ejar) attribution owner ruling 2 requires.
 
+// Arabic is noun then adjective, and both halves take the definite article, so the
+// noun list and the adjective are built once rather than spelled out as an alternation
+// of every pairing. The optional middle group is the intervening word.
+const AR_CORPUS = new RegExp(
+  "(?:ال)?(?:مساحات|مساحة|قوائم|بيانات|حقائق|عروض|عروضك|أصول|أصولا|أصولاً)" +
+    "\\s+(?:\\S+\\s+)?(?:ال)?موثّ?قة",
+);
+
+// ADV-4A. Both corpus frames were adjacency-only: the noun had to sit immediately
+// beside the adjective. One intervening word walked straight past them, in English
+// ("verified commercial space", "verified commercial listings") and in Arabic, where
+// the adjective follows the noun and the intervening word sits between the two
+// ("مساحة تجارية موثّقة"). Both now allow a single intervening word, and the noun
+// lists gain assets and property, which were simply missing.
+//
+// The actor-class frames are deliberately NOT widened the same way. Measured over the
+// whole tree, adding singular owners, brokers and parties to them fired on five true
+// statements and on no false one: the search note counting owner-verified rows off the
+// rows it rendered, the two requirements routes stating an access rule enforced two
+// lines below, the glossary term, and the PDPL lawful-basis clause naming the verified
+// counterparty in a transaction. A set claim is false at the record level because no
+// query selects for it; a singular claim about one record can be simply true. A frame
+// that fires on a true statement teaches people to suppress the guard, which is the
+// reason docs/ruling-3-residual-closure.md deferred this widening until it was measured.
 const CORPUS_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
   en: [
     [/verified (rent )?band/i, "the band is REGA's, republished, not verified by us"],
     [/the verified index/i, "no index on the platform has been verified"],
-    [/verified (stock|space|spaces|inventory|listings|data|matches|facts)/i, "asserts a verified corpus"],
+    [/verified (?:[a-z]+ )?(stock|spaces?|inventory|listings?|data|match(?:es)?|facts?|assets?|propert(?:y|ies))/i, "asserts a verified corpus"],
     [/verified (occupiers|participants|listers|platform)/i, "asserts a verified class of actor"],
     [/every listing is verified|owners? (?:are |get )?verified before|we verify (the parties|every)/i, "universal present-tense verification"],
     [/verified commercial (real estate )?(intelligence|exchange)/i, "verified as a positioning claim"],
@@ -525,7 +549,7 @@ const CORPUS_BANNED: Record<"en" | "ar", [RegExp, string][]> = {
   ar: [
     [/نطاق الإيجار الموثق|النطاق الموثق/, "the band is REGA's, republished, not verified by us"],
     [/المؤشر الموثّق|المؤشر الموثق/, "no index on the platform has been verified"],
-    [/مساحات موثقة|مساحات موثّقة|مساحة موثّقة|العروض الموثّقة|عروضك الموثّقة|قوائم موثقة|بيانات موثقة|بيانات موثّقة|حقائق موثّقة/, "asserts a verified corpus"],
+    [AR_CORPUS, "asserts a verified corpus"],
     [/مستأجرون موثّقون|مؤشرات المنصّة الموثّقة|المُدرِجين الموثّقين/, "asserts a verified class of actor"],
     [/توثّق سات كل|توثيق ال[^ ]{2,6}ك قبل/, "universal present-tense verification"],
     [/ذكاء عقاري تجاري موثوق|المنصة التجارية الموثّقة|المنصة الموثّقة/, "verified as a positioning claim"],
@@ -717,10 +741,24 @@ function claimSources(dir: string, exts: RegExp, out: string[] = []): string[] {
   return out;
 }
 
+// ADV-4A. `public/` is shipped verbatim to the origin and never passes through a
+// dictionary, a component or the prose gate, so `llms.txt` and `manifest.webmanifest`
+// were outside every claim check while being exactly the two files an AI assistant and
+// an app installer read instead of the page. The structured data in `src/components/
+// JsonLd.tsx` is the same class of machine-read claim and was corrected under ruling 3
+// only because the walk happened to reach that folder. Scope the guard to the claim.
+const PUBLIC_FACTS: string[] = claimSources(join(ROOT, "..", "public"), /\.(txt|webmanifest|json)$/);
+
 const CLAIM_SOURCES: string[] = [
   ...claimSources(ROOT, /\.(ts|tsx)$/),
   ...claimSources(join(ROOT, "..", "scripts"), /\.(mjs|cjs|js|ts)$/),
+  ...PUBLIC_FACTS,
 ];
+
+// The comment stripper is a TypeScript rule. Applied to a manifest or a text file it
+// would delete content rather than commentary, which is a way for a claim to hide from
+// the guard inside the guard, so it runs only on the extensions it was written for.
+const CODE_EXT = /\.(ts|tsx|mjs|cjs|js)$/;
 
 test("ruling 3: no source file anywhere carries a corpus claim", () => {
   // The count is asserted so that a future refactor which moves a folder out of the
@@ -728,7 +766,8 @@ test("ruling 3: no source file anywhere carries a corpus claim", () => {
   assert.ok(CLAIM_SOURCES.length > 200, `the claim scan reaches only ${CLAIM_SOURCES.length} files`);
   const offenders: string[] = [];
   for (const f of CLAIM_SOURCES) {
-    const src = code(readFileSync(f, "utf8"));
+    const raw = readFileSync(f, "utf8");
+    const src = CODE_EXT.test(f) ? code(raw) : raw;
     const rel = f.replace(join(ROOT, ".."), "").replace(/^\//, "");
     for (const locale of ["en", "ar"] as const) {
       for (const [re, why] of CORPUS_BANNED[locale]) {
@@ -745,7 +784,7 @@ test("ruling 3: the claim scan reaches the three modules that were outside it", 
   // about its own reach, and the previous scan reported zero for weeks while these
   // three carried claims.
   const rel = new Set(CLAIM_SOURCES.map((f) => f.replace(join(ROOT, ".."), "").replace(/^\//, "")));
-  for (const f of ["src/lib/search/searchNote.ts", "src/lib/format.ts", "src/lib/legalContent.ts", "src/lib/agents/agents.ts", "src/middleware.ts", "scripts/seed-demo.mjs"]) {
+  for (const f of ["src/lib/search/searchNote.ts", "src/lib/format.ts", "src/lib/legalContent.ts", "src/lib/agents/agents.ts", "src/middleware.ts", "scripts/seed-demo.mjs", "public/llms.txt", "public/manifest.webmanifest"]) {
     assert.ok(rel.has(f), `${f} is outside the claim scan`);
   }
   for (const f of ["src/lib/claims.test.ts", "src/lib/agents/agents.test.ts"]) {

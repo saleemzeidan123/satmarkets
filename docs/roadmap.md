@@ -435,6 +435,13 @@ without written permission.
 Gate: every figure licensed, sourced, period-correct, sufficiently aggregated and
 bilingual, with EN and AR parity.
 
+**ADV-4A shipped**, the canonical machine-readable facts: `docs/adv-4a-closure.md`. The
+claims guard now reaches `public/`, which no gate had ever read, and both files there
+carried the banned positioning frame. `llms.txt` is rewritten as the canonical facts
+file and no longer advertises the held `/area` or the private `/find`. The corpus frames
+are widened by one intervening word on measurement; the actor-class frames are not,
+because widening them fired only on true statements. ADV-4B is the three pages.
+
 ### ADV-5. Location intelligence, interfaces and a controlled pilot
 
 Deliver: the SPL National Address interface, the stc Geo Analytics procurement
