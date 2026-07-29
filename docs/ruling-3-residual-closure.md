@@ -161,7 +161,7 @@ own history is worth less than one that shows where it was wrong.
 | `npm test` | 1028 pass, 0 fail (was 1021) |
 | `npm run ar-lint` | clean |
 | `node scripts/prose-scan.mjs` | 0 hardcoded prose strings in 0 files, exit 0 |
-| Production build | see the handback for the deployment id |
+| Production build | `dpl_Fv66yLG3vuQxksthHB5ecodRm481` READY, commit `6a7465d` |
 
 `searchNote.test.ts` went from 25 to 31 and `claims.test.ts` from 72 to 73. No new test file was
 created, so the explicit list in the `test` script is unchanged; that list is not a glob and a
@@ -173,6 +173,46 @@ rendered sentence. Sweep B of `scripts/ar-lint.mjs` bans the literal character a
 `.ts` under `src`, test files included, so the assertion would have failed the law it was
 testing. It is written with the escaped form `\u2014`, which is the convention the rest of
 the file already used for exactly this reason.
+
+## Live evidence
+
+The corrected sentence was exercised on the deployed build in both languages, and the exercise
+produced something better than a screenshot of the new wording: a before and after in the same
+DOM. `useAdvisorChat` persists the conversation to `sessionStorage` under `sat_advisor_page`,
+so the turn produced by the pre-fix build was restored above the turn composed live by
+`6a7465d`. Same query, same four rows, same total of 18, two sentences.
+
+English, `/en/advisor`, query "office for lease in Riyadh":
+
+```
+before   4 verified matches, owner-verified and deduplicated. These are the closest 4 results of 18.
+after    4 matches, 4 with a verified owner. These are the closest 4 results of 18.
+```
+
+Arabic, `/ar/advisor`, query "مكتب للإيجار في الرياض":
+
+```
+before   4 مطابقات موثّقة. التحقق من المالك مباشرة، بلا تكرار، مع سند الترخيص. هذه أقرب 4 نتائج من أصل 18.
+after    4 مطابقات، منها 4 بمالك موثّق. هذه أقرب 4 نتائج من أصل 18.
+```
+
+Both are read out of the live DOM as text rather than transcribed from an image, which is what
+Codex item 5 asked for after the mojibake in an earlier handback. The Arabic renders in true RTL
+with Western numerals, and the licence-authorisation clause is gone from the live sentence.
+
+The subset here is 4 of 4, which is what the evidence table predicts: all 88 published listings
+carry `ownership_verified = true`. That is not the clause being trivially true. It is the clause
+now stating a measured fact instead of asserting a corpus property, and the zero, partial and
+uncounted readings are asserted in `searchNote.test.ts` because production data cannot exercise
+them today.
+
+No responsive re-measurement was taken. The corrected sentence is shorter than the one it
+replaces in both languages, on the same element, so it cannot introduce an overflow the previous
+wording did not already have.
+
+## Handback
+
+The consolidated handback for this package is `docs/handback-ruling-3-residual.md`.
 
 ## Next
 
