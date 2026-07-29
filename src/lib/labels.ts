@@ -68,6 +68,22 @@ const CITY_BY_FOLD: Record<string, string> = (() => {
 export const cityKey = (t: string | null | undefined): string | null =>
   t ? (CITY_BY_FOLD[foldText(t)] ?? null) : null;
 
+/**
+ * Every spelling of every city we recognise, by canonical key.
+ *
+ * `cityKey` folds a whole string and looks it up, which is right for a URL
+ * parameter and useless for a sentence: nothing in "warehouse for lease in
+ * Riyadh" is a city key. A parser that has to find a city INSIDE a longer query
+ * needs the spellings themselves, and it must get them from here rather than
+ * keeping its own list, because a second list is how "الخبر" comes to be a city
+ * on one surface and an unrecognised word on another.
+ */
+export const CITY_SPELLINGS: Readonly<Record<string, readonly string[]>> = Object.freeze(
+  Object.fromEntries(
+    Object.keys(CITY).map((k) => [k, Object.freeze([k, CITY[k][0], CITY[k][1], ...(CITY_ALIAS[k] ?? [])])])
+  )
+);
+
 export const cityLabel = (t: string | null | undefined, l: L) => {
   if (!t) return "";
   const k = cityKey(t);

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { allow } from "@/lib/ratelimit";
 import { llmParse, rulesParse, type Parsed } from "@/lib/search/aiParse";
+import { cityKey } from "@/lib/labels";
+import { resolvePlace } from "@/lib/search/place";
 
 export async function POST(req: NextRequest) {
   if (!allow("search", req)) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });
@@ -37,59 +39,73 @@ export async function POST(req: NextRequest) {
   const dealDetected = parsed.deal;
   const minSize = parsed.minSize;
   const maxRent = parsed.maxRent;
+  const city = parsed.city ? cityKey(parsed.city) : null;
 
   const { data: districts } = await supabase.from("districts").select("id, name_en, name_ar, city");
-  const SYN: Record<string, string> = { kafd: "KAFD", cafd: "KAFD", "كافد": "KAFD", "واجهة الرياض المالية": "KAFD", "المركز المالي": "KAFD", olaya: "Al Olaya", "al olaya": "Al Olaya", "العليا": "Al Olaya", hittin: "Hittin", "حطين": "Hittin", granada: "Granada", "غرناطة": "Granada", itcc: "ITCC", "روشن": "Roshn Front", "roshn": "Roshn Front" };
-  let wanted = (parsed.district || "").toLowerCase().trim();
-  const rawLower = raw.toLowerCase();
-  for (const [k, v] of Object.entries(SYN)) {
-    if (wanted.includes(k) || rawLower.includes(k)) { wanted = v.toLowerCase(); break; }
-  }
-  const dMatch = (districts ?? []).find((d: any) => {
-    const ne = (d.name_en || "").toLowerCase();
-    const ci = (d.city || "").toLowerCase();
-    const na = (d.name_ar || "");
-    if (wanted) return (ne && (wanted.includes(ne) || ne.includes(wanted))) || (na && raw.includes(na));
-    return rawLower.includes(ne) || rawLower.includes(ci) || (na && raw.includes(na));
-  });
+  // Place resolution lives in `@/lib/search/place` so it can be tested. It used
+  // to be inline here, where nothing could reach it, and it answered a query
+  // naming a city by narrowing to one arbitrary district of that city.
+  const { district: dMatch, cityDistrictIds, applied: placeApplied } = resolvePlace(raw, parsed.district, city, districts);
 
-  const hasIntent = !!(asset || dMatch || minSize || maxRent || dealDetected);
+  const hasIntent = !!(asset || placeApplied || minSize || maxRent || dealDetected);
   const vague = /(suggest|recommend|help|idea|option|advice|not sure|don'?t know|dont know|anything|what (can|do|should)|where should|guide)/i.test(raw);
   const clarify = !hasIntent && (vague || raw.trim().length < 4);
 
+  // Returns null when the place filter cannot match anything, which is a result
+  // rather than an error: `.in("district_id", [])` is not expressible, and
+  // pretending the filter was never asked for is the defect this package exists
+  // to remove.
   const build = (level: number) => {
     let sb = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
     if (clarify) return sb;
     if (asset) sb = sb.eq("asset_type", asset);
     if (dealDetected) sb = sb.eq("deal_type", dealDetected);
-    if (dMatch && level < 3) sb = sb.eq("district_id", dMatch.id);
+    if (level < 3) {
+      if (dMatch) sb = sb.eq("district_id", dMatch.id);
+      else if (cityDistrictIds) {
+        if (!cityDistrictIds.length) return null;
+        sb = sb.in("district_id", cityDistrictIds);
+      }
+    }
     if (minSize && level < 2) sb = sb.gte("area_sqm", minSize * 0.6);
     if (maxRent && dealDetected !== "sale" && level < 1) sb = sb.lte("asking_rent_sqm", maxRent);
     return sb;
   };
 
-  const relaxNotes = [
-    maxRent && dealDetected !== "sale" ? `above your ${maxRent.toLocaleString()} SAR/m² cap` : null,
-    minSize ? "smaller than your size" : null,
-    dMatch ? `outside ${dMatch.name_en}` : null,
+  // What was given up, as a token rather than a sentence. This used to be an
+  // English string composed on the server, and `useAdvisorChat` dropped it into
+  // the middle of an Arabic sentence, so an Arabic reader was told their results
+  // were "outside KAFD" in Latin script inside their own language. The client
+  // owns the wording in both languages now; the route says only which constraint
+  // was relaxed and what the place was called.
+  const relaxKinds: ("budget" | "size" | "place" | null)[] = [
+    maxRent && dealDetected !== "sale" ? "budget" : null,
+    minSize ? "size" : null,
+    placeApplied ? "place" : null,
   ];
-  let data: any[] = []; let level = 0; let relaxedReason: string | null = null;
+  let data: any[] = []; let level = 0; let relaxedBy: "budget" | "size" | "place" | null = null;
   for (level = 0; level <= 3; level++) {
-    const { data: d, error } = await build(level);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    data = d ?? [];
+    const qb = build(level);
+    if (qb) {
+      const { data: d, error } = await qb;
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      data = d ?? [];
+    } else {
+      data = [];
+    }
     if (clarify || data.length > 0 || level === 3) {
-      relaxedReason = level > 0 ? relaxNotes[level - 1] : null;
+      relaxedBy = level > 0 ? relaxKinds[level - 1] : null;
       break;
     }
   }
   const relaxed = !clarify && level > 0 && data.length > 0;
 
   return NextResponse.json({
-    parsed: { asset: asset ?? null, deal: dealDetected, district: dMatch?.name_en ?? null, minSize, maxRent },
+    parsed: { asset: asset ?? null, deal: dealDetected, district: dMatch?.name_en ?? null, city, minSize, maxRent },
+    place: placeApplied,
     clarify,
     relaxed,
-    relaxedReason,
+    relaxedBy,
     aiUsed,
     count: data.length,
     results: data,

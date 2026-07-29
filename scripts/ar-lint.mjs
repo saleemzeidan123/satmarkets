@@ -32,7 +32,7 @@ walk("src/lib/translate");
 // Shipped Arabic copy that lives outside the dictionaries: the label catalogue
 // and the unit and plural formatter tables. Both render straight into public
 // pages, so both must clear the same voice gate as src/i18n.
-for (const p of ["src/lib/labels.ts", "src/lib/format.ts"]) {
+for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts"]) {
   if (fs.existsSync(p)) files.push(p);
 }
 

@@ -9,11 +9,12 @@
 
 import { callModelText, instruction, userWords } from "@/lib/ai";
 import { foldText } from "@/lib/textFold";
+import { CITY_SPELLINGS, cityKey } from "@/lib/labels";
 import { ASSET_SYN, DEAL_SYN } from "@/lib/search/queryParse";
 
 export const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"] as const;
 type AssetT = typeof ASSETS[number];
-export type Parsed = { asset: AssetT | null; deal: "lease" | "sale" | null; district: string | null; minSize: number | null; maxRent: number | null };
+export type Parsed = { asset: AssetT | null; deal: "lease" | "sale" | null; district: string | null; city: string | null; minSize: number | null; maxRent: number | null };
 
 // Rules-based parser, kept as a fast, reliable fallback for when the model is
 // unavailable (no key set, timeout, or error). It never sees the network.
@@ -62,6 +63,37 @@ const NUMBER = "[0-9]+(?:[ ,.][0-9]{3})*";
 const toNumber = (v: string) => Number(v.replace(/[ ,.]/g, ""));
 const MAX_LEAD = "(?:under|below|max|maximum|up to|less than|no more than|اقل من|تحت|بحد اقصي|لا يزيد عن|لا يزيد|حتي|في حدود)";
 
+/**
+ * The canonical key of a city named anywhere in the query, or null.
+ *
+ * ADV-3A.1, finding 55. A city is not a district, and the two are not
+ * interchangeable: `/api/search` used to test the query against the districts
+ * table's `city` COLUMN, take the first row that matched, and then filter by
+ * that one district. So "warehouse for lease in Riyadh" was answered by
+ * narrowing to KAFD, a district the person never typed, and the relaxation note
+ * told them their results were "outside KAFD".
+ *
+ * Resolving a city here is safe in a way that resolving a district here is not.
+ * The city vocabulary is closed, finite and already rendered on public surfaces;
+ * a district vocabulary is open and lives in the database, which is why the
+ * comment below still refuses to guess one. Longest spelling wins, so
+ * "مكه المكرمه" is not eaten by "مكه".
+ */
+function cityIn(folded: string): string | null {
+  let city: string | null = null;
+  let best = 0;
+  for (const key of Object.keys(CITY_SPELLINGS)) {
+    for (const spelling of CITY_SPELLINGS[key]) {
+      const n = matchLen(folded, spelling);
+      if (n > best) {
+        best = n;
+        city = key;
+      }
+    }
+  }
+  return city;
+}
+
 export function rulesParse(raw: string): Parsed {
   const q = foldText(raw);
 
@@ -99,17 +131,19 @@ export function rulesParse(raw: string): Parsed {
   const budgetMatch = q.match(new RegExp(MAX_LEAD + "\\s*(?:sar|sr|ريال)?\\s*(" + NUMBER + ")"));
   const maxRent = budgetMatch ? toNumber(budgetMatch[1]) : null;
 
-  // The district is deliberately still null. Resolving a place needs the
-  // districts vocabulary, which this endpoint does not load, and inventing one
+  // The district is deliberately still null. Resolving a district needs the
+  // districts vocabulary, which this parser does not load, and inventing one
   // from a word list is exactly the silent upgrade of an unrecognised term into
-  // a constraint that the discovery law forbids.
-  return { asset, deal, district: null, minSize, maxRent };
+  // a constraint that the discovery law forbids. A city is a different case: the
+  // list is closed and we publish it, so naming one is recognition, not a guess.
+  return { asset, deal, district: null, city: cityIn(q), minSize, maxRent };
 }
 
-const SEARCH_INSTRUCTION = instruction("search intent instruction")`You extract structured search filters from a commercial real estate query for Riyadh, Saudi Arabia. Understand both Arabic and English, including dialect and loose phrasing. Respond with strict JSON only, no prose, with exactly these keys:
+const SEARCH_INSTRUCTION = instruction("search intent instruction")`You extract structured search filters from a commercial real estate query for Saudi Arabia. Understand both Arabic and English, including dialect and loose phrasing. Respond with strict JSON only, no prose, with exactly these keys:
 - asset: one of "office","retail","medical","showroom","warehouse","serviced","education","land", or null
 - deal: "lease", "sale", or null
-- district: the Riyadh district or area name the user means as a string, or null
+- district: the district or area name the user means as a string, or null
+- city: one of "Riyadh","Jeddah","Dammam","Khobar","Makkah","Madinah", or null
 - minSize: minimum floor area in square metres as a number, or null
 - maxRent: maximum rent in SAR per square metre per year as a number, or null
 Infer intent: a clinic is medical, a logistics shed is warehouse, a restaurant or shop is retail, a fitted or co-working suite is serviced, a school or training centre is education. Never invent a value that is not implied. Output only the JSON object.`;
@@ -158,7 +192,10 @@ export async function llmParse(raw: string): Promise<Parsed | null> {
   const asset = (ASSETS as readonly string[]).includes(o?.asset) ? (o.asset as AssetT) : null;
   const deal: Parsed["deal"] = o?.deal === "lease" || o?.deal === "sale" ? o.deal : null;
   const district = typeof o?.district === "string" && o.district.trim() ? o.district.trim() : null;
+  // A city the model names is only accepted if it is one of ours. An unrecognised
+  // place name stays unrecognised rather than becoming a filter nobody can see.
+  const city = typeof o?.city === "string" ? cityKey(o.city) : null;
   const minSize = typeof o?.minSize === "number" && isFinite(o.minSize) ? o.minSize : null;
   const maxRent = typeof o?.maxRent === "number" && isFinite(o.maxRent) ? o.maxRent : null;
-  return { asset, deal, district, minSize, maxRent };
+  return { asset, deal, district, city, minSize, maxRent };
 }

@@ -270,6 +270,22 @@ export const COUNTED = {
     en: { one: "result", other: "results" },
     ar: { zero: "نتيجة", one: "نتيجة واحدة", two: "نتيجتان", twoOblique: "نتيجتين", few: "نتائج", many: "نتيجة", other: "نتيجة" },
   },
+  // The adjective is inside the phrase because Arabic agrees an adjective with
+  // its noun, and the dual takes a dual adjective. A caller that wrote
+  // `${formatCounted(n, "match", "ar")} موثّقة` would be correct for every count
+  // except two, and would be wrong there in a way no plural table could reach.
+  verifiedMatch: {
+    en: { one: "verified match", other: "verified matches" },
+    ar: {
+      zero: "مطابقة موثّقة",
+      one: "مطابقة واحدة موثّقة",
+      two: "مطابقتان موثّقتان",
+      twoOblique: "مطابقتين موثّقتين",
+      few: "مطابقات موثّقة",
+      many: "مطابقة موثّقة",
+      other: "مطابقة موثّقة",
+    },
+  },
   leaseListing: {
     en: { one: "lease listing", other: "lease listings" },
     ar: { zero: "عرض إيجار", one: "عرض إيجار واحد", two: "عرضا إيجار", twoOblique: "عرضي إيجار", few: "عروض إيجار", many: "عرض إيجار", other: "عرض إيجار" },

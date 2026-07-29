@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { addWatch } from "@/lib/watches";
 import { formatPeriod } from "@/lib/market/period";
+import { searchNote } from "@/lib/search/searchNote";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string; }
@@ -120,18 +121,11 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
    const r = await fetchBounded("/api/search", { query: q }, REQUEST_TIMEOUT_MS);
    const j = await r.json();
    const results: R[] = j.results || [];
-   let note = "";
-   if (ar) {
-    if (j.clarify) note = "أخبرني بالمزيد، نوع المساحة أو المدينة أو الميزانية، وسأضيّق النطاق.";
-    else if (j.relaxed && results.length) note = `لا توجد مطابقات تامة، فإليك أقرب ${results.length}، بعضها ${j.relaxedReason || "خارج عوامل التصفية"}. عدّل الميزانية أو المساحة أو الحي للتضييق.`;
-    else if (results.length) note = `${results.length} مطابقة موثّقة، من المالك مباشرة، خالية من التكرار، مدعومة بالتراخيص.`;
-    else note = "لا توجد مطابقات موثّقة لذلك بعد. جرّب حياً أو مساحة أو ميزانية مختلفة وسأبحث مجدداً.";
-   } else {
-    if (j.clarify) note = "Tell me a bit more, a space type, a city, or a budget, and I'll narrow it down.";
-    else if (j.relaxed && results.length) note = `No exact matches, so here are the closest ${results.length}, some are ${j.relaxedReason || "outside your filters"}. Adjust the budget, size, or district to tighten it.`;
-    else if (results.length) note = `${results.length} verified ${results.length === 1 ? "match" : "matches"}, owner-verified and deduplicated.`;
-    else note = "No verified matches yet for that. Try a different district, size, or budget and I'll search again.";
-   }
+   // The wording lives in `@/lib/search/searchNote` so a test can read it and the
+   // Arabic lint can see it. It was written inline here, which is how an English
+   // relaxation phrase came to sit inside an Arabic sentence and how "6 مطابقة"
+   // shipped without counted-noun agreement.
+   const note = searchNote(j, results.length, locale);
    setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
   } catch (e) {
    failed(isAbort(e));
