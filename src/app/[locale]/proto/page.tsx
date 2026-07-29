@@ -1,5 +1,6 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
+import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 
 // Design-system reference (Verified Ground). Route-flagged prototype for the
 // approved redesign: renders the token roles and the core shared components so
@@ -57,7 +58,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
 
       <Section title={t("Source footer", "تذييل المصدر")}>
         <p style={{ fontSize: 12.5, color: "var(--slate)", borderInlineStart: "3px solid var(--harbor)", paddingInlineStart: 12 }}>
-          {t("Updated Q2 2026 · REGA Rental Index (Ejar), averages of registered contracts · indicative, not advice.", "محدّث الربع الثاني 2026 · المؤشر الإيجاري (إيجار)، متوسطات العقود المسجّلة · استرشادي وليس نصيحة.")}
+          {t(`Updated Q2 2026 · ${RENT_INDEX_SOURCE.en}, averages of registered contracts · indicative, not advice.`, `محدّث الربع الثاني 2026 · ${RENT_INDEX_SOURCE.ar}، متوسطات العقود المسجّلة · استرشادي وليس نصيحة.`)}
         </p>
       </Section>
 

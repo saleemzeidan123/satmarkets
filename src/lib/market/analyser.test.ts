@@ -154,7 +154,7 @@ test("analyseDeal Arabic result mirrors English with Arabic wording, Western num
   const r = analyseDeal({ ...baseInput, locationLabel: "العليا، الرياض", ar: true })!;
   assert.ok(r.text.startsWith("فحص الصفقة: تجزئة ومطاعم، العليا، الرياض، عند 2,100 ريال/م²·سنة."), r.text.slice(0, 90));
   assert.ok(r.text.includes("يقع ضمن النطاق الاسترشادي التجريبي"));
-  assert.ok(r.text.includes("المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة"));
+  assert.ok(r.text.includes("المؤشر الإيجاري للهيئة العامة للعقار (إيجار): متوسط العقود المسجّلة"));
   assert.ok(!r.text.includes("|"));
   assert.ok(!r.text.includes("SAR/m2/yr"));
   assert.ok(r.text.includes("2,180")); // Western numerals

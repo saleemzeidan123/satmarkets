@@ -17,6 +17,7 @@
 
 import { assetLabel } from "@/lib/labels";
 import { formatPeriod, parsePeriod } from "@/lib/market/period";
+import { rentIndexSourceLabel } from "@/lib/market/attribution";
 
 /** Whether the answer is built from the period the user actually asked for. */
 export type PeriodStatus = "match" | "unavailable" | "none";
@@ -224,12 +225,10 @@ export function arPeriodPhrase(period: string | null | undefined): string {
   return `${formatPeriod(p, true).replace(/\s*\d{4}\s*$/, "")} من عام ${parsed.year}`;
 }
 
-function sourceLabel(source: string, ar: boolean): string {
-  if (/rega|ejar|rcri/i.test(source)) {
-    return ar ? "مؤشر الإيجارات (إيجار)، متوسط العقود المسجّلة" : "REGA Rental Index (Ejar), average of registered rental contracts";
-  }
-  return source;
-}
+// Owner ruling 2. The source name is not written here any more. The Arabic form
+// composed at this line named no authority while its English twin named REGA, so
+// both now come from the one canonical constant.
+const sourceLabel = (source: string, ar: boolean): string => rentIndexSourceLabel(source, ar);
 
 function position(ev: ValueEvidence): "below" | "within" | "above" | null {
   if (ev.userFigure === null) return null;

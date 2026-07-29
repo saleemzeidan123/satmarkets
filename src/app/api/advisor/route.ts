@@ -8,6 +8,7 @@ import { readNumericIntent } from "@/lib/market/numericIntent";
 import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
 import { allowedSources, userHistory } from "@/lib/advisor/history";
 import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
+import { rentIndexSourceLabel } from "@/lib/market/attribution";
 
 const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
 
@@ -57,12 +58,9 @@ async function resolveDistrictId(supabase: any, name?: string | null): Promise<s
 // registered rental contracts. It used to say the figures came from JLL, CBRE and
 // Knight Frank. They did not, and all three forbid republication of their research
 // without written permission, so the Advisor may not name them.
-function srcLabel(s: string, arabic: boolean): string {
-  if (/rcri/i.test(s || "")) return arabic
-    ? "\u0645\u0624\u0634\u0631 \u0627\u0644\u0625\u064a\u062c\u0627\u0631 (\u0625\u064a\u062c\u0627\u0631)\u060c \u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0642\u0648\u062f \u0627\u0644\u0645\u0633\u062c\u0651\u0644\u0629"
-    : "REGA Rental Index (Ejar), average of registered rental contracts";
-  return s;
-}
+// Owner ruling 2. This used to carry its own escaped Arabic literal, a third
+// spelling of the source that named no authority. One canonical constant now.
+const srcLabel = (s: string, arabic: boolean): string => rentIndexSourceLabel(s, arabic);
 
 // Law 3 (structural): block any rent, price, or market figure in free-text
 // model output that is not present in the allowed source (the user's own words

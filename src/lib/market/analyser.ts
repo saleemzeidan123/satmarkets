@@ -7,6 +7,7 @@
 import { assetLabel, segmentLabel } from "@/lib/labels";
 import { isSqmYear } from "@/lib/market/verdict";
 import { formatPeriod } from "@/lib/market/period";
+import { rentIndexSource } from "@/lib/market/attribution";
 
 export type Band = { low: number; average: number; high: number };
 
@@ -132,13 +133,13 @@ export function analyseDeal(input: DealInput): DealResult | null {
     const dAr = rate === average ? "عند المتوسط تماماً" : rate < average ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
     text = `فحص الصفقة: ${spaceL}، ${input.locationLabel}، عند ${fmt(rate)} ${unitL}. ${vAr} (${fmt(low)} إلى ${fmt(high)}، المتوسط ${fmt(average)})، ${dAr}.` +
       (annual ? ` عند ${fmt(size!)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
-      ` ${periodL}، المؤشر الإيجاري (إيجار): متوسط العقود المسجّلة. استرشادي وليس نصيحة.`;
+      ` ${periodL}، ${rentIndexSource(true, ": ")}. استرشادي وليس نصيحة.`;
   } else {
     const vEn = verdict === "within" ? "sits within the sample indicative range" : verdict === "below" ? "sits below the sample indicative range" : "sits above the sample indicative range";
     const dEn = rate === average ? "exactly at the average" : rate < average ? `about ${dm}% below the average` : `about ${dm}% above the average`;
     text = `Deal check: ${spaceL}, ${input.locationLabel}, at ${fmt(rate)} ${unitL}. That ${vEn} (${fmt(low)} to ${fmt(high)}, average ${fmt(average)}), ${dEn}.` +
       (annual ? ` At ${fmt(size!)} m² that is about ${fmt(annual)} SAR a year.` : "") +
-      ` ${periodL}, REGA Rental Index (Ejar): average of registered rental contracts. Indicative, not advice.`;
+      ` ${periodL}, ${rentIndexSource(false, ": ")}. Indicative, not advice.`;
   }
   return { text, band, quoted: rate, verdict };
 }

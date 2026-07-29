@@ -8,6 +8,7 @@
 // All data is SYNTHETIC. Never production. See ops/layout.tsx for noindex.
 
 import { Fragment, useMemo, useState } from "react";
+import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 
 type Seg = "blended" | "grade_a" | "grade_b" | "modern";
 type Row = {
@@ -19,8 +20,10 @@ type Row = {
   cell?: string;
 };
 
-const REGA = "REGA Rental Index (Ejar)";
-const REGA_AR = "مؤشر ريجا للإيجارات (إيجار)";
+// Owner ruling 2. Both forms come from the canonical constant; the Arabic one
+// used to transliterate the authority as "ريجا" instead of naming it.
+const REGA = RENT_INDEX_SOURCE.en;
+const REGA_AR = RENT_INDEX_SOURCE.ar;
 const BJLL = "Published: JLL";
 const BJLL_AR = "منشور: JLL";
 const B3 = "Published: CBRE, JLL, Knight Frank";
