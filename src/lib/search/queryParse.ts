@@ -130,7 +130,7 @@ const STOP = new Set([
 
 // Vocabulary the label tables do not carry because a label is one rendering and a
 // search string is every rendering. Each list is additive to the label itself.
-const ASSET_SYN: Record<string, string[]> = {
+export const ASSET_SYN: Record<string, string[]> = {
   office: ["offices", "office space", "workspace", "مكتب", "مكاتب", "مكتبي", "مساحه مكتبيه"],
   retail: ["shop", "shops", "store", "stores", "f b", "fnb", "food", "beverage", "restaurant", "restaurants", "cafe", "محل", "محلات", "تجزئه", "مطعم", "مطاعم", "مقهي", "تجاري"],
   medical: ["clinic", "clinics", "dental", "polyclinic", "عياده", "عيادات", "طبي", "طبيه", "مجمع طبي"],
@@ -155,7 +155,7 @@ const FITOUT_SYN: Record<string, string[]> = {
   furnished: ["fully furnished", "مفروشه", "مؤثثه", "موثثه"],
 };
 
-const DEAL_SYN: Record<string, string[]> = {
+export const DEAL_SYN: Record<string, string[]> = {
   lease: ["for rent", "to rent", "rental", "leasing", "to lease", "for lease", "للايجار", "للاستئجار", "للاستيجار", "استئجار", "استيجار", "تاجير"],
   sale: ["for sale", "buy", "to buy", "purchase", "freehold", "للبيع", "شراء", "تمليك"],
 };
@@ -171,7 +171,7 @@ const GRADE_LETTER: Record<string, string[]> = {
   c: ["c", "ج"],
 };
 
-const CITY_SYN: Record<string, string[]> = {
+export const CITY_SYN: Record<string, string[]> = {
   Riyadh: ["riyad", "ar riyadh", "al riyadh", "الرياض"],
   Jeddah: ["jiddah", "jedda", "جده"],
   Dammam: ["ad dammam", "al dammam", "الدمام"],

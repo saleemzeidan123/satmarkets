@@ -13,86 +13,194 @@ import type { PromptPart } from "@/lib/aiBoundary";
 // value, and the gateway derives what it checks from what it sends. There is no
 // second list to keep in step.
 //
-// The constructors below exist because the escape hatch has to be less
-// convenient than the honest route. `userWords` and `priorTurn` are one-liners.
-// `instruction` takes a template with `{{slot}}` placeholders and refuses to
-// render an unfilled one, so live data reaches a system prompt only through a
-// slot, and a slot declares its own parts. `classified` is the general form and
-// throws on an empty parts list.
+// ADV-3A.1. THE FIRST VERSION OF THIS FILE DID NOT DO WHAT ITS DOCUMENTATION
+// CLAIMED.
+//
+// It offered `instruction(label, template, slots)`, where `template` was an
+// ordinary string parameter. The closure record then claimed that undeclared
+// interpolation was impossible. It was not. Nothing stopped:
+//
+//     instruction("classifier", SYS + "\n\nUser said: " + query)
+//     instruction("classifier", `${SYS} ${tenantRequirement}`)
+//
+// Both compile, both run, and the boundary sees one part classified
+// `own_instruction`. The placeholder machinery only governed values passed
+// through the `slots` argument; it had nothing to say about a string composed
+// before the call. The guarantee was a convention with a type signature draped
+// over it.
+//
+// The API below removes the string parameter entirely. An instruction is built
+// by a tagged template, so JavaScript itself hands this module the fixed spans
+// and the interpolated values as separate arrays. A raw interpolated value is
+// rejected at runtime and rejected by the type checker. The only way to put a
+// runtime value into a prompt is `classifiedSlot(value, parts)`, which forces the
+// caller to say what the value IS.
+//
+// There is deliberately no `fixedText(someString)` convenience. It would be one
+// line and it would reopen exactly the hole this closes.
+//
+// `ClassifiedMessage` and `ClassifiedSlot` are also nominally branded with
+// module-private symbols. Before, both were plain structural types, so any object
+// literal with the right three fields was accepted everywhere a classified value
+// was. Now the key cannot be named outside this file.
 
 export type Role = "system" | "user" | "assistant";
 
+// Not exported. That is the entire mechanism: application code cannot write a
+// property it cannot name, so it cannot forge one of these with a literal.
+const MESSAGE_BRAND = Symbol("sat.ai.classifiedMessage");
+const SLOT_BRAND = Symbol("sat.ai.classifiedSlot");
+
 export type ClassifiedMessage = {
+  readonly [MESSAGE_BRAND]: true;
   readonly role: Role;
   readonly content: string;
   /** Every distinguishable thing this message carries. Never empty. */
   readonly parts: readonly PromptPart[];
 };
 
-/** A value interpolated into an instruction, with the classes it carries. */
-export type Slot = {
-  key: string;
-  value: string;
-  parts: PromptPart[];
+/** A runtime value cleared for interpolation into a prompt, with what it carries. */
+export type ClassifiedSlot = {
+  readonly [SLOT_BRAND]: true;
+  readonly value: string;
+  readonly parts: readonly PromptPart[];
 };
-
-// Doubled braces rather than single, because system prompts in this codebase
-// describe JSON and single braces appear in that prose. A doubled brace does not.
-const PLACEHOLDER = /\{\{([A-Za-z0-9_]+)\}\}/g;
 
 export class UnclassifiedMessageError extends Error {}
 
+function isSlot(v: unknown): v is ClassifiedSlot {
+  return typeof v === "object" && v !== null && (v as Record<symbol, unknown>)[SLOT_BRAND] === true;
+}
+
+/** True for a value this module built. Used by the gateway, not by callers. */
+export function isClassifiedMessage(v: unknown): v is ClassifiedMessage {
+  return typeof v === "object" && v !== null && (v as Record<symbol, unknown>)[MESSAGE_BRAND] === true;
+}
+
 /**
- * A system prompt SAT authored, optionally quoting live values through slots.
+ * Clear a runtime value for use inside a prompt.
  *
- * Throws rather than sends when a placeholder is left unfilled, when a slot names
- * a placeholder the template does not contain, or when a slot declares no class.
- * Each of those is a request that was about to carry undeclared material.
+ * This is the only door. Everything that is not a fixed span written into a
+ * template literal in the source comes through here, and it cannot be called
+ * without naming at least one data class, which is the point.
  */
-export function instruction(label: string, template: string, slots: readonly Slot[] = []): ClassifiedMessage {
-  const open = new Set<string>();
-  for (const m of template.matchAll(PLACEHOLDER)) open.add(m[1]);
-
-  const parts: PromptPart[] = [{ label, dataClass: "own_instruction" }];
-  let content = template;
-
-  for (const s of slots) {
-    if (!open.has(s.key)) {
-      throw new UnclassifiedMessageError(`ai/message: instruction '${label}' has no {{${s.key}}} placeholder for the slot supplied`);
-    }
-    if (!s.parts.length) {
-      throw new UnclassifiedMessageError(`ai/message: slot '${s.key}' in instruction '${label}' declares no data class`);
-    }
-    content = content.split(`{{${s.key}}}`).join(s.value);
-    parts.push(...s.parts);
-    open.delete(s.key);
+export function classifiedSlot(value: string, parts: readonly PromptPart[]): ClassifiedSlot {
+  if (!parts.length) {
+    throw new UnclassifiedMessageError("ai/message: a slot was built with no declared data class");
   }
+  return { [SLOT_BRAND]: true, value: String(value), parts };
+}
 
-  if (open.size) {
+/**
+ * Fixed instruction text that itself contains slots.
+ *
+ * Long system prompts branch: an Arabic clause here, an English one there, an
+ * optional paragraph that only applies when live context exists. Without this,
+ * the alternative is one enormous template per branch combination, duplicated per
+ * language, which is how two languages drift apart in behaviour.
+ *
+ * Every span of a `phrase` is written in the source, so it is our own instruction
+ * text; anything interpolated into it must itself be a slot, recursively.
+ */
+export function phrase(strings: TemplateStringsArray, ...values: readonly unknown[]): ClassifiedSlot {
+  const built = assemble("phrase", strings, values);
+  return {
+    [SLOT_BRAND]: true,
+    value: built.content,
+    parts: built.parts.length ? built.parts : [{ label: "instruction text", dataClass: "own_instruction" }],
+  };
+}
+
+function assemble(
+  label: string,
+  strings: TemplateStringsArray,
+  values: readonly unknown[]
+): { content: string; parts: PromptPart[] } {
+  if (!strings || !Array.isArray(strings.raw)) {
     throw new UnclassifiedMessageError(
-      `ai/message: instruction '${label}' has unfilled placeholders: ${[...open].sort().join(", ")}`
+      `ai/message: '${label}' must be used as a tagged template, not called with a composed string`
     );
   }
+  const parts: PromptPart[] = [];
+  let content = strings[0] ?? "";
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i];
+    if (!isSlot(v)) {
+      // The whole correction, in one branch. A string, a number, a template
+      // literal built elsewhere, a variable holding a tenant's requirement: all
+      // of them land here and none of them go any further.
+      throw new UnclassifiedMessageError(
+        `ai/message: '${label}' interpolated an undeclared value at position ${i + 1}. ` +
+          `Wrap it in classifiedSlot(value, parts) and say what it is.`
+      );
+    }
+    content += v.value + (strings[i + 1] ?? "");
+    parts.push(...v.parts);
+  }
+  return { content, parts };
+}
 
-  return { role: "system", content, parts };
+/**
+ * A system prompt SAT authored.
+ *
+ *     instruction("advisor classifier")`Return JSON. Context: ${classifiedSlot(ctx, [...])}`
+ *
+ * The fixed spans are our own instruction text. Every interpolation is a
+ * `ClassifiedSlot` and contributes its own parts to the message, so an
+ * instruction that quotes live data declares that data separately and the
+ * boundary sees it.
+ */
+export function instruction(label: string) {
+  return function tag(strings: TemplateStringsArray, ...values: readonly unknown[]): ClassifiedMessage {
+    const built = assemble(`instruction '${label}'`, strings, values);
+    return {
+      [MESSAGE_BRAND]: true,
+      role: "system",
+      content: built.content,
+      parts: [{ label, dataClass: "own_instruction" }, ...built.parts],
+    };
+  };
 }
 
 /** The person's own message, going to the model on their behalf. */
 export function userWords(content: string, label = "user message"): ClassifiedMessage {
-  return { role: "user", content, parts: [{ label, dataClass: "user_own_words" }] };
+  return {
+    [MESSAGE_BRAND]: true,
+    role: "user",
+    content,
+    parts: [{ label, dataClass: "user_own_words" }],
+  };
 }
 
-/** One of the person's own earlier turns, theirs or the assistant's reply to them. */
-export function priorTurn(role: "user" | "assistant", content: string): ClassifiedMessage {
-  return { role, content, parts: [{ label: "conversation history", dataClass: "user_own_words" }] };
+/**
+ * One of the person's OWN earlier turns.
+ *
+ * ADV-3A.1. This replaces `priorTurn(role, content)`, which took an assistant
+ * reply and classified it `user_own_words`. An assistant reply is not the user's
+ * own words. It is model output, and it may restate a licensed figure, a platform
+ * record or something the model invented. Classifying it as the user's own words
+ * gave model output a route out of the process under a class it had no claim to,
+ * and gave a fabricated figure a second life as apparent user-supplied context.
+ *
+ * There is deliberately no constructor for an assistant turn. Until conversation
+ * history retains typed provenance per turn, assistant text does not go to an
+ * external model at all, so the honest shape is that the function does not exist.
+ */
+export function priorUserTurn(content: string): ClassifiedMessage {
+  return {
+    [MESSAGE_BRAND]: true,
+    role: "user",
+    content,
+    parts: [{ label: "the users earlier message", dataClass: "user_own_words" }],
+  };
 }
 
 /** The general form. Requires at least one declared part, which is the whole point. */
-export function classified(role: Role, content: string, parts: PromptPart[]): ClassifiedMessage {
+export function classified(role: Role, content: string, parts: readonly PromptPart[]): ClassifiedMessage {
   if (!parts.length) {
     throw new UnclassifiedMessageError(`ai/message: a ${role} message was built with no declared data class`);
   }
-  return { role, content, parts };
+  return { [MESSAGE_BRAND]: true, role, content, parts };
 }
 
 /**
@@ -104,6 +212,11 @@ export function classified(role: Role, content: string, parts: PromptPart[]): Cl
 export function partsOf(messages: readonly ClassifiedMessage[]): PromptPart[] {
   const out: PromptPart[] = [];
   for (const m of messages) {
+    if (!isClassifiedMessage(m)) {
+      throw new UnclassifiedMessageError(
+        "ai/message: a value reached the gateway that this module did not build, so nothing declared what it carries"
+      );
+    }
     if (!m.parts.length) {
       throw new UnclassifiedMessageError(`ai/message: a ${m.role} message reached the gateway with no declared data class`);
     }

@@ -5,7 +5,9 @@ import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
 import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type PeriodStatus } from "@/lib/market/valueEvidence";
 import { readNumericIntent } from "@/lib/market/numericIntent";
-import { callModelText, instruction, priorTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
+import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
+import { allowedSources, userHistory } from "@/lib/advisor/history";
+import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
 
 const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
 
@@ -96,54 +98,50 @@ async function llm(messages: ClassifiedMessage[], json: boolean): Promise<string
 }
 
 
-// response_format is honoured by the primary provider but not by Anthropic's
-// OpenAI-compatibility layer, so on failover the model may wrap its JSON in a code
-// fence or lead with a sentence. Pull the first balanced object out rather than
-// letting JSON.parse throw and collapsing every intent to {}.
-function parseJsonLoose(text: string | null): any {
-  if (!text) return {};
-  const t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
-  try { return JSON.parse(t); } catch { /* fall through */ }
-  const i = t.indexOf("{");
-  const j = t.lastIndexOf("}");
-  if (i >= 0 && j > i) {
-    try { return JSON.parse(t.slice(i, j + 1)); } catch { /* give up */ }
-  }
-  return {};
-}
+// ADV-3A.1. THE INTENT CLASSIFIER IS NO LONGER A MODEL CALL.
+//
+// It used to be: a `CLASSIFY` system prompt returned strict JSON with a mode, a
+// district, an asset, a figure and a threshold, and a `parseJsonLoose` helper
+// existed solely to rescue that JSON when a failover provider wrapped it in a
+// code fence.
+//
+// Two things ended it. The first is the boundary: while no enterprise AI
+// agreement is in force, the person's message may not reach an external provider,
+// so the classifier would return null on every turn and every non-greeting would
+// collapse to `mode: "search"`. That would have silently destroyed the `value`
+// and `watch` paths, which are the two that read the published Rent Index and
+// involve no model at all once the intent is known.
+//
+// The second is that the deterministic reader is simply better at this. The
+// route already ignored the model's `figure` field, because a model reading "in
+// 2026" returned a rent of 2,026; `readNumericIntent` was written to fix exactly
+// that and is tested against it. Having replaced the one field that mattered
+// most, keeping a model for the other four was paying a provider to be less
+// reliable than a table of words.
+//
+// So `src/lib/advisor/intent.ts` reads the intent, in both languages, with no
+// network call and no provider. The model is still used for PROSE, which is what
+// it is good at, and every prose path already degrades to a written sentence.
 
-const CLASSIFY = `Classify a message to a Saudi commercial real estate assistant into one intent. Respond strict JSON only with keys:
-- mode: "chat" (a greeting, small talk, or asking what you can do, or a general question not tied to a specific space or figure), "search" (they want to find or browse actual spaces or listings), "draft" (they want listing copy written for a space they own or represent), "value" (they ask whether a rent or price is fair, or about current rent levels for a district and asset type), or "watch" (they want a standing alert when rents in a district or asset move).
-- district: the Saudi district or city they mention, or null.
-- asset: one of "office","retail","medical","showroom","warehouse","serviced","education","land", or null.
-- figure: any SAR per square metre number they mention, or null.
-- threshold: the percent move they want to be alerted on as a number, or null.
-Output only the JSON object.`;
+const chatInstruction = (ctx: string, arabic: boolean): ClassifiedMessage =>
+  instruction("advisor chat instruction")`You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. ${arabic ? phrase`Write your reply in Modern Standard Arabic with Western numerals.` : phrase`Write your reply in British English. Do not use Arabic.`} Your knowledge is strictly limited to SAT Markets: its listings, the Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the Rent Index, draft a listing, or watch the market. Market structure you respect: Riyadh is polycentric and organised in clusters, for example the Laysen Valley cluster in the west beside the Diplomatic Quarter, the KAFD cluster in the north-center, and the Granada cluster in the east, with more forming; each Saudi city has its own market logic and Riyadh's cluster story never transfers to Jeddah, Makkah, Madinah or the Eastern Province. Respect Saudi commercial tiers and never compare across tiers: developments are projects like KAFD, ITCC, Laysen Valley and Roshn Front, never districts; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. Deal types go beyond lease and sale: land can be sold or ground-leased, and lease rights can be assigned (tanazul), sometimes with the fit-out sold alongside; you may explain these in general terms, and any specific assignment or capex deal routes to SAT's verified process. The Rent Index is derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Say average, never median, because that is what the source publishes. Cells with too few registered transactions are shown blank and you must not fill them in. It is indicative, never advice. Never attribute a figure to JLL, CBRE, Knight Frank or any research house: they did not produce our figures and their research may not be republished.${
+    ctx
+      ? // The one place the advisor quotes live platform data inside its own
+        // instruction. It is a slot, so the counts declare themselves as an
+        // aggregate over inventory and the boundary sees them separately from the
+        // instruction that carries them. Under the ADV-3A.1 tagged-template API
+        // there is no other way in: a raw interpolation throws.
+        phrase` Live platform context you may cite: ${classifiedSlot(ctx, [
+          { label: "published listing and index segment counts", dataClass: "aggregate_count", overParties: false },
+        ])}. Use only these counts; every rent or price figure still comes only from the Rent Index.`
+      : phrase``
+  } If the user greets you, welcome them to SAT Markets in one warm sentence, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic that is not in the live platform context; if they want numbers, ask for a location and an asset type and tell them you will pull the figure from the Rent Index. No em dashes. Invent nothing.`;
 
-// The one place the advisor quotes live platform data inside its own instruction.
-// It is a slot rather than an interpolation, so the counts declare themselves as
-// an aggregate over inventory and the boundary sees them. An instruction cannot
-// carry a value into a prompt any other way: `instruction()` throws on an unfilled
-// placeholder, which is what closes the laundering route structurally.
-const CHAT_CTX_CLAUSE = ` Live platform context you may cite: {{ctx}}. Use only these counts; every rent or price figure still comes only from the Rent Index.`;
+const askInstruction = (arabic: boolean): ClassifiedMessage =>
+  instruction("advisor ask instruction")`You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. ${arabic ? phrase`Ask in Modern Standard Arabic with Western numerals.` : phrase`Ask in British English. Do not use Arabic.`} No em dashes.`;
 
-const chatSys = (arabic: boolean, withCtx: boolean) => `You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. ${arabic ? "Write your reply in Modern Standard Arabic with Western numerals." : "Write your reply in British English. Do not use Arabic."} Your knowledge is strictly limited to SAT Markets: its listings, the Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the Rent Index, draft a listing, or watch the market. Market structure you respect: Riyadh is polycentric and organised in clusters, for example the Laysen Valley cluster in the west beside the Diplomatic Quarter, the KAFD cluster in the north-center, and the Granada cluster in the east, with more forming; each Saudi city has its own market logic and Riyadh's cluster story never transfers to Jeddah, Makkah, Madinah or the Eastern Province. Respect Saudi commercial tiers and never compare across tiers: developments are projects like KAFD, ITCC, Laysen Valley and Roshn Front, never districts; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. Deal types go beyond lease and sale: land can be sold or ground-leased, and lease rights can be assigned (tanazul), sometimes with the fit-out sold alongside; you may explain these in general terms, and any specific assignment or capex deal routes to SAT's verified process. The Rent Index is derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Say average, never median, because that is what the source publishes. Cells with too few registered transactions are shown blank and you must not fill them in. It is indicative, never advice. Never attribute a figure to JLL, CBRE, Knight Frank or any research house: they did not produce our figures and their research may not be republished.${withCtx ? CHAT_CTX_CLAUSE : ""} If the user greets you, welcome them to SAT Markets in one warm sentence, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic that is not in the live platform context; if they want numbers, ask for a location and an asset type and tell them you will pull the figure from the Rent Index. No em dashes. Invent nothing.`;
-
-function chatInstruction(ctx: string, arabic: boolean): ClassifiedMessage {
-  const label = "advisor chat instruction";
-  if (!ctx) return instruction(label, chatSys(arabic, false));
-  return instruction(label, chatSys(arabic, true), [
-    {
-      key: "ctx",
-      value: ctx,
-      // Counts of published listings and of published index segments. Inventory,
-      // not people, so no minimum group size applies.
-      parts: [{ label: "published listing and index segment counts", dataClass: "aggregate_count", overParties: false }],
-    },
-  ]);
-}
-
-const askSys = (arabic: boolean) => `You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. ${arabic ? "Ask in Modern Standard Arabic with Western numerals." : "Ask in British English. Do not use Arabic."} No em dashes.`;
+const draftInstruction = (arabic: boolean): ClassifiedMessage =>
+  instruction("advisor draft instruction")`You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete. ${arabic ? phrase`Write in Modern Standard Arabic with Western numerals.` : phrase`Write in British English. Do not use Arabic.`} No em dashes.`;
 
 export async function POST(req: NextRequest) {
   // Durable across instances when a KV store is configured; degrades to the local
@@ -152,15 +150,23 @@ export async function POST(req: NextRequest) {
   if (!gate.ok) return NextResponse.json({ mode: "search" }, { status: 429 });
   const { query, history } = (await req.json()) as { query?: string; history?: { role: string; text: string }[] };
   const raw = (query || "").trim().slice(0, 2000);
-  const hist = (Array.isArray(history) ? history : []).slice(-6).filter((h: any) => h && (h.role === "user" || h.role === "assistant") && h.text).map((h: any) => ({ role: h.role as "user" | "assistant", content: String(h.text).slice(0, 600) }));
-  const allowedSrc = raw + " " + hist.map((h) => h.content).join(" ");
+  // ADV-3A.1. ONLY THE PERSON'S OWN TURNS SURVIVE THIS LINE.
+  //
+  // The filter and the evidence set both live in `@/lib/advisor/history` rather
+  // than here, and the reason is not tidiness. A route module may only export
+  // HTTP handlers, so an inline filter is a rule no test can call. Codex item 3
+  // asks for a regression test proving that a number present only in a previous
+  // assistant message stays unsupported, and that test has to exercise the rule
+  // the route actually runs, not a copy of it written in the test file.
+  //
+  // What the rule is, and why, is written where it lives.
+  const hist = userHistory(history);
+  const allowedSrc = allowedSources(raw, hist);
   if (!raw) return NextResponse.json({ mode: "search" });
 
   const greeting = /^(hey+|hi+|hello+|hala|halla|salam+|salaam|marhaba|\u0647\u0644\u0627|\u0645\u0631\u062d\u0628\u0627?|\u0627\u0644\u0633\u0644\u0627\u0645( \u0639\u0644\u064a\u0643\u0645)?|good (morning|evening|afternoon)|yo|sup)[\s!.\u061f?]*$/i.test(raw) || raw.length < 4;
-  const cText = greeting ? null : await llm([instruction("advisor classifier", CLASSIFY), userWords(raw)], true);
-  let intent: any = {};
-  intent = parseJsonLoose(cText);
-  const mode = greeting ? "chat" : ["chat", "draft", "value", "watch"].includes(intent?.mode) ? intent.mode : "search";
+  const intent = readAdvisorIntent(raw);
+  const mode: AdvisorMode = greeting ? "chat" : intent.mode;
 
   const supabase = getSupabaseServer();
   const arq = isAr(raw);
@@ -180,13 +186,13 @@ export async function POST(req: NextRequest) {
   if (mode === "search") {
     const broad = !intent?.district && (intent?.figure === null || intent?.figure === undefined);
     if (!broad) return NextResponse.json({ mode: "search" });
-    const askMsg = await llm([instruction("advisor ask instruction", askSys(arq)), userWords(raw)], false);
+    const askMsg = await llm([askInstruction(arq), userWords(raw)], false);
     const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : (arq ? `يسعدني مساعدتك في إيجاد المساحة المناسبة. أي موقع تفكر فيه، مثلاً ${examplePair(true)}، وما ميزانيتك للمتر المربع، وما المساحة التي تحتاجها تقريباً؟` : `Happy to help you find the right space. Which location are you considering, for example ${examplePair(false)}, what is your budget per square metre, and roughly what size do you need?`);
     return NextResponse.json({ mode: "ask", message: askSafe });
   }
 
   if (mode === "chat") {
-    const msg = await llm([chatInstruction(ctx, arq), ...hist.map((h) => priorTurn(h.role, h.content)), userWords(raw)], false);
+    const msg = await llm([chatInstruction(ctx, arq), ...hist.map((h) => priorUserTurn(h.content)), userWords(raw)], false);
     const chatSafe = msg && !unsourcedFigure(msg, allowedSrc + " " + ctx) ? msg : (arq ? `أفضل أن آخذ أي إيجار أو سعر من مؤشر الإيجارات لا من الذاكرة. أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأعطيك النطاق المنشور.` : `I would rather pull any rent or price from the Rent Index than quote one from memory. Tell me the location and asset type, for example ${examplePair(false)}, and I will give you the published band.`);
     return NextResponse.json({ mode: "chat", message: chatSafe });
   }
@@ -316,8 +322,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ mode: "watch", message, band: toPublicSegment(band as IndexRowLike), threshold, saved });
   }
 
-  const sys = `You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete. ${arq ? "Write in Modern Standard Arabic with Western numerals." : "Write in British English. Do not use Arabic."} No em dashes.`;
-  const msg = await llm([instruction("advisor draft instruction", sys), userWords(raw)], false);
+  const msg = await llm([draftInstruction(arq), userWords(raw)], false);
   const draftSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : (arq ? `أبقيت أي رقم خارج المسودة حتى لا يدخل شيء غير موثّق في إعلانك. أخبرني بالسعر المطلوب الذي تريده، أو حدده بنفسك، وسأنسق الباقي مما تقدمه من تفاصيل فقط.` : `I have kept any figure out of the draft so nothing unverified goes into your listing. Tell me the asking price you want, or set your own, and I will format the rest from only the details you give.`);
   return NextResponse.json({ mode: "draft", message: draftSafe });
 }

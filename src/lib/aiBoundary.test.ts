@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import {
   AI_AGREEMENT_IN_FORCE,
   AGGREGATE_MIN,
+  SYNTHETIC_SETS,
+  REDACTION_APPROVALS,
   buildExternalPrompt,
   mayLeaveProcess,
   type PromptPart,
@@ -55,11 +57,63 @@ test("an agreement opens private material but is not the production state", () =
   }
 });
 
-// 2. What is always permitted, and why.
+// 2. What is permitted before an agreement, and why.
 
-test("already-published material and the users own words may leave", () => {
+test("already-published material may leave", () => {
   assert.equal(ext({ label: "listing copy", dataClass: "public_published" }).allowed, true);
-  assert.equal(ext({ label: "their message", dataClass: "user_own_words" }).allowed, true);
+});
+
+test("unstructured user text is not a permission", () => {
+  // ADV-3A.1. This used to pass. The argument was that a person who types a
+  // sentence has consented to its processing, which does not survive contact with
+  // what people actually type: a search query carries a company name and an
+  // expansion budget, an advisor message carries a tenant's confidential
+  // requirement, a draft listing is unpublished third-party copy. The person
+  // typing is frequently not the only party the text is about.
+  const d = ext({ label: "their message", dataClass: "user_own_words" });
+  assert.equal(d.allowed, false);
+  assert.match(d.reason, /enterprise AI agreement/);
+  assert.equal(ext({ label: "their message", dataClass: "user_own_words" }, { agreementInForce: true }).allowed, true);
+});
+
+test("a synthetic sample must name a registered set", () => {
+  const bare = ext({ label: "gold row", dataClass: "synthetic_sample" });
+  assert.equal(bare.allowed, false);
+  assert.match(bare.reason, /assertion, not evidence/);
+
+  const unknown = ext({ label: "gold row", dataClass: "synthetic_sample", syntheticSetId: "whatever" });
+  assert.equal(unknown.allowed, false);
+  assert.match(unknown.reason, /not a registered synthetic set/);
+
+  const known = ext({ label: "gold row", dataClass: "synthetic_sample", syntheticSetId: "adv3-eval-gold" });
+  assert.equal(known.allowed, true);
+});
+
+test("the registered synthetic sets are named, not open-ended", () => {
+  assert.ok(SYNTHETIC_SETS.includes("adv3-eval-gold"));
+  assert.equal(SYNTHETIC_SETS.length, 1);
+});
+
+test("approved redaction denies every time while no approval is on record", () => {
+  // The register is empty and honestly so: no redaction standard has been
+  // written, applied or approved. The class exists so that approving one later is
+  // a recorded decision rather than a code path invented under time pressure.
+  assert.equal(REDACTION_APPROVALS.length, 0);
+
+  const bare = ext({ label: "redacted deed", dataClass: "approved_redaction" });
+  assert.equal(bare.allowed, false);
+  assert.match(bare.reason, /no recorded approval id/);
+
+  const claimed = ext({ label: "redacted deed", dataClass: "approved_redaction", redactionApprovalId: "trust-me" });
+  assert.equal(claimed.allowed, false);
+  assert.match(claimed.reason, /is on record/);
+
+  // Not even an agreement opens it. The agreement is about the provider; this
+  // register is about whether anybody actually redacted anything.
+  assert.equal(
+    ext({ label: "redacted deed", dataClass: "approved_redaction", redactionApprovalId: "trust-me" }, { agreementInForce: true }).allowed,
+    false
+  );
 });
 
 test("an internal destination gates nothing, because nothing crosses a boundary", () => {
@@ -79,25 +133,51 @@ test("an internal destination gates nothing, because nothing crosses a boundary"
 
 // 3. Aggregates.
 
+test("a count over platform data is gated on the agreement before it is gated on size", () => {
+  // ADV-3A.1. A large group makes a count safe to publish; it does not make it
+  // lawful to export to a processor we hold no terms with. Group size answers a
+  // re-identification question, the agreement answers a processing question, and
+  // passing one is not passing the other.
+  const d = ext({ label: "listing count", dataClass: "aggregate_count", n: 1 });
+  assert.equal(d.allowed, false);
+  assert.match(d.reason, /enterprise AI agreement/);
+
+  const big = ext({ label: "landlord count", dataClass: "aggregate_count", overParties: true, n: 5000 });
+  assert.equal(big.allowed, false);
+  assert.match(big.reason, /enterprise AI agreement/);
+});
+
 test("an aggregate over inventory may leave regardless of size", () => {
-  assert.equal(ext({ label: "listing count", dataClass: "aggregate_count", n: 1 }).allowed, true);
+  assert.equal(
+    ext({ label: "listing count", dataClass: "aggregate_count", n: 1 }, { agreementInForce: true }).allowed,
+    true
+  );
 });
 
 test("an aggregate over parties is denied below the minimum group size", () => {
   for (const n of [0, 1, 9]) {
-    const d = ext({ label: "landlord count", dataClass: "aggregate_count", overParties: true, n });
+    const d = ext(
+      { label: "landlord count", dataClass: "aggregate_count", overParties: true, n },
+      { agreementInForce: true }
+    );
     assert.equal(d.allowed, false, String(n));
     assert.match(d.reason, /minimum group size/);
   }
   assert.equal(
-    ext({ label: "landlord count", dataClass: "aggregate_count", overParties: true, n: AGGREGATE_MIN }).allowed,
+    ext(
+      { label: "landlord count", dataClass: "aggregate_count", overParties: true, n: AGGREGATE_MIN },
+      { agreementInForce: true }
+    ).allowed,
     true
   );
 });
 
 test("an aggregate over parties with a missing or non-finite n is treated as zero", () => {
   for (const n of [undefined, NaN, Infinity]) {
-    const d = ext({ label: "party count", dataClass: "aggregate_count", overParties: true, n: n as number });
+    const d = ext(
+      { label: "party count", dataClass: "aggregate_count", overParties: true, n: n as number },
+      { agreementInForce: true }
+    );
     assert.equal(d.allowed, false, String(n));
   }
 });
@@ -175,13 +255,23 @@ test("an unrecognised data class is denied rather than defaulted", () => {
 
 test("one denied part fails the entire prompt", () => {
   const r = buildExternalPrompt([
-    { label: "user message", dataClass: "user_own_words" },
+    { label: "instruction", dataClass: "own_instruction" },
     { label: "deed", dataClass: "verification_evidence" },
     { label: "listing copy", dataClass: "public_published" },
   ]);
   assert.equal(r.allowed, false);
   assert.equal(r.allowed === false && r.denials.length, 1);
   assert.equal(r.reasons.length, 3);
+});
+
+test("a prompt carrying only pre-agreement classes is permitted whole", () => {
+  const r = buildExternalPrompt([
+    { label: "instruction", dataClass: "own_instruction" },
+    { label: "listing copy", dataClass: "public_published" },
+    { label: "gold row", dataClass: "synthetic_sample", syntheticSetId: "adv3-eval-gold" },
+  ]);
+  assert.equal(r.allowed, true);
+  assert.equal(r.allowed === true && r.parts.length, 3);
 });
 
 test("a denied prompt returns no parts at all, so nothing can be sent by accident", () => {
@@ -223,12 +313,19 @@ test("an instruction class does not launder what it quotes", () => {
   // request. The structural half of this lives in src/lib/ai/message.ts, which
   // will not interpolate a value into a prompt except through a slot that
   // declares its own parts; this is the boundary half.
-  const r = buildExternalPrompt([
-    { label: "advisor system prompt", dataClass: "own_instruction" },
-    { label: "landlord count", dataClass: "aggregate_count", overParties: true, n: 3 },
-  ]);
+  const r = buildExternalPrompt(
+    [
+      { label: "advisor system prompt", dataClass: "own_instruction" },
+      { label: "landlord count", dataClass: "aggregate_count", overParties: true, n: 3 },
+    ],
+    // The agreement is opened deliberately, so that the denial below can only be
+    // the group-size rule. Otherwise the provider gate would answer first and this
+    // test would pass without exercising the thing it is named after.
+    { agreementInForce: true }
+  );
   assert.equal(r.allowed, false);
   assert.equal(r.allowed === false && r.denials.length, 1);
+  assert.match(r.allowed === false ? r.denials[0] : "", /minimum group size/);
 });
 
 test("there is no hand-written declaration of what the advisor sends", () => {

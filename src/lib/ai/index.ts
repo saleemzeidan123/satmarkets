@@ -16,14 +16,17 @@ export {
 
 export {
   instruction,
+  phrase,
+  classifiedSlot,
   userWords,
-  priorTurn,
+  priorUserTurn,
   classified,
   partsOf,
+  isClassifiedMessage,
   UnclassifiedMessageError,
   type ClassifiedMessage,
+  type ClassifiedSlot,
   type Role,
-  type Slot,
 } from "./message";
 
 export {

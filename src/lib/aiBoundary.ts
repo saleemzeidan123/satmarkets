@@ -72,8 +72,45 @@ export type DataClass =
    * behalf. The test is authorship plus submission by the same party, not the
    * shape of the text: a lister who writes a listing description and asks for it
    * in Arabic is sending their own words exactly as a chat user is.
+   *
+   * ADV-3A.1. THIS CLASS IS NOT A PERMISSION. It used to be permitted
+   * unconditionally, on the argument that a person who types a sentence has
+   * consented to its processing. That argument does not survive contact with what
+   * people actually type. A search query can carry a company name, an expansion
+   * plan, a budget and a headcount. An advisor message can carry a tenant's
+   * confidential requirement. A draft listing is unpublished third-party material.
+   * None of that becomes public because a user pressed send, and the person typing
+   * is frequently not the only party the text is about.
+   *
+   * `docs/regulatory-register.md` Part D says that before an enterprise AI
+   * agreement exists, an external model may receive public information,
+   * deliberately constructed samples or approved redacted material. Unstructured
+   * user text is none of those, so it is gated on the agreement like every other
+   * nonpublic class.
    */
   | "user_own_words"
+  /**
+   * Data that was deliberately constructed to contain no real user and no real
+   * platform content: an evaluation gold set, a fixture, a worked example written
+   * for the purpose. Permitted before an agreement because there is nobody in it.
+   *
+   * Requires a `syntheticSetId` naming a set registered in `SYNTHETIC_SETS`. A part
+   * that merely asserts it is synthetic is not evidence that it is, so an
+   * unregistered id denies. The register is the list of sets somebody built and
+   * can show you.
+   */
+  | "synthetic_sample"
+  /**
+   * Material reduced, under a recorded redaction standard, to something that
+   * carries no personal, third-party or commercially sensitive content.
+   *
+   * Requires a `redactionApprovalId` present in `REDACTION_APPROVALS`. That
+   * register is EMPTY today and this class therefore always denies, which is the
+   * accurate state: no redaction standard has been written, applied or approved,
+   * so no material qualifies. The class exists so that approving one later is a
+   * recorded decision rather than a new code path invented under time pressure.
+   */
+  | "approved_redaction"
   /**
    * Text SAT itself authored as an instruction to the model. A system prompt, a
    * schema description, a house-style rule.
@@ -115,7 +152,34 @@ export type PromptPart = {
   n?: number;
   /** True when the aggregate counts people, organizations or their behaviour rather than inventory. */
   overParties?: boolean;
+  /** Required when dataClass is 'synthetic_sample'. Must name a registered set. */
+  syntheticSetId?: string;
+  /** Required when dataClass is 'approved_redaction'. Must name a recorded approval. */
+  redactionApprovalId?: string;
 };
+
+/**
+ * Deliberately constructed sets that contain no real user and no platform data.
+ *
+ * A set earns a place here by being built from invented districts, invented
+ * companies and invented requirements, and by being reviewable: anyone can open it
+ * and see there is nobody in it. Adding an id here is the claim, and the claim is
+ * in a commit.
+ */
+export const SYNTHETIC_SETS: readonly string[] = [
+  // ADV-3B. The bilingual evaluation gold set. Every row is written for the
+  // purpose; no listing, requirement, message or document is copied into it.
+  "adv3-eval-gold",
+];
+
+/**
+ * Redaction approvals on record.
+ *
+ * Empty, and honestly so. Approving one means writing the redaction standard,
+ * applying it, having the result reviewed and recording the decision, and none of
+ * that has happened. Until it does, `approved_redaction` denies every time.
+ */
+export const REDACTION_APPROVALS: readonly string[] = [];
 
 export type BoundaryDecision = {
   allowed: boolean;
@@ -155,13 +219,48 @@ export function mayLeaveProcess(
     case "public_published":
       return { allowed: true, reason: `${part.label}: already published publicly` };
 
-    case "user_own_words":
-      return { allowed: true, reason: `${part.label}: the users own words, sent on their behalf` };
-
     case "own_instruction":
       return { allowed: true, reason: `${part.label}: our own instruction to the model, carrying no party or licensed material` };
 
+    case "synthetic_sample": {
+      const id = part.syntheticSetId ?? "";
+      if (!id) {
+        return { allowed: false, reason: `${part.label}: material described as synthetic with no registered set id is an assertion, not evidence` };
+      }
+      if (!SYNTHETIC_SETS.includes(id)) {
+        return { allowed: false, reason: `${part.label}: '${id}' is not a registered synthetic set` };
+      }
+      return { allowed: true, reason: `${part.label}: registered synthetic set '${id}', containing no real user or platform data` };
+    }
+
+    case "approved_redaction": {
+      const id = part.redactionApprovalId ?? "";
+      if (!id) {
+        return { allowed: false, reason: `${part.label}: redacted material with no recorded approval id has no approval` };
+      }
+      if (!REDACTION_APPROVALS.includes(id)) {
+        return { allowed: false, reason: `${part.label}: no redaction approval '${id}' is on record` };
+      }
+      return { allowed: true, reason: `${part.label}: redaction approval '${id}' is on record` };
+    }
+
+    case "user_own_words":
+      return agreement
+        ? { allowed: true, reason: `${part.label}: the users own words, sent on their behalf under the provider agreement` }
+        : {
+            allowed: false,
+            reason: `${part.label}: unstructured user text may carry personal, third-party or commercially sensitive material and may not reach an external provider before an enterprise AI agreement is in force`,
+          };
+
     case "aggregate_count": {
+      // The agreement is checked FIRST, before the group-size rule. A count over
+      // unpublished platform records is still a platform record: a large group
+      // makes it safe to publish, not lawful to export to a processor we have no
+      // terms with. Group size answers a re-identification question; the agreement
+      // answers a processing question. Passing one is not passing the other.
+      if (!agreement) {
+        return { allowed: false, reason: `${part.label}: a count over platform data may not reach an external provider before an enterprise AI agreement is in force` };
+      }
       if (!part.overParties) {
         return { allowed: true, reason: `${part.label}: aggregate over inventory, not over parties` };
       }

@@ -1,72 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { allow } from "@/lib/ratelimit";
-import { callModelText, instruction, userWords } from "@/lib/ai";
-
-const ASSETS = ["office","retail","medical","showroom","warehouse","serviced","education","land"] as const;
-type AssetT = typeof ASSETS[number];
-type Parsed = { asset: AssetT | null; deal: "lease" | "sale" | null; district: string | null; minSize: number | null; maxRent: number | null };
-
-// Rules-based parser, kept as a fast, reliable fallback for when the model is
-// unavailable (no key set, timeout, or error). It never sees the network.
-function rulesParse(raw: string): Parsed {
-  const q = raw.toLowerCase();
-  const asset = (ASSETS.find((a) => q.includes(a)) as AssetT | undefined) || (q.includes("clinic") ? "medical" : (q.includes("logistic") || q.includes("warehouse")) ? "warehouse" : (q.includes("shop") || q.includes("f&b") || q.includes("restaurant")) ? "retail" : null);
-  const deal: Parsed["deal"] = /\b(buy|sale|for sale|purchase|freehold|acquire)\b/.test(q) ? "sale" : (/\b(lease|rent|rental|let)\b/.test(q) ? "lease" : null);
-  const sizeMatch = q.match(/([0-9][0-9,\.]{1,9})\s*(sqm|sq m|m2|m²|meter)/);
-  const minSize = sizeMatch ? Number(sizeMatch[1].replace(/[,]/g, "")) : null;
-  const budgetMatch = q.match(/(under|below|max|up to)\s*(sar)?\s*([0-9][0-9,\.]{1,9})/);
-  const maxRent = budgetMatch ? Number(budgetMatch[3].replace(/[,]/g, "")) : null;
-  return { asset: asset ?? null, deal, district: null, minSize, maxRent };
-}
-
-const SYS = `You extract structured search filters from a commercial real estate query for Riyadh, Saudi Arabia. Understand both Arabic and English, including dialect and loose phrasing. Respond with strict JSON only, no prose, with exactly these keys:
-- asset: one of "office","retail","medical","showroom","warehouse","serviced","education","land", or null
-- deal: "lease", "sale", or null
-- district: the Riyadh district or area name the user means as a string, or null
-- minSize: minimum floor area in square metres as a number, or null
-- maxRent: maximum rent in SAR per square metre per year as a number, or null
-Infer intent: a clinic is medical, a logistics shed is warehouse, a restaurant or shop is retail, a fitted or co-working suite is serviced, a school or training centre is education. Never invent a value that is not implied. Output only the JSON object.`;
-
-// The model-assisted intent parser.
-//
-// ADV-3A. This route used to reach two providers directly, from an inline array
-// of base-url/key/model tuples, with no boundary call anywhere in the file. The
-// ADV-0 closure record described the advisor's `llm()` as the single choke point
-// through which providers are reached. That was true of the advisor and false of
-// the platform, which is finding 54.
-//
-// It now goes through the gateway like everything else, so the boundary sees the
-// request, failover is the router's chain rather than a local array, and the same
-// unknown-class denial applies here as anywhere.
-//
-// What is sent is exactly what it looks like: our own extraction instruction and
-// the words the user typed into the search box.
-async function llmParse(raw: string): Promise<Parsed | null> {
-  if (raw.trim().length < 3) return null;
-  const txt = await callModelText({
-    profile: "classification",
-    messages: [instruction("search intent instruction", SYS), userWords(raw, "search query")],
-    json: true,
-    maxTokens: 200,
-    // Search is in front of a person waiting for results, so it gets a shorter
-    // leash than the advisor's twelve seconds.
-    timeoutMs: 7000,
-  });
-  if (!txt) return null;
-  let o: any;
-  try {
-    o = JSON.parse(txt);
-  } catch {
-    return null;
-  }
-  const asset = (ASSETS as readonly string[]).includes(o?.asset) ? (o.asset as AssetT) : null;
-  const deal: Parsed["deal"] = o?.deal === "lease" || o?.deal === "sale" ? o.deal : null;
-  const district = typeof o?.district === "string" && o.district.trim() ? o.district.trim() : null;
-  const minSize = typeof o?.minSize === "number" && isFinite(o.minSize) ? o.minSize : null;
-  const maxRent = typeof o?.maxRent === "number" && isFinite(o.maxRent) ? o.maxRent : null;
-  return { asset, deal, district, minSize, maxRent };
-}
+import { llmParse, rulesParse, type Parsed } from "@/lib/search/aiParse";
 
 export async function POST(req: NextRequest) {
   if (!allow("search", req)) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });

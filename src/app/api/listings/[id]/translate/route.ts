@@ -90,9 +90,33 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   let model = "";
   let touched = false;
 
+  // ADV-3A.1. A REFUSAL IS ANSWERED, NOT RECORDED AS A TRANSLATION.
+  //
+  // Below, every successful field sets `touched`, and `touched` is what causes
+  // `ar_translation_status = 'machine'` to be written. When the translator could
+  // not run, no field is set, so no status is written, and the route says why in
+  // its own response. The previous shape threw out of `callTranslator` and the
+  // failure surfaced as a 500; worse, any future partial path would have left a
+  // row claiming a machine translation that never happened.
+  const unavailable = (r: { reason: string; detail: string }) =>
+    NextResponse.json(
+      {
+        status: "unavailable",
+        id,
+        reason: r.reason,
+        message:
+          r.reason === "agreement_required"
+            ? "Automatic Arabic translation is unavailable until the enterprise AI agreement is recorded. The English copy is unchanged and no Arabic status was written."
+            : "Automatic Arabic translation is unavailable right now. The English copy is unchanged and no Arabic status was written.",
+        detail: r.detail,
+      },
+      { status: 503 }
+    );
+
   // Title
   if (listing.title_en && (force || hashSource(listing.title_en) !== listing.title_ar_src_hash)) {
     const r = await translateToArabic(listing.title_en, { tier });
+    if (!r.ok) return unavailable(r);
     if (unsourcedFigure(r.arabic, listing.title_en)) {
       console.warn(`[translate] unsourced figure in title of ${id}; keeping source`);
     } else {
@@ -109,6 +133,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     (force || hashSource(listing.description_en) !== listing.description_ar_src_hash)
   ) {
     const r = await translateToArabic(listing.description_en, { tier });
+    if (!r.ok) return unavailable(r);
     if (unsourcedFigure(r.arabic, listing.description_en)) {
       console.warn(`[translate] unsourced figure in description of ${id}; keeping source`);
     } else {

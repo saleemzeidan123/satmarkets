@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { callModel, sanitizeModelText } from "./gateway";
-import { instruction, userWords, priorTurn, classified, partsOf, UnclassifiedMessageError } from "./message";
+import { instruction, phrase, classifiedSlot, userWords, priorUserTurn, classified, partsOf, UnclassifiedMessageError } from "./message";
 import { CANDIDATES, selectChain } from "./router";
 
 // ADV-3A. Three kinds of test live here and they are not interchangeable.
@@ -40,16 +40,108 @@ const stripComments = (s: string) =>
 
 // 1. The structural claim: one module opens a socket to a provider.
 
-test("no file outside the transport opens a provider request", () => {
-  const needles = ["chat/" + "completions", "x-api" + "-key", "anthropic" + "-version"];
-  const allowed = "src/lib/ai/trans" + "port.ts";
-  const offenders: string[] = [];
+// ADV-3A.1. WHAT THIS SCAN DOES AND DOES NOT PROVE.
+//
+// The first version looked for three needles: a completions path and two
+// provider headers. Codex was right that this did not establish what the closure
+// record claimed. A file could have reached a provider through an SDK, through a
+// responses or messages endpoint, through a hostname, through a differently
+// named authorization header, or through a generic fetch to a URL held in a
+// configuration value, and this test would have passed.
+//
+// The list below is wider: endpoints, hostnames, SDK package names, provider
+// authorization headers and model-related environment reads. It is still a list.
+// A determined future edit can assemble a hostname from fragments, exactly as
+// this file assembles its own needles to avoid matching itself, and no source
+// scan can see through that.
+//
+// So the claim this test supports is the narrow one, and the closure record now
+// makes only that claim: every currently known and registered provider
+// integration is centralized in the transport and guarded here. It is not a
+// proof that no other socket is expressible.
+//
+// A note on `/messages`: taken bare it is a route in this application, linked
+// from the header, so a bare match would flag a dozen navigation files and the
+// test would be turned off within a week. It is matched as a versioned API path
+// instead, which is the form every provider actually uses.
+
+const PROVIDER_NEEDLES: RegExp[] = [
+  // Endpoints.
+  new RegExp("chat/" + "completions"),
+  new RegExp("/v\\d+/" + "messages"),
+  new RegExp("/v\\d+/" + "responses"),
+  new RegExp("/v\\d+/" + "complete"),
+  new RegExp("[\"'`]/" + "responses[\"'`]"),
+  new RegExp(":generate" + "Content"),
+  // Authorization and versioning headers providers use.
+  new RegExp("x-api" + "-key", "i"),
+  new RegExp("anthropic" + "-version", "i"),
+  // Google's model header is the same header Google Places uses, and
+  // `/api/places` is a legitimate maps integration. Gemini is caught by its
+  // hostname and by the generateContent path instead, which are specific to it.
+  new RegExp("openai" + "-organization", "i"),
+  new RegExp("http-" + "referer[\"'`]?\\s*:", "i"),
+  // Hostnames.
+  new RegExp("api\\.open" + "ai\\.com"),
+  new RegExp("api\\.anthro" + "pic\\.com"),
+  new RegExp("api\\.deep" + "seek\\.com"),
+  new RegExp("generativelanguage\\.google" + "apis\\.com"),
+  new RegExp("api\\.moon" + "shot\\.(cn|ai)"),
+  new RegExp("open" + "router\\.ai"),
+  new RegExp("api\\.mis" + "tral\\.ai"),
+  new RegExp("api\\.gro" + "q\\.com"),
+  new RegExp("api\\.toget" + "her\\.xyz"),
+  new RegExp("bed" + "rock-runtime\\."),
+  // Provider SDK imports.
+  new RegExp("from\\s+[\"']open" + "ai"),
+  new RegExp("from\\s+[\"']@anthro" + "pic-ai/"),
+  new RegExp("from\\s+[\"']@google/gener" + "ative-ai"),
+  new RegExp("from\\s+[\"']@mist" + "ralai/"),
+  new RegExp("from\\s+[\"']@aws-sdk/client-bed" + "rock"),
+  new RegExp("from\\s+[\"']@azure/open" + "ai"),
+  new RegExp("require\\([\"']open" + "ai"),
+  // Model-related environment reads. A second place that decides which model
+  // answers is a second provider integration even when it opens no socket, which
+  // is how the Arabic translator held its own tier table for a while.
+  // Deliberately not a bare `API_KEY`: the maps key and the database keys are not
+  // model configuration, and a guard that flags them is a guard somebody deletes.
+  new RegExp("process\\.env\\.[A-Z0-9_]*(_MODEL|MODEL_|ANTHRO" + "PIC|OPEN" + "AI|DEEP" + "SEEK|GEM" + "INI|MOON" + "SHOT|LLM|AI_API_KEY)"),
+];
+
+// The transport is the socket. The router is the register of which models exist
+// and which environment keys configure them, which is its declared job.
+const PROVIDER_ALLOWED = new Set([
+  "src/lib/ai/trans" + "port.ts",
+  "src/lib/ai/router.ts",
+  "src/lib/ai/gateway.test.ts",
+]);
+
+test("no file outside the AI package reaches a provider or decides which model answers", () => {
+  const offenders: { file: string; needle: string }[] = [];
   for (const f of tsFiles()) {
-    if (norm(f) === allowed) continue;
+    const n = norm(f);
+    if (PROVIDER_ALLOWED.has(n)) continue;
     const t = fs.readFileSync(f, "utf8");
-    if (needles.some((n) => t.includes(n))) offenders.push(norm(f));
+    for (const re of PROVIDER_NEEDLES) {
+      if (re.test(t)) offenders.push({ file: n, needle: String(re) });
+    }
   }
-  assert.deepEqual(offenders, [], `these files reach a provider directly: ${offenders.join(", ")}`);
+  assert.deepEqual(
+    offenders,
+    [],
+    `these files reach a provider or hold provider configuration directly: ${offenders.map((o) => `${o.file} (${o.needle})`).join(", ")}`
+  );
+});
+
+test("the supabase key reads are not caught by the provider env rule", () => {
+  // A guard that flags the database client is a guard somebody switches off.
+  const re = PROVIDER_NEEDLES.find((r) => String(r).includes("process"))!;
+  assert.equal(re.test("process.env.SUPABASE_SERVICE_ROLE_KEY"), false);
+  assert.equal(re.test("process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY"), false);
+  assert.equal(re.test("process.env.GOOGLE_MAPS_API_KEY"), false);
+  assert.equal(re.test("process.env.SAT_TRANSLATE_MODEL_FAST"), true);
+  assert.equal(re.test("process.env.ANTHROPIC_API_KEY"), true);
+  assert.equal(re.test("process.env.AI_API_KEY"), true);
 });
 
 test("nothing but the gateway imports the transport", () => {
@@ -116,31 +208,45 @@ test("an env override changes the model id without changing the candidate", () =
 
 test("a message cannot be built with no declared class", () => {
   assert.throws(() => classified("user", "hello", []), UnclassifiedMessageError);
-  assert.throws(() => partsOf([{ role: "user", content: "x", parts: [] }]), UnclassifiedMessageError);
+  assert.throws(() => partsOf([{ role: "user", content: "x", parts: [] } as any]), UnclassifiedMessageError);
 });
 
-test("an instruction with an unfilled placeholder throws instead of being sent", () => {
-  assert.throws(() => instruction("sys", "counts: {{ctx}}"), UnclassifiedMessageError);
+test("an object literal shaped like a classified message is not one", () => {
+  // ADV-3A.1. Before the private-symbol brand this passed. The type was purely
+  // structural, so any literal with a role, a content and a parts array was
+  // accepted everywhere a classified message was, and it declared whatever class
+  // its author fancied. The brand key cannot be named outside message.ts, so the
+  // forgery below cannot be written by application code at all, and if it is
+  // cast into place it still does not reach a provider.
+  const forged: any = {
+    role: "user",
+    content: "Acme is leaving Al Olaya and needs 900 sqm",
+    parts: [{ label: "harmless", dataClass: "own_instruction" }],
+  };
+  assert.throws(() => partsOf([forged]), UnclassifiedMessageError);
 });
 
-test("a slot the template does not contain throws", () => {
-  assert.throws(
-    () => instruction("sys", "no slots here", [{ key: "ctx", value: "3", parts: [{ label: "c", dataClass: "aggregate_count" }] }]),
-    UnclassifiedMessageError
-  );
+test("an instruction cannot be called with a composed string", () => {
+  // This is the old signature, and it is the exact call that laundered a dynamic
+  // value into own_instruction. It must not type-check and must not run.
+  assert.throws(() => (instruction("sys") as any)("counts: " + 3), UnclassifiedMessageError);
+});
+
+test("a raw interpolation is refused at the point of interpolation", () => {
+  const tenantRequirement = "Acme is leaving Al Olaya and needs 900 sqm";
+  assert.throws(() => instruction("sys")`extract from: ${tenantRequirement as any}`, UnclassifiedMessageError);
+  assert.throws(() => instruction("sys")`count: ${412 as any}`, UnclassifiedMessageError);
+  assert.throws(() => phrase`count: ${412 as any}`, UnclassifiedMessageError);
 });
 
 test("a slot with no declared class throws", () => {
-  assert.throws(
-    () => instruction("sys", "counts: {{ctx}}", [{ key: "ctx", value: "3", parts: [] }]),
-    UnclassifiedMessageError
-  );
+  assert.throws(() => classifiedSlot("412", []), UnclassifiedMessageError);
 });
 
 test("a filled instruction declares both itself and what it quotes", () => {
-  const m = instruction("advisor system", "published listings: {{ctx}}", [
-    { key: "ctx", value: "412", parts: [{ label: "published listing count", dataClass: "aggregate_count" }] },
-  ]);
+  const m = instruction("advisor system")`published listings: ${classifiedSlot("412", [
+    { label: "published listing count", dataClass: "aggregate_count" },
+  ])}`;
   assert.equal(m.role, "system");
   assert.equal(m.content, "published listings: 412");
   assert.deepEqual(
@@ -149,10 +255,29 @@ test("a filled instruction declares both itself and what it quotes", () => {
   );
 });
 
+test("a phrase carries its own slots up into the instruction that holds it", () => {
+  const m = instruction("advisor system")`base.${phrase` context: ${classifiedSlot("7", [
+    { label: "segment count", dataClass: "aggregate_count" },
+  ])}`}`;
+  assert.equal(m.content, "base. context: 7");
+  assert.deepEqual(
+    m.parts.map((p) => p.dataClass),
+    ["own_instruction", "aggregate_count"]
+  );
+});
+
+test("a phrase with no slots is our own instruction text", () => {
+  const m = instruction("advisor system")`say this: ${phrase`in Arabic`}`;
+  assert.deepEqual(
+    m.parts.map((p) => p.dataClass),
+    ["own_instruction", "own_instruction"]
+  );
+});
+
 test("the parts checked are the parts of the messages sent", () => {
   const messages = [
-    instruction("sys", "be brief"),
-    priorTurn("user", "earlier"),
+    instruction("sys")`be brief`,
+    priorUserTurn("earlier"),
     userWords("what is available in Olaya"),
   ];
   assert.deepEqual(
@@ -161,11 +286,31 @@ test("the parts checked are the parts of the messages sent", () => {
   );
 });
 
+test("there is no way to build an assistant turn for a provider", () => {
+  // ADV-3A.1, Codex item 3. `priorTurn(role, content)` accepted "assistant" and
+  // classified it user_own_words. The correction is not a stricter label, it is
+  // the absence of the constructor: until history carries typed provenance per
+  // turn, assistant text does not go to an external model at all.
+  const mod = stripComments(fs.readFileSync("src/lib/ai/message.ts", "utf8"));
+  assert.doesNotMatch(mod, /role:\s*"assistant"/);
+  assert.doesNotMatch(mod, /export function priorTurn\b/);
+});
+
 // 4. The gateway.
 
 const noFetch = () => {
   throw new Error("the gateway opened a socket when it should not have");
 };
+
+// ADV-3A.1. The behavioural tests below need a message the boundary permits
+// before an agreement exists, because `userWords` no longer is one. A row from
+// the registered evaluation gold set is exactly that, and it is also the only
+// material Codex permits for provider testing: written for the purpose, copied
+// from no listing, requirement, message or document.
+const goldRow = (text: string) =>
+  classified("user", text, [
+    { label: "evaluation gold row", dataClass: "synthetic_sample", syntheticSetId: "adv3-eval-gold" },
+  ]);
 
 const stubFetch = async (body: unknown, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -189,7 +334,7 @@ test("a denied part stops the request before the network is touched", async () =
     callModel({
       profile: "classification",
       messages: [
-        instruction("sys", "extract"),
+        instruction("sys")`extract`,
         classified("user", "a deed scan", [{ label: "deed", dataClass: "verification_evidence" }]),
       ],
       env: { AI_API_KEY: "k" },
@@ -215,9 +360,42 @@ test("the boundary runs before selection, so a denial is never a provider failur
 
 test("no configured provider is reported rather than papered over", async () => {
   const r = await withFetch(noFetch, () =>
-    callModel({ profile: "classification", messages: [userWords("hello")], env: {} })
+    callModel({ profile: "classification", messages: [goldRow("hello")], env: {} })
   );
   assert.equal(r.ok === false && r.failure, "no_provider");
+});
+
+test("the person's own words do not reach a provider while no agreement is in force", async () => {
+  // ADV-3A.1, Codex item 1. This is the whole correction in one assertion: a
+  // fully configured provider, a working socket, and the request still stops.
+  const r = await withFetch(noFetch, () =>
+    callModel({
+      profile: "classification",
+      messages: [instruction("search intent")`extract filters`, userWords("office in Olaya", "search query")],
+      env: { AI_API_KEY: "k", ANTHROPIC_API_KEY: "k2" },
+    })
+  );
+  assert.equal(r.ok === false && r.failure, "boundary");
+  assert.ok(r.ok === false && r.denials.some((d) => /enterprise AI agreement/.test(d)));
+});
+
+test("a synthetic gold row is permitted, so the harness can still be exercised", async () => {
+  const impl = async () => stubFetch({ choices: [{ message: { content: "office" } }] });
+  const r = await withFetch(impl, () =>
+    callModel({ profile: "classification", messages: [goldRow("office in Olaya")], env: { AI_API_KEY: "k" } })
+  );
+  assert.equal(r.ok, true);
+});
+
+test("a synthetic class without a registered set id is not a permission", async () => {
+  const r = await withFetch(noFetch, () =>
+    callModel({
+      profile: "classification",
+      messages: [classified("user", "x", [{ label: "row", dataClass: "synthetic_sample" }])],
+      env: { AI_API_KEY: "k" },
+    })
+  );
+  assert.equal(r.ok === false && r.failure, "boundary");
 });
 
 test("a permitted request reaches the provider and returns its text", async () => {
@@ -229,7 +407,7 @@ test("a permitted request reaches the provider and returns its text", async () =
   const r = await withFetch(impl, () =>
     callModel({
       profile: "classification",
-      messages: [instruction("sys", "extract"), userWords("office in Olaya")],
+      messages: [instruction("sys")`extract`, goldRow("office in Olaya")],
       json: true,
       env: { AI_API_KEY: "k" },
     })
@@ -252,7 +430,7 @@ test("a failing primary falls over to the next candidate in the chain", async ()
   const r = await withFetch(impl, () =>
     callModel({
       profile: "classification",
-      messages: [userWords("hello")],
+      messages: [goldRow("hello")],
       env: { AI_API_KEY: "k", ANTHROPIC_API_KEY: "k2" },
     })
   );
@@ -270,7 +448,7 @@ test("a named candidate does not fail over to a different one", async () => {
     callModel({
       profile: "bilingual_translation",
       candidate: "claude-sonnet",
-      messages: [instruction("sys", "translate"), userWords("a listing description")],
+      messages: [instruction("sys")`translate`, goldRow("a listing description")],
       env: { ANTHROPIC_API_KEY: "k" },
     })
   );
@@ -289,7 +467,7 @@ test("an exact model id overrides the candidate default", async () => {
       profile: "bilingual_translation",
       candidate: "claude-haiku",
       modelId: "claude-haiku-pinned",
-      messages: [userWords("text")],
+      messages: [goldRow("text")],
       env: { ANTHROPIC_API_KEY: "k" },
     })
   );
@@ -307,7 +485,7 @@ test("every provider path sanitizes the dash the platform forbids", () => {
 test("an empty answer is a failure to answer rather than an empty answer", async () => {
   const impl = async () => stubFetch({ choices: [{ message: { content: "   \n  " } }] });
   const r = await withFetch(impl, () =>
-    callModel({ profile: "classification", messages: [userWords("x")], env: { AI_API_KEY: "k" } })
+    callModel({ profile: "classification", messages: [goldRow("x")], env: { AI_API_KEY: "k" } })
   );
   assert.equal(r.ok, false);
 });
