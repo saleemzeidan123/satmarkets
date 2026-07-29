@@ -24,7 +24,7 @@ after acquisition (gate 21/22).
 | /listings, /listings/[id] | public-indexable-later | none | Detail pages enter sitemap only when ALLOW_INDEX (sample-data guard). |
 | /listings/[id]/flyer | noindex-public | none | Canonicalize to detail (WS12). |
 | /map, /rent-index, /advisor, /requirements, /locations, /market, /brokers | public-indexable-later | none | In `SITEMAP_ROUTES` (lib/routePolicy.ts). |
-| /area, /pricing, /neutrality, /about | noindex-public (HELD) | none | In `HELD_ROUTES` (lib/routePolicy.ts): excluded from the sitemap AND noindexed by the middleware even when ALLOW_INDEX is on, until each route's audit gate clears (/area entity route, /pricing offer decision O1, /neutrality legal review O2, /about claim C8). |
+| /area, /pricing, /neutrality, /about, /verification, /sources, /bilingual | noindex-public (HELD) | none | In `HELD_ROUTES` (lib/routePolicy.ts): excluded from the sitemap AND noindexed by the middleware even when ALLOW_INDEX is on, until each route's audit gate clears (/area entity route, /pricing offer decision O1, /neutrality legal review O2, /about claim C8, and the three ADV-4B evidence pages on the indexing half of ADV-4, owner decision O11, with /sources also on O10). Holding a route here also pulls its page source into the enforced tier of `scripts/prose-scan.mjs`, so every string in it has to come from the dictionaries. |
 | /building/[id], /lister/[id], /requirements/[id] | public-indexable-later | none | Detail sitemap entries gated on ALLOW_INDEX. |
 | /login, /signup | noindex-private | none | Both in `PRIVATE_PREFIXES`. /login was linked from the public header while appearing in none of the three lists (PKG-1C.1); an authentication surface has nothing to index. |
 | /hbu | noindex-private | none | In `PRIVATE_PREFIXES` (PKG-1C.1). A highest-and-best-use demonstration whose every figure and every comparable is simulated. Private until the page is driven by real evidence; the global preview banner alone was not a sufficient qualification for named comparables. |
@@ -35,7 +35,7 @@ after acquisition (gate 21/22).
 | /verify, /verify/signups, /verify/viewings | noindex-private | SAT session (404 otherwise) | Added to PRIVATE_PREFIXES in PKG-0A; robots.txt also disallows. |
 | /ops, /proto | noindex-private | internal | Added to PRIVATE_PREFIXES in PKG-0A. |
 | /go | noindex-private (alias) | none | Post-login role router. |
-| /agent, /bilingual, /search, /thinking-map | alias | none | Locale- and query-preserving redirects; excluded from sitemap. |
+| /agent, /search, /thinking-map | alias | none | Locale- and query-preserving redirects; excluded from sitemap. /bilingual was one of these until ADV-4B; it is now a page. |
 
 ## Sitemap contract
 
