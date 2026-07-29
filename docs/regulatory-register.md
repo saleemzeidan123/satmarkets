@@ -319,6 +319,49 @@ Activation requires the owner to record four things, not one: the provider agree
 processing terms, the cross-border basis (Part C4), and the user disclosure or consent
 position. Three of the four are already open decisions in this file.
 
+### D2. Agents and tools, settled in ADV-3B
+
+An agent is a model that can ask the platform for things, so it is a new way for material
+to reach a provider and it needs its answer recorded here rather than assumed from D1.
+
+The route a naive agent loop opens is the one worth naming. The loop asks a model what to
+do, calls a tool, appends the tool's answer to the transcript as an observation, and sends
+the transcript back on the next turn. The observation is platform data wearing the
+transcript's clothes, and the boundary sees `own_instruction`. That is D1 reopened one
+layer up, so `ToolResult` carries its own `parts` and `toolResultSlot()` in
+`src/lib/agents/tool.ts` is the only route from a tool result into a prompt. A tool that
+reads unpublished rows denies at the gateway today for the same reason a draft listing
+does.
+
+**The parsed query is classified at three grains, and this is the boundary judgement in
+the package.** `parsedQueryParts()` in `src/lib/agents/tools.ts` splits a parsed search
+sentence into: the platform vocabulary it matched, which is our own closed enum and is
+`own_instruction`; any budget or size the person typed, which is `user_own_words`; and any
+free text the vocabulary did not recognise, which is `user_own_words`. The reasoning is
+that a value which cannot appear unless it is already one of our published labels carries
+nothing about the person, while a ceiling of 1400 is a tenant's budget and a residual
+phrase is whatever they wrote.
+
+The practical consequence, stated so it can be challenged: `office for lease in Riyadh`
+carries no user text and could reach an external model today, while `office under 1400 for
+the Acme expansion` cannot. The first is a claim about the grain of the classification and
+not about the sentence, and if the grain is wrong this is the paragraph to argue with.
+
+Two further positions are recorded because they do not follow from D1:
+
+* **An agent boundary is narrower than the provider boundary, and stays narrower after an
+  agreement exists.** `agentMayInclude()` runs before `buildExternalPrompt()`. Once
+  `AI_AGREEMENT_IN_FORCE` flips, verification evidence becomes globally sendable; a
+  discovery agent helping a visitor find offices still has no business holding a deed.
+  Widening what the platform may do does not widen what a search assistant is for.
+* **No figure is derived by a model.** `answerPermitted()` allows a number in an answer
+  only if a tool returned that exact value or the person typed it. There is deliberately no
+  policy permitting a derived figure, so a midpoint a model computed from a band it was
+  given is refused. That is Law 3 as a code path rather than as a prompt instruction.
+
+Nothing in this section activates anything. Every one of the six agent boundaries reports
+`deterministic` while Part D stays `unknown`.
+
 ---
 
 ## Part E. Contract and procurement requirements

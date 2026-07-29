@@ -31,10 +31,19 @@ import type { PromptPart } from "@/lib/aiBoundary";
 //
 // The API below removes the string parameter entirely. An instruction is built
 // by a tagged template, so JavaScript itself hands this module the fixed spans
-// and the interpolated values as separate arrays. A raw interpolated value is
-// rejected at runtime and rejected by the type checker. The only way to put a
-// runtime value into a prompt is `classifiedSlot(value, parts)`, which forces the
-// caller to say what the value IS.
+// and the interpolated values as separate arrays. The only way to put a runtime
+// value into a prompt is `classifiedSlot(value, parts)`, which forces the caller
+// to say what the value IS.
+//
+// ADV-3B. The interpolation parameter is typed `readonly ClassifiedSlot[]` rather
+// than `readonly unknown[]`, so an undeclared value is a compile error at the
+// call site and not only a throw at run time. The first version of this file took
+// `unknown` and the closure record still said the type checker rejected a raw
+// value; it did not, because everything is assignable to `unknown`. That was the
+// same shape of overstatement Codex found in the rest of the package, one layer
+// down. The runtime check in `assemble` stays, because a caller can still reach
+// this through `any`, through JSON, or from JavaScript, and the throw is what
+// catches those.
 //
 // There is deliberately no `fixedText(someString)` convenience. It would be one
 // line and it would reopen exactly the hole this closes.
@@ -102,7 +111,7 @@ export function classifiedSlot(value: string, parts: readonly PromptPart[]): Cla
  * Every span of a `phrase` is written in the source, so it is our own instruction
  * text; anything interpolated into it must itself be a slot, recursively.
  */
-export function phrase(strings: TemplateStringsArray, ...values: readonly unknown[]): ClassifiedSlot {
+export function phrase(strings: TemplateStringsArray, ...values: readonly ClassifiedSlot[]): ClassifiedSlot {
   const built = assemble("phrase", strings, values);
   return {
     [SLOT_BRAND]: true,
@@ -151,7 +160,7 @@ function assemble(
  * boundary sees it.
  */
 export function instruction(label: string) {
-  return function tag(strings: TemplateStringsArray, ...values: readonly unknown[]): ClassifiedMessage {
+  return function tag(strings: TemplateStringsArray, ...values: readonly ClassifiedSlot[]): ClassifiedMessage {
     const built = assemble(`instruction '${label}'`, strings, values);
     return {
       [MESSAGE_BRAND]: true,
