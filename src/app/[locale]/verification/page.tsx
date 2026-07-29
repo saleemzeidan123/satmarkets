@@ -119,6 +119,18 @@ export default function VerificationPage({ params }: { params: { locale: string 
               {unknownLabel(ar)}
             </div>
           </div>
+          {/* The states table prints `not_verified` and `unknown` with the same
+              words, because the engine maps them to the same badge on purpose.
+              On a listing that collapse is protective. On the page that explains
+              the states it reads as a duplicate, so the page says which two
+              collide and why rather than leaving a reader to notice it. */}
+          <div
+            className="card pad"
+            style={{ marginTop: 14, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
+          >
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.collideT}</div>
+            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.collideB}</p>
+          </div>
         </Reveal>
 
         <Reveal delay={170}>

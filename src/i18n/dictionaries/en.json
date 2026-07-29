@@ -1641,6 +1641,8 @@
     "statesBody": "There are five, and two of them are not failures. Not applicable means the check does not apply to this record. Not verified means we have not established it, which is different from having established that it is false.",
     "unknownT": "An unknown never becomes a known",
     "unknownB": "Where we hold nothing, the surface says so in those words rather than leaving a blank, because a blank is filled in by the reader and it is filled in optimistically.",
+    "collideT": "Two of the five print the same words on purpose",
+    "collideB": "not_verified and unknown carry the same badge text, so the table above shows one label twice. That is deliberate and it is the safer of the two mistakes: a dimension we have never looked at must never read better on a listing than one we looked at and could not confirm. The raw key beside each row is what the record actually holds, and it is the one that differs.",
     "demoteTitle": "How a record is demoted",
     "demoteBody": "The flag alone is never enough, because a flag is a claim rather than a check. Five conditions are read on every record and any one of them is sufficient on its own. The third is recorded as one of two reasons, depending on whether the record names a seeding method or names no method at all. Below are the six reasons in the words the code itself returns.",
     "gateTitle": "Why a listing fails the marketing gate",

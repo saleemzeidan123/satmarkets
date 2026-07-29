@@ -150,6 +150,34 @@ test("ADV-4B: every label the verification page prints is real text in both lang
   }
 });
 
+test("ADV-4B: where two states print the same words, the page says which two and why", () => {
+  // `unknown` and `not_verified` map to one badge on purpose: a dimension nobody
+  // has looked at must never read better than one that was looked at and could
+  // not be confirmed. On a listing that collapse is protective. On the page that
+  // enumerates the states it renders as the same label twice, so the page has to
+  // name the collision. This test finds the collisions from the engine rather
+  // than assuming which pair collides, so a future relabelling that creates a
+  // new pair fails here instead of shipping an unexplained duplicate.
+  for (const [name, dict] of [["en", EN], ["ar", AR]] as const) {
+    const byLabel = new Map<string, string[]>();
+    for (const s of ALL_STATES) {
+      const label = verificationStateLabel(s, name === "ar");
+      byLabel.set(label, [...(byLabel.get(label) ?? []), s]);
+    }
+    const collisions = [...byLabel.values()].filter((xs) => xs.length > 1);
+    if (collisions.length === 0) continue;
+
+    const body = dict.verification?.collideB ?? "";
+    assert.ok(body.trim().length > 0, `${name}: two states print the same label and the page does not explain it`);
+    assert.ok((dict.verification?.collideT ?? "").trim().length > 0, `${name}: verification.collideT is missing`);
+    for (const group of collisions) {
+      for (const s of group) {
+        assert.ok(body.includes(s), `${name}: ${s} collides with another state and the explanation does not name it`);
+      }
+    }
+  }
+});
+
 test("ADV-4B: the verification page states the two checks separately", () => {
   // The whole finding behind this page is that one badge for two different
   // checks tells a reader less than it appears to. If the copy for either check
