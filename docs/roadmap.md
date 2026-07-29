@@ -442,6 +442,19 @@ file and no longer advertises the held `/area` or the private `/find`. The corpu
 are widened by one intervening word on measurement; the actor-class frames are not,
 because widening them fired only on true statements. ADV-4B is the three pages.
 
+**ADV-4B shipped**, the three public records: `docs/adv-4b-closure.md`. `/verification`,
+`/sources` and `/bilingual` are built now, each generated from the engine it describes
+rather than describing it: the dimensions, states, demotion reasons and gate failures are
+read from `evidence.ts`, `listingVerification.ts` and `gate.ts`; the source policies are
+read from the live register; the counted-noun table is produced by `formatCounted` and the
+term base is `RE_GLOSSARY` whole. All three ship noindex under O11. Two things are worth
+carrying forward. A Next.js page module may export only the route contract, so the lists
+these pages publish live in `src/lib/publishedRecords.ts`, and `.next/types` is stale
+enough that only the production build catches the violation on a new route. And the live
+DOM again found what no local gate could: the states table printed one label twice,
+because `unknown` and `not_verified` share a badge on purpose, so the page now names the
+collision and a test discovers collisions from the engine at runtime.
+
 ### ADV-5. Location intelligence, interfaces and a controlled pilot
 
 Deliver: the SPL National Address interface, the stc Geo Analytics procurement
