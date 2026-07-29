@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { getDictionary } from "@/i18n/getDictionary";
 
@@ -22,7 +23,10 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
  const panelRef = useRef<HTMLDivElement>(null);
  const fabRef = useRef<HTMLButtonElement>(null);
  const scrollRef = useRef<HTMLDivElement>(null);
- const { msgs, busy, send, reset } = useAdvisorChat(loc, "satm_adv_chat");
+ // Three, passed to the hook rather than sliced at render. See finding 65 in
+ // `useAdvisorChat`: the widget showed three rows under a sentence that said
+ // seven.
+ const { msgs, busy, send, reset } = useAdvisorChat(loc, "satm_adv_chat", 3);
 
  const hidden = /\/(advisor|flyer|termsheet|verify|admin|dashboard|signup)(\/|$)/.test(path);
 
@@ -119,8 +123,8 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
           )}
           {m.results && m.results.length > 0 && (
            <div className="col gap8">
-            {m.results.slice(0, 3).map((l) => {
-             const title = (ar ? l.title_ar : l.title_en) || l.reference_code;
+            {m.results.map((l) => {
+             const title = listingTitle(l, loc);
              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : "";
              const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
              return (

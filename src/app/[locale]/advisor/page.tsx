@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
 import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num, isKnownUnit } from "@/lib/market/analyser";
@@ -21,7 +22,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  const locale = (params.locale === "ar" ? "ar" : "en") as "en"|"ar";
  const ar = locale === "ar";
  const av = getDictionary(locale).advisor;
- const { msgs, setMsgs, busy, send, reset } = useAdvisorChat(locale, "sat_advisor_page");
+ // The cap lives here, in the hook, not in the map below. Finding 65: this file
+ // sliced to four while the hook counted everything the route returned, so the
+ // sentence above the rows counted rows that were never rendered.
+ const { msgs, setMsgs, busy, send, reset } = useAdvisorChat(locale, "sat_advisor_page", 4);
  const [input, setInput] = useState("");
  const [tool, setTool] = useState<null | "value">(null);
  const [segs, setSegs] = useState<SegRow[] | null>(null);
@@ -210,8 +214,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
         )}
         {m.results && m.results.length > 0 && (
          <div className="col gap10">
-          {m.results.slice(0, 4).map((l) => {
-           const title = (locale === "ar" ? l.title_ar : l.title_en) || l.reference_code;
+          {m.results.map((l) => {
+           const title = listingTitle(l, locale);
            const dn = l.districts ? (locale === "ar" ? l.districts.name_ar : l.districts.name_en) : "";
            const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
            return (

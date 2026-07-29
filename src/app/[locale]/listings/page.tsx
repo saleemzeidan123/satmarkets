@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, dealLabel, cityLabel, cityKey, gradeLabel, gradePhrase, fitoutLabel, segmentLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 // Discovery search. Deterministic, no model: the box has promised to understand a
 // stated requirement since the day it shipped, and until now it did nothing at all.
 import { parseQuery, dropKeys, matchesQuery, type QueryVocab } from "@/lib/search/queryParse";
@@ -148,7 +149,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
       const bmap = new Map((bs ?? []).map((b: any) => [b.id, b]));
-      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); coordByListing.set(l.id, { lat: Number(b.lat), lng: Number(b.lng) }); return { id: l.id, title: (ar ? l.title_ar : l.title_en) || l.reference_code, lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
+      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); coordByListing.set(l.id, { lat: Number(b.lat), lng: Number(b.lng) }); return { id: l.id, title: listingTitle(l, ar ? "ar" : "en"), lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
     }
   }
 
@@ -476,7 +477,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                           inline unit strings and a Latin "m²" on the Arabic card. The
                           split stays; both parts now come from the unit table. */}
                       <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? formatNumber(Number(price), locale) : dl.onRequest}<small> {formatUnit(l.deal_type === "lease" ? "sar_sqm_year" : "sar", locale, "short")}</small></div>
-                      <div className="ttl">{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                      <div className="ttl">{listingTitle(l, ar ? "ar" : "en")}</div>
                       <div className="meta"><span>{dn || rcity}</span><i /><span>{formatArea(l.area_sqm, locale)}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
                       {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
                       {(() => {

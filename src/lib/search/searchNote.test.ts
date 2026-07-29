@@ -142,6 +142,90 @@ test("the sentence counts what the caller renders, not what the server said it f
   assert.ok(searchNote(answer({}), 3, "en").startsWith("3 verified matches"));
 });
 
+// ---------------------------------------------------------------- finding 65
+// Found live on `411f205`, in both languages, on the deployed advisor: the note
+// read "7 verified matches" and "7 مطابقات موثّقة" over four rows. The hook
+// passed the server total; the page rendered four and the widget three. The
+// formatter was right about the number it was handed. These tests fix which
+// number that is, and require the other one to be declared rather than dropped.
+
+test("the note counts the rendered rows, never the server total, in both languages", () => {
+  const en = searchNote(answer({}), 4, "en", 7);
+  assert.ok(en.startsWith("4 verified matches"), en);
+  assert.equal(en.startsWith("7"), false, "the live defect sentence");
+  const ar = searchNote(answer({}), 4, "ar", 7);
+  assert.ok(ar.startsWith("4 مطابقات موثّقة"), ar);
+  assert.equal(ar.startsWith("7"), false, "the live Arabic defect sentence");
+});
+
+test("the withheld rows are declared, not silently dropped", () => {
+  // A reader shown four of seven is owed the seven. The alternative, printing
+  // only the four, hides that the search matched more than it showed.
+  assert.ok(searchNote(answer({}), 4, "en", 7).includes("These are the closest 4 results of 7."));
+  assert.ok(searchNote(answer({}), 4, "ar", 7).includes("هذه أقرب 4 نتائج من أصل 7."));
+});
+
+test("English does not print the numeral one in front of a singular result", () => {
+  // "These are the closest 1 result of 7" is what a formatter writes and nobody
+  // says. The count is still one; the sentence just stops counting out loud.
+  const s = searchNote(answer({}), 1, "en", 7);
+  assert.ok(s.startsWith("1 verified match,"), s);
+  assert.ok(s.includes("This is the closest result of 7."), s);
+});
+
+test("nothing is declared when nothing is withheld", () => {
+  for (const total of [undefined, 4, 3, Number.NaN, Number.POSITIVE_INFINITY]) {
+    for (const locale of ["en", "ar"] as const) {
+      const s = searchNote(answer({}), 4, locale, total as number | undefined);
+      assert.equal(/closest|أقرب/.test(s), false, `total=${String(total)} ${locale}: ${s}`);
+      assert.equal(s, searchNote(answer({}), 4, locale), `total=${String(total)} ${locale}`);
+    }
+  }
+});
+
+test("the relaxed sentence carries the total inline rather than appending a second one", () => {
+  const a = answer({ relaxed: true, relaxedBy: "size" });
+  assert.ok(searchNote(a, 4, "en", 9).includes("here are the closest 4 results of 9, some are"));
+  assert.ok(searchNote(a, 4, "ar", 9).includes("أقرب 4 نتائج من أصل 9، بعضها"));
+});
+
+test("Arabic agreement still holds at every boundary when the total clause is present", () => {
+  // The clause carries a second numeral, and "من أصل" governs a bare one, so the
+  // counted noun in front of it must not change its agreement.
+  const cases: [number, string, string][] = [
+    [1, "مطابقة واحدة موثّقة", "هذه أقرب نتيجة واحدة من أصل 400."],
+    [2, "مطابقتان موثّقتان", "هذه أقرب نتيجتين من أصل 400."],
+    [3, "3 مطابقات موثّقة", "هذه أقرب 3 نتائج من أصل 400."],
+    [10, "10 مطابقات موثّقة", "هذه أقرب 10 نتائج من أصل 400."],
+    [11, "11 مطابقة موثّقة", "هذه أقرب 11 نتيجة من أصل 400."],
+    [99, "99 مطابقة موثّقة", "هذه أقرب 99 نتيجة من أصل 400."],
+    [100, "100 مطابقة موثّقة", "هذه أقرب 100 نتيجة من أصل 400."],
+  ];
+  for (const [n, head, tail] of cases) {
+    const s = searchNote(answer({}), n, "ar", 400);
+    assert.ok(s.startsWith(head), s);
+    assert.ok(s.includes(tail), s);
+  }
+});
+
+test("the total clause introduces no Latin script, no Arabic-Indic numeral and no em dash", () => {
+  for (const a of [answer({}), answer({ relaxed: true, relaxedBy: "size" })]) {
+    for (const n of [1, 2, 4, 11]) {
+      const s = searchNote(a, n, "ar", 400);
+      assert.equal(LATIN.test(s), false, s);
+      assert.equal(ARABIC_INDIC.test(s), false, s);
+      assert.equal(/[\u2014\u2013]/.test(s), false, s);
+      assert.equal(/[\u2014\u2013]/.test(searchNote(a, n, "en", 400)), false);
+    }
+  }
+});
+
+test("a total is never printed when the caller rendered nothing, or when the answer asks for more detail", () => {
+  assert.ok(searchNote(answer({}), 0, "en", 7).startsWith("No verified matches yet"));
+  assert.equal(searchNote(answer({}), 0, "en", 7).includes("7"), false);
+  assert.equal(searchNote(answer({ clarify: true }), 0, "ar", 7).includes("7"), false);
+});
+
 test("no em dash reaches either sentence", () => {
   for (const locale of ["en", "ar"] as const) {
     for (const n of [0, 1, 2, 6]) {

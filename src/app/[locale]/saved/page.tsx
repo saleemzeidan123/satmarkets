@@ -5,6 +5,7 @@ import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import { isLocale } from "@/i18n/config";
 import { assetLabel, dealLabel, gradeLabel, cityLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { fetchAccountSaved, promoteDeviceFolders, setShortlist } from "@/lib/saved";
 import type { Listing } from "@/lib/types";
 
@@ -179,7 +180,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 <thead>
                   <tr className="border-b border-line">
                     <th className="p-3 text-start text-[11px] uppercase tracking-wide text-charcoal/40"></th>
-                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{(ar ? l.title_ar : l.title_en) || (l as any).reference_code}</th>))}
+                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
                   </tr>
                 </thead>
                 <tbody className="text-charcoal/75">

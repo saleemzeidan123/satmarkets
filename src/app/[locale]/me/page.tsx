@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listedSince, listedLabel } from "@/lib/listedSince";
@@ -284,7 +285,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
                       <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
                         <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price != null ? Number(price).toLocaleString("en-US") : t.onReq}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{price != null ? (l.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
-                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
                         <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
                       </div>
                     </Link>

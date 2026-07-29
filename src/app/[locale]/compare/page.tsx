@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -82,7 +83,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
   // naming rule lives here beside the one the table headers already use: the title in the
   // reader's language, and the reference code when the title is missing rather than a
   // truncated id, which names nothing to the person reading it.
-  const titleById = new Map<string, string>(items.map((l: any) => [l.id, (ar ? l.title_ar : l.title_en) || l.reference_code || ""]));
+  const titleById = new Map<string, string>(items.map((l: any) => [l.id, listingTitle(l, ar ? "ar" : "en")]));
   const titleOf = (id: string) => titleById.get(id) || id;
 
   const GRID = `232px ${items.map(() => "1fr").join(" ")}`;
@@ -115,7 +116,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={verifiedBadges(l, null, ar)} />
-                      <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                      <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{listingTitle(l, ar ? "ar" : "en")}</div>
                       <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>
                   </div>

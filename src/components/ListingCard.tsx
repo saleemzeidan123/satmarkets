@@ -4,13 +4,14 @@ import type { Listing } from "@/lib/types";
 import type { Locale } from "@/i18n/config";
 import { photoFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, cityLabel, dealLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import SaveHeart from "@/components/SaveHeart";
 import { verifiedBadgeTexts } from "@/lib/listingVerification";
 
 export default function ListingCard({ listing, locale, sqm, ui }: {
   listing: Listing; locale: Locale; sqm: string; ui: any;
 }) {
-  const title = (locale === "ar" ? listing.title_ar : listing.title_en) || listing.reference_code;
+  const title = listingTitle(listing, locale === "ar" ? "ar" : "en");
   const d = listing.districts;
   const dn = d ? (locale === "ar" ? d.name_ar : d.name_en) : "";
   const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";

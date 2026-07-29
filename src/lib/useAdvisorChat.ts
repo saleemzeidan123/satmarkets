@@ -43,8 +43,18 @@ const STATE_VERSION = "v2";
  * page and the floating advisor widget. Pass a storageKey to persist the
  * conversation in sessionStorage. BOTH callers pass one today (the page uses
  * "sat_advisor_page", the widget "sat_advisor"), so both persist per locale.
+ *
+ * `resultCap` is how many rows the caller will actually render, and it belongs
+ * here rather than in the renderer. FINDING 65, found by exercising the deployed
+ * advisor in English and Arabic on `411f205`: the note read "7 verified matches"
+ * and "7 مطابقات موثّقة" above four visible rows. The hook stored everything the
+ * route returned and passed that length to the sentence, while the page sliced to
+ * four and the widget to three. Three places each held a different idea of how
+ * many results there were, and the one that spoke aloud held the wrong one. The
+ * hook now truncates once, so the array, the sentence and the screen cannot
+ * disagree, and the count that was hidden is declared instead of dropped.
  */
-export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
+export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultCap?: number) {
  const ar = locale === "ar";
  const key = storageKey ? `${storageKey}:${STATE_VERSION}:${locale}` : undefined;
  const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -120,12 +130,16 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string) {
   try {
    const r = await fetchBounded("/api/search", { query: q }, REQUEST_TIMEOUT_MS);
    const j = await r.json();
-   const results: R[] = j.results || [];
+   const all: R[] = j.results || [];
+   // Truncated once, here, so the stored array is exactly what will be rendered.
+   // The renderers used to slice, which is how the sentence came to count rows
+   // nobody could see.
+   const results = typeof resultCap === "number" && resultCap > 0 ? all.slice(0, resultCap) : all;
    // The wording lives in `@/lib/search/searchNote` so a test can read it and the
    // Arabic lint can see it. It was written inline here, which is how an English
    // relaxation phrase came to sit inside an Arabic sentence and how "6 مطابقة"
    // shipped without counted-noun agreement.
-   const note = searchNote(j, results.length, locale);
+   const note = searchNote(j, results.length, locale, all.length);
    setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
   } catch (e) {
    failed(isAbort(e));

@@ -3,6 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { listingTitle } from "@/lib/listingTitle";
 import ViewingDecision from "@/components/ViewingDecision";
 
 // Viewing requests on the lister's own listings.
@@ -52,7 +53,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
 
   const { data } = await sb
     .from("viewings")
-    .select("id, created_at, scheduled_at, status, contact_name, contact_email, contact_phone, note, listings(reference_code, title_en, title_ar)")
+    .select("id, created_at, scheduled_at, status, contact_name, contact_email, contact_phone, note, listings(reference_code, title_en, title_ar, asset_type, districts(name_en,name_ar,city))")
     .order("scheduled_at", { ascending: true })
     .limit(200);
 
@@ -102,7 +103,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
           </thead>
           <tbody>
             {rows.map((v) => {
-              const title = (ar ? v.listings?.title_ar : v.listings?.title_en) || v.listings?.title_en || v.listings?.reference_code || "";
+              const title = listingTitle(v.listings, ar ? "ar" : "en");
               return (
                 <tr key={v.id} style={{ borderTop: "1px solid var(--silver)" }}>
                   <td style={{ padding: "12px 14px" }}>

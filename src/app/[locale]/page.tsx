@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { formatArea, formatNumber } from "@/lib/format";
 import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
@@ -104,7 +105,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
     return {
       id: l.id,
       price: price != null ? formatNumber(Number(price), locale) : h.onRequest,
-      title: (ar ? l.title_ar : l.title_en) || l.reference_code,
+      title: listingTitle(l, ar ? "ar" : "en"),
       district: dn || city,
       area: formatArea(l.area_sqm, locale),
       type,

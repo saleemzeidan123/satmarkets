@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { photoFor } from "@/lib/photos";
 import { fill } from "@/lib/format";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -63,7 +64,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   }
   if (!l) notFound();
   const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (t.riyadh);
-  const title = (ar ? l.title_ar : l.title_en) || l.reference_code;
+  const title = listingTitle(l, ar ? "ar" : "en");
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;

@@ -66,13 +66,39 @@ export function relaxReason(a: SearchAnswer, locale: Loc): string {
 }
 
 /**
+ * True when the caller is holding back rows, so the sentence owes the reader
+ * both numbers rather than silently picking one of them.
+ */
+const withheld = (count: number, total?: number): total is number =>
+  typeof total === "number" && isFinite(total) && total > count;
+
+/**
+ * "of 7", in the caller's language, or nothing when nothing is withheld.
+ *
+ * "من أصل" is the ordinary Arabic for "out of", and it governs a bare numeral,
+ * so no counted noun has to agree twice in one sentence.
+ */
+function ofTotal(total: number | undefined, count: number, ar: boolean): string {
+  if (!withheld(count, total)) return "";
+  return ar ? ` من أصل ${formatInteger(total, "ar")}` : ` of ${formatInteger(total, "en")}`;
+}
+
+/**
  * The whole sentence above a set of search results.
  *
  * `count` is passed rather than read off the answer because the caller renders
  * the rows it holds, and a sentence that counts something other than what is on
  * the screen is the same class of untruth as an invented figure.
+ *
+ * `total` is what the search actually matched, and it is optional only because a
+ * caller that renders everything it was given has nothing to declare. THE DEFECT
+ * THIS PARAMETER EXISTS TO KILL, found by exercising the deployed advisor in both
+ * languages: the note read "7 verified matches" and "7 مطابقات موثّقة" above four
+ * rows, because the hook passed the server total while the two renderers sliced
+ * to four and to three. The formatter honoured the number it was given. Nobody
+ * was counting the same thing.
  */
-export function searchNote(a: SearchAnswer, count: number, locale: Loc): string {
+export function searchNote(a: SearchAnswer, count: number, locale: Loc, total?: number): string {
   const ar = locale === "ar";
   if (a.clarify) {
     return ar
@@ -81,16 +107,27 @@ export function searchNote(a: SearchAnswer, count: number, locale: Loc): string 
   }
   if (a.relaxed && count > 0) {
     const why = relaxReason(a, locale);
+    const of = ofTotal(total, count, ar);
     return ar
-      ? `لا توجد مطابقات تامة، فإليك أقرب ${formatCounted(count, "result", "ar", { oblique: true })}، بعضها ${why}. عدّل الميزانية أو المساحة أو الموقع للتضييق.`
-      : `No exact matches, so here are the closest ${formatCounted(count, "result", "en")}, some are ${why}. Adjust the budget, size, or location to tighten it.`;
+      ? `لا توجد مطابقات تامة، فإليك أقرب ${formatCounted(count, "result", "ar", { oblique: true })}${of}، بعضها ${why}. عدّل الميزانية أو المساحة أو الموقع للتضييق.`
+      : `No exact matches, so here are the closest ${formatCounted(count, "result", "en")}${of}, some are ${why}. Adjust the budget, size, or location to tighten it.`;
   }
   if (count > 0) {
     // The descriptors are verbal nouns in Arabic on purpose: an adjective would
     // have to agree with the count, and the dual would then be wrong.
-    return ar
+    const head = ar
       ? `${formatCounted(count, "verifiedMatch", "ar")}. التحقق من المالك مباشرة، بلا تكرار، مع سند الترخيص.`
       : `${formatCounted(count, "verifiedMatch", "en")}, owner-verified and deduplicated.`;
+    if (!withheld(count, total)) return head;
+    // The leading count is what is on the screen. This sentence is the only place
+    // the larger number may appear, and it says plainly which of the two it is.
+    // English drops the leading numeral at one, because "These are the closest 1
+    // result of 7" is not a sentence anyone writes.
+    const of = ofTotal(total, count, ar);
+    if (ar) return `${head} هذه أقرب ${formatCounted(count, "result", "ar", { oblique: true })}${of}.`;
+    return count === 1
+      ? `${head} This is the closest result${of}.`
+      : `${head} These are the closest ${formatCounted(count, "result", "en")}${of}.`;
   }
   return ar
     ? "لا توجد مطابقات موثّقة لذلك بعد. جرّب موقعاً أو مساحة أو ميزانية مختلفة وسأبحث مجدداً."

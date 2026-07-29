@@ -3,6 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, cityLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
@@ -152,7 +153,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
                         strings, which is how an Arabic card could show a Latin unit.
                         Both now come from the shared unit formatter. */}
                     <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price == null ? t.onReq : l.deal_type === "lease" ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)}</div>
-                    <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.reference_code}</div>
+                    <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
                     <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · {formatArea(l.area_sqm, lp)}</div>
                   </div>
                 </Link>

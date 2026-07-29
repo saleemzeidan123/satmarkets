@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { assetLabel, gradeLabel, gradePhrase, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
+import { listingTitle } from "@/lib/listingTitle";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
@@ -94,7 +95,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
-  const title = (ar ? l.title_ar : l.title_en) || l.reference_code;
+  const title = listingTitle(l, ar ? "ar" : "en");
   const kindFor = (a: string) => a;
   const L = (p: string) => `/${locale}${p}`;
 
@@ -531,7 +532,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                       <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
                         <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (dict.ld.onRequest)}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? " " + formatUnit(s.deal_type === "lease" ? "sar_sqm_year" : "sar", lp, "short") : ""}</small></div>
-                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{(ar ? s.title_ar : s.title_en) || s.reference_code}</div>
+                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(s, ar ? "ar" : "en")}</div>
                         <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · {formatArea(s.area_sqm, lp)}</div>
                       </div>
                     </Link>
