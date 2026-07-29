@@ -151,10 +151,61 @@ as a route named `/`, which the sitemap test caught on its first run.
 | `npm test` | 1034 pass, 0 fail (was 1028) |
 | `npm run ar-lint` | clean |
 | `node scripts/prose-scan.mjs` | 0 hardcoded prose strings in 0 files, exit 0 |
-| Production build | recorded below on the deployment |
+| Production build | `dpl_6h9Eh7vrLiujSNK64aDQxNV5rLxk` READY, commit `8cfb7ba` |
 
 `src/lib/publicFacts.test.ts` is a new file and is registered in the explicit list in the `test`
 script. That list is not a glob and a file not named in it silently never runs.
+
+## Live evidence
+
+Taken on `dpl_6h9Eh7vrLiujSNK64aDQxNV5rLxk`, commit `8cfb7ba`, READY. The operating rules require
+verifying the deployed preview rather than relying on local results, and this package is the case
+where that distinction is not a formality: two of the four corrected files are static assets in
+`public/`, so the only way to know they are corrected is to read what the origin actually serves.
+
+`GET /llms.txt` returns `200`, `content-type: text/plain; charset=utf-8`,
+`x-robots-tag: noindex`, and the rewritten file byte for byte. The first line of the served body
+reads `# SAT Markets (satmarkets.sa)` and the description line reads `Commercial real estate
+exchange for Saudi Arabia, powered by SAT Real Estate (REGA FAL licence 1200025510)`. The banned
+positioning frame is not in the served body. Neither `/en/area` nor `/en/find` appears; the nine
+routes named are exactly `SITEMAP_ROUTES`. The sample-data disclosure is served in the second
+section, which is the part that matters most, because a model quoting this file never loads the
+page that carries the preview banner.
+
+`GET /manifest.webmanifest` returns `200`, `content-type: application/manifest+json`, and the
+served `description` is `Commercial real estate exchange for Saudi Arabia. Riyadh-first leasing and
+sales, a rent index republished from the REGA Rental Index (Ejar), and search that never invents a
+figure.` `theme_color` is served as `#3A6EA5`. None of the three defects is present in what the
+origin returns.
+
+`/en/signup` and `/ar/signup` were fetched from the deployment and the served DOM searched for the
+old and the new wording by exact string, rather than read end to end. Both corrections are present
+once each and neither superseded string appears at all:
+
+```
+/en/signup   "Find, compare and lease or buy commercial space"   1
+             "Underwrite assets with sourced data"               1
+             "verified commercial space"                         0
+             "Underwrite verified assets"                        0
+/ar/signup   "ابحث وقارن واستأجر أو اشترِ مساحة تجارية"                    1
+             "قيّم الأصول ببيانات مُسندة"                                  1
+             "مساحة تجارية موثّقة"                                        0
+             "أصولاً موثّقة"                                              0
+```
+
+The Arabic above is read out of the served document as text, not transcribed from an image, which
+is what Codex item 5 asked for after the mojibake in an earlier handback. `/ar/signup` serves
+`<html lang="ar" dir="rtl">` and `/en/signup` serves `<html lang="en" dir="ltr">`, so the
+corrected strings land in a true RTL document rather than in a mirrored English one.
+
+The four global laws that `publicFacts.test.ts` now holds over the two public files were also
+measured against both served signup documents, since a static test cannot see what a component
+composes at request time: zero literal em or en dashes, zero Arabic-Indic numerals in either
+locale, zero occurrences of the retired FAL number, zero occurrences of the retired gold.
+
+No responsive re-measurement was taken for the two signup subtitles. Both corrections are shorter
+than the strings they replace, in both languages, on the same element, so neither can introduce an
+overflow the previous wording did not already have.
 
 ## Next
 
