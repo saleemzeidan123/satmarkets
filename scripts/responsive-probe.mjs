@@ -237,9 +237,9 @@ ${c.pills.map((label) => `    <button type="button" class="chip" data-item="1" s
     render: (c) => `
 <section style="font-family:var(--sans);color:var(--ink);background:var(--paper);padding:0 16px">
  <div data-inner="1">
-  <div class="mt-6 flex items-baseline gap-2">
-   <span class="fig text-[11px] text-charcoal/35">01</span>
-   <h2 class="text-[15px] font-semibold">${c.mobilityTitle}</h2>
+  <div class="mt-8 flex items-baseline gap-3 border-b border-line pb-2">
+   <span class="fig text-[12px] text-charcoal">01</span>
+   <h2 class="font-display text-xl text-charcoal">${c.mobilityTitle}</h2>
   </div>
   <div class="mt-3 card p-5" data-probe="1">
    <p class="text-[14px] leading-relaxed text-charcoal/70" data-item="1">${c.mobilityBody}</p>

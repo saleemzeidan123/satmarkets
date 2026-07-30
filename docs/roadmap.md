@@ -531,14 +531,64 @@ content and left open elsewhere, because forty other uses are a platform-wide vi
 and belong to the parked visual-quality package. The general point it raises, that contrast
 has no gate at all, is the natural first item of that package.
 
-Next, per the governing directive: the strategy reconciliation, converting the uncompleted
-recommendations of the Codex Competitive Advantage Strategy into this roadmap.
-`docs/strategy-reconciliation.md` is where it lands.
+**The strategy reconciliation is done, second pass.** `docs/strategy-reconciliation.md`
+now carries both passes: the first at `058a568` and the second at `a2d2817`, with the
+first-pass verdicts kept beside the current ones so the classification can be audited
+rather than taken on trust. It adds a sixth verdict, **Built but unreached**, for a module
+that exists, is typed and is tested, and that nothing on a rendering surface or request
+path reaches. Section 7 of that file is the dependency-ordered conversion and is the
+authority for what follows here.
+
+The second pass applied ADV-5B's own method to itself, asking not what was built but what
+reaches a reader, and that produced finding 76: the strategy's flagship advantage, the
+Evidence Passport, is built and unreached. `evidence.ts` defines it with 567 lines of test
+behind it and no code in `src` constructs one; `provenance.ts` declares a tier on every
+asset field whose only runtime reader uses it to skip computed fields; and
+`ProvenanceChip.tsx`, the component that would draw it, is imported by nothing. Finding 77
+is the same thing seen from the component side, five orphans of 57 with two of them being
+the passport's rendering surfaces. The reconciliation is careful to separate this from the
+dormant AI agent layer, which is unreached because a gate refuses to activate it under
+owner ruling 7 and is therefore working as designed.
 
 ADV-5C, when it runs: the coverage-validation harness against known ground truth, which
 Part E requires before a first figure is ever published, and which needs a candidate
 dataset to validate against. Nothing about it is blocked by ADV-5B; it is blocked by
 there being no source, which is owner-side under ruling 7.
+
+### ADV-1C. The Evidence Passport producer, its rendering and its gate
+
+**Next.** Converted from the second strategy reconciliation, section 7. Chosen on three
+grounds rather than on preference: it is the strategy's flagship advantage; nothing gates
+it, because no permission, vendor, contract or owner decision stands between here and a
+rendered passport; and every remaining evidence-dependent agent item, the evidence auditor
+first among them, has nothing to operate on until it exists.
+
+Deliver: a producer that builds an `EvidencePassport` from records the platform already
+holds, so the type stops being a description of intent; a rendering that shows the passport
+to a reader, which is what the strategy means by a citation chip not being enough; the four
+reading functions, `freshnessOf`, `confidenceOf`, `isKnown` and `publishability`, wired to
+that rendering rather than exercised only in unit tests; and a structural gate in the
+`claims.test.ts` pattern that fails when a rendering surface states a figure no passport
+reaches. On the ADV-5B evidence the gate is the part that carries the value, because a
+module can be shipped, tested and green while the surfaces contradict it.
+
+Two smaller items ship with it because they are the same finding from other sides. Finding
+77's five orphan components are each wired, deleted, or excepted with a test that the
+reason for the exception is still true, on the `LocationScore` precedent; `RentBand.tsx`
+carries a `badge-gold` name, an unisolated en dash range under RTL against D20, three muted
+tiers finding 75 measures below threshold, and a locale-free `toLocaleString()`, none of
+which any gate catches because none of it renders. And the strategy's image-integrity rule,
+that AI must never beautify an image in a way that changes the physical reality of the
+property, is written as a law and enforced by a test: it appears nowhere in this repository
+today, and a verification-first exchange that retouches a photograph has falsified the
+record it exists to hold.
+
+Gate: no public figure renders without a passport a reader can inspect, and the structural
+test proves it by reading the surfaces rather than the module.
+
+Not in scope: the append-only corrections write path, which stays with ADV-6 where
+corrections originate; PD4 deed checks, blocked on O13 and O10; and the availability green
+collision, which needs O16.
 
 ### ADV-6. Contributor network
 
