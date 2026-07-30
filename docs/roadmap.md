@@ -497,10 +497,35 @@ fact. With the register as it stands every external location provider is denied:
 autocomplete serves our own indexed districts alone, geocode returns an empty list, and
 listing pages show straight-line distance with no drive time.
 
-ADV-5B is next: the SPL National Address interface, the mobility and visitation interface
-with regulatory-register Part E as an executable sufficiency checklist, the privacy
-methodology, the coverage-validation gate, the procurement and register updates, and the
-`/ops` "POI + isochrones" claim, which contradicts the constraint above.
+**ADV-5B shipped**, the mobility and address interfaces and the claims gate:
+`docs/adv-5b-closure.md`. Scope was the SPL National Address interface, the mobility and
+visitation interface with regulatory-register Part E as an executable sufficiency
+checklist, the privacy methodology, the coverage thresholds, the procurement and register
+updates, and the `/ops` "POI + isochrones" claim.
+
+The address interface is built around an empty permitted-field set, because the request is
+the moment data crosses: asking for a building number and rendering only the district does
+not make the other fields unrequested, it makes them received. An empty list builds no
+request, and two further refusals sit under it. The mobility interface runs four gates in
+a fixed order, rights first, and its available type narrows geography to city or district
+so a building-level movement figure cannot be constructed rather than merely refused.
+D29 records the rule and `docs/mobility-privacy-methodology.md` states it in prose,
+written before any source exists on purpose.
+
+What made the package worth more than its interfaces was the structural gate. Reading
+every file under `src/app` and `src/components` for mobility claims found that
+`/building/[id]` hashed the building id into a seeded generator and rendered the output as
+that building's weekly visitors, hourly rhythm, drive-time rings, dwell, daytime and spend
+figures, three of them in the overview row with no sample label, stable across reloads.
+Auditing `/area` before excepting it found four source cards representing telecom
+partnerships, payment-gateway feeds and data partnerships that do not exist. Findings 70
+to 73; 74 stays open, on whether `/building` should be declared for indexing or held,
+which is an owner decision rather than a defect.
+
+ADV-5C, when it runs: the coverage-validation harness against known ground truth, which
+Part E requires before a first figure is ever published, and which needs a candidate
+dataset to validate against. Nothing about it is blocked by ADV-5B; it is blocked by
+there being no source, which is owner-side under ruling 7.
 
 ### ADV-6. Contributor network
 

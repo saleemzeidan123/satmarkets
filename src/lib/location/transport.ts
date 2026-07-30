@@ -1,5 +1,5 @@
 import type { GeoProvider } from "./registry";
-import type { GeoPlaceItem, GeoPointItem } from "./results";
+import type { AddressFields, GeoPlaceItem, GeoPointItem } from "./results";
 
 // ADV-5A. The only place in this repository that opens a socket to a location
 // provider.
@@ -358,4 +358,30 @@ export function fetchGeocode(
         detail: `${p.id}: no geocode transport is implemented`,
       });
   }
+}
+
+/**
+ * Address lookup. DELIBERATELY WITHOUT A SINGLE BRANCH.
+ *
+ * Every other dispatcher in this file has a case per implemented provider and a
+ * denying default. This one has only the default, and that is the ADV-5B
+ * decision rather than unfinished work.
+ *
+ * A request cannot be written honestly before the written redisplay terms are
+ * read. The SPL National Address service answers with a set of fields, and
+ * asking for more fields than we are permitted to display is itself the
+ * problem: the request is the moment the data crosses, not the render. So the
+ * permitted field set in `address.ts` is empty, a request built from an empty
+ * field set is nothing, and there is nothing here to implement until the owner
+ * records the terms under Part E.
+ */
+export function fetchAddress(
+  p: GeoProvider,
+  _query: string,
+  _o: TransportOptions = {}
+): Promise<GeoOutcome<AddressFields[]>> {
+  return Promise.resolve({
+    ok: false,
+    detail: `${p.id}: no address transport is implemented, and none may be written before the redisplay terms are recorded`,
+  });
 }

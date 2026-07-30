@@ -238,8 +238,8 @@ export const ASSET_FIELDS: AssetFieldRegistry = {
     // Later (defined now, render Not available yet)
     { key: "catchment_population", label_en: "Catchment population", label_ar: "سكان النطاق", type: "number",
       section: "market", provenance: "sourced", available: false,
-      help_en: "GASTAT population in a drive-time isochrone, once wired. Labeled coarse.",
-      help_ar: "سكان النطاق حسب هيئة الإحصاء عند الربط. مبدئي." },
+      help_en: "GASTAT population for a published district, once wired. No isochrone is computed or stored (D27a). Labeled coarse.",
+      help_ar: "سكان حي منشور حسب هيئة الإحصاء عند الربط. لا يُحسب أي عزل زمني ولا يُخزَّن (D27a). مبدئي." },
     { key: "footfall", label_en: "Footfall", label_ar: "حركة الزوار", type: "number", section: "market",
       provenance: "sourced", available: false,
       help_en: "Vendor-only; off until a vendor is signed. Never asserted.",

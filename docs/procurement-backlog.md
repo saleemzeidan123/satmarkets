@@ -124,7 +124,17 @@ exported.
 **Closes when.** Signup completes and the terms are read and recorded, not summarized
 from the signup page.
 
-**Repository effect.** The `spl_address` row gains its policies and its `licence_ref`.
+**Repository effect.** The `spl_address` row gains its policies and its `licence_ref`, and
+`PERMITTED_ADDRESS_FIELDS` in `src/lib/location/address.ts` gains one entry per field the
+terms actually permit, each added in a reviewable commit with the clause that permits it.
+That list is empty today and an empty list builds no request, so the terms are not a
+configuration switch: the fields SAT may receive are the fields somebody wrote down.
+
+**What the interface already refuses.** Three independent refusals, and removing any one
+of them still leaves a refusal. No field is permitted, so no request can be built. The
+register holds the source at the internal ceiling, so a public caller is denied on rights.
+And the transport has no address branch to run. `address.test.ts` proves each separately
+and proves no socket opens.
 
 ---
 
@@ -198,6 +208,19 @@ known ground truth runs before the first figure is published.
 against a disabled source row regardless, so that the interface is testable before any
 agreement exists. The row opens only after both the agreement and the coverage
 validation.
+
+**Shipped in ADV-5B, before any conversation with any provider.** The requirement above is
+now executable rather than prose. Each clause is a `ClauseId` in
+`src/lib/location/sufficiency.ts` and `RECORDED_AGREEMENTS` is empty, so assessing a
+candidate agreement returns the list of clauses it leaves unanswered by name. Reading a
+set of terms produces a diff against a written standard instead of an impression of one,
+and a partial answer is a recorded gap rather than a judgement call. The publication
+thresholds sit separately in `coverage.ts`, because an agreement being sufficient never
+implies that a particular figure is publishable. D29 records the full rule and
+`docs/mobility-privacy-methodology.md` states what SAT will and will not publish, written
+deliberately before a source exists: a methodology written after a contract describes what
+the contract allows, and one written before it describes what the product is willing to
+accept.
 
 **Why last.** Every other item on this list fails by withholding a figure. This one
 fails by publishing a figure that is confidently wrong because the sample did not

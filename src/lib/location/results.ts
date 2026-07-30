@@ -22,6 +22,24 @@ export type GeoPointItem = {
   lng: number;
 };
 
+/**
+ * The fields the SPL National Address service can return.
+ *
+ * Declared so the request shape is discussable, NOT so it can be requested. See
+ * `address.ts`: the permitted set is empty until the written redisplay terms are
+ * read and recorded, and a request is built from the permitted set alone.
+ */
+export type AddressFieldId =
+  | "short_code"
+  | "building_number"
+  | "street"
+  | "district"
+  | "city"
+  | "postal_code"
+  | "additional_number";
+
+export type AddressFields = Partial<Record<AddressFieldId, string>>;
+
 export type TravelMethod = "driving";
 
 export type TravelTimeContext = "typical_off_peak";

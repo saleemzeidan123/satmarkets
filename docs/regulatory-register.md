@@ -189,10 +189,13 @@ every new rights column stays at its failing default and the pre-existing
 review, not as evidence. ADV-5 writes the interface. The signup is owner-side.
 Status: **asserted_unverified**.
 
-**stc Geo Analytics.** Nothing exists, no contact has been made, and none will be under
-owner ruling 7. What a sufficient contract would have to cover is recorded at Part E as a
-procurement requirement so that the requirement is ready when the owner is.
-Status: **unknown**.
+**stc Geo Analytics, and any location-intelligence provider (`geo_analytics`).** Nothing
+exists, no contact has been made, and none will be under owner ruling 7. What a sufficient
+contract would have to cover is recorded at Part E as a procurement requirement so that the
+requirement is ready when the owner is. ADV-5B declares the capability in
+`src/lib/location/registry.ts` with no host and no key, so it denies itself, and
+`mobilityFigure` refuses every input at the rights gate because there is no row here to
+find. Status: **unknown**.
 
 **Google Places.** Was in production through `/api/places` and had never been registered.
 No row, therefore no rights, therefore denied by construction once ADV-5A put the route
@@ -407,6 +410,18 @@ minimum aggregation threshold; controller and processor roles; storage location;
 cross-border transfer basis; audit rights; deletion on termination; and an explicit
 prohibition on user-level output. A pilot that cannot answer coverage and bias is a
 pilot that will produce a confident wrong number.
+
+**The twelve clauses above are executable (ADV-5B).** They are not only prose here. Each
+one is a `ClauseId` in `src/lib/location/sufficiency.ts`, `RECORDED_AGREEMENTS` is empty,
+and `assessMobilityAgreement` returns the list of clauses a candidate agreement leaves
+unanswered rather than a yes or a no. So reading a set of terms produces a diff against
+this part rather than an impression of it, and a partial answer is a recorded gap instead
+of a judgement call. The publication thresholds that sit downstream of a sufficient
+agreement are in `src/lib/location/coverage.ts`: the publishable geographies, the minimum
+aggregation count, the maximum period age and the minimum observed share, each with its
+own failure code. An agreement being sufficient never implies a particular figure is
+publishable, and the two are assessed separately for that reason. D29 records the full
+rule.
 
 **Location and geography providers (settled in ADV-5A).** Distinct from the AI agreement
 and not implied by it. Before any external location provider may receive text a user

@@ -11,10 +11,22 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fillProse } from "@/lib/format";
 import { getBuildingById } from "@/lib/queries/listings";
+import { getAllSourceRights } from "@/lib/queries/sourceRights";
+import { districtMobilityPanel } from "@/lib/location/panel";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
-function rng(seed: number) { return () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }; }
-function hash(s: string) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+
+// ADV-5B. A seeded generator used to live here. It took the building id, hashed
+// it, and produced a weekly visitor curve, an hourly rhythm, three catchment
+// rings, a dwell figure, a daytime index and a spend index, all of which then
+// rendered as this building's numbers, three of them in the overview row with no
+// sample label at all. It was stable per building, which made it worse: reload
+// the page and the same numbers came back, which is exactly how a reader decides
+// a figure is measured. That breaches "no invented figures", and the drive-time
+// rings additionally asserted a travel-time computation that D27(a) says this
+// schema does not hold and is not permitted to cache. It is gone. What replaces
+// it is `districtMobilityPanel`, which today returns the reason there is nothing
+// to show.
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -51,26 +63,16 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   const band = (rentRows ?? []).find((r: any) => r.sufficient && r.median != null) as any;
   const demand = (briefs ?? []).length;
 
-  const rnd = rng(hash(b.id) + 7);
-  const weekly = Array.from({ length: 8 }, (_, i) => 55 + Math.round(rnd() * 40) + (i > 4 ? 12 : 0));
-  const wow = Math.round(rnd() * 18 - 6);
-  const hours = Array.from({ length: 24 }, (_, h) => { let v = 8 + Math.round(Math.sin((h - 6) / 24 * Math.PI * 2) * 18 + rnd() * 14); if ([5, 12, 15, 18, 20].includes(h)) v = Math.max(4, v - 14); return Math.max(3, v); });
-  const catch5 = 40 + Math.round(rnd() * 60), catch10 = catch5 + 120 + Math.round(rnd() * 180), catch15 = catch10 + 260 + Math.round(rnd() * 320);
-  const workingAge = 58 + Math.round(rnd() * 14), daytime = 60 + Math.round(rnd() * 30), spendIdx = 90 + Math.round(rnd() * 60);
-  const dwell = 26 + Math.round(rnd() * 20);
+  // The register is read here rather than inside the panel so that the geo
+  // package stays free of React's request cache and remains unit testable.
+  const rights = await getAllSourceRights();
+  const mobility = districtMobilityPanel(b.district_id, "public", { rights });
 
   const name = ar ? (b.name_ar || b.name_en) : b.name_en;
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? "، " + cityLabel(b.city, locale) : ""}`;
   const grade = gradeLabel(b.grade, locale);
 
   const T = dict.building;
-
-  const maxWeekly = Math.max(...weekly), maxHour = Math.max(...hours);
-  const days = ar ? ["أحد","إثن","ثلا","أرب","خمي","جمع","سبت","أحد"] : ["Su","Mo","Tu","We","Th","Fr","Sa","Su"];
-  const W = 520, H = 120;
-  const pts = weekly.map((v, i) => [12 + i * ((W - 24) / (weekly.length - 1)), H - 12 - (v / maxWeekly) * (H - 30)]);
-  const lineP = pts.map((p, i) => `${i ? "L" : "M"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
-  const areaP = `${lineP} L${pts[pts.length-1][0].toFixed(1)},${H-12} L${pts[0][0].toFixed(1)},${H-12} Z`;
 
   return (
     <section>
@@ -119,63 +121,37 @@ export default async function BuildingPage({ params }: { params: { locale: strin
       </div>
 
       <SectionLabel n="00" title={T.overview} sub="" />
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      {/* Three of the six tiles here were generated numbers carrying tone="live",
+          which rendered them in the same colour as the counted ones. The row now
+          holds only what the record actually says. */}
+      <div className="mt-3 grid grid-cols-3 gap-3">
         <Kpi label={T.units} value={`${listings.length}`} tone="verified" />
         <Kpi label={T.grade} value={grade && grade !== "N/A" ? grade : "N/A"} tone="verified" />
-        <Kpi label={T.visitors} value={`${weekly[weekly.length-1]}k`} tone="live" />
-        <Kpi label={T.dwell} value={`${dwell} ${T.min}`} tone="live" />
-        <Kpi label={T.catch15} value={`${catch15}k`} tone="live" />
         <Kpi label={T.demand} value={`${demand}`} tone="verified" />
       </div>
 
-      <SectionLabel n="01" title={T.movement} sub={T.live} />
-      <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        <Card title={T.footfall} sample={T.sample}>
-          <div className="flex items-end justify-between">
-            <div className="fig text-[26px]" style={{ color: TEAL }}>{weekly[weekly.length-1]}k</div>
-            <div className={`fig text-sm ${wow>=0?"text-emerald-600":"text-red-500"}`}>{wow>=0?"▲":"▼"} {Math.abs(wow)}%</div>
-          </div>
-          <svg viewBox={`0 0 ${W} ${H}`} className="mt-2 w-full">
-            <defs><linearGradient id="bf" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor={TEAL} stopOpacity="0.38"/><stop offset="100%" stopColor={TEAL} stopOpacity="0"/></linearGradient></defs>
-            <path d={areaP} fill="url(#bf)" /><path d={lineP} fill="none" stroke={TEAL} strokeWidth="2.5" />
-            {pts.map((p,i)=>(<circle key={i} cx={p[0]} cy={p[1]} r="3" fill={TEAL} />))}
-          </svg>
-          <div className="mt-1 flex justify-between text-[10px] text-charcoal/40">{days.map((d,i)=>(<span key={i}>{d}</span>))}</div>
-        </Card>
-        <Card title={T.hourly} sample={T.sample}>
-          <div className="flex h-[120px] items-end gap-[3px]">
-            {hours.map((v,h)=>(<div key={h} className="flex-1 rounded-t" style={{ height: `${(v/maxHour)*100}%`, background: [5,12,15,18,20].includes(h)?"rgba(47,163,154,0.32)":TEAL }} />))}
-          </div>
-          <div className="mt-1 flex justify-between text-[10px] text-charcoal/40"><span>00</span><span>06</span><span>12</span><span>18</span><span>23</span></div>
-          <div className="mt-1 text-[11px] text-charcoal/40">● {T.prayer}</div>
-        </Card>
-      </div>
-
-      <SectionLabel n="02" title={T.catchSec} sub={T.live} />
-      <div className="mt-3 grid gap-4 lg:grid-cols-2">
-        <Card title={T.catchment} sample={T.sample}>
-          <div className="flex items-center gap-5">
-            <svg viewBox="0 0 160 160" className="h-36 w-36">
-              <circle cx="80" cy="80" r="72" fill={TEAL} opacity="0.10" /><circle cx="80" cy="80" r="50" fill={TEAL} opacity="0.18" /><circle cx="80" cy="80" r="28" fill={TEAL} opacity="0.30" /><circle cx="80" cy="80" r="4" fill={TEAL} />
-            </svg>
-            <div className="space-y-2 text-[13px]">
-              <Ring label={T.min5} v={`${catch5}k`} /><Ring label={T.min10} v={`${catch10}k`} /><Ring label={T.min15} v={`${catch15}k`} />
-            </div>
-          </div>
-        </Card>
-        <Card title={T.demo} sample={T.sample}>
-          <div className="space-y-3">
-            <Bar label={T.workingAge} value={workingAge} suffix="%" max={100} />
-            <Bar label={T.daytime} value={daytime} suffix="" max={120} />
-            <Bar label={T.spend} value={spendIdx} suffix="" max={160} />
-          </div>
-        </Card>
+      <SectionLabel n="01" title={T.mobilityTitle} sub="" />
+      <div className="mt-3 card p-5">
+        <p className="text-[14px] leading-relaxed text-charcoal/70">{T.mobilityBody}</p>
+        {mobility.available ? (
+          <>
+            <div className="mt-3 fig text-[26px]" style={{ color: TEAL }}>{mobility.value}</div>
+            <p className="mt-1 text-[11px] text-charcoal/45">
+              {T.mobilityK} <span className="fig">{mobility.k}</span> · {T.mobilityPeriod} <span className="fig">{mobility.periodEnd}</span> · {T.mobilityCoverage} <span className="fig">{Math.round(mobility.coverageShare * 100)}%</span>
+            </p>
+            <p className="mt-1 text-[11px] text-charcoal/45">{mobility.method}</p>
+            <p className="mt-1 text-[11px] text-charcoal/45">{mobility.attribution}</p>
+          </>
+        ) : (
+          <p className="mt-3 text-[13px] leading-relaxed text-charcoal/55">{T[mobility.statusKey]}</p>
+        )}
+        <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/45">{T.mobilityRule}</p>
       </div>
 
       {/* The subtitle read "Verified" above the whole unit grid, which claimed for
           every card below it whatever the reader took the word to mean. Each card
           states its own verification for itself. */}
-      <SectionLabel n="03" title={T.unitsSec} sub="" />
+      <SectionLabel n="02" title={T.unitsSec} sub="" />
       {listings.length === 0 ? (
         <p className="mt-3 text-[14px] text-charcoal/50">{T.noUnits}</p>
       ) : (
@@ -197,16 +173,7 @@ function Kpi({ label, value, tone }: { label: string; value: string; tone: "live
   const c = tone === "live" ? TEAL : GOLD;
   return (<div className="card p-3.5"><div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-charcoal/45"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />{label}</div><div className="mt-1 fig text-[20px] tracking-tight" style={{ color: c }}>{value}</div></div>);
 }
-// ADV-1. Every call site passed ok={false}, so the "Verified" branch was already
-// unreachable; had a source ever been wired to it, it would have labelled a movement
-// or demographic panel with a claim instead of with its provenance. Those panels stay
-// sample until ADV-5 clears a licensed provider, so the label is the only honest one.
-function Card({ title, sample, children }: { title: string; sample: string; children: React.ReactNode }) {
-  return (<div className="card p-5"><div className="flex items-center justify-between"><div className="font-display text-[15px] text-charcoal">{title}</div><span className="rounded-full px-2.5 py-0.5 text-[10px] font-medium tag-sample">{sample}</span></div><div className="mt-3">{children}</div></div>);
-}
-function Ring({ label, v }: { label: string; v: string }) {
-  return (<div className="flex items-center gap-2"><span className="inline-block h-3 w-3 rounded-full" style={{ background: TEAL, opacity: 0.5 }} /><span className="text-charcoal/60">{label}</span><span className="fig text-charcoal">{v}</span></div>);
-}
-function Bar({ label, value, suffix, max }: { label: string; value: number; suffix: string; max: number }) {
-  return (<div><div className="flex justify-between text-[12.5px]"><span className="text-charcoal/60">{label}</span><span className="fig text-charcoal">{value}{suffix}</span></div><div className="mt-1 h-1.5 overflow-hidden rounded-full bg-charcoal/[0.05]"><div className="h-full" style={{ width: `${Math.min(100,(value/max)*100)}%`, background: TEAL }} /></div></div>);
-}
+// ADV-5B. `Card`, `Ring` and `Bar` were deleted with the panels they drew. The
+// sample-tag branch of `Card` is not worth keeping against a future need: a tag
+// reading "Sample" beside a generated number is what made the old panels look
+// disclosed when they were invented.

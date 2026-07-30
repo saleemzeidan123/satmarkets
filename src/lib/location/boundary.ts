@@ -102,11 +102,17 @@ function permitted(use: GeoUse, r: SourceRights, audience: Audience): boolean {
   }
 }
 
-/** Decide one declared provider. Never throws, never grants on absence. */
-export function decideGeoProvider(
-  p: GeoProvider,
-  ctx: GeoBoundaryContext
-): GeoDecision {
+/**
+ * The rights half of the decision, checks 1 to 4, and nothing else.
+ *
+ * ADV-5B split this out because two different questions were being asked of one
+ * function. "May we call this provider" needs an endpoint and a credential.
+ * "May we publish a figure we already hold from this source" needs neither, and
+ * answering it with `no_endpoint` would report a licensed, publishable dataset
+ * as a wiring problem. The checks themselves and their order are unchanged, so
+ * `decideGeoProvider` behaves exactly as it did in ADV-5A.
+ */
+function decideGeoRights(p: GeoProvider, ctx: GeoBoundaryContext): GeoDecision {
   const reasons: string[] = [];
 
   if (!ctx.rights) {
@@ -138,6 +144,22 @@ export function decideGeoProvider(
     );
     return { allowed: false, code: "user_text_denied", reasons };
   }
+
+  reasons.push(`${p.id}: '${p.sourceId}' permits ${p.use} to the ${ctx.audience} audience`);
+  return { allowed: true, provider: p, reasons };
+}
+
+/** Decide one declared provider. Never throws, never grants on absence. */
+export function decideGeoProvider(
+  p: GeoProvider,
+  ctx: GeoBoundaryContext
+): GeoDecision {
+  const rights = decideGeoRights(p, ctx);
+  if (!rights.allowed) return rights;
+
+  // The rights reason is dropped here rather than carried, so the reasons array
+  // reads as one line per candidate, exactly as it did before the split.
+  const reasons: string[] = [];
 
   if (!p.host) {
     reasons.push(`${p.id}: declared with no endpoint, so it cannot be called`);
@@ -181,6 +203,38 @@ export function decideGeoCall(ctx: GeoBoundaryContext): GeoDecision {
   let last: GeoDenialCode = "no_provider";
   for (const p of candidates) {
     const d = decideGeoProvider(p, ctx);
+    reasons.push(...d.reasons);
+    if (d.allowed) return { allowed: true, provider: d.provider, reasons };
+    last = d.code;
+  }
+  return { allowed: false, code: last, reasons };
+}
+
+/**
+ * Decide whether a figure ALREADY HELD from a capability's source may be shown
+ * to this audience. Checks 1 to 4 only.
+ *
+ * This is deliberately not `decideGeoCall` with an option. It answers a
+ * different question, it opens no socket, and it must never be read as
+ * permission to make a request: a source with no endpoint declared is a source
+ * we cannot call and might still be licensed to publish from, and the reverse is
+ * also true. `mobility.ts` is the caller, and the figure it governs arrives from
+ * a delivered dataset rather than from a request built out of user data.
+ */
+export function decideGeoDisplay(ctx: GeoBoundaryContext): GeoDecision {
+  const candidates = providersFor(ctx.capability);
+  if (candidates.length === 0) {
+    return {
+      allowed: false,
+      code: "no_provider",
+      reasons: [`no provider is declared for capability '${ctx.capability}'`],
+    };
+  }
+
+  const reasons: string[] = [];
+  let last: GeoDenialCode = "no_provider";
+  for (const p of candidates) {
+    const d = decideGeoRights(p, ctx);
     reasons.push(...d.reasons);
     if (d.allowed) return { allowed: true, provider: d.provider, reasons };
     last = d.code;

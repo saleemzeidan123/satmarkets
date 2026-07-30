@@ -179,7 +179,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
       { name: "Nafath (identity)", nameAr: "نفاذ (الهوية)", cad: t("Live OIDC", "مباشر OIDC"), last: liveN, ok: true, note: t("1 unverified (SAT-2077)", "واحد غير موثّق (SAT-2077)") },
       { name: "REGA advertising permit", nameAr: "رخصة الإعلان", cad: t("Live inquiry", "استعلام مباشر"), last: liveN, ok: true, note: t("1 expired (SAT-2044)", "واحدة منتهية (SAT-2044)") },
       { name: "GASTAT / SAMA (context)", nameAr: "الإحصاء / ساما", cad: t("Dated, monthly", "مؤرخ، شهري"), last: period, ok: true, note: t("context only", "سياق فقط") },
-      { name: "Foursquare / Mapbox (geo)", nameAr: "Foursquare / Mapbox", cad: t("Snapshot / live", "لقطة / مباشر"), last: period, ok: true, note: t("POI + isochrones", "نقاط + عزل زمني") },
+      { name: "Foursquare open POI (stored)", nameAr: "نقاط فورسكوير المفتوحة (مخزّنة)", cad: t("Snapshot, Apache 2.0", "لقطة، رخصة أباتشي 2.0"), last: period, ok: true, note: t("POI layer only. No travel time and no isochrone is stored.", "طبقة نقاط فقط. لا زمن تنقل ولا عزل زمني مخزّن.") },
     ];
   }, [period, scn, ar, resolvedOv]);
 

@@ -5,8 +5,9 @@ import {
   type GeoDenialCode,
 } from "./boundary";
 import { providersFor, type GeoCapability, type GeoProvider, type GeoProviderId } from "./registry";
-import type { GeoPlaceItem, GeoPointItem } from "./results";
+import type { AddressFields, GeoPlaceItem, GeoPointItem } from "./results";
 import {
+  fetchAddress,
   fetchGeocode,
   fetchPlaceSuggestions,
   fetchTravelSeconds,
@@ -151,6 +152,28 @@ export function callGeoGeocode(
     "place_geocode",
     ctx,
     (p) => fetchGeocode(p, q, { timeoutMs: ctx.timeoutMs, signal: ctx.signal }),
+    (v) => v.length === 0
+  );
+}
+
+/**
+ * Address lookup, ADV-5B.
+ *
+ * Present so that every capability in the registry has exactly one route to a
+ * socket, including the ones that will never reach one in this build. It denies
+ * at the boundary first, because `spl_address` is `asserted_unverified` and the
+ * status ceiling holds it at internal, so a public caller is refused for a
+ * rights reason and not for a missing endpoint. Behind that, the transport has
+ * no branch to reach. `address.ts` is the caller.
+ */
+export function callGeoAddress(
+  query: string,
+  ctx: GeoCallContext
+): Promise<GeoCallResult<AddressFields[]>> {
+  return walk<AddressFields[]>(
+    "address_lookup",
+    ctx,
+    (p) => fetchAddress(p, query, { timeoutMs: ctx.timeoutMs, signal: ctx.signal }),
     (v) => v.length === 0
   );
 }
