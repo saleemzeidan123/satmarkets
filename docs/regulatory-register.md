@@ -194,6 +194,20 @@ owner ruling 7. What a sufficient contract would have to cover is recorded at Pa
 procurement requirement so that the requirement is ready when the owner is.
 Status: **unknown**.
 
+**Google Places.** Was in production through `/api/places` and had never been registered.
+No row, therefore no rights, therefore denied by construction once ADV-5A put the route
+behind the location boundary. Nothing has been read, agreed or recorded about Google's
+terms, and until that happens the correct state is an unregistered id whose declaration in
+`src/lib/location/registry.ts` denies itself. Status: **unknown**.
+
+**Photon / OpenStreetMap.** Was in production through `/api/places` and `/api/geocode`.
+The underlying OpenStreetMap data is openly licensed and attribution is known
+("OpenStreetMap contributors"), but the public Photon endpoint is a courtesy service with
+a usage policy, and the requests carried text the visitor typed, which is a separate
+question from the data licence and is gated separately. No row, so denied by construction.
+Registering it means recording the ODbL attribution obligation and either accepting the
+public endpoint's policy or self-hosting. Status: **unknown**.
+
 **MOJ real-estate transactions.** Roadmap PD1. Subject to the standing hard constraint
 recorded as D26: **srem.moj.gov.sa and the Najiz interfaces are interactive portals, not
 data products, and are never scraped.** Any use requires a per-dataset open-data review,
@@ -393,6 +407,24 @@ minimum aggregation threshold; controller and processor roles; storage location;
 cross-border transfer basis; audit rights; deletion on termination; and an explicit
 prohibition on user-level output. A pilot that cannot answer coverage and bias is a
 pilot that will produce a confident wrong number.
+
+**Location and geography providers (settled in ADV-5A).** Distinct from the AI agreement
+and not implied by it. Before any external location provider may receive text a user
+typed, the owner must record, per provider: the processing terms; whether the provider is
+a controller or a processor for the query text; the storage location and cross-border
+basis; the retention period applied to queries; whether the answer may be displayed, and
+in redisplayed or derived form; whether it may be cached, and for how long; and the
+required attribution string. `PROCESSING_AGREEMENTS_IN_FORCE` in
+`src/lib/location/boundary.ts` is the single switch, and it is a compile-time constant
+rather than an environment read on purpose: an environment variable is a deployment
+setting, and this is a contractual fact. Nothing about a location provider is activated by
+setting a key.
+
+**Mapbox, specifically.** `foursquare_mapbox` is `storage_policy: id_only`,
+`redisplay_policy: none`, `derived_display_policy: none`. A travel time is a derived value,
+so displaying one publicly needs `derived_display_policy` moved, not `redisplay_policy`,
+and D27(a) independently forbids storing it. Both must be satisfied; neither implies the
+other.
 
 **Enterprise AI agreement.** As specified at Part D.
 

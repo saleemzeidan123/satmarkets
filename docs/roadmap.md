@@ -473,6 +473,35 @@ its method and time context, and is never stored as a property fact.
 
 Gate: coverage, bias, sample, privacy and user-value evidence pass.
 
+**ADV-5A shipped**, the location rights boundary: `docs/adv-5a-closure.md`. Discovery
+asked whether the platform was ready to add location intelligence and found the wrong
+question. Four code paths were already calling third-party geography services and none of
+them consulted `source_registry`. `driveMinutes` called the Mapbox Directions API, held
+the answer under a day-long revalidate and rendered the minutes on a public listing page,
+while the register records `foursquare_mapbox` as `derived_display_policy: none`.
+`/api/places` sent the visitor's typed query to Google Places, then Mapbox Search, then
+Photon. `/api/geocode` sent the same text to Photon. `src/lib/location/` now mirrors
+`src/lib/ai/` exactly: a registry that is the only place a hostname or a credential name
+is written, a boundary that reads no environment variable, a transport that is the only
+socket and is absent from the package index, and a gateway that runs the boundary first
+per candidate so a denial costs no request. Findings 68 and 69.
+
+Two things carry forward. `driveMinutes` degraded correctly with `MAPBOX_TOKEN` unset,
+which is exactly why nobody noticed it checked no permission: the only thing between a
+public page and an unlicensed value was an unset environment variable, so the boundary
+evaluates rights before credentials and a rights denial survives someone adding a token.
+And requests carrying text the user typed are gated separately by
+`PROCESSING_AGREEMENTS_IN_FORCE`, a compile-time constant rather than an environment
+read, because an environment variable is a deployment setting and this is a contractual
+fact. With the register as it stands every external location provider is denied:
+autocomplete serves our own indexed districts alone, geocode returns an empty list, and
+listing pages show straight-line distance with no drive time.
+
+ADV-5B is next: the SPL National Address interface, the mobility and visitation interface
+with regulatory-register Part E as an executable sufficiency checklist, the privacy
+methodology, the coverage-validation gate, the procurement and register updates, and the
+`/ops` "POI + isochrones" claim, which contradicts the constraint above.
+
 ### ADV-6. Contributor network
 
 Deliver: portfolio feeds, contributor agreements as interfaces and requirements, the

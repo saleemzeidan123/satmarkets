@@ -1559,7 +1559,8 @@
     "metroDot": "Metro station",
     "srcMetro": "Metro: Riyadh Metro network, RCRC Open Data.",
     "srcRail": "High-speed rail: Haramain stations, OpenStreetMap.",
-    "srcComputed": "Distances computed by SAT Markets."
+    "srcComputed": "Distances computed by SAT Markets.",
+    "srcTravel": "Travel time via"
   },
   "listerPage": {
     "metaTitle": "{name} | SAT Markets",

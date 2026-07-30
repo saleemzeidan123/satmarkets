@@ -68,23 +68,33 @@ export function relevanceFor(asset: string): Relevance {
   return { primary: ["metro", "rail", "airport"], less: [] };
 }
 
-// Off-peak driving time to a destination via the Mapbox Directions API. Returns null
-// when no token is configured or the call fails, so the page degrades to straight-line
-// distance rather than showing nothing or, worse, a fabricated time.
-export async function driveMinutes(o: Origin, destLat: number, destLng: number): Promise<number | null> {
-  const token = process.env.MAPBOX_TOKEN || process.env.mapbox_token || "";
-  if (!token) return null;
-  const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${o.lng},${o.lat};${destLng},${destLat}?access_token=${token}&overview=false&alternatives=false`;
-  try {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 2500);
-    const res = await fetch(url, { signal: ctrl.signal, next: { revalidate: 86400 } } as any);
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const j: any = await res.json();
-    const sec = j?.routes?.[0]?.duration;
-    return typeof sec === "number" ? Math.max(1, Math.round(sec / 60)) : null;
-  } catch {
-    return null;
-  }
-}
+// WHERE `driveMinutes` WENT, AND WHY IT IS NOT COMING BACK HERE
+//
+// This module used to export an async `driveMinutes(o, destLat, destLng)` that
+// called api.mapbox.com/directions directly. It had three defects, and they were
+// hard to see because the one thing it did right hid all three.
+//
+//   1. It consulted no permission. `source_registry.foursquare_mapbox` records
+//      `derived_display_policy: none`, and a routing answer we computed a figure
+//      from is a derived value, not the source's own published one. The minutes
+//      were rendered on a public listing page anyway.
+//   2. It cached: `next: { revalidate: 86400 }`. Mapbox forbids caching routing
+//      results, and D27(a) says travel time is computed at request time and is
+//      never stored as a property fact. A day-long cache is storage whatever the
+//      option is named.
+//   3. It returned `number | null`, so the figure carried no record of the
+//      method or the time context it was computed under. The label "driving,
+//      typical off-peak" was hardcoded beside it at the render site and would
+//      have kept reading that way whatever the computation later became.
+//
+// What it did right, and what hid the rest: with no token it returned null and
+// the page degraded cleanly to straight-line distance. Everything looked
+// correct. The only thing standing between a public page and an unlicensed
+// figure was an unset environment variable.
+//
+// The replacement is `src/lib/location/travel.ts`, behind the rights boundary in
+// `src/lib/location/boundary.ts`, which evaluates the register BEFORE the
+// credential precisely so that this failure mode cannot recur silently. What
+// remains in this file is the pure half: our own coordinates, our own distance
+// arithmetic, and our own relevance rules. None of it needs a licence and none
+// of it needs a socket, which is why this module now imports nothing at all.

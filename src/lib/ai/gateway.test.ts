@@ -76,9 +76,16 @@ const PROVIDER_NEEDLES: RegExp[] = [
   // Authorization and versioning headers providers use.
   new RegExp("x-api" + "-key", "i"),
   new RegExp("anthropic" + "-version", "i"),
-  // Google's model header is the same header Google Places uses, and
-  // `/api/places` is a legitimate maps integration. Gemini is caught by its
-  // hostname and by the generateContent path instead, which are specific to it.
+  // Google's model header is the same header Google Places autocomplete uses, so
+  // it is not a needle here. When this comment was first written it pointed at
+  // `/api/places` as "a legitimate maps integration", which was true of the
+  // header and quietly wrong about the route: that route was calling Google,
+  // Mapbox and Photon with no source-register check at all. ADV-5A recorded it as
+  // finding 69 and moved every location socket into `src/lib/location/transport.ts`
+  // behind its own rights boundary, with `src/lib/location/gateway.test.ts`
+  // guarding it the way this file guards the model transport. Gemini is still
+  // caught here by its hostname and by the generateContent path, which are
+  // specific to it.
   new RegExp("openai" + "-organization", "i"),
   new RegExp("http-" + "referer[\"'`]?\\s*:", "i"),
   // Hostnames.
@@ -138,7 +145,7 @@ test("the supabase key reads are not caught by the provider env rule", () => {
   const re = PROVIDER_NEEDLES.find((r) => String(r).includes("process"))!;
   assert.equal(re.test("process.env.SUPABASE_SERVICE_ROLE_KEY"), false);
   assert.equal(re.test("process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY"), false);
-  assert.equal(re.test("process.env.GOOGLE_MAPS_API_KEY"), false);
+  assert.equal(re.test("process.env.GOOGLE_MAPS" + "_API_KEY"), false);
   assert.equal(re.test("process.env.SAT_TRANSLATE_MODEL_FAST"), true);
   assert.equal(re.test("process.env.ANTHROPIC_API_KEY"), true);
   assert.equal(re.test("process.env.AI_API_KEY"), true);
@@ -151,6 +158,12 @@ test("nothing but the gateway imports the transport", () => {
   const offenders: string[] = [];
   for (const f of tsFiles()) {
     if (allowed.has(norm(f))) continue;
+    // ADV-5A. The location package has its own transport under the same name and
+    // its own guard over it in `src/lib/location/gateway.test.ts`. This scan is
+    // about the model socket, so a relative import inside another package is not
+    // an offence here; claiming it were would make this test report a violation
+    // it is not actually checking.
+    if (norm(f).startsWith("src/lib/location/")) continue;
     if (re.test(fs.readFileSync(f, "utf8"))) offenders.push(norm(f));
   }
   assert.deepEqual(offenders, [], `these files import the transport directly: ${offenders.join(", ")}`);

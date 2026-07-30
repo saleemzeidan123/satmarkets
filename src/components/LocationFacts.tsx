@@ -3,12 +3,23 @@ import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { FactKey } from "@/lib/locationFacts";
+import type { TravelTime } from "@/lib/location/results";
 
 // Honest, computed location section for a listing detail page. Every value here is
 // either a verified coordinate or a computation over verified coordinates (CLAUDE.md
-// Law 3). No location score, no footfall, no market narrative. The data passed in is
-// computed server-side from the RCRC metro dataset, public airport points, and (when
-// available) the Mapbox routing engine.
+// Law 3). No location score, no footfall, no market narrative. Distances are computed
+// server-side from the RCRC metro dataset and public airport points.
+//
+// Travel time is different in kind and is typed differently on purpose. It is a
+// PROVIDER value, so it arrives as a TravelTime union rather than a bare number. A
+// route is only present when the source register permitted the call for public
+// redisplay; a missing token is not the only way it can be absent, and this component
+// must not imply otherwise. When it is absent the row falls back to the straight-line
+// distance it already had, which is our own computation and needs no licence.
+//
+// The label is read from `travel.labelKey`, never hardcoded, so a figure computed
+// under different conditions cannot inherit wording describing conditions it was not
+// computed under. `travel.reason` is internal and is never rendered.
 
 const PRIMARY_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/positron";
@@ -20,8 +31,8 @@ const LINE_AR: Record<string, string> = {
 };
 
 export interface MetroFact { name_en: string; name_ar: string; line: string | null; lat: number; lng: number; km: number; walkMin: number | null }
-export interface AirportFact { name_en: string; name_ar: string; km: number; driveMin: number | null }
-export interface RailFact { name_en: string; name_ar: string; line: string | null; km: number; driveMin: number | null }
+export interface AirportFact { name_en: string; name_ar: string; km: number; travel: TravelTime | null }
+export interface RailFact { name_en: string; name_ar: string; line: string | null; km: number; travel: TravelTime | null }
 
 export default function LocationFacts({ locale, lat, lng, exact, metro, airport, rail, primary, less, computedDate }: {
   locale: "en" | "ar";
@@ -105,16 +116,32 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
     </div>
   ) : null;
 
+  // One cell, two states, and the fallback is not an error state. A computed route
+  // prints minutes with the label the computation itself carries. Anything else prints
+  // the straight-line distance, which is ours. The denial reason is deliberately not
+  // rendered: it quotes internal licence reasoning, the same rule the source-rights
+  // denialReason follows.
+  const travelCell = (km: number, travel: TravelTime | null) => {
+    const computed = travel && travel.state === "computed" ? travel : null;
+    return (
+      <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
+        <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>
+          {computed ? `${computed.minutes} ${t.driveMin}` : `${num(km)} ${t.km}`}
+        </div>
+        <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+          {computed ? (t[computed.labelKey] || t.driving) : t.straightLine}
+        </div>
+      </div>
+    );
+  };
+
   const airportRow = (key: string) => airport ? (
     <div key={key} className="row between" style={{ gap: 12, padding: "11px 0", borderTop: "1px solid var(--silver)" }}>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.airport}</div>
         <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? airport.name_ar : airport.name_en}</div>
       </div>
-      <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
-        {airport.driveMin != null ? <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{airport.driveMin} {t.driveMin}</div> : <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{num(airport.km)} {t.km}</div>}
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>{airport.driveMin != null ? t.driving : t.straightLine}</div>
-      </div>
+      {travelCell(airport.km, airport.travel)}
     </div>
   ) : null;
 
@@ -124,10 +151,7 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
         <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.rail}</div>
         <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? rail.name_ar : rail.name_en}{rail.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(rail.line)}</span> : null}</div>
       </div>
-      <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
-        {rail.driveMin != null ? <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{rail.driveMin} {t.driveMin}</div> : <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{num(rail.km)} {t.km}</div>}
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>{rail.driveMin != null ? t.driving : t.straightLine}</div>
-      </div>
+      {travelCell(rail.km, rail.travel)}
     </div>
   ) : null;
   const renderKey = (k: FactKey, i: number) => (k === "metro" ? metroRow("p" + i) : k === "rail" ? railRow("p" + i) : airportRow("p" + i));
@@ -138,6 +162,19 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
   const hasFact = (k: FactKey) => (k === "metro" ? !!metro : k === "rail" ? !!rail : !!airport);
   const primaryShown = primary.filter(hasFact);
   const lessShown = less.filter(hasFact);
+
+  // Attribution follows the value, not the integration. It appears only when a route
+  // was actually computed AND that row is actually rendered, because attributing a
+  // provider whose figure is not on the page would be as wrong as omitting it when it
+  // is. The "less relevant" section prints a sentence, not a figure, so it is excluded.
+  const travelAttribution = Array.from(
+    new Set(
+      primaryShown
+        .map((k) => (k === "metro" ? null : k === "rail" ? rail?.travel : airport?.travel))
+        .map((tt) => (tt && tt.state === "computed" ? tt.attribution : null))
+        .filter((a): a is string => !!a)
+    )
+  ).map((a) => `${t.srcTravel} ${a}.`);
 
   return (
     <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
@@ -176,7 +213,7 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
         </div>
       )}
       <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{d.ld.locNote}</div>
-      <div className="mono muted" style={{ fontSize: 10.5, marginTop: 8 }}>{[metro ? t.srcMetro : null, rail ? t.srcRail : null, t.srcComputed].filter(Boolean).join(" ")}</div>
+      <div className="mono muted" style={{ fontSize: 10.5, marginTop: 8 }}>{[metro ? t.srcMetro : null, rail ? t.srcRail : null, t.srcComputed, ...travelAttribution].filter(Boolean).join(" ")}</div>
     </div>
   );
 }

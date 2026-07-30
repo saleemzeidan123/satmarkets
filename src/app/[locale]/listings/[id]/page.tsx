@@ -22,7 +22,9 @@ import VerificationSummary, { verifiedBadges } from "@/components/VerificationSt
 import AdPermit from "@/components/AdPermit";
 import LocationFacts from "@/components/LocationFacts";
 import ReportListing from "@/components/ReportListing";
-import { nearest, relevanceFor, driveMinutes, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
+import { nearest, relevanceFor, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
+import { travelTime } from "@/lib/location/travel";
+import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
@@ -179,13 +181,21 @@ export default async function ListingDetail({ params }: { params: { locale: stri
     const na = nearest(originLL, anchors, "airport");
     const nr = nearest(originLL, anchors, "rail");
     const rel = relevanceFor(l.asset_type);
-    const airDrive = na ? await driveMinutes(originLL, na.anchor.lat, na.anchor.lng) : null;
-    const railDrive = nr ? await driveMinutes(originLL, nr.anchor.lat, nr.anchor.lng) : null;
+    // ADV-5A. Travel time is a provider value on a public page, so it is asked
+    // for through the location gateway, which reads the source register before it
+    // reaches a socket. An EMPTY register is passed as UNDEFINED on purpose: the
+    // ledger has rows, so a register that reads as empty was not read, and
+    // `/sources` already states that rule in public. Undefined denies for the
+    // honest reason rather than reporting that every source happens to have no row.
+    const register = await getAllSourceRights();
+    const geoCtx = { audience: "public" as const, rights: register.size ? register : undefined };
+    const airTravel = na ? await travelTime(originLL, na.anchor.lat, na.anchor.lng, geoCtx) : null;
+    const railTravel = nr ? await travelTime(originLL, nr.anchor.lat, nr.anchor.lng, geoCtx) : null;
     locFactsProps = {
       lat: originLL.lat, lng: originLL.lng, exact: originLL.exact,
       metro: nm ? { name_en: nm.anchor.name_en, name_ar: nm.anchor.name_ar, line: nm.anchor.line, lat: nm.anchor.lat, lng: nm.anchor.lng, km: nm.km, walkMin: nm.km <= WALKABLE_KM ? walkMinutes(nm.km) : null } : null,
-      airport: na ? { name_en: na.anchor.name_en, name_ar: na.anchor.name_ar, km: na.km, driveMin: airDrive } : null,
-      rail: nr ? { name_en: nr.anchor.name_en, name_ar: nr.anchor.name_ar, line: nr.anchor.line, km: nr.km, driveMin: railDrive } : null,
+      airport: na ? { name_en: na.anchor.name_en, name_ar: na.anchor.name_ar, km: na.km, travel: airTravel } : null,
+      rail: nr ? { name_en: nr.anchor.name_en, name_ar: nr.anchor.name_ar, line: nr.anchor.line, km: nr.km, travel: railTravel } : null,
       primary: rel.primary, less: rel.less,
       computedDate: new Date().toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }),
     };
