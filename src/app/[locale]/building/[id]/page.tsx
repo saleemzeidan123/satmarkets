@@ -130,22 +130,31 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         <Kpi label={T.demand} value={`${demand}`} tone="verified" />
       </div>
 
+      {/* ADV-5B, finding 75. The muted tiers on this panel are set at
+          charcoal/60 rather than the platform's habitual /45 and /55. Those two
+          composite to 2.93:1 and 3.96:1 on white, both below WCAG AA for normal
+          text, and this is the one panel on the page where the muted text IS the
+          content: the status line is the only thing telling a reader why there is
+          no figure, and the rule paragraph is the publication rule itself. A
+          footnote nobody can read is a footnote. An explanation nobody can read
+          is an absence. /60 measures 4.69:1. The wider pattern is finding 75 and
+          belongs to the parked visual-quality package, not to a claims package. */}
       <SectionLabel n="01" title={T.mobilityTitle} sub="" />
       <div className="mt-3 card p-5">
         <p className="text-[14px] leading-relaxed text-charcoal/70">{T.mobilityBody}</p>
         {mobility.available ? (
           <>
             <div className="mt-3 fig text-[26px]" style={{ color: TEAL }}>{mobility.value}</div>
-            <p className="mt-1 text-[11px] text-charcoal/45">
+            <p className="mt-1 text-[11px] text-charcoal/60">
               {T.mobilityK} <span className="fig">{mobility.k}</span> · {T.mobilityPeriod} <span className="fig">{mobility.periodEnd}</span> · {T.mobilityCoverage} <span className="fig">{Math.round(mobility.coverageShare * 100)}%</span>
             </p>
-            <p className="mt-1 text-[11px] text-charcoal/45">{mobility.method}</p>
-            <p className="mt-1 text-[11px] text-charcoal/45">{mobility.attribution}</p>
+            <p className="mt-1 text-[11px] text-charcoal/60">{mobility.method}</p>
+            <p className="mt-1 text-[11px] text-charcoal/60">{mobility.attribution}</p>
           </>
         ) : (
-          <p className="mt-3 text-[13px] leading-relaxed text-charcoal/55">{T[mobility.statusKey]}</p>
+          <p className="mt-3 text-[13px] leading-relaxed text-charcoal/70">{T[mobility.statusKey]}</p>
         )}
-        <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/45">{T.mobilityRule}</p>
+        <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/60">{T.mobilityRule}</p>
       </div>
 
       {/* The subtitle read "Verified" above the whole unit grid, which claimed for

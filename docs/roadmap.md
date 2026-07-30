@@ -522,6 +522,19 @@ partnerships, payment-gateway feeds and data partnerships that do not exist. Fin
 to 73; 74 stays open, on whether `/building` should be declared for indexing or held,
 which is an owner decision rather than a defect.
 
+**ADV-5B closed.** `docs/handback-adv-5b.md` is the consolidated handback: commits, the
+1,154-test suite, live EN and AR evidence on production, twelve responsive measurements of
+the new panel, and the remaining blockers. The accessibility check on that panel found
+finding 75, the two habitual muted text tiers measuring 2.93:1 and 3.96:1 against a WCAG
+AA threshold of 4.5:1. It is corrected on the panel where the muted text was the whole
+content and left open elsewhere, because forty other uses are a platform-wide visual change
+and belong to the parked visual-quality package. The general point it raises, that contrast
+has no gate at all, is the natural first item of that package.
+
+Next, per the governing directive: the strategy reconciliation, converting the uncompleted
+recommendations of the Codex Competitive Advantage Strategy into this roadmap.
+`docs/strategy-reconciliation.md` is where it lands.
+
 ADV-5C, when it runs: the coverage-validation harness against known ground truth, which
 Part E requires before a first figure is ever published, and which needs a candidate
 dataset to validate against. Nothing about it is blocked by ADV-5B; it is blocked by

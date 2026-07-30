@@ -202,6 +202,54 @@ ${c.pills.map((label) => `    <button type="button" class="chip" data-item="1" s
 </section>`,
   },
 
+  // ADV-5B. src/app/[locale]/building/[id]/page.tsx, the movement and catchment
+  // panel that replaced the seeded generator (finding 72). It is measured in its
+  // UNAVAILABLE state because that is the only state that exists: no mobility
+  // source is licensed, so `districtMobilityPanel` returns the rights-stage key
+  // on every call and this is what every reader sees on every building today.
+  //
+  // The measurement that matters here is not a row fitting. It is four blocks of
+  // prose, two of them long, inside a card at 320px in a script whose glyphs are
+  // wider. `data-item` sits on each paragraph, so `lines` counts the blocks and
+  // `widest` reports whether any of them exceeds the card it sits in.
+  //
+  // The muted tiers below read /70 and /60 rather than the platform's habitual
+  // /55 and /45 because the shipped page was corrected under finding 75 before
+  // this fragment was measured. Those two habitual tiers composite to 3.96:1 and
+  // 2.93:1 on white, below WCAG AA for normal text, and on this panel the muted
+  // text IS the content. The fragment tracks the page, not the habit.
+  "mobility-panel": {
+    source: "src/app/[locale]/building/[id]/page.tsx (movement and catchment, unavailable state)",
+    copy: {
+      en: {
+        mobilityTitle: "Movement and catchment",
+        mobilityBody: "SAT publishes no visitor, dwell or catchment figure for this building. A building sits below the smallest area SAT will publish a movement figure for, and no movement source is contracted.",
+        mobilityStageRights: "No movement source is licensed, so there is nothing to publish here.",
+        mobilityRule: "When a source is licensed, a figure appears here at district level or wider only, and only carrying its aggregation count, period, coverage share, method and required attribution. No travel-time area is stored and no record of an individual visitor is held.",
+      },
+      ar: {
+        mobilityTitle: "الحركة ونطاق الجذب",
+        mobilityBody: "لا تنشر سات أي رقم للزوّار أو المكوث أو نطاق الجذب لهذا المبنى. المبنى أصغر من أدنى نطاق تنشر عنده سات رقم حركة، ولا يوجد مصدر حركة متعاقد عليه.",
+        mobilityStageRights: "لا يوجد مصدر حركة مرخّص، فلا شيء يُنشر هنا.",
+        mobilityRule: "عند ترخيص مصدر، يظهر الرقم هنا على مستوى الحي أو أوسع فقط، ومصحوباً بعدد التجميع والفترة ونسبة التغطية والمنهجية والإسناد المطلوب. لا يُخزَّن أي نطاق لزمن التنقل ولا يُحتفظ بأي سجل عن زائر بعينه.",
+      },
+    },
+    render: (c) => `
+<section style="font-family:var(--sans);color:var(--ink);background:var(--paper);padding:0 16px">
+ <div data-inner="1">
+  <div class="mt-6 flex items-baseline gap-2">
+   <span class="fig text-[11px] text-charcoal/35">01</span>
+   <h2 class="text-[15px] font-semibold">${c.mobilityTitle}</h2>
+  </div>
+  <div class="mt-3 card p-5" data-probe="1">
+   <p class="text-[14px] leading-relaxed text-charcoal/70" data-item="1">${c.mobilityBody}</p>
+   <p class="mt-3 text-[13px] leading-relaxed text-charcoal/70" data-item="1">${c.mobilityStageRights}</p>
+   <p class="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/60" data-item="1">${c.mobilityRule}</p>
+  </div>
+ </div>
+</section>`,
+  },
+
   // ADV-2 owed responsive evidence for seven surfaces. They follow, one fragment each.
   //
   // Every string below was DUMPED from the model that produces it, not written here.
