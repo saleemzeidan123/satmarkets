@@ -132,6 +132,47 @@ now says so and points at this package.
 - Production build: the Vercel deployment reaching READY is the build evidence, as the
   local build cannot fetch the four Google-hosted font families from this container
 
+Responsive evidence is stated rather than re-measured, and the reason is worth being
+explicit about. This package added exactly one string per locale, `srcTravel`, and that
+string renders only when a provider route was actually computed, which is never while
+every provider is denied. Every string the listing page now renders in the location
+section is one PKG-2A already measured: the value cell prints `{km} km` over
+`straight-line distance` and `مسافة مباشرة`, which is the shorter of the cell's two
+states in both languages. The API routes carry no layout at all. When a travel provider
+is one day permitted, the longer state and the attribution line it adds to the source
+row are new layout and must be measured before that switch is thrown. That is recorded
+here as a condition on enabling travel time, not as evidence already held.
+
+## Live evidence
+
+Commit `c0ca303`, deployment `dpl_BYPbpRgVW3dUHTKyvZ5pz47dhvRa`, READY, production, on
+`satmarkets-sat-markets.vercel.app`. The Vercel build reaching READY is the production
+build evidence.
+
+`/api/places?q=olaya&lang=en` returns two indexed districts and `"src":"indexed"`. The
+Arabic call `/api/places?q=العليا&lang=ar` returns the same two rows as `العليا / الرياض`
+and `العليا / الخبر`, also `"src":"indexed"`. `src` names what actually answered, so the
+absence of a provider name is the denial, stated without quoting a licence reason.
+
+The clearest single piece of evidence is `/api/places?q=kingdom+centre&lang=en`, which
+returns `{"items":[],"src":""}`. Kingdom Centre is a landmark Google Places would answer
+for immediately and our district table does not hold. Before this package that query
+reached three vendors. It now reaches none, and the response says so by naming none.
+
+`/api/geocode?q=kingdom tower riyadh` and the Arabic `/api/geocode?q=برج المملكة` both
+return `{"items":[]}` with no `attribution` key, which is the documented degraded state
+rather than an error.
+
+On the listing page `0024e7a0-6a68-4921-ae12-7107636e9bdc`, the airport row reads
+`Nearest airport | King Khalid International Airport | 21 km | straight-line distance` in
+English and `أقرب مطار | مطار الملك خالد الدولي | 21 كم | مسافة مباشرة` in Arabic. Both
+are readable DOM text rather than mojibake, both use Western numerals, and neither prints
+a drive time. The rendered source line is the metro and computed-distance line alone. The
+strings `Travel time via` and `زمن التنقل عبر` each appear exactly once in the served
+document, in the serialized dictionary, and nowhere in rendered output, because
+attribution follows the value and no provider value exists. `api.mapbox.com`,
+`places.googleapis.com` and `photon` appear zero times in either document.
+
 ## Records
 
 - Findings 68 and 69 in `docs/findings-register.md`
