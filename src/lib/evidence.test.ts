@@ -16,6 +16,7 @@ import {
   normalizeSufficiency,
   normalizeTransformation,
   publishability,
+  readCorrectionReason,
   statisticLabel,
   unknownLabel,
   verificationDimensionLabel,
@@ -564,4 +565,47 @@ test("a transformation the build does not recognise blocks publication rather th
   const t = normalizeTransformation("smoothed" as unknown as Transformation);
   assert.equal(t, "unknown");
   assert.equal(publishability(good({ transformation: t }), ctx()).allowed, false);
+});
+
+// ---------------------------------------------------------------------------
+// Correction reasons: filed words, never generated ones
+// ---------------------------------------------------------------------------
+
+test("a bilingual filing gives each reader their own language and marks neither", () => {
+  const c = {
+    at: "2026-07-01T00:00:00Z",
+    kind: "correction" as const,
+    reason: { en: "Restated to the published basis", ar: "أُعيدت صياغتها على الأساس المنشور" },
+  };
+  assert.deepEqual(readCorrectionReason(c, false), {
+    text: "Restated to the published basis",
+    foreign: null,
+  });
+  assert.deepEqual(readCorrectionReason(c, true), {
+    text: "أُعيدت صياغتها على الأساس المنشور",
+    foreign: null,
+  });
+});
+
+test("a filing in one language reaches the other reader in the words that were filed", () => {
+  const c = {
+    at: "2026-07-01T00:00:00Z",
+    kind: "correction" as const,
+    reason: "Lister refiled the quoted rent",
+    reasonLang: "en" as const,
+  };
+  // Same text both ways. SAT does not translate a correction reason: Codex
+  // boundary 10 forbids filling missing evidence with generated wording, and a
+  // machine translation is a sentence nobody filed.
+  assert.equal(readCorrectionReason(c, true).text, "Lister refiled the quoted rent");
+  assert.equal(readCorrectionReason(c, false).text, "Lister refiled the quoted rent");
+  assert.equal(readCorrectionReason(c, true).foreign, "en");
+  assert.equal(readCorrectionReason(c, false).foreign, null);
+});
+
+test("an unrecorded filing language is never guessed at", () => {
+  const c = { at: "2026-07-01T00:00:00Z", kind: "correction" as const, reason: "Refiled" };
+  for (const ar of [false, true]) assert.equal(readCorrectionReason(c, ar).foreign, null);
+  const nulled = { ...c, reasonLang: null };
+  for (const ar of [false, true]) assert.equal(readCorrectionReason(nulled, ar).foreign, null);
 });

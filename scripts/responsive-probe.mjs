@@ -672,7 +672,212 @@ ${c.dims.map((d) => `        <div class="row gap12 wrap" style="align-items:base
  </div>
 </div>`,
   },
+
+  // src/components/EvidencePassport.tsx, the open detail panel, as mounted by
+  // src/app/[locale]/listings/[id]/page.tsx. Markup copied character for
+  // character out of a react-dom/server render of the sourced tier, which is the
+  // widest body the component produces: it is the only tier that prints the
+  // Source sub-line and licence-derived permissions.
+  //
+  // THE MOUNT CHAIN IS REPRODUCED IN FULL, AND THAT IS THE POINT. The panel does
+  // not sit in a page-width column. It sits in a tile inside
+  // repeat(auto-fit,minmax(150px,1fr)) inside the 2fr side of .satmkt-2col. So
+  // the narrowest containing block is not 320px wide, it is 1280px wide: at 320
+  // the two-column grid collapses (globals.css:258, !important) and the tile gets
+  // 272 - 32 = 240px, while at 1280 the left column is 800px and auto-fit splits
+  // it four ways for a 188px tile, 156px of content. A probe that dropped the
+  // tile grid would measure the panel two hundred pixels wider than it ever
+  // renders and pass a row that overflows on a desktop.
+  //
+  // data-inner is .evi-dl rather than .evi-body: the body carries 12px of padding
+  // and a border on each side, and comparing items against the padded box would
+  // grant every item 26px it does not have.
+  "evidence-passport": {
+    source: "src/components/EvidencePassport.tsx open panel, sourced tier, as mounted in src/app/[locale]/listings/[id]/page.tsx",
+    copy: {
+      en: {
+        tile: "Published average rent",
+        value: "1,420",
+        chip: "From a published source",
+        chipTitle: "From an external source: published",
+        state: "Corrected",
+        more: "Evidence",
+        aria: "Evidence for Published average rent: Corrected",
+        notes: [
+          ["Corrected.", "This value was corrected. The previous display and the reason are kept on the record."],
+          ["Derived by SAT.", "SAT produced this from other records rather than republishing a figure someone else published."],
+        ],
+        rows: [
+          ["Statistic", "Median"],
+          ["Unit", "SAR⁠/⁠m²⁠/⁠year"],
+          ["Source", "REGA Rental Index (Ejar)", "Reference: rega_ejar"],
+          ["What SAT did", "Aggregated by SAT"],
+          ["Reporting period", "2026-Q2"],
+          ["Geography", "Al Olaya, Riyadh"],
+          ["Subject", "Market segment"],
+          ["Asset type", "Office"],
+          ["Sample", "Sufficient"],
+          ["Freshness", "Current · last updated 10 Jul 2026"],
+        ],
+        checkedH: "What was checked",
+        checked: [["Ownership", "Verified · 01 Jul 2026"], ["Advertising permit", "Verified · 01 Jul 2026"]],
+        corrH: "Correction history",
+        corr: [["22 Jul 2026", "Restated to the published basis after REGA reissued the quarter", "Previously shown: 1,380"]],
+        permH: "What is permitted",
+        perms: [["Display here", "Permitted"], ["Export", "Internal only"], ["Use by the assistant", "Permitted"]],
+      },
+      ar: {
+        tile: "متوسط الإيجار المنشور",
+        value: "1,420",
+        chip: "من مصدر منشور",
+        chipTitle: "من مصدر خارجي: منشور",
+        state: "مصحّح",
+        more: "الدليل",
+        aria: "دليل متوسط الإيجار المنشور: مصحّح",
+        notes: [
+          ["مصحّح.", "صُحّحت هذه القيمة، ويُحفظ ما كان معروضاً سابقاً وسبب التصحيح في السجل."],
+          ["اشتقّته سات.", "أنتجت سات هذه القيمة من سجلات أخرى، لا بإعادة نشر رقم نشره غيرنا."],
+        ],
+        rows: [
+          ["نوع الرقم", "الوسيط"],
+          ["الوحدة", "ريال⁠/⁠م²⁠·⁠سنة"],
+          ["المصدر", "المؤشر الإيجاري للهيئة العامة للعقار (إيجار)", "المرجع: rega_ejar"],
+          ["ما فعلته سات", "جمّعتها سات"],
+          ["فترة التقرير", "2026-Q2"],
+          ["النطاق الجغرافي", "العليا، الرياض"],
+          ["موضوع الرقم", "شريحة السوق"],
+          ["نوع الأصل", "مكاتب"],
+          ["كفاية العينة", "كافية"],
+          ["الحداثة", "محدّث · آخر تحديث 10 يوليو 2026"],
+        ],
+        checkedH: "ما الذي جرى التحقق منه",
+        checked: [
+          ["الملكية", "موثّق · 01 يوليو 2026"],
+          ["تصريح الإعلان", "موثّق · 01 يوليو 2026"],
+        ],
+        corrH: "سجل التصحيحات",
+        corr: [["22 يوليو 2026", "أُعيد بيانها إلى الأساس المنشور بعد إعادة الهيئة إصدار الربع", "كان معروضاً: 1,380"]],
+        permH: "ما المسموح بهذا الرقم",
+        perms: [
+          ["العرض هنا", "مسموح"],
+          ["التصدير", "داخلي فقط"],
+          ["الاستخدام في المساعد", "مسموح"],
+        ],
+      },
+    },
+    render: (c) => EVI_MOUNT(`
+      <details class="evi" open>
+       <summary class="evi-sum" aria-label="${c.aria}">${SOURCED_CHIP(c)}<span class="evi-state">${c.state}</span><span class="evi-more">${c.more}</span></summary>
+       <div class="evi-body" data-probe="1">
+${c.notes.map(([h, t]) => `        <p class="evi-note"><b>${h}</b> ${t}</p>`).join("\n")}
+        <dl class="evi-dl" data-inner="1">
+${c.rows.map(([k, v, sub]) => `         <div class="evi-row"><dt data-item="1">${k}</dt><dd data-item="1">${v}${sub ? `<span class="evi-sub" data-item="1">${sub}</span>` : ""}</dd></div>`).join("\n")}
+        </dl>
+        <div class="evi-sec"><div class="evi-h" data-item="1">${c.checkedH}</div><ul class="evi-list">
+${c.checked.map(([k, v]) => `         <li><span data-item="1">${k}</span><span class="evi-val" data-item="1">${v}</span></li>`).join("\n")}
+        </ul></div>
+        <div class="evi-sec"><div class="evi-h" data-item="1">${c.corrH}</div><ul class="evi-list evi-corr">
+${c.corr.map(([at, why, prev]) => `         <li><span class="evi-val" data-item="1">${at}</span><span data-item="1">${why}</span><span class="evi-prev" data-item="1">${prev}</span></li>`).join("\n")}
+        </ul></div>
+        <div class="evi-sec"><div class="evi-h" data-item="1">${c.permH}</div><ul class="evi-list">
+${c.perms.map(([k, v]) => `         <li><span data-item="1">${k}</span><span class="evi-val" data-item="1">${v}</span></li>`).join("\n")}
+        </ul></div>
+       </div>
+      </details>`, c),
+  },
+
+  // The same component closed, which is the state a reader meets first and the
+  // one boundary 5 calls the compact indicator. Separate fragment because the
+  // failure it can have is a different failure: the summary holds three pills of
+  // fixed content in a row that a tile can be half as wide as.
+  //
+  // Drawn at the widest of each: the sourced chip, whose "From a published
+  // source" is 130px and the longest label the four tiers produce now that the
+  // passport no longer dates its chip, beside "Permission not established",
+  // which is the longest of the nine evidence states. The pair does occur: a
+  // figure can come from an external source and have no readable permission
+  // record, which is exactly when it matters that the line says so.
+  //
+  // data-probe is the summary row itself and data-inner is the tile's content
+  // box, so a chip that cannot fit its tile is caught as an item wider than its
+  // block even where overflow:clip on html,body hides the consequence.
+  "evidence-summary": {
+    source: "src/components/EvidencePassport.tsx closed summary line, widest chip and widest state label, as mounted in src/app/[locale]/listings/[id]/page.tsx",
+    copy: {
+      en: {
+        tile: "Published average rent",
+        value: "1,420",
+        chip: "From a published source",
+        chipTitle: "From an external source: published",
+        state: "Permission not established",
+        more: "Evidence",
+        aria: "Evidence for Published average rent: Permission not established",
+      },
+      ar: {
+        tile: "متوسط الإيجار المنشور",
+        value: "1,420",
+        chip: "من مصدر منشور",
+        chipTitle: "من مصدر خارجي: منشور",
+        state: "الإذن غير مثبت",
+        more: "الدليل",
+        aria: "دليل متوسط الإيجار المنشور: الإذن غير مثبت",
+      },
+    },
+    render: (c) => EVI_MOUNT(`
+      <details class="evi">
+       <summary class="evi-sum" aria-label="${c.aria}" data-probe="1">${SOURCED_CHIP(c, true)}<span class="evi-state" data-item="1">${c.state}</span><span class="evi-more" data-item="1">${c.more}</span></summary>
+      </details>`, c, true),
+  },
 };
+
+// ProvenanceChip at size sm, from src/components/ProvenanceChip.tsx, copied out
+// of a react-dom/server render. The inline styles are the component's own; the
+// custom properties they name are resolved from the compiled globals.css above.
+// `wrap` is on, which is what EvidencePassport passes. The three properties it
+// adds are the component's, not the probe's: see the prop's doc comment.
+const CHIP_BASE = "display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding-block:3px;padding-inline:8px;font-size:11px;font-weight:600;line-height:1.3;white-space:normal;max-width:100%;min-width:0";
+const SOURCED_CHIP = (c, item = false) =>
+  `<span${item ? ' data-item="1"' : ""} title="${c.chipTitle}" aria-label="${c.chipTitle}" style="${CHIP_BASE};background:var(--cool);color:var(--harbor);border:1px solid var(--silver-2)">${c.chip}</span>`;
+
+// The containing-block chain the passport actually renders inside, reproduced
+// from src/app/[locale]/listings/[id]/page.tsx: the 1280px two-column page grid
+// (which collapses to one column at 920px via globals.css:258), then the
+// auto-fit tile grid, then the tile card's 16px padding.
+//
+// `innerOnTile` moves data-inner up to the tile content box for the summary
+// fragment, which has no .evi-dl to measure against.
+const EVI_MOUNT = (evi, c, innerOnTile = false) => `
+<div style="background:var(--cool);font-family:var(--sans);color:var(--ink)">
+ <div class="satmkt-2col" style="max-width:1280px;margin:0 auto;padding:24px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:32px">
+  <div style="min-width:0">
+   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:22px">
+    <div class="card pad" style="box-shadow:none;padding:16px;min-width:0">
+     <div style="min-width:0"${innerOnTile ? ' data-inner="1"' : ""}>
+      <div class="muted" style="font-size:11.5px">${c.tile}</div>
+      <div class="fig" style="font-size:20px;font-weight:700;margin-top:2px">${c.value}</div>
+${evi}
+     </div>
+    </div>
+${EVI_SIBLINGS}
+   </div>
+  </div>
+  <aside style="min-width:0"></aside>
+ </div>
+</div>`;
+
+// The three tiles that stand beside the probed one on the real page, carrying no
+// probe hooks of their own.
+//
+// They are load-bearing. auto-fit collapses empty tracks, so a grid holding a
+// single item stretches that item across the whole column no matter how many
+// 150px tracks would have fitted. Probing one tile alone therefore measured the
+// panel at 740px on desktop, which is not a width it is ever drawn at; with the
+// row populated the same desktop tile is 188px and the true worst case moves off
+// the phone widths entirely, to 390 and 768 where the column splits two and four
+// ways into the narrowest content box the component ever gets.
+const EVI_SIBLINGS = [1, 2, 3]
+  .map(() => `    <div class="card pad" style="box-shadow:none;padding:16px;min-width:0"><div class="muted" style="font-size:11.5px">&nbsp;</div><div class="fig" style="font-size:20px;font-weight:700;margin-top:2px">&nbsp;</div></div>`)
+  .join("\n");
 
 const WIDTHS = [320, 360, 390, 430, 768, 1280];
 const DIR = { en: "ltr", ar: "rtl" };

@@ -32,6 +32,52 @@ No other Laws copy may be created. Documents that need the Laws link here.
 7. Location taxonomy: never call a development a district. `districts.kind`
    carries district, development, area; UI copy uses the umbrella "Location"
    (الموقع) when a list mixes kinds; developments carry a project marker.
+8. Property media integrity. AI must never alter media in a way that changes the
+   apparent physical reality, condition, dimensions, finishes, fixtures, views,
+   access, defects or surroundings of a property. Originals must be preserved.
+   Any permitted enhancement must be non-deceptive and traceable.
+
+## Law 8, property media integrity, in operation
+
+Codified on Codex direction (ADV-1C boundary 9), 2026-07-31. The law is stated
+above in the words it was given. This section is what enforcing it means, and
+`src/lib/mediaStandard.ts` carries the machine-readable half.
+
+A photograph of a property is evidence about that property. A viewer reads it as
+a record of what is there, which is why altering it is not a styling decision but
+a claim: a relit room is a claim about light, a cleared frame is a claim about
+condition, a replaced sky is a claim about aspect. SAT Markets is a verification
+exchange, so it cannot make claims of that kind by way of a filter.
+
+The distinction the platform draws is not between manual and automatic editing.
+It is between a transformation that changes what a reasonable viewer would
+conclude about the physical property and one that does not. Exposure correction
+on an underexposed frame does not change the room. Removing the damp patch above
+the skirting does, and so does a generative upscale that invents a texture the
+camera never resolved, because the invented detail is indistinguishable from
+recorded detail once it is in the frame.
+
+Three obligations follow, and all three are conditions, not preferences:
+
+Originals are preserved. The file as delivered by the lister is retained
+unmodified and remains the reference copy for any dispute. A derived file never
+replaces it.
+
+Every transformation is recorded. What was applied, by what, and when. An
+enhancement nobody can enumerate afterwards is not traceable, and an untraceable
+enhancement is treated as a forbidden one.
+
+Permitted enhancement is non-deceptive by construction, which is why the
+permitted set is enumerated rather than described. `MEDIA_TRANSFORMS` in
+`src/lib/mediaStandard.ts` is that enumeration, each entry carrying the reason it
+is permitted or forbidden. A transformation absent from the list is forbidden
+until it is added deliberately, because the failure mode this law exists to
+prevent is a new capability arriving and being used before anyone rules on it.
+
+Virtual staging and any other depiction of a state the property is not in is not
+an enhancement. It may only ever appear as a clearly labelled separate image
+beside the unaltered original, never in its place, and the wider workflow for it
+belongs to Listing Studio rather than to this law.
 
 ## Controlled vocabulary and claims
 

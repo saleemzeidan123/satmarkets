@@ -320,15 +320,53 @@ export function verifiedDimensions(
  */
 export type CorrectionKind = "correction" | "restatement" | "retraction";
 
+/**
+ * Words a person filed, in the language they filed them in.
+ *
+ * A pair is a correction filed in both languages. A bare string is a correction
+ * filed in one, and `reasonLang` records which, so a page can mark the text as
+ * foreign rather than pass it off as the reader's own language.
+ *
+ * SAT never translates one of these. Codex boundary 10 forbids filling missing
+ * evidence with generated wording, and the stated reason a figure changed is
+ * evidence: a machine translation of it is a sentence nobody filed, sitting in
+ * the record as though somebody had.
+ */
+export type FiledReason = string | { en: string; ar: string };
+
 export type CorrectionEntry = {
   at: string;
   kind: CorrectionKind;
   /** Why, in the words of whoever made the correction. */
-  reason: string;
+  reason: FiledReason;
+  /** The language a bare `reason` was filed in. Absent means unrecorded. */
+  reasonLang?: "en" | "ar" | null;
   actorRole?: string | null;
   /** What was displayed before, so the record shows what was withdrawn. */
   previousDisplay?: string | null;
 };
+
+/**
+ * The reason as this reader should receive it, and whether it is in their
+ * language.
+ *
+ * `foreign` is the language tag a surface must put on the text, and it is
+ * non-null only when the filed language is known AND differs from the reader's.
+ * Unknown stays unmarked: asserting a language we were not told is a claim, and
+ * a wrong `lang` attribute makes a screen reader pronounce the sentence as
+ * gibberish, which is worse than leaving it unsaid.
+ */
+export function readCorrectionReason(
+  c: CorrectionEntry,
+  ar: boolean
+): { text: string; foreign: "en" | "ar" | null } {
+  if (typeof c.reason !== "string") {
+    return { text: ar ? c.reason.ar : c.reason.en, foreign: null };
+  }
+  const filed = c.reasonLang ?? null;
+  const reader = ar ? "ar" : "en";
+  return { text: c.reason, foreign: filed && filed !== reader ? filed : null };
+}
 
 /** Latest entry by date, or null. Ties resolve to the later position in the array. */
 export function latestCorrection(
@@ -370,6 +408,18 @@ export type EvidencePassport = {
   statistic: StatisticKind;
   transformation: Transformation;
   sufficiency: Sufficiency;
+
+  /**
+   * The asset type the fact is about, e.g. "office" or "warehouse".
+   *
+   * ADV-1C, Codex boundary 4. A rent figure means nothing without it: the same
+   * number is unremarkable for one asset type and impossible for another, and a
+   * reader who cannot see which one it describes cannot check it. Held as the
+   * registry slug rather than a label, so the renderer resolves it in the
+   * reader's own language through `assetLabel` and the Arabic page never shows
+   * an English asset name.
+   */
+  assetType?: string | null;
 
   /** Registered source id, required when tier is "sourced". Rights resolve from it. */
   sourceId?: string | null;
@@ -595,6 +645,42 @@ const STATISTIC_LABEL: Record<StatisticKind, [string, string]> = {
 
 export function statisticLabel(s: StatisticKind, ar: boolean): string {
   return STATISTIC_LABEL[s][ar ? 1 : 0];
+}
+
+/**
+ * What SAT did to the figure between receiving it and showing it.
+ *
+ * ADV-1C, Codex boundary 4. The transformation was already on the passport and
+ * already decided whether the redisplay or the derived clause of a licence
+ * applies, but nothing could render it, so a reader had no way to tell a
+ * republished number from one we produced. These are the words for that.
+ */
+const TRANSFORMATION_LABEL: Record<Transformation, [string, string]> = {
+  as_published: ["As published", "كما نُشرت"],
+  unit_converted: ["Unit converted", "محوّلة الوحدة"],
+  aggregated: ["Aggregated by SAT", "جمّعتها سات"],
+  derived: ["Derived by SAT", "اشتقّتها سات"],
+  modelled: ["Modelled assumption", "افتراض نموذجي"],
+  unknown: ["Not stated", "غير مذكور"],
+};
+
+export function transformationLabel(t: Transformation, ar: boolean): string {
+  return TRANSFORMATION_LABEL[t][ar ? 1 : 0];
+}
+
+/**
+ * Whether the records behind a figure amount to one. `insufficient` is a real
+ * answer and is never rounded up to a small number, which is the whole reason
+ * the field exists.
+ */
+const SUFFICIENCY_LABEL: Record<Sufficiency, [string, string]> = {
+  sufficient: ["Sufficient", "كافية"],
+  insufficient: ["Not sufficient", "غير كافية"],
+  unknown: ["Not assessed", "لم تُقيَّم"],
+};
+
+export function sufficiencyLabel(v: Sufficiency, ar: boolean): string {
+  return SUFFICIENCY_LABEL[v][ar ? 1 : 0];
 }
 
 const FRESHNESS_LABEL: Record<Freshness, [string, string]> = {

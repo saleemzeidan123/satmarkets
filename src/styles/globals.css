@@ -436,3 +436,37 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 /* Reserve room for the fixed mobile contact dock (shown below 768px) so it never
    covers the last of the page content. */
 @media(max-width:767px){.ld-page{padding-bottom:calc(84px + env(safe-area-inset-bottom));}}
+
+
+/* ---- ADV-1C: the Evidence Passport disclosure (Codex boundary 5). ---- */
+/* A compact indicator in the summary, the detail panel in the body. Native      */
+/* <details>, so keyboard operation, expanded-state announcement and focus       */
+/* behaviour are the browser's rather than ours, and so nothing here needs a     */
+/* reduced-motion branch: there is no animation to reduce. The RTL rule at the   */
+/* top of this file already zeroes letter-spacing, so the uppercase eyebrows     */
+/* below cannot break Arabic joining.                                           */
+.evi{margin-top:10px;}
+/* The hit area is the full width of the tile, so the target stays wide even
+   where the chip inside it is small. */
+.evi>summary{display:flex;align-items:center;flex-wrap:wrap;gap:6px;cursor:pointer;list-style:none;min-height:40px;padding-block:4px;}
+.evi>summary::-webkit-details-marker{display:none;}
+.evi>summary::marker{content:"";}
+.evi>summary:focus-visible{outline:2px solid var(--azure);outline-offset:3px;border-radius:10px;}
+.evi-more{font-size:11px;color:var(--slate);text-decoration:underline;text-underline-offset:3px;margin-inline-start:auto;}
+.evi[open] .evi-more{text-decoration:none;font-weight:600;}
+.evi-state{display:inline-flex;align-items:center;font-size:11px;font-weight:600;line-height:1.3;padding:3px 8px;border-radius:999px;background:var(--paper);border:1px solid var(--silver-2,var(--silver));color:var(--slate);white-space:normal;text-align:center;max-width:100%;min-width:0;}
+.evi-body{margin-top:8px;padding:12px;background:var(--paper);border:1px solid var(--silver);border-radius:12px;}
+.evi-note{margin:0 0 8px;font-size:11.5px;line-height:1.65;color:var(--slate);overflow-wrap:anywhere;}
+.evi-note:last-child{margin-bottom:0;}
+.evi-dl{display:grid;gap:9px;margin:10px 0 0;}
+.evi-row{min-width:0;}
+.evi-dl dt{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600;}
+.evi-dl dd{margin:2px 0 0;font-size:12.5px;line-height:1.5;color:var(--ink);overflow-wrap:anywhere;}
+.evi-sub{display:block;margin-top:2px;font-size:11px;color:var(--slate);overflow-wrap:anywhere;}
+.evi-sec{margin-top:12px;padding-top:10px;border-top:1px solid var(--silver);}
+.evi-h{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--slate);font-weight:600;margin-bottom:6px;}
+.evi-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;}
+.evi-list li{display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:space-between;font-size:12px;line-height:1.5;min-width:0;overflow-wrap:anywhere;}
+.evi-val{color:var(--slate);}
+.evi-corr li{flex-direction:column;justify-content:flex-start;}
+.evi-prev{color:var(--slate);font-size:11.5px;}

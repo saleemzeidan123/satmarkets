@@ -17,10 +17,15 @@ import { ASSET_FIELDS } from "@/lib/assetFields";
 // A hardcoded allow list decays: a file gets renamed, a reason stops being true,
 // and the entry survives because nobody rereads it. So each exception below
 // carries the reason it exists AND a test that the reason is still true. If
-// `/area` stops being held, or stops carrying its sample tag, or if anything
-// starts importing `LocationScore`, or if `/find` starts stating a value beside
-// the phrase instead of offering it as a preference, the exception fails on its
-// own terms and the file goes back under the gate.
+// `/area` stops being held, or stops carrying its sample tag, or if `/find`
+// starts stating a value beside the phrase instead of offering it as a
+// preference, the exception fails on its own terms and the file goes back under
+// the gate.
+//
+// ADV-1C removed the third exception. `LocationScore.tsx` was excepted because
+// it was an orphan whose figures no reader could reach, and ADV-5B judged
+// deleting it out of scope. Codex boundary 8 put it in scope: the component is
+// gone, and the test below now holds it gone rather than holding it unimported.
 //
 // Anything NEW that renders a mobility figure fails here, which is the point.
 //
@@ -43,11 +48,6 @@ const EXCEPTIONS: readonly Exception[] = [
     file: "src/app/[locale]/area/page.tsx",
     reason:
       "The sample trade-area page. Held out of indexing in routePolicy, and every figure on it renders under the Sample data tag. ADV-5B rewrote its source cards so none of them represents a contract or a feed that does not exist.",
-  },
-  {
-    file: "src/components/LocationScore.tsx",
-    reason:
-      "An orphan. Nothing imports it, so it renders nowhere. Deleting it is a destructive change outside this package's scope, and leaving it unexcepted would mean the gate reports a claim no reader can reach.",
   },
   {
     file: "src/app/[locale]/find/page.tsx",
@@ -167,22 +167,28 @@ test("claims: the sample trade-area copy represents no contract, partner or feed
   }
 });
 
-// The second exception's reason, tested rather than trusted.
+// The retired exception, held retired.
+//
+// The component carried a per-asset template of hardcoded representative
+// figures: a drive time, a count of nearby anchors, a daytime population, a
+// spend index. Every one of them was invented copy in the shape of a
+// measurement, which is Law 3 in the form that is hardest to spot, because the
+// numbers were plausible and consistent. `LocationFacts.tsx` is the honest
+// successor and renders only what the record holds. Git keeps the file; this
+// test keeps it out of the tree.
 
-test("claims: nothing imports the orphan location score component", () => {
-  const importers: string[] = [];
-  for (const f of surfaces) {
-    if (f === "src/components/LocationScore.tsx") continue;
-    const body = stripComments(fs.readFileSync(f, "utf8"));
-    if (/from\s+["'](?:@\/components|\.{1,2}(?:\/[\w.\-[\]]+)*)\/Location[S]core["']/.test(body)) {
-      importers.push(f);
-    }
-  }
-  assert.deepEqual(
-    importers,
-    [],
-    "the orphan is no longer an orphan, so its figures render and the exception is void"
+test("claims: the location score component stays deleted", () => {
+  assert.equal(
+    fs.existsSync("src/components/LocationScore.tsx"),
+    false,
+    "LocationScore.tsx is back, and with it a per-asset template of invented figures"
   );
+  const importers = surfaces.filter((f) =>
+    /from\s+["'](?:@\/components|\.{1,2}(?:\/[\w.\-[\]]+)*)\/Location[S]core["']/.test(
+      stripComments(fs.readFileSync(f, "utf8"))
+    )
+  );
+  assert.deepEqual(importers, [], "something imports a component that no longer exists");
 });
 
 // The two asset fields that would carry a mobility figure if anything switched

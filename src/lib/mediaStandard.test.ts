@@ -5,8 +5,15 @@ import {
   assessMedia,
   shotWeightLabel,
   MEDIA_ASSET_TYPES,
+  MEDIA_TRANSFORMS,
+  isPermittedMediaTransform,
+  mediaIntegrityFaults,
+  mediaPublishable,
   type MediaShot,
+  type MediaDerivation,
 } from "./mediaStandard";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { PHOTO_SET_MIN } from "./listingQuality";
 import { planTypesFor } from "./planTypes";
 
@@ -169,4 +176,125 @@ test("weight labels are distinct in both languages", () => {
     assert.equal(new Set(labels).size, 3);
     labels.forEach((l) => assert.ok(l.trim().length > 0));
   }
+});
+
+// ---------------------------------------------------------------------------
+// Law 8, property media integrity (Codex ADV-1C boundary 9)
+// ---------------------------------------------------------------------------
+//
+// The law lives in `docs/LAWS.md` and its enumeration lives in the module. Two
+// statements of one rule drift, so these tests hold them together: the document
+// cannot lose the law without failing, and the module cannot quietly permit
+// something the document forbids.
+
+const LAWS = readFileSync(join(process.cwd(), "docs", "LAWS.md"), "utf8");
+
+const LAW_8 =
+  "AI must never alter media in a way that changes the\n   apparent physical reality, condition, dimensions, finishes, fixtures, views,\n   access, defects or surroundings of a property. Originals must be preserved.\n   Any permitted enhancement must be non-deceptive and traceable.";
+
+test("law 8: the register still carries the media integrity law in the words it was given", () => {
+  assert.ok(LAWS.includes(LAW_8), "Law 8 is missing or reworded in docs/LAWS.md");
+  assert.match(LAWS, /^8\. Property media integrity\./m, "Law 8 lost its place in the numbered register");
+});
+
+test("law 8: every reality-altering transformation is forbidden by name", () => {
+  const MUST_BE_FORBIDDEN = [
+    "object_removal",
+    "object_insertion",
+    "sky_replacement",
+    "relight",
+    "generative_fill",
+    "generative_upscale",
+    "geometry_change",
+    "virtual_staging",
+  ] as const;
+  for (const t of MUST_BE_FORBIDDEN) {
+    assert.equal(MEDIA_TRANSFORMS[t].permitted, false, `${t} is permitted, and it changes the property`);
+    assert.equal(isPermittedMediaTransform(t), false, t);
+  }
+});
+
+test("law 8: an unrecognised transformation is forbidden rather than unrecognised", () => {
+  // The direction of the list is the protection. A capability that did not
+  // exist when this was written must be ruled on before it can be used.
+  for (const t of ["", "enhance", "auto_magic", "restyle", "OBJECT_REMOVAL", "reframe_2027"]) {
+    assert.equal(isPermittedMediaTransform(t), false, `${t} passed without a ruling`);
+  }
+});
+
+test("law 8: every rule carries a substantive reason, so a change of mind is visible", () => {
+  for (const [k, rule] of Object.entries(MEDIA_TRANSFORMS)) {
+    assert.ok(rule.reason.length > 60, `${k} has a reason too thin to review`);
+    assert.doesNotMatch(rule.reason, /\u2014/, `em dash in the reason for ${k}`);
+  }
+});
+
+test("law 8: the permitted set changes no fact about the property", () => {
+  const permitted = Object.entries(MEDIA_TRANSFORMS)
+    .filter(([, r]) => r.permitted)
+    .map(([k]) => k)
+    .sort();
+  assert.deepEqual(permitted, [
+    "downscale",
+    "exposure",
+    "format_convert",
+    "lens_correction",
+    "noise_reduction",
+    "straighten",
+    "white_balance",
+  ]);
+});
+
+const TRACED: MediaDerivation = {
+  originalRef: "media/original/abc.jpg",
+  transforms: ["exposure", "downscale"],
+  appliedBy: "listing-studio/pipeline@1",
+  appliedAt: "2026-07-30T09:00:00Z",
+};
+
+test("law 8: an untouched original commits no fault and needs no derivation record", () => {
+  const untouched: MediaDerivation = {
+    originalRef: null,
+    transforms: [],
+    appliedBy: null,
+    appliedAt: null,
+  };
+  assert.deepEqual(mediaIntegrityFaults(untouched), []);
+  assert.equal(mediaPublishable(untouched), true);
+});
+
+test("law 8: a derived file that loses its original is not publishable", () => {
+  assert.deepEqual(mediaIntegrityFaults({ ...TRACED, originalRef: null }), ["original_not_preserved"]);
+  assert.equal(mediaPublishable({ ...TRACED, originalRef: null }), false);
+});
+
+test("law 8: an untraceable enhancement is treated as a forbidden one", () => {
+  assert.deepEqual(mediaIntegrityFaults({ ...TRACED, appliedBy: null }), ["untraceable"]);
+  assert.deepEqual(mediaIntegrityFaults({ ...TRACED, appliedAt: null }), ["untraceable"]);
+  assert.equal(mediaPublishable({ ...TRACED, appliedAt: null }), false);
+});
+
+test("law 8: one forbidden transformation condemns the whole derivation", () => {
+  const d = { ...TRACED, transforms: ["exposure", "object_removal", "downscale"] };
+  assert.deepEqual(mediaIntegrityFaults(d), ["forbidden_transform"]);
+  assert.equal(mediaPublishable(d), false);
+});
+
+test("law 8: every fault is reported, not only the first", () => {
+  const d: MediaDerivation = {
+    originalRef: null,
+    transforms: ["generative_fill"],
+    appliedBy: null,
+    appliedAt: null,
+  };
+  assert.deepEqual(mediaIntegrityFaults(d), [
+    "original_not_preserved",
+    "forbidden_transform",
+    "untraceable",
+  ]);
+});
+
+test("law 8: a fully traced, permitted derivation is publishable", () => {
+  assert.deepEqual(mediaIntegrityFaults(TRACED), []);
+  assert.equal(mediaPublishable(TRACED), true);
 });

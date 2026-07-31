@@ -1355,15 +1355,6 @@
     "send": "Send",
     "footer": "Grounded in the Rent Index, derived from the REGA Rental Index (Ejar), and in listing records. It explains the data, it does not invent it."
   },
-  "locationFilter": {
-    "clearLocation": "Clear location",
-    "searchPlaceholder": "Find a location in any Saudi city",
-    "searchLabel": "Find a location",
-    "projectSuffix": " · project",
-    "fullDir": "Full directory",
-    "project": "project",
-    "noLocations": "No locations in this city yet"
-  },
   "findPage": {
     "assetNeeds": "Asset-specific needs",
     "needsNote": "These needs are attached to your brief for SAT's advisor. Ranking today uses the size, grade and budget on each listing record.",

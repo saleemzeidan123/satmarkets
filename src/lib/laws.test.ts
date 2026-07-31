@@ -27,7 +27,7 @@ function* sourceFiles(dir: string): Generator<string> {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* sourceFiles(p);
-    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.ts$/.test(name)) yield p;
+    else if (/\.(ts|tsx)$/.test(name) && !/\.test\.tsx?$/.test(name)) yield p;
   }
 }
 

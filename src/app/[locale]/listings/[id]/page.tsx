@@ -26,6 +26,8 @@ import ReportListing from "@/components/ReportListing";
 import { nearest, relevanceFor, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 import { travelTime } from "@/lib/location/travel";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
+import { listingEvidenceByField } from "@/lib/listingEvidence";
+import EvidencePassport from "@/components/EvidencePassport";
 import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
@@ -101,6 +103,22 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const title = listingTitle(l, ar ? "ar" : "en");
   const kindFor = (a: string) => a;
   const L = (p: string) => `/${locale}${p}`;
+
+  // ADV-1C. The runtime Evidence Passport for every figure this row actually
+  // holds, keyed by the column it came from, so a tile can carry its own
+  // evidence instead of the page carrying one badge for all of them.
+  //
+  // The place is resolved here rather than inside the module because this page
+  // is what knows the district and city names in both languages; passing the
+  // English pair to the Arabic reader would break parity in the one field a
+  // reader is most likely to check. `filingAccountOf(lister)` is the same
+  // account the verification summary above is built from, so the two cannot
+  // disagree about who filed this.
+  const evidence = listingEvidenceByField(l as any, {
+    locale: lp,
+    account: filingAccountOf(lister),
+    geography: `${dn}${ar ? "، " : ", "}${city}`,
+  });
 
 
   // Similar verified spaces: same district first, then fall back to the same asset type
@@ -334,8 +352,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               // and how the parking line hand-built a counted phrase. The unit table
               // and the money and area formatters answer all of them, and they carry
               // the bidi isolation the raw concatenations were missing.
-              const tiles: ([string, string] | null)[] = [
-                [dict.ld.area, formatArea(l.area_sqm, lp)],
+              // ADV-1C: the third element is the database column the figure came
+              // from, which is how a tile finds its own passport. A tile with no
+              // column named carries no evidence disclosure rather than a generic
+              // one, because a grade or a fit-out condition is a stated attribute
+              // and not a measured or computed figure: giving it a passport would
+              // dress a category label as a number with provenance.
+              const tiles: ([string, string, string?] | null)[] = [
+                [dict.ld.area, formatArea(l.area_sqm, lp), "area_sqm"],
                 (l.building_grade && l.building_grade !== "n_a") ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null,
                 (l.fitout_condition && l.fitout_condition !== "n_a") ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null,
                 l.clear_height_m != null ? [T.clearHeight, formatWithUnit(Number(l.clear_height_m), "metre", lp, "long", 2)] : null,
@@ -343,14 +367,18 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 l.power_kva != null ? [T.power, formatWithUnit(Number(l.power_kva), "kva", lp, "long", 0)] : null,
                 l.parking_ratio != null ? [T.parking, fill(T.parkingRatio, { area: formatArea(Number(l.parking_ratio), lp) })] : null,
                 l.civil_defense_approved ? [T.civilDefense, T.approved] : null,
-                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)) : (dict.ld.onRequest)],
+                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)) : (dict.ld.onRequest), lease ? "asking_rent_sqm" : "sale_price"],
               ];
-              return (tiles.filter(Boolean) as [string, string][]).map((s, i) => (
-                <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
-                  <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
-                  <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
-                </div>
-              ));
+              return (tiles.filter(Boolean) as [string, string, string?][]).map((s, i) => {
+                const ev = s[2] ? evidence.get(s[2]) : undefined;
+                return (
+                  <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
+                    <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
+                    <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
+                    {ev ? <EvidencePassport view={ev} label={s[0]} ar={ar} locale={lp} /> : null}
+                  </div>
+                );
+              });
             })()}
           </div>
           {(() => {
@@ -388,9 +416,13 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             // and rate formatters keep the Latin unit off the Arabic page.
             const termFmt = (m: number) => (m % 12 === 0 ? formatCounted(m / 12, "year", lp) : formatCounted(m, "month", lp));
             const vatFmt = (v: string) => (v === "inclusive" ? T.vatInclusive : T.vatExclusive);
-            const rows: [string, string][] = [];
+            // ADV-1C: as in the facts grid above, the optional third element is
+            // the column the figure came from. Only the two figures that carry a
+            // passport name one; a lease term in months or a VAT treatment is a
+            // contractual term rather than a measured or computed figure.
+            const rows: [string, string, string?][] = [];
             if (lease) {
-              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, formatWithUnit(Number(l.service_charge_sqm), "sar_sqm_year", lp, "short", 0)]);
+              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, formatWithUnit(Number(l.service_charge_sqm), "sar_sqm_year", lp, "short", 0), "service_charge_sqm"]);
               if (l.lease_term_months != null) rows.push([T.leaseTerm, termFmt(Number(l.lease_term_months))]);
               if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, formatCounted(Number(l.rent_free_months), "month", lp)]);
               if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, formatMoney(Number(l.fitout_contribution), lp)]);
@@ -402,7 +434,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               const pps = l.sale_price_sqm != null
                 ? Number(l.sale_price_sqm)
                 : (l.sale_price != null && l.area_sqm ? Number(l.sale_price) / Number(l.area_sqm) : null);
-              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, formatWithUnit(Math.round(pps), "sar_sqm", lp, "short", 0)]);
+              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, formatWithUnit(Math.round(pps), "sar_sqm", lp, "short", 0), "sale_price_sqm"]);
             }
             if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
             // Registry commercial attributes with no typed column (price basis, deal
@@ -413,12 +445,16 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
                 <div style={{ fontWeight: 600, fontSize: 15 }}>{T.termsTitle}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
-                  {rows.map((r, i) => (
-                    <div key={i}>
-                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
-                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
-                    </div>
-                  ))}
+                  {rows.map((r, i) => {
+                    const ev = r[2] ? evidence.get(r[2]) : undefined;
+                    return (
+                      <div key={i}>
+                        <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
+                        <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                        {ev ? <EvidencePassport view={ev} label={r[0]} ar={ar} locale={lp} /> : null}
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
               </div>

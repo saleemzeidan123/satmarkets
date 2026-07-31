@@ -371,3 +371,171 @@ export function shotWeightLabel(w: ShotWeight, ar: boolean): string {
   if (w === "expected") return ar ? "متوقعة" : "Expected";
   return ar ? "اختيارية" : "Optional";
 }
+
+// ---------------------------------------------------------------------------
+// Law 8, property media integrity
+// ---------------------------------------------------------------------------
+//
+// Codex ADV-1C boundary 9. The law is stated in `docs/LAWS.md`; this is its
+// machine-readable half, and `mediaStandard.test.ts` holds the two in step.
+//
+// The list below is an ALLOW LIST, not a deny list, and the direction matters
+// more than the contents. A deny list of forbidden edits is a list of the
+// capabilities that existed on the day it was written. The next model release
+// adds one that is not on it and the omission reads as permission. Here an
+// unlisted transformation is forbidden by `isPermittedMediaTransform` returning
+// false for anything it does not recognise, so a new capability has to be ruled
+// on before it can be used rather than after it has shipped.
+//
+// The line is not manual versus automatic. It is whether a reasonable viewer
+// would conclude something different about the physical property. Exposure
+// correction on a dark frame does not change the room. Removing the damp patch
+// does. So does a generative upscale, because invented detail is
+// indistinguishable from recorded detail once it is in the frame, which is the
+// same defect as an invented rent figure wearing the clothes of a sourced one.
+
+export type MediaTransform =
+  | "exposure"
+  | "white_balance"
+  | "straighten"
+  | "lens_correction"
+  | "noise_reduction"
+  | "downscale"
+  | "format_convert"
+  | "object_removal"
+  | "object_insertion"
+  | "sky_replacement"
+  | "relight"
+  | "generative_fill"
+  | "generative_upscale"
+  | "geometry_change"
+  | "virtual_staging";
+
+export interface MediaTransformRule {
+  permitted: boolean;
+  /** Why, in the terms of the law: what a viewer would or would not conclude. */
+  reason: string;
+}
+
+export const MEDIA_TRANSFORMS: Record<MediaTransform, MediaTransformRule> = {
+  exposure: {
+    permitted: true,
+    reason:
+      "Corrects the camera's reading of the light, not the light. A room photographed dark is the same room, and a viewer concludes nothing different about it.",
+  },
+  white_balance: {
+    permitted: true,
+    reason:
+      "Restores the colour a viewer standing in the room would have seen. It does not change a finish, and it may not be pushed to make one read as a different material.",
+  },
+  straighten: {
+    permitted: true,
+    reason:
+      "Levels the horizon within the recorded frame. It moves no wall and adds nothing, though it must not be used to crop a defect out of view.",
+  },
+  lens_correction: {
+    permitted: true,
+    reason:
+      "Removes distortion the lens introduced. It brings the frame closer to the geometry of the space rather than further from it.",
+  },
+  noise_reduction: {
+    permitted: true,
+    reason:
+      "Suppresses sensor noise. Permitted only at a strength that does not erase surface texture, because erased texture is erased condition.",
+  },
+  downscale: {
+    permitted: true,
+    reason:
+      "Delivery sizing. It removes resolution and invents none, so nothing appears that the camera did not record.",
+  },
+  format_convert: {
+    permitted: true,
+    reason:
+      "Container and codec only. Every pixel it keeps is a recorded pixel.",
+  },
+  object_removal: {
+    permitted: false,
+    reason:
+      "Changes condition, contents and defects. A frame with the crack taken out is a claim that there is no crack.",
+  },
+  object_insertion: {
+    permitted: false,
+    reason:
+      "Puts something in the property that is not in the property. Whether it flatters or not is beside the point: it is a fact nobody established.",
+  },
+  sky_replacement: {
+    permitted: false,
+    reason:
+      "Changes aspect, weather and the light the building actually receives, all of which a viewer reads as facts about the site.",
+  },
+  relight: {
+    permitted: false,
+    reason:
+      "Synthesises light the space did not receive. Natural light is one of the things a viewer is looking at the photograph to judge.",
+  },
+  generative_fill: {
+    permitted: false,
+    reason:
+      "Produces surroundings, extensions or surfaces that were never photographed, and presents them at the same weight as the ones that were.",
+  },
+  generative_upscale: {
+    permitted: false,
+    reason:
+      "Invents detail the camera never resolved. Once in the frame it is indistinguishable from recorded detail, which is precisely why it is forbidden.",
+  },
+  geometry_change: {
+    permitted: false,
+    reason:
+      "Alters apparent dimensions or proportions. Size is a term of the deal, and stretching a room is misstating it in a medium that reads as a record.",
+  },
+  virtual_staging: {
+    permitted: false,
+    reason:
+      "Depicts a state the property is not in. It may exist only as a clearly labelled separate image beside the unaltered original, never in its place, and that workflow belongs to Listing Studio.",
+  },
+};
+
+/**
+ * An unrecognised transformation is forbidden, deliberately. The failure this
+ * guards is a capability arriving and being used before anyone rules on it.
+ */
+export function isPermittedMediaTransform(t: string): boolean {
+  return MEDIA_TRANSFORMS[t as MediaTransform]?.permitted === true;
+}
+
+export interface MediaDerivation {
+  /** The retained, unmodified file as the lister delivered it. */
+  originalRef: string | null;
+  /** Every transformation applied to produce the derived file, in order. */
+  transforms: string[];
+  /** What applied them, and when. Traceability is a condition, not a note. */
+  appliedBy: string | null;
+  appliedAt: string | null;
+}
+
+export type MediaIntegrityFault =
+  | "original_not_preserved"
+  | "forbidden_transform"
+  | "untraceable";
+
+/**
+ * The three obligations, checked. Returns every fault rather than the first,
+ * because a derived file can fail all three and reporting one would hide two.
+ *
+ * An untraceable enhancement is treated as a forbidden one: a transformation
+ * nobody can enumerate afterwards cannot be shown to be non-deceptive, and the
+ * law puts the burden on the enhancement rather than on the reader.
+ */
+export function mediaIntegrityFaults(d: MediaDerivation): MediaIntegrityFault[] {
+  const faults: MediaIntegrityFault[] = [];
+  const derived = d.transforms.length > 0;
+  if (derived && !d.originalRef) faults.push("original_not_preserved");
+  if (d.transforms.some((t) => !isPermittedMediaTransform(t))) faults.push("forbidden_transform");
+  if (derived && (!d.appliedBy || !d.appliedAt)) faults.push("untraceable");
+  return faults;
+}
+
+/** A derived file may be published only when it commits no fault at all. */
+export function mediaPublishable(d: MediaDerivation): boolean {
+  return mediaIntegrityFaults(d).length === 0;
+}

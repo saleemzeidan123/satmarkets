@@ -20,11 +20,29 @@ export default function ProvenanceChip({
   parts = {},
   ar = false,
   size = "sm",
+  wrap = false,
 }: {
   tier: ProvenanceTier;
   parts?: ProvenanceParts;
   ar?: boolean;
   size?: "sm" | "md";
+  /**
+   * Let the label break across lines.
+   *
+   * Off by default, because a chip beside a field has room and a pill broken
+   * over two lines is uglier than one that stays on one. On by default nowhere:
+   * a caller turns it on when it knows its own container can be narrower than
+   * the widest label this component produces, which "From a published source"
+   * reaches at 130px. The Evidence Passport is that caller. Its tile drops to
+   * 103px once the listing page's auto-fit grid splits, and a chip that cannot
+   * wrap there does not shrink, it hangs out of the card.
+   *
+   * A prop rather than an `!important` override from the caller's stylesheet:
+   * the width the chip occupies is the chip's business, and a rule reaching in
+   * to defeat this component's own inline style is a rule that stops working
+   * the day the inline style moves.
+   */
+  wrap?: boolean;
 }) {
   const s = provenanceStyle(tier);
   const label = provenanceLabel(tier, parts, ar);
@@ -48,7 +66,8 @@ export default function ProvenanceChip({
         fontSize: md ? 13 : 11,
         fontWeight: 600,
         lineHeight: 1.3,
-        whiteSpace: "nowrap",
+        whiteSpace: wrap ? "normal" : "nowrap",
+        ...(wrap ? { maxWidth: "100%", minWidth: 0 } : {}),
       }}
     >
       {s.dot && (
