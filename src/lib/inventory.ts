@@ -37,11 +37,27 @@
 // exercise both release states, and so that a running deployment reflects the
 // environment it is actually in rather than the one it was built in.
 //
-// `realInventoryOnly` remains the unconditional form, for the surfaces where no
-// label travels with the figure. The sitemap is the one that exists today: a
-// sitemap entry carries no banner into a crawler's index, so it excludes
+// `withoutFlaggedSimulatedRows` remains the unconditional form, for the surfaces
+// where no label travels with the figure. The sitemap is the one that exists
+// today: a sitemap entry carries no banner into a crawler's index, so it excludes
 // simulated rows in every release state. Any future export, feed or
 // machine-readable fact file belongs on this one too.
+//
+// ADV-1C.1 correction 1. That function was called `realInventoryOnly` until this
+// package, and the name was a claim its predicate cannot support. Codex: "is_demo
+// = false does not establish that a listing is real, authorized, current or
+// suitable for a production inventory claim", and "do not infer authenticity from
+// the absence of a demo marker". The rename says what the function does, which is
+// exclude the rows something explicitly flagged, and nothing more. Codex suggested
+// `nonDemoPublishedInventoryOnly`; the name here drops the "published", because
+// this helper states no `status` predicate at all, every caller states its own,
+// and a name asserting a filter the function does not apply would be the same
+// class of defect one word over.
+//
+// What the old name was reaching for now lives in `src/lib/launchGate.ts`, where
+// the five facts Codex asked to be separated are five values rather than one
+// reading of a nullable boolean, and production count eligibility is a conclusion
+// drawn from all of them.
 //
 // The predicate is `is_demo IS NOT TRUE`, not `is_demo = false`, and the
 // difference is not stylistic. The column is nullable and predates the committed
@@ -78,14 +94,19 @@ export function simulatedRowsAreLabelled(): boolean {
  * `verifiedOnly` uses on the listings page.
  */
 export function releaseVisibleInventory<T>(q: T): T {
-  return simulatedRowsAreLabelled() ? q : realInventoryOnly(q);
+  return simulatedRowsAreLabelled() ? q : withoutFlaggedSimulatedRows(q);
 }
 
 /**
  * The unconditional form, for a surface that publishes a figure with no label
  * attached to it in any release state. The sitemap is the case that exists.
+ *
+ * This excludes rows something flagged. It does not establish that what remains
+ * is real, authorized, current or countable as production inventory: that is
+ * `mayCountAsProductionInventory` in `src/lib/launchGate.ts`, and it needs four
+ * facts this predicate does not read.
  */
-export function realInventoryOnly<T>(q: T): T {
+export function withoutFlaggedSimulatedRows<T>(q: T): T {
   return (q as any).not(SIMULATED_FLAG, "is", true) as T;
 }
 

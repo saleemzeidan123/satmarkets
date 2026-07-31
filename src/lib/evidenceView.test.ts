@@ -176,11 +176,13 @@ test("average and median stay distinct all the way to the view", () => {
 // The two denials a reader must be able to tell apart.
 // ---------------------------------------------------------------------------
 
-test("no rights row reads as permission not established, not as permission refused", () => {
-  // This is the live state today. /en/sources renders the register unreadable
-  // branch, so every sourced figure on the platform lands here.
+test("no rights row reads as permission not recorded, not as permission refused", () => {
+  // This is the live state today. /en/sources renders a register it could not
+  // read, so every sourced figure on the platform lands here. ADV-1C.1 renamed
+  // the state from `unavailable`, which was the one member of the union named
+  // for how it feels rather than for what it says.
   const v = publicEvidenceView(sourced(), { ...segmentCtx, rights: null });
-  assert.equal(v.state, "unavailable");
+  assert.equal(v.state, "permission_unrecorded");
   assert.equal(v.value, null);
   assert.equal(v.source, null);
   assert.deepEqual(v.permissions, { display: "unknown", export: "unknown", aiUse: "unknown" });
@@ -188,7 +190,7 @@ test("no rights row reads as permission not established, not as permission refus
 
 test("a rights row for a different source is not a rights row", () => {
   const v = publicEvidenceView(sourced(), { ...segmentCtx, rights: rights({ sourceId: "gastat_sama" }) });
-  assert.equal(v.state, "unavailable");
+  assert.equal(v.state, "permission_unrecorded");
   assert.equal(v.value, null);
 });
 
@@ -209,7 +211,10 @@ test("derived display is judged by the derived policy, not the redisplay one", (
 test("a first-party figure consults no licence and states its permissions as recorded", () => {
   const v = publicEvidenceView(entered(), listingCtx);
   assert.equal(v.value, "450");
-  assert.equal(v.state, "held");
+  // Not `held`. ADV-1C.1 correction 5: a figure a lister supplied and nobody
+  // checked is shown as supplied, and saying "evidence held" over it was the
+  // collapse the correction is about. The value is still displayed.
+  assert.equal(v.state, "unverified");
   assert.equal(v.source, null);
   assert.deepEqual(v.permissions, FIRST_PARTY_PERMISSIONS);
   // Not recorded is not the same as not permitted, and the view must not round
@@ -279,14 +284,15 @@ test("a corrected figure still shows, with the history a reader can weigh", () =
     entered({ corrections: [{ at: iso(4), kind: "correction", reason: "area restated after measurement", previousDisplay: "430" }] }),
     listingCtx
   );
-  assert.equal(v.state, "corrected");
+  assert.ok(v.states.includes("corrected"));
   assert.equal(v.value, "450");
   assert.equal(v.corrections[0].previousDisplay, "430");
 });
 
 test("every state has a label and a note in both languages, and they differ", () => {
   const all: EvidenceState[] = [
-    "held", "empty", "retracted", "restricted", "unavailable", "insufficient", "stale", "corrected", "derived",
+    "held", "empty", "retracted", "restricted", "permission_unrecorded", "insufficient",
+    "check_unavailable", "unverified", "stale", "corrected", "derived",
   ];
   for (const s of all) {
     for (const fn of [evidenceStateLabel, evidenceStateNote]) {
@@ -372,4 +378,129 @@ test("boundary 6: the filing language survives the copy, so a page can mark it",
     segmentCtx
   );
   assert.equal(v.corrections[0].reasonLang, "en");
+});
+
+// ---------------------------------------------------------------------------
+// ADV-1C.1 correction 5. The seven readings a reader must be able to tell apart.
+// ---------------------------------------------------------------------------
+
+test("correction 5: the seven distinctions are seven states, not one", () => {
+  // Codex ruled that "unavailable" must stop standing in for several materially
+  // different facts. Each row below is one of the seven, produced from a record
+  // that is actually in that condition rather than asserted about a label.
+  const cases: [string, EvidenceState][] = [
+    ["not supplied", "empty"],
+    ["supplied but not independently verified", "unverified"],
+    ["verification unavailable", "check_unavailable"],
+    ["stale", "stale"],
+    ["insufficient", "insufficient"],
+    ["access restricted", "restricted"],
+    ["sourced and checked within a defined scope", "held"],
+  ];
+  const produced: Record<string, readonly EvidenceState[]> = {
+    "not supplied": publicEvidenceView(entered({ value: null }), listingCtx).states,
+    "supplied but not independently verified": publicEvidenceView(entered(), listingCtx).states,
+    "verification unavailable": publicEvidenceView(
+      entered({ verification: [{ dimension: "measurement", state: "unknown" }] }),
+      listingCtx
+    ).states,
+    stale: publicEvidenceView(entered({ asOf: iso(400), maxAgeDays: 365 }), listingCtx).states,
+    insufficient: publicEvidenceView(
+      sourced({ sufficiency: "insufficient" }),
+      { ...segmentCtx, rights: rights() }
+    ).states,
+    "access restricted": publicEvidenceView(
+      sourced(),
+      { ...segmentCtx, rights: rights({ redisplayPolicy: "internal" }) }
+    ).states,
+    "sourced and checked within a defined scope": publicEvidenceView(
+      sourced(),
+      { ...segmentCtx, rights: rights() }
+    ).states,
+  };
+  for (const [name, expected] of cases) {
+    assert.ok(
+      produced[name].includes(expected),
+      `${name} does not produce ${expected}; it produced ${produced[name].join(", ")}`
+    );
+  }
+  // And the eighth, which is not one of the seven but is the one they were all
+  // collapsing into: a permission record we could not read.
+  assert.ok(
+    publicEvidenceView(sourced(), { ...segmentCtx, rights: null }).states.includes("permission_unrecorded")
+  );
+});
+
+test("correction 5: a check with no known outcome is not a check that failed", () => {
+  // `verificationStateOf` demotes a stored `unknown` to `not_verified`, which is
+  // right for deciding whether to CLAIM a check and wrong for describing one.
+  // Reading the resolved state here would tell a reader we checked and it did
+  // not pass, which is the "SAT attempted verification and failed" impression
+  // Codex ruled the copy must not give.
+  const v = publicEvidenceView(
+    entered({ verification: [{ dimension: "measurement", state: "unknown" }] }),
+    listingCtx
+  );
+  assert.ok(v.states.includes("check_unavailable"));
+  assert.equal(v.value, "450", "an unknown check outcome must not withhold a supplied value");
+  const en = evidenceStateNote("check_unavailable", false);
+  assert.ok(!/fail/i.test(en), "the note reads as a failed check");
+  assert.ok(!/attempt/i.test(en), "the note claims an attempt the record does not record");
+});
+
+test("correction 5: a seeded verification record is not an attempted check", () => {
+  // Ruling 3: a fixture may populate a page, it may not confer a claim. It also
+  // may not confer the appearance of a check that could not be completed.
+  const v = publicEvidenceView(
+    entered({ verification: [{ dimension: "measurement", state: "unknown", isDemo: true }] }),
+    listingCtx
+  );
+  assert.equal(v.states.includes("check_unavailable"), false);
+  assert.ok(v.states.includes("unverified"));
+});
+
+test("correction 5: a checked first-party figure is held rather than shown as supplied", () => {
+  const v = publicEvidenceView(
+    entered({ verification: [{ dimension: "measurement", state: "verified", checkedAt: iso(5) }] }),
+    listingCtx
+  );
+  assert.equal(v.state, "held");
+  assert.equal(v.states.includes("unverified"), false);
+});
+
+test("correction 5: the checking states qualify a figure, they never withhold one", () => {
+  // The failure this guards against is a listing page that looks broken. If
+  // either state started withholding, every unchecked lister figure on the
+  // platform would render as an absence.
+  for (const p of [
+    entered(),
+    entered({ verification: [{ dimension: "measurement", state: "unknown" }] }),
+  ]) {
+    const v = publicEvidenceView(p, listingCtx);
+    assert.equal(v.value, "450", `${v.state} withheld a value it only qualifies`);
+  }
+});
+
+test("correction 5: a sourced or computed figure is never described as supplied to us", () => {
+  // `unverified` is a statement about a value someone gave us. On a sourced
+  // figure it would be a category error, and it would also read as a criticism
+  // of the source rather than of our own checking.
+  const v = publicEvidenceView(sourced(), { ...segmentCtx, rights: rights() });
+  assert.equal(v.states.includes("unverified"), false);
+});
+
+test("correction 5: no two states share a label or a note, in either language", () => {
+  // Distinct members are worth nothing if they read identically. This is the
+  // gate on "do not collapse these into one generic unavailable state" holding
+  // at the surface rather than only in the type.
+  const all: EvidenceState[] = [
+    "held", "empty", "retracted", "restricted", "permission_unrecorded", "insufficient",
+    "check_unavailable", "unverified", "stale", "corrected", "derived",
+  ];
+  for (const ar of [false, true]) {
+    for (const fn of [evidenceStateLabel, evidenceStateNote]) {
+      const texts = all.map((s) => fn(s, ar));
+      assert.equal(new Set(texts).size, all.length, `two states read the same, ar=${ar}`);
+    }
+  }
 });

@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
 
 // Service-role client for server-only ingestion. Returns null when not configured,
 // so callers can stay dormant until SUPABASE_SERVICE_ROLE_KEY is set in the environment.
@@ -42,7 +43,11 @@ export type IngestResult = {
 export async function ingestRentBase(sb: SupabaseClient, input: IngestInput): Promise<IngestResult> {
   const threshold = input.threshold ?? 30;
   const dataClass = input.dataClass ?? "real";
-  const source_id = "rega_ejar";
+  // ADV-1C.1 correction 2 / Codex gate 3: the REGA id resolves through the one
+  // canonical catalogue entry rather than a string literal in this function, so
+  // the row this pipeline writes and the register row that governs it are the
+  // same source by construction.
+  const source_id = REGA_RENT_INDEX_SOURCE_ID;
 
   const { data: existing } = await sb
     .from("ingestion_runs")

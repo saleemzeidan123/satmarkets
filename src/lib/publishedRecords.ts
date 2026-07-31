@@ -50,34 +50,18 @@ export const ALL_GATE_REASONS: readonly GateReason[] = [
   "permit_expired",
 ];
 
-/** Declared order for the source register. A map has no reading order. */
-export const DECLARED_SOURCES: readonly string[] = [
-  "gastat_sama",
-  "rega_ejar",
-  "broker_overlay",
-  "fsq_os_places",
-  "foursquare_mapbox",
-  "rega_permit",
-  "nafath",
-  "wathq_deeds",
-  "spl_address",
-];
-
-/** source_id to the dictionary key pair that names and describes it. */
-export const SOURCE_COPY: Record<
-  string,
-  "Gastat" | "Rega" | "Broker" | "Fsq" | "Mapbox" | "Permit" | "Nafath" | "Wathq" | "Spl"
-> = {
-  gastat_sama: "Gastat",
-  rega_ejar: "Rega",
-  broker_overlay: "Broker",
-  fsq_os_places: "Fsq",
-  foursquare_mapbox: "Mapbox",
-  rega_permit: "Permit",
-  nafath: "Nafath",
-  wathq_deeds: "Wathq",
-  spl_address: "Spl",
-};
+/**
+ * The source register's reading order and copy keys.
+ *
+ * ADV-1C.1 correction 2: these were declared here by hand, while the passport
+ * declared the same nine ids again in `evidenceView.ts` and the rent pipeline
+ * wrote a tenth copy of one of them as a string literal. They now come from the
+ * single catalogue in `src/lib/sources/catalogue.ts`. The re-export stays because
+ * `/sources` and the ADV-4B gate both reference these names, and because this
+ * file is where the "a page may only export the route contract" rule sends
+ * anything a page needs to import.
+ */
+export { DECLARED_SOURCES, SOURCE_COPY } from "./sources/catalogue";
 
 /**
  * Where Arabic changes the counted form. CLDR gives it six categories against

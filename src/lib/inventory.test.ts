@@ -6,7 +6,7 @@ import {
   SIMULATED_FLAG,
   SIMULATED_VISIBLE,
   SIMULATED_VISIBLE_MARKER,
-  realInventoryOnly,
+  withoutFlaggedSimulatedRows,
   releaseVisibleInventory,
   simulatedRowsAreLabelled,
 } from "@/lib/inventory";
@@ -21,7 +21,7 @@ import {
 // counts agreed with reality only because no simulated row happened to be published
 // on the day they were read.
 //
-// So this file does not test `realInventoryOnly`. It tests that nothing publishes a
+// So this file does not test `withoutFlaggedSimulatedRows`. It tests that nothing publishes a
 // count without it. A helper nothing calls is worth nothing, which is Codex boundary
 // 7 stated as a test rather than as an intention.
 //
@@ -58,7 +58,7 @@ const SURFACE_ROOTS = ["src/app"];
 // it looks for finds itself and reports the guard as the breach.
 const FROM_LISTINGS = new RegExp('from\\(\\s*"' + "list" + 'ings"\\s*\\)', "g");
 const PUBLISHED = '"' + "publish" + 'ed"';
-const STRICT = "real" + "InventoryOnly(";
+const STRICT = "without" + "FlaggedSimulatedRows(";
 const RELEASE_SCOPED = "release" + "VisibleInventory(";
 const APPLIED = [STRICT, RELEASE_SCOPED];
 
@@ -162,7 +162,7 @@ test("the filter reads null and false alike as real inventory", () => {
   // shrink, so the predicate must be the negative one.
   const calls: any[] = [];
   const q = { not: (...a: any[]) => (calls.push(a), q) };
-  realInventoryOnly(q);
+  withoutFlaggedSimulatedRows(q);
   assert.deepEqual(calls, [[SIMULATED_FLAG, "is", true]]);
 });
 
@@ -213,7 +213,7 @@ test("a simulated row is shown exactly when something is labelling it", () => {
     const calls: any[] = [];
     const q = { not: (...a: any[]) => (calls.push(a), q) };
     delete process.env.SITE_ENV;
-    realInventoryOnly(q);
+    withoutFlaggedSimulatedRows(q);
     assert.deepEqual(calls, [[SIMULATED_FLAG, "is", true]]);
   } finally {
     if (before.s === undefined) delete process.env.SITE_ENV;
@@ -236,4 +236,39 @@ test("the banner and the filter read one predicate, not two copies of it", () =>
     !new RegExp("process" + "\\.env\\.[A-Z_]*SITE_ENV").test(s),
     "the layout reads the environment directly again instead of asking the one predicate",
   );
+});
+
+// ADV-1C.1 correction 1. The rename is the visible half; this is the half that
+// makes it more than cosmetic.
+
+test("ADV-1C.1: the claiming name is gone from the codebase, not just from this file", () => {
+  const banned = "real" + "InventoryOnly";
+  // `src` only, and typed source only. The documents keep the old name on
+  // purpose: findings 78 and 79 are the record of what was shipped, and rewriting
+  // history to match a rename would destroy the evidence the rename came from.
+  //
+  // Comments are stripped for the same reason `catalogue.test.ts` strips them: two
+  // files here explain at length which name they used to have and why it was
+  // wrong, and a scan that reads its own explanation reports the correction as the
+  // breach.
+  const strip = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+  const offenders = walk("src").filter((f) => strip(fs.readFileSync(f, "utf8")).includes(banned));
+  assert.deepEqual(
+    offenders,
+    [],
+    "a helper is still called real inventory, which is a claim its single demo predicate cannot support",
+  );
+});
+
+test("ADV-1C.1: the exclusion predicate makes no claim about what is left", () => {
+  // The whole correction in one assertion. The function excludes flagged rows.
+  // It must not consult, and cannot answer, authorisation, freshness or the
+  // release state, because those are the facts the old name implied it had read.
+  const src = fs.readFileSync("src/lib/inventory.ts", "utf8");
+  const body = src.slice(src.indexOf("export function without" + "FlaggedSimulatedRows"));
+  const decl = body.slice(0, body.indexOf("\n}"));
+  assert.ok(decl.includes("SIMULATED_" + "FLAG"), "the predicate no longer reads the simulated flag");
+  for (const word of ["authoriz", "authoris", "fresh", "SITE_ENV", "simulatedRows" + "AreLabelled"]) {
+    assert.equal(decl.includes(word), false, `the exclusion predicate reads ${word}, which is another fact's job`);
+  }
 });

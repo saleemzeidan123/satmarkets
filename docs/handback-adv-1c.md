@@ -17,6 +17,22 @@ The eleven corrections and boundaries are answered one by one below. Two of them
 work streams; two more (boundaries 1 and 2) were record corrections that had to land
 before anything could be built on top of them.
 
+## What this package closes, and what it does not
+
+NARROWED AT ADV-1C.1, on Codex correction 3. ADV-1C is recorded as closing the Evidence
+Passport producer, the public permission boundary, the first runtime surface and the
+reachability gate. It is NOT recorded as closing the Evidence Passport product outcome, and
+it is not recorded as closing strategic ADV-1.
+
+Those stay open until at least one real, rights-cleared material figure is rendered with its
+complete evidence, and until the agreed public surfaces are progressively integrated. One
+detail route carrying the whole demonstration is a first surface, not a product. Findings 80
+and 81 remain legitimately open and are not folded into any closure sentence here.
+
+The reason for writing the narrower sentence rather than the broader one is the same reason
+finding 88 exists. A closure record that overstates by one clause is read by the next
+package as ground it does not have to check.
+
 ## Commits
 
 | Commit | What it carries |
@@ -263,7 +279,11 @@ first-party figures, an owner and terms question), 81 (five unreachable library 
 
 The ADV-1 append-only field-level correction write path originates with ADV-6 and is not
 in this package. No authorised internal evidence view exists yet, stated above. The source
-register is empty, which is what limits the passport to one surface. Finding 80 should be
+register returns no rows to the public runtime, which is what limits the passport to one
+surface. CORRECTED AT ADV-1C.1: this sentence read "the source register is empty", and that
+was false. The register holds nine reviewed rows; the public anon reader receives none of
+them. Finding 88 records the defect that produced the wrong sentence and the evidence for
+the corrected one. Finding 80 should be
 closed before any bulk export feature or any retrieval path that would feed a lister's
 figures to a model. Owner ruling 7 continues to hold: no service purchased, no vendor
 contacted, no data right represented.

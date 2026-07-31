@@ -46,6 +46,7 @@ const SOURCES = read("src/app/[locale]/sources/page.tsx");
 const BILINGUAL = read("src/app/[locale]/bilingual/page.tsx");
 const FOOTER = read("src/components/SatFooter.tsx");
 const LEDGER = read("supabase/migrations/20260728_source_rights_ledger.sql");
+const SOURCE_RIGHTS_QUERY = read("src/lib/queries/sourceRights.ts");
 
 const EN = JSON.parse(read("src/i18n/dictionaries/en.json")) as Record<string, Record<string, string>>;
 const AR = JSON.parse(read("src/i18n/dictionaries/ar.json")) as Record<string, Record<string, string>>;
@@ -233,16 +234,71 @@ test("ADV-4B: the sources page withholds the three fields it is not allowed to p
   }
 });
 
-test("ADV-4B: the sources page has a controlled state for a register it cannot read", () => {
-  // getAllSourceRights returns an EMPTY MAP on every failure path rather than
-  // throwing. An empty map rendered as an empty table reads as "no sources",
-  // which is the one thing it does not mean.
-  assert.match(SOURCES, /register\.size === 0/, "the empty register is no longer handled explicitly");
+test("ADV-4B, ADV-1C.1: the sources page tells the four register outcomes apart", () => {
+  // The loader returns an EMPTY MAP on every failure path rather than throwing,
+  // and this page used to ask `register.size === 0` and print one sentence for
+  // all of them. An empty map rendered as one generic sentence reads as "no
+  // sources", which is the one thing it does not mean, and it is what put the
+  // false claim "the source register is empty" into the ADV-1C handback.
+  //
+  // Codex gate: unavailable states remain semantically distinct. So the page
+  // must branch on the state rather than on the size, and each state must have
+  // its own copy in both languages.
+  assert.match(SOURCES_CODE, /read\.state !== "loaded"/, "the page no longer branches on the register state");
+  assert.equal(
+    /register\.size === 0/.test(SOURCES_CODE),
+    false,
+    "the page is back to inferring the register state from the map size",
+  );
+
+  const states = ["not_configured", "read_failed", "no_rows_visible"];
+  for (const s of states) {
+    assert.match(SOURCES_CODE, new RegExp(`\\b${s}\\b`), `the page has no branch for ${s}`);
+  }
+
+  const perState = ["regNotConfiguredT", "regNotConfiguredB", "regReadFailedT", "regReadFailedB", "regNoRowsT", "regNoRowsB"];
   for (const [name, dict] of [["en", EN], ["ar", AR]] as const) {
-    for (const k of ["unavailableTitle", "unavailableBody", "notRecorded"]) {
+    for (const k of [...perState, "notRecorded"]) {
       assert.ok((dict.sources?.[k] ?? "").trim().length > 0, `${name}: sources.${k} is missing`);
     }
   }
+
+  // Distinct keys are worth nothing if they carry the same sentence. The whole
+  // correction is that these three facts read differently to a human.
+  for (const [name, dict] of [["en", EN], ["ar", AR]] as const) {
+    for (const suffix of ["T", "B"]) {
+      const texts = perState
+        .filter((k) => k.endsWith(suffix))
+        .map((k) => (dict.sources?.[k] ?? "").trim());
+      assert.equal(new Set(texts).size, texts.length, `${name}: two register states share the same ${suffix} copy`);
+    }
+  }
+
+  // The old generic pair must not come back under its old name.
+  for (const [name, dict] of [["en", EN], ["ar", AR]] as const) {
+    for (const k of ["unavailableTitle", "unavailableBody"]) {
+      assert.equal(dict.sources?.[k], undefined, `${name}: the collapsed sources.${k} has returned`);
+    }
+  }
+});
+
+test("ADV-1C.1: every register state denies, so the state is reported and never acted on", () => {
+  // The four states exist to describe what happened, not to change what is
+  // permitted. If a future edit let one of them carry rights, the page could
+  // publish a figure on the strength of a failed read.
+  assert.match(SOURCE_RIGHTS_QUERY, /const EMPTY = \(state: SourceRegisterState\)/, "the deny-on-failure constructor is gone");
+  const branches = [...SOURCE_RIGHTS_QUERY.matchAll(/EMPTY\("([a-z_]+)"\)/g)].map((m) => m[1]);
+  for (const s of ["not_configured", "read_failed", "no_rows_visible"]) {
+    assert.ok(branches.includes(s), `${s} no longer returns through the empty, denying constructor`);
+  }
+  assert.match(
+    SOURCE_RIGHTS_QUERY,
+    /rights: new Map\(\)/,
+    "the non-loaded states no longer carry an empty rights map",
+  );
+  // Exactly one branch may return rows.
+  const loaded = [...SOURCE_RIGHTS_QUERY.matchAll(/state: "loaded"/g)].length;
+  assert.equal(loaded, 1, "there is more than one path that reports a loaded register");
 });
 
 test("ADV-4B, D26: the sources page states that the portals are never scraped", () => {

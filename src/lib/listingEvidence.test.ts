@@ -187,13 +187,31 @@ test("a stated area does not age, because it does not decay on a clock", () => {
   const old = listingEvidenceViews(lease({ availability_confirmed_at: iso(4000) }), opts).find((v) => v.field === "area_sqm")!;
   assert.equal(old.freshness, "unknown");
   assert.ok(!old.states.includes("stale"));
-  assert.equal(old.state, "held");
 });
 
-test("a fresh figure is held, and held is the only state it is in", () => {
+test("ADV-1C.1: a lister figure is shown as supplied, because nothing here checks a number", () => {
+  // This test used to assert `held`, and `held` was wrong. Every verification
+  // record a listing carries is a check on the FILING: who owns it, who is
+  // authorised, whether there is a right to market, whether the advertisement is
+  // permitted. None of them is a measurement of an area or a document
+  // evidencing a rent. Codex correction 5 requires "supplied but not
+  // independently verified" to be its own reading, and on a listing today that
+  // is what every entered figure is.
   const v = listingEvidenceViews(lease(), opts).find((x) => x.field === "asking_rent_sqm")!;
-  assert.deepEqual(v.states, ["held"]);
-  assert.equal(v.value, formatWithUnit(1450, "sar_sqm_year", "en", "short", 0));
+  assert.deepEqual(v.states, ["unverified"]);
+  assert.equal(v.value, formatWithUnit(1450, "sar_sqm_year", "en", "short", 0), "the figure is still shown");
+
+  const area = listingEvidenceViews(lease(), opts).find((x) => x.field === "area_sqm")!;
+  assert.ok(area.states.includes("unverified"));
+
+  // And the filing checks are still carried, so the page can state them where
+  // they belong. Qualifying the number did not cost the reader the other record.
+  assert.ok(v.verification.length > 0, "the filing checks stopped travelling with the figure");
+  assert.equal(
+    v.verification.some((r) => r.dimension === "measurement" || r.dimension === "document"),
+    false,
+    "a listing now carries a check on the value itself, so this test is measuring the wrong thing",
+  );
 });
 
 test("a computed figure says so in its state, every time", () => {

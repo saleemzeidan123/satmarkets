@@ -881,7 +881,12 @@
     "dsName": "Saudi Commercial Rent Index",
     "dsDesc": "Commercial rent figures derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Cells that do not clear a minimum transaction count are shown blank rather than estimated. Indicative market context, not advice.",
     "dsBasedOn": "REGA Rental Index (Ejar), registered rental contracts",
-    "dsCoverage": "Riyadh, Saudi Arabia"
+    "dsCoverage": "Riyadh, Saudi Arabia",
+    "eviTitle": "Evidence for each figure",
+    "eviBody": "Each figure above carries its full record: the kind of statistic, the unit, the source, what SAT did to the number, the reporting period, sample sufficiency, freshness and what the licence permits. Open a figure to read it.",
+    "eviAverage": "Average",
+    "eviBand": "Band",
+    "eviNone": "No published cells, so there is nothing to evidence yet."
   },
   "postReq": {
     "submitError": "Something interrupted the submission. Please try again.",
@@ -1674,8 +1679,12 @@
     "gapBody": "The Rent Index republishes benchmarks derived from the REGA Rental Index (Ejar). Republishing the source's own published average with its attribution is one permission. Deriving a new figure from it, exporting it, and letting the assistant retrieve it are three further permissions, and the register records those as not established. Until they are, the derived, export and retrieval columns on that row stay closed. This is carried as an open owner decision rather than resolved in our own favour.",
     "notShownTitle": "What this page does not show",
     "notShownBody": "Three things are held back deliberately. The internal reasoning behind a refusal quotes licence terms we are not free to republish. The stop condition and the review note are recorded in one language only, so publishing them would put English text on the Arabic page and break the parity rule. And no licensor is named on a prohibited row, because naming them would republish the term we are respecting.",
-    "unavailableTitle": "The register could not be read",
-    "unavailableBody": "This page renders the live register rather than a copy of it. When the register cannot be read, this message appears in place of the table, because an empty table would read as an empty register.",
+    "regNotConfiguredT": "The register is not connected in this deployment",
+    "regNotConfiguredB": "This build carries no database credentials, so no read of the register was attempted at all. Nothing is inferred from that silence. Every source is treated as permitting nothing until its own row has been read.",
+    "regReadFailedT": "The register could not be read",
+    "regReadFailedB": "The read was attempted and it failed. That is a fault on our side and not a statement about any licence. Until it succeeds, every source is treated as permitting nothing.",
+    "regNoRowsT": "The register returned no rows to this page",
+    "regNoRowsB": "The read succeeded and came back with nothing in it. Either the register holds no rows, or this page is not permitted to read the rows it holds, and the response cannot tell those two apart. We do not guess between them. Either way, every source is treated as permitting nothing.",
     "sGastatT": "GASTAT and central bank published statistics",
     "sGastatB": "Official published statistics. The published terms permit republication, including commercial republication, with attribution. That is a republication right and not a model-input right, which is exactly why the two are separate columns.",
     "sRegaT": "REGA Rental Index (Ejar)",

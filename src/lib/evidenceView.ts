@@ -37,13 +37,29 @@
 //
 // WHAT THE LIVE REGISTER SAYS TODAY, AND WHY IT SHAPES THE DEFAULT.
 //
-// Read at ADV-1C on the deployed preview: `/en/sources` renders "The register
-// could not be read", which is the `register.size === 0` branch. There is no
-// external source rights row in production. So every `tier: "sourced"` passport
-// resolves to `unavailable` today, and the only figures that can lawfully carry
+// CORRECTED AT ADV-1C.1. The ADV-1C note here said "there is no external source
+// rights row in production". That was wrong, and the reason it was wrong is
+// finding 88: the loader collapsed four different outcomes into one empty map,
+// and `/sources` printed one sentence for all of them, so "the read returned
+// nothing to this reader" was read as "nothing is recorded".
+//
+// What the evidence actually supports. The rights ledger migration writes nine
+// reviewed rows into `public.source_registry` and records that it was applied to
+// production. On the same deployed preview, `/en/rent-index` reads
+// `rent_index_published` through the same anon client and returns rows, while
+// `/en/sources` returns none. Supabase is configured, reachable and readable;
+// `source_registry` specifically returns nothing to the public runtime, which is
+// what row-level security with no SELECT policy produces: HTTP 200, no error,
+// zero rows. Whether the register holds nothing or shows this reader nothing is
+// not something the response can tell us, and we do not guess.
+//
+// What that means for this module is unchanged, and deliberately so. The public
+// runtime cannot read a rights row, so every `tier: "sourced"` passport resolves
+// to `permission_unrecorded` today, and the only figures that can lawfully carry
 // a public passport are the exchange's own: entered by a lister, verified by
-// SAT, or computed by SAT from those. That is not a limitation to work around,
-// it is the answer, and the view states it rather than hiding it.
+// SAT, or computed by SAT from those. The correction is to the STATEMENT, not to
+// the behaviour: an unreadable register and an empty one deny identically, and
+// they must, because the alternative is publishing on the strength of a silence.
 //
 // Owner ruling 7 and Codex boundary 10 both point the same way: no gated feature
 // is enabled before the permission exists, and no missing evidence is filled
@@ -59,14 +75,15 @@ import {
   type Transformation,
   type VerificationDimension,
   type VerificationState,
+  anyVerified,
   freshnessOf,
   isRetracted,
   latestCorrection,
   publishability,
   verificationStateOf,
 } from "./evidence";
+import { effectivePolicy } from "./sourceRights";
 import type { SourceRights, UsePolicy } from "./sourceRights";
-import { RENT_INDEX_SOURCE } from "./market/attribution";
 
 // ---------------------------------------------------------------------------
 // The states a figure can be in
@@ -80,23 +97,46 @@ import { RENT_INDEX_SOURCE } from "./market/attribution";
  * that receives `restricted` says we hold it and may not show it here. Those are
  * different sentences and a reader deserves the right one.
  *
- *   held         publishable, nothing qualifying it
- *   empty        no value: we do not hold this
- *   retracted    the latest correction withdrew it, so there is no value to show
- *   restricted   a rights row exists and its policy denies this audience
- *   unavailable  no rights row could be read, so permission is not established
- *   insufficient the sample behind it does not support a figure
- *   stale        past the tolerance the field itself declares
- *   corrected    shown, with a correction history a reader can see
- *   derived      SAT changed it: aggregated, derived or modelled, never as published
+ *   held                  sourced or checked within a defined scope, nothing qualifying it
+ *   empty                 not supplied: we do not hold this
+ *   retracted             the latest correction withdrew it, so there is no value to show
+ *   restricted            access restricted: a rights row exists and its policy denies this audience
+ *   permission_unrecorded no rights row could be read, so permission is not established
+ *   insufficient          the sample behind it does not support a figure
+ *   check_unavailable     a check was recorded and its outcome is not known to us
+ *   unverified            supplied to us and shown as supplied, not independently checked
+ *   stale                 past the tolerance the field itself declares
+ *   corrected             shown, with a correction history a reader can see
+ *   derived               SAT changed it: aggregated, derived or modelled, never as published
+ *
+ * ADV-1C.1 correction 5. Codex named seven things a reader must be able to tell
+ * apart and ruled that they must not collapse into one generic unavailable
+ * state. Each now has its own member:
+ *
+ *   not supplied                          -> empty
+ *   supplied but not independently verified -> unverified
+ *   verification unavailable              -> check_unavailable
+ *   stale                                 -> stale
+ *   insufficient                          -> insufficient
+ *   access restricted                     -> restricted
+ *   sourced and verified within a scope   -> held
+ *
+ * `unavailable` was renamed to `permission_unrecorded` in the same pass. It was
+ * the only member of this union whose name described how it feels to a reader
+ * rather than what it says, and "unavailable" is the exact word Codex ruled must
+ * stop standing in for several different facts. It is a statement about a
+ * MISSING PERMISSION RECORD and about nothing else: not about the figure, not
+ * about the source, and not about whether we hold the value.
  */
 export type EvidenceState =
   | "held"
   | "empty"
   | "retracted"
   | "restricted"
-  | "unavailable"
+  | "permission_unrecorded"
   | "insufficient"
+  | "check_unavailable"
+  | "unverified"
   | "stale"
   | "corrected"
   | "derived";
@@ -110,8 +150,14 @@ const STATE_ORDER: readonly EvidenceState[] = [
   "retracted",
   "empty",
   "restricted",
-  "unavailable",
+  "permission_unrecorded",
   "insufficient",
+  // The two checking states sit below the five that withhold a figure and above
+  // the three that qualify a shown one, because they are neither: the value is
+  // shown, and what is missing is our own check rather than the value or the
+  // right to display it.
+  "check_unavailable",
+  "unverified",
   "stale",
   "corrected",
   "derived",
@@ -120,11 +166,13 @@ const STATE_ORDER: readonly EvidenceState[] = [
 
 const STATE_LABEL: Record<EvidenceState, [string, string]> = {
   held: ["Evidence held", "الدليل متوفر"],
-  empty: ["Not held", "غير متوفر لدينا"],
+  empty: ["Not supplied", "لم تُقدَّم"],
   retracted: ["Withdrawn", "مسحوب"],
   restricted: ["Not shown here", "غير معروض هنا"],
-  unavailable: ["Permission not established", "الإذن غير مثبت"],
+  permission_unrecorded: ["Permission not recorded", "الإذن غير مسجّل"],
   insufficient: ["Sample not sufficient", "العينة غير كافية"],
+  check_unavailable: ["Check unavailable", "التحقق غير متاح"],
+  unverified: ["Shown as supplied", "معروضة كما قُدِّمت"],
   stale: ["Out of date", "غير محدّث"],
   corrected: ["Corrected", "مصحّح"],
   derived: ["Derived by SAT", "اشتقّته سات"],
@@ -145,8 +193,8 @@ const STATE_NOTE: Record<EvidenceState, [string, string]> = {
     "نحتفظ بهذه القيمة، والسجل الذي خلفها يسمح بعرضها هنا.",
   ],
   empty: [
-    "We do not hold this value. Nothing is estimated in its place.",
-    "لا نحتفظ بهذه القيمة، ولا نضع تقديراً مكانها.",
+    "This was not supplied to us, so we do not hold it. Nothing is estimated in its place.",
+    "لم تُقدَّم إلينا هذه القيمة فلا نحتفظ بها، ولا نضع تقديراً مكانها.",
   ],
   retracted: [
     "A correction withdrew this value, so it is no longer stated. The record of the withdrawal stays.",
@@ -156,9 +204,17 @@ const STATE_NOTE: Record<EvidenceState, [string, string]> = {
     "The permission recorded for this source does not cover showing the value to this audience.",
     "الإذن المسجّل لهذا المصدر لا يشمل عرض القيمة لهذه الفئة.",
   ],
-  unavailable: [
-    "No permission record could be read for this source, so the value is not shown. An unread permission is not a permission.",
-    "تعذّرت قراءة سجل الإذن لهذا المصدر، فلم تُعرض القيمة. والإذن غير المقروء ليس إذناً.",
+  permission_unrecorded: [
+    "No permission record could be read for this source, so the value is not shown. This says nothing about the source or the value: an unread permission is simply not a permission.",
+    "تعذّرت قراءة سجل الإذن لهذا المصدر، فلم تُعرض القيمة. ولا يقول هذا شيئاً عن المصدر ولا عن القيمة، فالإذن غير المقروء ليس إذناً.",
+  ],
+  check_unavailable: [
+    "A check was recorded for this and its outcome is not known to us. That is a gap in our checking, not a finding about the value.",
+    "سُجّل فحص لهذه القيمة ولا نعرف نتيجته. وهذا نقص في فحصنا لا حكم على القيمة.",
+  ],
+  unverified: [
+    "This was supplied to us and is shown as supplied. We have not matched it against an independent record, and we do not present it as checked.",
+    "قُدِّمت إلينا هذه القيمة وتُعرض كما قُدِّمت. ولم نطابقها مع سجل مستقل، ولا نقدّمها على أنها مُتحقَّق منها.",
   ],
   insufficient: [
     "The records behind this do not amount to a figure, so no figure is stated.",
@@ -245,31 +301,14 @@ export const FIRST_PARTY_PERMISSIONS: EvidencePermissions = {
  * `/sources`. The owner is the body that published the data, and it is a name,
  * so it needs both languages or it breaks parity on the Arabic page.
  *
- * An id with no entry falls back to the id itself, which is a single token in
- * Latin characters and reads the same in both languages. A source added to the
- * register tomorrow therefore appears unlabelled rather than nameless.
+ * ADV-1C.1 correction 2: this table used to be declared here, a second hand
+ * written list of the same nine ids `/sources` declared separately. Both now
+ * read the one catalogue. Re-exported rather than re-pointed at every call site
+ * because the passport is what a reader sees the name in, so this module is
+ * where a reader of the code expects to find it.
  */
-const SOURCE_OWNER: Record<string, [string, string]> = {
-  gastat_sama: ["General Authority for Statistics and SAMA", "الهيئة العامة للإحصاء ومؤسسة النقد"],
-  // Not a hand-written name. Owner ruling 2 requires every Rent Index reference
-  // to carry the canonical attribution, and a second spelling of it living in
-  // this table is exactly the defect `market/attribution.ts` was created to end.
-  // The passport row is headed "Source", so the canonical clause is also the
-  // right thing to print there.
-  rega_ejar: [RENT_INDEX_SOURCE.en, RENT_INDEX_SOURCE.ar],
-  rega_permit: ["Real Estate General Authority", "الهيئة العامة للعقار"],
-  wathq_deeds: ["Ministry of Justice, through Wathq", "وزارة العدل، عبر وثق"],
-  nafath: ["National Single Sign On (Nafath)", "النفاذ الوطني الموحد (نفاذ)"],
-  spl_address: ["Saudi Post (SPL) National Address", "البريد السعودي (سبل) العنوان الوطني"],
-  fsq_os_places: ["Foursquare Open Source Places", "فورسكوير للأماكن مفتوحة المصدر"],
-  foursquare_mapbox: ["Foursquare, through Mapbox", "فورسكوير، عبر ماببوكس"],
-  broker_overlay: ["Licensed brokers filing on SAT Markets", "وسطاء مرخّصون يودعون عبر سات ماركتس"],
-};
-
-export function sourceOwnerLabel(sourceId: string, ar: boolean): string {
-  const e = SOURCE_OWNER[sourceId];
-  return e ? e[ar ? 1 : 0] : sourceId;
-}
+export { sourceOwnerLabel } from "./sources/catalogue";
+import { sourceOwnerLabel } from "./sources/catalogue";
 
 export type PublicSourceRef = {
   /** The registered id, which is already public on /sources. */
@@ -393,11 +432,22 @@ export function publicEvidenceView(
   } else if (!ctx.rights || ctx.rights.sourceId !== p.sourceId) {
     permissions = { display: "unknown", export: "unknown", aiUse: "unknown" };
   } else {
+    // Finding 89. These used to be the raw policy columns, and a raw column is
+    // not what applies. `rights_status` places a downward ceiling on every one
+    // of them, so a row reading `redisplay_policy = 'public'` at
+    // `rights_status = 'asserted_unverified'` effectively permits internal use
+    // only. Reporting the column would have printed "Permitted" beside a value
+    // that `publishability` had already withheld for exactly that reason, and
+    // it would have kept `restricted` out of the state set below, leaving the
+    // reader with a permission, a blank, and no explanation of either.
+    //
+    // `effectivePolicy` is the same computation the enforcement path runs, so
+    // what is shown and what is applied can no longer disagree.
     const asPublished = p.transformation === "as_published" || p.transformation === "unit_converted";
     permissions = {
-      display: asPublished ? ctx.rights.redisplayPolicy : ctx.rights.derivedDisplayPolicy,
-      export: ctx.rights.exportPolicy,
-      aiUse: ctx.rights.aiRetrievalPolicy,
+      display: effectivePolicy(ctx.rights, asPublished ? "redisplay" : "derived_display"),
+      export: effectivePolicy(ctx.rights, "export"),
+      aiUse: effectivePolicy(ctx.rights, "ai_retrieval"),
     };
   }
 
@@ -471,9 +521,27 @@ const DISQUALIFYING: readonly EvidenceState[] = [
   "retracted",
   "empty",
   "restricted",
-  "unavailable",
+  "permission_unrecorded",
   "insufficient",
 ];
+
+// The two checking states are deliberately NOT in that list. Neither withholds a
+// figure: `unverified` says the value is shown as it was supplied, and
+// `check_unavailable` says our own check has no recorded outcome. Adding either
+// here would make a shown figure look like a withheld one, which is precisely
+// the confusion Codex correction 5 is about.
+
+/**
+ * The verification dimensions that are a check on the VALUE.
+ *
+ * `measurement` is an area someone measured. `document` is a figure evidenced by
+ * a filed document. Everything else in `VerificationDimension` is a check on the
+ * party, the filing or the right to advertise, and none of those makes a number
+ * true. Kept as an explicit list rather than an exclusion so that a dimension
+ * added tomorrow is unverifying by default: a new check has to be argued into
+ * this list, not out of it.
+ */
+const VALUE_DIMENSIONS: readonly VerificationDimension[] = ["measurement", "document"];
 
 function statesOf(
   p: EvidencePassport,
@@ -503,9 +571,38 @@ function statesOf(
   // tell apart are here: no readable row is "permission not established", a
   // readable row that says no is "permission refused".
   if (p.tier === "sourced") {
-    if (!ctx.rights || ctx.rights.sourceId !== p.sourceId) set.add("unavailable");
+    if (!ctx.rights || ctx.rights.sourceId !== p.sourceId) set.add("permission_unrecorded");
     else if (permissions.display !== "public") set.add("restricted");
   }
+
+  // Checking, which is a different question from permission and from sample.
+  //
+  // Codex correction 5 asks that "supplied but not independently verified" and
+  // "verification unavailable" stop being read as the same thing, and that
+  // neither be read as the platform having tried to verify and failed.
+  //
+  // Only checks on the FIGURE count here, which is a narrower set than the
+  // records a passport carries. `listingEvidence.ts` attaches the filing checks
+  // to every figure on a listing and says in its own comment that they are not a
+  // check on the number: ownership, authorisation, the right to market and the
+  // advertising permit are facts about the party who filed, not about the value
+  // they filed. Reading them as checks on the value would clear an unmeasured
+  // area as verified because its lister proved they own the building, which is
+  // the exact conflation the per-field passport exists to end.
+  const checks = (p.verification ?? []).filter((r) => VALUE_DIMENSIONS.includes(r.dimension));
+
+  // `check_unavailable` reads the STORED state rather than the resolved one.
+  // `verificationStateOf` demotes a stored `unknown` to `not_verified`, which is
+  // the right resolution for deciding whether to claim a check but the wrong
+  // input for describing one: it turns "we do not know the outcome" into "it did
+  // not pass". A seeded record is excluded because a fixture is not an attempted
+  // check, and it is already answered by `unverified` below.
+  if (checks.some((r) => r.isDemo !== true && r.state === "unknown")) set.add("check_unavailable");
+
+  // `unverified` is a statement about a value someone gave us. A computed or
+  // sourced figure is not "supplied to us", so the state would be a category
+  // error there: what those two carry instead is `derived` and a source.
+  if (p.tier === "entered" && !anyVerified(checks)) set.add("unverified");
 
   // A denial with nothing above it to account for it. Subject mismatch, an
   // unlabelled statistic and a missing period all land here. The honest summary

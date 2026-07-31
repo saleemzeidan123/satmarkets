@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { locales, defaultLocale } from "@/i18n/config";
 import { PRIVATE_PREFIXES, HELD_ROUTES } from "@/lib/routePolicy";
+import { indexingPermitted } from "@/lib/launchGate";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -44,7 +45,16 @@ export async function middleware(req: NextRequest) {
   // pre-launch sample data. Connecting the real domain must not auto-index it;
   // indexing is a deliberate switch, not a side effect of DNS. Prototype and
   // account routes stay noindexed regardless of the flag.
-  const allowIndex = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
+  //
+  // ADV-1C.1 correction 1. This was one flag, and one flag was carrying two
+  // decisions: that the operator intends this host to be indexed, and that the
+  // inventory behind it is fit to be presented as production inventory. Those are
+  // made by different people at different times, and running them together meant
+  // flipping ALLOW_INDEX on launch day would have indexed a corpus every row of
+  // which is flagged simulated. `indexingPermitted()` is now the AND of two
+  // explicit switches, and the sitemap reads the same function, so a page cannot
+  // be indexable through one path and held through the other.
+  const allowIndex = indexingPermitted();
   // Prototype/account routes stay noindexed even on the production host until they
   // are real. /verify and its descendants are SAT-only operational surfaces: the
   // pages already 404 for non-SAT sessions, and this adds the response-level

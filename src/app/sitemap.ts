@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { withoutFlaggedSimulatedRows } from "@/lib/inventory";
+import { indexingPermitted, mayCountAsProductionInventory } from "@/lib/launchGate";
 import { SITE } from "@/lib/site";
 
 // SM-P1-001b. Two things were wrong here.
@@ -32,8 +33,20 @@ const LISTING_DRIVEN = new Set(["", "/listings", "/map", "/locations", "/market"
 // Indexing safety (Codex): do not emit per-listing or per-building detail URLs
 // while the catalogue is pre-launch sample data. Those pages are noindexed by
 // the middleware, so listing them here only points crawlers at throwaway URLs.
-// Gated on the same ALLOW_INDEX switch that controls indexability.
-const ALLOW_INDEX = process.env.ALLOW_INDEX === "true" || process.env.NEXT_PUBLIC_ALLOW_INDEX === "true";
+//
+// ADV-1C.1 correction 1. This used to be one module-level constant reading
+// ALLOW_INDEX, and it was read at module load, so a running deployment answered
+// with the environment it was built in. It is now `indexingPermitted()`, called
+// per request, and it is the AND of two switches: the operator intending this
+// host to be indexable, and the owner having recorded that the inventory may be
+// presented as production inventory. See `src/lib/launchGate.ts`.
+//
+// The record gate is the second half and it is the one Codex asked for by name.
+// Even with both switches on, a detail URL is emitted only when every row behind
+// it clears all four record facts. Today none of them do: every listing is
+// flagged simulated, nothing records production display authorization, and
+// nothing records an availability confirmation. So this fails closed twice over,
+// which is the intended state and not a coincidence worth relying on.
 
 const langs = (path: string) => ({
   en: `${SITE}/en${path}`,
@@ -44,7 +57,13 @@ const langs = (path: string) => ({
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [];
 
-  type Row = { id: string; created_at: string | null; updated_at: string | null };
+  type Row = {
+    id: string;
+    created_at: string | null;
+    updated_at: string | null;
+    is_demo: boolean | null;
+    availability_confirmed_at?: string | null;
+  };
   let listings: Row[] = [];
   let buildings: { id: string; created_at: string | null }[] = [];
   let newestListing: Date | undefined;
@@ -52,9 +71,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const sb = getSupabaseServer();
     if (sb) {
-      const { data } = await realInventoryOnly(sb
+      // `availability_confirmed_at` is deliberately not selected: no migration
+      // creates it, and PostgREST fails the whole query on an unknown column.
+      // Its absence is itself one of the four facts, and it reads as `unknown`,
+      // which blocks. A gate that needs a column that does not exist must block
+      // rather than error, and it must not be quietly dropped from the gate.
+      const { data } = await withoutFlaggedSimulatedRows(sb
         .from("listings")
-        .select("id,created_at,updated_at")
+        .select("id,created_at,updated_at,is_demo")
         .eq("status", "published"))
         .limit(500);
       listings = (data ?? []) as Row[];
@@ -84,7 +108,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  if (ALLOW_INDEX) for (const l of listings) {
+  // Both switches, then every row. `mayCountAsProductionInventory` returns not
+  // eligible for an empty set too, so a failed read cannot open the gate by
+  // leaving nothing to object to.
+  const detailUrlsPermitted = indexingPermitted() && mayCountAsProductionInventory(listings).eligible;
+
+  if (detailUrlsPermitted) for (const l of listings) {
     const stamp = l.updated_at || l.created_at;
     for (const loc of ["en", "ar"]) {
       entries.push({
@@ -97,7 +126,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  if (ALLOW_INDEX) for (const b of buildings) {
+  // Buildings ride on the listings verdict rather than carrying their own. A
+  // building page is a page about the spaces inside it, so indexing one while its
+  // listings are ineligible would index the same claim by another route.
+  if (detailUrlsPermitted) for (const b of buildings) {
     for (const loc of ["en", "ar"]) {
       entries.push({
         url: `${SITE}/${loc}/building/${b.id}`,

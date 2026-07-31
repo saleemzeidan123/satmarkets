@@ -179,6 +179,36 @@ function effective(policy: UsePolicy, status: RightsStatus): UsePolicy {
     : statusCeiling(status);
 }
 
+/**
+ * What a named use actually permits on this row, after the status ceiling.
+ *
+ * Finding 89. This exists because a reader was being shown the raw policy
+ * column. `evidenceView.ts` reported `display: rights.redisplayPolicy`, so a
+ * row carrying `redisplay_policy = 'public'` with `rights_status =
+ * 'asserted_unverified'` rendered "Permitted" beside a value the publish
+ * decision had withheld. Both statements were drawn from the same row and they
+ * contradicted each other, which is worse than either being wrong alone: it
+ * tells the reader the withholding is a bug.
+ *
+ * A caller that wants a yes or no asks `mayRedisplay` and the rest. A caller
+ * that has to SHOW the permission asks this, so that what is displayed and what
+ * is enforced come from one computation.
+ */
+export function effectivePolicy(
+  r: SourceRights,
+  use: "redisplay" | "derived_display" | "export" | "ai_retrieval"
+): UsePolicy {
+  const policy =
+    use === "redisplay"
+      ? r.redisplayPolicy
+      : use === "derived_display"
+        ? r.derivedDisplayPolicy
+        : use === "export"
+          ? r.exportPolicy
+          : r.aiRetrievalPolicy;
+  return effective(policy, r.rightsStatus);
+}
+
 function permits(policy: UsePolicy, r: SourceRights, audience: Audience): boolean {
   return USE_RANK[effective(policy, r.rightsStatus)] >= AUDIENCE_RANK[audience];
 }

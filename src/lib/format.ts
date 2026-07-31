@@ -119,6 +119,10 @@ export type UnitKey = keyof typeof UNITS;
 /** Legacy spellings still present in seed data and API payloads, mapped to a key. */
 const UNIT_ALIASES: Record<string, UnitKey> = {
   "sar/m2/yr": "sar_sqm_year", "sar/m²/yr": "sar_sqm_year", "sar/m²·yr": "sar_sqm_year",
+  // The exact string `rentBasePipeline.ts` writes into `index_cells.unit`, and
+  // therefore the exact string the Rent Index rows carry. It was missing, so
+  // `resolveUnitKey` answered null for the one unit the index actually uses.
+  "sar_sqm_yr": "sar_sqm_year",
   "sar/m²/year": "sar_sqm_year", "sar / m² / yr": "sar_sqm_year", "sar_sqm_year": "sar_sqm_year",
   "m2/yr": "sar_sqm_year", "m²/yr": "sar_sqm_year", "sqm/yr": "sar_sqm_year",
   "sar/m2/mo": "sar_sqm_month", "sar/m²/mo": "sar_sqm_month", "m²/mo": "sar_sqm_month", "m2/mo": "sar_sqm_month",

@@ -1,6 +1,7 @@
 import {
+  mayDisplayDerived,
+  mayRedisplay,
   type SourceRights,
-  type UsePolicy,
 } from "@/lib/sourceRights";
 
 // ADV-1. The Evidence Passport.
@@ -542,12 +543,6 @@ export type PublishContext = {
   now: number;
 };
 
-function permits(policy: UsePolicy, audience: "internal" | "public"): boolean {
-  if (policy === "public") return true;
-  if (policy === "internal") return audience === "internal";
-  return false;
-}
-
 /**
  * The single question every surface asks before rendering a value.
  *
@@ -590,9 +585,27 @@ export function publishability(
     if (rights.sourceId !== p.sourceId) return deny("rights row does not match the declared source");
     // Redisplay covers the source's own published figure. Anything we changed
     // into a number they never published is the derived question instead.
+    //
+    // Finding 89. This module used to answer that question itself, with a local
+    // three-line `permits` that read the policy column and nothing else. It was
+    // not a paraphrase of the rule in `sourceRights.ts`; it was a different
+    // rule, because it ignored `rights_status` and therefore ignored the
+    // downward ceiling that is the whole reason the column exists. For
+    // `rega_ejar`, whose `redisplay_policy` is `public` and whose
+    // `rights_status` is `asserted_unverified`, the local copy answered yes to
+    // a public audience where `mayRedisplay` answers no. The moment a rights
+    // row became readable at runtime, this file would have authorised public
+    // redisplay of a figure whose own stop condition says O10 is unresolved.
+    //
+    // The header of this module already stated the rule it was breaking: it
+    // does not restate rights, it asks the module that owns them. A second copy
+    // of a permission is a second thing to forget to update, and this is what
+    // that costs.
     const ownFigure = p.transformation === "as_published" || p.transformation === "unit_converted";
-    const policy = ownFigure ? rights.redisplayPolicy : rights.derivedDisplayPolicy;
-    if (!permits(policy, ctx.audience)) {
+    const allowed = ownFigure
+      ? mayRedisplay(rights, ctx.audience)
+      : mayDisplayDerived(rights, ctx.audience);
+    if (!allowed) {
       return deny(
         ownFigure
           ? `licence does not permit redisplay to a ${ctx.audience} audience`

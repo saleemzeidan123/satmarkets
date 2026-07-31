@@ -574,9 +574,24 @@ there being no source, which is owner-side under ruling 7.
 **Closed 2026-07-31**, commits `5654802`, `15939ec`, `874fa31`, `2d03d9f`, `8600116`, live on
 `dpl_2rQxGuzPJwFAx9gJJdbRdPaTccGQ`. Record: `docs/handback-adv-1c.md`. The passport renders on
 the listing detail page in both languages, and that is the only surface it can lawfully reach
-today because the source register is empty and every `sourced` figure therefore resolves to
-unavailable; the handback states that rather than claiming breadth. Findings 80 and 81 stay
+today because the public runtime cannot read a rights row and every `sourced` figure
+therefore resolves to permission not recorded; the handback states that rather than claiming
+breadth. CORRECTED AT ADV-1C.1: this paragraph said the source register is empty. It is not.
+Nine reviewed rows are written by `supabase/migrations/20260728_source_rights_ledger.sql`,
+and what the public runtime observes is that `source_registry` returns no rows to it. See
+finding 88. Findings 80 and 81 stay
 open by decision, and there is still no authorised internal evidence view.
+
+**What ADV-1C closes, narrowed at ADV-1C.1 on Codex correction 3.** It closes four things
+and only four: the Evidence Passport PRODUCER, the PUBLIC PERMISSION BOUNDARY, the FIRST
+RUNTIME SURFACE and the REACHABILITY GATE. It does not close the Evidence Passport product
+outcome, and it does not close strategic ADV-1. Those remain open until at least one real,
+rights-cleared material figure is rendered with its complete evidence, and until the agreed
+public surfaces are progressively integrated rather than one detail route carrying the whole
+demonstration. Findings 80 and 81 are legitimately open and are not to be swept into a
+closure sentence. The distinction matters because a passport that renders is an engineering
+result, and a passport that carries a real cleared figure is the product claim, and this
+package earned the first.
 
 **Was next.** Converted from the second strategy reconciliation, section 7. Chosen on three
 grounds rather than on preference: it is the strategy's flagship advantage; nothing gates

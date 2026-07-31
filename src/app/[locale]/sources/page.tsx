@@ -4,7 +4,7 @@ import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
-import { getAllSourceRights } from "@/lib/queries/sourceRights";
+import { readSourceRegister, type SourceRegisterState } from "@/lib/queries/sourceRights";
 import type { SourceRights, UsePolicy, ModelInputPolicy, RightsStatus } from "@/lib/sourceRights";
 import { DECLARED_SOURCES, SOURCE_COPY } from "@/lib/publishedRecords";
 
@@ -31,7 +31,20 @@ import { DECLARED_SOURCES, SOURCE_COPY } from "@/lib/publishedRecords";
 //
 // `DECLARED_SOURCES` and `SOURCE_COPY` live in `src/lib/publishedRecords.ts`
 // rather than here. A page module may only export the route contract, so an
-// extra export fails the generated route type at build time.
+// extra export fails the generated route type at build time. Since ADV-1C.1
+// they are re-exported from `src/lib/sources/catalogue.ts`, which is the one
+// place a registered source is named.
+//
+// ADV-1C.1 corrections 2 and 5. This page used to ask `register.size === 0` and
+// print one sentence, "The register could not be read", for four materially
+// different facts: no credentials in this deployment, a failed read, a
+// successful read that returned nothing, and a genuinely empty register. That
+// single sentence is what produced the false claim in the ADV-1C handback that
+// the register is empty. It now reads the discriminated `readSourceRegister()`
+// and states which of the four happened, in the reader's language, without
+// guessing between "holds no rows" and "shows this reader no rows", because a
+// PostgREST 200 with an empty body cannot tell those apart. The permission
+// outcome is identical in all three non-loaded states: everything is denied.
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").sources;
@@ -59,10 +72,20 @@ export default async function SourcesPage({ params }: { params: { locale: string
     prohibited: c.rProhibited,
   };
 
-  const register = await getAllSourceRights();
+  const read = await readSourceRegister();
+  const register = read.rights;
   // Every declared id, plus anything live that we have not declared. A register
   // row we did not expect must appear, not be filtered out by our own list.
   const ids = [...DECLARED_SOURCES, ...[...register.keys()].filter((k) => !DECLARED_SOURCES.includes(k))];
+
+  // One title and one body per non-loaded state. Spelled out rather than
+  // composed from the state name, so a state added to the union fails the
+  // compile here instead of rendering an empty card.
+  const unread: Record<Exclude<SourceRegisterState, "loaded">, [string, string]> = {
+    not_configured: [c.regNotConfiguredT, c.regNotConfiguredB],
+    read_failed: [c.regReadFailedT, c.regReadFailedB],
+    no_rows_visible: [c.regNoRowsT, c.regNoRowsB],
+  };
 
   const notes: [string, string][] = [
     [c.statusTitle, c.statusBody],
@@ -89,13 +112,13 @@ export default async function SourcesPage({ params }: { params: { locale: string
         </Reveal>
 
         <Reveal delay={80}>
-          {register.size === 0 ? (
+          {read.state !== "loaded" ? (
             <div
               className="card pad"
               style={{ marginTop: 24, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
             >
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{c.unavailableTitle}</div>
-              <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.unavailableBody}</p>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{unread[read.state][0]}</div>
+              <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{unread[read.state][1]}</p>
             </div>
           ) : (
             <>
