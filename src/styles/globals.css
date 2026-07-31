@@ -267,11 +267,13 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   /* Icon-only affordances that carry an action. .vtool controls were the one set
      the earlier pass missed, so they stayed 36px on touch. */
   .icon-btn, .iconbtn, button.icononly, .fab, .vtool span{min-height:44px;min-width:44px;}
-  /* The Evidence Passport disclosure. It is a control, it is new, and the base
-     rule gives it 40px, which is the same four pixels short the .vtool set was
-     found at above. Enumerating every interactive selector by hand is how that
-     keeps happening; finding 86 records the class. */
-  .evi>summary{min-height:44px;}
+  /* The Evidence Passport disclosure is NOT here, deliberately. Its base rule is
+     `.evi>summary`, which is specificity (0,1,1), the same as the override would
+     be, and a media query adds no specificity. The base rule is declared ~180
+     lines below this block, so a 44px floor written here loses to the 40px there
+     at every width the query matches. The floor is declared after the base rule
+     instead: search "evi-touch-floor". Finding 86 records both the class of
+     defect and the inert first attempt. */
 }
 
 /* ---- Hero asset tiles: swipeable one-line rail on mobile, centered wrap on desktop ---- */
@@ -457,6 +459,15 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .evi>summary::-webkit-details-marker{display:none;}
 .evi>summary::marker{content:"";}
 .evi>summary:focus-visible{outline:2px solid var(--azure);outline-offset:3px;border-radius:10px;}
+/* evi-touch-floor. WCAG 2.5.5 on touch layouts, and it has to sit after the base
+   rule above rather than in the enumerated tap-target block near the top of this
+   file. Both selectors are (0,1,1); a media query contributes nothing to
+   specificity, so at equal specificity the later declaration wins and the
+   earlier one is inert whether or not its query matches. The platform
+   stylesheet's `@media (pointer:coarse){...summary{min-height:44px}}` catch-all
+   does not cover this either: a bare element selector is (0,0,1) and loses to
+   any class-qualified rule regardless of order. */
+@media(max-width:1024px){.evi>summary{min-height:44px;}}
 .evi-more{font-size:11px;color:var(--slate);text-decoration:underline;text-underline-offset:3px;margin-inline-start:auto;}
 .evi[open] .evi-more{text-decoration:none;font-weight:600;}
 .evi-state{display:inline-flex;align-items:center;font-size:11px;font-weight:600;line-height:1.3;padding:3px 8px;border-radius:999px;background:var(--paper);border:1px solid var(--silver-2,var(--silver));color:var(--slate);white-space:normal;text-align:center;max-width:100%;min-width:0;}

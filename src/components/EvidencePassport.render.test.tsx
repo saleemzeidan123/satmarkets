@@ -413,35 +413,106 @@ test("render: the derived price per square metre says SAT derived it", () => {
   assert.ok(!html.includes("Stated by the lister"), "a derived figure was credited to the lister");
 });
 
-test("stylesheet: the disclosure clears 44px on touch layouts", () => {
+/**
+ * Every `min-height` this stylesheet declares for a selector, in source order,
+ * each tagged with the media conditions it sits inside.
+ *
+ * Written as a scanner rather than a regex because the question this test asks
+ * is not "does the number appear in the file" but "which declaration wins", and
+ * that needs to know what block each one is in. Comments are stripped first:
+ * one of them quotes a rule, braces and all, and a brace counter cannot tell a
+ * quoted rule from a real one.
+ */
+function minHeightsFor(css: string, selector: string): { px: number; media: string[] }[] {
+  const src = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const out: { px: number; media: string[] }[] = [];
+  const open: { cond: string; depth: number }[] = [];
+  let depth = 0;
+  let preludeStart = 0;
+  let i = 0;
+
+  while (i < src.length) {
+    const c = src[i];
+    if (c === "{") {
+      const prelude = src.slice(preludeStart, i).trim();
+      if (prelude.startsWith("@")) {
+        depth += 1;
+        open.push({ cond: prelude, depth });
+        i += 1;
+        preludeStart = i;
+        continue;
+      }
+      const end = src.indexOf("}", i);
+      const body = src.slice(i + 1, end === -1 ? src.length : end);
+      const hit = prelude
+        .split(",")
+        .map((s) => s.trim().replace(/\s*>\s*/g, ">"))
+        .includes(selector);
+      const mh = /(?:^|;)\s*min-height:\s*(\d+)px/.exec(body);
+      if (hit && mh) out.push({ px: Number(mh[1]), media: open.map((m) => m.cond) });
+      i = (end === -1 ? src.length : end) + 1;
+      preludeStart = i;
+      continue;
+    }
+    if (c === "}") {
+      if (open.length > 0 && open[open.length - 1].depth === depth) open.pop();
+      depth -= 1;
+      i += 1;
+      preludeStart = i;
+      continue;
+    }
+    i += 1;
+  }
+  return out;
+}
+
+/** Does every condition in this stack hold at viewport width `w`? */
+function appliesAt(media: string[], w: number): boolean {
+  return media.every((cond) => {
+    const max = /max-width:\s*(\d+)px/.exec(cond);
+    const min = /min-width:\s*(\d+)px/.exec(cond);
+    if (max && w > Number(max[1])) return false;
+    if (min && w < Number(min[1])) return false;
+    return true;
+  });
+}
+
+test("stylesheet: the disclosure resolves to 44px on touch layouts", () => {
   // Not a render assertion, because the height is not in the markup: the summary
   // is a bare <summary className="evi-sum"> and its size comes entirely from
   // globals.css. A test that only read the HTML would pass while the control was
   // 40px tall on every phone the platform is tested at.
   //
-  // 44px is the platform's own standard, set at line 260 of globals.css against
-  // WCAG 2.5.5 and applied there to chips, tabs, buttons and icon-only controls.
-  // The passport summary is a control by the same test: it is focusable, it is
-  // keyboard-operable, it carries cursor:pointer, and tapping it is the only way
-  // to reach the evidence. It was 40px, which is the same four pixels the .vtool
-  // set was found short by in an earlier pass.
+  // And not a presence assertion either, which is the correction this test
+  // carries. The first version asserted that a 44px rule existed in the
+  // touch-target block and that a 40px base rule existed below it. Both were
+  // true and the control was still 40px on every touch width: the two selectors
+  // are both `.evi>summary`, specificity (0,1,1), a media query adds nothing to
+  // specificity, and at equal specificity the later declaration wins. The
+  // assertion had moved one level up from the markup and still was not
+  // measuring the outcome. So this resolves the cascade: last applying
+  // declaration at the width, which is what the browser does.
+  //
+  // 44px is the platform's own standard, set against WCAG 2.5.5 and applied to
+  // chips, tabs, buttons and icon-only controls. The passport summary is a
+  // control by the same test: it is focusable, keyboard-operable, carries
+  // cursor:pointer, and tapping it is the only way to reach the evidence.
   const css = readFileSync(join(process.cwd(), "src/styles/globals.css"), "utf8");
+  const decls = minHeightsFor(css, ".evi>summary");
+  assert.ok(decls.length > 0, "no min-height is declared for the passport disclosure at all");
 
-  const at = css.indexOf("@media(max-width:1024px){");
-  assert.ok(at > 0, "the touch-target media block was renamed or removed");
-  const block = css.slice(at, css.indexOf("\n}", at));
+  // The widths the responsive probe measures, plus the media boundary itself.
+  for (const w of [320, 360, 390, 430, 768, 1024]) {
+    const winner = decls.filter((d) => appliesAt(d.media, w)).pop();
+    assert.ok(winner, `no min-height applies to the disclosure at ${w}px`);
+    assert.ok(
+      winner.px >= 44,
+      `the disclosure resolves to ${winner.px}px at ${w}px wide, under the platform's 44px`
+    );
+  }
 
-  const rule = /\.evi>summary\{[^}]*min-height:(\d+)px/.exec(block);
-  assert.ok(rule, "the passport disclosure is not in the touch-target block");
-  assert.ok(
-    Number(rule[1]) >= 44,
-    `the passport disclosure is ${rule[1]}px on touch, under the platform's 44px`
-  );
-
-  // And the base rule still sets a floor, so the control is never text-height on
-  // a pointer device either. It is declared below the media block rather than
-  // above it, which is why this reads the remainder and not the head.
-  const rest = css.slice(at + block.length);
-  const base = /\.evi>summary\{[^}]*min-height:(\d+)px/.exec(rest);
-  assert.ok(base && Number(base[1]) >= 40, "the base disclosure height floor was dropped");
+  // And a floor still holds on a pointer device, so the control is never
+  // text-height there either.
+  const desktop = decls.filter((d) => appliesAt(d.media, 1280)).pop();
+  assert.ok(desktop && desktop.px >= 40, "the base disclosure height floor was dropped");
 });
