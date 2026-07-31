@@ -571,7 +571,14 @@ there being no source, which is owner-side under ruling 7.
 
 ### ADV-1C. The Evidence Passport producer, its rendering and its gate
 
-**Next.** Converted from the second strategy reconciliation, section 7. Chosen on three
+**Closed 2026-07-31**, commits `5654802`, `15939ec`, `874fa31`, `2d03d9f`, `8600116`, live on
+`dpl_2rQxGuzPJwFAx9gJJdbRdPaTccGQ`. Record: `docs/handback-adv-1c.md`. The passport renders on
+the listing detail page in both languages, and that is the only surface it can lawfully reach
+today because the source register is empty and every `sourced` figure therefore resolves to
+unavailable; the handback states that rather than claiming breadth. Findings 80 and 81 stay
+open by decision, and there is still no authorised internal evidence view.
+
+**Was next.** Converted from the second strategy reconciliation, section 7. Chosen on three
 grounds rather than on preference: it is the strategy's flagship advantage; nothing gates
 it, because no permission, vendor, contract or owner decision stands between here and a
 rendered passport; and every remaining evidence-dependent agent item, the evidence auditor
