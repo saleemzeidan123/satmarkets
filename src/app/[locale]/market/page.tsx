@@ -2,7 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, segmentLabel } from "@/lib/labels";
 import { fill, formatCounted } from "@/lib/format";
 import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/market/verdict";
@@ -32,7 +32,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
   let locCount = 0;
   if (sb) {
     const [{ data: ls }, { data: ir }, { count }] = await Promise.all([
-      realInventoryOnly(sb.from("listings").select("asset_type,deal_type,asking_rent_sqm,district_id,building_grade").eq("status", "published")).limit(1000),
+      releaseVisibleInventory(sb.from("listings").select("asset_type,deal_type,asking_rent_sqm,district_id,building_grade").eq("status", "published")).limit(1000),
       sb.from("rent_index_published").select("district_id,district_label,district_label_ar,asset_type,segment,unit,median,band_low,band_high,period,sufficient").eq("sufficient", true),
       sb.from("districts").select("id", { count: "exact", head: true }),
     ]);

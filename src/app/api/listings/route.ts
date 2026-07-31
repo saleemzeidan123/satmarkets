@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { getSessionUser } from "@/lib/auth/session";
 import { coerceAndValidateAttributes } from "@/lib/intakeValidation";
 import { hashSource } from "@/lib/translate/translateToArabic";
@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ listings: [], note: "supabase not configured" });
   const { searchParams } = new URL(req.url);
-  let query = realInventoryOnly(supabase.from("listings").select("*").eq("status", "published")).limit(50);
+  let query = releaseVisibleInventory(supabase.from("listings").select("*").eq("status", "published")).limit(50);
   const asset = searchParams.get("asset");
   const district = searchParams.get("district");
   if (asset) query = query.eq("asset_type", asset);

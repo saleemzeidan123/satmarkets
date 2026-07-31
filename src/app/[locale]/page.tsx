@@ -2,7 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
@@ -40,9 +40,9 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const heroBands: HeroBand[] = [];
   let openReqs: number | null = null, idxSegs: number | null = null;
   if (sb) {
-    const { data } = await realInventoryOnly(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(4);
+    const { data } = await releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(4);
     rows = (data as Listing[]) ?? [];
-    const { count: lc } = await realInventoryOnly(sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published"));
+    const { count: lc } = await releaseVisibleInventory(sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published"));
     listings = lc ?? 0;
     // C4. This counted three different things and called all of them owner-verified:
     // a checked owner, a broker's authorisation to market, and the row simply being
@@ -55,7 +55,7 @@ export default async function HomePage({ params }: { params: { locale: string } 
     // resolved from, so the number on the home page and the badge on the card can
     // never disagree. It reads zero today, which is the true answer and is why the
     // tile drops out below rather than publishing a rate.
-    const { count: vc } = await realInventoryOnly(sb
+    const { count: vc } = await releaseVisibleInventory(sb
       .from("listings")
       .select("*", { count: "exact", head: true })
       .eq("status", "published"))

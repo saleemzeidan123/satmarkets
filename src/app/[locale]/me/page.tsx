@@ -3,7 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
@@ -126,7 +126,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       .limit(12);
     for (const s of (searches ?? []) as any[]) {
       const base = () => {
-        let q = realInventoryOnly(sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published"));
+        let q = releaseVisibleInventory(sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published"));
         if (s.asset_type) q = q.eq("asset_type", s.asset_type);
         if (s.district_id) q = q.eq("district_id", s.district_id);
         return q;

@@ -3,7 +3,7 @@ import { isSqmYear } from "@/lib/market/verdict";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { cityLabel } from "@/lib/labels";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -30,7 +30,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
   if (sb) {
     const [{ data: ds }, { data: ls }, { data: idx }] = await Promise.all([
       sb.from("districts").select("id,city,name_en,name_ar,kind"),
-      realInventoryOnly(sb.from("listings").select("district_id").eq("status", "published")).limit(1000),
+      releaseVisibleInventory(sb.from("listings").select("district_id").eq("status", "published")).limit(1000),
       sb.from("rent_index_published").select("district_id,asset_type,median,sufficient,unit").eq("sufficient", true).eq("asset_type", "office"),
     ]);
     const counts = new Map<string, number>();

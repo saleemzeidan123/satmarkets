@@ -2,7 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, cityLabel } from "@/lib/labels";
 import { photoFor } from "@/lib/photos";
 import ListingCard from "@/components/ListingCard";
@@ -56,7 +56,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   const b: any = await getBuildingById(params.id);
   if (!b) notFound();
   const [{ data: units }, { data: rentRows }, { data: briefs }] = await Promise.all([
-    realInventoryOnly(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("building_id", b.id).eq("status", "published")).order("created_at", { ascending: false }),
+    releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("building_id", b.id).eq("status", "published")).order("created_at", { ascending: false }),
     sb.from("rent_index_published").select("asset_type, unit, band_low, band_high, median, sufficient").eq("district_id", b.district_id).eq("asset_type", b.asset_type),
     sb.from("tenant_briefs").select("id").eq("district_id", b.district_id).eq("asset_type", b.asset_type),
   ]);

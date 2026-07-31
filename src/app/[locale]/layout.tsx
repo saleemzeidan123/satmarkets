@@ -10,14 +10,20 @@ import TabBar from "@/components/TabBar";
 import AdvisorWidget from "@/components/AdvisorWidget";
 import HtmlLangDir from "@/components/HtmlLangDir";
 import JsonLd, { ORG, website } from "@/components/JsonLd";
-
-// Preview containment (SM-P0-006). Everything on this deployment is sample data
-// until the owner sets SITE_ENV=production, so the notice is persistent and site
-// wide rather than a per-page banner that some routes forget to mount.
-const PREVIEW = (process.env.SITE_ENV ?? process.env.NEXT_PUBLIC_SITE_ENV) !== "production";
+import { simulatedRowsAreLabelled } from "@/lib/inventory";
 
 export default function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
+  // Preview containment (SM-P0-006). Everything on this deployment is sample data
+  // until the owner sets SITE_ENV=production, so the notice is persistent and site
+  // wide rather than a per-page banner that some routes forget to mount.
+  //
+  // Finding 79. The condition used to be written out here, a second copy of the
+  // rule that decides whether a simulated row may be shown at all. It is now the
+  // one predicate in `@/lib/inventory`, imported by both, so the banner cannot be
+  // up while the filter is excluding, and the filter cannot be passing rows
+  // through while nothing on the page says they are samples.
+  const PREVIEW = simulatedRowsAreLabelled();
   const locale = params.locale;
   const dict = getDictionary(locale);
   const ar = locale === "ar";

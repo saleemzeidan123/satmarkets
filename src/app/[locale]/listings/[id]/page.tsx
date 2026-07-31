@@ -2,7 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { listedSince, listedLabel } from "@/lib/listedSince";
@@ -108,11 +108,11 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   if (sb) {
     const cols = "id,title_en,title_ar,reference_code,asset_type,building_grade,area_sqm,deal_type,asking_rent_sqm,sale_price, districts(name_en,name_ar)";
     if (l.district_id) {
-      const { data: sim } = await realInventoryOnly(sb.from("listings").select(cols).eq("status", "published")).eq("district_id", l.district_id).neq("id", l.id).limit(6);
+      const { data: sim } = await releaseVisibleInventory(sb.from("listings").select(cols).eq("status", "published")).eq("district_id", l.district_id).neq("id", l.id).limit(6);
       similar = sim ?? [];
     }
     if (similar.length < 3) {
-      const { data: sim2 } = await realInventoryOnly(sb.from("listings").select(cols).eq("status", "published")).eq("asset_type", l.asset_type).neq("id", l.id).limit(8);
+      const { data: sim2 } = await releaseVisibleInventory(sb.from("listings").select(cols).eq("status", "published")).eq("asset_type", l.asset_type).neq("id", l.id).limit(8);
       const seen = new Set(similar.map((x: any) => x.id));
       (sim2 ?? []).forEach((x: any) => { if (!seen.has(x.id) && similar.length < 4) { seen.add(x.id); similar.push(x); } });
     }

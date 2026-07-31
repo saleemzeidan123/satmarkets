@@ -2,7 +2,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { SIMULATED_FLAG, SIMULATED_VISIBLE, SIMULATED_VISIBLE_MARKER, realInventoryOnly } from "@/lib/inventory";
+import {
+  SIMULATED_FLAG,
+  SIMULATED_VISIBLE,
+  SIMULATED_VISIBLE_MARKER,
+  realInventoryOnly,
+  releaseVisibleInventory,
+  simulatedRowsAreLabelled,
+} from "@/lib/inventory";
 
 // ADV-1C, finding 78. The structural gate on what may be counted as inventory.
 //
@@ -34,6 +41,16 @@ import { SIMULATED_FLAG, SIMULATED_VISIBLE, SIMULATED_VISIBLE_MARKER, realInvent
 // query read, and described its own SIMW1- reference prefix as the sim tag. Running
 // it would have added 24 synthetic spaces to every public count on the exchange, and
 // nothing in `src` could have excluded them. The seeder now sets the flag.
+//
+// WHAT THIS GATE DID NOT CATCH, AND NOW DOES.
+//
+// It passed on a tree that took the live preview to zero spaces. A structural gate
+// proves a rule is applied everywhere; it cannot prove the rule is the right one.
+// The rule was wrong: every one of the 93 listings rows is `is_demo`, so an
+// unconditional exclusion removed the whole corpus rather than a simulated slice of
+// it. Finding 79. The two tests at the end of this file are the part that would have
+// caught it, and they check behaviour in both release states rather than presence at
+// call sites.
 
 const SURFACE_ROOTS = ["src/app"];
 
@@ -41,7 +58,9 @@ const SURFACE_ROOTS = ["src/app"];
 // it looks for finds itself and reports the guard as the breach.
 const FROM_LISTINGS = new RegExp('from\\(\\s*"' + "list" + 'ings"\\s*\\)', "g");
 const PUBLISHED = '"' + "publish" + 'ed"';
-const APPLIED = "real" + "InventoryOnly(";
+const STRICT = "real" + "InventoryOnly(";
+const RELEASE_SCOPED = "release" + "VisibleInventory(";
+const APPLIED = [STRICT, RELEASE_SCOPED];
 
 function walk(dir: string, out: string[] = []): string[] {
   if (!fs.existsSync(dir)) return out;
@@ -87,7 +106,7 @@ test("the surface scan actually finds published listings queries", () => {
 });
 
 test("every published listings query is filtered or excepted", () => {
-  const bad = all.filter((s) => !s.stmt.includes(APPLIED) && !s.lead.includes(SIMULATED_VISIBLE_MARKER));
+  const bad = all.filter((s) => !APPLIED.some((a) => s.stmt.includes(a)) && !s.lead.includes(SIMULATED_VISIBLE_MARKER));
   assert.deepEqual(
     bad.map((s) => `${s.file}:${s.line}`),
     [],
@@ -125,12 +144,15 @@ test("the exception list is short and every entry is distinct", () => {
   assert.equal(new Set(SIMULATED_VISIBLE.map((e) => e.path)).size, SIMULATED_VISIBLE.length);
 });
 
-test("the sitemap never lists a simulated row", () => {
-  // The one surface where an unfiltered count would become an indexed claim rather
+test("the sitemap never lists a simulated row, in any release state", () => {
+  // The one surface where an unfiltered row would become an indexed claim rather
   // than a labelled preview figure. Codex boundary 2 names this outcome exactly.
+  // A sitemap entry carries no banner into a crawler's index, so this site takes
+  // the unconditional predicate and must never be moved to the release-scoped one.
   const s = sites("src/app/sitemap.ts");
   assert.equal(s.length, 1);
-  assert.ok(s[0].stmt.includes(APPLIED));
+  assert.ok(s[0].stmt.includes(STRICT), "the sitemap must apply the unconditional filter");
+  assert.ok(!s[0].stmt.includes(RELEASE_SCOPED), "the sitemap must not depend on the release state");
   assert.ok(!s[0].lead.includes(SIMULATED_VISIBLE_MARKER));
 });
 
@@ -157,4 +179,61 @@ test("the simulation seeder flags the rows it publishes", () => {
 test("the other seeder still agrees on which flag means simulated", () => {
   const s = fs.readFileSync("scripts/seed-demo.mjs", "utf8");
   assert.ok(s.includes(SIMULATED_FLAG), "seed-demo no longer sets the flag the public filter reads");
+});
+
+// Finding 79. The two tests below are the behavioural half. The structural tests
+// above prove the rule reaches every site; these prove the rule is the right one.
+
+test("a simulated row is shown exactly when something is labelling it", () => {
+  const before = { s: process.env.SITE_ENV, n: process.env.NEXT_PUBLIC_SITE_ENV };
+  const trace = () => {
+    const calls: any[] = [];
+    const q = { not: (...a: any[]) => (calls.push(a), q) };
+    releaseVisibleInventory(q);
+    return calls;
+  };
+  try {
+    // Preview. The banner is up on every route, so the rows it labels must reach
+    // the reader. This is the case that took the live exchange to zero spaces, and
+    // it is the whole reason this test exists.
+    delete process.env.SITE_ENV;
+    delete process.env.NEXT_PUBLIC_SITE_ENV;
+    assert.equal(simulatedRowsAreLabelled(), true, "an unset environment must be the labelled preview state");
+    assert.deepEqual(trace(), [], "the preview must not filter away the rows its own banner is labelling");
+
+    process.env.SITE_ENV = "preview";
+    assert.deepEqual(trace(), []);
+
+    // Production. Nothing labels anything, so nothing simulated may be counted.
+    process.env.SITE_ENV = "production";
+    assert.equal(simulatedRowsAreLabelled(), false);
+    assert.deepEqual(trace(), [[SIMULATED_FLAG, "is", true]]);
+
+    // And the unconditional form does not consult the release state at all.
+    const calls: any[] = [];
+    const q = { not: (...a: any[]) => (calls.push(a), q) };
+    delete process.env.SITE_ENV;
+    realInventoryOnly(q);
+    assert.deepEqual(calls, [[SIMULATED_FLAG, "is", true]]);
+  } finally {
+    if (before.s === undefined) delete process.env.SITE_ENV;
+    else process.env.SITE_ENV = before.s;
+    if (before.n === undefined) delete process.env.NEXT_PUBLIC_SITE_ENV;
+    else process.env.NEXT_PUBLIC_SITE_ENV = before.n;
+  }
+});
+
+test("the banner and the filter read one predicate, not two copies of it", () => {
+  // If the layout recomputes the release condition itself, the two can drift and
+  // the deployment can end up showing simulated rows with nothing saying so, or
+  // showing an empty exchange under a banner explaining the samples that are not
+  // there. Both halves of finding 79 are that drift.
+  const s = fs.readFileSync("src/app/[locale]/layout.tsx", "utf8");
+  const fn = "simulatedRows" + "AreLabelled";
+  assert.ok(s.includes(fn), "the layout no longer imports the shared release predicate");
+  // The comment may name the variable an operator sets. The code may not read it.
+  assert.ok(
+    !new RegExp("process" + "\\.env\\.[A-Z_]*SITE_ENV").test(s),
+    "the layout reads the environment directly again instead of asking the one predicate",
+  );
 });

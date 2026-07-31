@@ -3,7 +3,7 @@ import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -23,7 +23,7 @@ export default async function BrokersPage({ params }: { params: { locale: string
   const sb = getSupabaseServer();
   let sample: any[] = [];
   if (sb) {
-    const { data } = await realInventoryOnly(sb.from("listings").select("id,title_en,title_ar,asset_type,deal_type,asking_rent_sqm,area_sqm,districts(name_en,name_ar)").eq("status", "published")).eq("deal_type", "lease").limit(3);
+    const { data } = await releaseVisibleInventory(sb.from("listings").select("id,title_en,title_ar,asset_type,deal_type,asking_rent_sqm,area_sqm,districts(name_en,name_ar)").eq("status", "published")).eq("deal_type", "lease").limit(3);
     sample = data ?? [];
   }
   const steps: [string, string][] = [

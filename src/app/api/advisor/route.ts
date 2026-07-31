@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
   if (supabase && mode === "chat") {
     try {
       const [ls, seg] = await Promise.all([
-        realInventoryOnly(supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "published")),
+        releaseVisibleInventory(supabase.from("listings").select("*", { count: "exact", head: true }).eq("status", "published")),
         supabase.from("rent_index_published").select("*", { count: "exact", head: true }).eq("sufficient", true),
       ]);
       if (ls?.count != null && seg?.count != null) ctx = `${ls.count} published listings live on the exchange (pre-launch sample inventory) and ${seg.count} published Rent Index segments with sufficient data`;

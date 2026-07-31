@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { realInventoryOnly } from "@/lib/inventory";
+import { releaseVisibleInventory } from "@/lib/inventory";
 
 const ASSETS = ["office","retail","warehouse","medical","showroom","serviced","education"];
 const DEALS = ["lease","sale"];
@@ -143,7 +143,7 @@ export async function POST(req: NextRequest) {
  // A real count of published listings that match. Never a placeholder.
  let match = 0;
  try {
-  let q = realInventoryOnly(sb.from("listings").select("id", { count: "exact", head: true })
+  let q = releaseVisibleInventory(sb.from("listings").select("id", { count: "exact", head: true })
    .eq("status", "published")).eq("asset_type", b.asset_type).eq("deal_type", b.deal_type);
   if (districtId) q = q.eq("district_id", districtId);
   const { count } = await q;
