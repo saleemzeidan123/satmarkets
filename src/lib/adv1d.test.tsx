@@ -8,6 +8,7 @@ import {
   RENT_INDEX_MAX_AGE_DAYS,
   periodEndIso,
   rentIndexEvidenceByField,
+  rentIndexEvidenceViews,
   rentIndexPassports,
   rentIndexRecordClassOf,
   type RentIndexCell,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/sourceRights";
 import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
+import { buildValueEvidence, renderValue } from "@/lib/market/valueEvidence";
 
 //
 // ADV-1D, and four of Codex's eight required gates:
@@ -357,4 +359,184 @@ test("Codex gate: the disclosure is mounted outside the horizontally scrolling t
     code.includes("minmax(min(100%, 260px), 1fr)"),
     "the evidence grid declares a fixed minimum track, which overflows below that width",
   );
+});
+
+// ---------------------------------------------------------------------------
+// ADV-1D: a card prints the figure its own passport cleared
+// ---------------------------------------------------------------------------
+
+test("ADV-1D: the rent index evidence card prints the passport's value, not the row's", () => {
+  // The defect this closes. The card printed `d.figure`, read straight off the
+  // row and shown whenever `sufficient` is true, directly above a passport that
+  // decides separately whether the figure may be shown at all. Two answers to
+  // one question, on one card, with no rule saying they must agree.
+  const code = codeOnly(readFileSync(PAGE, "utf8"));
+  const start = code.indexOf('id="evidence"');
+  assert.ok(start > 0, "the evidence card is not where this test expects it");
+  const card = code.slice(start);
+  assert.ok(card.includes("{avg.value ?? ri.na}"), "the average tile no longer prints the passport's own value");
+  assert.ok(card.includes("{band.value ?? ri.na}"), "the band tile no longer prints the passport's own value");
+  assert.equal(/\{d\.figure\}/.test(card), false, "the evidence card prints the raw row figure again");
+  assert.equal(/\{d\.band\}/.test(card), false, "the evidence card prints the raw row band again");
+});
+
+test("ADV-1D: that fallback is reachable, so it is a state and not decoration", () => {
+  // The narrow select, expressed as data rather than as a worry. Both record
+  // class markers absent, so the class is `unknown`, the stricter sourced branch
+  // runs, no rights row is readable, and the passport withholds. The row still
+  // holds the number, which is exactly the contradiction the card would have
+  // printed.
+  const { data_class, is_demo, ...narrow } = CELL;
+  void data_class;
+  void is_demo;
+  assert.equal(rentIndexRecordClassOf(narrow), "unknown");
+  const views = rentIndexEvidenceByField(narrow, { locale: "en", geography: "Al Olaya, Riyadh", now: NOW }, null);
+  assert.equal(views.get("rent_index_average")!.value, null, "an unknown row published its value");
+  assert.equal(views.get("rent_index_band")!.value, null, "an unknown row published its band");
+  assert.equal(narrow.median, 1421, "the fixture stopped holding a figure, so this proves nothing");
+});
+
+// ---------------------------------------------------------------------------
+// ADV-1D correction 4: the Advisor published-band surface
+// ---------------------------------------------------------------------------
+
+const ADVISOR_ROUTE = "src/app/api/advisor/route.ts";
+const ADVISOR_PAGE = "src/app/[locale]/advisor/page.tsx";
+const ADVISOR_HOOK = "src/lib/useAdvisorChat.ts";
+
+/** The row the Advisor value path retrieves, with the wide select. */
+const ADVISOR_ROW = {
+  id: "ri-olaya-office-2026Q2",
+  district_label: "Al Olaya, Riyadh",
+  district_label_ar: "العليا، الرياض",
+  district_id: "d-olaya",
+  asset_type: "office",
+  segment: "all",
+  unit: "sar_sqm_yr",
+  band_low: 1250,
+  band_high: 1591,
+  median: 1421,
+  period: "2026-Q2",
+  source: "REGA Rental Index (Ejar)",
+  sufficient: true,
+  stat_kind: "average",
+  data_class: "synthetic",
+  is_demo: true,
+};
+
+test("ADV-1D: the Advisor's published-band select carries the record class, and its fallback does not buy a claim", () => {
+  const code = codeOnly(readFileSync(ADVISOR_ROUTE, "utf8"));
+  const wide = /const V_WIDE = "([^"]+)"/.exec(code);
+  const narrow = /const V_NARROW = "([^"]+)"/.exec(code);
+  assert.ok(wide, "the value path no longer declares a wide column list");
+  assert.ok(narrow, "the value path no longer declares a narrow fallback");
+  const cols = wide![1].split(",").map((s) => s.trim());
+  for (const c of ["sufficient", "stat_kind", "data_class", "is_demo"]) {
+    assert.ok(cols.includes(c), `the wide select dropped ${c}, so the passport reads it as unknown`);
+  }
+  // The fallback must be the pre-ADV-1D list. A narrow select that carried one
+  // of the four would answer with a class read from an incomplete record.
+  for (const c of ["sufficient", "stat_kind", "data_class", "is_demo"]) {
+    assert.equal(narrow![1].includes(c), false, `the narrow fallback selects ${c}, so a partial read now makes a claim`);
+  }
+  assert.match(code, /build\(V_WIDE\)/, "the wide list is declared and never used");
+  assert.match(code, /build\(V_NARROW\)/, "the narrow list is declared and never used");
+});
+
+test("Codex gate: no passport rides on an Advisor answer whose figure the licence withheld", () => {
+  const opts = { locale: "en" as const, geography: "Al Olaya, Riyadh", now: NOW };
+  // Today's corpus: flagged simulated, shown as an illustration, both figures
+  // cleared, so both passports attach.
+  const shown = rentIndexEvidenceViews(ADVISOR_ROW as RentIndexCell, opts, null).filter((v) => v.value !== null);
+  assert.equal(shown.length, 2, "the live row stopped producing the two passports the answer displays");
+
+  // The same row as a real one. No rights row is readable, so the value is
+  // withheld and nothing may be attached. The answer keeps its pre-ADV-1D shape
+  // rather than showing a figure beside a panel that refuses it.
+  const real = rentIndexEvidenceViews({ ...ADVISOR_ROW, data_class: "real", is_demo: false } as RentIndexCell, opts, null);
+  assert.equal(real.length, 2, "the producer stopped producing views for a real row");
+  assert.equal(real.filter((v) => v.value !== null).length, 0, "a withheld figure was attached to an answer anyway");
+
+  // And the route applies that predicate rather than describing it.
+  const code = codeOnly(readFileSync(ADVISOR_ROUTE, "utf8"));
+  assert.match(code, /\.filter\(\(v\) => v\.value !== null\)/, "the route stopped filtering withheld views");
+  assert.match(code, /getSourceRightsOrNull\(REGA_RENT_INDEX_SOURCE_ID\)/, "the route stopped resolving the source rights row");
+  assert.equal(
+    /[^r]getSourceRights\(/.test(code),
+    false,
+    "the denying variant is back, so an unread permission would render as a refusal",
+  );
+});
+
+test("Codex gate: the Advisor passport carries the figure the Advisor printed, in both languages", () => {
+  // Traceability stated as an equality rather than as an intention. The message
+  // is a pure function of the typed result, the typed result is a pure function
+  // of the row, and the passport is built from the same row. If any of the three
+  // stopped agreeing, the number in the panel and the number in the sentence
+  // would part company here.
+  const ev = buildValueEvidence(ADVISOR_ROW as any, null, null, { requested: null, status: "none" });
+  assert.ok(ev, "the fixture no longer forms a valid band");
+  const langs: [("en" | "ar"), string][] = [
+    ["en", "Al Olaya, Riyadh"],
+    ["ar", "العليا، الرياض"],
+  ];
+  const seen = new Map<string, string>();
+  for (const [loc, geography] of langs) {
+    const views = rentIndexEvidenceByField(ADVISOR_ROW as RentIndexCell, { locale: loc, geography, now: NOW }, null);
+    const avg = views.get("rent_index_average")!;
+    const band = views.get("rent_index_band")!;
+    const msg = renderValue(ev!, loc);
+    assert.ok(msg.includes(avg.value!), `${loc}: the answer printed an average the passport does not carry`);
+    const [low, high] = band.value!.split("–");
+    assert.ok(msg.includes(low) && msg.includes(high), `${loc}: the answer printed a band the passport does not carry`);
+    // Codex gate: EN and AR values and periods identical.
+    for (const [field, v] of views) {
+      const key = `${field}:value`;
+      const per = `${field}:period`;
+      if (seen.has(key)) {
+        assert.equal(v.value, seen.get(key), `${field}: the two languages carry different values`);
+        assert.equal(v.period, seen.get(per), `${field}: the two languages carry different periods`);
+      }
+      seen.set(key, v.value!);
+      seen.set(per, v.period!);
+    }
+  }
+  // Western numerals in Arabic (Law 4), on the figure the Arabic reader sees.
+  const arViews = rentIndexEvidenceByField(ADVISOR_ROW as RentIndexCell, { locale: "ar", geography: "العليا، الرياض", now: NOW }, null);
+  for (const [, v] of arViews) {
+    assert.equal(/[٠-٩۰-۹]/.test(v.value ?? ""), false, "an Arabic passport value used Eastern numerals");
+  }
+});
+
+test("ADV-1D: the Advisor client carries evidence and never builds it", () => {
+  const hook = codeOnly(readFileSync(ADVISOR_HOOK, "utf8"));
+  assert.equal(
+    /rentIndexEvidence|rentIndexPassports|publicEvidenceView\(/.test(hook),
+    false,
+    "the client constructs evidence, which puts the surface that displays a figure in charge of vouching for it",
+  );
+  assert.match(hook, /extra\.passports = ps/, "the value branch stopped carrying the passports through");
+  assert.match(hook, /p\.value != null/, "the client stopped dropping withheld views");
+
+  const page = codeOnly(readFileSync(ADVISOR_PAGE, "utf8"));
+  assert.equal(
+    /rentIndexEvidence|publicEvidenceView\(/.test(page),
+    false,
+    "the advisor page constructs evidence instead of rendering what it was given",
+  );
+  assert.match(page, /<EvidencePassport/, "the advisor page stopped rendering the passport");
+});
+
+test("Codex gate: the Advisor disclosure is mounted outside the fixed-height band bar", () => {
+  // The same placement rule the Rent Index follows, for the same reason. The bar
+  // is a fixed-height LTR measure with absolutely positioned children; a
+  // `<details>` inside it would expand into a box that does not grow, and the
+  // disclosure would overflow the message bubble at 320 pixels.
+  const page = codeOnly(readFileSync(ADVISOR_PAGE, "utf8"));
+  const track = page.indexOf("borderRadius: 999");
+  const mount = page.indexOf("<EvidencePassport");
+  const retry = page.indexOf("m.retry &&");
+  assert.ok(track > 0 && retry > track, "the band block is not where this test expects it");
+  assert.ok(mount > track, "the passport was mounted inside the band bar");
+  assert.ok(mount < retry, "the passport moved out of the assistant message block");
 });

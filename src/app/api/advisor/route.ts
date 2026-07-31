@@ -10,6 +10,10 @@ import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
 import { allowedSources, userHistory } from "@/lib/advisor/history";
 import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
 import { rentIndexSourceLabel } from "@/lib/market/attribution";
+import { rentIndexEvidenceViews, type RentIndexCell } from "@/lib/rentIndexEvidence";
+import { getSourceRightsOrNull } from "@/lib/queries/sourceRights";
+import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
+import type { PublicEvidenceView } from "@/lib/evidenceView";
 
 const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
 
@@ -211,8 +215,8 @@ export async function POST(req: NextRequest) {
     let band: any = null;
     if (supabase) {
       const did = await resolveDistrictId(supabase, intent?.district);
-      const scoped = () => {
-        let q = supabase.from("rent_index_published").select("id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true);
+      const scoped = (cols: string) => {
+        let q = supabase.from("rent_index_published").select(cols).eq("sufficient", true);
         if (intent?.asset) q = q.eq("asset_type", intent.asset);
         // Prefer an exact district_id match (language-independent); fall back to a
         // label ilike only when the name did not resolve to a known district.
@@ -220,18 +224,38 @@ export async function POST(req: NextRequest) {
         else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
         return q;
       };
+      // ADV-1D. Four columns the answer never needed and the Evidence Passport
+      // cannot do without: `sufficient` so the sample state is read rather than
+      // assumed from the filter, `stat_kind` so the statistic is the row's own
+      // word and not the column name (Law 6), and the two record-class markers.
+      //
+      // Two selects, exactly as `/rent-index` does it, because PostgREST fails
+      // the WHOLE query on one unknown column. If the wide list is not what the
+      // schema holds, the narrow list is the pre-ADV-1D list unchanged, the
+      // answer is identical to the one shipped before this package, and every
+      // passport resolves to `unknown` and withholds. A schema that is not what
+      // we expect must cost us the evidence, never buy us a claim.
+      const V_WIDE = "id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source, sufficient, stat_kind, data_class, is_demo";
+      const V_NARROW = "id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source";
+      const firstRow = async (build: (cols: string) => any): Promise<any | null> => {
+        let { data, error } = await build(V_WIDE);
+        if (error || !data) ({ data } = await build(V_NARROW));
+        return data && data[0] ? data[0] : null;
+      };
       // Ask for the period the user asked for. Only when that period is not
       // published do we fall back to the newest one, and then the answer must say
       // so rather than presenting the newest row as the requested period.
       if (wantedPeriod) {
         const exact = /^\d{4}-Q[1-4]$/.test(wantedPeriod);
-        const pq = exact ? scoped().eq("period", wantedPeriod) : scoped().ilike("period", `${wantedPeriod}%`);
-        const { data } = await pq.order("period", { ascending: false }).limit(1);
-        if (data && data[0]) { band = data[0]; periodStatus = "match"; }
+        const row = await firstRow((cols) =>
+          (exact ? scoped(cols).eq("period", wantedPeriod) : scoped(cols).ilike("period", `${wantedPeriod}%`))
+            .order("period", { ascending: false })
+            .limit(1)
+        );
+        if (row) { band = row; periodStatus = "match"; }
       }
       if (!band) {
-        const { data } = await scoped().order("created_at", { ascending: false }).limit(1);
-        band = data && data[0] ? data[0] : null;
+        band = await firstRow((cols) => scoped(cols).order("created_at", { ascending: false }).limit(1));
         if (band && wantedPeriod) periodStatus = "unavailable";
       }
     }
@@ -250,6 +274,53 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ mode: "value", message: arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.` });
     }
     const message = renderValue(ev, arq ? "ar" : "en");
+
+    // ADV-1D, correction 4: the passport on the Advisor published-band surface.
+    //
+    // THE BOUNDARY CODEX DREW, AND WHY THE FILTER IS THE WHOLE OF IT.
+    //
+    // "Do not attach a passport to an Advisor answer unless the displayed figure
+    // is completely traceable through an authorized typed tool result." Two
+    // things make that true here and both are structural rather than hopeful.
+    //
+    // First, the figure. `renderValue` is a pure function of `ev`, `ev` is a
+    // pure function of `band`, and `band` is one row this route read from
+    // `rent_index_published`. No model call sits anywhere on that path, so the
+    // number in the message is the number in the row. The passports are built
+    // from the SAME `band` object, so they cannot be evidence for a different
+    // figure than the one the reader was shown.
+    //
+    // Second, the filter. A view whose `value` is null is one `publishability`
+    // withheld: an insufficient sample, an unlabelled statistic, or a licence
+    // that does not cover this audience. Attaching it beneath a message that
+    // just printed the figure would put a number and "this value is not shown"
+    // on the same screen. So a withheld view is dropped and the answer carries
+    // no passport at all, which is exactly the pre-ADV-1D behaviour and states
+    // nothing untrue. The prose figure is governed by the sufficiency gate the
+    // value path has always applied; whether it should ALSO be gated on the
+    // passport is finding 90 and is deliberately not decided here.
+    //
+    // `getSourceRightsOrNull`, never `getSourceRights`: the denying variant
+    // returns a row matching the id asked for, which would render "the
+    // permission recorded for this source does not cover this audience" when
+    // nothing was recorded and nothing was read. Correction 5 keeps those apart.
+    let passports: PublicEvidenceView[] = [];
+    try {
+      const rights = await getSourceRightsOrNull(REGA_RENT_INDEX_SOURCE_ID);
+      // The geography the passport states is the one the reader was answered in,
+      // so an Arabic answer cannot carry an English place name in the one field
+      // a reader is most likely to check.
+      const geography = arq ? (band.district_label_ar || band.district_label) : band.district_label;
+      passports = rentIndexEvidenceViews(
+        band as RentIndexCell,
+        { locale: arq ? "ar" : "en", geography },
+        rights
+      ).filter((v) => v.value !== null);
+    } catch {
+      // Evidence is an addition to the answer, never a precondition for it. A
+      // rights read that throws costs the passport and leaves the answer whole.
+      passports = [];
+    }
     // Public payload: the figure travels as `average` (the stored value IS an
     // arithmetic average; see lib/market/segments.ts). Never expose `median`. The
     // evidence summary lets the client and QA assert the same scope both languages saw.
@@ -263,6 +334,10 @@ export async function POST(req: NextRequest) {
       // stopped doing so. It now consumes this authoritative value and nothing else.
       quoted: ev.userFigure,
       evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason, requestedPeriod: ev.requestedPeriod, periodStatus: ev.periodStatus },
+      // A separate key. `evidence` above is the scope summary the client and QA
+      // already assert on, and overloading it would have one name meaning two
+      // things. Absent as an empty array when nothing was traceable.
+      passports,
     });
   }
 

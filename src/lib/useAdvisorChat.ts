@@ -3,9 +3,18 @@ import { useEffect, useState } from "react";
 import { addWatch } from "@/lib/watches";
 import { formatPeriod } from "@/lib/market/period";
 import { searchNote } from "@/lib/search/searchNote";
+import type { PublicEvidenceView } from "@/lib/evidenceView";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; ownership_verified?: boolean | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
-export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string; }
+export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string;
+ /**
+  * ADV-1D. The Evidence Passports for the figures this answer displayed, built
+  * server-side from the same published row the answer was rendered from, and
+  * already filtered there to the ones whose value the licence permits showing.
+  * Optional and additive, so `STATE_VERSION` does not move: a persisted message
+  * from before this field simply carries no evidence, which is what it had.
+  */
+ passports?: PublicEvidenceView[]; }
 
 /**
  * Every advisor request is bounded. An AI provider stall or a network hang used
@@ -116,6 +125,15 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
      extra.band = { low: Number(aj.band.band_low), average: Number(aj.band.average), high: Number(aj.band.band_high), unit: aj.band.unit };
      extra.quoted = isFinite(qn) && qn > 0 ? qn : null;
      if (aj.band.district_id) { extra.handoffDistrict = String(aj.band.district_id); extra.handoffAsset = aj.band.asset_type || null; extra.handoffLabel = (ar ? (aj.band.district_label_ar || aj.band.district_label) : aj.band.district_label) || null; }
+     // Carried, never rebuilt. The client holds no rights ledger and no record
+     // class, so anything it constructed here would be evidence assembled by
+     // the surface that displays it. The one check made here is the same one
+     // the server already made, because a view with no value has nothing to
+     // stand beside a figure (Codex correction 4).
+     if (Array.isArray(aj.passports)) {
+      const ps = (aj.passports as PublicEvidenceView[]).filter((p) => p && p.value != null);
+      if (ps.length) extra.passports = ps;
+     }
     }
     setMsgs((m) => [...m, { role: "a", text: aj.message, ...extra }]);
     setBusy(false);

@@ -333,14 +333,27 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
             {avg ? (
              <div style={{ marginTop: 12 }}>
               <div className="muted" style={{ fontSize: 11.5 }}>{ri.eviAverage}</div>
-              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{d.figure}</bdi></div>
+              {/* The passport's own value, not the row's. `d.figure` is read
+                  straight off the record and is printed whenever `sufficient`
+                  is true; `avg.value` is null whenever the passport withheld
+                  the figure, and sufficiency is only one of the reasons it
+                  does. If the NARROW select runs, both record-class markers
+                  arrive undefined, the row takes the sourced branch and the
+                  licence withholds, and printing `d.figure` here would put a
+                  number directly above a panel saying the number cannot be
+                  shown. One object decides both, so they cannot disagree. */}
+              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{avg.value ?? ri.na}</bdi></div>
               <EvidencePassport view={avg} label={ri.eviAverage} ar={ar} locale={loc} />
              </div>
             ) : null}
             {band ? (
              <div style={{ marginTop: 12 }}>
               <div className="muted" style={{ fontSize: 11.5 }}>{ri.eviBand}</div>
-              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{d.band}</bdi></div>
+              {/* Same rule for the band, and `ri.na` rather than the table's
+                  `ri.thinSample`, because a withheld band is not always a thin
+                  sample: it can equally be a licence that does not cover
+                  derived display. The panel below states which. */}
+              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{band.value ?? ri.na}</bdi></div>
               <EvidencePassport view={band} label={ri.eviBand} ar={ar} locale={loc} />
              </div>
             ) : null}

@@ -9,6 +9,8 @@ import { formatPeriod } from "@/lib/market/period";
 import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num, isKnownUnit } from "@/lib/market/analyser";
 import { getDictionary } from "@/i18n/getDictionary";
 import { fill, formatArea, formatInteger, formatRange } from "@/lib/format";
+import EvidencePassport from "@/components/EvidencePassport";
+import { statisticLabel } from "@/lib/evidence";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
@@ -22,6 +24,11 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
  const locale = (params.locale === "ar" ? "ar" : "en") as "en"|"ar";
  const ar = locale === "ar";
  const av = getDictionary(locale).advisor;
+ // The Rent Index's own evidence heading, reused rather than rewritten. The
+ // figures the Advisor quotes ARE Rent Index figures, so a second wording of
+ // "evidence for each figure" would be two sentences for one idea, translated
+ // twice and free to drift apart in one language.
+ const ri = getDictionary(locale).rentIndex;
  // The cap lives here, in the hook, not in the map below. Finding 65: this file
  // sliced to four while the hook counted everything the route returned, so the
  // sentence above the rows counted rows that were never rendered.
@@ -197,6 +204,32 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           </div>
          );
         })()}
+        {m.passports?.length ? (
+         // ADV-1D, correction 4: the published-band answer carries its evidence.
+         //
+         // BELOW the bar and not inside it. The bar is a fixed-height LTR
+         // measure at any width; an expanded `<details>` inside it would push
+         // the track's own box out and the disclosure would overflow the
+         // message bubble at 320 pixels, which fails Codex's mobile gate. Out
+         // here each passport is a normal flow element that wraps.
+         //
+         // The label is the record's own statistic, not a second table of
+         // names. `rent_index_average` carries statistic `average` and the band
+         // carries `range`, so the panel is titled by the same field that
+         // decides what the figure IS, and there is no local string that could
+         // come to disagree with it in one language.
+         //
+         // Nothing is rebuilt here. Every view arrived from the route, which
+         // built it from the row the answer was rendered from and dropped any
+         // whose value the licence withheld. A message restored from
+         // sessionStorage carries whatever it was given and no more.
+         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+          <div className="muted" style={{ fontSize: 11.5, fontWeight: 600 }}>{ri.eviTitle}</div>
+          {m.passports.map((v, k) => (
+           <EvidencePassport key={k} view={v} label={statisticLabel(v.statistic, ar)} ar={ar} locale={locale} />
+          ))}
+         </div>
+        ) : null}
         {m.retry && (
          // A failed or timed-out request offers its own way out: one tap resends
          // the same question, so a provider stall never dead-ends the session.
