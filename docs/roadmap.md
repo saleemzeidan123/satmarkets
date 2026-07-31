@@ -626,6 +626,48 @@ Not in scope: the append-only corrections write path, which stays with ADV-6 whe
 corrections originate; PD4 deed checks, blocked on O13 and O10; and the availability green
 collision, which needs O16.
 
+### ADV-1C.1 and ADV-1D. The corrections, and the first integrated evidence
+
+**Closed 2026-07-31**, commits `71ee177` and `1486ec3`, live on
+`dpl_2AqS8vGx6VjcsJwHfX5peLfGnrge` at `satmarkets-3c7ql7zer-sat-markets.vercel.app`.
+Record: `docs/handback-adv-1c1-adv-1d.md`. Owner checklist: `docs/owner-actions-adv-1c1.md`.
+
+Codex's seven corrections all landed. `realInventoryOnly` is gone and the one predicate it
+was became five separate facts in `src/lib/launchGate.ts`: `RecordDemoStatus`,
+`PreviewEnvironment`, `PublicationAuthorization`, `AvailabilityFreshness` and
+`ProductionCountEligibility`, with `indexingPermitted()` failing closed on both switches and
+on any sample, synthetic, unknown or unauthorized record in the set. The runtime predicate is
+`nonDemoPublishedInventoryOnly`, reached through `releaseVisibleInventory` at 16 public query
+surfaces. Nothing promotes the absence of a demo marker to authenticity.
+
+The source register is one register, not two. `readSourceRegister` now separates
+`not_configured`, `read_failed`, `no_rows_visible` and `loaded`, so "we could not read" is
+never reported as "there is nothing", and finding 88's state is named. REGA resolves through
+one canonical constant, `REGA_RENT_INDEX_SOURCE_ID`, and the string literal appears in
+exactly one non-test module.
+
+`EvidenceState` carries 11 members and each of Codex's seven reader-distinguishable
+conditions has its own. The member formerly called `unavailable` is now
+`permission_unrecorded`, because "unavailable" was the exact word ruled out as a stand-in for
+several different facts.
+
+Two runtime surfaces were added to ADV-1C's one: `/[locale]/rent-index`, server-rendered,
+whose evidence card now prints the passport's own value rather than the row's; and
+`/[locale]/advisor`, where `/api/advisor` builds the passports server-side, filters to the
+values the licence permits, and the client carries them without ever building them. Live in
+both languages at 1,421 and 1,250–1,591 for 2026-Q2, Western numerals throughout.
+
+**What this does NOT close.** ADV-1D's own precondition is unmet. There is no rights-cleared
+REGA Rental Index (Ejar) figure to demonstrate: `rega_ejar` is `asserted_unverified` with an
+`internal` ceiling and a `stop_condition` of "O10 unresolved"; finding 88 means the public
+runtime reads no rights row at all; and every `rent_index_published` row is `data_class
+'synthetic'`, `is_demo true`. The passport therefore renders a truthful `derived` state
+attributed to "SAT Markets own record". The machinery is complete and the input is missing.
+Strategic ADV-1 and the Evidence Passport product outcome stay open, findings 80 and 81 stay
+open, and finding 90 opens: the Advisor's prose figure comes from the row whatever the
+passport decides, so a withheld licence leaves the number visible with no evidence beside it.
+O10 is now on the critical path twice.
+
 ### ADV-6. Contributor network
 
 Deliver: portfolio feeds, contributor agreements as interfaces and requirements, the
