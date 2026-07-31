@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { EvidencePassport as Passport } from "@/lib/evidence";
 import type { SourceRights } from "@/lib/sourceRights";
@@ -409,4 +411,37 @@ test("render: the derived price per square metre says SAT derived it", () => {
   // the screen: SAT computed it, and the way it computed it was derivation.
   assert.ok(html.includes("Derived by SAT") || html.includes("Derived"), "the derivation is not stated");
   assert.ok(!html.includes("Stated by the lister"), "a derived figure was credited to the lister");
+});
+
+test("stylesheet: the disclosure clears 44px on touch layouts", () => {
+  // Not a render assertion, because the height is not in the markup: the summary
+  // is a bare <summary className="evi-sum"> and its size comes entirely from
+  // globals.css. A test that only read the HTML would pass while the control was
+  // 40px tall on every phone the platform is tested at.
+  //
+  // 44px is the platform's own standard, set at line 260 of globals.css against
+  // WCAG 2.5.5 and applied there to chips, tabs, buttons and icon-only controls.
+  // The passport summary is a control by the same test: it is focusable, it is
+  // keyboard-operable, it carries cursor:pointer, and tapping it is the only way
+  // to reach the evidence. It was 40px, which is the same four pixels the .vtool
+  // set was found short by in an earlier pass.
+  const css = readFileSync(join(process.cwd(), "src/styles/globals.css"), "utf8");
+
+  const at = css.indexOf("@media(max-width:1024px){");
+  assert.ok(at > 0, "the touch-target media block was renamed or removed");
+  const block = css.slice(at, css.indexOf("\n}", at));
+
+  const rule = /\.evi>summary\{[^}]*min-height:(\d+)px/.exec(block);
+  assert.ok(rule, "the passport disclosure is not in the touch-target block");
+  assert.ok(
+    Number(rule[1]) >= 44,
+    `the passport disclosure is ${rule[1]}px on touch, under the platform's 44px`
+  );
+
+  // And the base rule still sets a floor, so the control is never text-height on
+  // a pointer device either. It is declared below the media block rather than
+  // above it, which is why this reads the remainder and not the head.
+  const rest = css.slice(at + block.length);
+  const base = /\.evi>summary\{[^}]*min-height:(\d+)px/.exec(rest);
+  assert.ok(base && Number(base[1]) >= 40, "the base disclosure height floor was dropped");
 });

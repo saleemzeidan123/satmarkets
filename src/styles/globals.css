@@ -267,6 +267,11 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
   /* Icon-only affordances that carry an action. .vtool controls were the one set
      the earlier pass missed, so they stayed 36px on touch. */
   .icon-btn, .iconbtn, button.icononly, .fab, .vtool span{min-height:44px;min-width:44px;}
+  /* The Evidence Passport disclosure. It is a control, it is new, and the base
+     rule gives it 40px, which is the same four pixels short the .vtool set was
+     found at above. Enumerating every interactive selector by hand is how that
+     keeps happening; finding 86 records the class. */
+  .evi>summary{min-height:44px;}
 }
 
 /* ---- Hero asset tiles: swipeable one-line rail on mobile, centered wrap on desktop ---- */
