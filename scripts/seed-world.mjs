@@ -7,10 +7,12 @@
 // prefixed "SIMW1-" (sim world-v1). Idempotent: it deletes every SIMW1-* listing
 // first, then re-inserts, so re-running with the same --seed yields the same world.
 //
-// NOTE: the listings table has no `sim_tag`/`synthetic` column, so the SIMW1-
-// reference_code prefix IS the sim tag. account_id/district_id are resolved from
-// existing rows so foreign keys hold. Enum literals below match what the app
-// renders; confirm against the DB enums on the first real run.
+// NOTE: the SIMW1- reference_code prefix names these rows for a human reader, and
+// `is_demo = true` is what every public query actually filters on. Both are set:
+// the prefix so the rows are recognisable and deletable, the flag so no public
+// count can include them. account_id/district_id are resolved from existing rows
+// so foreign keys hold. Enum literals below match what the app renders; confirm
+// against the DB enums on the first real run.
 import { createClient } from "@supabase/supabase-js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -85,6 +87,10 @@ async function main() {
       asking_rent_sqm: lease ? rent : null,
       sale_price: lease ? null : rent * area * 12,
       status: "published",
+      // Finding 78. The SIMW1- prefix was called the sim tag while no query in src
+      // read it, so these rows entered the public count as ordinary inventory. The
+      // flag every public query filters on is is_demo, so the seeder sets it.
+      is_demo: true,
       right_to_market_confirmed: true,
       is_sat_listed: isBroker && rnd() > 0.5,
       ownership_verified: !isBroker,

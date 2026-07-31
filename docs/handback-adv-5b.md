@@ -15,6 +15,12 @@ life of the prototype. That is finding 72 and it is the most serious figure-inte
 defect found on this platform. The package therefore closes with a deletion at its centre
 rather than an addition.
 
+**What this closes, and what it does not.** This handback closes ADV-5B. It does not close
+the strategic ADV-5. The SPL National Address integration, the stc Geo Analytics pilot,
+the real coverage assessment and the user-value evaluation all remain open, and all four
+are contract or data dependent rather than engineering blocked. `docs/roadmap.md` under
+ADV-5 carries the full statement. Codex boundary 1, 2026-07-31.
+
 `docs/adv-5b-closure.md` is the full record and is not repeated here. This document is the
 handback the directive asks for: scope, commits, tests, live evidence in both languages,
 responsive evidence, remaining blockers and the next package.

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { SITE } from "@/lib/site";
 
 // SM-P1-001b. Two things were wrong here.
@@ -51,10 +52,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const sb = getSupabaseServer();
     if (sb) {
-      const { data } = await sb
+      const { data } = await realInventoryOnly(sb
         .from("listings")
         .select("id,created_at,updated_at")
-        .eq("status", "published")
+        .eq("status", "published"))
         .limit(500);
       listings = (data ?? []) as Row[];
 

@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
@@ -30,7 +31,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
   const sb = getSupabaseServer();
   let items: any[] = [];
   if (sb && ids.length) {
-    const { data } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").in("id", ids).eq("status", "published");
+    const { data } = await realInventoryOnly(sb.from("listings").select("*, districts(name_en,name_ar,city)").in("id", ids).eq("status", "published"));
     const byId = new Map((data ?? []).map((l: any) => [l.id, l]));
     items = ids.map((id) => byId.get(id)).filter(Boolean); // preserve requested order
     // grounded verdict per item from the published Rent Index

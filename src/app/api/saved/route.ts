@@ -8,6 +8,8 @@ export async function GET(req: Request) {
   if (!ids.length) return NextResponse.json({ listings: [] });
   const sb = getSupabaseServer();
   if (!sb) return NextResponse.json({ listings: [] });
+  // simulated-visible. This hydrates the ids the user themself saved. Dropping a
+  // simulated row from their own shortlist would read as data loss, not a correction.
   const { data } = await sb.from("listings").select("*, districts(name_en, name_ar, city)").in("id", ids).eq("status", "published");
   const ls = data ?? [];
   const dids = Array.from(new Set(ls.map((l: any) => l.district_id).filter(Boolean)));

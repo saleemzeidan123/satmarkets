@@ -24,6 +24,8 @@ export async function POST(req: NextRequest) {
   if (!reason) return NextResponse.json({ error: "Choose a reason." }, { status: 400 });
 
   // Only accept reports for a listing that actually exists and is public.
+  // simulated-visible. Anything a reader can see in the preview they must be able to
+  // report, and this is an existence check on one id rather than a count of anything.
   const { data: exists } = await sb.from("listings").select("id").eq("id", listing_id).eq("status", "published").maybeSingle();
   if (!exists) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
 

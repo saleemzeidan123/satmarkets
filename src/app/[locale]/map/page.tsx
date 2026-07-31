@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getDictionary } from "@/i18n/getDictionary";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
 import { localeMeta } from "@/lib/meta";
@@ -25,7 +26,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
       .select("id,name_en,name_ar,district_label,district_label_ar,district_id,asset_type,grade,size_sqm,lat,lng")
       .not("lat","is",null);
     const { data: bands } = await sb.from("rent_index_published").select("district_id,district_label,asset_type,median,band_low,band_high,unit,sufficient");
-    const { data: lst } = await sb.from("listings").select("building_id").eq("status","published").not("building_id","is",null);
+    const { data: lst } = await realInventoryOnly(sb.from("listings").select("building_id").eq("status","published")).not("building_id","is",null);
 
     const bandMap = new Map<string, { median: number|null; low: number|null; high: number|null; unit: string }>();
     (bands ?? []).forEach((r: any) => { if (r.sufficient) bandMap.set(`${r.district_id ?? r.district_label}|${r.asset_type}`, { median: r.median, low: r.band_low, high: r.band_high, unit: r.unit }); });

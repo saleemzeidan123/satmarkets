@@ -2,6 +2,7 @@ import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
@@ -70,10 +71,10 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
   // checked the lister either, unless someone did.
   const identityVerified = listerIdentityVerified(filingAccountOf(p));
 
-  const { data: listings } = await sb
+  const { data: listings } = await realInventoryOnly(sb
     .from("listings")
     .select("id,title_en,title_ar,asset_type,area_sqm,deal_type,asking_rent_sqm,sale_price,reference_code,districts(name_en,name_ar,city)")
-    .eq("account_id", params.id).eq("status", "published")
+    .eq("account_id", params.id).eq("status", "published"))
     .order("created_at", { ascending: false }).limit(60);
   const rows = (listings || []) as any[];
 

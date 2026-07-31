@@ -3,6 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
@@ -40,6 +41,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     // rather than living in this browser, so it is the same list on the next device.
     const filed = new Map<string, string | null>((saved ?? []).map((r: any) => [r.listing_id, r.shortlist ?? null]));
     if (ids.length) {
+      // simulated-visible. A shortlist returns the rows this user saved themselves,
+      // so a simulated row they saved in the preview stays on their own list.
       const { data: ls } = await sb
         .from("listings")
         .select("id,title_en,title_ar,asset_type,area_sqm,deal_type,asking_rent_sqm,sale_price,reference_code,districts(name_en,name_ar,city)")
@@ -123,7 +126,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       .limit(12);
     for (const s of (searches ?? []) as any[]) {
       const base = () => {
-        let q = sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published");
+        let q = realInventoryOnly(sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published"));
         if (s.asset_type) q = q.eq("asset_type", s.asset_type);
         if (s.district_id) q = q.eq("district_id", s.district_id);
         return q;

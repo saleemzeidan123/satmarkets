@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { assetLabel, dealLabel, cityLabel, cityKey, gradeLabel, gradePhrase, fitoutLabel, segmentLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 // Discovery search. Deterministic, no model: the box has promised to understand a
@@ -100,7 +101,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const idxByDistrict = new Map<string, IndexRow[]>();
   const assetCounts: Record<string, number> = {}, gradeCounts: Record<string, number> = {}, fitCounts: Record<string, number> = {};
   if (sb) {
-    let query = sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published").limit(300);
+    let query = realInventoryOnly(sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published")).limit(300);
     const assetArr = list(searchParams.asset);
     if (assetArr.length) query = query.in("asset_type", assetArr);
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
@@ -126,7 +127,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
-    let fq = sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published").limit(400);
+    let fq = realInventoryOnly(sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published")).limit(400);
     if (searchParams.deal) fq = fq.eq("deal_type", searchParams.deal);
     if (searchParams.smin) fq = fq.gte("area_sqm", Number(searchParams.smin));
     if (searchParams.smax) fq = fq.lte("area_sqm", Number(searchParams.smax));

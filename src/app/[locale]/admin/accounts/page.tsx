@@ -47,6 +47,8 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
 
   const [{ data: accounts }, { data: listings }, sq, { data: events }] = await Promise.all([
     sb.from("accounts").select("id,type,name_en,name_ar,legal_name,cr_number,verification_status,created_at").order("created_at", { ascending: false }),
+    // simulated-visible. Reviewing an account means seeing every listing behind it,
+    // including the simulated ones. Admin gated, and it publishes no claim.
     sb.from("listings").select("id,account_id").eq("status", "published"),
     sb.from("signup_requests").select("id", { count: "exact", head: true }).eq("status", "new"),
     sb.from("verification_events").select("id,account_id,from_status,to_status,actor_email,basis,created_at").order("created_at", { ascending: false }).limit(50),

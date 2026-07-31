@@ -45,6 +45,8 @@ export default async function AdminPage({ params }: { params: { locale: string }
   };
 
   const [lc, ec, rc, ac, avc, sq, recent] = await Promise.all([
+    // simulated-visible. The operator console exists to show what is actually in the
+    // database, simulated rows included. Admin gated, and it publishes no claim.
     sb.from("listings").select("id", { count: "exact", head: true }).eq("status", "published"),
     sb.from("leads").select("id", { count: "exact", head: true }),
     sb.from("tenant_briefs").select("id", { count: "exact", head: true }).eq("status", "open"),

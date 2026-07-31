@@ -473,6 +473,20 @@ its method and time context, and is never stored as a property fact.
 
 Gate: coverage, bias, sample, privacy and user-value evidence pass.
 
+**ADV-5 is not closed, and ADV-5A and ADV-5B did not close it.** What those two packages
+closed is the discovery, the source-rights boundary and the egress control: the question
+of whether the platform was ready, the register check that now stands in front of every
+external geography call, and the publication rule and claims gate that decide what may be
+said on the day a source exists. Four deliverables in the paragraph above remain open, and
+not one of them is blocked by engineering. The SPL National Address integration needs an
+agreement, the stc Geo Analytics pilot needs a contract, the coverage assessment needs a
+real dataset to assess, and the user-value evaluation needs the coverage assessment to have
+run first. Each is contract or data dependent under owner ruling 7, which is why the
+interfaces were built against an empty permitted-field set and why the gated capabilities
+stay disabled. Recording ADV-5B's closure as ADV-5's closure would convert four unmet
+dependencies into four delivered features, which is the error the strategy reconciliation
+exists to catch. Codex boundary 1, 2026-07-31.
+
 **ADV-5A shipped**, the location rights boundary: `docs/adv-5a-closure.md`. Discovery
 asked whether the platform was ready to add location intelligence and found the wrong
 question. Four code paths were already calling third-party geography services and none of

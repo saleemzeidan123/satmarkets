@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { realInventoryOnly } from "@/lib/inventory";
 import { allow } from "@/lib/ratelimit";
 import { llmParse, rulesParse, type Parsed } from "@/lib/search/aiParse";
 import { cityKey } from "@/lib/labels";
@@ -19,10 +20,10 @@ export async function POST(req: NextRequest) {
     const m = qs.match(/^SAT[M]?-?([0-9A-Z]{4,10})$/);
     if (m) {
       const code = `SATM-${m[1]}`;
-      const { data: byRef } = await supabase
+      const { data: byRef } = await realInventoryOnly(supabase
         .from("listings")
         .select("*, districts(name_en, name_ar, city)")
-        .eq("status", "published")
+        .eq("status", "published"))
         .ilike("reference_code", code)
         .limit(1);
       if (byRef && byRef.length) {
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
   // pretending the filter was never asked for is the defect this package exists
   // to remove.
   const build = (level: number) => {
-    let sb = supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published").order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
+    let sb = realInventoryOnly(supabase.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(clarify ? 6 : 36);
     if (clarify) return sb;
     if (asset) sb = sb.eq("asset_type", asset);
     if (dealDetected) sb = sb.eq("deal_type", dealDetected);

@@ -61,6 +61,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // registration over a stale attachment would lose the message with it.
   let listing_id: string | null = null;
   if (claimed) {
+    // simulated-visible. An account's own simulated listing is still its own, and this
+    // is an ownership check on one id rather than a count of public inventory.
     const { data: own } = await sb
       .from("listings")
       .select("id")

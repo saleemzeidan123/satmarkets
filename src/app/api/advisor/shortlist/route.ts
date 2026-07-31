@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
+import { realInventoryOnly } from "@/lib/inventory";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -81,7 +82,7 @@ export async function POST(req: NextRequest) {
   let rows: any[] = [];
   let relaxed = "none";
   for (const st of stages) {
-    let q = client.from("listings").select(SEL).eq("status", "published").eq("asset_type", b.assetType);
+    let q = realInventoryOnly(client.from("listings").select(SEL).eq("status", "published")).eq("asset_type", b.assetType);
     if (b.dealType) q = q.eq("deal_type", b.dealType);
     if (b.sizeMin != null) q = q.gte("area_sqm", b.sizeMin);
     if (b.sizeMax != null) q = q.lte("area_sqm", b.sizeMax);
