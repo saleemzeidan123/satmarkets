@@ -668,6 +668,69 @@ open, and finding 90 opens: the Advisor's prose figure comes from the row whatev
 passport decides, so a withheld licence leaves the number visible with no evidence beside it.
 O10 is now on the critical path twice.
 
+### ADV-1E. One quote decision, and the meanings it separates
+
+Codex's corrective package on the ADV-1D handback. The defect it answers is finding 90 and
+it is worth stating plainly, because the machinery around it was already correct: a row
+being `published` in the database and `sufficient` under the statistical rule was being read
+as permission to say the number out loud. Those are three different questions. Statistics
+answers whether a figure means anything. Publication status answers whether SAT has finished
+preparing it. Neither answers whether SAT is allowed to publish it, and only the third
+question has a licensor's signature behind it.
+
+There is now one function that answers it. `decidePublicQuote` in `src/lib/publicQuote.ts`
+takes data class, demo status, source-rights status, permitted display, environment and any
+recorded stop condition, and returns one of four meanings: `authorized_public`,
+`labelled_sample`, `withheld`, `unavailable`. Every reader of `rent_index_published` goes
+through it, all fourteen, and so do the API responses, the metadata, the structured data and
+the Advisor. Fail-closed is the default rather than a branch: an unrecognised combination
+withholds.
+
+The prose and the passport can no longer disagree, because they are no longer two decisions.
+The Advisor's figure and the passport beside it are produced from the same call, so a
+withheld licence removes the number from the sentence rather than leaving it stranded beside
+an empty evidence panel, which is exactly what finding 90 described.
+
+Synthetic rows stay visible on the private preview and say what they are. `SAMPLE_STATEMENT`
+carries "Sample data for product testing. Not a published market figure." and its Arabic
+twin, which passes the existing language gates, and it travels with the figure into the
+Advisor's prose rather than sitting in a banner at the top of a page a reader has scrolled
+past.
+
+Source laundering is closed structurally rather than by review. "SAT Markets own record" and
+its Arabic twin are written in exactly one module, `src/lib/evidenceView.ts`, and
+`publicSourceText` is the only writer of the Source field, read by both the Evidence Passport
+and the Rent Index table. Discovering this was the useful part of the package: the two
+surfaces had each grown their own hand-written ladder answering "who says so", and a rule
+written twice is a rule that will eventually be written differently. `mayNameSatOwnRecord` is
+set on one first-party branch and is never inferred from a missing source block, so clearing
+a third party's rights still never converts its figure into SAT's own record.
+
+O10 is recorded precisely for the first time. It had been carried in four documents in four
+shapes, each true and none a specification, which is how a question gets answered in a
+meeting with three of its dimensions untouched. `src/lib/sources/o10.ts` holds the ten
+clauses Codex named as data, each quoting the register verbatim so the document and the
+module fail together, and each answered by a recorded string rather than a tick, on the
+ADV-5B rule that a boolean checkbox reads identically whether the statement behind it is a
+licence or a recollection. `O10_RECORDS` is empty under owner ruling 7 and that is the
+truthful state. It is deliberately not a second gate: the ledger already withholds, and two
+independent gates on one question is one more thing that can be flipped by mistake.
+
+Eight regression gates in `src/lib/adv1e.test.ts`, thirty tests, plus nine in
+`src/lib/sources/o10.test.ts`. They prove the properties rather than restate them:
+`published` and `sufficient` cannot override withheld rights; `noindex` is not display
+authorization and the response header is not read as one; synthetic figures always carry
+sample status; unauthorized figures never reach an API or rendered payload; prose and
+passport use one decision; no source is relabelled as SAT because public rights are missing;
+English and Arabic expose identical figures and evidence states; and enabling indexing cannot
+expose synthetic, unknown or withheld data.
+
+**What this does NOT close.** The rights input is still missing, and no amount of correct
+machinery substitutes for it. The Rent Index publishes no REGA figure today and will not
+until O10 is resolved externally. Strategic ADV-1 and the Evidence Passport product outcome
+remain open on that dependency, as Codex ruled: a functioning passport displaying synthetic
+or unavailable evidence is not the evidence-backed product outcome.
+
 ### ADV-6. Contributor network
 
 Deliver: portfolio feeds, contributor agreements as interfaces and requirements, the

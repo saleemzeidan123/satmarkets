@@ -1,5 +1,7 @@
 import { cache } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { type Loc } from "@/lib/format";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 // Rent Index headline figures.
 //
@@ -23,6 +25,13 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 // Every figure below traces to rent_index_published -> index_cells -> ingestion_run
 // -> the source file. If it cannot, it does not exist.
 
+// ADV-1E. `sufficient` was the only question this file asked, and it is the
+// wrong one on its own: it is the cell's verdict on its own sample size, and it
+// says nothing about whether SAT may publish what the sample produced. These
+// KPIs are the most widely reproduced figures on the platform (the home hero,
+// the Rent Index header, the printed flyer), so they now pass the same decision
+// every other surface takes, and `statements` carries the sentence that has to
+// travel with them.
 export type PublishedKpis = {
   period: string | null;
   source: string | null;      // the source's own attribution label, from source_registry
@@ -31,6 +40,8 @@ export type PublishedKpis = {
   retailRent: number | null;
   cells: number;              // how many cells stand behind these numbers
   districts: number;
+  /** Sentences that must accompany any of the figures above. */
+  statements: readonly string[];
 };
 
 const EMPTY: PublishedKpis = {
@@ -41,25 +52,32 @@ const EMPTY: PublishedKpis = {
   retailRent: null,
   cells: 0,
   districts: 0,
+  statements: [],
 };
 
 const mean = (xs: number[]) =>
   xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length) : null;
 
-export const getPublishedKpis = cache(async (): Promise<PublishedKpis> => {
+export const getPublishedKpis = cache(async (locale: Loc = "en"): Promise<PublishedKpis> => {
   try {
     const sb = getSupabaseServer();
     if (!sb) return EMPTY;
 
     // `sufficient` is the cell's own verdict on whether it had enough
     // transactions to say anything. A cell that failed its sample rule is not a
-    // quieter number, it is not a number.
+    // quieter number, it is not a number. It is a necessary condition for a
+    // figure, never a sufficient one: the decision below asks the second half.
     const { data } = await sb
       .from("rent_index_published")
-      .select("asset_type, median, district_id, period, source, stat_kind, sufficient")
+      .select("asset_type, segment, unit, median, band_low, band_high, district_id, period, source, stat_kind, data_class, is_demo, sufficient")
       .eq("sufficient", true);
 
-    const rows = (data ?? []) as {
+    // The average of a set of cells is a figure derived from every cell in it,
+    // so one withheld cell must leave the set before the mean is taken rather
+    // than after. `cells` and `districts` then describe what actually stands
+    // behind the printed number, which is the claim those two tiles make.
+    const quotable = await quotableRentIndexRows((data ?? []) as any[], locale);
+    const rows = quotable.rows.map((q) => q.row) as unknown as {
       asset_type: string | null;
       median: number | null;
       district_id: string | null;
@@ -67,7 +85,7 @@ export const getPublishedKpis = cache(async (): Promise<PublishedKpis> => {
       source: string | null;
       stat_kind: "average" | "median" | null;
     }[];
-    if (!rows.length) return EMPTY;
+    if (!rows.length) return { ...EMPTY, statements: quotable.statements };
 
     const val = (asset: string) =>
       mean(
@@ -84,6 +102,7 @@ export const getPublishedKpis = cache(async (): Promise<PublishedKpis> => {
       retailRent: val("retail"),
       cells: rows.length,
       districts: new Set(rows.map((r) => r.district_id).filter(Boolean)).size,
+      statements: quotable.statements,
     };
   } catch {
     return EMPTY;

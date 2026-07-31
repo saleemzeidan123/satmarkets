@@ -323,7 +323,15 @@ test("Codex gate: /rent-index builds its passports from the row and mounts them"
 test("Codex gate: the machine-readable REGA claim does not ride on simulated rows", () => {
   // The human surface stamps every row "Sample". `isBasedOn` told a crawler the
   // same figures came from the REGA Rental Index (Ejar). Emitting it is now
-  // conditional on there being rows and none of them being flagged simulated.
+  // conditional on the same decision that governs the visible figures.
+  //
+  // ADV-1E widened the predicate. It used to read "no row is flagged simulated",
+  // which is a test of the demo markers alone: a real row whose publication
+  // rights are unread or withheld passed it, and the crawler was told the REGA
+  // index stood behind a figure the page itself would not print. Codex item 2
+  // names metadata and structured data explicitly, so the claim now requires
+  // every row to have been decided `authorized_public`, which is strictly
+  // stronger: a simulated row is `labelled_sample` and fails it too.
   const code = codeOnly(readFileSync(PAGE, "utf8"));
   assert.match(
     code,
@@ -332,8 +340,14 @@ test("Codex gate: the machine-readable REGA claim does not ride on simulated row
   );
   assert.match(
     code,
-    /const basedOnPermitted = districts\.length > 0 && !districts\.some\(\(d\) => d\.simulated\)/,
-    "the gate no longer requires rows AND no simulated row among them",
+    /const basedOnPermitted = districts\.length > 0 && districts\.every\(\(d\) => d\.quote === "authorized_public"\)/,
+    "the structured-data claim no longer requires every row to be authorized for public use",
+  );
+  // And the weaker demo-marker test is not what guards it any more.
+  assert.equal(
+    /basedOnPermitted = districts\.length > 0 && !districts\.some/.test(code),
+    false,
+    "the claim fell back to testing the demo markers, which withheld rights pass",
   );
 });
 
@@ -457,9 +471,23 @@ test("Codex gate: no passport rides on an Advisor answer whose figure the licenc
   assert.equal(real.length, 2, "the producer stopped producing views for a real row");
   assert.equal(real.filter((v) => v.value !== null).length, 0, "a withheld figure was attached to an answer anyway");
 
-  // And the route applies that predicate rather than describing it.
+  // And the predicate is applied rather than described. ADV-1E moved it out of
+  // the route and into `rentIndexQuoteGate`, which is the point: the route no
+  // longer builds a passport set of its own, so there is no second set that
+  // could be filtered by a second rule. The predicate is asserted where it now
+  // lives, and the route is asserted to have no other source of passports. It
+  // lives under the neutral name because `/rent-index` and `/api/index/segments`
+  // quote the same cells and must reach the same verdict by the same route.
+  const gateCode = codeOnly(readFileSync("src/lib/rentIndexEvidence.ts", "utf8"));
+  assert.match(gateCode, /\.filter\(\(v\) => v\.value !== null\)/, "the gate stopped filtering withheld views");
+  assert.match(gateCode, /export function rentIndexQuoteGate\(/, "the shared gate moved or was renamed");
   const code = codeOnly(readFileSync(ADVISOR_ROUTE, "utf8"));
-  assert.match(code, /\.filter\(\(v\) => v\.value !== null\)/, "the route stopped filtering withheld views");
+  assert.match(code, /const passports = gate\.passports/, "the route builds its own passport set again");
+  assert.equal(
+    /rentIndexEvidenceViews\(/.test(code),
+    false,
+    "the route calls the view producer directly again, which is how finding 90 became possible",
+  );
   assert.match(code, /getSourceRightsOrNull\(REGA_RENT_INDEX_SOURCE_ID\)/, "the route stopped resolving the source rights row");
   assert.equal(
     /[^r]getSourceRights\(/.test(code),

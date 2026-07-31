@@ -7,6 +7,7 @@ import Reveal from "@/components/Reveal";
 import { readSourceRegister, type SourceRegisterState } from "@/lib/queries/sourceRights";
 import type { SourceRights, UsePolicy, ModelInputPolicy, RightsStatus } from "@/lib/sourceRights";
 import { DECLARED_SOURCES, SOURCE_COPY } from "@/lib/publishedRecords";
+import { O10_CLAUSES, assessO10 } from "@/lib/sources/o10";
 
 // ADV-4B. The source register, rendered from the register.
 //
@@ -87,12 +88,27 @@ export default async function SourcesPage({ params }: { params: { locale: string
     no_rows_visible: [c.regNoRowsT, c.regNoRowsB],
   };
 
-  const notes: [string, string][] = [
-    [c.statusTitle, c.statusBody],
-    [c.modelTitle, c.modelBody],
-    [c.neverTitle, c.neverBody],
-    [c.gapTitle, c.gapBody],
-    [c.notShownTitle, c.notShownBody],
+  // ADV-1E. The gap note carries a count read from `src/lib/sources/o10.ts`
+  // rather than a sentence written here. The note used to state the permitted-use
+  // position in prose, in two languages, which made this page a fifth place where
+  // O10 was described and the fifth place it could drift. What is rendered is the
+  // count and nothing else: `assessO10().reasons` quotes licence reasoning and is
+  // internal by the same rule as `denialReason`, and each clause's own wording is
+  // recorded in English only, so printing it would put English on the Arabic page.
+  //
+  // This is also the one statement on the page that does not depend on the
+  // register being readable. Under finding 88 the REGA card itself does not
+  // render, and a reader would otherwise leave with no account of why the Rent
+  // Index publishes no figure.
+  const o10 = assessO10();
+  const o10Count = `${O10_CLAUSES.length - o10.unanswered.length}/${O10_CLAUSES.length}`;
+
+  const notes: [string, string, boolean][] = [
+    [c.statusTitle, c.statusBody, false],
+    [c.modelTitle, c.modelBody, false],
+    [c.neverTitle, c.neverBody, false],
+    [c.gapTitle, c.gapBody, true],
+    [c.notShownTitle, c.notShownBody, false],
   ];
 
   return (
@@ -189,6 +205,17 @@ export default async function SourcesPage({ params }: { params: { locale: string
                 style={{ background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
               >
                 <div style={{ fontSize: 15, fontWeight: 700 }}>{n[0]}</div>
+                {n[2] ? (
+                  <div className="row gap12" style={{ alignItems: "baseline", marginTop: 8 }}>
+                    <span
+                      className="mono"
+                      style={{ color: "var(--harbor)", fontWeight: 700, fontSize: 16, direction: "ltr" }}
+                    >
+                      {o10Count}
+                    </span>
+                    <span className="muted" style={{ fontSize: 13 }}>{c.o10CountLabel}</span>
+                  </div>
+                ) : null}
                 <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{n[1]}</p>
               </div>
             ))}

@@ -11,6 +11,7 @@ import type { Listing } from "@/lib/types";
 import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 import { getPublishedKpis } from "@/lib/market/published";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { CHECK_METHODS, listingVerifiedDimensions, verifiedBadgeText } from "@/lib/listingVerification";
 
 export const revalidate = 600;
@@ -32,13 +33,14 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const locale = params.locale;
   const ar = locale === "ar";
   const sb = getSupabaseServer();
-  const kpis = await getPublishedKpis();
+  const kpis = await getPublishedKpis(locale);
 
   let rows: Listing[] = [];
   let listings = 0, districts = 0, buildings = 0, verified = 0;
   const idxBands = new Map<string, { low: number; high: number }>();
   const heroBands: HeroBand[] = [];
   let openReqs: number | null = null, idxSegs: number | null = null;
+  let idxStatements: readonly string[] = [];
   if (sb) {
     const { data } = await releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(4);
     rows = (data as Listing[]) ?? [];
@@ -68,18 +70,35 @@ export default async function HomePage({ params }: { params: { locale: string } 
     districts = dc ?? 0;
     const { count: bc } = await sb.from("buildings").select("*", { count: "exact", head: true });
     buildings = bc ?? 0;
-    const { data: idxRows } = await sb.from("rent_index_published").select("district_label, asset_type, segment, band_low, band_high");
-    for (const r of (idxRows ?? []) as any[]) idxBands.set(`${String(r.district_label).toLowerCase()}|${r.asset_type}|${r.segment}`, { low: Number(r.band_low), high: Number(r.band_high) });
-    const { data: bandRows } = await sb.from("rent_index_published").select("district_label, district_label_ar, band_low, band_high, median, period").eq("asset_type", "office").eq("segment", "all").eq("sufficient", true).order("median", { ascending: false });
-    for (const r of (bandRows ?? []) as any[]) heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period });
+    // ADV-1E. Three separate reads of this table used to sit here: one for the
+    // band a featured card positions its asking rent inside, one for the hero
+    // strip, and a head count of sufficient segments. Each asked its own
+    // question and none asked whether SAT may publish the answer. They are now
+    // one read and one decision, and the hero strip, the card position and the
+    // segment count are all derived from the rows that survived it.
+    const { data: idxRows } = await sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, unit, period, band_low, band_high, median, sufficient, stat_kind, data_class, is_demo").order("median", { ascending: false });
+    const quotable = await quotableRentIndexRows((idxRows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+    idxStatements = quotable.statements;
+    const quotedRows = quotable.rows.map((q) => q.row as any);
+    for (const r of quotedRows) {
+      if (r.band_low == null || r.band_high == null) continue;
+      idxBands.set(`${String(r.district_label).toLowerCase()}|${r.asset_type}|${r.segment}`, { low: Number(r.band_low), high: Number(r.band_high) });
+    }
+    for (const r of quotedRows) {
+      if (r.asset_type !== "office" || r.segment !== "all" || r.median == null) continue;
+      heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period });
+    }
     // Matches the English district_label stored in rent_index_published, not a
     // label shown to anyone, so it stays a literal.
     const oi = heroBands.findIndex((b) => b.en === /* i18n-exempt */ "Al Olaya");
     if (oi > -1 && oi < heroBands.length - 1) heroBands.push(heroBands.splice(oi, 1)[0]);
     const { count: rc } = await sb.from("requirements_public").select("*", { count: "exact", head: true });
     openReqs = rc ?? null;
-    const { count: sc } = await sb.from("rent_index_published").select("*", { count: "exact", head: true }).eq("sufficient", true);
-    idxSegs = sc ?? null;
+    // The tile says how many segments the reader can actually see a figure for,
+    // so it counts what survived the decision rather than what the table holds.
+    // A count that includes rows nothing on the site will print is a promise the
+    // rest of the site does not keep.
+    idxSegs = quotedRows.length;
   }
 
   const h = getDictionary(locale).home;
@@ -133,5 +152,5 @@ export default async function HomePage({ params }: { params: { locale: string } 
     verifiedPct: verified > 0 && listings > 0 ? `${Math.round((verified / listings) * 100)}%` : null,
   };
 
-  return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} jobs={{ reqs: openReqs, segs: idxSegs }} />;
+  return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} bandNotes={idxStatements} jobs={{ reqs: openReqs, segs: idxSegs }} />;
 }

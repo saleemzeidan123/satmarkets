@@ -13,6 +13,7 @@ import { verifiedBadges } from "@/components/VerificationState";
 import { listingDimensionState } from "@/lib/listingVerification";
 import DecisionPackPanel from "@/components/DecisionPackPanel";
 import type { PackListing } from "@/lib/decisionPack";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 type SP = { ids?: string };
 
@@ -30,6 +31,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
 
   const sb = getSupabaseServer();
   let items: any[] = [];
+  let indexStatements: readonly string[] = [];
   if (sb && ids.length) {
     const { data } = await releaseVisibleInventory(sb.from("listings").select("*, districts(name_en,name_ar,city)").in("id", ids).eq("status", "published"));
     const byId = new Map((data ?? []).map((l: any) => [l.id, l]));
@@ -38,8 +40,16 @@ export default async function ComparePage({ params, searchParams }: { params: { 
     const distIds = Array.from(new Set(items.map((l) => l.district_id).filter(Boolean)));
     const idxByDistrict = new Map<string, IndexRow[]>();
     if (distIds.length) {
-      const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient,district_label,district_label_ar").in("district_id", distIds).eq("sufficient", true);
-      (irows ?? []).forEach((r: any) => { const a = idxByDistrict.get(r.district_id) ?? []; a.push(r as IndexRow); idxByDistrict.set(r.district_id, a); });
+      // ADV-1E. "~12% below the district median" is the third-party figure in a
+      // different shape, so it is a derived display of that figure and it takes
+      // the same decision. A row whose publication rights are unread or withheld
+      // never enters `idxByDistrict`, `pickIndexRow` finds nothing, and the cell
+      // falls to "not enough index" rather than printing a percentage computed
+      // from a figure SAT may not publish.
+      const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo,district_label,district_label_ar").in("district_id", distIds).eq("sufficient", true);
+      const quotable = await quotableRentIndexRows((irows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+      indexStatements = quotable.statements;
+      quotable.rows.forEach(({ row }) => { const r = row as any; const a = idxByDistrict.get(r.district_id) ?? []; a.push(r as IndexRow); idxByDistrict.set(r.district_id, a); });
     }
     items.forEach((l) => {
       const dnEn = l.districts ? l.districts.name_en : null;
@@ -160,6 +170,13 @@ export default async function ComparePage({ params, searchParams }: { params: { 
             <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>
             <span className="muted" style={{ fontSize: 12.5 }}>{cp.note}</span>
           </div>
+
+          {/* The comparison row above is the only place these figures appear, in
+              percentage form, so the sentence that governs them sits directly
+              beneath the same table. */}
+          {indexStatements.map((s) => (
+            <p key={s} className="muted" style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.7, maxWidth: 640 }}>{s}</p>
+          ))}
 
           {/* ADV-2D. The table above arranges the figures. This states which of those
               arrangements is a comparison, which is withheld and why, and what is missing

@@ -67,25 +67,32 @@ packages.
 
 ## 2. REGA and Ejar permitted use (O10)
 
-**Question.** Whether SAT Markets may publish values derived from the REGA Rental
-Index (Ejar), whether users may export them, whether an assistant may retrieve them,
-and what attribution string is required.
+**Question.** Stated once, in ten clauses, at `docs/regulatory-register.md` and as data
+at `src/lib/sources/o10.ts`. This entry does not restate them, because O10 was carried
+in four documents in four shapes before ADV-1E and each shape was true while none was a
+specification. Procurement asks for exactly the ten clauses the register names, and a
+statement that answers nine of them is unresolved.
 
 **What it costs while open.** `rega_ejar` sits at `rights_status =
-'asserted_unverified'` with `derived_display_policy = 'internal'`, so the Rent Index,
-which is the highest-value evidence surface in the product, cannot render a derived
-figure publicly, cannot be exported and cannot be retrieved by the advisor. The
+'asserted_unverified'` with a recorded stop condition, which `effectivePolicy` ceils at
+`internal` and `decidePublicQuote` turns into a withholding on every surface: page,
+API, metadata, structured data, export and the assistant. The Rent Index is the
+highest-value evidence surface in the product and it currently publishes no figure. The
 attribution requirement is separately fixed by owner ruling 2 and does not depend on
 this answer: every Rent Index reference retains the REGA Rental Index (Ejar)
 attribution whatever else is agreed.
 
-**Closes when.** A written permitted-use statement covering derived values, export,
-retrieval and attribution.
+**Closes when.** A written permitted-use statement is obtained and its text is recorded
+into `O10_RECORDS`, one recorded answer per clause. Owner ruling 7 governs how it is
+obtained: nothing here authorises contacting the licensor, and no entry in that list may
+be written from a recollection or a phone call.
 
-**Repository effect.** The `rega_ejar` row moves to `evidenced` with its policy
-columns set, and every surface reading `mayDisplayDerived` and `mayExport` opens
-without a code change, which is the property the ledger was built for. `mayAiRetrieve`
-opens for the advisor only if the statement covers retrieval explicitly.
+**Repository effect.** The `rega_ejar` row moves to `evidenced` with its policy columns
+set and its stop condition cleared, and every surface opens without a code change, which
+is the property the ledger was built for. `assessO10` moving to resolved is the evidence
+that the ledger edit is warranted, not a second gate: `o10.test.ts` proves both halves,
+including the counterfactual that a cleared row does open and that clearing it still
+never makes the figure SAT's own record.
 
 ---
 

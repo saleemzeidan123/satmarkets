@@ -22,6 +22,9 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
   const [folders, setFolders] = useState<Record<string, string>>({});
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [px, setPx] = useState<Record<string, { was: number; now: number }>>({});
+  // The sentences the server's quote decision attached to the index figures the
+  // "vs index" row is built from. Empty when nothing was quoted.
+  const [idxNotes, setIdxNotes] = useState<readonly string[]>([]);
   // Whether the shortlist names on this page live on the account or only in this browser.
   // The page says which, because a person filing four spaces into a shortlist deserves to
   // know whether that survives opening the site on their phone.
@@ -50,9 +53,13 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     try { const s = JSON.parse(localStorage.getItem(KEY) || "[]"); saved = Array.isArray(s) ? s : []; } catch {}
     try { const f = JSON.parse(localStorage.getItem(FKEY) || "{}"); if (f && typeof f === "object") setFolders(f); } catch {}
     if (!saved.length) { setLoading(false); return; }
-    fetch(`/api/saved?ids=${saved.join(",")}`).then((r) => r.json()).then((d) => {
+    // ADV-1E. The locale travels with the request because the sentence that has
+    // to accompany a quoted index figure is language-specific and the decision
+    // that produces it is taken on the server.
+    fetch(`/api/saved?ids=${saved.join(",")}&locale=${locale}`).then((r) => r.json()).then((d) => {
       const ls: Listing[] = d.listings || [];
       setListings(ls);
+      setIdxNotes(Array.isArray(d.statements) ? d.statements : []);
       try {
         const prev = JSON.parse(localStorage.getItem(PKEY) || "{}");
         const stored: Record<string, number> = prev && typeof prev === "object" ? prev : {};
@@ -71,7 +78,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
       } catch {}
       setLoading(false);
     }).catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const clearAll = () => { try { localStorage.setItem(KEY, "[]"); localStorage.setItem(FKEY, "{}"); } catch {} setListings([]); setFolders({}); setActiveFolder(null); };
 
@@ -194,6 +201,9 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 </tbody>
               </table>
             </div>
+            {idxNotes.map((n) => (
+              <div key={n} className="px-3 pt-2 text-[11.5px] leading-relaxed text-charcoal/55">{n}</div>
+            ))}
           </div>
         </>
       )}

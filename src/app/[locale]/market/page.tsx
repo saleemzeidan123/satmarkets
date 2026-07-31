@@ -10,6 +10,7 @@ import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 export const revalidate = 1800;
 
@@ -29,15 +30,23 @@ export default async function MarketPage({ params }: { params: { locale: string 
 
   let listings: any[] = [];
   let idxRows: any[] = [];
+  let idxStatements: readonly string[] = [];
   let locCount = 0;
   if (sb) {
     const [{ data: ls }, { data: ir }, { count }] = await Promise.all([
       releaseVisibleInventory(sb.from("listings").select("asset_type,deal_type,asking_rent_sqm,district_id,building_grade").eq("status", "published")).limit(1000),
-      sb.from("rent_index_published").select("district_id,district_label,district_label_ar,asset_type,segment,unit,median,band_low,band_high,period,sufficient").eq("sufficient", true),
+      sb.from("rent_index_published").select("district_id,district_label,district_label_ar,asset_type,segment,unit,median,band_low,band_high,period,sufficient,stat_kind,data_class,is_demo").eq("sufficient", true),
       sb.from("districts").select("id", { count: "exact", head: true }),
     ]);
     listings = ls ?? [];
-    idxRows = ir ?? [];
+    // ADV-1E. Everything below is computed from `idxRows`: the band chart, the
+    // median office figure, the segment count and the quote distribution across
+    // the whole inventory. Gating once here means none of those four can restate
+    // a figure the licence withholds, and it is the reason the gate lives at the
+    // read rather than at each of the four render sites.
+    const quotable = await quotableRentIndexRows((ir ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+    idxRows = quotable.rows.map((q) => q.row as any);
+    idxStatements = quotable.statements;
     locCount = count ?? 0;
   }
 
@@ -149,6 +158,12 @@ export default async function MarketPage({ params }: { params: { locale: string 
             })}
           </div>
           <div className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>{t.bandsCaption}</div>
+          {/* Every figure on this page is derived from the same set of rows, so
+              the sentence that governs them is stated once, beneath the chart
+              that shows the most of them. */}
+          {idxStatements.map((s) => (
+            <div key={s} className="muted" style={{ fontSize: 11.5, marginTop: 6, lineHeight: 1.7 }}>{s}</div>
+          ))}
         </section>
       )}
 

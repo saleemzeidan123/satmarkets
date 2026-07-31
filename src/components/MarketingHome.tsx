@@ -29,7 +29,12 @@ const ASSETS = [
  { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
 ];
 
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
+// ADV-1E. `bandNotes` carries the sentences the server's quote decision attached
+// to the figures in `bands`. It is a prop rather than a lookup because this
+// component is a client component and the decision is a server one: a client
+// that could re-derive the sentence could also re-derive it wrongly, and the
+// figure and its sentence must come from the same place.
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
  const router = useRouter();
  const ar = locale === "ar";
  const H = getDictionary(ar ? "ar" : "en").home;
@@ -422,6 +427,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span>{kpis.source || (ar ? "\u0627\u0644\u0645\u0635\u062f\u0631" : "Source")}</span>
         <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : ""}</span>
        </div>
+       {bandNotes.map((n) => (
+        <div key={n} style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "rgba(255,255,255,.6)", marginTop: 8 }}>{n}</div>
+       ))}
       </div>}
      </div>
     </div>

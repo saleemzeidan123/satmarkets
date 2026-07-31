@@ -84,6 +84,13 @@ import {
 } from "./evidence";
 import { effectivePolicy } from "./sourceRights";
 import type { SourceRights, UsePolicy } from "./sourceRights";
+import { type PreviewEnvironment, previewEnvironmentNow } from "./launchGate";
+import {
+  type PublicQuoteKind,
+  decidePublicQuote,
+  SAMPLE_STATEMENT,
+  SOURCE_NOT_DISCLOSED,
+} from "./publicQuote";
 
 // ---------------------------------------------------------------------------
 // The states a figure can be in
@@ -127,6 +134,17 @@ import type { SourceRights, UsePolicy } from "./sourceRights";
  * stop standing in for several different facts. It is a statement about a
  * MISSING PERMISSION RECORD and about nothing else: not about the figure, not
  * about the source, and not about whether we hold the value.
+ *
+ * ADV-1E adds the two states the canonical quote decision can reach that none
+ * of the eleven above described. `restricted` and `permission_unrecorded` are
+ * both statements about a source's licence row, and neither is true of a figure
+ * withheld because a reviewer recorded a stop condition against it or because
+ * synthetic data left the labelled preview. And nothing here said "this is test
+ * data", which is the one thing a reader of a sample figure must be told.
+ *
+ *   sample              test data, shown in the labelled preview only, never as
+ *                       a published market figure
+ *   withheld_public_use held, and not available for public use here
  */
 export type EvidenceState =
   | "held"
@@ -134,7 +152,9 @@ export type EvidenceState =
   | "retracted"
   | "restricted"
   | "permission_unrecorded"
+  | "withheld_public_use"
   | "insufficient"
+  | "sample"
   | "check_unavailable"
   | "unverified"
   | "stale"
@@ -151,7 +171,13 @@ const STATE_ORDER: readonly EvidenceState[] = [
   "empty",
   "restricted",
   "permission_unrecorded",
+  "withheld_public_use",
   "insufficient",
+  // `sample` sits directly below the withholding states and above everything
+  // that merely qualifies a shown figure, because it is the most important true
+  // thing about a figure that IS shown. A reader who takes one word from the
+  // indicator must take this one.
+  "sample",
   // The two checking states sit below the five that withhold a figure and above
   // the three that qualify a shown one, because they are neither: the value is
   // shown, and what is missing is our own check rather than the value or the
@@ -170,7 +196,9 @@ const STATE_LABEL: Record<EvidenceState, [string, string]> = {
   retracted: ["Withdrawn", "مسحوب"],
   restricted: ["Not shown here", "غير معروض هنا"],
   permission_unrecorded: ["Permission not recorded", "الإذن غير مسجّل"],
+  withheld_public_use: ["Not available for public use", "غير متاح للاستخدام العام"],
   insufficient: ["Sample not sufficient", "العينة غير كافية"],
+  sample: ["Sample data", "بيانات تجريبية"],
   check_unavailable: ["Check unavailable", "التحقق غير متاح"],
   unverified: ["Shown as supplied", "معروضة كما قُدِّمت"],
   stale: ["Out of date", "غير محدّث"],
@@ -207,6 +235,14 @@ const STATE_NOTE: Record<EvidenceState, [string, string]> = {
   permission_unrecorded: [
     "No permission record could be read for this source, so the value is not shown. This says nothing about the source or the value: an unread permission is simply not a permission.",
     "تعذّرت قراءة سجل الإذن لهذا المصدر، فلم تُعرض القيمة. ولا يقول هذا شيئاً عن المصدر ولا عن القيمة، فالإذن غير المقروء ليس إذناً.",
+  ],
+  withheld_public_use: [
+    "We hold this value and it is not available for public use here. That is a limit on what SAT may publish, not a statement about the value.",
+    "نحتفظ بهذه القيمة وهي غير متاحة للاستخدام العام هنا. وهذا حدٌّ على ما تستطيع سات نشره، لا حكم على القيمة.",
+  ],
+  sample: [
+    "Sample data for product testing. Not a published market figure. It exists to exercise the product on the private preview, and nothing about the market may be concluded from it.",
+    "بيانات تجريبية لاختبار المنتج، وليست رقماً سوقياً منشوراً. وهي موجودة لتشغيل المنتج على المعاينة الخاصة، ولا يصح استنتاج أي شيء عن السوق منها.",
   ],
   check_unavailable: [
     "A check was recorded for this and its outcome is not known to us. That is a gap in our checking, not a finding about the value.",
@@ -385,6 +421,22 @@ export type PublicEvidenceView = {
   state: EvidenceState;
   /** Every state that applies, most disqualifying first. */
   states: readonly EvidenceState[];
+
+  /**
+   * ADV-1E. The canonical quote decision for this figure, carried on the object
+   * every surface renders.
+   *
+   * Finding 90 was two surfaces computing the same permission twice and getting
+   * two answers. They cannot now: the decision is made once, in `publicQuote`,
+   * and travels with the figure. A page, an API payload, a metadata builder and
+   * an Advisor sentence all read this field, so "the prose and passport must
+   * never disagree" is a property of the data rather than a discipline.
+   */
+  quote: PublicQuoteKind;
+  /** True when this figure may appear only beside the explicit sample statement. */
+  requiresSampleStatement: boolean;
+  /** True only for a genuine first-party value. Codex item 4, as one boolean. */
+  mayNameSatOwnRecord: boolean;
 };
 
 export type PublicViewContext = {
@@ -399,6 +451,14 @@ export type PublicViewContext = {
    */
   rights?: SourceRights | null;
   now: number;
+  /**
+   * Is this deployment labelling what it shows as sample data.
+   *
+   * Optional, and read from the deployment when omitted, so no call site can
+   * accidentally assert a labelled preview it is not in. A test passes it
+   * explicitly; nothing else should.
+   */
+  environment?: PreviewEnvironment;
 };
 
 /**
@@ -457,18 +517,45 @@ export function publicEvidenceView(
   // prohibited row, because naming them republishes the term being respected. A
   // denied sourced figure therefore carries no source block at all, and the
   // state says why without saying who.
+  // ADV-1E. The canonical quote decision, made here and made once.
+  //
+  // It runs BESIDE `publishability` rather than instead of it, and the figure
+  // survives only if both allow it. They answer overlapping questions from
+  // different angles: `publishability` asks whether this passport is a claim we
+  // may make on this page, and `decidePublicQuote` asks whether SAT may quote
+  // the figure in public at all, weighing the two things the older decision
+  // never saw, which are the record's own sample status and the environment it
+  // is being rendered in. Neither can widen the other, because the value below
+  // requires both to say yes.
+  const quote = decidePublicQuote({
+    hasValue: p.value !== null && p.value !== undefined,
+    sufficiency: p.sufficiency,
+    recordDemoStatus: p.recordDemoStatus ?? "unknown",
+    dataClass: p.dataClass ?? null,
+    tier: p.tier,
+    sourceId: p.sourceId ?? null,
+    rights: ctx.rights ?? null,
+    asPublished: p.transformation === "as_published" || p.transformation === "unit_converted",
+    environment: ctx.environment ?? previewEnvironmentNow(),
+  });
+  const show = decision.allowed && quote.mayShowFigure;
+
   const source: PublicSourceRef | null =
-    sourced && p.sourceId && decision.allowed
+    sourced && p.sourceId && show
       ? { id: p.sourceId, owner: sourceOwnerLabel(p.sourceId, false) }
       : null;
 
-  const states = statesOf(p, ctx, decision.allowed, fresh, permissions);
+  const states = statesOf(p, ctx, show, fresh, permissions, quote.kind);
 
   return {
     field: p.field,
     // A value that may not be shown is not carried in the object that renders
     // it. Boundary 6 as a data shape: a page cannot leak a figure it never got.
-    value: decision.allowed ? p.value : null,
+    // Codex item 2 reads the same rule at the wire: an unauthorized figure does
+    // not reach the browser, an API consumer, metadata, structured data or an AI
+    // response, and the way to guarantee that is for it not to be in the object
+    // any of them serialise.
+    value: show ? p.value : null,
     unit: p.unit ?? null,
     subjectKind: p.subjectKind,
     assetType: p.assetType ?? null,
@@ -499,6 +586,9 @@ export function publicEvidenceView(
     })),
     state: states[0],
     states,
+    quote: quote.kind,
+    requiresSampleStatement: quote.requiresSampleStatement,
+    mayNameSatOwnRecord: quote.mayNameSatOwnRecord,
   };
 }
 
@@ -513,6 +603,36 @@ export function localiseSource(v: PublicEvidenceView, ar: boolean): PublicEviden
 }
 
 /**
+ * The one name SAT may put on a figure it collected itself. Codex item 4: this
+ * phrase is reserved for genuine first-party information and must never stand in
+ * for an unresolved third party, a synthetic row or a withheld attribution.
+ */
+export const SAT_OWN_RECORD = { en: "SAT Markets own record", ar: "سجل سات ماركتس" } as const;
+
+/**
+ * What the "Source" field says about one view, in the reader's language.
+ *
+ * ADV-1E. This rule existed twice: once inside `EvidencePassport` and once,
+ * written out again, in the Rent Index table's Source column. Two copies of a
+ * source-naming rule is precisely the shape Codex item 4 warns about, because
+ * the copy that drifts is the one that starts saying "SAT Markets own record"
+ * where the truthful answer is that we are not permitted to say. There is now
+ * one, and both surfaces read it.
+ *
+ * The order is not cosmetic. A named source wins because it is the strongest
+ * true statement available. `mayNameSatOwnRecord` is set by `decidePublicQuote`
+ * on the single first-party branch and is never inferred from a missing source
+ * block. Sample data names itself in the field a reader checks when a figure
+ * looks surprising. Everything left is a source we may not name, and says so.
+ */
+export function publicSourceText(v: PublicEvidenceView, ar: boolean): string {
+  if (v.source) return sourceOwnerLabel(v.source.id, ar);
+  if (v.mayNameSatOwnRecord) return SAT_OWN_RECORD[ar ? "ar" : "en"];
+  if (v.quote === "labelled_sample") return SAMPLE_STATEMENT[ar ? "ar" : "en"];
+  return SOURCE_NOT_DISCLOSED[ar ? "ar" : "en"];
+}
+
+/**
  * The states that are, on their own, a reason a figure is not stated. Used to
  * answer the last question below: the decision denied, and did anything already
  * in the set explain why.
@@ -522,6 +642,7 @@ const DISQUALIFYING: readonly EvidenceState[] = [
   "empty",
   "restricted",
   "permission_unrecorded",
+  "withheld_public_use",
   "insufficient",
 ];
 
@@ -548,7 +669,8 @@ function statesOf(
   ctx: PublicViewContext,
   allowed: boolean,
   fresh: Freshness,
-  permissions: EvidencePermissions
+  permissions: EvidencePermissions,
+  quote: PublicQuoteKind
 ): readonly EvidenceState[] {
   const set = new Set<EvidenceState>();
 
@@ -603,6 +725,21 @@ function statesOf(
   // sourced figure is not "supplied to us", so the state would be a category
   // error there: what those two carry instead is `derived` and a source.
   if (p.tier === "entered" && !anyVerified(checks)) set.add("unverified");
+
+  // ADV-1E. The two outcomes the canonical quote decision can reach that the
+  // record's own condition and the licence row cannot describe between them.
+  //
+  // `sample` is stated whenever the decision says sample, and never inferred
+  // from anything else, so a figure that is test data says so even on a surface
+  // whose author never thought about test data.
+  //
+  // `withheld_public_use` is only added when nothing more specific already
+  // explains the withholding. A figure denied because its licence row says no
+  // is `restricted`, and saying both would be two answers to one question.
+  if (quote === "labelled_sample") set.add("sample");
+  if (quote === "withheld" && !set.has("restricted") && !set.has("permission_unrecorded")) {
+    set.add("withheld_public_use");
+  }
 
   // A denial with nothing above it to account for it. Subject mismatch, an
   // unlabelled statistic and a missing period all land here. The honest summary

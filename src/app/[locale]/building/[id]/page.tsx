@@ -14,6 +14,7 @@ import { fillProse } from "@/lib/format";
 import { getBuildingById } from "@/lib/queries/listings";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { districtMobilityPanel } from "@/lib/location/panel";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 
@@ -57,11 +58,22 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   if (!b) notFound();
   const [{ data: units }, { data: rentRows }, { data: briefs }] = await Promise.all([
     releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("building_id", b.id).eq("status", "published")).order("created_at", { ascending: false }),
-    sb.from("rent_index_published").select("asset_type, unit, band_low, band_high, median, sufficient").eq("district_id", b.district_id).eq("asset_type", b.asset_type),
+    // ADV-1E. The select carries what the decision needs. `sufficient` alone
+    // used to choose this band, and `sufficient` describes a sample size, not a
+    // right to publish what the sample produced.
+    sb.from("rent_index_published").select("asset_type, unit, band_low, band_high, median, period, segment, sufficient, stat_kind, data_class, is_demo").eq("district_id", b.district_id).eq("asset_type", b.asset_type),
     sb.from("tenant_briefs").select("id").eq("district_id", b.district_id).eq("asset_type", b.asset_type),
   ]);
   const listings = (units as Listing[]) ?? [];
-  const band = (rentRows ?? []).find((r: any) => r.sufficient && r.median != null) as any;
+  // The band on a building profile is one figure, so the decision is taken over
+  // the rows that could supply it and the first survivor wins. A band whose
+  // publication rights are unread or withheld leaves `band` undefined, and the
+  // page falls to `T.noBand` rather than printing a number with nothing behind
+  // it (Codex item 2: it does not reach the browser at all).
+  const quotableBands = await quotableRentIndexRows((rentRows ?? []) as any[], locale, () => (ar ? (b.district_label_ar || b.district_label) : b.district_label) ?? null);
+  const quoted = quotableBands.rows.find((q) => (q.row as any).median != null);
+  const band = (quoted?.row ?? null) as any;
+  const bandStatement = quoted?.gate.statement ?? null;
   const demand = (briefs ?? []).length;
 
   // The register is read here rather than inside the panel so that the geo
@@ -115,6 +127,10 @@ export default async function BuildingPage({ params }: { params: { locale: strin
                   the source, which is also the attribution owner ruling 2 requires of
                   every Rent Index reference on the platform. */}
               <div className="mt-1 text-[11px] text-charcoal/45">{T.bandSource}</div>
+              {/* The sentence sits with the figure, not in a footer, because a
+                  reader who sees the number and not the sentence has been told
+                  something untrue about it. */}
+              {bandStatement ? <div className="mt-1 text-[11px] leading-snug text-charcoal/55">{bandStatement}</div> : null}
             </div>
           ) : <div className="text-[13px] text-charcoal/45">{T.noBand}</div>}
           <span className="text-[13px] text-charcoal/60"><span className="fig">{listings.length}</span> {T.units}</span>

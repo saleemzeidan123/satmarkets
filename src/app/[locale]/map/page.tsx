@@ -6,6 +6,7 @@ import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
 import { localeMeta } from "@/lib/meta";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
 
@@ -25,11 +26,20 @@ export default async function MapPage({ params }: { params: { locale: string } }
     const { data: bs } = await sb.from("buildings")
       .select("id,name_en,name_ar,district_label,district_label_ar,district_id,asset_type,grade,size_sqm,lat,lng")
       .not("lat","is",null);
-    const { data: bands } = await sb.from("rent_index_published").select("district_id,district_label,asset_type,median,band_low,band_high,unit,sufficient");
+    // ADV-1E. The select carries what the decision needs, and the decision, not
+    // `sufficient`, is what puts a band on the map. A band whose publication
+    // rights are unread or withheld is absent from `bandMap`, so the building
+    // renders as "no data" rather than as a figure with nothing standing behind
+    // it. Codex item 2: it does not reach the browser at all, and the map's
+    // GeoJSON properties are a browser payload like any other.
+    const { data: bands } = await sb.from("rent_index_published").select("district_id,district_label,district_label_ar,asset_type,segment,period,median,band_low,band_high,unit,sufficient,stat_kind,data_class,is_demo");
     const { data: lst } = await releaseVisibleInventory(sb.from("listings").select("building_id").eq("status","published")).not("building_id","is",null);
 
-    const bandMap = new Map<string, { median: number|null; low: number|null; high: number|null; unit: string }>();
-    (bands ?? []).forEach((r: any) => { if (r.sufficient) bandMap.set(`${r.district_id ?? r.district_label}|${r.asset_type}`, { median: r.median, low: r.band_low, high: r.band_high, unit: r.unit }); });
+    const bandMap = new Map<string, { median: number|null; low: number|null; high: number|null; unit: string; note: string|null }>();
+    const quotable = await quotableRentIndexRows((bands ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+    for (const { row: r, gate } of quotable.rows) {
+      bandMap.set(`${(r as any).district_id ?? (r as any).district_label}|${r.asset_type}`, { median: (r as any).median, low: (r as any).band_low, high: (r as any).band_high, unit: (r as any).unit, note: gate.statement });
+    }
     const counts = new Map<string, number>();
     (lst ?? []).forEach((r: any) => counts.set(r.building_id, (counts.get(r.building_id) ?? 0) + 1));
 
@@ -42,6 +52,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
         grade: b.grade || "n_a", size: b.size_sqm,
         lat: Number(b.lat), lng: Number(b.lng),
         band: band?.median ?? null, bandLow: band?.low ?? null, bandHigh: band?.high ?? null, unit: band?.unit ?? null,
+        bandNote: band?.note ?? null,
         listings: counts.get(b.id) ?? 0,
       };
     });

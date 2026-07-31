@@ -3,6 +3,12 @@ import {
   mayRedisplay,
   type SourceRights,
 } from "@/lib/sourceRights";
+// Type only, so nothing is imported at runtime and the policy module keeps no
+// dependency on the launch gate. `RecordDemoStatus` is declared there because
+// that is where the five inventory facts are kept apart from each other, and
+// restating the union here would be the second copy this codebase keeps
+// learning not to make.
+import type { RecordDemoStatus } from "@/lib/launchGate";
 
 // ADV-1. The Evidence Passport.
 //
@@ -433,6 +439,25 @@ export type EvidencePassport = {
   asOf?: string | null;
   /** How long this kind of field stays current. Absent means we cannot say. */
   maxAgeDays?: number | null;
+
+  /**
+   * ADV-1E. What the record behind this figure says about itself.
+   *
+   * Two fields, because the two columns are two facts and ADV-1C.1 correction 1
+   * rules that neither may be inferred from the other's silence. Both are
+   * optional and both default to the restrictive reading: a producer that does
+   * not set them has told us nothing, and nothing is not a statement that the
+   * figure is real.
+   *
+   * They are carried on the passport rather than passed alongside it because
+   * every surface that renders a figure receives the passport and only the
+   * passport, and a fact that travels separately is a fact some surface will
+   * forget to carry. Codex item 1 requires the quote decision to consider data
+   * class and demo status, so the decision has to be able to see them here.
+   */
+  recordDemoStatus?: RecordDemoStatus;
+  /** The record's own data class, e.g. "synthetic" or "real". Read, never inferred. */
+  dataClass?: string | null;
 
   verification?: readonly VerificationRecord[];
   corrections?: readonly CorrectionEntry[];

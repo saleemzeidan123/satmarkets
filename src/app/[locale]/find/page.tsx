@@ -163,14 +163,20 @@ export default function FindPage() {
       };
 
   const [relaxed, setRelaxed] = useState("none");
+  // ADV-1E. The sentences the server's quote decision attached to the index
+  // figures behind every verdict and yield on this page.
+  const [idxNotes, setIdxNotes] = useState<readonly string[]>([]);
 
   async function run(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setErr("");
     setRows(null);
+    setIdxNotes([]);
     try {
-      const body: Record<string, unknown> = { assetType, dealType, limit: 8 };
+      // The locale was never sent, so an Arabic reader was served an English
+      // decision. Law: identical figures and evidence states in both languages.
+      const body: Record<string, unknown> = { assetType, dealType, limit: 8, locale: ar ? "ar" : "en" };
       if (grade) body.grade = grade;
       if (sizeMin) body.sizeMin = Number(sizeMin);
       if (sizeMax) body.sizeMax = Number(sizeMax);
@@ -185,6 +191,7 @@ export default function FindPage() {
       if (!res.ok) throw new Error(data.error || "Request failed");
       setRows(data.results || []);
       setRelaxed(data.relaxed || "none");
+      setIdxNotes(Array.isArray(data.statements) ? data.statements : []);
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -310,6 +317,12 @@ export default function FindPage() {
                 : ar ? r.verdict.line_ar : r.verdict.line_en}
             </p>
           </a>
+        ))}
+        {/* Directly beneath the cards whose verdicts and yields the index stands
+            behind, because a label further from the figure than this is a label
+            a reader can miss. */}
+        {rows && rows.length > 0 && idxNotes.map((note) => (
+          <p key={note} className="text-[11px] leading-relaxed text-slate-500">{note}</p>
         ))}
       </div>
     </main>

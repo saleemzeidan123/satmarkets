@@ -13,7 +13,7 @@ import {
   evidenceStateLabel,
   evidenceStateNote,
   permissionLabel,
-  sourceOwnerLabel,
+  publicSourceText,
 } from "@/lib/evidenceView";
 import { type Loc, formatUnit } from "@/lib/format";
 import { assetLabel } from "@/lib/labels";
@@ -59,6 +59,45 @@ import ProvenanceChip from "@/components/ProvenanceChip";
 /** Absent, stated as absent. Never a blank, never a dash that reads as a value. */
 function notStated(ar: boolean): string {
   return ar ? "غير مذكور" : "Not stated";
+}
+
+/**
+ * ADV-1E, Codex item 4. Who the figure actually came from.
+ *
+ * This row used to answer the question by elimination: a view with no source
+ * block had no external licensor, "which on this platform means the record is
+ * our own". That inference is the source-laundering defect. Three different
+ * things arrive here with no source block, and only one of them is SAT's:
+ *
+ *   - a figure a lister entered or SAT computed from its own records;
+ *   - a figure SAT generated to exercise the product;
+ *   - a third-party figure whose source block was withheld precisely because
+ *     the licence does not permit us to name or display it.
+ *
+ * Naming the last two "SAT Markets own record" put the exchange's name behind
+ * a number the exchange never collected, and did it most confidently in the
+ * case where the truth was that we were not permitted to say. So the answer is
+ * no longer inferred from the absence of a block. `mayNameSatOwnRecord` is set
+ * by `decidePublicQuote`, on the one branch that reaches a genuine first-party
+ * record, and this function reads it rather than guessing.
+ *
+ * The rule itself now lives in `publicSourceText`, because the Rent Index table
+ * asks the same question in its Source column and a second handwritten copy of
+ * a source-naming rule is the copy that drifts. Localisation happens inside it
+ * rather than being trusted from the caller: the owner is a name in one language
+ * or the other, and a page that forgot to localise would put English on the
+ * Arabic page in the single field a reader is most likely to check.
+ */
+
+/**
+ * The registered source id, which boundary 4 asks for beside the owner: it is
+ * already public on `/sources` and is what a reader follows to check the licence
+ * for themselves. Present only when the source itself is, so a withheld source
+ * does not leak its identity through its reference.
+ */
+function sourceSubText(view: PublicEvidenceView, ar: boolean): string | undefined {
+  if (!view.source) return undefined;
+  return `${ar ? "المرجع" : "Reference"}: ${view.source.id}`;
 }
 
 /**
@@ -108,23 +147,7 @@ export default function EvidencePassport({
   const rows: [string, string, string?][] = [
     [ar ? "نوع الرقم" : "Statistic", statisticLabel(view.statistic, ar)],
     [ar ? "الوحدة" : "Unit", view.unit ? formatUnit(view.unit, locale, "long") : notStated(ar)],
-    [
-      ar ? "المصدر" : "Source",
-      view.source
-        ? // Localised here rather than trusted from the caller. The owner is a
-          // name in one language or the other, and a page that forgot to
-          // localise it would put English on the Arabic page in the single field
-          // a reader is most likely to check.
-          sourceOwnerLabel(view.source.id, ar)
-        : // No source block means no external licensor, which on this platform
-          // means the record is our own. Naming it is not a claim about the
-          // figure: the tier above already says whether a lister stated it or
-          // SAT computed it.
-          ar
-          ? "سجل سات ماركتس"
-          : "SAT Markets own record",
-      view.source ? `${ar ? "المرجع" : "Reference"}: ${view.source.id}` : undefined,
-    ],
+    [ar ? "المصدر" : "Source", publicSourceText(view, ar), sourceSubText(view, ar)],
     [ar ? "ما فعلته سات" : "What SAT did", transformationLabel(view.transformation, ar)],
     [ar ? "فترة التقرير" : "Reporting period", view.period ?? notStated(ar)],
     [ar ? "النطاق الجغرافي" : "Geography", view.geography ?? notStated(ar)],

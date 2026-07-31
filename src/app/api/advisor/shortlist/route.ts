@@ -12,6 +12,8 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { underwrite } from "@/lib/market/underwrite";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { type Loc } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -72,6 +74,10 @@ export async function POST(req: NextRequest) {
   }
   const client = sb();
   const limit = Math.min(b.limit || 6, 20);
+  // Hoisted from the message block below, because the quote decision needs it:
+  // the sentence that has to travel with a figure is language-specific, and the
+  // decision is taken at the read rather than at the point the prose is written.
+  const locale: Loc = (b as any)?.locale === "ar" ? "ar" : "en";
 
   // Progressive relaxation: strict, then drop budget, then drop district.
   const stages = [
@@ -99,15 +105,30 @@ export async function POST(req: NextRequest) {
   }
 
   // Index rows for the districts involved.
+  //
+  // ADV-1E, Codex item 2. This select asked no question at all: not the licence,
+  // not even `sufficient`. Every surviving row then flowed through pickIndexRow
+  // into marketVerdict and underwrite, and both of those emit the third-party
+  // figure in a different shape ("12% below the district median", a yield built
+  // on the band) straight into a JSON response. A figure reshaped is still the
+  // figure, and a JSON response is precisely the "API consumer" the correction
+  // names. So the rows now take the same decision every rendered surface takes,
+  // and the columns the decision needs are selected rather than omitted, because
+  // an omitted column reads as unknown and unknown fails closed.
   const districtIds = Array.from(new Set(rows.map((r) => r.district_id).filter(Boolean)));
   let idx: IndexRow[] = [];
+  let idxStatements: readonly string[] = [];
   if (districtIds.length) {
     const { data: ir } = await client
       .from("rent_index_published")
-      .select("district_id, district_label, district_label_ar, asset_type, segment, unit, band_low, median, band_high, period")
+      .select("district_id, district_label, district_label_ar, asset_type, segment, unit, band_low, median, band_high, period, sufficient, stat_kind, data_class, is_demo")
       .in("district_id", districtIds)
       .eq("asset_type", b.assetType);
-    idx = (ir || []) as any;
+    const quotable = await quotableRentIndexRows((ir ?? []) as any[], locale, (r: any) =>
+      (locale === "ar" ? r.district_label_ar || r.district_label : r.district_label) ?? null,
+    );
+    idx = quotable.rows.map((q) => q.row) as unknown as IndexRow[];
+    idxStatements = quotable.statements;
   }
   const idxByDistrict: Record<string, IndexRow[]> = {};
   for (const r of idx as any[]) (idxByDistrict[r.district_id] ||= []).push(r);
@@ -140,7 +161,6 @@ export async function POST(req: NextRequest) {
   results.sort((a, c) => (rank[a.verdict.status] - rank[c.verdict.status]) || c.fit_score - a.fit_score);
 
   const shown = results.slice(0, limit);
-  const locale = (b as any)?.locale === "ar" ? "ar" : "en";
   let message: string;
   if (shown.length === 0) {
     message = locale === "ar" ? "لا توجد مساحات معروضة مطابقة الآن. وسّع الميزانية أو الموقع، أو انشر طلباً وسيصلك ردّ المُلّاك والوسطاء." : "No listed spaces match right now. Widen the budget or location, or post a requirement and let owners and brokers come to you.";
@@ -160,12 +180,26 @@ export async function POST(req: NextRequest) {
     const lo = prices.length ? Math.min(...prices).toLocaleString("en-US") : null;
     const hi = prices.length ? Math.max(...prices).toLocaleString("en-US") : null;
     const within = shown.filter((r: any) => r.verdict?.status === "within" || r.verdict?.status === "below").length;
-    const mid = lo && hi
-      ? (locale === "ar" ? ` الأسعار المعلنة من ${lo} إلى ${hi} ريال/م²·سنة، منها ${within} ضمن نطاق المؤشر أو أدنى.` : ` Asking runs ${lo} to ${hi} SAR/m²·yr, with ${within} at or below their index band.`)
+    // The asking range is the listings' own data and is always sayable. The
+    // second half of the sentence counts spaces against the index band, which is
+    // the third-party figure restated, so it is said only where a band survived
+    // the decision. Saying "0 at or below their index band" when every band was
+    // withheld would report an absence of permission as a market fact.
+    const graded = shown.filter((r: any) => r.verdict?.status && r.verdict.status !== "na").length;
+    const range = lo && hi
+      ? (locale === "ar" ? ` الأسعار المعلنة من ${lo} إلى ${hi} ريال/م²·سنة` : ` Asking runs ${lo} to ${hi} SAR/m²·yr`)
       : "";
+    const band = range && graded > 0
+      ? (locale === "ar" ? `، منها ${within} ضمن نطاق المؤشر أو أدنى` : `, with ${within} at or below their index band`)
+      : "";
+    const mid = range ? `${range}${band}.` : "";
+    // Codex item 3: the label stays connected to the figure, including inside an
+    // Advisor answer, so the statement rides in the same sentence block rather
+    // than in a footnote the client may not render.
+    const notes = graded > 0 && idxStatements.length ? ` ${idxStatements.join(" ")}` : "";
     message = locale === "ar"
-      ? `وجدت ${shown.length} مساحة معروضة مطابقة.${mid} أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
-      : `Found ${shown.length} listed ${shown.length === 1 ? "space" : "spaces"}.${mid} Give me a budget, size or location to narrow it, or ask me about any of them.`;
+      ? `وجدت ${shown.length} مساحة معروضة مطابقة.${mid}${notes} أخبرني بالميزانية أو المساحة أو الموقع لأضيّق القائمة، أو اسألني عن أي واحدة منها.`
+      : `Found ${shown.length} listed ${shown.length === 1 ? "space" : "spaces"}.${mid}${notes} Give me a budget, size or location to narrow it, or ask me about any of them.`;
   }
-  return NextResponse.json({ count: results.length, relaxed, message, results: shown });
+  return NextResponse.json({ count: results.length, relaxed, message, statements: idxStatements, results: shown });
 }

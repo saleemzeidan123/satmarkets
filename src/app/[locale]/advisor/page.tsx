@@ -10,11 +10,20 @@ import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, 
 import { getDictionary } from "@/i18n/getDictionary";
 import { fill, formatArea, formatInteger, formatRange } from "@/lib/format";
 import EvidencePassport from "@/components/EvidencePassport";
+import { advisorQuoteMessage } from "@/lib/advisor/quote";
+import { type PublicQuoteKind } from "@/lib/publicQuote";
 import { statisticLabel } from "@/lib/evidence";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
-type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string };
+//
+// ADV-1E. `quote` and `statement` arrive with it. The route has already decided
+// that every row it sent may be quoted, so this component never re-decides; but
+// a row may be quotable only WITH a sentence attached, and that sentence is
+// written once, server side, in the reader's language. Rendering the figure and
+// dropping the statement would put the label back at the mercy of a component,
+// which is the shape finding 90 took.
+type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string; quote?: string; statement?: string | null };
 
 const XIcon = ({ size = 16 }: { size?: number }) => (
  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -47,8 +56,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
 
  useEffect(() => {
   if (tool !== "value" || segs) return;
-  fetch("/api/index/segments").then((r) => r.json()).then((d) => setSegs(d.segments || [])).catch(() => setSegs([]));
- }, [tool, segs]);
+  fetch(`/api/index/segments?locale=${locale}`).then((r) => r.json()).then((d) => setSegs(d.segments || [])).catch(() => setSegs([]));
+ }, [tool, segs, locale]);
 
  // Keep a still-valid previous selection, but never auto-pick a segment as
  // implicit intent: if the current choice is not among the loaded options,
@@ -106,7 +115,24 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
    ar,
   });
   if (!res) return;
-  setMsgs((m) => [...m, { role: "a", text: res.text, band: { low: res.band.low, average: res.band.average, high: res.band.high, unit: activeRow.unit }, quoted: res.quoted, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
+  // The analyser's sentence quotes the band, so the row's statement travels
+  // inside that sentence rather than beside it. A chat answer is one string:
+  // anything not concatenated into it is not in the answer. Same rule, same
+  // concatenation helper, as the server side Advisor.
+  // The kind is the row's own, not a convenient one: the route sends only rows
+  // it may quote, so `mayShowFigure` is true here by construction, but the kind
+  // is carried through rather than assumed so a later reader of this message
+  // sees what was actually decided.
+  const text = advisorQuoteMessage(
+   {
+    kind: (activeRow.quote as PublicQuoteKind) ?? "authorized_public",
+    mayShowFigure: true,
+    statement: activeRow.statement ?? null,
+    passports: [],
+   },
+   res.text,
+  );
+  setMsgs((m) => [...m, { role: "a", text, band: { low: res.band.low, average: res.band.average, high: res.band.high, unit: activeRow.unit }, quoted: res.quoted, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
  }
 
  const started = msgs.length > 0;
@@ -306,6 +332,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
             avg: formatInteger(activeBand.average, locale),
             period: formatPeriod(activeRow.period, ar),
           })}</div>
+          {/* Codex item 3. The statement sits directly beneath the band line it
+              qualifies, inside the same block, so it cannot be read as a note
+              about the tool rather than about this figure. */}
+          {activeRow.statement && <div className="muted" style={{ fontSize: "var(--fs-2xs)", lineHeight: 1.7 }}>{activeRow.statement}</div>}
           <div className="row gap8">
            <button className="btn primary sm" onClick={analyse} disabled={!activeBand || !rateValid || !unitOk}>{av.analyse}</button>
           </div>

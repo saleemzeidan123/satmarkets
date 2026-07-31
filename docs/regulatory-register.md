@@ -396,10 +396,36 @@ plus O12 (consent basis for external notification channels), plus the legal-page
 placeholders that are finding rank 9. One instruction, three answers, and it unblocks
 more than any other single item in this file.
 
-**REGA and Ejar permitted-use language (O10).** A written statement of whether derived
-values, user export and assistant retrieval are permitted, and what attribution string
-is required. Sufficient to move `rega_ejar` from `asserted_unverified` to `evidenced`
-and to open the highest-value surface in the product to derived figures.
+**REGA and Ejar permitted-use language (O10).** Recorded precisely in ADV-1E, because
+the four earlier statements of this question in this repository were each true and none
+was a specification, which is how a question gets answered in a meeting, believed to be
+closed, and leaves three of its dimensions untouched.
+
+O10 is the external confirmation of REGA Rental Index (Ejar) rights covering: source
+access; public display; attribution wording; SAT transformations and derived figures;
+aggregation and minimum samples; export; API and machine-readable output; AI retrieval
+and response use; retention and correction; Arabic and English publication.
+
+Those ten clauses are executable, not only prose here. Each is an `O10ClauseId` in
+`src/lib/sources/o10.ts`, each carries the register phrase above as the join, `O10_RECORDS`
+is empty under owner ruling 7, and `assessO10` returns the clauses a candidate statement
+leaves unanswered rather than a yes or a no. Reading a set of terms therefore produces a
+diff against this paragraph rather than an impression of it, and `o10.test.ts` fails the
+build if this text and that file drift apart in either direction.
+
+Resolution is unanimous rather than scored. A statement that permits public display and
+is silent on AI retrieval does not permit AI retrieval nine tenths of the way. **Until
+O10 is resolved the production decision fails closed**, which is enforced by the rights
+ledger rather than by intention: `rega_ejar` carries `rights_status =
+'asserted_unverified'` with the stop condition recorded, `effectivePolicy` ceils every
+column at `internal`, and `decidePublicQuote` returns `withheld` for every surface,
+including the API, structured data, metadata and the assistant. Sufficient answers move
+`rega_ejar` to `evidenced` with its policy columns set, and every surface opens without a
+code change, which is the property the ledger was built for.
+
+Owner ruling 2 fixes SAT's side of the attribution clause independently and does not wait
+on this answer: every Rent Index reference retains the REGA Rental Index (Ejar)
+attribution whatever else is agreed.
 
 **SPL National Address.** Signup, then read and record the written redisplay terms.
 

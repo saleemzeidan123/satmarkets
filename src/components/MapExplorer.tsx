@@ -15,6 +15,19 @@ export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
  grade: string; size: number | null; lat: number; lng: number;
  band: number | null; bandLow: number | null; bandHigh: number | null; unit: string | null; listings: number;
+ /**
+  * ADV-1E. The sentence that must accompany this building's band, already in
+  * the reader's language, or null when the band needs none.
+  *
+  * The map used to show a band for any row the table called `sufficient`, which
+  * is a fact about sample size and not about whether SAT may publish what the
+  * sample produced. The page now decides per row and sends only bands it may
+  * show; a band it may show only as sample data arrives with this sentence, and
+  * the sentence renders beside the number in both the rail card and the detail
+  * panel, because a map has no single place a caption could sit and still be
+  * about one building.
+  */
+ bandNote?: string | null;
 }
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
 const unitFmt = (u: string | null, l: string) =>
@@ -208,7 +221,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     map.on("click", "pt-hit", (e: any) => {
      if (modeRef.current === "zone") return;
      const p = e.features[0].properties;
-     const b: MapBuilding = { ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), listings: Number(p.listings) || 0 };
+     const b: MapBuilding = { ...p, size: p.size === "null" || p.size == null ? null : Number(p.size), band: p.band === "null" || p.band == null ? null : Number(p.band), bandLow: p.bandLow === "null" || p.bandLow == null ? null : Number(p.bandLow), bandHigh: p.bandHigh === "null" || p.bandHigh == null ? null : Number(p.bandHigh), bandNote: p.bandNote === "null" || p.bandNote == null || p.bandNote === "" ? null : String(p.bandNote), listings: Number(p.listings) || 0 };
      setSel(b);
      if (!inViewRef.current.some((x) => x.id === b.id)) {
       const full = buildings.find((x) => x.id === b.id);
@@ -346,6 +359,9 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
              <span className="text-[10px] text-charcoal/50">{unitFmt(b.unit, locale)}</span>
             </div>
            ) : (<div className="mt-1 text-[11px] text-charcoal/40">{t.noData}</div>)}
+           {b.band != null && b.bandNote ? (
+            <div className="mt-0.5 text-[10px] leading-snug text-charcoal/55">{b.bandNote}</div>
+           ) : null}
            <div className="mt-1 flex items-center justify-between">
             <span className="text-[11px] text-charcoal/60">{b.listings} {t.available}</span>
             <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
@@ -378,6 +394,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
           <span className="font-display text-2xl text-charcoal">{Math.round(sel.band).toLocaleString()}</span>
           <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + (locale === "ar" ? " إلى " : "–") + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
          </div>
+         {sel.bandNote ? <div className="mt-1 text-[11px] leading-snug text-charcoal/55">{sel.bandNote}</div> : null}
         </div>
        ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/45">{t.noData}</div>)}
        <div className="mt-3 flex items-center justify-between">

@@ -12,7 +12,8 @@ import { formatPeriod } from "@/lib/market/period";
 import { assetLabel, segmentLabel } from "@/lib/labels";
 import { fill, formatInteger, formatUnit } from "@/lib/format";
 import EvidencePassport from "@/components/EvidencePassport";
-import { type PublicEvidenceView } from "@/lib/evidenceView";
+import { type PublicEvidenceView, evidenceStateLabel, publicSourceText } from "@/lib/evidenceView";
+import { type PublicQuoteKind, quoteStatement } from "@/lib/publicQuote";
 import {
   rentIndexEvidenceByField,
   rentIndexRecordClassOf,
@@ -23,6 +24,30 @@ import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
 
 const AZURE = "#3A6EA5";
 
+/**
+ * ADV-1E. The Source column, in one short phrase, from the same decision that
+ * decided whether there is a figure beside it.
+ *
+ * Short by necessity: this is the sixth column of a table that is already
+ * scrolling sideways at 320 pixels. The full sentence Codex item 3 requires is
+ * printed once under the table rather than repeated down it, which keeps it
+ * legible and keeps it attached to the figures it qualifies.
+ *
+ * The name itself comes from `publicSourceText`, the same function the Evidence
+ * Passport's Source row reads, so this column and the panel a reader opens from
+ * it cannot answer "who says so" differently. Writing the rule out again here,
+ * which is what this did first, is how "SAT Markets own record" ends up on a
+ * figure SAT never collected.
+ */
+function sourceCell(d: DRow, sampleWord: string, ar: boolean) {
+  const avg = d.evidence.get("rent_index_average") ?? d.evidence.get("rent_index_band");
+  if (d.quote === "authorized_public" && avg) {
+    return <span className="statusdot ok">{publicSourceText(avg, ar)}</span>;
+  }
+  if (d.quote === "labelled_sample") return <span className="statusdot pend">{sampleWord}</span>;
+  return <span className="statusdot pend">{evidenceStateLabel(d.quote === "withheld" ? "withheld_public_use" : "empty", ar)}</span>;
+}
+
 // ADV-1D. This was a five-tuple of display strings, which is why the evidence
 // could not be attached: by the time the row reached the table there was nothing
 // left of the record, only the text it had been turned into. It now carries the
@@ -32,12 +57,24 @@ const AZURE = "#3A6EA5";
 type DRow = {
   location: string;
   asset: string;
-  /** Already formatted, or the "n/a" the table prints for a thin cell. */
+  /**
+   * ADV-1E, finding 90. Read off the passport, never off the record.
+   *
+   * These two were computed here from `r.median` and `r.sufficient` while the
+   * evidence card below printed `avg.value` from the passport. Two readings of
+   * one row, taken by two different rules, which is finding 90 on the server
+   * render: the table could print 1,420 in the same card whose panel said the
+   * figure may not be shown. There is now one reading. If the passport withholds
+   * the figure, the table has no figure to print, because there is no other
+   * place to get one from.
+   */
   figure: string;
   band: string;
   sufficient: boolean;
   /** Whether the row says of itself that it is a simulated demonstration cell. */
   simulated: boolean;
+  /** The one decision, for the row's headline figure. Drives what Source says. */
+  quote: PublicQuoteKind;
   evidence: Map<string, PublicEvidenceView>;
 };
 
@@ -51,7 +88,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;
- const pub = await getPublishedKpis();
+ const pub = await getPublishedKpis(ar ? "ar" : "en");
 
  // This page used to carry its own asset table and its own segment table, a
  // fourth and a fifth copy of vocabulary that labels.ts already owns. That is
@@ -99,21 +136,31 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
    if (error || !data) ({ data } = await q(NARROW));
    districts = ((data ?? []) as any[]).map((r: any): DRow => {
     const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " \u00b7 " + segmentLabel(r.segment, loc) : ""}`;
-    const figure = r.sufficient && r.median != null ? formatInteger(Number(r.median), loc) : (ri.na);
-    const band = r.sufficient && r.band_low != null && r.band_high != null ? `${formatInteger(Number(r.band_low), loc)}\u2013${formatInteger(Number(r.band_high), loc)}` : (ri.thinSample);
     const location = ar ? (r.district_label_ar || r.district_label) : r.district_label;
     const cell: RentIndexCell = r;
+    // The geography the passport states is the one the reader is looking at,
+    // in the reader's language, so the Arabic page cannot report an English
+    // place name in the single field a reader is most likely to check.
+    const evidence = rentIndexEvidenceByField(cell, { locale: loc, geography: location }, rights);
+    const avg = evidence.get("rent_index_average");
+    const bandView = evidence.get("rent_index_band");
+    const sufficient = !!r.sufficient;
     return {
      location,
      asset,
-     figure,
-     band,
-     sufficient: !!r.sufficient,
+     // `avg.value` is already null wherever the decision withheld, so the
+     // fallback here is reached by an absent figure and a withheld one alike,
+     // and prints the same "not available" for both. Which of the two it was is
+     // in the panel below, stated rather than encoded in the blank.
+     figure: avg?.value ?? ri.na,
+     // `ri.thinSample` only where thinness is actually the reason. A band the
+     // licence withheld is not a thin sample, and saying so would blame the
+     // data for a decision about our rights.
+     band: bandView?.value ?? (sufficient ? ri.na : ri.thinSample),
+     sufficient,
      simulated: rentIndexRecordClassOf(cell) === "flagged_simulated",
-     // The geography the passport states is the one the reader is looking at,
-     // in the reader's language, so the Arabic page cannot report an English
-     // place name in the single field a reader is most likely to check.
-     evidence: rentIndexEvidenceByField(cell, { locale: loc, geography: location }, rights),
+     quote: avg?.quote ?? bandView?.quote ?? "unavailable",
+     evidence,
     };
    });
   }
@@ -129,7 +176,24 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  // is the same defect as ADV-1C.1 correction 1, one layer down: a claim standing
  // on a marker that says the opposite. It is emitted only when there are rows and
  // not one of them is flagged simulated.
- const basedOnPermitted = districts.length > 0 && !districts.some((d) => d.simulated);
+ //
+ // ADV-1E widens the predicate from "not flagged simulated" to "every row is
+ // authorized public evidence". The old test caught the case we had, a synthetic
+ // corpus, and missed the one we are about to have: a real REGA row whose
+ // display rights are still unread is not simulated, so it passed, and the
+ // structured data would have told a crawler the dataset is based on the REGA
+ // Rental Index while the page beside it withheld every figure for want of
+ // permission to say exactly that. Codex item 2 puts metadata and structured
+ // data inside the fence, so the fence is the same decision the figures use.
+ const basedOnPermitted = districts.length > 0 && districts.every((d) => d.quote === "authorized_public");
+
+ // The distinct statements the table needs, in table order, deduplicated. An
+ // `authorized_public` row contributes nothing, because a figure we are
+ // permitted to publish needs no qualification and adding one would teach a
+ // reader to ignore the sentence when it matters.
+ const quoteNotes = Array.from(
+  new Set(districts.map((d) => quoteStatement(d.quote, ar)).filter((t): t is string => t !== null))
+ );
 
  // Only what the index can actually evidence. Where a figure has no cell behind
  // it, we show the same "not available" the table shows. The old row led with
@@ -169,6 +233,12 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="eyebrow">{ri.eyebrow}{pub.period ? " \u00b7 " + formatPeriod(pub.period, ar) : ""}</div>
       <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
       <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ri.intro}</div>
+      {/* ADV-1E. The four tiles below the header are averages taken across
+          cells, so the sentence that governs those cells belongs beside the
+          tiles and not only beside the table further down. */}
+      {pub.statements.map((s) => (
+       <div key={s} className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 4 }}>{s}</div>
+      ))}
      </div>
      <div className="row gap10 wrap">
       <span className="seg"><span className="on">{ri.all}</span><span>{ri.open}</span><span>{ri.capped}</span></span>
@@ -288,12 +358,30 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                thin-sample text stays in the ambient direction. */}
            <td className="num mono muted">{d.sufficient ? <bdi dir="ltr">{d.band}</bdi> : d.band}</td>
            <td className="num">{d.sufficient ? <span className="statusdot ok">{ri.sufficient}</span> : <span className="statusdot pend">{ri.thin}</span>}</td>
-           <td className="num"><span className="statusdot pend">{ri.sample}</span></td>
+           {/* ADV-1E. This cell was the literal word "Sample" on every row
+               regardless of what the row was, which was right by accident while
+               every row happened to be synthetic and would have gone on saying
+               it over a real REGA figure. It now says what the decision decided,
+               and the sentence behind the short label is under the table. */}
+           <td className="num">{sourceCell(d, ri.sample, ar)}</td>
           </tr>
          ))}
         </tbody>
        </table>
       </div>
+      {/* ADV-1E, Codex item 3. The explicit meaning, in the reader's language,
+          inside the same card as the figures it qualifies and immediately below
+          them. One line per kind actually present, so a table of real cleared
+          figures carries no sample sentence and a table of sample rows cannot
+          be read without one. The wording is the canonical constant, not a
+          restatement of it: a second copy would be the copy that drifts. */}
+      {quoteNotes.length > 0 && (
+       <div style={{ padding: "12px 20px 0" }}>
+        {quoteNotes.map((t) => (
+         <p key={t} className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, margin: "0 0 6px" }}>{t}</p>
+        ))}
+       </div>
+      )}
       <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
        <span className="muted" style={{ fontSize: 12.5 }}>{ri.tableNote}</span>

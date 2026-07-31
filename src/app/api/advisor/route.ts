@@ -10,12 +10,21 @@ import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
 import { allowedSources, userHistory } from "@/lib/advisor/history";
 import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
 import { rentIndexSourceLabel } from "@/lib/market/attribution";
-import { rentIndexEvidenceViews, type RentIndexCell } from "@/lib/rentIndexEvidence";
+import { type RentIndexCell, rentIndexQuoteGate, withheldGate } from "@/lib/rentIndexEvidence";
+import { advisorQuoteMessage } from "@/lib/advisor/quote";
 import { getSourceRightsOrNull } from "@/lib/queries/sourceRights";
 import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
-import type { PublicEvidenceView } from "@/lib/evidenceView";
 
 const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
+
+/**
+ * A canonical statement, joined mid-sentence after a lead-in clause.
+ *
+ * Only the first character, and only when it is one the language actually
+ * cases. Arabic has no case, so this is a no-op there, and lowercasing the
+ * whole string would flatten a proper noun in English.
+ */
+const lower = (s: string): string => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
 // Cluster-aware examples per the owner market briefing (2026-07-03): Riyadh is
 // polycentric, so examples rotate across clusters instead of defaulting to Al Olaya.
@@ -273,11 +282,46 @@ export async function POST(req: NextRequest) {
     if (!ev) {
       return NextResponse.json({ mode: "value", message: arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.` });
     }
-    const message = renderValue(ev, arq ? "ar" : "en");
+    // ADV-1E, finding 90. The decision is taken BEFORE the sentence is written,
+    // because a sentence that has already been written is a sentence somebody
+    // will be tempted to send.
+    //
+    // `getSourceRightsOrNull`, never `getSourceRights`: the denying variant
+    // returns a row matching the id asked for, which would render "the
+    // permission recorded for this source does not cover this audience" when
+    // nothing was recorded and nothing was read. Correction 5 keeps those apart.
+    //
+    // A throw here is not a reason to answer anyway. Evidence used to be "an
+    // addition to the answer, never a precondition for it", which was true while
+    // the answer was ungated and is the opposite of true now: if we cannot
+    // establish that we may quote the figure, we may not quote the figure. So
+    // the catch fails closed onto `unavailable` rather than onto the sentence.
+    const geography = arq ? (band.district_label_ar || band.district_label) : band.district_label;
+    let gate;
+    try {
+      const rights = await getSourceRightsOrNull(REGA_RENT_INDEX_SOURCE_ID);
+      gate = rentIndexQuoteGate(band as RentIndexCell, { locale: arq ? "ar" : "en", geography }, rights);
+    } catch {
+      gate = withheldGate(arq ? "ar" : "en");
+    }
+
+    // Codex item 2. The figure does not reach the browser, the API consumer or
+    // the chart when the decision says it may not be quoted. Not hidden, not
+    // styled away, not left in a key the client happens not to read today: the
+    // keys carrying it are absent from the response, so there is nothing to
+    // expose later by reading them.
+    if (!gate.mayShowFigure) {
+      return NextResponse.json({
+        mode: "value",
+        message: `${arq ? `لدي خلية منشورة لهذا الموقع ونوع الأصل، لكن` : `I hold a published cell for that location and asset type, but`} ${lower(gate.statement ?? "")}`,
+        evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason, requestedPeriod: ev.requestedPeriod, periodStatus: ev.periodStatus },
+        quote: gate.kind,
+      });
+    }
+
+    const message = advisorQuoteMessage(gate, renderValue(ev, arq ? "ar" : "en"));
 
     // ADV-1D, correction 4: the passport on the Advisor published-band surface.
-    //
-    // THE BOUNDARY CODEX DREW, AND WHY THE FILTER IS THE WHOLE OF IT.
     //
     // "Do not attach a passport to an Advisor answer unless the displayed figure
     // is completely traceable through an authorized typed tool result." Two
@@ -290,37 +334,11 @@ export async function POST(req: NextRequest) {
     // from the SAME `band` object, so they cannot be evidence for a different
     // figure than the one the reader was shown.
     //
-    // Second, the filter. A view whose `value` is null is one `publishability`
-    // withheld: an insufficient sample, an unlabelled statistic, or a licence
-    // that does not cover this audience. Attaching it beneath a message that
-    // just printed the figure would put a number and "this value is not shown"
-    // on the same screen. So a withheld view is dropped and the answer carries
-    // no passport at all, which is exactly the pre-ADV-1D behaviour and states
-    // nothing untrue. The prose figure is governed by the sufficiency gate the
-    // value path has always applied; whether it should ALSO be gated on the
-    // passport is finding 90 and is deliberately not decided here.
-    //
-    // `getSourceRightsOrNull`, never `getSourceRights`: the denying variant
-    // returns a row matching the id asked for, which would render "the
-    // permission recorded for this source does not cover this audience" when
-    // nothing was recorded and nothing was read. Correction 5 keeps those apart.
-    let passports: PublicEvidenceView[] = [];
-    try {
-      const rights = await getSourceRightsOrNull(REGA_RENT_INDEX_SOURCE_ID);
-      // The geography the passport states is the one the reader was answered in,
-      // so an Arabic answer cannot carry an English place name in the one field
-      // a reader is most likely to check.
-      const geography = arq ? (band.district_label_ar || band.district_label) : band.district_label;
-      passports = rentIndexEvidenceViews(
-        band as RentIndexCell,
-        { locale: arq ? "ar" : "en", geography },
-        rights
-      ).filter((v) => v.value !== null);
-    } catch {
-      // Evidence is an addition to the answer, never a precondition for it. A
-      // rights read that throws costs the passport and leaves the answer whole.
-      passports = [];
-    }
+    // Second, ADV-1E: the gate above decided whether there is a figure at all,
+    // and these passports are the views it carried out of that same decision.
+    // The route no longer builds a second set here, which is what made finding
+    // 90 possible: two readings of one row cannot disagree if only one is taken.
+    const passports = gate.passports;
     // Public payload: the figure travels as `average` (the stored value IS an
     // arithmetic average; see lib/market/segments.ts). Never expose `median`. The
     // evidence summary lets the client and QA assert the same scope both languages saw.
@@ -338,6 +356,10 @@ export async function POST(req: NextRequest) {
       // already assert on, and overloading it would have one name meaning two
       // things. Absent as an empty array when nothing was traceable.
       passports,
+      // The decision itself, named, so a machine consumer reads the same verdict
+      // the sentence was written from instead of inferring one from whether a
+      // key happens to be present.
+      quote: gate.kind,
     });
   }
 
@@ -348,11 +370,25 @@ export async function POST(req: NextRequest) {
     let band: any = null;
     if (supabase) {
       const did = await resolveDistrictId(supabase, intent?.district);
-      let q = supabase.from("rent_index_published").select("period, district_label, district_id, asset_type, segment, unit, band_low, band_high, median, source").eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
-      if (intent?.asset) q = q.eq("asset_type", intent.asset);
-      if (did) q = q.eq("district_id", did);
-      else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
-      const { data } = await q;
+      // ADV-1E. The same two-select widening the value path and `/rent-index`
+      // use. The watch answer quotes a baseline band in prose, which is a public
+      // figure and is therefore subject to the same decision, and a decision
+      // cannot be taken on columns that were never selected. If the wide list is
+      // not what the schema holds, the narrow list is the pre-ADV-1E list
+      // unchanged, every record-class marker arrives undefined, and the decision
+      // fails closed onto a withheld baseline. A schema that is not what we
+      // expect must cost us a figure, never buy us a claim.
+      const W_WIDE = "period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source, sufficient, stat_kind, data_class, is_demo";
+      const W_NARROW = "period, district_label, district_id, asset_type, segment, unit, band_low, band_high, median, source";
+      const build = (cols: string) => {
+        let q = supabase.from("rent_index_published").select(cols).eq("sufficient", true).order("created_at", { ascending: false }).limit(1);
+        if (intent?.asset) q = q.eq("asset_type", intent.asset);
+        if (did) q = q.eq("district_id", did);
+        else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
+        return q;
+      };
+      let { data, error } = await build(W_WIDE);
+      if (error || !data) ({ data } = await build(W_NARROW));
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
@@ -360,6 +396,27 @@ export async function POST(req: NextRequest) {
     }
     const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
     const seg = band.segment ? ` ${band.segment}` : "";
+
+    // ADV-1E, finding 90 on the watch path.
+    //
+    // This path printed `band.band_low`, `band.band_high` and `band.median`
+    // straight out of the row, in both languages, with no licence question asked
+    // and no passport anywhere near it. It is the same public quote the value
+    // path makes, so it takes the same decision, from the same function.
+    //
+    // The WRITE is not gated and deliberately so. Storing a baseline is internal
+    // processing, which `sourceRights.ts` governs by `storagePolicy` and not by
+    // display, and the row we insert is never shown to anyone. What is gated is
+    // the sentence, which is the part a person reads.
+    const wGeo = arq ? (band.district_label_ar || band.district_label) : band.district_label;
+    let wGate;
+    try {
+      const rights = await getSourceRightsOrNull(REGA_RENT_INDEX_SOURCE_ID);
+      wGate = rentIndexQuoteGate(band as RentIndexCell, { locale: arq ? "ar" : "en", geography: wGeo }, rights);
+    } catch {
+      wGate = withheldGate(arq ? "ar" : "en");
+    }
+
     let saved = false;
     if (supabase) {
       const { error } = await supabase.from("market_watches").insert({ district_label: band.district_label, asset_type: band.asset_type, segment: band.segment ?? null, threshold_pct: threshold, baseline_median: band.median, baseline_band_low: band.band_low, baseline_band_high: band.band_high, baseline_period: band.period });
@@ -386,14 +443,41 @@ export async function POST(req: NextRequest) {
     // people care about. So we keep the write and describe it accurately. When there is
     // a notifier and a way to reach the person, this copy can promise a notification,
     // and not one minute before.
-    const message = saved
+    //
+    // The baseline clause is the part that carries figures, so it is the part
+    // that appears or does not. Everything else in the sentence is true either
+    // way: the watch was recorded, or it was not, and we still cannot notify
+    // anybody. `wGeo` rather than `band.district_label`, so an Arabic answer
+    // names the district in Arabic.
+    const noted = saved
       ? (arq
-        ? `سجّلت اهتمامك بـ ${band.district_label} ${band.asset_type}${seg}. خط الأساس هو نطاق المؤشر الحالي، ${baseline}. لا يمكنني إشعارك تلقائياً بعد، لذا راجع مؤشر الإيجارات عند تحديثه. المصدر ${srcLabel(band.source, true)}.`
-        : `Noted: ${band.district_label} ${band.asset_type}${seg}. The baseline is the current Rent Index band, ${baseline}. I cannot alert you automatically yet, so check the Rent Index when it next updates. Source ${srcLabel(band.source, false)}.`)
+        ? `سجّلت اهتمامك بـ ${wGeo} ${band.asset_type}${seg}.`
+        : `Noted: ${wGeo} ${band.asset_type}${seg}.`)
       : (arq
-        ? `تعذر حفظ المراقبة الآن، لكن نطاق المؤشر الحالي لـ ${band.district_label} ${band.asset_type}${seg} هو ${baseline}. المصدر ${srcLabel(band.source, true)}.`
-        : `I could not save the watch just now, but the current Rent Index band for ${band.district_label} ${band.asset_type}${seg} is ${baseline}. Source ${srcLabel(band.source, false)}.`);
-    return NextResponse.json({ mode: "watch", message, band: toPublicSegment(band as IndexRowLike), threshold, saved });
+        ? `تعذر حفظ المراقبة الآن لـ ${wGeo} ${band.asset_type}${seg}.`
+        : `I could not save the watch just now for ${wGeo} ${band.asset_type}${seg}.`);
+    const tail = arq
+      ? `لا يمكنني إشعارك تلقائياً بعد، لذا راجع مؤشر الإيجارات عند تحديثه.`
+      : `I cannot alert you automatically yet, so check the Rent Index when it next updates.`;
+    const message = wGate.mayShowFigure
+      ? advisorQuoteMessage(
+          wGate,
+          arq
+            ? `${noted} خط الأساس هو نطاق المؤشر الحالي، ${baseline}. ${tail} المصدر ${srcLabel(band.source, true)}.`
+            : `${noted} The baseline is the current Rent Index band, ${baseline}. ${tail} Source ${srcLabel(band.source, false)}.`
+        )
+      : `${noted} ${wGate.statement ?? ""} ${tail}`.replace(/\s+/g, " ").trim();
+    return NextResponse.json({
+      mode: "watch",
+      message,
+      // Codex item 2 again. `toPublicSegment` carries the average and both band
+      // ends, so it is a figure leaving the server and is omitted outright when
+      // the decision withheld one. The client already guards on its absence.
+      ...(wGate.mayShowFigure ? { band: toPublicSegment(band as IndexRowLike) } : {}),
+      threshold,
+      saved,
+      quote: wGate.kind,
+    });
   }
 
   const msg = await llm([draftInstruction(arq), userWords(raw)], false);

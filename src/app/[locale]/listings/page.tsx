@@ -27,6 +27,7 @@ import DataState from "@/components/DataState";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
+import { decidedRentIndexRows, quotableRentIndexRows } from "@/lib/market/quotable";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
@@ -140,8 +141,13 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     (fdata ?? []).forEach((r: any) => { if (r.asset_type) assetCounts[r.asset_type] = (assetCounts[r.asset_type] || 0) + 1; if (r.building_grade) gradeCounts[r.building_grade] = (gradeCounts[r.building_grade] || 0) + 1; if (r.fitout_condition) fitCounts[r.fitout_condition] = (fitCounts[r.fitout_condition] || 0) + 1; });
     const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
     const { data: allLocs } = await sb.from("districts").select("id,city,name_en,name_ar,kind");
-    const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient").eq("sufficient", true);
-    (irows ?? []).forEach((r: any) => { const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
+    // ADV-1E. This map feeds `marketVerdict` on every card in the result list,
+    // and that verdict is the third-party figure restated as a percentage. A row
+    // the gate withholds never enters the map, so the card says nothing about
+    // market position rather than saying it from a figure SAT may not publish.
+    const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo").eq("sufficient", true);
+    const quotableIdx = await quotableRentIndexRows((irows ?? []) as any[], locale);
+    quotableIdx.rows.forEach(({ row }) => { const r: any = row; const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
     bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((ar ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? " · " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
@@ -282,14 +288,22 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     return s ? `/${locale}/listings?${s}` : `/${locale}/listings`;
   })();
 
-  let idx: any[] = [];
+  // ADV-1E. The index cut keeps its rows and loses only the figures it may not
+  // print, which is why it takes `decidedRentIndexRows` rather than the dropping
+  // form: a district vanishing from a comparison is itself a statement about the
+  // market. Every figure cell below tests `q.gate.mayShowFigure`, so `sufficient`
+  // no longer decides on its own what reaches the browser.
+  let idx: Array<{ row: any; gate: { mayShowFigure: boolean } }> = [];
+  let idxStatements: readonly string[] = [];
   if (sb && insightsView) {
-    let iq = sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, median, band_low, band_high, sufficient, sort_order").order("sort_order", { ascending: true }).limit(20);
+    let iq = sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, unit, period, median, band_low, band_high, sufficient, stat_kind, data_class, is_demo, sort_order").order("sort_order", { ascending: true }).limit(20);
     const aArr = list(searchParams.asset);
     if (aArr.length) iq = iq.in("asset_type", aArr);
     if (searchParams.district) iq = iq.eq("district_id", searchParams.district);
     const { data: idata } = await iq;
-    idx = idata ?? [];
+    const decided = await decidedRentIndexRows((idata ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+    idx = decided.rows as any;
+    idxStatements = decided.statements;
   }
   const rcity = dl.riyadh;
   const kindFor = (a: string) => a;
@@ -435,20 +449,33 @@ export default async function ListingsPage({ params, searchParams }: { params: {
               <table className="dt" style={{ minWidth: 520 }}>
                 <thead><tr><th>{dl.colLocation}</th><th>{dl.colAsset}</th><th style={{ textAlign: "right" }}>{dl.colMedian}</th><th style={{ textAlign: "right" }}>{dl.colBand}</th><th style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
                 <tbody>
-                  {idx.map((r: any, i: number) => (
+                  {idx.map((q, i: number) => {
+                    const r: any = q.row;
+                    const show = q.gate.mayShowFigure;
+                    return (
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + segmentLabel(r.segment, locale) : ""}</td>
-                      <td className="num mono">{r.sufficient && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dl.na)}</td>
-                      <td className="num mono muted">{r.sufficient && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dl.thinSample)}</td>
+                      <td className="num mono">{show && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dl.na)}</td>
+                      <td className="num mono muted">{show && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dl.thinSample)}</td>
+                      {/* This column reports the sample, which is a separate
+                          question from whether the figure may be published, so
+                          it keeps saying what it always said. The sentences
+                          under the table say the other thing. */}
                       <td className="num">{r.sufficient ? <span className="statusdot ok">{dl.sufficient}</span> : <span className="statusdot pend">{dl.thin}</span>}</td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
-          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>{dl.sampleDisclaimer}</div>
+          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>
+            {dl.sampleDisclaimer}
+            {idxStatements.map((s) => (
+              <div key={s} style={{ marginTop: 6, lineHeight: 1.7 }}>{s}</div>
+            ))}
+          </div>
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>

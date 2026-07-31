@@ -86,6 +86,7 @@ import { parsePeriod } from "./market/period";
 import { REGA_RENT_INDEX_SOURCE_ID } from "./sources/catalogue";
 import type { SourceRights } from "./sourceRights";
 import { type PublicEvidenceView, publicEvidenceView } from "./evidenceView";
+import { type PublicQuoteKind, quoteStatement } from "./publicQuote";
 
 // ---------------------------------------------------------------------------
 // The row
@@ -250,6 +251,20 @@ export function rentIndexPassports(
     geography: opts.geography ?? null,
     asOf: periodEndIso(row.period),
     maxAgeDays: RENT_INDEX_MAX_AGE_DAYS,
+    // ADV-1E. The record's own account of itself, carried onto the passport
+    // rather than consumed here.
+    //
+    // This is the correction to Codex item 4. The `origin` split below sends a
+    // simulated cell down `tier: "computed", sourceId: null`, which is true, and
+    // which `publicEvidenceView` used to read as "then it is SAT's own record"
+    // and label accordingly. It is not. It is a number SAT generated to exercise
+    // the product, and describing it as SAT Markets' own record put the
+    // exchange's name behind a figure the exchange never collected. The two
+    // columns now travel with the figure, so the quote decision can tell a
+    // synthetic cell from a first-party one instead of inferring from a null
+    // source id.
+    recordDemoStatus: cls,
+    dataClass: row.data_class ?? null,
   };
 
   // The two halves of the three-way rule, expressed once each.
@@ -323,4 +338,99 @@ export function rentIndexEvidenceByField(
   rights: SourceRights | null
 ): Map<string, PublicEvidenceView> {
   return new Map(rentIndexEvidenceViews(row, opts, rights).map((v) => [v.field, v]));
+}
+
+// ---------------------------------------------------------------------------
+// The gate
+// ---------------------------------------------------------------------------
+
+/**
+ * ADV-1E. One verdict per published cell, for every surface that quotes one.
+ *
+ * FINDING 90, WHICH THIS EXISTS TO CLOSE.
+ *
+ * Three surfaces quoted this table by three different rules. `/rent-index`
+ * printed the figure when the row said `sufficient`. `/api/advisor` printed it
+ * from `renderValue`, which asks the same single question. `/api/index/segments`
+ * printed it to any machine that asked, with no question at all. Meanwhile the
+ * Evidence Passport beside all three asked the licence and withheld. A reader
+ * could be told a number in a sentence, above a panel refusing to stand behind
+ * it, and a crawler could be told the same number with nothing beside it.
+ *
+ * Codex item 5 rules that the prose and the passport must never disagree, and
+ * the only way two things never disagree is for there to be one of them. Every
+ * quoting surface now reads this, and this reads `decidePublicQuote` exactly
+ * once, through the passport for the figure the surface would lead with.
+ *
+ * WHY THE AVERAGE DECIDES, AND WHY THERE IS A FALLBACK.
+ *
+ * The average is the figure a reader takes away and the band qualifies it, so
+ * the average's decision governs. Where a row holds a band and no average, the
+ * band is what would be quoted and its decision governs instead. Where it holds
+ * neither there is nothing to decide about, and the answer is `unavailable`,
+ * which is the same word used for a figure that does not exist, because that is
+ * what this is.
+ */
+export type RentIndexQuoteGate = {
+  /** The one decision, for the figure a surface would lead with. */
+  readonly kind: PublicQuoteKind;
+  /** Whether the prose, the payload, the chart and the metadata may carry it. */
+  readonly mayShowFigure: boolean;
+  /**
+   * The sentence that must accompany the figure, or stand in place of it, in the
+   * reader's language. Null only for `authorized_public`, which needs none.
+   */
+  readonly statement: string | null;
+  /**
+   * The passports that may travel with the answer.
+   *
+   * Empty when the figure is withheld or unavailable. ADV-1C.1 correction 4
+   * permits a passport only where the displayed figure is completely traceable,
+   * and where no figure is displayed there is no figure to trace: the refusal
+   * travels as `statement`, in the prose, where a reader will actually meet it.
+   */
+  readonly passports: readonly PublicEvidenceView[];
+};
+
+/**
+ * `rights` is nullable and the null is load bearing, for the reason
+ * `queries/sourceRights.ts` gives: `getSourceRights` returns a denying row that
+ * matches the id asked for, which renders as "the permission recorded for this
+ * source does not cover this audience" when in truth no permission was recorded
+ * and none was read. Callers pass `getSourceRightsOrNull`.
+ */
+export function rentIndexQuoteGate(
+  row: RentIndexCell,
+  opts: RentIndexEvidenceOptions,
+  rights: SourceRights | null
+): RentIndexQuoteGate {
+  const views = rentIndexEvidenceViews(row, opts, rights);
+  const lead =
+    views.find((v) => v.field === "rent_index_average") ??
+    views.find((v) => v.field === "rent_index_band") ??
+    null;
+
+  const kind: PublicQuoteKind = lead ? lead.quote : "unavailable";
+  const mayShowFigure = kind === "authorized_public" || kind === "labelled_sample";
+
+  return {
+    kind,
+    mayShowFigure,
+    statement: quoteStatement(kind, opts.locale === "ar"),
+    // The same non-null filter the Advisor route has always applied, kept for
+    // the same reason: a view whose value was withheld is not evidence for a
+    // figure. Under this gate a withheld view cannot occur beside a shown figure
+    // anyway, because the shown figure and the view come out of one decision.
+    passports: mayShowFigure ? views.filter((v) => v.value !== null) : [],
+  };
+}
+
+/** The verdict a surface falls back to when it could not establish one. */
+export function withheldGate(locale: Loc): RentIndexQuoteGate {
+  return {
+    kind: "unavailable",
+    mayShowFigure: false,
+    statement: quoteStatement("unavailable", locale === "ar"),
+    passports: [],
+  };
 }

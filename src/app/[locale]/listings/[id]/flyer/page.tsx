@@ -16,6 +16,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getListingById } from "@/lib/queries/listings";
 import { verifiedBadgeTexts } from "@/lib/listingVerification";
 import { localeMeta } from "@/lib/meta";
+import { quotableRentIndexRows } from "@/lib/market/quotable";
 
 // Branded property flyer: the landlord outreach artifact. Print-to-PDF via the
 // browser (native feature, no dependencies). Every figure is the listing's own
@@ -50,16 +51,25 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   const locale = params.locale;
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").flyer;
-  const pub = await getPublishedKpis();
+  const pub = await getPublishedKpis(locale);
   const sb = getSupabaseServer();
   let l: any = null;
   let idxRows: IndexRow[] = [];
+  let idxStatements: readonly string[] = [];
   if (sb) {
     const { data } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("id", params.id).single();
     l = data;
     if (l?.district_id) {
-      const { data: rows } = await sb.from("rent_index_published").select("asset_type,segment,unit,band_low,median,band_high,period,district_label,district_label_ar").eq("district_id", l.district_id);
-      idxRows = (rows as IndexRow[]) ?? [];
+      // ADV-1E. The flyer is the one surface that leaves the platform: a landlord
+      // prints it and carries it into a meeting, where nothing on the page can be
+      // corrected later. The pricing context on it is a derived display of the
+      // third-party figure and it takes the same decision as every other surface.
+      // A row whose rights are unread or withheld produces no context block at
+      // all, which is the correct outcome for a document that cannot be recalled.
+      const { data: rows } = await sb.from("rent_index_published").select("asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo,district_label,district_label_ar").eq("district_id", l.district_id);
+      const quotable = await quotableRentIndexRows((rows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+      idxRows = quotable.rows.map((q) => q.row as unknown as IndexRow);
+      idxStatements = quotable.statements;
     }
   }
   if (!l) notFound();
@@ -124,10 +134,19 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
                 <span className="tag">{t.platformSample}</span>
               </div>
               <div style={{ fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>{ar ? v.line_ar : v.line_en}</div>
+              {/* Inside the same bordered block, because the block is what gets
+                  printed and a sentence further down the page is a sentence a
+                  folded flyer can lose. */}
+              {idxStatements.map((s) => (
+                <div key={s} className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 6 }}>{s}</div>
+              ))}
             </div>
           )}
           <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
             {`${pub.officeRent != null ? fill(t.officeAvg, { rate: pub.officeRent.toLocaleString("en-US") }) : ""}${t.indexSource}`}
+            {pub.officeRent != null && pub.statements.map((s) => (
+              <div key={s} style={{ marginTop: 4 }}>{s}</div>
+            ))}
           </div>
         </div>
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>
