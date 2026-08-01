@@ -1626,6 +1626,72 @@ same deployment, because the two pages read different rows. Full table in
 missing rather than described.
 
 
+## PKG-LS2, the unit the lister is told they are typing (findings 133, 134)
+
+PKG-FIG2 closed the surfaces that RENDER a figure. This closes the surface that COLLECTS one, which
+is the only place in the chain where a wrong unit cannot be detected afterwards. What a listing
+stores in `area_sqm` and `asking_rent_sqm` is a bare number. The unit exists only in the words above
+the box, so if those words name a unit the platform does not use, every figure derived from the
+number is wrong at the source and consistently so, and no downstream gate can see it, because there
+is nothing wrong with the number.
+
+Finding 133, the class. Three surfaces built a field label by concatenating `field.unit` verbatim:
+`ListingStudio.tsx` and `EditListingForm.tsx` in `renderField`, and the numeric facet placeholder on
+the public `/listings` page. The registry string is a developer's note, not copy, so an Arabic lister
+filling in a warehouse was asked for `ارتفاع السقف (m)`, `مساحة الطابق (m²)`, `(kVA)`, `(t/m²)`,
+`(kN/m²)` and `(L)`, and for a lease term in the bare English words `(months)` and `(years)`. Seventy
+registry fields declare a unit. The canon in `format.ts` holds م, م², ك.ف.أ, طن/م², ك.ن/م² and لتر for
+exactly these, and nothing was reading it. The sharpest evidence that this was an oversight rather
+than a decision is `attributeDisplay.ts`, which already routes the VALUE through the one table and
+already special cases `months` and `years` as counted nouns: the number a reader is shown on a
+listing page carried the right unit while the box the lister typed it into carried the wrong one.
+
+Finding 134, the instance underneath it. The Studio asked for `Area (sqm)` and
+`Asking rent (SAR per sqm per year)`, and in Arabic `المساحة (متر مربع)` and
+`الإيجار المطلوب (ريال للمتر المربع سنوياً)`. None of those four unit spellings is a spelling
+`format.ts` knows. The edit screen for the same two stored numbers already said `Size (m²)` and
+`Asking rent (SAR/m²/yr)`. So a lister created a price under one unit and edited it under another, on
+two screens of the same product, and had no way to tell which one the stored number was. Both screens
+also decided the deal to unit question inline with a `deal_type` comparison, while
+`listingFigures.ts` has owned that decision for every rendering surface since PKG-SUP2.
+
+The fix is one module, `src/lib/fieldLabel.ts`. `fieldUnitText` and `fieldUnitLabel` resolve a
+registry unit through the one table, with `months` and `years` taken from the exported `COUNTED`
+forms rather than passed through, because a label carries no count and `formatCounted` would prefix a
+numeral. `fieldLabel` puts the unit after the base label and appends nothing else, so a caller that
+wants a required marker or a range hint adds its own and cannot put one inside the parentheses where
+it would read as part of the unit. `areaFieldLabel` and `priceFieldLabel` cover the two platform
+columns that are not registry fields, with the deal read from `priceUnitKey` and the noun settled as
+`Area` rather than `Size`, because `Area` is what the public dictionaries and `netArea` already say
+and the label a lister types into should be the label their reader is shown. All five call sites now
+go through it.
+
+Guards. `fieldLabel.test.ts` asserts the Arabic rendering of every unit class the registry declares,
+asserts that every declared unit either resolves or is a counted noun so a new one cannot fall
+through verbatim, and carries two source rules: no file outside the module may put `.unit` in
+parentheses by hand, and neither intake screen may spell an area or price unit itself or decide the
+price unit on a line that names a currency. Against `95f162b` both fail and name all five sites.
+`fieldLabel.ts` joins the ar-lint pass A watch list, since it now holds shipped Arabic copy.
+
+One existing guard was superseded rather than kept. The finding 126 test asserted that the Studio
+still contained the literals `Asking rent (SAR per sqm per year)` and
+`الإيجار المطلوب (ريال للمتر المربع سنوياً)`, on the reasoning that the form label was the only thing
+in the tree stating what `listings.asking_rent_sqm` holds, so deleting it would remove finding 120's
+own evidence. That reasoning was right about why the label matters and wrong about where the evidence
+belongs: neither spelling was one `format.ts` knows. The assertion is now that the label is built by
+`priceFieldLabel`, which is the same function every rendering surface reads, so the evidence is
+stronger than the literal it replaces and cannot drift from them.
+
+Live verification, stated as a limit rather than glossed. `web_fetch_vercel_url` is GET only, and
+`/dashboard/new` and the edit form are both session gated, so neither intake screen can be fetched
+from this environment at all. The one public call site, the numeric facet placeholder, is dark: it is
+gated by `coveredFacetFields(assetType, listings, minCount = 3, minCoverage = 0.4)`, and a live fetch
+of `/ar/listings?asset=office` on the current production deployment returned 200 with zero `f_*`
+inputs, because real inventory does not carry enough registry attribute values for any office facet
+to clear the gate. This package therefore ships on tests and source guards, and the rendered evidence
+for its public surface is owed once inventory density clears the facet threshold.
+
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

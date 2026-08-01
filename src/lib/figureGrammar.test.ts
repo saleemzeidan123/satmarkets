@@ -4,6 +4,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { UNITS, fill, formatInteger, formatRange, formatUnit, unitText } from "./format";
 import { askingPrice, netArea } from "./listingFigures";
+import { priceFieldLabel } from "./fieldLabel";
 import { normalizeStatisticKind, statisticLabel } from "./evidence";
 import { agreedStatistic, agreedUnit, appendUnit, figureCellOf, statUnitHeading, withUnit } from "./market/columnHeading";
 
@@ -97,13 +98,7 @@ test("finding 126: the Studio preview renders the figures a visitor is served", 
   const studio = read("src/components/ListingStudio.tsx");
   assert.match(studio, /from "@\/lib\/listingFigures"/, "the preview stopped reading the module every visitor surface reads");
 
-  // Scoped to the preview's own body, not to the file. The same two spellings
-  // appear once more in this file on purpose, in the FORM LABEL that collects
-  // the price, and that one has to stay: it is the record-level evidence
-  // finding 120 turned on, the sentence the lister is reading while they type
-  // the number, and therefore the only thing in the tree that says what
-  // `listings.asking_rent_sqm` holds. A guard that deleted it would be removing
-  // the evidence for the rule it is enforcing.
+  // Scoped to the preview's own body, not to the file.
   const start = studio.indexOf("function preview(");
   assert.ok(start > 0, "the preview function was renamed, so this guard is aimed at nothing");
   const end = studio.indexOf("async function save(", start);
@@ -112,11 +107,25 @@ test("finding 126: the Studio preview renders the figures a visitor is served", 
   for (const spelling of ["per sqm per year", "للمتر المربع سنوياً"]) {
     assert.equal(previewBody.includes(spelling), false, `the preview spelled the unit itself again: ${spelling}`);
   }
-  // The label, asserted present rather than merely tolerated.
-  assert.ok(
-    studio.includes("Asking rent (SAR per sqm per year)") && studio.includes("الإيجار المطلوب (ريال للمتر المربع سنوياً)"),
-    "the intake label that states what the rent column holds was removed; finding 120 lost its evidence",
-  );
+  // SUPERSEDED BY PKG-LS2, finding 134. This guard used to assert the two
+  // literals "Asking rent (SAR per sqm per year)" and its Arabic twin were still
+  // present in the Studio, on the reasoning that the form label was the only
+  // thing in the tree stating what `listings.asking_rent_sqm` holds, so deleting
+  // it would remove finding 120's own evidence.
+  //
+  // That reasoning was right about WHY the label matters and wrong about where
+  // the evidence should live. Neither spelling was a spelling `format.ts` knows,
+  // so the sentence a lister read while typing the number named a unit no
+  // rendering surface used, and the edit screen for the same stored number
+  // already said SAR/m²/yr. The label is now built by `priceFieldLabel`, which
+  // takes the unit from `priceUnitKey` and the one table. The evidence for what
+  // the column holds is therefore stronger than the literal it replaces: it is
+  // the same function every surface that renders the price already reads, and it
+  // cannot drift from them. What has to be asserted is that link, not the words.
+  assert.match(studio, /priceFieldLabel\(f\.deal_type, loc\)/, "the intake price label stopped naming its unit through priceUnitKey; finding 120 lost its evidence");
+  assert.match(studio, /areaFieldLabel\(loc\)/, "the intake area label stopped naming its unit through the one table");
+  assert.equal(priceFieldLabel("lease", "en").replace(/\u2060/g, ""), "Asking rent (SAR/m\u00b2/yr)");
+  assert.equal(priceFieldLabel("lease", "ar").replace(/\u2060/g, ""), "\u0627\u0644\u0625\u064a\u062c\u0627\u0631 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 (\u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629)");
   assert.ok(previewBody.includes("askingPrice(") && previewBody.includes("netArea("), "the preview stopped drawing its figures from the module");
 
   // What a visitor is actually served, from the module the public card uses.
