@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -66,8 +66,24 @@ export default function RequirementDetail({ params }: { params: { locale: string
     request that did not complete. */
  const [matchesErr, setMatchesErr] = useState(false);
  const [attached, setAttached] = useState<string | null>(null);
+ const panelBtn = useRef<HTMLButtonElement | null>(null);
 
- const load = () => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setSummary(j.summary || { total: 0, owners: 0, brokers: 0 }); setIdentitiesVisible(!!j.identitiesVisible); setLoading(false); }).catch(() => setLoading(false));
+ /* RC9d, finding 187. The whole of this page is fetched by the browser after the
+    route has painted, so line 110 below returns a loading div and then, when the
+    request settles, the next render replaces the entire document body. Nothing
+    said so. The instrument is a status message and not a focus move, for the
+    reason written out at length in the board file beside this one: a reader is
+    as likely to be part way through the loading page with the virtual cursor as
+    to be waiting, DOM focus cannot tell those apart, and moving it would punish
+    the attentive one.
+
+    `announce` is set from three places rather than one, because this page has
+    three settlements and they are different facts: the requirement arrived, the
+    requirement does not exist, and a response was registered. The third is the
+    one worth naming here, because it is not part of finding 187 and is recorded
+    separately as finding 201. */
+ const [announce, setAnnounce] = useState("");
+ const load = (after?: string) => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setSummary(j.summary || { total: 0, owners: 0, brokers: 0 }); setIdentitiesVisible(!!j.identitiesVisible); setLoading(false); setAnnounce(after ?? (j.requirement ? t.detailReady : t.notFound)); }).catch(() => setLoading(false));
  useEffect(() => { load(); }, []);
 
  // Asked only once the responder opens the panel, and only ever answered for
@@ -101,17 +117,47 @@ export default function RequirementDetail({ params }: { params: { locale: string
    if (res.status === 401) { setNeedAuth(true); setErr(j.error || t.errSignIn); setBusy(false); return; }
    if (!res.ok || j.error) { setErr(j.error || t.errRegister); setBusy(false); return; }
    setMsg(""); setShow(false); setBusy(false); setAttached(null);
-   load();
+   /* Finding 201. `setShow(false)` unmounts the panel, and the submit button
+      inside it is the element that holds focus at this moment, so focus fell to
+      document.body: the same defect as finding 199 in journey 1, in journey 4.
+      The disclosure that opened the panel is where focus belongs when a
+      disclosure closes, and it is still on screen. The `load()` that follows
+      refreshes the list this response now appears in, and carries the sentence
+      that says so, so the confirmation is announced by the request that makes it
+      true rather than optimistically before it. */
+   panelBtn.current?.focus();
+   load(t.responseSaved);
   } catch {
    setErr(t.errRegister); setBusy(false);
   }
  }
 
- if (loading) return <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.loading}…</div>;
- if (!req) return <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.notFound} <Link href={`/${locale}/requirements`} style={{ color: "var(--azure-d)" }}>{t.backLink} {ar ? "←" : "→"}</Link></div>;
+ /* Every branch below opens with the same outer div and the same status region
+    as its first child, in the same position, and that is the whole of what makes
+    the region work. A live region announces changes inside an element the
+    browser was already watching. The three states this page has were three early
+    returns with three unrelated root elements, so a region placed in each of
+    them would be torn down and rebuilt with its text already in place at exactly
+    the moment it had something to say, and would say nothing. React reconciles
+    by type and position, so an identical root and an identical first child are
+    preserved across the swap while everything under them is replaced, which is
+    the difference between a live region and a decorative attribute. */
+ const statusRegion = <div className="sronly" role="status" aria-live="polite">{announce}</div>;
+
+ if (loading || !req) return (
+  <div style={{ background: "var(--cool)" }} aria-busy={loading}>
+   {statusRegion}
+   {loading ? (
+    <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.loading}…</div>
+   ) : (
+    <div style={{ padding: 48, textAlign: "center" }} className="muted">{t.notFound} <Link href={`/${locale}/requirements`} style={{ color: "var(--azure-d)" }}>{t.backLink} {ar ? "←" : "→"}</Link></div>
+   )}
+  </div>
+ );
 
  return (
-  <div style={{ background: "var(--cool)" }}>
+  <div style={{ background: "var(--cool)" }} aria-busy={false}>
+   {statusRegion}
    <div style={{ padding: "26px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
     <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: "0.8125rem", color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
     <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
@@ -151,7 +197,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
      <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
       <div style={{ fontSize: "1rem", fontWeight: 700 }}>{t.interestedH} {summary.total ? `· ${summary.total}` : ""}</div>
       {/* ELITE-4 J4-4: this button is the disclosure for the panel below it. */}
-      <button className="btn primary sm" onClick={openPanel} aria-expanded={show} aria-controls="req-response-panel"><Icon.plus size={14} /> {t.haveSpace}</button>
+      <button ref={panelBtn} className="btn primary sm" onClick={openPanel} aria-expanded={show} aria-controls="req-response-panel"><Icon.plus size={14} /> {t.haveSpace}</button>
      </div>
      <p className="muted" style={{ fontSize: "0.78125rem", margin: "0 0 14px" }}>{t.interestedP}</p>
 

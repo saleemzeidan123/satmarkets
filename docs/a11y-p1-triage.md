@@ -454,6 +454,83 @@ mode, but the gap had been open since slice B. It is closed now, and it is the
 second time a shared component holding a journey's actual work sat outside a
 scan named after that journey.
 
+**RC9d. Content that arrives after the page does, findings 187 and 201.**
+
+Both requirement routes are client components that fetch their own content on
+mount. The route resolves at once, the visitor is given a heading, a subtitle and
+a loading line, and then some time later the entire body of the page is replaced.
+A sighted reader watches that happen. Nobody else was told anything.
+
+The register's deferral proposed a route-level loading boundary plus a focus move
+to the new heading. Slice L implemented neither, and the reasons are worth
+writing down because both are instructive.
+
+The loading boundary does nothing here. A `loading.tsx` covers the wait for a
+server render, and there is no server wait: the route resolves immediately and
+the delay belongs to a `fetch` the browser starts after hydration. Putting a
+boundary above these routes would produce a file that never renders.
+
+The focus move is the more interesting mistake, and it is the second time in this
+package the register proposed the wrong instrument. It assumes a screen reader
+user sits still while the request runs. They do not. They land on the URL and
+start reading the heading and the subtitle with the virtual cursor, which walks
+the document without moving DOM focus at all. So `document.activeElement` is
+`document.body` for the reader who is three paragraphs in and for the reader who
+has touched nothing, and no guard written around focus can tell them apart.
+Calling `focus()` when the data settles would drag the attentive one back to the
+top of a page they had already started. Focus is moved when the user asked for
+the change. Nobody asked for this one; the page finished loading.
+
+What fits is a status message, which is what SC 4.1.3 is for and which moves
+nobody. Both routes now carry a `.sronly` `role="status" aria-live="polite"`
+region and set `aria-busy` on their container while the request is in flight.
+
+The difficulty in a status region is never the attributes. It is whether the
+element survives the swap it is reporting on. A live region announces changes
+inside an element the browser was already watching, so a region created in the
+same render as its text is silent. The board file keeps the region outside the
+loading branch. The detail file could not: it had three early returns with three
+unrelated root elements, which is precisely the shape that breaks this, and it
+was restructured so every branch opens with the same root and the same region as
+its first child. React reconciles by type and position, so the region is
+preserved and only what sits under it is replaced. That restructure is the actual
+work of finding 187; the attributes are the easy part, and a version of this fix
+that added the attributes without moving the returns would test the same and
+announce nothing.
+
+Two further repairs travelled with it. The board's `.catch` set `loading` to
+false and nothing else, so a request that failed fell straight into the empty
+branch and told the visitor that no occupier in the country is looking for space.
+That is the ELITE-4 J4-5 defect in a second place, and it now says it failed,
+distinguishes a connection problem from an empty market in the sentence itself,
+and offers the retry an automatic one would have hidden. And the same fetch was
+parsing a `!r.ok` response as JSON and treating it as success, so a 500 produced
+an empty board rather than a failure.
+
+Finding 201 came out of reading the detail page for 187, and it is the sharper of
+the two. The response form is a disclosure. On a successful registration the
+handler calls `setShow(false)`, and the element holding focus at that instant is
+the submit button inside the panel that call unmounts, so focus fell to
+`document.body`. That is finding 199 exactly, one journey over. It is compounded
+because the confirmation is silent too: the evidence that the response saved is
+that a count in the heading above went up by one and an entry appeared in a list
+further down, both visual, both below the fold on a phone, neither announced. A
+responder using a screen reader submitted a message and was told nothing.
+
+The fix returns focus to the disclosure button, which is where a user belongs
+when a disclosure they operated closes, and carries the confirmation on the
+reload rather than asserting it before the reload proves it: `load()` takes an
+optional sentence and sets it into the same region 187 installed, so the words
+appear only in the render that also shows the response in the list. The order is
+deliberate. Focus moves first, the fetch resolves second, so the reader is
+already at the disclosure button when the confirmation is spoken rather than
+being moved after it.
+
+One test in this slice asserts an absence: there is no `.focus()` call in the
+board file. A deliberate absence with nothing guarding it reads as an oversight to
+the next person and gets helpfully corrected, and the correction would be a
+regression that no other test in the repository would notice.
+
 **RC10. Locale leakage in constructed controls, findings 18, 160, 162, 22 and
 171.** Map controls in English in the Arabic build; the MapLibre container with no
 accessible name and its built-in controls constructed with no locale; lightbox

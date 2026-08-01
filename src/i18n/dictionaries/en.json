@@ -386,6 +386,10 @@
     "metaTitle": "Requirements | SAT Markets",
     "metaDesc": "Post what you need and let owners and licensed brokers come to you. The demand board for commercial space on SAT Markets.",
     "empty": "No requirements are open right now. Post one and owners and licensed brokers see it here.",
+    "boardReady": "{n} open requirements loaded",
+    "boardReadyOne": "1 open requirement loaded",
+    "boardFailed": "The requirements board could not be loaded. This is a connection problem, not an empty market.",
+    "boardRetry": "Try again",
     "timeline": "Move-in"
   },
   "about": {
@@ -1491,7 +1495,9 @@
     "matchesExcluded": "listings of yours are not offerable yet, so they were not compared. Drafts and expired advertising licences are never matched.",
     "matchesMargins": "Published margins: size {size} percent, budget {budget} percent.",
     "matchesTruncated": "Showing the closest results only.",
-    "timelineUnstated": "No date given"
+    "timelineUnstated": "No date given",
+    "detailReady": "Requirement loaded",
+    "responseSaved": "Your response was registered. It appears in the list below."
   },
   "locFacts": {
     "title": "Location facts",

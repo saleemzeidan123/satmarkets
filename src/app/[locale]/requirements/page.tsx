@@ -31,7 +31,51 @@ export default function RequirementsBoard({ params }: { params: { locale: string
  // is where the platform names an asset type.
  const [reqs, setReqs] = useState<Req[]>([]);
  const [loading, setLoading] = useState(true);
- useEffect(() => { fetch("/api/requirements").then((r) => r.json()).then((j) => { setReqs(j.requirements || []); setLoading(false); }).catch(() => setLoading(false)); }, []);
+ /* RC9d, finding 187. This board is fetched by the browser after the page has
+    already painted, so the visitor is given a heading, a subtitle and a loading
+    line, and then, some time later, the entire body of the page is replaced. A
+    sighted reader sees that happen. Nobody else was told anything at all.
+
+    The remedy the register proposed for this was a focus move to the heading
+    once the board arrived, and that is wrong here, for the same kind of reason
+    the aria-expanded proposal was wrong in finding 167. A screen reader user who
+    lands on this URL does not sit still while the fetch runs: they start reading
+    the heading and the subtitle with the virtual cursor, which moves through the
+    document without moving DOM focus. `document.activeElement` is `document.body`
+    for that reader and for a reader who has not touched anything, so no guard
+    written around focus can tell the two apart, and calling focus() would drag
+    the attentive one back to the top of a page they were already three
+    paragraphs into. Moving focus is right when the user asked for the change.
+    Nobody asked for this one; it is the page finishing loading.
+
+    So the instrument is a status message, which is what SC 4.1.3 is for. The
+    region below is present from first paint and empty, because a live region
+    only announces what changes inside it after it exists, and a message that is
+    already in the initial HTML announces nothing. It receives one sentence when
+    the request settles, and the results container carries `aria-busy` until then
+    so the incompleteness is stated rather than implied by silence.
+
+    The catch is also repaired here. It set `loading` to false and nothing else,
+    so a request that failed fell into the empty branch and told the visitor that
+    no occupier in the country is looking for space. That is the same defect as
+    ELITE-4 J4-5 on the matches panel, and the same answer: a failure says it
+    failed, and offers the retry that an automatic one would have hidden. */
+ const [failed, setFailed] = useState(false);
+ const [status, setStatus] = useState("");
+ const load = () => {
+  setLoading(true);
+  setFailed(false);
+  fetch("/api/requirements")
+   .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+   .then((j) => {
+    const rows: Req[] = j.requirements || [];
+    setReqs(rows);
+    setLoading(false);
+    setStatus(rows.length === 0 ? dict.req.empty : rows.length === 1 ? dict.req.boardReadyOne : dict.req.boardReady.replace("{n}", String(rows.length)));
+   })
+   .catch(() => { setFailed(true); setLoading(false); setStatus(dict.req.boardFailed); });
+ };
+ useEffect(() => { load(); }, []);
 
  return (
   <div style={{ background: "var(--cool)" }}>
@@ -45,8 +89,16 @@ export default function RequirementsBoard({ params }: { params: { locale: string
      <Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link>
     </div>
 
+    <div className="sronly" role="status" aria-live="polite">{status}</div>
+
+    <div aria-busy={loading}>
     {loading ? (
      <div className="muted" style={{ marginTop: 40, fontSize: "0.875rem" }}>{dict.req.loading}</div>
+    ) : failed ? (
+     <div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
+      <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0 }}>{dict.req.boardFailed}</p>
+      <div style={{ marginTop: 14 }}><button type="button" className="btn primary" onClick={load}>{dict.req.boardRetry}</button></div>
+     </div>
     ) : reqs.length === 0 ? (
      /* An empty board rendered an empty grid: the header, the loading line gone,
         and then nothing, which reads as a page that failed rather than a market
@@ -93,6 +145,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
       })}
      </div>
     )}
+    </div>
    </div>
   </div>
  );

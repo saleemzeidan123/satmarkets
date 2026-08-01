@@ -847,3 +847,108 @@ test("the map claims to be modal only while the layout actually makes it modal",
       "unreachable.",
   );
 });
+
+// ---------------------------------------------------------------------------
+// RC9d, finding 187 and new finding 201.
+//
+// Both requirement routes are client components that fetch their own content
+// after the page has painted, so the visitor is shown a loading line and then
+// the whole body of the page is replaced. Nothing announced that. The register
+// proposed a focus move to the new heading and slice L did not do that, so these
+// tests record the instrument that was used instead, and one of them asserts the
+// absence of the focus call, because an absence with no test against it reads as
+// an oversight to the next person and gets "fixed".
+//
+// The reason is written out in both files: a screen reader user who lands on the
+// URL is as likely to be reading the header with the virtual cursor as waiting,
+// DOM focus is document.body in both cases, and no guard can tell them apart, so
+// calling focus() would drag an attentive reader back to the top. A status
+// message is what SC 4.1.3 is for, and it moves nobody.
+//
+// The fragile part of a status region is not the attributes, it is whether the
+// element survives the swap it is reporting on. A region created in the same
+// render as its text announces nothing, because the browser was not watching it
+// before. So both files keep the region outside the branch, and the tests below
+// assert the structure rather than the attribute.
+// ---------------------------------------------------------------------------
+
+test("the requirements board reports its own arrival rather than moving the reader", () => {
+  const src = file("src/app/[locale]/requirements/page.tsx");
+  assert.match(
+    src,
+    /<div className="sronly" role="status" aria-live="polite">\{status\}<\/div>/,
+    "finding 187. The board arrives after first paint and replaces the body of the page. " +
+      "SC 4.1.3 is answered by a status message, and the message has to be in a region that " +
+      "was already on the page and empty.",
+  );
+  assert.match(
+    src,
+    /<div aria-busy=\{loading\}>/,
+    "finding 187. While the request is in flight the results container is incomplete, and " +
+      "saying so is not the same as being silent.",
+  );
+  assert.doesNotMatch(
+    src,
+    /\.focus\(\)/,
+    "finding 187. Deliberate. Moving focus to the heading when the board settles would yank " +
+      "the virtual cursor of a reader who started reading during the fetch, and document.body " +
+      "is the active element for that reader and for one who is waiting, so no guard " +
+      "distinguishes them. The user did not ask for this change; the page finished loading.",
+  );
+});
+
+test("a requirements board that failed to load does not report an empty market", () => {
+  const src = file("src/app/[locale]/requirements/page.tsx");
+  assert.match(
+    src,
+    /\.catch\(\(\) => \{ setFailed\(true\); setLoading\(false\); setStatus\(dict\.req\.boardFailed\); \}\)/,
+    "finding 187's second half. The old catch set loading to false and nothing else, so a " +
+      "request that failed fell into the empty branch and told the visitor that no occupier " +
+      "in the country is looking for space.",
+  );
+  assert.match(
+    src,
+    /onClick=\{load\}>\{dict\.req\.boardRetry\}/,
+    "A failure that offers no way to retry is a dead end, and this one is recoverable.",
+  );
+});
+
+test("the requirement detail keeps one status region across all three of its states", () => {
+  const src = file("src/app/[locale]/requirements/[id]/page.tsx");
+  assert.match(
+    src,
+    /const statusRegion = <div className="sronly" role="status" aria-live="polite">\{announce\}<\/div>;/,
+    "finding 187. One region, defined once.",
+  );
+  assert.equal(
+    (src.match(/\{statusRegion\}/g) ?? []).length,
+    2,
+    "finding 187. Loading, not-found and loaded are two returns whose root element and first " +
+      "child are identical, so React preserves the region across the swap. A third return, or " +
+      "a branch that omits it, breaks the announcement rather than the layout, which is the " +
+      "kind of regression nothing else here would catch.",
+  );
+  assert.match(
+    src,
+    /setAnnounce\(after \?\? \(j\.requirement \? t\.detailReady : t\.notFound\)\)/,
+    "finding 187. The three settlements of this page are different facts and are said " +
+      "differently: the requirement arrived, it does not exist, or a response was registered.",
+  );
+});
+
+test("closing the response panel hands focus back to the control that opened it", () => {
+  const src = file("src/app/[locale]/requirements/[id]/page.tsx");
+  assert.match(
+    src,
+    /panelBtn\.current\?\.focus\(\);\n\s*load\(t\.responseSaved\);/,
+    "finding 201. A successful registration calls setShow(false), which unmounts the panel " +
+      "holding the submit button that has focus, so focus fell to document.body: finding 199 " +
+      "in journey 4. The disclosure that opened the panel is where focus belongs, and the " +
+      "confirmation is carried by the reload that makes it true rather than asserted before it.",
+  );
+  assert.match(
+    src,
+    /<button ref=\{panelBtn\} className="btn primary sm" onClick=\{openPanel\}/,
+    "finding 201. The focus target has to be the disclosure itself, not a query for it.",
+  );
+});
