@@ -13,8 +13,8 @@ type Row = {
 };
 
 const wrap: CSSProperties = { maxWidth: 1180, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)" };
-const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
-const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
+const th: CSSProperties = { textAlign: "left", fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
+const td: CSSProperties = { fontSize: "0.8125rem", padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
 
 function detailsSummary(d: Record<string, unknown> | null): string {
   if (!d) return "";
@@ -46,8 +46,8 @@ export default async function SignupQueue() {
   const roleColor: Record<string, string> = { occupier: "var(--harbor-d)", owner: "var(--harbor)", broker: "var(--brass)", investor: "var(--slate)" };
   return (
     <main style={wrap}>
-      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
-      <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: 30, margin: "6px 0 4px" }}>Signup requests</h1>
+      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
+      <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Signup requests</h1>
       <p style={{ color: "var(--slate)", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request verified; account provisioning follows when auth goes live.</p>
       <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -56,15 +56,15 @@ export default async function SignupQueue() {
             {rows.length === 0 && <tr><td style={td} colSpan={10}>No requests yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} style={{ background: r.status === "new" ? "#FBF3E6" : "var(--paper)" }}>
-                <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11 }}>{new Date(r.created_at).toISOString().slice(0, 16).replace("T", " ")}</span></td>
-                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, color: roleColor[r.role] || "var(--slate)", textTransform: "uppercase", letterSpacing: ".04em" }}>{r.role}</span></td>
+                <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem" }}>{new Date(r.created_at).toISOString().slice(0, 16).replace("T", " ")}</span></td>
+                <td style={td}><span style={{ fontSize: "0.6875rem", fontWeight: 700, color: roleColor[r.role] || "var(--slate)", textTransform: "uppercase", letterSpacing: ".04em" }}>{r.role}</span></td>
                 <td style={td}>{r.full_name}</td>
                 <td style={td}>{r.company || ""}</td>
-                <td style={td}><a href={`mailto:${r.email}`} style={{ color: "var(--harbor-d)" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, color: "var(--slate)" }}>{r.phone}</div> : null}</td>
+                <td style={td}><a href={`mailto:${r.email}`} style={{ color: "var(--harbor-d)" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", color: "var(--slate)" }}>{r.phone}</div> : null}</td>
                 <td style={{ ...td, maxWidth: 260 }}>{detailsSummary(r.details)}</td>
                 <td style={td}>{r.locale}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber-d)" }}>{r.status}</span></td>
-                <td style={{ ...td, maxWidth: 180, color: "var(--slate)", fontSize: 12 }}>{r.notes || ""}</td>
+                <td style={{ ...td, maxWidth: 180, color: "var(--slate)", fontSize: "0.75rem" }}>{r.notes || ""}</td>
                 <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>
             ))}

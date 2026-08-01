@@ -113,14 +113,14 @@ export default function RequirementDetail({ params }: { params: { locale: string
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ padding: "26px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
-    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: 13, color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
+    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: "0.8125rem", color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
     <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center" }}>
       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(req.asset, locale)} · {req.deal === "lease" ? t.lease : t.buy}</span>
-      <span className="mono muted" style={{ fontSize: 11 }}>{req.ref}</span>
+      <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{req.ref}</span>
      </div>
-     <h1 style={{ fontSize: 23, fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
-     <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
+     <h1 style={{ fontSize: "1.4375rem", fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
+     <div className="muted" style={{ fontSize: "0.84375rem" }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
       {([
         // PKG-DEM2, finding 114. `${req.sizeMin}` printed the word `null` for a
@@ -137,40 +137,40 @@ export default function RequirementDetail({ params }: { params: { locale: string
         [t.timeline, timelineLabel(req.timeline, ar) || t.timelineUnstated],
       ] as [string, string][]).map((s, i) => (
        <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-        <div className="muted" style={{ fontSize: 11 }}>{s[0]}</div>
+        <div className="muted" style={{ fontSize: "0.6875rem" }}>{s[0]}</div>
         {/* bdi keeps "320 m2" from rendering as "m2 320" once the paragraph
             direction is RTL: the number and its unit are one LTR run. */}
-        <div style={{ fontSize: 14, fontWeight: 600, marginTop: 3 }}><bdi>{s[1]}</bdi></div>
+        <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: 3 }}><bdi>{s[1]}</bdi></div>
        </div>
       ))}
      </div>
-     {req.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 14 }}>{req.mustHaves.map((m, i) => <span key={i} className="chip on" style={{ fontSize: 11.5 }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
+     {req.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 14 }}>{req.mustHaves.map((m, i) => <span key={i} className="chip on" style={{ fontSize: "0.71875rem" }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
     </div>
 
     <div className="card pad" style={{ marginTop: 18, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
-      <div style={{ fontSize: 16, fontWeight: 700 }}>{t.interestedH} {summary.total ? `· ${summary.total}` : ""}</div>
+      <div style={{ fontSize: "1rem", fontWeight: 700 }}>{t.interestedH} {summary.total ? `· ${summary.total}` : ""}</div>
       {/* ELITE-4 J4-4: this button is the disclosure for the panel below it. */}
       <button className="btn primary sm" onClick={openPanel} aria-expanded={show} aria-controls="req-response-panel"><Icon.plus size={14} /> {t.haveSpace}</button>
      </div>
-     <p className="muted" style={{ fontSize: 12.5, margin: "0 0 14px" }}>{t.interestedP}</p>
+     <p className="muted" style={{ fontSize: "0.78125rem", margin: "0 0 14px" }}>{t.interestedP}</p>
 
      {show && (
       <div id="req-response-panel" className="card pad" style={{ boxShadow: "none", background: "var(--cool)", marginBottom: 14 }}>
-       <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>{t.appearAs}</p>
+       <p className="muted" style={{ fontSize: "0.78125rem", margin: "0 0 10px" }}>{t.appearAs}</p>
 
        {/* ELITE-4 J4-5: the matches arrive after the panel opens, so the region
            that holds them announces its own changes and reports that it is
            busy while the request is in flight. */}
        <div aria-live="polite" aria-busy={matchesLoading}>
        {matchesLoading ? (
-        <p className="muted" style={{ fontSize: 12.5, margin: "0 0 12px" }}>{t.matchesLoading}…</p>
+        <p className="muted" style={{ fontSize: "0.78125rem", margin: "0 0 12px" }}>{t.matchesLoading}…</p>
        ) : matches ? (
         <div style={{ marginBottom: 14 }}>
-         <div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.matchesH}</div>
-         <p className="muted" style={{ fontSize: 12.3, margin: "3px 0 10px", lineHeight: 1.6 }}>{t.matchesP}</p>
+         <div style={{ fontSize: "0.84375rem", fontWeight: 700 }}>{t.matchesH}</div>
+         <p className="muted" style={{ fontSize: "0.76875rem", margin: "3px 0 10px", lineHeight: 1.6 }}>{t.matchesP}</p>
          {matches.matches.length === 0 ? (
-          <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.matchesNone}</p>
+          <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.matchesNone}</p>
          ) : (
           <div className="col gap10">
            {matches.matches.map((m) => {
@@ -185,16 +185,16 @@ export default function RequirementDetail({ params }: { params: { locale: string
             return (
              <div key={m.listing_id} style={{ background: "var(--paper)", border: `1px solid ${on ? "var(--border-brand)" : "var(--silver)"}`, borderRadius: 11, padding: 12 }}>
               <div className="row gap8 wrap" style={{ alignItems: "center" }}>
-               <span style={{ fontSize: 13, fontWeight: 600, minWidth: 0 }}>{mt}</span>
-               <span className="tag" style={{ fontSize: 10.5, color: tone.fg, background: tone.bg, borderColor: "transparent" }}>{ar ? m.verdict_ar : m.verdict_en}</span>
+               <span style={{ fontSize: "0.8125rem", fontWeight: 600, minWidth: 0 }}>{mt}</span>
+               <span className="tag" style={{ fontSize: "0.65625rem", color: tone.fg, background: tone.bg, borderColor: "transparent" }}>{ar ? m.verdict_ar : m.verdict_en}</span>
               </div>
               <details style={{ marginTop: 8 }}>
-               <summary style={{ fontSize: 12, color: "var(--slate)", cursor: "pointer" }}>
+               <summary style={{ fontSize: "0.75rem", color: "var(--slate)", cursor: "pointer" }}>
                 {t.matchesWhy} <bdi>({m.reasons.length})</bdi>
                </summary>
                <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 7 }}>
                 {m.reasons.map((r) => (
-                 <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.3, lineHeight: 1.6 }}>
+                 <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "0.76875rem", lineHeight: 1.6 }}>
                   {/* The mark is decoration. The state reaches a reader through
                       the visually hidden word below, not through this. */}
                   <span aria-hidden="true" className="mono" style={{ flex: "none", width: 16, textAlign: "center", color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention-text)" }}>{NOTE[r.state]}</span>
@@ -213,7 +213,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
                 ))}
                </ul>
               </details>
-              <label className="row gap8" style={{ alignItems: "center", marginTop: 10, fontSize: 12.5, cursor: "pointer" }}>
+              <label className="row gap8" style={{ alignItems: "center", marginTop: 10, fontSize: "0.78125rem", cursor: "pointer" }}>
                <input
                 type="radio"
                 name="attach-listing"
@@ -225,25 +225,25 @@ export default function RequirementDetail({ params }: { params: { locale: string
              </div>
             );
            })}
-           {matches.truncated ? <p className="muted" style={{ fontSize: 12, margin: 0 }}>{t.matchesTruncated}</p> : null}
+           {matches.truncated ? <p className="muted" style={{ fontSize: "0.75rem", margin: 0 }}>{t.matchesTruncated}</p> : null}
           </div>
          )}
-         <p className="muted" style={{ fontSize: 11.8, margin: "10px 0 0", lineHeight: 1.6 }}>
+         <p className="muted" style={{ fontSize: "0.7375rem", margin: "10px 0 0", lineHeight: 1.6 }}>
           <bdi>{t.matchesMargins.replace("{size}", String(matches.tolerances.size_pct)).replace("{budget}", String(matches.tolerances.budget_pct))}</bdi>
           {matches.excluded_count > 0 ? <> <bdi>{matches.excluded_count}</bdi> {t.matchesExcluded}</> : null}
          </p>
         </div>
        ) : matchesErr ? (
-        <p style={{ color: "var(--status-error)", fontSize: 12.5, margin: "0 0 12px", lineHeight: 1.6 }}>{t.matchesErr}</p>
+        <p style={{ color: "var(--status-error)", fontSize: "0.78125rem", margin: "0 0 12px", lineHeight: 1.6 }}>{t.matchesErr}</p>
        ) : null}
        </div>
 
        {/* ELITE-4 J4-2: the only field in this flow, and it had no id, no label
            and no accessible name of any kind. */}
-       <label htmlFor="req-interest-msg" style={{ display: "block", fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>{t.msgLabel}</label>
+       <label htmlFor="req-interest-msg" style={{ display: "block", fontSize: "0.78125rem", fontWeight: 600, marginBottom: 6 }}>{t.msgLabel}</label>
        <textarea id="req-interest-msg" className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={`${t.placeholder}…`} style={{ ...inp, minHeight: 64, resize: "vertical" }} />
        {err && (
-        <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 8 }}>
+        <p role="alert" style={{ color: "#B3261E", fontSize: "0.78125rem", marginTop: 8 }}>
          {err}{needAuth ? <> <Link href={`/${locale}/login`} style={{ color: "var(--azure-d)", fontWeight: 600 }}>{t.signIn}</Link></> : null}
         </p>
        )}
@@ -255,25 +255,25 @@ export default function RequirementDetail({ params }: { params: { locale: string
      )}
 
      {summary.total === 0 ? (
-      <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: 13 }}>{t.none}</div>
+      <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: "0.8125rem" }}>{t.none}</div>
      ) : !identitiesVisible ? (
       // OD-003: the public sees how much interest there is, never who.
       <div className="col gap10">
        <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-        <div style={{ fontSize: 15, fontWeight: 700 }}>
+        <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>
          <bdi>{summary.total}</bdi> {summary.total === 1 ? t.interestedOne : t.interestedCount}
         </div>
-        <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>
+        <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4 }}>
          <bdi>{summary.owners}</bdi> {t.ownersB} · <bdi>{summary.brokers}</bdi> {t.brokersB}
         </div>
-        <div className="muted" style={{ fontSize: 12, marginTop: 10, lineHeight: 1.6 }}>{t.hiddenNote}</div>
+        <div className="muted" style={{ fontSize: "0.75rem", marginTop: 10, lineHeight: 1.6 }}>{t.hiddenNote}</div>
        </div>
        {ints.filter((i) => i.mine).map((it) => (
         <div key={it.id} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.shield size={16} /></span>
          <div className="grow">
-          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{t.yours}</span></div>
-          {it.message && <div className="muted" style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
+          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.yours}</span></div>
+          {it.message && <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
          </div>
         </div>
        ))}
@@ -290,13 +290,13 @@ export default function RequirementDetail({ params }: { params: { locale: string
            the requirement is the only person who ever saw it. It is gone, and
            what a real reply needs is recorded in the findings register rather
            than mocked up here. */}
-       <p className="muted" style={{ fontSize: 12, margin: "0 0 2px", lineHeight: 1.6 }}>{t.replyNote}</p>
+       <p className="muted" style={{ fontSize: "0.75rem", margin: "0 0 2px", lineHeight: 1.6 }}>{t.replyNote}</p>
        {ints.map((it) => (
         <div key={it.id} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}>{it.type === "broker" ? <Icon.user size={16} /> : <Icon.shield size={16} />}</span>
          <div className="grow">
-          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name || (it.type === "broker" ? t.aBroker : t.anOwner)}</span><span className="tag" style={{ fontSize: 10 }}>{it.type === "broker" ? t.broker : t.owner}</span></div>
-          {it.message && <div className="muted" style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
+          <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{it.name || (it.type === "broker" ? t.aBroker : t.anOwner)}</span><span className="tag" style={{ fontSize: "0.625rem" }}>{it.type === "broker" ? t.broker : t.owner}</span></div>
+          {it.message && <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
          </div>
         </div>
        ))}
@@ -310,4 +310,4 @@ export default function RequirementDetail({ params }: { params: { locale: string
 /* ELITE-4 J4-1: `outline: "none"` is gone. The visible focus ring is
    `.input:focus-visible` in the shared stylesheet, and an inline outline
    cannot be overridden from a stylesheet. */
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", width: "100%" };
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: "0.84375rem", color: "var(--ink)", background: "var(--paper)", width: "100%" };

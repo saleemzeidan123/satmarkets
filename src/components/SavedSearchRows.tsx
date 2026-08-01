@@ -42,7 +42,7 @@ export default function SavedSearchRows({
     }
   };
 
-  if (!items.length) return <p className="muted" style={{ fontSize: 13.5, margin: "6px 0 0" }}>{labels.empty}</p>;
+  if (!items.length) return <p className="muted" style={{ fontSize: "0.84375rem", margin: "6px 0 0" }}>{labels.empty}</p>;
 
   return (
     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
@@ -50,14 +50,14 @@ export default function SavedSearchRows({
         <div key={s.id} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
           <div style={{ minWidth: 0 }}>
             <div className="row gap8 wrap" style={{ alignItems: "center" }}>
-              <Link href={s.href} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.label}</Link>
+              <Link href={s.href} style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{s.label}</Link>
               {s.fresh > 0 && (
-                <span className="tag" style={{ background: "var(--harbor)", color: "var(--on-brand)", borderColor: "transparent", fontSize: 11 }}>
+                <span className="tag" style={{ background: "var(--harbor)", color: "var(--on-brand)", borderColor: "transparent", fontSize: "0.6875rem" }}>
                   {s.fresh} {labels.newSince}
                 </span>
               )}
             </div>
-            <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>
+            <div className="muted" style={{ fontSize: "0.75rem", marginTop: 3 }}>
               <bdi dir="ltr">{s.total}</bdi> {labels.matches}
             </div>
           </div>

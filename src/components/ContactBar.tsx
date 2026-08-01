@@ -49,9 +49,9 @@ function IconChat() {
 }
 
 const primaryCls =
-  "flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[15px] font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor focus-visible:ring-offset-2";
+  "flex h-12 w-full items-center justify-center gap-2 rounded-xl px-4 text-[0.9375rem] font-semibold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor focus-visible:ring-offset-2";
 const ghostCls =
-  "flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 text-[14px] font-semibold text-ink transition-colors hover:border-harbor hover:bg-harbor/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor focus-visible:ring-offset-2";
+  "flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 text-[0.875rem] font-semibold text-ink transition-colors hover:border-harbor hover:bg-harbor/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor focus-visible:ring-offset-2";
 
 /** The shared channel block, hierarchy first. Used by the desktop card and the
  *  mobile sticky dock. */
@@ -109,7 +109,7 @@ function Channels(p: Props) {
       {email && (
         <a
           href={`mailto:${p.email}?subject=${encodeURIComponent(`${p.refCode}: ${p.title}`)}&body=${enc}`}
-          className="mt-0.5 inline-flex items-center justify-center gap-1.5 text-[13px] font-medium text-slate underline-offset-2 hover:text-harbor hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor rounded"
+          className="mt-0.5 inline-flex items-center justify-center gap-1.5 text-[0.8125rem] font-medium text-slate underline-offset-2 hover:text-harbor hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-harbor rounded"
         >
           {t.email}
         </a>

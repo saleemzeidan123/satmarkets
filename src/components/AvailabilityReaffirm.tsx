@@ -79,7 +79,7 @@ export default function AvailabilityReaffirm({
       </button>
       <span role="status" className="sronly">{done ? t.done : ""}</span>
       {err && (
-        <span role="alert" style={{ color: "var(--red)", fontSize: 11, lineHeight: 1.5 }}>
+        <span role="alert" style={{ color: "var(--red)", fontSize: "0.6875rem", lineHeight: 1.5 }}>
           {err}
         </span>
       )}

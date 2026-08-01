@@ -259,13 +259,13 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{ri.eyebrow}{pub.period ? " \u00b7 " + formatPeriod(pub.period, ar) : ""}</div>
-      <h1 style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ri.intro}</div>
+      <h1 style={{ fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
+      <div className="muted" style={{ fontSize: "0.84375rem", marginTop: 6 }}>{ri.intro}</div>
       {/* ADV-1E. The four tiles below the header are averages taken across
           cells, so the sentence that governs those cells belongs beside the
           tiles and not only beside the table further down. */}
       {pub.statements.map((s) => (
-       <div key={s} className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 4 }}>{s}</div>
+       <div key={s} className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7, marginTop: 4 }}>{s}</div>
       ))}
      </div>
      <div className="row gap10 wrap">
@@ -288,7 +288,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="side">
        <div className="h"><span className="freeze capped"><span className="dot" />{ri.capped}</span> {ri.cappedExisting}</div>
        <div className="sub">{ri.cappedBody}</div>
-       <div className="big" style={{ color: "var(--amber-d)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.cappedMovement}</span></div>
+       <div className="big" style={{ color: "var(--amber-d)" }}>≈ 0.0% <span style={{ fontSize: "0.8125rem", color: "var(--slate)" }}>{ri.cappedMovement}</span></div>
       </div>
       <div className="side">
        <div className="h"><span className="freeze open"><span className="dot" />{ri.open}</span> {ri.openNew}</div>
@@ -312,7 +312,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
     </div>
 
     <div style={{ padding: "12px 24px 0" }}>
-     <span className="muted" style={{ fontSize: 12.5 }}>{ri.benchNote}</span>
+     <span className="muted" style={{ fontSize: "0.78125rem" }}>{ri.benchNote}</span>
     </div>
 
     {/* main grid */}
@@ -330,18 +330,18 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
          no time series behind it, and it rendered blank besides. It is gone until we
          have real history. */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.trendT}</div>
-      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 6, marginBottom: 0, maxWidth: 560 }}>{ri.trendB}</p>
+      <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{ri.trendT}</div>
+      <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7, marginTop: 6, marginBottom: 0, maxWidth: 560 }}>{ri.trendB}</p>
      </div>
 
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-      <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.heatT}</div>
+      <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{ri.heatT}</div>
       {/* The unit was spelled in this sentence, in both dictionaries, over cells
           whose unit nothing here read. It is now the unit the cells agree on, or
           absent. The thin-sample clause is a second string so the first can end
           where the unit does. */}
-      <div className="muted" style={{ fontSize: 12.5 }}>{withUnit(ri.heatSubReal, cells, loc, C.statUnit) + ". " + ri.heatSubRealThin}</div>
+      <div className="muted" style={{ fontSize: "0.78125rem" }}>{withUnit(ri.heatSubReal, cells, loc, C.statUnit) + ". " + ri.heatSubRealThin}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
        {(() => {
         const vals = districts.map((d) => Number(String(d.figure).replace(/[^0-9.]/g, "")) || 0);
@@ -355,24 +355,24 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
          const light = t > 0.55;
          return (
           <div key={i} title={String(d.location) + " · " + String(d.asset)} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
-           <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.25, color: light ? "var(--on-brand)" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.location}</div>
-           <div className="mono" style={{ fontSize: 13, fontWeight: 700, marginTop: 6, color: light ? "var(--on-brand)" : "var(--azure-d)" }}>{v > 0 ? d.figure : "–"}</div>
+           <div style={{ fontSize: "0.6875rem", fontWeight: 600, lineHeight: 1.25, color: light ? "var(--on-brand)" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.location}</div>
+           <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 700, marginTop: 6, color: light ? "var(--on-brand)" : "var(--azure-d)" }}>{v > 0 ? d.figure : "–"}</div>
           </div>
          );
         });
        })()}
       </div>
       <div className="row between" style={{ marginTop: 14 }}>
-       <span className="mono muted" style={{ fontSize: 10 }}>{ri.heatLow}</span>
+       <span className="mono muted" style={{ fontSize: "0.625rem" }}>{ri.heatLow}</span>
        <div style={{ flex: 1, height: 7, margin: "0 10px", borderRadius: 4, background: "linear-gradient(90deg,var(--azure-wash),var(--azure))" }} />
-       <span className="mono muted" style={{ fontSize: 10 }}>{ri.heatHigh}</span>
+       <span className="mono muted" style={{ fontSize: "0.625rem" }}>{ri.heatHigh}</span>
       </div>
      </div>
 
      {/* district table */}
      <div className="card" style={{ gridColumn: "1 / -1", overflow: "hidden", boxShadow: "var(--sh-1)" }}>
       <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.tableTitle}</div>
+       <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{ri.tableTitle}</div>
        <span className="chip" style={{ borderColor: "var(--silver)" }}>{ri.sortYoY} <Icon.chevd size={14} /></span>
       </div>
       <div style={{ overflowX: "auto" }}>
@@ -410,13 +410,13 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       {quoteNotes.length > 0 && (
        <div style={{ padding: "12px 20px 0" }}>
         {quoteNotes.map((t) => (
-         <p key={t} className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, margin: "0 0 6px" }}>{t}</p>
+         <p key={t} className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7, margin: "0 0 6px" }}>{t}</p>
         ))}
        </div>
       )}
       <div className="row gap10" style={{ padding: "14px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>{ri.tableNote}</span>
+       <span className="muted" style={{ fontSize: "0.78125rem" }}>{ri.tableNote}</span>
       </div>
      </div>
 
@@ -435,12 +435,12 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
          different licence questions behind them and one shared row of record. */}
      <div className="card" style={{ gridColumn: "1 / -1", boxShadow: "var(--sh-1)" }} id="evidence">
       <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.eviTitle}</div>
-       <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, margin: "6px 0 0", maxWidth: 680 }}>{ri.eviBody}</p>
+       <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{ri.eviTitle}</div>
+       <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7, margin: "6px 0 0", maxWidth: 680 }}>{ri.eviBody}</p>
       </div>
       <div style={{ padding: "16px 20px" }}>
        {districts.length === 0 ? (
-        <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{ri.eviNone}</p>
+        <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{ri.eviNone}</p>
        ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 260px), 1fr))", gap: 14 }}>
          {districts.map((d, i) => {
@@ -448,11 +448,11 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           const band = d.evidence.get("rent_index_band");
           return (
            <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700 }}>{d.location}</div>
-            <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>{d.asset}</div>
+            <div style={{ fontSize: "0.8125rem", fontWeight: 700 }}>{d.location}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 2 }}>{d.asset}</div>
             {avg ? (
              <div style={{ marginTop: 12 }}>
-              <div className="muted" style={{ fontSize: 11.5 }}>{ri.eviAverage}</div>
+              <div className="muted" style={{ fontSize: "0.71875rem" }}>{ri.eviAverage}</div>
               {/* The passport's own value, not the row's. `d.figure` is read
                   straight off the record and is printed whenever `sufficient`
                   is true; `avg.value` is null whenever the passport withheld
@@ -462,18 +462,18 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
                   licence withholds, and printing `d.figure` here would put a
                   number directly above a panel saying the number cannot be
                   shown. One object decides both, so they cannot disagree. */}
-              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{avg.value ?? ri.na}</bdi></div>
+              <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{avg.value ?? ri.na}</bdi></div>
               <EvidencePassport view={avg} label={ri.eviAverage} ar={ar} locale={loc} />
              </div>
             ) : null}
             {band ? (
              <div style={{ marginTop: 12 }}>
-              <div className="muted" style={{ fontSize: 11.5 }}>{ri.eviBand}</div>
+              <div className="muted" style={{ fontSize: "0.71875rem" }}>{ri.eviBand}</div>
               {/* Same rule for the band, and `ri.na` rather than the table's
                   `ri.thinSample`, because a withheld band is not always a thin
                   sample: it can equally be a licence that does not cover
                   derived display. The panel below states which. */}
-              <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{band.value ?? ri.na}</bdi></div>
+              <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 4 }}><bdi dir="ltr">{band.value ?? ri.na}</bdi></div>
               <EvidencePassport view={band} label={ri.eviBand} ar={ar} locale={loc} />
              </div>
             ) : null}

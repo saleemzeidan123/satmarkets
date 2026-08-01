@@ -227,7 +227,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           two real controls beside it, with no handler, no focus and nothing announced.
           Removed rather than invented: implementing sharing is not an accessibility fix. */}
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
-        <Link href={L("/listings")} className="mono muted" style={{ fontSize: 11.5, letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
+        <Link href={L("/listings")} className="mono muted" style={{ fontSize: "0.71875rem", letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
@@ -250,10 +250,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             <span className="tag">{dict.ld.availableNow}</span>
             {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "var(--harbor)", color: "var(--on-brand)", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
           </div>
-          <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
-          <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: 14 }}>
+          <h1 className="serif" style={{ fontSize: "1.875rem", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
+          <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: "0.875rem" }}>
             <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span>{formatArea(l.area_sqm, lp)}</span>
-            {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: 12.5 }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
+            {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: "0.78125rem" }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
           </div>
           {/* WHO FILED THIS. A byline under the headline, not a footnote at the tail of
               the contact rail. Moving it here also removed the last reason the rail
@@ -283,7 +283,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             const dtxt = dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
             const color = availabilityTone(av.state);
             return (
-              <div className="row gap6" style={{ marginTop: 6, alignItems: "center", color, fontSize: 12.5 }}>
+              <div className="row gap6" style={{ marginTop: 6, alignItems: "center", color, fontSize: "0.78125rem" }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                 <span className="mono">{availabilityLabel(av, dtxt, ar)}</span>
               </div>
@@ -379,8 +379,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 const ev = s[2] ? evidence.get(s[2]) : undefined;
                 return (
                   <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
-                    <div className="muted" style={{ fontSize: 11.5 }}>{s[0]}</div>
-                    <div className="mono" style={{ fontSize: 16, fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
+                    <div className="muted" style={{ fontSize: "0.71875rem" }}>{s[0]}</div>
+                    <div className="mono" style={{ fontSize: "1rem", fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
                     {ev ? <EvidencePassport view={ev} label={s[0]} ar={ar} locale={lp} /> : null}
                   </div>
                 );
@@ -399,16 +399,16 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{T.spaceTitle}</div>
+                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.spaceTitle}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => (
                     <div key={i}>
-                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
-                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                      <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
+                      <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
                     </div>
                   ))}
                 </div>
-                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedGeneric}</div>
+                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{T.statedGeneric}</div>
               </div>
             );
           })()}
@@ -449,20 +449,20 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{T.termsTitle}</div>
+                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.termsTitle}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => {
                     const ev = r[2] ? evidence.get(r[2]) : undefined;
                     return (
                       <div key={i}>
-                        <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
-                        <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                        <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
+                        <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
                         {ev ? <EvidencePassport view={ev} label={r[0]} ar={ar} locale={lp} /> : null}
                       </div>
                     );
                   })}
                 </div>
-                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{T.statedByLister}</div>
+                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{T.statedByLister}</div>
               </div>
             );
           })()}
@@ -473,16 +473,16 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (rows.length === 0) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{(dict as any).ld.complianceTitle}</div>
+                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{(dict as any).ld.complianceTitle}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => (
                     <div key={i}>
-                      <div className="muted" style={{ fontSize: 11.5 }}>{r[0]}</div>
-                      <div className="mono" style={{ fontSize: 15, fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
+                      <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
+                      <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
                     </div>
                   ))}
                 </div>
-                <div className="mono muted" style={{ fontSize: 10.5, marginTop: 12 }}>{(dict as any).ld.statedGeneric}</div>
+                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{(dict as any).ld.statedGeneric}</div>
               </div>
             );
           })()}
@@ -502,23 +502,23 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             const tile = (fp: typeof floorPlans[number], i: number) => (
               <a key={i} href={fp.url} target="_blank" rel="noopener noreferrer" className="card" style={{ textDecoration: "none", color: "inherit", overflow: "hidden", display: "block", boxShadow: "none" }}>
                 {fp.isPdf ? (
-                  <div style={{ height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--harbor)", gap: 6, fontSize: 12.5, fontWeight: 600 }}><Icon.doc size={22} /> PDF</div>
+                  <div style={{ height: 110, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--harbor)", gap: 6, fontSize: "0.78125rem", fontWeight: 600 }}><Icon.doc size={22} /> PDF</div>
                 ) : (
                   <img src={fp.url} alt={fp.label ?? planLabel(fp.planType, ar)} style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
                 )}
-                <div className="muted" style={{ fontSize: 12, padding: "6px 8px" }}>{fp.label ?? planLabel(fp.planType, ar)}</div>
+                <div className="muted" style={{ fontSize: "0.75rem", padding: "6px 8px" }}>{fp.label ?? planLabel(fp.planType, ar)}</div>
               </a>
             );
             const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 12 } as const;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{heading}</div>
+                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{heading}</div>
                 {single ? (
                   <div style={gridStyle}>{groups.get(onlyType!)!.map(tile)}</div>
                 ) : (
                   Array.from(groups.entries()).map(([type, items]) => (
                     <div key={type} style={{ marginTop: 14 }}>
-                      <div className="mono muted" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".05em" }}>{planLabel(type, ar)}</div>
+                      <div className="mono muted" style={{ fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: ".05em" }}>{planLabel(type, ar)}</div>
                       <div style={gridStyle}>{items.map(tile)}</div>
                     </div>
                   ))
@@ -528,7 +528,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           })()}
           {brochures.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{lease ? (dict as any).ld.brochureTitle : (dict as any).ld.omTitle}</div>
+              <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{lease ? (dict as any).ld.brochureTitle : (dict as any).ld.omTitle}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
                 {brochures.map((b, i) => (
                   <a key={i} href={b.url} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {(dict as any).ld.downloadBrochure}{b.label ? ` · ${b.label}` : ""}</a>
@@ -541,7 +541,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             if (!v) return null;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>{(dict as any).ld.videoTour}</div>
+                <div style={{ fontWeight: 600, fontSize: "0.9375rem", marginBottom: 12 }}>{(dict as any).ld.videoTour}</div>
                 {v.kind === "youtube" || v.kind === "vimeo" ? (
                   <div style={{ position: "relative", paddingBottom: "56.25%", height: 0, borderRadius: 10, overflow: "hidden" }}>
                     <iframe src={v.embedUrl} title={(dict as any).ld.videoTour} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
@@ -556,8 +556,8 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           })()}
           {canSeeDocs && ownerDocs.length > 0 && (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--silver)" }}>
-              <div style={{ fontWeight: 600, fontSize: 15 }}>{(dict as any).ld.verifDocs}</div>
-              <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{(dict as any).ld.verifDocsNote}</div>
+              <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{(dict as any).ld.verifDocs}</div>
+              <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4 }}>{(dict as any).ld.verifDocsNote}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
                 {ownerDocs.map((d) => (
                   <a key={d.id} href={`/api/documents/${d.id}/download`} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {documentLabel(d.kind, ar)}{d.name ? ` · ${d.name}` : ""}</a>
@@ -565,17 +565,17 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           )}
-          {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: 14.5, lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
+          {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: "0.90625rem", lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
           {locFactsProps ? (
             <LocationFacts locale={locale as "en" | "ar"} {...locFactsProps} />
           ) : (
             <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-              <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 620 }}>{dict.ld.locNote}</div>
+              <div className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6, maxWidth: 620 }}>{dict.ld.locNote}</div>
             </div>
           )}
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
-              <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
+              <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 14, marginTop: 14 }}>
                 {similar.map((s: any) => {
                   const sdn = s.districts ? (ar ? s.districts.name_ar : s.districts.name_en) : dn;
@@ -586,9 +586,9 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                     <Link key={s.id} href={L(`/listings/${s.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}><bdi>{spp ? spp.value : dict.ld.onRequest}</bdi>{spp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + spp.unit}</small>}</div>
-                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(s, ar ? "ar" : "en")}</div>
-                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · {formatArea(s.area_sqm, lp)}</div>
+                        <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 600 }}><bdi>{spp ? spp.value : dict.ld.onRequest}</bdi>{spp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + spp.unit}</small>}</div>
+                        <div style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.35 }}>{listingTitle(s, ar ? "ar" : "en")}</div>
+                        <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 3 }}>{sdn} · {formatArea(s.area_sqm, lp)}</div>
                       </div>
                     </Link>
                   );

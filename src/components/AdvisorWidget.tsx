@@ -94,13 +94,13 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
        <div className="grab" />
        <div className="row gap10" style={{ alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--silver)" }}>
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <span style={{ fontSize: 14.5, fontWeight: 700, letterSpacing: "-.01em" }}>{av.advisorTitle}</span>
-        <span className="tag" style={{ fontSize: 10 }}>{av.beta}</span>
+        <span style={{ fontSize: "0.90625rem", fontWeight: 700, letterSpacing: "-.01em" }}>{av.advisorTitle}</span>
+        <span className="tag" style={{ fontSize: "0.625rem" }}>{av.beta}</span>
         <span style={{ flex: 1 }} />
         {msgs.length > 0 && (
-         <button type="button" onClick={reset} className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)" }}>{av.newChat}</button>
+         <button type="button" onClick={reset} className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", border: "1px solid var(--silver)", background: "var(--paper)" }}>{av.newChat}</button>
         )}
-        <Link href={`/${loc}/advisor`} className="chip" style={{ fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)", textDecoration: "none", color: "inherit" }} onClick={() => setOpen(false)}>{av.fullPage}</Link>
+        <Link href={`/${loc}/advisor`} className="chip" style={{ fontSize: "0.71875rem", border: "1px solid var(--silver)", background: "var(--paper)", textDecoration: "none", color: "inherit" }} onClick={() => setOpen(false)}>{av.fullPage}</Link>
         <button type="button" onClick={() => setOpen(false)} aria-label={av.close} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 6 }}>{xIcon}</button>
        </div>
       </div>
@@ -136,8 +136,8 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
              return (
               <Link key={l.id} href={`/${loc}/listings/${l.id}`} onClick={() => setOpen(false)} className="row gap10" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 10, padding: 9, textDecoration: "none", color: "inherit" }}>
                <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={15} /></span>
-               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{[assetLabel(l.asset_type, loc), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
-               <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}><bdi>{price ?? av.na}</bdi></div></div>
+               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: "0.78125rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 2 }}>{[assetLabel(l.asset_type, loc), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
+               <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "0.84375rem", fontWeight: 500 }}><bdi>{price ?? av.na}</bdi></div></div>
               </Link>
              );
             })}
@@ -155,14 +155,14 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
       <div style={{ padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
        {msgs.length === 0 && (
         <div className="row gap8 wrap" style={{ marginBottom: 8 }}>
-         {chips.map((p, i) => <button key={i} type="button" className="chip" style={{ cursor: "pointer", fontSize: 11.5, border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => doSend(p)}>{p}</button>)}
+         {chips.map((p, i) => <button key={i} type="button" className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => doSend(p)}>{p}</button>)}
         </div>
        )}
        <form onSubmit={(e) => { e.preventDefault(); doSend(input); }} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--azure)", borderRadius: 999, padding: "6px 8px 6px 14px", background: "var(--paper)" }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.placeholder} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 13.5, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left", minWidth: 0 }} />
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.placeholder} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "0.84375rem", color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left", minWidth: 0 }} />
         <button type="submit" className="btn primary sm" disabled={busy} aria-label={av.send}><Icon.send size={14} /></button>
        </form>
-       <p className="muted" style={{ fontSize: 10.5, margin: "6px 2px 0" }}>{av.footer}</p>
+       <p className="muted" style={{ fontSize: "0.65625rem", margin: "6px 2px 0" }}>{av.footer}</p>
       </div>
      </div>
     </>

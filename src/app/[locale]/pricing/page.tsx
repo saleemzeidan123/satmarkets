@@ -70,8 +70,8 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
   <div style={{ background: "var(--paper)" }}>
    <div style={{ padding: "48px 24px 28px", textAlign: "center", background: "linear-gradient(180deg,var(--cool),var(--paper))" }}>
     <div className="eyebrow">{dict.pricing.membership}</div>
-    <h1 className="serif" style={{ fontSize: "clamp(30px,5vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{dict.pricing.h1}</h1>
-    <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, margin: "14px auto 0" }}>{dict.pricing.sub}</p>
+    <h1 className="serif" style={{ fontSize: "clamp(1.875rem,5vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{dict.pricing.h1}</h1>
+    <p className="muted" style={{ fontSize: "0.96875rem", maxWidth: 560, margin: "14px auto 0" }}>{dict.pricing.sub}</p>
     <div className="seg" style={{ display: "inline-flex", marginTop: 22 }}><span className="on">{dict.pricing.monthly}</span><span>{dict.pricing.annual}</span></div>
    </div>
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
@@ -90,10 +90,10 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
       </div>
      ))}
     </div>
-    <p className="muted" style={{ textAlign: "center", fontSize: 12, margin: "10px 0 0" }}>{dict.pricing.vatNote}</p>
+    <p className="muted" style={{ textAlign: "center", fontSize: "0.75rem", margin: "10px 0 0" }}>{dict.pricing.vatNote}</p>
 
     <div style={{ padding: "36px 24px 48px" }}>
-     <h2 className="serif" style={{ fontSize: 24, fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{dict.pricing.compareLimits}</h2>
+     <h2 className="serif" style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{dict.pricing.compareLimits}</h2>
      <div className="card" style={{ overflow: "hidden", boxShadow: "none" }}>
       <div style={{ overflowX: "auto" }}>
        <table className="matrix">

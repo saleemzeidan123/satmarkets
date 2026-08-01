@@ -14,8 +14,8 @@ type Row = {
 };
 
 const wrap: CSSProperties = { maxWidth: 1220, margin: "0 auto", padding: "40px 24px", fontFamily: "var(--font-sans), system-ui, sans-serif", color: "var(--ink)" };
-const th: CSSProperties = { textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
-const td: CSSProperties = { fontSize: 13, padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
+const th: CSSProperties = { textAlign: "left", fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: ".06em", color: "var(--slate)", padding: "8px 10px", borderBottom: "1px solid var(--silver-2)", whiteSpace: "nowrap" };
+const td: CSSProperties = { fontSize: "0.8125rem", padding: "8px 10px", borderBottom: "1px solid var(--silver)", verticalAlign: "top" };
 
 function riyadh(iso: string | null): string {
   if (!iso) return "";
@@ -39,10 +39,10 @@ export default async function ViewingsQueue() {
   const sColor: Record<string, string> = { requested: "var(--amber-d)", confirmed: "var(--harbor-d)", completed: "var(--harbor-d)", cancelled: "var(--red)", no_show: "var(--red)" };
   return (
     <main style={wrap}>
-      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
-      <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: 30, margin: "6px 0 4px" }}>Viewing requests</h1>
+      <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
+      <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Viewing requests</h1>
       <p style={{ color: "var(--slate)", margin: "0 0 4px" }}>{rows.length} requests, {pending} awaiting a decision. SAT-listed viewings are SAT&apos;s to host; owner-listed viewings route to the lister once accounts go live, until then this queue serves both with the route shown.</p>
-      <p style={{ color: "var(--slate)", fontSize: 12, margin: "0 0 20px" }}>The brief is what the requester stated; the platform never scores people.</p>
+      <p style={{ color: "var(--slate)", fontSize: "0.75rem", margin: "0 0 20px" }}>The brief is what the requester stated; the platform never scores people.</p>
       <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead><tr>{["Slot (Riyadh)", "Listing", "Route", "Requester", "Stated brief", "Status", "Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
@@ -50,10 +50,10 @@ export default async function ViewingsQueue() {
             {rows.length === 0 && <tr><td style={td} colSpan={7}>No viewing requests yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} style={{ background: r.status === "requested" ? "#FBF3E6" : "var(--paper)" }}>
-                <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11.5 }}>{riyadh(r.scheduled_at)}</span></td>
-                <td style={td}>{r.listings?.title_en || "?"}<div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 10.5, color: "#8A93A0" }}>{r.listings?.reference_code || ""}</div></td>
-                <td style={td}><span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "var(--harbor-d)" : "var(--slate)" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
-                <td style={td}>{r.contact_name || ""}{r.contact_email ? <div><a href={`mailto:${r.contact_email}`} style={{ color: "var(--harbor-d)", fontSize: 12 }}>{r.contact_email}</a></div> : null}</td>
+                <td style={td}><span style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.71875rem" }}>{riyadh(r.scheduled_at)}</span></td>
+                <td style={td}>{r.listings?.title_en || "?"}<div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.65625rem", color: "#8A93A0" }}>{r.listings?.reference_code || ""}</div></td>
+                <td style={td}><span style={{ fontSize: "0.6875rem", fontWeight: 700, letterSpacing: ".04em", color: r.listings?.is_sat_listed ? "var(--harbor-d)" : "var(--slate)" }}>{r.listings?.is_sat_listed ? "SAT HOSTS" : "OWNER"}</span></td>
+                <td style={td}>{r.contact_name || ""}{r.contact_email ? <div><a href={`mailto:${r.contact_email}`} style={{ color: "var(--harbor-d)", fontSize: "0.75rem" }}>{r.contact_email}</a></div> : null}</td>
                 <td style={{ ...td, maxWidth: 280 }}>{r.qualification?.summary_en || ""}</td>
                 <td style={td}><span style={{ fontWeight: 600, color: sColor[r.status] || "var(--slate)" }}>{r.status}</span></td>
                 <td style={td}><ViewingActions id={r.id} status={r.status} /></td>

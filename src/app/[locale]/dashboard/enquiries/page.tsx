@@ -81,8 +81,8 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
-        <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>{t.sub}</div>
+        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+        <div className="muted" style={{ fontSize: "0.8125rem", marginTop: 3 }}>{t.sub}</div>
       </div>
 
       <div className="dpanel">
@@ -90,13 +90,13 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
           <span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span>
           <span className="t">{t.title}</span>
           <span style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 11.5 }}>{rows.length}</span>
+          <span className="muted" style={{ fontSize: "0.71875rem" }}>{rows.length}</span>
         </div>
 
         {rows.length === 0 ? (
           <div style={{ padding: "24px 20px 28px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.emptyT}</div>
-            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 400 }}>{t.emptyB}</div>
+            <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.emptyT}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 400 }}>{t.emptyB}</div>
             <Link href={`/${lp}/dashboard/listings`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.emptyC}</Link>
           </div>
         ) : (
@@ -116,12 +116,12 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
                       <td>
                         <Link href={`/${lp}/dashboard/enquiries/${l.id}`} className="row gap10 rowlink" style={{ color: "inherit" }}>
                           <span className="avatar" style={{ background: "var(--harbor)", flex: "none" }}>{initials(nm)}</span>
-                          <span style={{ fontWeight: 600, fontSize: 13 }}>{nm}</span>
+                          <span style={{ fontWeight: 600, fontSize: "0.8125rem" }}>{nm}</span>
                         </Link>
                       </td>
-                      <td className="muted" style={{ fontSize: 12.5 }}>{titleOf.get(l.listing_id) || ""}</td>
-                      <td>{(() => { const s = stLabel(l.status || "new"); return <span className={"statusdot " + s.cls} style={{ fontSize: 12 }}>{s.label}</span>; })()}</td>
-                      <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(l.created_at)}</td>
+                      <td className="muted" style={{ fontSize: "0.78125rem" }}>{titleOf.get(l.listing_id) || ""}</td>
+                      <td>{(() => { const s = stLabel(l.status || "new"); return <span className={"statusdot " + s.cls} style={{ fontSize: "0.75rem" }}>{s.label}</span>; })()}</td>
+                      <td className="num mono muted" style={{ fontSize: "0.71875rem" }}>{stamp(l.created_at)}</td>
                     </tr>
                   );
                 })}

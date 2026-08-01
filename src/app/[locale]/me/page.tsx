@@ -184,8 +184,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     <div style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
-          <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: 0 }}>{t.hi}</h1>
-          <p className="muted" style={{ fontSize: 14, marginTop: 6, maxWidth: 560 }}>{t.sub}</p>
+          <h1 className="serif" style={{ fontSize: "1.625rem", fontWeight: 500, margin: 0 }}>{t.hi}</h1>
+          <p className="muted" style={{ fontSize: "0.875rem", marginTop: 6, maxWidth: 560 }}>{t.sub}</p>
         </div>
         <Link href={`/${lp}/listings`} className="btn secondary sm" style={{ textDecoration: "none" }}><Icon.building size={15} /> {t.explore}</Link>
       </div>
@@ -195,8 +195,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
         <div className="row gap12" style={{ alignItems: "center" }}>
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.inbox size={20} /></span>
           <div>
-            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{t.messages}{threadCount ? <span className="muted" style={{ fontWeight: 400 }}> · {threadCount}</span> : null}</div>
-            <div className="muted" style={{ fontSize: 12.5 }}>{t.msgSub}</div>
+            <div style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{t.messages}{threadCount ? <span className="muted" style={{ fontWeight: 400 }}> · {threadCount}</span> : null}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem" }}>{t.msgSub}</div>
           </div>
         </div>
         <span className="btn secondary sm">{t.openMsgs}</span>
@@ -205,8 +205,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       {/* Viewings this occupier booked, and what the lister decided. */}
       {viewings.length > 0 && (
         <div style={{ marginTop: 26 }}>
-          <div className="modhead"><Icon.clock size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.viewings}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{viewings.length}</span></div>
-          <p className="muted" style={{ fontSize: 12.5, margin: "4px 0 0" }}>{t.viewingsSub}</p>
+          <div className="modhead"><Icon.clock size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.viewings}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: "0.8125rem" }}>{viewings.length}</span></div>
+          <p className="muted" style={{ fontSize: "0.78125rem", margin: "4px 0 0" }}>{t.viewingsSub}</p>
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
             {viewings.map((v: any) => {
               const l = v.listings;
@@ -215,12 +215,12 @@ export default async function OccupierHome({ params }: { params: { locale: strin
               return (
                 <div key={v.id} className="card pad row between wrap" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
-                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
-                    <div className="mono" style={{ fontSize: 12.5, marginTop: 4 }}><bdi dir="ltr">{vWhen(v.scheduled_at)}</bdi>{passed && v.status === "requested" ? <span className="muted" style={{ marginInlineStart: 8 }}>{t.vPast}</span> : null}</div>
+                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
+                    <div className="muted" style={{ fontSize: "0.75rem", marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
+                    <div className="mono" style={{ fontSize: "0.78125rem", marginTop: 4 }}><bdi dir="ltr">{vWhen(v.scheduled_at)}</bdi>{passed && v.status === "requested" ? <span className="muted" style={{ marginInlineStart: 8 }}>{t.vPast}</span> : null}</div>
                   </div>
                   <div className="row gap12" style={{ alignItems: "center", flex: "none" }}>
-                    <span style={{ color: vTone(v.status), fontWeight: 600, fontSize: 12.5 }}>{vLabel(v.status)}</span>
+                    <span style={{ color: vTone(v.status), fontWeight: 600, fontSize: "0.78125rem" }}>{vLabel(v.status)}</span>
                     <Link href={`/${lp}/listings/${l.id}`} className="btn secondary sm" style={{ textDecoration: "none" }}>{t.view}</Link>
                   </div>
                 </div>
@@ -233,7 +233,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
       {/* Enquiry history: the spaces this occupier has contacted. */}
       {enquiries.length > 0 && (
         <div style={{ marginTop: 26 }}>
-          <div className="modhead"><Icon.doc size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.enquiries}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{enquiries.length}</span></div>
+          <div className="modhead"><Icon.doc size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.enquiries}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: "0.8125rem" }}>{enquiries.length}</span></div>
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
             {enquiries.map((it: any) => {
               const l = it.listing;
@@ -243,8 +243,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
               return (
                 <div key={it.key} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
-                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
+                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
+                    <div className="muted" style={{ fontSize: "0.75rem", marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
                   </div>
                   {direct
                     ? <Link href={`/${lp}/listings/${l.id}`} className="btn secondary sm" style={{ textDecoration: "none", flex: "none" }}>{t.view}</Link>
@@ -258,17 +258,17 @@ export default async function OccupierHome({ params }: { params: { locale: strin
 
       {/* Saved searches + new-match alerts. */}
       <div style={{ marginTop: 26 }}>
-        <div className="modhead"><Icon.search size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.searches}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{savedSearches.length}</span></div>
-        <p className="muted" style={{ fontSize: 12.5, margin: "4px 0 0" }}>{t.searchesSub}</p>
+        <div className="modhead"><Icon.search size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.searches}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: "0.8125rem" }}>{savedSearches.length}</span></div>
+        <p className="muted" style={{ fontSize: "0.78125rem", margin: "4px 0 0" }}>{t.searchesSub}</p>
         <SavedSearchRows rows={savedSearches} locale={lp as "en" | "ar"} labels={{ matches: t.matches, newSince: t.newSince, view: t.view, remove: t.remove, empty: t.noSearch }} />
       </div>
 
       {/* Saved listings */}
       <div style={{ marginTop: 26 }}>
-        <div className="modhead"><Icon.heart size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.saved}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{rows.length}</span></div>
+        <div className="modhead"><Icon.heart size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.saved}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: "0.8125rem" }}>{rows.length}</span></div>
         {rows.length === 0 ? (
           <div style={{ padding: "22px 0" }}>
-            <p className="muted" style={{ fontSize: 13.5, margin: 0 }}>{t.none}</p>
+            <p className="muted" style={{ fontSize: "0.84375rem", margin: 0 }}>{t.none}</p>
             <Link href={`/${lp}/listings`} className="btn secondary sm" style={{ marginTop: 12, textDecoration: "none" }}>{t.browse}</Link>
           </div>
         ) : (
@@ -276,8 +276,8 @@ export default async function OccupierHome({ params }: { params: { locale: strin
             <div key={g.name ?? "__unfiled"} style={{ marginTop: 14 }}>
               {savedGroups.length > 1 && (
                 <div className="row gap12" style={{ alignItems: "baseline", marginBottom: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: g.name ? "var(--harbor)" : "var(--slate)" }}>{g.name ?? t.unfiled}</span>
-                  <span className="muted" style={{ fontSize: 12 }}>{g.items.length}</span>
+                  <span style={{ fontSize: "0.8125rem", fontWeight: 700, color: g.name ? "var(--harbor)" : "var(--slate)" }}>{g.name ?? t.unfiled}</span>
+                  <span className="muted" style={{ fontSize: "0.75rem" }}>{g.items.length}</span>
                 </div>
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16 }}>
@@ -292,9 +292,9 @@ export default async function OccupierHome({ params }: { params: { locale: strin
                     <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}><bdi>{pp ? pp.value : t.onReq}{pp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + pp.unit}</small>}</bdi></div>
-                        <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
+                        <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 600 }}><bdi>{pp ? pp.value : t.onReq}{pp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + pp.unit}</small>}</bdi></div>
+                        <div style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
+                        <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
                       </div>
                     </Link>
                   );

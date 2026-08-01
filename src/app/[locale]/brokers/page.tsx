@@ -36,14 +36,14 @@ export default async function BrokersPage({ params }: { params: { locale: string
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div className="eyebrow">{b.eyebrow}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "10px 0 0" }}>{b.title}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640, lineHeight: 1.6 }}>{b.intro}</p>
+      <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "10px 0 0" }}>{b.title}</h1>
+      <p className="muted" style={{ marginTop: 8, fontSize: "0.90625rem", maxWidth: 640, lineHeight: 1.6 }}>{b.intro}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14, marginTop: 24 }}>
         {steps.map((s, i) => (
           <div key={i} className="card" style={{ padding: "18px 20px" }}>
-            <div className="row gap8" style={{ alignItems: "center", marginBottom: 8 }}><span style={{ color: "var(--harbor)" }}><Icon.shield size={16} /></span><span style={{ fontSize: 14, fontWeight: 700 }}>{s[0]}</span></div>
-            <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, margin: 0 }}>{s[1]}</p>
+            <div className="row gap8" style={{ alignItems: "center", marginBottom: 8 }}><span style={{ color: "var(--harbor)" }}><Icon.shield size={16} /></span><span style={{ fontSize: "0.875rem", fontWeight: 700 }}>{s[0]}</span></div>
+            <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: 0 }}>{s[1]}</p>
           </div>
         ))}
       </div>
@@ -53,8 +53,8 @@ export default async function BrokersPage({ params }: { params: { locale: string
         <div className="row gap12" style={{ alignItems: "center" }}>
           <span style={{ width: 46, height: 46, borderRadius: 12, background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontFamily: "var(--mono)" }}>NG</span>
           <div>
-            <div style={{ fontSize: 17, fontWeight: 700 }}>{b.sampleName}</div>
-            <div className="muted" style={{ fontSize: 12 }}>{b.falAppears}</div>
+            <div style={{ fontSize: "1.0625rem", fontWeight: 700 }}>{b.sampleName}</div>
+            <div className="muted" style={{ fontSize: "0.75rem" }}>{b.falAppears}</div>
           </div>
         </div>
         <div className="row gap8 wrap" style={{ marginTop: 14 }}>
@@ -65,21 +65,21 @@ export default async function BrokersPage({ params }: { params: { locale: string
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, marginTop: 16 }}>
             {sample.map((l) => (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="card lift" style={{ padding: "14px 16px", textDecoration: "none", color: "inherit" }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{[assetLabel(l.asset_type, locale), netArea(l.area_sqm, locale), listingPlace(l, ar ? "ar" : "en")].filter(Boolean).join(" · ")}</div>
-                <div className="mono" style={{ fontSize: 12, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>{askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale) ?? b.onRequest}</div>
+                <div style={{ fontSize: "0.84375rem", fontWeight: 700, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
+                <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 4 }}>{[assetLabel(l.asset_type, locale), netArea(l.area_sqm, locale), listingPlace(l, ar ? "ar" : "en")].filter(Boolean).join(" · ")}</div>
+                <div className="mono" style={{ fontSize: "0.75rem", marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>{askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale) ?? b.onRequest}</div>
               </Link>
             ))}
           </div>
         )}
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.55 }}>{b.illustration}</p>
+        <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 14, lineHeight: 1.55 }}>{b.illustration}</p>
       </section>
 
       <div className="row gap10 wrap" style={{ marginTop: 26 }}>
         <Link href={`/${locale}/signup`} className="btn primary" style={{ textDecoration: "none" }}>{b.signupCta} <Icon.arrow size={15} /></Link>
         <Link href={`/${locale}/requirements`} className="btn secondary" style={{ textDecoration: "none" }}>{b.seeReqs}</Link>
       </div>
-      <p className="muted" style={{ marginTop: 20, fontSize: 12 }}>{b.footer}</p>
+      <p className="muted" style={{ marginTop: 20, fontSize: "0.75rem" }}>{b.footer}</p>
     </div>
   );
 }

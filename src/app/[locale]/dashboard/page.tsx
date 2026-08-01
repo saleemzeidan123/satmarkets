@@ -24,8 +24,8 @@ export const dynamic = "force-dynamic";
 function EmptyState({ title, body, cta, href }: { title: string; body: string; cta?: string; href?: string }) {
  return (
   <div style={{ padding: "22px 20px 24px" }}>
-   <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>{title}</div>
-   <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 380 }}>{body}</div>
+   <div style={{ fontSize: "0.84375rem", fontWeight: 600, color: "var(--ink)" }}>{title}</div>
+   <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 380 }}>{body}</div>
    {cta && href && <Link href={href} className="btn secondary sm" style={{ marginTop: 12 }}>{cta}</Link>}
   </div>
  );
@@ -208,8 +208,8 @@ export default async function DashboardPage({ params }: { params: { locale: stri
     <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{ar ? "يحتاج انتباهك" : "Needs your attention"}</span></div>
     {q.length === 0 ? (
      <div style={{ padding: "20px" }}>
-      <div style={{ fontSize: 14, fontWeight: 700 }}>{caughtUp.t}</div>
-      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{caughtUp.b}</div>
+      <div style={{ fontSize: "0.875rem", fontWeight: 700 }}>{caughtUp.t}</div>
+      <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{caughtUp.b}</div>
       <Link href={`/${lp}/list`} className="btn secondary sm" style={{ marginTop: 12 }}><Icon.plus size={14} /> {ar ? "أدرج مساحة" : "Add a listing"}</Link>
      </div>
     ) : (
@@ -220,7 +220,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
         <div key={it.key} className="row between" style={{ gap: 12, padding: "13px 16px", borderTop: "1px solid var(--silver)", borderInlineStart: `3px solid ${it.tone === "warn" ? "var(--status-stale)" : "var(--harbor)"}`, alignItems: "center" }}>
          <div className="row gap10" style={{ alignItems: "center", minWidth: 0 }}>
           <span style={{ color: it.tone === "warn" ? "var(--status-stale)" : "var(--harbor)", display: "inline-flex", flex: "none" }}><I size={16} /></span>
-          <span style={{ fontSize: 13, lineHeight: 1.45, minWidth: 0 }}><bdi>{it.text}</bdi></span>
+          <span style={{ fontSize: "0.8125rem", lineHeight: 1.45, minWidth: 0 }}><bdi>{it.text}</bdi></span>
          </div>
          <Link href={it.href} className="btn secondary sm" style={{ flex: "none", whiteSpace: "nowrap" }}>{it.cta}</Link>
         </div>
@@ -232,15 +232,15 @@ export default async function DashboardPage({ params }: { params: { locale: stri
 
    {/* Recent enquiries: the owner's core inbox feeling. */}
    <div className="dpanel" style={{ marginTop: 18 }}>
-    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/dashboard/enquiries`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{db.recentEnq}</span><span style={{ flex: 1 }} />{leads.length > 0 && <Link href={`/${lp}/dashboard/enquiries`} style={{ fontSize: "0.78125rem", color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
     {leads.length === 0
      ? <EmptyState title={ar ? "لا استفسارات بعد" : "No enquiries yet"} body={ar ? "حين يتواصل أحدهم بشأن أحد عروضك، ستجده هنا ببياناته وسجلّ محادثتك." : "When someone reaches out about a listing, you'll find them here with their details and your full conversation."} cta={db.navMyListings} href={`/${lp}/dashboard/listings`} />
      : leads.map((l, i) => (
       <Link key={l.id} href={`/${lp}/dashboard/enquiries/${l.id}`} className="lead-item" style={{ color: "inherit" }}>
        <span className="avatar" style={{ background: i % 2 ? "var(--slate)" : "var(--harbor)" }}>{l.ini}</span>
-       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}><bdi>{l.name}</bdi></div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{l.listing}</bdi></div></div>
+       <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: "0.8125rem", fontWeight: 600 }}><bdi>{l.name}</bdi></div><div className="muted" style={{ fontSize: "0.71875rem" }}><bdi>{l.listing}</bdi></div></div>
        <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}>
-        <div className="mono muted" style={{ fontSize: 10.5 }}>{l.time}</div>
+        <div className="mono muted" style={{ fontSize: "0.65625rem" }}>{l.time}</div>
         {l.isNew && <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)", marginTop: 4 }}>{db.statusNew}</span>}
        </div>
       </Link>
@@ -249,7 +249,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
 
    {/* Inventory, promoted. Status is now load-bearing (it feeds the queue), so it is a real pill. */}
    <div className="dpanel" style={{ marginTop: 18 }}>
-    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} />{listRows.length > 0 && <Link href={`/${lp}/dashboard/listings`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
+    <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} />{listRows.length > 0 && <Link href={`/${lp}/dashboard/listings`} style={{ fontSize: "0.78125rem", color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
     {listRows.length === 0 ? <EmptyState title={ar ? "لا عروض بعد" : "No listings yet"} body={ar ? "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض." : "List your first space and it starts reaching occupiers searching in Riyadh."} cta={ar ? "أدرج مساحة" : "List a space"} href={`/${lp}/list`} /> : (
      <div style={{ overflowX: "auto" }}>
       <table className="dt" style={{ minWidth: 460 }}>
@@ -260,7 +260,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
           <td>
            <div className="row gap10">
             <Photo kind={l.asset} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
-            <div style={{ minWidth: 0 }}><Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, textDecoration: "none", color: "inherit" }}>{l.title}</Link><div className="mono muted" style={{ fontSize: 11 }}><bdi>{l.place} · {l.rent}</bdi></div></div>
+            <div style={{ minWidth: 0 }}><Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: "0.8125rem", textDecoration: "none", color: "inherit" }}>{l.title}</Link><div className="mono muted" style={{ fontSize: "0.6875rem" }}><bdi>{l.place} · {l.rent}</bdi></div></div>
            </div>
           </td>
           <td className="num"><span className={"statusdot " + l.pill.cls}>{l.pill.label}</span></td>
@@ -280,7 +280,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
       {matches.map((r, i) => (
        <div key={i} className="lead-item">
         <span className="queue-ic"><Icon.doc size={16} /></span>
-        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13, fontWeight: 600 }}><bdi>{r.title}</bdi></div><div className="muted" style={{ fontSize: 11.5 }}><bdi>{r.spec}</bdi></div></div>
+        <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: "0.8125rem", fontWeight: 600 }}><bdi>{r.title}</bdi></div><div className="muted" style={{ fontSize: "0.71875rem" }}><bdi>{r.spec}</bdi></div></div>
         <Link href={`/${lp}/dashboard/requirements`} className="btn secondary sm">{db.pitch}</Link>
        </div>
       ))}

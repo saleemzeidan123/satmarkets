@@ -91,7 +91,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
   return (
     <div aria-busy={busy || undefined}>
       <div className="row between" style={{ alignItems: "center", marginBottom: 12 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700 }}>{t.title} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· {photos.length}</span></div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{t.title} <span className="muted" style={{ fontWeight: 400, fontSize: "0.8125rem" }}>· {photos.length}</span></div>
         {/* ELITE-4 J2-1: the input was `display:none`, which takes it out of the tab
             order and out of the accessibility tree, and a <label> is not focusable,
             so photographs could not be attached by keyboard at all. It is now
@@ -119,7 +119,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
       </div>
 
       {photos.length === 0 ? (
-        <p className="muted" style={{ fontSize: 13 }}>{t.none}</p>
+        <p className="muted" style={{ fontSize: "0.8125rem" }}>{t.none}</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
           {photos.map((p, i) => (
@@ -127,7 +127,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
               <div style={{ position: "relative", aspectRatio: "4 / 3", background: "var(--cool)" }}>
                 {p.url ? <img src={p.url} alt={t.photoAt(i + 1)} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null}
                 {i === 0 && (
-                  <span style={{ position: "absolute", top: 8, insetInlineStart: 8, fontSize: 10.5, fontWeight: 700, letterSpacing: ".03em", color: "var(--on-brand)", background: "var(--harbor)", padding: "3px 8px", borderRadius: 6 }}>{t.cover}</span>
+                  <span style={{ position: "absolute", top: 8, insetInlineStart: 8, fontSize: "0.65625rem", fontWeight: 700, letterSpacing: ".03em", color: "var(--on-brand)", background: "var(--harbor)", padding: "3px 8px", borderRadius: 6 }}>{t.cover}</span>
                 )}
               </div>
               <div className="row gap8" style={{ padding: "8px 10px", justifyContent: "space-between" }}>
@@ -136,9 +136,9 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
                     tell them apart. The position is now part of each name and of
                     the image's own alternative text. */}
                 {i !== 0 ? (
-                  <button type="button" onClick={() => makeCover(p.id)} aria-disabled={busy || undefined} aria-label={t.makeCoverAt(i + 1)} className="chip" style={{ cursor: "pointer", fontSize: 11.5, opacity: busy ? 0.6 : 1 }}>{t.makeCover}</button>
+                  <button type="button" onClick={() => makeCover(p.id)} aria-disabled={busy || undefined} aria-label={t.makeCoverAt(i + 1)} className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", opacity: busy ? 0.6 : 1 }}>{t.makeCover}</button>
                 ) : <span />}
-                <button type="button" onClick={() => remove(p.id)} aria-disabled={busy || undefined} aria-label={t.removeAt(i + 1)} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "var(--red)", borderColor: "var(--silver)", opacity: busy ? 0.6 : 1 }}>
+                <button type="button" onClick={() => remove(p.id)} aria-disabled={busy || undefined} aria-label={t.removeAt(i + 1)} className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", color: "var(--red)", borderColor: "var(--silver)", opacity: busy ? 0.6 : 1 }}>
                   <Icon.trash size={13} /> {t.remove}
                 </button>
               </div>
@@ -148,9 +148,9 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
       )}
 
       <div className="row gap10" style={{ marginTop: 10, alignItems: "center" }}>
-        <p className="muted" style={{ fontSize: 11.5, margin: 0 }}>{t.hint}</p>
-        {note && <span style={{ fontSize: 12.5, color: "var(--harbor-d)" }}>{note}</span>}
-        {err && <span style={{ fontSize: 12.5, color: "var(--red)" }}>{err}</span>}
+        <p className="muted" style={{ fontSize: "0.71875rem", margin: 0 }}>{t.hint}</p>
+        {note && <span style={{ fontSize: "0.78125rem", color: "var(--harbor-d)" }}>{note}</span>}
+        {err && <span style={{ fontSize: "0.78125rem", color: "var(--red)" }}>{err}</span>}
       </div>
     </div>
   );

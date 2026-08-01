@@ -71,8 +71,8 @@ export default async function ComparePage({ params, searchParams }: { params: { 
       <div style={{ background: "var(--cool)", minHeight: "60vh" }}>
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "64px 24px", textAlign: "center" }}>
           <div className="eyebrow">{cp.eyebrowSaved}</div>
-          <h1 className="serif" style={{ fontSize: "clamp(26px,4vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{cp.emptyTitle}</h1>
-          <p className="muted" style={{ fontSize: 15, lineHeight: 1.6, margin: "14px auto 0", maxWidth: 520 }}>{cp.emptyBody}</p>
+          <h1 className="serif" style={{ fontSize: "clamp(1.625rem,4vw,2.25rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{cp.emptyTitle}</h1>
+          <p className="muted" style={{ fontSize: "0.9375rem", lineHeight: 1.6, margin: "14px auto 0", maxWidth: 520 }}>{cp.emptyBody}</p>
           <div className="row gap10" style={{ justifyContent: "center", marginTop: 22 }}>
             <Link href={L("/listings")} className="btn primary" style={{ textDecoration: "none" }}>{cp.browseListings}</Link>
             <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {cp.myShortlist}</Link>
@@ -104,9 +104,9 @@ export default async function ComparePage({ params, searchParams }: { params: { 
   const GRID = `232px ${items.map(() => "1fr").join(" ")}`;
   const HeaderRow = ({ label, render }: { label: string; render: (l: any, i: number) => React.ReactNode }) => (
     <div style={{ display: "grid", gridTemplateColumns: GRID, borderBottom: "1px solid var(--silver)" }}>
-      <div style={{ padding: "14px 16px", fontSize: 12.5, fontWeight: 600, color: "var(--slate)", background: "var(--cool)", borderRight: "1px solid var(--silver)" }}>{label}</div>
+      <div style={{ padding: "14px 16px", fontSize: "0.78125rem", fontWeight: 600, color: "var(--slate)", background: "var(--cool)", borderRight: "1px solid var(--silver)" }}>{label}</div>
       {items.map((l, i) => (
-        <div key={l.id} style={{ padding: "14px 16px", borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", fontSize: 13.5, display: "flex", alignItems: "center", gap: 8 }}>{render(l, i)}</div>
+        <div key={l.id} style={{ padding: "14px 16px", borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", fontSize: "0.84375rem", display: "flex", alignItems: "center", gap: 8 }}>{render(l, i)}</div>
       ))}
     </div>
   );
@@ -117,7 +117,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
         <div className="row between wrap" style={{ padding: "22px 24px 18px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
           <div>
             <div className="eyebrow">{ar ? `قارن · ${items.length} مساحات` : `Compare · ${items.length} space${items.length === 1 ? "" : "s"}`}</div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{cp.sideBySide}</h1>
+            <h1 style={{ fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{cp.sideBySide}</h1>
           </div>
           <Link href={L("/saved")} className="btn secondary" style={{ textDecoration: "none" }}><Icon.heart size={15} /> {cp.myShortlist}</Link>
         </div>
@@ -131,8 +131,8 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={verifiedBadges(l, null, ar)} />
-                      <div style={{ fontSize: 14, fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                      <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
+                      <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{listingTitle(l, ar ? "ar" : "en")}</div>
+                      <div className="muted" style={{ fontSize: "0.75rem", marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>
                   </div>
                 ))}
@@ -147,11 +147,11 @@ export default async function ComparePage({ params, searchParams }: { params: { 
               <HeaderRow label={cp.fitout} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
               <HeaderRow label={cp.vsDistrictMedian} render={(l, i) => {
                 const v = l.__verdict;
-                if (!v || v.status === "na" || v.deltaPct == null) return <span className="muted" style={{ fontSize: 12.5 }}>{l.deal_type === "sale" ? (cp.indexLease) : (cp.noSuffIndex)}</span>;
+                if (!v || v.status === "na" || v.deltaPct == null) return <span className="muted" style={{ fontSize: "0.78125rem" }}>{l.deal_type === "sale" ? (cp.indexLease) : (cp.noSuffIndex)}</span>;
                 const a = Math.abs(v.deltaPct);
                 const txt = v.status === "below" ? (ar ? `أقل بنحو ${a}%` : `~${a}% below`) : v.status === "above" ? (ar ? `أعلى بنحو ${a}%` : `~${a}% above`) : (cp.withinBand);
                 const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)";
-                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--dv-quote-below)", background: "transparent", border: 0, padding: 0, fontSize: 9.5 }}>{cp.bestValue}</span>}</>;
+                return <><span className="mono" style={{ color: col, fontWeight: 600 }}>{txt}</span>{i === bestIdx && <span className="tag" style={{ color: "var(--dv-quote-below)", background: "transparent", border: 0, padding: 0, fontSize: "0.59375rem" }}>{cp.bestValue}</span>}</>;
               }} />
               <HeaderRow label={cp.district} render={(l) => <span>{dn(l)}</span>} />
               {/* C4, then ADV-1. Ownership OR authorisation OR the row being our own
@@ -172,14 +172,14 @@ export default async function ComparePage({ params, searchParams }: { params: { 
 
           <div className="row gap10" style={{ marginTop: 16 }}>
             <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>
-            <span className="muted" style={{ fontSize: 12.5 }}>{cp.note}</span>
+            <span className="muted" style={{ fontSize: "0.78125rem" }}>{cp.note}</span>
           </div>
 
           {/* The comparison row above is the only place these figures appear, in
               percentage form, so the sentence that governs them sits directly
               beneath the same table. */}
           {indexStatements.map((s) => (
-            <p key={s} className="muted" style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.7, maxWidth: 640 }}>{s}</p>
+            <p key={s} className="muted" style={{ marginTop: 6, fontSize: "0.78125rem", lineHeight: 1.7, maxWidth: 640 }}>{s}</p>
           ))}
 
           {/* ADV-2D. The table above arranges the figures. This states which of those

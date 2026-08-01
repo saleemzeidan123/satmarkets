@@ -57,7 +57,7 @@ export default function AdPermit({
           </div>
           <div
             className="mono"
-            style={{ fontSize: 19, fontWeight: 600, letterSpacing: ".02em", marginTop: 4 }}
+            style={{ fontSize: "1.1875rem", fontWeight: 600, letterSpacing: ".02em", marginTop: 4 }}
           >
             <bdi dir="ltr">{permit}</bdi>
           </div>
@@ -67,7 +67,7 @@ export default function AdPermit({
           <div className="eyebrow">{ar ? "تنتهي في" : "Expires"}</div>
           <div
             style={{
-              fontSize: 15,
+              fontSize: "0.9375rem",
               fontWeight: 600,
               marginTop: 4,
               color: soon ? "var(--amber-d, #92400e)" : "var(--ink)",
@@ -76,7 +76,7 @@ export default function AdPermit({
             {expText ?? (ar ? "غير مسجّل" : "not recorded")}
           </div>
           {daysLeft != null && daysLeft >= 0 && (
-            <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+            <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 2 }}>
               {ar ? `خلال ${formatCounted(daysLeft, "day", "ar", { oblique: true })}` : `in ${formatCounted(daysLeft, "day", "en")}`}
             </div>
           )}
@@ -86,7 +86,7 @@ export default function AdPermit({
       <div
         className="muted"
         style={{
-          fontSize: 11.5,
+          fontSize: "0.71875rem",
           lineHeight: 1.6,
           marginTop: 12,
           paddingTop: 10,

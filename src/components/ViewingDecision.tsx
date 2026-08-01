@@ -61,7 +61,7 @@ export default function ViewingDecision({
           {busy === "cancelled" ? "..." : t.decline}
         </button>
       </div>
-      {err && <span role="alert" style={{ color: "var(--red)", fontSize: 11.5 }}>{err}</span>}
+      {err && <span role="alert" style={{ color: "var(--red)", fontSize: "0.71875rem" }}>{err}</span>}
     </div>
   );
 }

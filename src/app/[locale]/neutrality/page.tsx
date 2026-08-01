@@ -39,20 +39,20 @@ export default function NeutralityPage({ params }: { params: { locale: string } 
       <div style={{ maxWidth: 880, margin: "0 auto", padding: "40px 24px 64px" }}>
         <Reveal>
           <div className="eyebrow">{c.eyebrow}</div>
-          <h1 className="serif" style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{c.title}</h1>
+          <h1 className="serif" style={{ fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{c.title}</h1>
           <p className="muted" style={{ fontSize: "var(--fs-lg)", lineHeight: 1.7, marginTop: 16, maxWidth: 680 }}>{c.intro}</p>
         </Reveal>
 
         <Reveal delay={80}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.commitmentsTitle}</h2>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.commitmentsTitle}</h2>
           <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
             {commitments.map((x, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
                 <div className="row gap12" style={{ alignItems: "baseline" }}>
-                  <span className="mono" style={{ color: "var(--harbor)", fontWeight: 600, fontSize: 13, flex: "none" }}>{"0" + (i + 1)}</span>
+                  <span className="mono" style={{ color: "var(--harbor)", fontWeight: 600, fontSize: "0.8125rem", flex: "none" }}>{"0" + (i + 1)}</span>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{x[0]}</div>
-                    <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, marginTop: 4 }}>{x[1]}</div>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{x[0]}</div>
+                    <div className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6, marginTop: 4 }}>{x[1]}</div>
                   </div>
                 </div>
               </div>
@@ -62,12 +62,12 @@ export default function NeutralityPage({ params }: { params: { locale: string } 
 
         <Reveal delay={140}>
           <div className="card pad" style={{ marginTop: 22, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.whyTitle}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.whyBody}</p>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.whyTitle}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.whyBody}</p>
           </div>
           <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.closeTitle}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.closeBody}</p>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.closeTitle}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.closeBody}</p>
             <Link href={`/${lp}/contact`} className="btn secondary sm" style={{ marginTop: 12 }}>{c.cta}</Link>
           </div>
         </Reveal>

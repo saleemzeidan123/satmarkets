@@ -116,8 +116,8 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     <div>
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12, marginBottom: 18 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
-          <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>{t.sub}</div>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+          <div className="muted" style={{ fontSize: "0.8125rem", marginTop: 3 }}>{t.sub}</div>
         </div>
         <Link href={`/${lp}/list`} className="btn primary"><Icon.plus size={16} /> {db.listSpace}</Link>
       </div>
@@ -125,8 +125,8 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
       <div className="dpanel">
         {rows.length === 0 ? (
           <div style={{ padding: "24px 20px 28px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.emptyT}</div>
-            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 380 }}>{t.emptyB}</div>
+            <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.emptyT}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 380 }}>{t.emptyB}</div>
             <Link href={`/${lp}/list`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.emptyC}</Link>
           </div>
         ) : (
@@ -189,26 +189,26 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                         <div className="row gap10">
                           <Photo kind={l.asset_type} h={40} style={{ width: 56, borderRadius: 7, flex: "none" }} />
                           <div>
-                            <Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{title}</Link>
-                            <div className="mono muted" style={{ fontSize: 11 }}>
+                            <Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: "0.8125rem", color: "var(--ink)" }}>{title}</Link>
+                            <div className="mono muted" style={{ fontSize: "0.6875rem" }}>
                               <bdi>{specLine}</bdi>
                             </div>
-                            <div className="mono muted" style={{ fontSize: 11, marginTop: 2 }}>
+                            <div className="mono muted" style={{ fontSize: "0.6875rem", marginTop: 2 }}>
                               <bdi>{onFile} {ar ? "من" : "of"} {applicable.length} {t.onFile}</bdi>
                             </div>
                             {otherMissing && (
-                              <div className="muted" style={{ fontSize: 11, lineHeight: 1.55, marginTop: 5, maxWidth: 330 }}>
+                              <div className="muted" style={{ fontSize: "0.6875rem", lineHeight: 1.55, marginTop: 5, maxWidth: 330 }}>
                                 {t.otherSees} <bdi dir={otherLoc === "ar" ? "rtl" : "ltr"}>{otherShown}</bdi>
                               </div>
                             )}
                             {av && (
                               <div className="col" style={{ alignItems: "flex-start", gap: 4, marginTop: 7, maxWidth: 330 }}>
                                 {av.publicLine && (
-                                  <div className="mono" style={{ fontSize: 11, color: av.tone, lineHeight: 1.45 }}>
+                                  <div className="mono" style={{ fontSize: "0.6875rem", color: av.tone, lineHeight: 1.45 }}>
                                     <bdi>{t.occupiersSee} {av.publicLine}</bdi>
                                   </div>
                                 )}
-                                <div className="muted" style={{ fontSize: 11, lineHeight: 1.6 }}>{av.note}</div>
+                                <div className="muted" style={{ fontSize: "0.6875rem", lineHeight: 1.6 }}>{av.note}</div>
                                 {av.worthReaffirming && (
                                   /* ELITE-4 J2-2: `a.rowlink::after` paints a full-row hit
                                      overlay over this cell, and only `.rowact` is lifted
@@ -227,7 +227,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                         </div>
                       </td>
                       <td className="num mono" style={{ fontWeight: 600, color: n ? "var(--ink)" : "var(--slate-2)" }}>{n}</td>
-                      <td><span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12 }}>{t.st[l.status] || l.status}</span></td>
+                      <td><span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: "0.75rem" }}>{t.st[l.status] || l.status}</span></td>
                       <td className="num">
                         <span className="rowact" style={{ display: "inline-flex" }}>
                           {/* ELITE-4 J2-20: the failure sentence is supplied in the reader's language. */}
@@ -241,7 +241,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
             </table>
           </div>
         )}
-        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>
+        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>
           <div>{t.note}</div>
           <div style={{ marginTop: 7 }}>{t.availNote}</div>
           <div style={{ marginTop: 7 }}>{t.titleNote}</div>

@@ -246,17 +246,17 @@ export default async function ManageListingPage({ params }: { params: { locale: 
 
   return (
     <div>
-      <Link href={`/${lp}/dashboard/listings`} className="mono muted" style={{ fontSize: 12, textDecoration: "none" }}>{ar ? "→" : "←"} {t.back}</Link>
+      <Link href={`/${lp}/dashboard/listings`} className="mono muted" style={{ fontSize: "0.75rem", textDecoration: "none" }}>{ar ? "→" : "←"} {t.back}</Link>
 
       <div className="row between wrap" style={{ alignItems: "flex-start", gap: 12, margin: "10px 0 18px" }}>
         <div style={{ minWidth: 0 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{title}</h1>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{title}</h1>
           <div className="row gap10" style={{ marginTop: 6, alignItems: "center" }}>
-            <span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12.5 }}>{t.st[L.status] || L.status}</span>
-            <span className="muted" style={{ fontSize: 12.5 }}>· {assetLabel(L.asset_type, lp)} · {dealLabel(L.deal_type, lp)}</span>
+            <span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: "0.78125rem" }}>{t.st[L.status] || L.status}</span>
+            <span className="muted" style={{ fontSize: "0.78125rem" }}>· {assetLabel(L.asset_type, lp)} · {dealLabel(L.deal_type, lp)}</span>
           </div>
           {otherMissing && (
-            <div className="muted" style={{ fontSize: 12, lineHeight: 1.6, marginTop: 8, maxWidth: 420 }}>
+            <div className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.6, marginTop: 8, maxWidth: 420 }}>
               <div>{t.noOther} {t.otherSees} <bdi dir={otherLoc === "ar" ? "rtl" : "ltr"} style={{ color: "var(--ink)" }}>{otherShown}</bdi></div>
               <div style={{ marginTop: 3 }}>{t.otherNote}</div>
             </div>
@@ -273,7 +273,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 14 }}>{t.edit}</div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 700, marginBottom: 14 }}>{t.edit}</div>
         <EditListingForm
           id={L.id}
           locale={lp}
@@ -312,27 +312,27 @@ export default async function ManageListingPage({ params }: { params: { locale: 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
         <div className="row gap8" style={{ alignItems: "center", marginBottom: 6 }}>
           <span className="muted" style={{ display: "inline-flex" }}><Icon.info size={15} /></span>
-          <span style={{ fontSize: 14.5, fontWeight: 700 }}>{t.locked}</span>
+          <span style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{t.locked}</span>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14, marginTop: 10 }}>
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{t.permit}</div>
-            <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{permitOf(L) || (ar ? "غير مسجّل" : "Not on file")}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.permit}</div>
+            <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 500, marginTop: 5 }}>{permitOf(L) || (ar ? "غير مسجّل" : "Not on file")}</div>
           </div>
           {expiry && (
             <div>
-              <div className="muted" style={{ fontSize: 11.5 }}>{t.expires}</div>
-              <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{expiry}</div>
+              <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.expires}</div>
+              <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 500, marginTop: 5 }}>{expiry}</div>
             </div>
           )}
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{ar ? "التحقّق" : "Verification"}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{ar ? "التحقّق" : "Verification"}</div>
             <div style={{ marginTop: 5 }}>
-              <span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: 13 }}>{verified ? verifiedBadgeText("ownership", ar) : t.pendingV}</span>
+              <span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: "0.8125rem" }}>{verified ? verifiedBadgeText("ownership", ar) : t.pendingV}</span>
             </div>
           </div>
         </div>
-        <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.lockedNote}</div>
+        <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.lockedNote}</div>
       </div>
     </div>
   );

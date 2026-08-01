@@ -48,16 +48,16 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
         <span
           className="avatar"
           aria-hidden
-          style={{ width: 40, height: 40, borderRadius: 10, background: "var(--harbor)", color: "var(--on-brand)", fontSize: 14, fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+          style={{ width: 40, height: 40, borderRadius: 10, background: "var(--harbor)", color: "var(--on-brand)", fontSize: "0.875rem", fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
         >
           {initials}
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="muted" style={{ fontSize: 10.5, letterSpacing: ".05em", textTransform: "uppercase" }}>
+          <div className="muted" style={{ fontSize: "0.65625rem", letterSpacing: ".05em", textTransform: "uppercase" }}>
             {ar ? "الإعلان مقدَّم من" : "Listed by"}
           </div>
           <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 2 }}>
-            <Link href={`/${lp}/lister/${lister.id}`} style={{ fontSize: 15.5, fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
+            <Link href={`/${lp}/lister/${lister.id}`} style={{ fontSize: "0.96875rem", fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
             {/* ADV-1. This drew a bare green "Verified" from
                 accounts.verification_status, which is a workflow status and not a
                 check: account_verifications holds zero rows, so no account on the
@@ -77,7 +77,7 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
           style={{ alignItems: "flex-start", marginTop: 10, paddingTop: 10, borderTop: "1px solid var(--silver)" }}
         >
           <span style={{ color: "var(--slate)", marginTop: 1, flex: "none" }}><Icon.info size={13} /></span>
-          <span style={{ fontSize: 11.5, lineHeight: 1.6, color: "var(--slate)" }}>
+          <span style={{ fontSize: "0.71875rem", lineHeight: 1.6, color: "var(--slate)" }}>
             {ar
               ? "شركة سات العقارية هي مشغّلة هذه المنصة، وتُدرج إعلاناتها هنا كأي وسيط مرخّص. لا تحصل إعلاناتها على أي أفضلية في الترتيب أو العرض، وتخضع لذات قواعد التحقق ورخصة الإعلان."
               : "SAT Real Estate operates this exchange and lists here as any licensed broker does. Its listings get no ranking or placement advantage, and clear the same verification and advertising-licence rules as everyone else's."}

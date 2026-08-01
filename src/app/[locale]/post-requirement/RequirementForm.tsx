@@ -195,22 +195,22 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
           <div ref={doneRef} tabIndex={-1} role="status" className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
             <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--harbor-d)", color: "var(--on-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
             <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
-            <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
-            <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
+            <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
+            <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, margin: "22px 0" }}>
               <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-                <div className="tnum" style={{ fontSize: 26, fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{pr.matchToday}</div>
+                <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div>
+                <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.matchToday}</div>
               </div>
               {/* This was the literal 3, printed beside the real list. */}
               <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-                <div className="tnum" style={{ fontSize: 26, fontWeight: 600 }}>{done.notified.length}</div>
-                <div className="muted" style={{ fontSize: 12 }}>{pr.audiencesNotified}</div>
+                <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600 }}>{done.notified.length}</div>
+                <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.audiencesNotified}</div>
               </div>
             </div>
             <div className="col gap8" style={{ textAlign: ar ? "right" : "left", maxWidth: 420, margin: "0 auto 22px" }}>
               {done.notified.map((n, i) => (
-                <div key={i} className="row gap8" style={{ fontSize: 13 }}><span style={{ color: "var(--harbor-d)" }}><Icon.check size={15} /></span>{n}</div>
+                <div key={i} className="row gap8" style={{ fontSize: "0.8125rem" }}><span style={{ color: "var(--harbor-d)" }}><Icon.check size={15} /></span>{n}</div>
               ))}
             </div>
             <div className="row gap10" style={{ justifyContent: "center" }}>
@@ -235,14 +235,14 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
     <div style={{ background: "var(--cool)" }}>
       <div style={{ padding: "36px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
         <div className="eyebrow">{pr.postReqTitle}</div>
-        <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{pr.tellMarket}</h1>
-        <p className="muted" style={{ fontSize: 15.5, maxWidth: 560, lineHeight: 1.6 }}>{pr.intro}</p>
+        <h1 className="serif" style={{ fontSize: "2.125rem", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{pr.tellMarket}</h1>
+        <p className="muted" style={{ fontSize: "0.96875rem", maxWidth: 560, lineHeight: 1.6 }}>{pr.intro}</p>
 
         <form ref={formRef} onSubmit={(e) => { e.preventDefault(); submit(); }} noValidate>
           <div className="card" style={{ marginTop: 30, padding: 0, overflow: "hidden" }}>
             <div className="row gap10" style={{ padding: "16px 24px", borderBottom: "1px solid var(--silver)", background: "var(--cool)" }}>
               <span style={{ color: "var(--harbor)" }}><Icon.doc size={18} /></span>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{pr.newReq}</div>
+              <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>{pr.newReq}</div>
               <span style={{ flex: 1 }} /><span className="tag">{pr.draft}</span>
             </div>
 
@@ -251,7 +251,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                 to go; this exists so a screen reader hears that something
                 happened at all. */}
             {err ? (
-              <div role="alert" className="pad" style={{ borderBottom: "1px solid var(--silver)", background: "var(--red-wash, #FDF2F2)", color: "var(--red)", fontSize: 13.5, padding: "14px 28px" }}>{err}</div>
+              <div role="alert" className="pad" style={{ borderBottom: "1px solid var(--silver)", background: "var(--red-wash, #FDF2F2)", color: "var(--red)", fontSize: "0.84375rem", padding: "14px 28px" }}>{err}</div>
             ) : null}
 
             <div className="req-grid" style={{ padding: 28 }}>
@@ -290,7 +290,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
               <div className="field" style={{ gridColumn: "1 / -1" }}>
                 <label htmlFor="pr-location">{pr.location}</label>
                 {groups.length === 0 ? (
-                  <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: "6px 0 0" }}>{pr.locationsUnavailable}</p>
+                  <p className="muted" style={{ fontSize: "0.8125rem", lineHeight: 1.6, margin: "6px 0 0" }}>{pr.locationsUnavailable}</p>
                 ) : (
                   <>
                     <select
@@ -310,7 +310,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                       ))}
                     </select>
                     {fieldNote("location")}
-                    <p id="pr-location-note" className="muted2" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "6px 0 0" }}>{pr.locationNote}</p>
+                    <p id="pr-location-note" className="muted2" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "6px 0 0" }}>{pr.locationNote}</p>
                   </>
                 )}
               </div>
@@ -357,7 +357,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                     {ar ? t.label_ar : t.label_en}
                   </label>
                 ))}</div>
-                <p className="muted2" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "8px 0 0" }}>{pr.moveInNote}</p>
+                <p className="muted2" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "8px 0 0" }}>{pr.moveInNote}</p>
               </fieldset>
 
               <div className="field">
@@ -389,7 +389,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
             <div style={{ padding: "18px 28px", borderTop: "1px solid var(--silver)", background: "var(--azure-wash)" }}>
               <div className="row gap10" style={{ marginBottom: 12 }}>
                 <span style={{ color: "var(--azure-d)" }}><Icon.spark size={18} /></span>
-                <div style={{ fontSize: 13.5 }}>{pr.postsToNote}</div>
+                <div style={{ fontSize: "0.84375rem" }}>{pr.postsToNote}</div>
               </div>
               {/* Real consent, not a badge asserting it. */}
               <label htmlFor="pr-consent" className="row gap10" style={{ alignItems: "flex-start", cursor: "pointer" }}>
@@ -399,7 +399,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                   aria-invalid={fieldErr.consent ? true : undefined} aria-describedby={describedBy("consent")}
                   style={{ marginTop: 3, width: 16, height: 16, flex: "none" }}
                 />
-                <span style={{ fontSize: 13, lineHeight: 1.6 }}>{pr.consentLabel}</span>
+                <span style={{ fontSize: "0.8125rem", lineHeight: 1.6 }}>{pr.consentLabel}</span>
               </label>
               {/* ELITE-4 J4-7: the reason the visitor cannot post, beside the
                   control that carries it, and the target `focusFirst` returns
@@ -409,7 +409,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
           </div>
 
           <div className="row between wrap" style={{ marginTop: 26, gap: 12 }}>
-            <span className="muted" style={{ fontSize: 12.5 }}>{pr.privacyNote}</span>
+            <span className="muted" style={{ fontSize: "0.78125rem" }}>{pr.privacyNote}</span>
             {/* ELITE-4 J4-7: `disabled` made this unfocusable and unreadable while
                 the visitor had no idea what was blocking them. `aria-disabled`
                 keeps it in the tab order and lets a press produce the error
@@ -430,5 +430,5 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
    controls, leaving a 1.17:1 box-shadow as the only focus affordance. The
    visible ring comes from `.input:focus-visible` in the shared stylesheet, and
    an inline `outline` cannot be overridden by a stylesheet, so it is gone. */
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", width: "100%" };
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: "0.875rem", color: "var(--ink)", background: "var(--paper)", width: "100%" };
 const chip: React.CSSProperties = { cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" };

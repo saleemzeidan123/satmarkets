@@ -22,13 +22,13 @@ export default function SignupActions({ id, status }: { id: string; status: stri
       if (j?.ok) { location.reload(); } else { setMsg(j?.error || "error"); setBusy(false); }
     } catch { setMsg("network error"); setBusy(false); }
   }
-  const btn = (color: string): CSSProperties => ({ fontSize: 11, padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "var(--paper)", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1, whiteSpace: "nowrap" });
+  const btn = (color: string): CSSProperties => ({ fontSize: "0.6875rem", padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "var(--paper)", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1, whiteSpace: "nowrap" });
   return (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {status === "new" && <button disabled={busy} onClick={() => act("contacted")} style={btn("var(--harbor-d)")}>Contacted</button>}
       {status !== "verified" && <button disabled={busy} onClick={() => act("verified")} style={btn("var(--verified)")}>Approve</button>}
       {status !== "rejected" && <button disabled={busy} onClick={() => act("rejected")} style={btn("var(--red)")}>Reject</button>}
-      {msg && <span style={{ fontSize: 11, color: "var(--red)" }}>{msg}</span>}
+      {msg && <span style={{ fontSize: "0.6875rem", color: "var(--red)" }}>{msg}</span>}
     </span>
   );
 }

@@ -91,12 +91,12 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
       <div key={d.id} style={{ border: "1px solid var(--silver)", borderRadius: 10, overflow: "hidden", background: "var(--paper)" }}>
         <div style={{ position: "relative", aspectRatio: "4 / 3", background: "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           {d.isPdf || !d.url
-            ? <span className="row gap6 muted" style={{ fontSize: 12 }}><Icon.doc size={18} /> {t.pdf}</span>
+            ? <span className="row gap6 muted" style={{ fontSize: "0.75rem" }}><Icon.doc size={18} /> {t.pdf}</span>
             : <img src={d.url} alt={name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
         </div>
         <div className="row" style={{ padding: "8px 10px", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-          {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="muted" style={{ fontSize: 11.5, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label || (ar ? "عرض" : "Open")}</a> : <span />}
-          <button type="button" onClick={() => remove(d.id)} aria-disabled={removing === d.id || undefined} aria-label={`${t.remove}: ${name}`} className="chip" style={{ cursor: "pointer", fontSize: 11.5, color: "var(--red)", borderColor: "var(--silver)", flex: "none", opacity: removing === d.id ? 0.6 : 1 }}>
+          {d.url ? <a href={d.url} target="_blank" rel="noopener noreferrer" className="muted" style={{ fontSize: "0.71875rem", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label || (ar ? "عرض" : "Open")}</a> : <span />}
+          <button type="button" onClick={() => remove(d.id)} aria-disabled={removing === d.id || undefined} aria-label={`${t.remove}: ${name}`} className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", color: "var(--red)", borderColor: "var(--silver)", flex: "none", opacity: removing === d.id ? 0.6 : 1 }}>
             <Icon.trash size={13} /> {t.remove}
           </button>
         </div>
@@ -109,7 +109,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
       {/* ELITE-4 J2-6: each section announces its own pending request. */}
       <div aria-busy={plan.busy || undefined}>
         <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{t.plans} <span className="muted" style={{ fontWeight: 400, fontSize: 12.5 }}>· {floorplans.length}</span></div>
+          <div style={{ fontSize: "0.875rem", fontWeight: 700 }}>{t.plans} <span className="muted" style={{ fontWeight: 400, fontSize: "0.78125rem" }}>· {floorplans.length}</span></div>
           {/* ELITE-4 J2-1: the input was `display:none`, so it was out of the tab
               order and out of the accessibility tree, and a <label> is not
               focusable. Floor plans could not be attached by keyboard at all. It
@@ -135,15 +135,15 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
             />
           </label>
         </div>
-        {floorplans.length === 0 ? <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.noPlans}</p> : (
+        {floorplans.length === 0 ? <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.noPlans}</p> : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{floorplans.map((d, i) => tile(d, i, t.planItem))}</div>
         )}
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.planHint}{plan.err ? <span style={{ color: "var(--red)" }}> · {plan.err}</span> : null}</p>
+        <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 8, marginBottom: 0 }}>{t.planHint}{plan.err ? <span style={{ color: "var(--red)" }}> · {plan.err}</span> : null}</p>
       </div>
 
       <div style={{ borderTop: "1px solid var(--silver)", paddingTop: 16 }} aria-busy={broch.busy || undefined}>
         <div className="row between" style={{ alignItems: "center", marginBottom: 10 }}>
-          <div style={{ fontSize: 14, fontWeight: 700 }}>{t.brochure} <span className="muted" style={{ fontWeight: 400, fontSize: 12.5 }}>· {brochures.length}</span></div>
+          <div style={{ fontSize: "0.875rem", fontWeight: 700 }}>{t.brochure} <span className="muted" style={{ fontWeight: 400, fontSize: "0.78125rem" }}>· {brochures.length}</span></div>
           {/* ELITE-4 J2-1: same defect and same repair as the floor plan control above. */}
           <label
             className="btn secondary sm"
@@ -165,12 +165,12 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
             />
           </label>
         </div>
-        {brochures.length === 0 ? <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.noBroch}</p> : (
+        {brochures.length === 0 ? <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.noBroch}</p> : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{brochures.map((d, i) => tile(d, i, t.brochItem))}</div>
         )}
-        <p className="muted" style={{ fontSize: 11.5, marginTop: 8, marginBottom: 0 }}>{t.brochHint}{broch.err ? <span style={{ color: "var(--red)" }}> · {broch.err}</span> : null}</p>
+        <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 8, marginBottom: 0 }}>{t.brochHint}{broch.err ? <span style={{ color: "var(--red)" }}> · {broch.err}</span> : null}</p>
       </div>
-      {rmErr && <p style={{ fontSize: 12, color: "var(--red)", margin: 0 }}>{rmErr}</p>}
+      {rmErr && <p style={{ fontSize: "0.75rem", color: "var(--red)", margin: 0 }}>{rmErr}</p>}
     </div>
   );
 }

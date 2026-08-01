@@ -53,7 +53,7 @@ export default function Gallery({ images, title, photosLabel }: { images: string
       <div className="grid grid-cols-4 gap-2">
         <button type="button" onClick={(e) => openAt(0, e.currentTarget)} className="group relative col-span-4 overflow-hidden rounded-2xl">
           <img src={images[0]} alt={title} className="h-72 w-full object-cover transition duration-500 group-hover:scale-[1.03]" />
-          <span className="pointer-events-none absolute bottom-3 end-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[11px] font-medium text-white backdrop-blur">
+          <span className="pointer-events-none absolute bottom-3 end-3 inline-flex items-center gap-1.5 rounded-full bg-black/55 px-3 py-1 text-[0.6875rem] font-medium text-white backdrop-blur">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.6-3.6a2 2 0 0 0-2.8 0L6 20"/></svg>
             {images.length} {photosLabel}
           </span>
@@ -85,7 +85,7 @@ export default function Gallery({ images, title, photosLabel }: { images: string
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
           </button>
           {/* ELITE-4 J3-2: the position indicator is the only feedback that the arrows worked. */}
-          <div aria-live="polite" className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[12px] text-white fig">{i + 1} / {images.length}</div>
+          <div aria-live="polite" className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-[0.75rem] text-white fig">{i + 1} / {images.length}</div>
         </div>
       )}
     </>

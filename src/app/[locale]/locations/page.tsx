@@ -69,13 +69,13 @@ export default async function LocationsPage({ params }: { params: { locale: stri
       ] }} />
       <JsonLd data={{ "@type": "ItemList", name: d.itemListName, numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${placeName(l, ar ? "ar" : "en")}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
       <div className="eyebrow">{d.directory}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "10px 0 0" }}>{d.title}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{d.intro}</p>
+      <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "10px 0 0" }}>{d.title}</h1>
+      <p className="muted" style={{ marginTop: 8, fontSize: "0.90625rem", maxWidth: 640 }}>{d.intro}</p>
       {/* The short marker on each card says which figures these sentences are
           about; this says what the marker means, once, before a reader meets
           the first one. */}
       {statements.map((s) => (
-        <p key={s} className="muted" style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.7, maxWidth: 640 }}>{s}</p>
+        <p key={s} className="muted" style={{ marginTop: 6, fontSize: "0.78125rem", lineHeight: 1.7, maxWidth: 640 }}>{s}</p>
       ))}
       <div className="row gap8" style={{ marginTop: 12 }}><Link href={`/${locale}/market`} className="chip" style={{ textDecoration: "none", color: "var(--azure-d)" }}>{d.marketPulse}</Link></div>
       {KIND_ORDER.map((k) => {
@@ -85,20 +85,20 @@ export default async function LocationsPage({ params }: { params: { locale: stri
         return (
           <section key={k} style={{ marginTop: 34 }}>
             <div className="row between wrap" style={{ alignItems: "baseline", gap: 10 }}>
-              <h2 className="serif" style={{ fontSize: 22, fontWeight: 500, margin: 0 }}>{t[0]}</h2>
-              <span className="muted" style={{ fontSize: 12.5 }}>{t[1]}</span>
+              <h2 className="serif" style={{ fontSize: "1.375rem", fontWeight: 500, margin: 0 }}>{t[0]}</h2>
+              <span className="muted" style={{ fontSize: "0.78125rem" }}>{t[1]}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 14, marginTop: 14 }}>
               {group.map((l) => (
                 <Link key={l.id} href={`/${locale}/listings?district=${l.id}`} className="card lift" style={{ textDecoration: "none", color: "inherit", padding: "16px 18px", display: "block" }}>
-                  <div style={{ fontSize: 15.5, fontWeight: 700 }}>{placeName(l, ar ? "ar" : "en")}</div>
-                  <div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{cityLabel(l.city, locale as "en" | "ar")}{k === "development" ? d.projectSuffix : ""}</div>
-                  <div className="mono" style={{ fontSize: 12.5, marginTop: 10, color: "var(--harbor)", fontWeight: 600 }}>{`${l.count} ${l.count === 1 ? d.listedSpace : d.listedSpaces}`}</div>
+                  <div style={{ fontSize: "0.96875rem", fontWeight: 700 }}>{placeName(l, ar ? "ar" : "en")}</div>
+                  <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 3 }}>{cityLabel(l.city, locale as "en" | "ar")}{k === "development" ? d.projectSuffix : ""}</div>
+                  <div className="mono" style={{ fontSize: "0.78125rem", marginTop: 10, color: "var(--harbor)", fontWeight: 600 }}>{`${l.count} ${l.count === 1 ? d.listedSpace : d.listedSpaces}`}</div>
                   {l.officeMedian != null && (
-                    <div className="mono muted" style={{ fontSize: 11.5, marginTop: 4 }}>{`${d.officeMedianPre}${l.officeMedian.toLocaleString("en-US")}${d.officeMedianSuf}`}</div>
+                    <div className="mono muted" style={{ fontSize: "0.71875rem", marginTop: 4 }}>{`${d.officeMedianPre}${l.officeMedian.toLocaleString("en-US")}${d.officeMedianSuf}`}</div>
                   )}
                   {l.officeMedian != null && l.officeSample && (
-                    <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>{evidenceStateLabel("sample", ar)}</div>
+                    <div className="muted" style={{ fontSize: "0.6875rem", marginTop: 3 }}>{evidenceStateLabel("sample", ar)}</div>
                   )}
                 </Link>
               ))}
@@ -106,7 +106,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
           </section>
         );
       })}
-      <p className="muted" style={{ marginTop: 30, fontSize: 12 }}>{d.footer}</p>
+      <p className="muted" style={{ marginTop: 30, fontSize: "0.75rem" }}>{d.footer}</p>
     </div>
   );
 }

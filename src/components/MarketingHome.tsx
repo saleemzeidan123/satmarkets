@@ -258,7 +258,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
       <span className="mono" style={{ fontSize: "var(--fs-2xs)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>{T.eyebrow}</span>
      </div>
-     <h1 className="serif" style={{ fontSize: "clamp(34px,5.2vw,58px)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "var(--on-brand)", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
+     <h1 className="serif" style={{ fontSize: "clamp(2.125rem,5.2vw,3.625rem)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "var(--on-brand)", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
       {T.h1a}<span style={{ color: "#C4DAF2", textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>{T.h1b}</span>
      </h1>
      <p style={{ fontSize: "var(--fs-lg)", lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>{T.sub}</p>
@@ -347,7 +347,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
     {T.stat.filter((x) => x[0]).map((x, i) => (
      <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
-      <div className="mono tnum" style={{ fontSize: 28, fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
+      <div className="mono tnum" style={{ fontSize: "1.75rem", fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
       <div className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 4 }}>{x[1]}</div>
      </div>
     ))}
@@ -358,14 +358,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
     {f0 && (
      <div style={{ padding: "clamp(44px,7vw,72px) 24px 8px" }}>
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
-       <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(24px,5vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
+       <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(1.5rem,5vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
        <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
       </div>
       <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
        <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]} />
        <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
-        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}{unitShort}</small></div>
-        <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
+        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: "1.75rem", color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}{unitShort}</small></div>
+        <div style={{ fontSize: "1.3125rem", fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: "var(--fs-xs)", color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
         {idxBar(f0)}
         <span style={{ marginTop: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{H.viewListing} <Icon.arrow size={16} /></span>
@@ -391,7 +391,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      <div style={{ maxWidth: 1160, margin: "0 auto" }}>
       <div style={{ maxWidth: 560 }}>
        <div className="eyebrow">{T.exEye}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{T.exH}</h2>
+       <h2 className="serif" style={{ fontSize: "clamp(1.75rem,4vw,2.75rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{T.exH}</h2>
        <p className="muted" style={{ fontSize: "var(--fs-lg)", lineHeight: 1.65, marginTop: 16 }}>{T.exP}</p>
       </div>
       <div className="job-grid" style={{ marginTop: 36 }}>
@@ -412,7 +412,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
             </span>
             <span className="jc-arrow"><Icon.arrow size={19} /></span>
            </span>
-           <span style={{ display: "block", fontSize: 20, fontWeight: 600, letterSpacing: "-.01em", marginTop: 14 }}>{c[0]}</span>
+           <span style={{ display: "block", fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-.01em", marginTop: 14 }}>{c[0]}</span>
            <span className="muted" style={{ display: "block", fontSize: "var(--fs-md)", marginTop: 6, lineHeight: 1.55 }}>{c[1]}</span>
            {st && (
             <span className="jc-stat">
@@ -433,7 +433,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.05fr)", gap: 48, alignItems: "center" }}>
       <div>
        <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}{kpis.period ? (ar ? "، " : ", ") + formatPeriod(kpis.period, ar) : ""}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(26px,3.6vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "var(--on-brand)" }}>{T.bandH}</h2>
+       <h2 className="serif" style={{ fontSize: "clamp(1.625rem,3.6vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "var(--on-brand)" }}>{T.bandH}</h2>
        <p style={{ fontSize: "var(--fs-input)", lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
        <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
         {bands.map((b, i) => (
@@ -448,7 +448,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{formatPeriod(band.period, ar)}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
-        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{fig(band.median)}</span>
+        <span className="mono" style={{ fontSize: "2.75rem", fontWeight: 500, lineHeight: 1 }}>{fig(band.median)}</span>
         {/* PKG-FIG2 closure, findings 129 and 130. This caption used to be one
             frozen dictionary string, "average SAR/m²/yr", and it was wrong in
             two independent ways at once.
@@ -490,7 +490,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
     <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
      <div style={{ textAlign: "center" }}>
       <div className="eyebrow">{T.oneEye}</div>
-      <h2 className="serif" style={{ fontSize: "clamp(26px,5vw,36px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
+      <h2 className="serif" style={{ fontSize: "clamp(1.625rem,5vw,2.25rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
       <p className="muted" style={{ fontSize: "var(--fs-md)", maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
      </div>
      <div>
@@ -517,7 +517,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
 
     <div style={{ padding: "8px 24px 64px" }}>
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "var(--on-brand)", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
-      <h2 className="serif" style={{ fontSize: "clamp(25px,5.4vw,34px)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "var(--on-brand)" }}>{T.ctaH}</h2>
+      <h2 className="serif" style={{ fontSize: "clamp(1.5625rem,5.4vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "var(--on-brand)" }}>{T.ctaH}</h2>
       <p style={{ fontSize: "var(--fs-input)", color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
       <div className="row gap12 center wrap">
        <Link href={L("/dashboard")} className="btn lg" style={{ background: "var(--paper)", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>

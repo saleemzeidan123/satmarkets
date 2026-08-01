@@ -65,8 +65,8 @@ const ASSET_TYPES = [
 ];
 
 const inp = "w-full rounded border border-charcoal/20 px-3 py-2 min-h-[44px]";
-const lbl = "block text-[12px] text-charcoal/70 mb-1";
-const help = "text-[11px] text-charcoal/65 mt-1";
+const lbl = "block text-[0.75rem] text-charcoal/70 mb-1";
+const help = "text-[0.6875rem] text-charcoal/65 mt-1";
 
 function stateLabel(state: StepState, ar: boolean): string {
   switch (state) {
@@ -393,7 +393,7 @@ export default function ListingStudio({
     const flag = flagFor(`field:${field.key}`, field.required);
     if (field.type === "boolean") {
       return (
-        <label key={field.key} className="flex items-center gap-2 text-[13px] py-1.5">
+        <label key={field.key} className="flex items-center gap-2 text-[0.8125rem] py-1.5">
           <input type="checkbox" checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
           <span>{ar ? field.label_ar : field.label_en}</span>
         </label>
@@ -495,7 +495,7 @@ export default function ListingStudio({
         );
       case "availability_confirmed":
         return (
-          <label key={key} className="flex items-start gap-2 text-[13px] py-1.5">
+          <label key={key} className="flex items-start gap-2 text-[0.8125rem] py-1.5">
             <input
               type="checkbox"
               checked={availableAt !== ""}
@@ -539,7 +539,7 @@ export default function ListingStudio({
                 <option value="broker_authorized">{t("I am a broker authorized by the owner", "أنا وسيط مفوّض من المالك")}</option>
               </select>
             </div>
-            <label className="flex items-start gap-2 text-[13px]">
+            <label className="flex items-start gap-2 text-[0.8125rem]">
               <input type="checkbox" {...flagFor("right_to_market", true)} checked={rightToMarket} onChange={(e) => { touch(); setRightToMarket(e.target.checked); }} className="mt-0.5" />
               <span>{t("I confirm I have the right to market this property.", "أقرّ بأن لدي حق تسويق هذا العقار.")} *</span>
             </label>
@@ -549,16 +549,16 @@ export default function ListingStudio({
         return (
           <div key={key} className="space-y-2">
             <label className={lbl} htmlFor="doc_files">{t("Supporting documents (private)", "المستندات الداعمة (خاصة)")}</label>
-            <p className="text-[11px] text-charcoal/65">
+            <p className="text-[0.6875rem] text-charcoal/65">
               {t("For SAT review only. Never shown to viewers, and uploading one does not by itself confirm anything.", "لمراجعة سات فقط. لا تظهر للزوار، ورفعها لا يؤكد شيئاً بذاته.")}
             </p>
             {isBroker && (
-              <p className="text-[11px] text-charcoal/70">
+              <p className="text-[0.6875rem] text-charcoal/70">
                 {t("As a broker, include your authorization to market and set its type below.", "بصفتك وسيطاً، أرفق تفويض التسويق واختر نوعه أدناه.")}
               </p>
             )}
             {stored.documents > 0 && (
-              <p className="text-[11px] text-charcoal/70">
+              <p className="text-[0.6875rem] text-charcoal/70">
                 {t(`${stored.documents} already attached. Anything you add here is added to those.`, `${stored.documents} مرفقة بالفعل. ما تضيفه هنا يُضاف إليها.`)}
               </p>
             )}
@@ -569,16 +569,16 @@ export default function ListingStudio({
               accept="application/pdf,image/jpeg,image/png,image/webp"
               multiple
               onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setDocFiles(arr); setDocKinds(arr.map(() => "deed" as DocumentKind)); }}
-              className="text-[13px]"
+              className="text-[0.8125rem]"
             />
             {docFiles.map((file, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-[11px] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+                <span className="text-[0.6875rem] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                 <select
                   aria-label={t("Document type", "نوع المستند")}
                   value={docKinds[i] ?? "deed"}
                   onChange={(e) => setDocKinds((p) => { const c = [...p]; c[i] = e.target.value as DocumentKind; return c; })}
-                  className="text-[12px] border border-charcoal/20 rounded px-1.5 py-1"
+                  className="text-[0.75rem] border border-charcoal/20 rounded px-1.5 py-1"
                 >
                   {DOCUMENT_KINDS.map((k) => <option key={k} value={k}>{documentLabel(k, ar)}</option>)}
                 </select>
@@ -593,7 +593,7 @@ export default function ListingStudio({
             <div>
               <label className={lbl} htmlFor="photo_files">{t("Upload photographs", "ارفع الصور")} *</label>
               {stored.photos > 0 && (
-                <p className="text-[11px] text-charcoal/70 mb-1">
+                <p className="text-[0.6875rem] text-charcoal/70 mb-1">
                   {t(`${stored.photos} photographs are already saved to this listing.`, `${stored.photos} صور محفوظة بالفعل في هذا العرض.`)}
                 </p>
               )}
@@ -605,7 +605,7 @@ export default function ListingStudio({
                 accept="image/jpeg,image/png,image/webp"
                 multiple
                 onChange={(e) => { touch(); setFiles(Array.from(e.target.files ?? [])); }}
-                className="text-[13px]"
+                className="text-[0.8125rem]"
               />
               <p className={help}>{t("JPEG, PNG or WebP, up to 4MB each. Images are processed and their metadata stripped.", "JPEG أو PNG أو WebP، حتى 4 ميغابايت لكل صورة. تُعالَج الصور وتُزال بياناتها الوصفية.")}</p>
             </div>
@@ -618,7 +618,7 @@ export default function ListingStudio({
       case "photo_set": {
         const n = stored.photos + photoUrls.length + files.length;
         return (
-          <p key={key} className="text-[12px] text-charcoal/70">
+          <p key={key} className="text-[0.75rem] text-charcoal/70">
             {n >= PHOTO_SET_MIN
               ? t(`${n} photographs, which reads as a set.`, `${n} صور، وهو ما يُقرأ كمجموعة.`)
               : t(`${n} of ${PHOTO_SET_MIN}. One photograph shows a wall. A set shows the space a viewer would walk.`, `${n} من ${PHOTO_SET_MIN}. الصورة الواحدة تُظهر جداراً. المجموعة تُظهر المساحة كما يراها الزائر.`)}
@@ -631,7 +631,7 @@ export default function ListingStudio({
             <div>
               <label className={lbl} htmlFor="floor_files">{t("Floor plans (image or PDF)", "المخططات (صورة أو PDF)")}</label>
               {stored.floorplans > 0 && (
-                <p className="text-[11px] text-charcoal/70 mb-1">
+                <p className="text-[0.6875rem] text-charcoal/70 mb-1">
                   {t(`${stored.floorplans} plans are already saved to this listing.`, `${stored.floorplans} مخططات محفوظة بالفعل في هذا العرض.`)}
                 </p>
               )}
@@ -642,16 +642,16 @@ export default function ListingStudio({
                 accept="image/jpeg,image/png,image/webp,application/pdf"
                 multiple
                 onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setFloorFiles(arr); setFloorTypes(arr.map(() => defaultPlanType(f.asset_type))); }}
-                className="text-[13px]"
+                className="text-[0.8125rem]"
               />
               {floorFiles.map((file, i) => (
                 <div key={i} className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[11px] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+                  <span className="text-[0.6875rem] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                   <select
                     aria-label={t("Plan type", "نوع المخطط")}
                     value={floorTypes[i] ?? defaultPlanType(f.asset_type)}
                     onChange={(e) => setFloorTypes((p) => { const c = [...p]; c[i] = e.target.value as PlanType; return c; })}
-                    className="text-[12px] border border-charcoal/20 rounded px-1.5 py-1"
+                    className="text-[0.75rem] border border-charcoal/20 rounded px-1.5 py-1"
                   >
                     {planTypesFor(f.asset_type).allowed.map((pt) => <option key={pt} value={pt}>{planLabel(pt, ar)}</option>)}
                   </select>
@@ -667,8 +667,8 @@ export default function ListingStudio({
               <label className={lbl} htmlFor="brochure">
                 {f.deal_type === "sale" ? t("Offering memorandum (PDF)", "مذكرة العرض (PDF)") : t("Marketing brochure (PDF)", "الكتيّب التسويقي (PDF)")}
               </label>
-              <input key={`brochure-${uploadRound}`} id="brochure" type="file" accept="application/pdf" onChange={(e) => { touch(); setBrochureFile(e.target.files?.[0] ?? null); }} className="text-[13px]" />
-              {brochureFile && <p className="text-[11px] text-charcoal/65 mt-1">{brochureFile.name.slice(0, 40)}</p>}
+              <input key={`brochure-${uploadRound}`} id="brochure" type="file" accept="application/pdf" onChange={(e) => { touch(); setBrochureFile(e.target.files?.[0] ?? null); }} className="text-[0.8125rem]" />
+              {brochureFile && <p className="text-[0.6875rem] text-charcoal/65 mt-1">{brochureFile.name.slice(0, 40)}</p>}
             </div>
           </div>
         );
@@ -691,7 +691,7 @@ export default function ListingStudio({
         );
       case "district":
         return (
-          <p key={key} className="text-[12px] text-charcoal/70">
+          <p key={key} className="text-[0.75rem] text-charcoal/70">
             {districtName
               ? t(`District derived from the pin: ${districtName}. You can move the pin to change it.`, `الحي المشتق من الدبوس: ${districtName}. يمكنك تحريك الدبوس لتغييره.`)
               : t("The district is derived from the pin once you place it.", "يُشتق الحي من الدبوس بعد وضعه.")}
@@ -699,7 +699,7 @@ export default function ListingStudio({
         );
       case "building":
         return (
-          <p key={key} className="text-[12px] text-charcoal/70">
+          <p key={key} className="text-[0.75rem] text-charcoal/70">
             {t("SAT links the building record after review, so building facts show as context rather than as facts about this space.", "تربط سات سجل المبنى بعد المراجعة، لتظهر حقائق المبنى كسياق لا كحقائق عن هذه المساحة.")}
           </p>
         );
@@ -714,7 +714,7 @@ export default function ListingStudio({
               <label className={lbl} htmlFor="contact_email">{t("Contact email", "البريد الإلكتروني")}</label>
               <input id="contact_email" dir="ltr" inputMode="email" value={f.contact_email} onChange={(e) => set("contact_email", e.target.value)} className={inp} />
             </div>
-            <fieldset className="flex flex-wrap gap-3 text-[13px]">
+            <fieldset className="flex flex-wrap gap-3 text-[0.8125rem]">
               <legend className={lbl}>{t("How viewers may reach you", "كيف يصل إليك الزائر")}</legend>
               {(([["whatsapp", "WhatsApp", "واتساب"], ["call", "Call", "اتصال"], ["email", "Email", "بريد إلكتروني"], ["message", "Message on SAT", "رسالة عبر سات"]]) as [string, string, string][]).map(([k, en, arLab]) => (
                 <label key={k} className="flex items-center gap-1.5">
@@ -759,20 +759,20 @@ export default function ListingStudio({
     const dName = placeName(d, isAr ? "ar" : "en") || null;
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="rounded border border-line p-3" lang={l}>
-        <div className="text-[11px] uppercase tracking-wide text-charcoal/65 mb-1">{isAr ? "العربية" : "English"}</div>
+        <div className="text-[0.6875rem] uppercase tracking-wide text-charcoal/65 mb-1">{isAr ? "العربية" : "English"}</div>
         <div className="font-display text-lg text-charcoal">
           {title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </div>
-        <div className="text-[13px] text-charcoal/70 mt-1">
+        <div className="text-[0.8125rem] text-charcoal/70 mt-1">
           {assetLabel(f.asset_type, l)} · {dealLabel(f.deal_type, l)}
           {dName ? ` · ${dName}` : ""}
         </div>
         {(areaText || priceText) && (
-          <div className="text-[13px] text-charcoal/70">
+          <div className="text-[0.8125rem] text-charcoal/70">
             {areaText ?? ""}{areaText && priceText ? " · " : ""}{priceText ?? ""}
           </div>
         )}
-        {body && <p className="text-[13px] text-charcoal/70 mt-2 whitespace-pre-line">{body}</p>}
+        {body && <p className="text-[0.8125rem] text-charcoal/70 mt-2 whitespace-pre-line">{body}</p>}
       </div>
     );
   }
@@ -933,10 +933,10 @@ export default function ListingStudio({
     <div className="max-w-2xl" aria-busy={busy || undefined}>
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3">
         <div className="flex items-baseline justify-between gap-3">
-          <div className="text-[12px] text-charcoal/70">
+          <div className="text-[0.75rem] text-charcoal/70">
             {t(`Step ${step.index} of ${steps.length}`, `الخطوة ${step.index} من ${steps.length}`)}
           </div>
-          <div className="text-[12px] text-charcoal/70">
+          <div className="text-[0.75rem] text-charcoal/70">
             {t(`${progress.answered} of ${progress.askable} facts supplied`, `${progress.answered} من ${progress.askable} حقيقة مُدخلة`)}
           </div>
         </div>
@@ -954,7 +954,7 @@ export default function ListingStudio({
           />
         </div>
         {resumeId !== step.id && (
-          <button type="button" onClick={() => go(resumeId)} className="mt-2 text-[12px] text-signal underline min-h-[44px]">
+          <button type="button" onClick={() => go(resumeId)} className="mt-2 text-[0.75rem] text-signal underline min-h-[44px]">
             {t("Go to where you left off", "انتقل إلى موضع التوقف")}
           </button>
         )}
@@ -972,7 +972,7 @@ export default function ListingStudio({
                   onClick={() => go(s.id)}
                   aria-current={isHere ? "step" : undefined}
                   className={
-                    "rounded border px-2.5 py-2 text-[12px] min-h-[44px] whitespace-nowrap " +
+                    "rounded border px-2.5 py-2 text-[0.75rem] min-h-[44px] whitespace-nowrap " +
                     (isHere ? "border-signal text-signal font-medium" : "border-line text-charcoal/70")
                   }
                 >
@@ -998,10 +998,10 @@ export default function ListingStudio({
       <section className="mt-4 rounded-lg border border-line p-4" aria-labelledby="step-title">
         {/* ELITE-4 J2-7: the heading takes focus after every step change. */}
         <h2 id="step-title" tabIndex={-1} className="font-display text-lg text-charcoal">{ar ? step.title_ar : step.title_en}</h2>
-        <p className="text-[12px] text-charcoal/65 mt-1">{ar ? step.purpose_ar : step.purpose_en}</p>
+        <p className="text-[0.75rem] text-charcoal/65 mt-1">{ar ? step.purpose_ar : step.purpose_en}</p>
         {/* ELITE-4 J2-11: the asterisk had no key anywhere on the screen. */}
         {step.kind !== "review" && (
-          <p className="text-[11px] text-charcoal/65 mt-1">{t("* marks a fact this listing cannot be saved without.", "* يشير إلى حقيقة لا يمكن حفظ العرض بدونها.")}</p>
+          <p className="text-[0.6875rem] text-charcoal/65 mt-1">{t("* marks a fact this listing cannot be saved without.", "* يشير إلى حقيقة لا يمكن حفظ العرض بدونها.")}</p>
         )}
 
         <div className="mt-4 space-y-3">
@@ -1056,20 +1056,20 @@ export default function ListingStudio({
             <div className="space-y-4">
               {quality.contradictions.length > 0 && (
                 <div className="rounded border border-red/40 p-3">
-                  <div className="text-[12px] font-medium text-charcoal/80">{t("These cannot both be true", "لا يمكن أن يصحّ هذان معاً")}</div>
-                  <ul className="mt-1.5 space-y-1 text-[12px] text-charcoal/70">
+                  <div className="text-[0.75rem] font-medium text-charcoal/80">{t("These cannot both be true", "لا يمكن أن يصحّ هذان معاً")}</div>
+                  <ul className="mt-1.5 space-y-1 text-[0.75rem] text-charcoal/70">
                     {quality.contradictions.map((c) => <li key={c.kind + c.fields.join()}>{ar ? c.statement_ar : c.statement_en}</li>)}
                   </ul>
                 </div>
               )}
               <div>
-                <div className="text-[12px] font-medium text-charcoal/80">{t("Still missing", "ما زال ناقصاً")}</div>
+                <div className="text-[0.75rem] font-medium text-charcoal/80">{t("Still missing", "ما زال ناقصاً")}</div>
                 {missing.length === 0 ? (
-                  <p className="text-[12px] text-charcoal/70 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن تحملها هذه القائمة موجودة.")}</p>
+                  <p className="text-[0.75rem] text-charcoal/70 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن تحملها هذه القائمة موجودة.")}</p>
                 ) : (
                   <ul className="mt-1.5 space-y-2">
                     {missing.map((c) => (
-                      <li key={c.key} className="text-[12px]">
+                      <li key={c.key} className="text-[0.75rem]">
                         <button
                           type="button"
                           onClick={() => { const target = stepOfCheck.get(c.key); if (target) go(target); }}
@@ -1078,20 +1078,20 @@ export default function ListingStudio({
                           {ar ? c.label_ar : c.label_en}
                         </button>
                         <span className="text-charcoal/65"> · {weightLabel(c.weight, ar)}</span>
-                        <p className="text-[11px] text-charcoal/65">{ar ? c.why_ar : c.why_en}</p>
+                        <p className="text-[0.6875rem] text-charcoal/65">{ar ? c.why_ar : c.why_en}</p>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
               <div>
-                <div className="text-[12px] font-medium text-charcoal/80">{t("As a visitor will read it", "كما سيقرأه الزائر")}</div>
+                <div className="text-[0.75rem] font-medium text-charcoal/80">{t("As a visitor will read it", "كما سيقرأه الزائر")}</div>
                 <div className="mt-2 space-y-2">
                   {preview("en")}
                   {preview("ar")}
                 </div>
               </div>
-              <p className="text-[11px] text-charcoal/65">
+              <p className="text-[0.6875rem] text-charcoal/65">
                 {t("Saved as a draft. SAT reviews a listing before it publishes, and nothing here is a confirmation by SAT.", "يُحفظ كمسودة. تراجع سات العرض قبل نشره، ولا شيء هنا تأكيد من سات.")}
               </p>
             </div>
@@ -1099,7 +1099,7 @@ export default function ListingStudio({
         </div>
 
         {here && here.askable > 0 && step.kind !== "review" && (
-          <p className="mt-4 text-[12px] text-charcoal/65">
+          <p className="mt-4 text-[0.75rem] text-charcoal/65">
             {t(`${here.answered} of ${here.askable} on this step. `, `${here.answered} من ${here.askable} في هذه الخطوة. `)}
             {stateLabel(here.state, ar)}
           </p>
@@ -1112,7 +1112,7 @@ export default function ListingStudio({
           no longer holds what is on the screen. Nothing here reads as a
           confirmation by SAT (D24): it is a draft, and it says so. */}
       {saved && (
-        <div role="status" className="mt-3 rounded border border-line bg-ivory-2/40 p-3 text-[12px] text-charcoal/70">
+        <div role="status" className="mt-3 rounded border border-line bg-ivory-2/40 p-3 text-[0.75rem] text-charcoal/70">
           <p>{t("Saved as a draft. You can close this page and come back to this address to continue.", "حُفظ كمسودة. يمكنك إغلاق الصفحة والعودة إلى هذا العنوان للمتابعة.")}</p>
           <button
             type="button"
@@ -1129,7 +1129,7 @@ export default function ListingStudio({
           type="button"
           disabled={at === 0}
           onClick={() => go(steps[Math.max(0, at - 1)].id)}
-          className="rounded border border-line px-4 py-2 min-h-[44px] text-[13px] disabled:opacity-40"
+          className="rounded border border-line px-4 py-2 min-h-[44px] text-[0.8125rem] disabled:opacity-40"
         >
           {t("Back", "السابق")}
         </button>
@@ -1137,7 +1137,7 @@ export default function ListingStudio({
           <button
             type="button"
             onClick={() => go(steps[at + 1].id)}
-            className="rounded border border-line px-4 py-2 min-h-[44px] text-[13px]"
+            className="rounded border border-line px-4 py-2 min-h-[44px] text-[0.8125rem]"
           >
             {t("Next", "التالي")}
           </button>
@@ -1148,7 +1148,7 @@ export default function ListingStudio({
           type="button"
           aria-disabled={busy || undefined}
           onClick={save}
-          className={"rounded bg-signal px-4 py-2 min-h-[44px] text-[13px] text-white" + (busy ? " opacity-60" : "")}
+          className={"rounded bg-signal px-4 py-2 min-h-[44px] text-[0.8125rem] text-white" + (busy ? " opacity-60" : "")}
         >
           {busy
             ? t("Saving...", "جارٍ الحفظ...")
@@ -1156,7 +1156,7 @@ export default function ListingStudio({
               ? t("Save changes", "حفظ التغييرات")
               : t("Save draft", "حفظ المسودة")}
         </button>
-        <span className="text-[11px] text-charcoal/65">
+        <span className="text-[0.6875rem] text-charcoal/65">
           {saveBlockers.length === 0
             ? t("You can save now and finish later.", "يمكنك الحفظ الآن وإكمال الباقي لاحقاً.")
             : t(`${saveBlockers.length} facts are needed before this can be saved.`, `${saveBlockers.length} حقائق مطلوبة قبل الحفظ.`)}

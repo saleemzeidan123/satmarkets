@@ -92,9 +92,9 @@ export default function EditListingForm({
   const set = (k: keyof Init, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
 
-  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
-  const lbl: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
-  const hint: React.CSSProperties = { fontSize: 11, color: "var(--slate)", marginTop: 4, opacity: 0.8 };
+  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: "0.84375rem", color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
+  const lbl: React.CSSProperties = { display: "block", fontSize: "0.75rem", color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
+  const hint: React.CSSProperties = { fontSize: "0.6875rem", color: "var(--slate)", marginTop: 4, opacity: 0.8 };
 
   const t = ar ? {
     titleEn: "العنوان بالإنجليزية", titleAr: "العنوان بالعربية",
@@ -154,7 +154,7 @@ export default function EditListingForm({
     };
     if (field.type === "boolean") {
       return (
-        <label key={field.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer" }}>
+        <label key={field.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "0.84375rem", cursor: "pointer" }}>
           <input id={fid} type="checkbox" aria-required={field.required || undefined} checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
           <span>{ar ? field.label_ar : field.label_en}</span>
         </label>
@@ -299,7 +299,7 @@ export default function EditListingForm({
 
       {hasRegistry(assetType) && perAsset.length > 0 && (
         <div style={{ border: "1px solid var(--silver)", borderRadius: 10, padding: 14, display: "flex", flexDirection: "column", gap: 16, background: "var(--paper)" }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)" }}>{t.details}</div>
+          <div style={{ fontSize: "0.78125rem", fontWeight: 700, color: "var(--slate)" }}>{t.details}</div>
           {SECTION_ORDER.map((sec) => {
             const fields = perAsset.filter((x) => x.section === sec);
             if (fields.length === 0) return null;
@@ -307,11 +307,11 @@ export default function EditListingForm({
             const more = fields.filter((x) => x.show_rule !== "always" && !x.required);
             return (
               <div key={sec} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".04em", color: "var(--slate)", opacity: 0.8 }}>{sectionLabel(sec, ar)}</div>
+                <div style={{ fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: ".04em", color: "var(--slate)", opacity: 0.8 }}>{sectionLabel(sec, ar)}</div>
                 {lead.map(renderField)}
                 {more.length > 0 && (
                   <details style={{ border: "1px solid var(--silver)", borderRadius: 8, padding: "8px 11px" }}>
-                    <summary style={{ fontSize: 12.5, color: "var(--slate)", cursor: "pointer" }}>{t.more}</summary>
+                    <summary style={{ fontSize: "0.78125rem", color: "var(--slate)", cursor: "pointer" }}>{t.more}</summary>
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>{more.map(renderField)}</div>
                   </details>
                 )}
@@ -355,7 +355,7 @@ export default function EditListingForm({
       </div>
       <div>
         <label style={lbl}>{t.channels}</label>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: 13 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: "0.8125rem" }}>
           {(["whatsapp", "call", "email", "message"] as const).map((k) => (
             <label key={k} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
               <input type="checkbox" checked={!!ch[k]} onChange={(e) => setCh((p) => ({ ...p, [k]: e.target.checked }))} /> {t.chLabels[k]}
@@ -369,7 +369,7 @@ export default function EditListingForm({
         {/* ELITE-4 J2-8 and J2-21: the outcome is announced, and it is named in
             words rather than told apart by colour alone. */}
         {msg && (
-          <span id="edit-save-msg" role="alert" style={{ fontSize: 13, color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>
+          <span id="edit-save-msg" role="alert" style={{ fontSize: "0.8125rem", color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>
             <strong>{msg.ok ? t.okTag : t.failTag}</strong> {msg.text}
           </span>
         )}

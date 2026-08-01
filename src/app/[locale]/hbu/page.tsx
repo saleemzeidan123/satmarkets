@@ -40,8 +40,8 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{hb.eyebrow}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, margin: "10px 0 0" }}>{hb.assetTitle}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{hb.assetSub}</div>
+      <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: "10px 0 0" }}>{hb.assetTitle}</h1>
+      <div className="muted" style={{ fontSize: "0.84375rem", marginTop: 6 }}>{hb.assetSub}</div>
      </div>
      <div className="row gap10 wrap">
       <span className="btn secondary"><Icon.download size={15} /> {hb.exportModel}</span>
@@ -53,7 +53,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
      {kpis.map((k, i) => (
       <div key={i} className="statpill grow" style={{ minWidth: 150 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div className="v tnum" style={{ fontSize: 22 }}>{k[0]}</div>
+        <div className="v tnum" style={{ fontSize: "1.375rem" }}>{k[0]}</div>
         {k[3] && <span className={"delta " + k[3]}>▲</span>}
        </div>
        <div className="l">{k[1]}</div>
@@ -66,7 +66,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
      <div className="card pad scn" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row gap10" style={{ marginBottom: 18 }}>
        <span style={{ color: "var(--harbor)" }}><Icon.layers size={18} /></span>
-       <div style={{ fontSize: 15, fontWeight: 700 }}>{hb.scenario}</div>
+       <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{hb.scenario}</div>
        <span className="grow" /><span className="tag">{hb.scenarioBaseCase}</span>
       </div>
       <div className="col gap18">
@@ -97,15 +97,15 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
        </div>
       </div>
       <div style={{ height: 1, background: "var(--silver)", margin: "20px 0" }} />
-      <div className="row between" style={{ fontSize: 13 }}><span className="muted">{hb.goingInYieldLbl}</span><b className="mono">6.8%</b></div>
-      <div className="row between" style={{ fontSize: 13, marginTop: 10 }}><span className="muted">{hb.yieldOnCost}</span><b className="mono" style={{ color: "var(--harbor-d)" }}>8.1%</b></div>
+      <div className="row between" style={{ fontSize: "0.8125rem" }}><span className="muted">{hb.goingInYieldLbl}</span><b className="mono">6.8%</b></div>
+      <div className="row between" style={{ fontSize: "0.8125rem", marginTop: 10 }}><span className="muted">{hb.yieldOnCost}</span><b className="mono" style={{ color: "var(--harbor-d)" }}>8.1%</b></div>
       <span className="btn primary lg" style={{ justifyContent: "center", marginTop: 18, width: "100%" }}>{hb.runFull}</span>
      </div>
 
      <div className="col gap20">
       <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
        <div className="row between wrap" style={{ alignItems: "flex-start", gap: 10 }}>
-        <div><div style={{ fontSize: 15, fontWeight: 700 }}>{hb.noiProjection}</div><div className="muted" style={{ fontSize: 12.5 }}>{hb.noiProjectionSub}</div></div>
+        <div><div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{hb.noiProjection}</div><div className="muted" style={{ fontSize: "0.78125rem" }}>{hb.noiProjectionSub}</div></div>
         <div className="col gap8">
          <span className="lgd"><span className="sw" /> {hb.openLegend}</span>
          <span className="lgd"><span className="sw amber" /> {hb.cappedLegend}</span>
@@ -118,19 +118,19 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
            <div className="b hi" style={{ height: (o / max * 100) + "%", width: 18, borderRadius: "4px 4px 0 0" }} />
            <div className="b" style={{ height: (capped[i] / max * 100) + "%", width: 18, borderRadius: "4px 4px 0 0", background: "#FBF4E6", borderColor: "#ECDCB6" }} />
           </div>
-          <span className="mono muted" style={{ fontSize: 10.5 }}>{(hb.yAxis) + (i + 1)}</span>
+          <span className="mono muted" style={{ fontSize: "0.65625rem" }}>{(hb.yAxis) + (i + 1)}</span>
          </div>
         ))}
        </div>
        <div className="row gap10" style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
         <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
-        <span className="muted" style={{ fontSize: 12.5 }}>{hb.upsideA}<b style={{ color: "var(--ink)" }}>{hb.upsideBold}</b>{hb.upsideB}</span>
+        <span className="muted" style={{ fontSize: "0.78125rem" }}>{hb.upsideA}<b style={{ color: "var(--ink)" }}>{hb.upsideBold}</b>{hb.upsideB}</span>
        </div>
       </div>
 
       <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
        <div className="row between" style={{ padding: "16px 20px", borderBottom: "1px solid var(--silver)" }}>
-        <div><div style={{ fontSize: 15, fontWeight: 700 }}>{hb.compsTitle}</div><div className="muted" style={{ fontSize: 12.5 }}>{hb.compsSubtitle}</div></div>
+        <div><div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{hb.compsTitle}</div><div className="muted" style={{ fontSize: "0.78125rem" }}>{hb.compsSubtitle}</div></div>
         {/* Was a "Last 6 months" filter chip. It described a recency window over
             transaction records, and this table holds none. */}
         <span className="tag">{hb.compsIllustrative}</span>
@@ -158,7 +158,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
        </div>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
         <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
-        <span className="muted" style={{ fontSize: 12.5 }}>{hb.compsNote}</span>
+        <span className="muted" style={{ fontSize: "0.78125rem" }}>{hb.compsNote}</span>
        </div>
       </div>
      </div>

@@ -19,10 +19,10 @@ export default function SignupPage({ params }: { params: { locale: string } }) {
     <div style={{ position: "absolute", right: -60, bottom: -70, opacity: .14 }}><Mark size={360} base="#2a3742" lit={HARBOR} /></div>
     <Logo size={30} rev />
     <div style={{ marginTop: "auto", position: "relative" }}>
-     <div className="serif" style={{ fontSize: 34, fontWeight: 500, lineHeight: 1.12, letterSpacing: "-.02em" }}>{t.hero}</div>
+     <div className="serif" style={{ fontSize: "2.125rem", fontWeight: 500, lineHeight: 1.12, letterSpacing: "-.02em" }}>{t.hero}</div>
      <div className="col gap12" style={{ marginTop: 26 }}>
       {bullets.map((b, i) => (
-       <div key={i} className="row gap10" style={{ fontSize: 14, color: "#C7CFD7" }}><span style={{ color: "var(--azure-l)" }}><Icon.check size={16} /></span>{b}</div>
+       <div key={i} className="row gap10" style={{ fontSize: "0.875rem", color: "#C7CFD7" }}><span style={{ color: "var(--azure-l)" }}><Icon.check size={16} /></span>{b}</div>
       ))}
      </div>
      <div className="row gap8" style={{ marginTop: 30 }}>
@@ -32,11 +32,11 @@ export default function SignupPage({ params }: { params: { locale: string } }) {
    </div>
    <div className="auth-form">
     <div style={{ width: 480, maxWidth: "100%" }}>
-     <div className="mono muted" style={{ fontSize: 11, letterSpacing: ".06em" }}>{t.byFamily}</div>
-     <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 4px" }}>{t.createAccount}</h1>
-     <p className="muted" style={{ fontSize: 14, margin: "0 0 20px" }}>{t.pickRole}</p>
+     <div className="mono muted" style={{ fontSize: "0.6875rem", letterSpacing: ".06em" }}>{t.byFamily}</div>
+     <h1 style={{ fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 4px" }}>{t.createAccount}</h1>
+     <p className="muted" style={{ fontSize: "0.875rem", margin: "0 0 20px" }}>{t.pickRole}</p>
      <SignupFlow locale={locale} />
-     <p className="muted" style={{ fontSize: 12.5, textAlign: "center", marginTop: 18 }}>{t.haveAccount} <Link href={"/" + locale + "/login"} style={{ color: "var(--azure-d)", fontWeight: 600, textDecoration: "none" }}>{t.signIn}</Link></p>
+     <p className="muted" style={{ fontSize: "0.78125rem", textAlign: "center", marginTop: 18 }}>{t.haveAccount} <Link href={"/" + locale + "/login"} style={{ color: "var(--azure-d)", fontWeight: 600, textDecoration: "none" }}>{t.signIn}</Link></p>
     </div>
    </div>
   </div>

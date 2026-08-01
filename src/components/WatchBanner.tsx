@@ -84,10 +84,10 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
     <div className="card" role="status" style={{ border: "1px solid var(--azure, #3A6EA5)", background: "var(--azure-wash, #EEF4FA)", padding: "14px 16px", marginBottom: 18, borderRadius: 12 }}>
       <div className="row gap8" style={{ alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div className="row gap8" style={{ alignItems: "center" }}>
-          <span aria-hidden style={{ color: "var(--azure-d, #2C5578)", fontSize: 15 }}>◔</span>
-          <strong style={{ fontSize: 14 }}>{t.segmentMoved}</strong>
+          <span aria-hidden style={{ color: "var(--azure-d, #2C5578)", fontSize: "0.9375rem" }}>◔</span>
+          <strong style={{ fontSize: "0.875rem" }}>{t.segmentMoved}</strong>
         </div>
-        <button type="button" onClick={dismissAll} className="chip" style={{ height: 30, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontSize: 12.5, border: "1px solid var(--silver-2, #D6DCE2)", background: "var(--paper, #fff)", color: "var(--ink)" }}>{t.gotIt}</button>
+        <button type="button" onClick={dismissAll} className="chip" style={{ height: 30, padding: "0 12px", borderRadius: 999, cursor: "pointer", fontSize: "0.78125rem", border: "1px solid var(--silver-2, #D6DCE2)", background: "var(--paper, #fff)", color: "var(--ink)" }}>{t.gotIt}</button>
       </div>
       <div className="col gap8">
         {moves.map((m) => {
@@ -106,18 +106,18 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
             : `${m.label}: ${noun.en} from ${nf(m.from)} to ${nf(m.to)} (${formatPeriod(m.period, false)}), ${dir} ${Math.abs(m.pct)}%.`;
           return (
             <div key={m.w.id} className="row gap8" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
-              <div style={{ fontSize: 13, lineHeight: 1.5 }}>
-                <span style={{ color: up ? "var(--harbor-d)" : "#C0492F", marginInlineEnd: 6, fontSize: 11 }}>{arrow}</span>
+              <div style={{ fontSize: "0.8125rem", lineHeight: 1.5 }}>
+                <span style={{ color: up ? "var(--harbor-d)" : "#C0492F", marginInlineEnd: 6, fontSize: "0.6875rem" }}>{arrow}</span>
                 {line}
                 {m.beyond ? <span style={{ marginInlineStart: 6, fontWeight: 600, color: "var(--azure-d, #2C5578)" }}>{`${wb.beyondPre}${m.w.thresholdPct}${wb.beyondSuf}`}</span> : null}
-                {m.statement ? <div className="muted" style={{ fontSize: 11, lineHeight: 1.6, marginTop: 2 }}>{m.statement}</div> : null}
+                {m.statement ? <div className="muted" style={{ fontSize: "0.6875rem", lineHeight: 1.6, marginTop: 2 }}>{m.statement}</div> : null}
               </div>
-              <button type="button" onClick={() => stop(m.w.id)} style={{ flex: "none", background: "transparent", border: "none", color: "var(--slate-2, #6B7480)", fontSize: 11.5, cursor: "pointer", textDecoration: "underline" }}>{t.stop}</button>
+              <button type="button" onClick={() => stop(m.w.id)} style={{ flex: "none", background: "transparent", border: "none", color: "var(--slate-2, #6B7480)", fontSize: "0.71875rem", cursor: "pointer", textDecoration: "underline" }}>{t.stop}</button>
             </div>
           );
         })}
       </div>
-      <div className="muted" style={{ fontSize: 10.5, marginTop: 8 }}>{t.watchDisclaimer}</div>
+      <div className="muted" style={{ fontSize: "0.65625rem", marginTop: 8 }}>{t.watchDisclaimer}</div>
     </div>
   );
 }

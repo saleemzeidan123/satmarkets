@@ -15,7 +15,7 @@ function KCard({ icon: I, tone, v, l, note }: { icon: (p: { size?: number }) => 
       <div className="top"><span className={"ic" + (tone ? " " + tone : "")}><I size={18} /></span></div>
       <div className="v tnum">{v}</div>
       <div className="l">{l}</div>
-      {note && <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{note}</div>}
+      {note && <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 4 }}>{note}</div>}
     </div>
   );
 }
@@ -79,10 +79,10 @@ export default async function AdminPage({ params }: { params: { locale: string }
           <span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span>
           <span className="t">{t.recent}</span>
           <span style={{ flex: 1 }} />
-          <Link href={`/${lp}/admin/accounts`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600 }}>{t.viewAll}</Link>
+          <Link href={`/${lp}/admin/accounts`} style={{ fontSize: "0.78125rem", color: "var(--azure-d)", fontWeight: 600 }}>{t.viewAll}</Link>
         </div>
         {leads.length === 0 ? (
-          <div className="muted" style={{ padding: "22px 20px", fontSize: 12.5 }}>{t.recentEmpty}</div>
+          <div className="muted" style={{ padding: "22px 20px", fontSize: "0.78125rem" }}>{t.recentEmpty}</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table className="dt" style={{ minWidth: 520 }}>
@@ -90,13 +90,13 @@ export default async function AdminPage({ params }: { params: { locale: string }
               <tbody>
                 {leads.map((l: any) => (
                   <tr key={l.id}>
-                    <td style={{ fontWeight: 600, fontSize: 13 }}>{l.contact_name || (ar ? "استفسار" : "Enquiry")}</td>
-                    <td className="muted" style={{ fontSize: 12.5 }}>
+                    <td style={{ fontWeight: 600, fontSize: "0.8125rem" }}>{l.contact_name || (ar ? "استفسار" : "Enquiry")}</td>
+                    <td className="muted" style={{ fontSize: "0.78125rem" }}>
                       {l.listing_id
                         ? <Link href={`/${lp}/listings/${l.listing_id}`} style={{ color: "var(--azure-d)" }}>{titleOf.get(l.listing_id) || l.listing_id}</Link>
                         : ""}
                     </td>
-                    <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(l.created_at, ar)}</td>
+                    <td className="num mono muted" style={{ fontSize: "0.71875rem" }}>{stamp(l.created_at, ar)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -107,7 +107,7 @@ export default async function AdminPage({ params }: { params: { locale: string }
 
       <div className="dpanel" style={{ marginTop: 18 }}>
         <div className="ph"><span style={{ color: "var(--slate)" }}><Icon.flag size={16} /></span><span className="t">{t.nbT}</span></div>
-        <div className="muted" style={{ padding: "14px 20px 18px", fontSize: 12.5, lineHeight: 1.7, maxWidth: 620 }}>{t.nbB}</div>
+        <div className="muted" style={{ padding: "14px 20px 18px", fontSize: "0.78125rem", lineHeight: 1.7, maxWidth: 620 }}>{t.nbB}</div>
       </div>
     </AdminShell>
   );

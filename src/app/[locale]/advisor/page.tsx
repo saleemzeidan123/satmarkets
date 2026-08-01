@@ -177,14 +177,14 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
       {!started && tool !== "value" && (
        <div>
         <div className="eyebrow">{av.welcome}</div>
-        <h2 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 4px" }}>{av.welcomeTitle}</h2>
+        <h2 style={{ fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 4px" }}>{av.welcomeTitle}</h2>
         <p className="muted" style={{ fontSize: "var(--fs-base)", margin: "0 0 18px" }}>{av.welcomeSub}</p>
         <div className="adv-jobs-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
          {JOBS.map((j, i) => (
           <button key={i} onClick={() => pickJob(j)} className="card pad lift" style={{ textAlign: ar ? "right" : "left", cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }}>
            <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
            <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
-           <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.5 }}>{j.sub}</div>
+           <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.5 }}>{j.sub}</div>
           </button>
          ))}
         </div>
@@ -229,10 +229,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            {/* End labels: only low and high, forced LTR and bidi-isolated. The average
                moved to its own line below so the middle label can no longer collide with
                the ends at narrow widths (Codex area 4, EN label collision). */}
-           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--slate)", marginTop: 6, direction: "ltr" }}>
+           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "0.6875rem", color: "var(--slate)", marginTop: 6, direction: "ltr" }}>
             <span style={{ unicodeBidi: "isolate" }}>{fmt(lo)}</span><span style={{ unicodeBidi: "isolate" }}>{fmt(hi)}</span>
            </div>
-           <div className="mono" style={{ fontSize: 11, color: "var(--slate)", marginTop: 3, textAlign: "center" }}>{(av.averageLabel)}<bdi dir="ltr">{fmt(avg)}</bdi>{unitL ? " · " + unitL : ""}</div>
+           <div className="mono" style={{ fontSize: "0.6875rem", color: "var(--slate)", marginTop: 3, textAlign: "center" }}>{(av.averageLabel)}<bdi dir="ltr">{fmt(avg)}</bdi>{unitL ? " · " + unitL : ""}</div>
            {q0 != null && <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 600, color: col, marginTop: 4 }}>{(av.yourRate)}<bdi dir="ltr">{fmt(q0)}</bdi></div>}
           </div>
          );
@@ -257,7 +257,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          // whose value the licence withheld. A message restored from
          // sessionStorage carries whatever it was given and no more.
          <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-          <div className="muted" style={{ fontSize: 11.5, fontWeight: 600 }}>{ri.eviTitle}</div>
+          <div className="muted" style={{ fontSize: "0.71875rem", fontWeight: 600 }}>{ri.eviTitle}</div>
           {m.passports.map((v, k) => (
            <EvidencePassport key={k} view={v} label={statisticLabel(v.statistic, ar)} ar={ar} locale={locale} />
           ))}
@@ -271,7 +271,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          </button>
         )}
         {m.handoffDistrict && (
-         <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: 12.5, fontWeight: 600, alignItems: "flex-start" }}>
+         <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: "0.78125rem", fontWeight: 600, alignItems: "flex-start" }}>
           <span style={{ flex: "none", display: "inline-flex", marginTop: 2 }}><Icon.search size={14} /></span>{/* The English sentence fell back to "this district" when the label was
                  missing and the Arabic fell back to nothing at all, leaving a
                  dangling "في". One template, one fallback, both languages. */}
@@ -293,8 +293,8 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
            return (
             <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
-             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{[assetLabel(l.asset_type, locale), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
-             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}><bdi>{pp ? pp.value : av.na}</bdi></div>{pp && <div className="muted" style={{ fontSize: 10.5 }}><bdi>{pp.unit}</bdi></div>}</div>
+             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{[assetLabel(l.asset_type, locale), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
+             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}><bdi>{pp ? pp.value : av.na}</bdi></div>{pp && <div className="muted" style={{ fontSize: "0.65625rem" }}><bdi>{pp.unit}</bdi></div>}</div>
             </Link>
            );
           })}
@@ -314,13 +314,13 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
         {segs && segs.length === 0 && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{av.noBands}</div>}
         {segs && segs.length > 0 && (
          <div className="col gap10">
-          <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{av.spaceType}
+          <label className="col gap4" style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{av.spaceType}
            <select className="input" value={segKey} onChange={(e) => { setSegKey(e.target.value); setSegLoc(""); }} style={{ fontFamily: "var(--sans)" }}>
             <option value="">{av.chooseType}</option>
             {segOptions.map((k) => { const [a, seg] = k.split("|"); return <option key={k} value={k}>{spaceTypeLabel(a, seg, ar)}</option>; })}
            </select>
           </label>
-          {segKey && <label className="col gap4" style={{ fontSize: 12.5, fontWeight: 600 }}>{av.locationLabel}
+          {segKey && <label className="col gap4" style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{av.locationLabel}
            <select className="input" value={activeRow ? activeRow.district_label : ""} onChange={(e) => setSegLoc(e.target.value)} style={{ fontFamily: "var(--sans)" }}>
             {locOptions.map((s) => <option key={s.district_label} value={s.district_label}>{ar ? (s.district_label_ar || s.district_label) : s.district_label}</option>)}
            </select>
@@ -328,10 +328,10 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           {activeRow && !(activeBand && unitOk) && <div className="muted" style={{ fontSize: "var(--fs-sm)" }}>{av.unsupported}</div>}
           {activeRow && activeBand && unitOk && <>
           <div className="row gap10 wrap">
-           <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 170 }}>{rateBasisLabel(activeRow.unit, ar)}
+           <label className="col gap4 grow" style={{ fontSize: "0.78125rem", fontWeight: 600, minWidth: 170 }}>{rateBasisLabel(activeRow.unit, ar)}
             <input className="input" inputMode="decimal" value={rent} onChange={(e) => setRent(e.target.value)} placeholder={formatInteger(activeBand.average, locale)} />
            </label>
-           <label className="col gap4 grow" style={{ fontSize: 12.5, fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
+           <label className="col gap4 grow" style={{ fontSize: "0.78125rem", fontWeight: 600, minWidth: 130 }}>{av.sizeLabel}
             <input className="input" inputMode="decimal" value={size} onChange={(e) => setSize(e.target.value)} placeholder="300" />
            </label>
           </div>
@@ -389,7 +389,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{av.marketSnapshot}</div></div>
     <div style={{ padding: 20 }} className="col gap16">
      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65 }}>
+      <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65 }}>
        {av.snapshotNote}
       </div>
      </div>

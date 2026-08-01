@@ -40,12 +40,12 @@ export default async function AdminSignupsPage({ params }: { params: { locale: s
           <span style={{ color: "var(--amber)" }}><Icon.shield size={17} /></span>
           <span className="t">{t.title}</span>
           <span style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 11.5 }}>{list.length}</span>
+          <span className="muted" style={{ fontSize: "0.71875rem" }}>{list.length}</span>
         </div>
         {list.length === 0 ? (
           <div style={{ padding: "22px 20px 26px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.emptyT}</div>
-            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{t.emptyB}</div>
+            <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.emptyT}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{t.emptyB}</div>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
@@ -57,22 +57,22 @@ export default async function AdminSignupsPage({ params }: { params: { locale: s
                 {list.map((r: any) => (
                   <tr key={r.id}>
                     <td>
-                      <div style={{ fontWeight: 600, fontSize: 13 }}>{r.full_name || ""}</div>
-                      {r.company && <div className="muted" style={{ fontSize: 11.5 }}>{r.company}</div>}
+                      <div style={{ fontWeight: 600, fontSize: "0.8125rem" }}>{r.full_name || ""}</div>
+                      {r.company && <div className="muted" style={{ fontSize: "0.71875rem" }}>{r.company}</div>}
                     </td>
-                    <td className="muted" style={{ fontSize: 12.5 }}>{r.role || ""}</td>
-                    <td className="mono muted" style={{ fontSize: 11.5 }}>
+                    <td className="muted" style={{ fontSize: "0.78125rem" }}>{r.role || ""}</td>
+                    <td className="mono muted" style={{ fontSize: "0.71875rem" }}>
                       <div>{r.email || ""}</div>
                       {r.phone && <div>{r.phone}</div>}
                     </td>
-                    <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(r.created_at, ar)}</td>
+                    <td className="num mono muted" style={{ fontSize: "0.71875rem" }}>{stamp(r.created_at, ar)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
-        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
+        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
       </div>
     </AdminShell>
   );

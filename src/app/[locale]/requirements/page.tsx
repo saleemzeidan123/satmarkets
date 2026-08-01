@@ -39,20 +39,20 @@ export default function RequirementsBoard({ params }: { params: { locale: string
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
      <div>
       <div className="eyebrow">{dict.req.openReqs}</div>
-      <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "12px 0 6px" }}>{dict.req.h1}</h1>
-      <p className="muted" style={{ fontSize: 15, maxWidth: 580, lineHeight: 1.6 }}>{dict.req.sub}</p>
+      <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "12px 0 6px" }}>{dict.req.h1}</h1>
+      <p className="muted" style={{ fontSize: "0.9375rem", maxWidth: 580, lineHeight: 1.6 }}>{dict.req.sub}</p>
      </div>
      <Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link>
     </div>
 
     {loading ? (
-     <div className="muted" style={{ marginTop: 40, fontSize: 14 }}>{dict.req.loading}</div>
+     <div className="muted" style={{ marginTop: 40, fontSize: "0.875rem" }}>{dict.req.loading}</div>
     ) : reqs.length === 0 ? (
      /* An empty board rendered an empty grid: the header, the loading line gone,
         and then nothing, which reads as a page that failed rather than a market
         with no open demand yet. */
      <div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
-      <p className="muted" style={{ fontSize: 14, lineHeight: 1.7, margin: 0 }}>{dict.req.empty}</p>
+      <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0 }}>{dict.req.empty}</p>
       <div style={{ marginTop: 14 }}><Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link></div>
      </div>
     ) : (
@@ -68,12 +68,12 @@ export default function RequirementsBoard({ params }: { params: { locale: string
         <div className="row between" style={{ alignItems: "center" }}>
          <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(r.asset, locale)} · {r.deal === "lease" ? (dict.req.lease) : (dict.req.buy)}</span>
          <span className="row gap6" style={{ alignItems: "center" }}>
-          {r.sample ? <span className="tag" style={{ color: "#92400E", background: "#FFFBEB", borderColor: "#FCD34D", fontSize: 10.5 }}>{dict.req.sampleTag}</span> : null}
-          <span className="mono muted" style={{ fontSize: 11 }}>{r.ref}</span>
+          {r.sample ? <span className="tag" style={{ color: "#92400E", background: "#FFFBEB", borderColor: "#FCD34D", fontSize: "0.65625rem" }}>{dict.req.sampleTag}</span> : null}
+          <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{r.ref}</span>
          </span>
         </div>
-        <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
-        <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
+        <div style={{ fontSize: "0.96875rem", fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
+        <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7 }}>
          <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</div>
          {size || budget ? (
           <div className="row gap6"><Icon.layers size={14} /> {size ? <bdi>{size}</bdi> : null}{size && budget ? " · " : ""}{budget ? <bdi>{budget}</bdi> : null}</div>
@@ -83,10 +83,10 @@ export default function RequirementsBoard({ params }: { params: { locale: string
              rather than drawn beside nothing. */}
          {timelineLabel(r.timeline, ar) ? <div className="row gap6"><Icon.clock size={14} /> {dict.req.timeline}: {timelineLabel(r.timeline, ar)}</div> : null}
         </div>
-        {r.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 10 }}>{r.mustHaves.slice(0, 4).map((m, i) => <span key={i} className="chip" style={{ fontSize: 11 }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
+        {r.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 10 }}>{r.mustHaves.slice(0, 4).map((m, i) => <span key={i} className="chip" style={{ fontSize: "0.6875rem" }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
         <div className="row between" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)", alignItems: "center" }}>
-         <span style={{ fontSize: 12.5, color: r.interest ? "var(--harbor)" : "var(--slate)" }}>{r.interest ? (ar ? `${r.interest} مهتم` : `${r.interest} interested`) : (dict.req.noInterest)}</span>
-         <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--azure-d)" }}>{dict.req.viewRespond}</span>
+         <span style={{ fontSize: "0.78125rem", color: r.interest ? "var(--harbor)" : "var(--slate)" }}>{r.interest ? (ar ? `${r.interest} مهتم` : `${r.interest} interested`) : (dict.req.noInterest)}</span>
+         <span style={{ fontSize: "0.78125rem", fontWeight: 600, color: "var(--azure-d)" }}>{dict.req.viewRespond}</span>
         </div>
        </Link>
        );

@@ -316,8 +316,8 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         </div>
         {status !== "ready" && (
           <div aria-live="polite" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, background: "var(--cool)", color: "var(--slate)", pointerEvents: "none", padding: 20, textAlign: "center" }}>
-            <span className="mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--slate-2)" }}>{status === "error" ? t2.mapUnavailable : t2.loadingMap}</span>
-            <span style={{ fontSize: 12.5, maxWidth: 240 }}>{status === "error" ? t2.browseList : t2.oneMoment}</span>
+            <span className="mono" style={{ fontSize: "0.6875rem", letterSpacing: ".1em", textTransform: "uppercase", color: "var(--slate-2)" }}>{status === "error" ? t2.mapUnavailable : t2.loadingMap}</span>
+            <span style={{ fontSize: "0.78125rem", maxWidth: 240 }}>{status === "error" ? t2.browseList : t2.oneMoment}</span>
           </div>
         )}
         {/* ELITE-4 J3-4: `moved` is only ever set from drag and zoom pointer events, so
@@ -328,7 +328,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         <button type="button" ref={closeRef} className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
         {/* Legend: names the two mark types so a click is never a mystery. Bubbles are
             district centroids (approximate); green dots are exact building points. */}
-        <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: 11.5, color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
+        <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: "0.71875rem", color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
           <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 13, height: 13, borderRadius: "50%", background: "var(--harbor)", border: "2px solid var(--on-brand)", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "منطقة (تقديري) · انقر للتصفية" : "District (approx.) · click to filter"}</span>
           {pins.length > 0 && (
             <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--harbor)", border: "1.5px solid var(--on-brand)", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "مبنى محدد" : "Exact building"}</span>

@@ -33,7 +33,7 @@ export default function SignupFlow({ locale }: Props) {
   const ASSET = [["office", t("Office", "مكاتب")], ["retail", t("Retail & F&B", "تجزئة ومطاعم")], ["medical", t("Medical", "طبي")], ["warehouse", t("Warehouse", "مستودعات")], ["showroom", t("Showroom", "معارض")], ["serviced", t("Serviced", "مكاتب مخدومة")], ["land", t("Land", "أراضٍ")], ["other", t("Other", "أخرى")]] as const;
   const toggleChip = (v: string) => setChips((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
 
-  const lbl: React.CSSProperties = { display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--slate)", marginBottom: 7 };
+  const lbl: React.CSSProperties = { display: "block", fontSize: "0.78125rem", fontWeight: 600, color: "var(--slate)", marginBottom: 7 };
   const fs: React.CSSProperties = { border: 0, padding: 0, margin: 0, minWidth: 0 };
 
   /* ELITE-4 J1-2 + J1-3: a single-choice chip row was an unnamed <div> of plain
@@ -99,13 +99,13 @@ export default function SignupFlow({ locale }: Props) {
         <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--azure-wash)", color: "var(--harbor-d)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
-        <h2 style={{ fontSize: 22, fontWeight: 700, margin: "16px 0 6px" }}>{t("Request received", "استلمنا طلبك")}</h2>
-        <p className="muted" style={{ fontSize: 14, lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>{t("Every account on SAT Markets is verified by a person before it opens. Here is what happens next:", "كل حساب في سات ماركتس يوثّقه فريقنا قبل فتحه. إليك ما سيحدث الآن:")}</p>
+        <h2 style={{ fontSize: "1.375rem", fontWeight: 700, margin: "16px 0 6px" }}>{t("Request received", "استلمنا طلبك")}</h2>
+        <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>{t("Every account on SAT Markets is verified by a person before it opens. Here is what happens next:", "كل حساب في سات ماركتس يوثّقه فريقنا قبل فتحه. إليك ما سيحدث الآن:")}</p>
         <div style={{ textAlign: "start", maxWidth: 400, margin: "18px auto 0" }}>
           {steps.map((s, i) => (
             <div key={i} className="row gap12" style={{ padding: "10px 0", borderBottom: i < 2 ? "1px solid var(--silver)" : "none", alignItems: "flex-start" }}>
-              <span className="mono" style={{ color: "var(--harbor)", fontSize: 13, fontWeight: 600, marginTop: 1 }}>{"0" + (i + 1)}</span>
-              <span style={{ fontSize: 14, lineHeight: 1.55 }}>{s}</span>
+              <span className="mono" style={{ color: "var(--harbor)", fontSize: "0.8125rem", fontWeight: 600, marginTop: 1 }}>{"0" + (i + 1)}</span>
+              <span style={{ fontSize: "0.875rem", lineHeight: 1.55 }}>{s}</span>
             </div>
           ))}
         </div>
@@ -126,7 +126,7 @@ export default function SignupFlow({ locale }: Props) {
             <button key={r.v} type="button" onClick={() => { setRole(r.v); setChips([]); setD({}); setStep(1); }}
               className="card" style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 18px", textAlign: "start", cursor: "pointer", border: "1px solid " + (role === r.v ? "var(--harbor)" : "var(--silver)"), width: "100%" }}>
               <span style={{ width: 48, height: 48, borderRadius: 13, background: "var(--azure-wash)", color: "var(--harbor)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>{RIC[r.v]}</span>
-              <span><span style={{ display: "block", fontSize: 16, fontWeight: 700 }}>{r.h}</span><span className="muted" style={{ display: "block", fontSize: 13, marginTop: 2, lineHeight: 1.5 }}>{r.p}</span></span>
+              <span><span style={{ display: "block", fontSize: "1rem", fontWeight: 700 }}>{r.h}</span><span className="muted" style={{ display: "block", fontSize: "0.8125rem", marginTop: 2, lineHeight: 1.5 }}>{r.p}</span></span>
             </button>
           ))}
         </div>
@@ -147,7 +147,7 @@ export default function SignupFlow({ locale }: Props) {
               and role="alert" announces it as it appears. */}
           {role === "broker" && field("su-fal", t("FAL licence number", "رقم رخصة فال"), (
             <><input id="su-fal" className="input fig" inputMode="numeric" aria-invalid={falBad} aria-describedby={falBad ? "su-fal-err" : "su-fal-hint"} placeholder={t("Digits only", "أرقام فقط")} value={d.fal || ""} onChange={(e) => setD((p) => ({ ...p, fal: e.target.value.replace(/[^\d]/g, "") }))} />
-            {falBad ? <div id="su-fal-err" role="alert" style={{ fontSize: 12, color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div id="su-fal-hint" className="muted" style={{ fontSize: 12, marginTop: 5 }}>{t("SAT reviews it before your account opens. Automated checks against the REGA register arrive before launch.", "تراجعه سات قبل فتح حسابك. التحقق الآلي مقابل سجل الهيئة العامة للعقار يصل قبل الإطلاق.")}</div>}</>
+            {falBad ? <div id="su-fal-err" role="alert" style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div id="su-fal-hint" className="muted" style={{ fontSize: "0.75rem", marginTop: 5 }}>{t("SAT reviews it before your account opens. Automated checks against the REGA register arrive before launch.", "تراجعه سات قبل فتح حسابك. التحقق الآلي مقابل سجل الهيئة العامة للعقار يصل قبل الإطلاق.")}</div>}</>
           ))}
           {role === "investor" && sel("ticket", t("Ticket size", "حجم الاستثمار"), [["u5", t("Under SAR 5M", "أقل من 5 ملايين ريال")], ["5_50", t("SAR 5-50M", "5-50 مليون ريال")], ["o50", t("Over SAR 50M", "أكثر من 50 مليون ريال")]])}
           {role === "investor" && group(t("Focus", "التركيز"), (
@@ -167,12 +167,12 @@ export default function SignupFlow({ locale }: Props) {
           {field("su-email", t("Work email", "البريد الإلكتروني"), <input id="su-email" className="input" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.sa" autoComplete="email" />)}
           {field("su-phone", t("Mobile (optional)", "الجوال (اختياري)"), <input id="su-phone" className="input fig" type="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" autoComplete="tel" />)}
           {/* ELITE-4 J1-4: submit failure was a bare div, silent to assistive tech. */}
-          {err ? <div role="alert" style={{ fontSize: 13, color: "var(--red)" }}>{err}</div> : null}
+          {err ? <div role="alert" style={{ fontSize: "0.8125rem", color: "var(--red)" }}>{err}</div> : null}
           <div className="row gap10" style={{ marginTop: 4 }}>
             <button type="button" className="btn secondary" onClick={() => setStep(1)}>{t("Back", "رجوع")}</button>
             <button type="button" className="btn primary grow" style={{ justifyContent: "center", opacity: step2Ok && !busy ? 1 : 0.5 }} disabled={!step2Ok || busy} onClick={submit}>{busy ? t("Sending...", "جارٍ الإرسال...") : t("Request my account", "اطلب حسابي")}</button>
           </div>
-          <p className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, margin: 0 }}>{t("By continuing you agree to the Terms and the privacy policy. Every account is reviewed by SAT before it opens; no unverified account can list.", "بمتابعتك توافق على الشروط وسياسة الخصوصية. تراجع سات كل حساب قبل فتحه، ولا يمكن لحساب غير موثّق أن يعرض.")}</p>
+          <p className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, margin: 0 }}>{t("By continuing you agree to the Terms and the privacy policy. Every account is reviewed by SAT before it opens; no unverified account can list.", "بمتابعتك توافق على الشروط وسياسة الخصوصية. تراجع سات كل حساب قبل فتحه، ولا يمكن لحساب غير موثّق أن يعرض.")}</p>
         </div>
       )}
     </div>

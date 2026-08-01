@@ -12,7 +12,7 @@ export default function Error({ reset }: { error: Error & { digest?: string }; r
   return (
     <div style={{ maxWidth: 560, margin: "80px auto", padding: "0 24px" }}>
       <div className="card pad" style={{ textAlign: "center" }}>
-        <p style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{d.body}</p>
+        <p style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>{d.body}</p>
         <button type="button" onClick={() => reset()} className="btn primary" style={{ marginTop: 18, justifyContent: "center" }}>
           {d.retry}
         </button>

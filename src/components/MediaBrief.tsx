@@ -36,14 +36,14 @@ export default function MediaBrief({
 
   return (
     <div className="rounded border border-line p-3">
-      <div className="text-[12px] font-medium text-charcoal/80">
+      <div className="text-[0.75rem] font-medium text-charcoal/80">
         {t("What this listing needs to show", "ما الذي يجب أن يعرضه هذا الإعلان")}
       </div>
 
       {/* The countable part. Statements, not scores. */}
       <ul className="mt-2 space-y-1">
         {status.requirements.map((r) => (
-          <li key={r.key} className="text-[12px] flex items-start gap-2">
+          <li key={r.key} className="text-[0.75rem] flex items-start gap-2">
             <span aria-hidden="true" className={r.met ? "text-signal" : "text-amber"}>
               {r.met ? "✓" : "○"}
             </span>
@@ -62,7 +62,7 @@ export default function MediaBrief({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="mt-2 text-[12px] text-signal underline underline-offset-2 min-h-[44px]"
+        className="mt-2 text-[0.75rem] text-signal underline underline-offset-2 min-h-[44px]"
       >
         {open
           ? t("Hide the views a professional listing carries", "إخفاء اللقطات التي يحملها الإعلان الاحترافي")
@@ -71,7 +71,7 @@ export default function MediaBrief({
 
       {open && (
         <div className="mt-2">
-          <p className="text-[11px] text-charcoal/65">
+          <p className="text-[0.6875rem] text-charcoal/65">
             {t(
               "Guidance for you, not a check on this listing. Nothing here reads the contents of a file, so nothing here is counted against you.",
               "إرشاد لك، وليس فحصاً لهذا الإعلان. لا شيء هنا يقرأ محتوى الملفات، ولذلك لا يُحسب شيء منه عليك.",
@@ -80,11 +80,11 @@ export default function MediaBrief({
           <ul className="mt-2 space-y-2">
             {shots.map((s) => (
               <li key={s.key}>
-                <div className="text-[12px] text-charcoal/85">
+                <div className="text-[0.75rem] text-charcoal/85">
                   {ar ? s.label_ar : s.label_en}
-                  <span className="ms-2 text-[11px] text-charcoal/65">{shotWeightLabel(s.weight, ar)}</span>
+                  <span className="ms-2 text-[0.6875rem] text-charcoal/65">{shotWeightLabel(s.weight, ar)}</span>
                 </div>
-                <p className="text-[11px] text-charcoal/65 leading-relaxed">{ar ? s.why_ar : s.why_en}</p>
+                <p className="text-[0.6875rem] text-charcoal/65 leading-relaxed">{ar ? s.why_ar : s.why_en}</p>
               </li>
             ))}
           </ul>

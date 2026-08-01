@@ -75,8 +75,8 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
     return (
       <div style={{ display: "grid", placeItems: "center", padding: "64px 24px" }}>
         <div style={{ textAlign: "center", maxWidth: 460 }}>
-          <div style={{ fontSize: 18, fontWeight: 600 }}>{t.emptyT}</div>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 8 }}>{t.emptyB}</p>
+          <div style={{ fontSize: "1.125rem", fontWeight: 600 }}>{t.emptyT}</div>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 8 }}>{t.emptyB}</p>
           <Link href={`/${lp}/dashboard/listings`} className="btn secondary" style={{ marginTop: 16 }}>{t.browse}</Link>
         </div>
       </div>
@@ -86,12 +86,12 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
   return (
     <div className="col gap14">
       <div>
-        <h2 style={{ fontSize: 18, margin: 0 }}>{t.title}</h2>
+        <h2 style={{ fontSize: "1.125rem", margin: 0 }}>{t.title}</h2>
         <div className="sub">{t.sub}</div>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84375rem" }}>
           <thead>
             <tr style={{ background: "var(--cool)", textAlign: ar ? "right" : "left" }}>
               <th style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thWho}</th>
@@ -108,7 +108,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
                 <tr key={v.id} style={{ borderTop: "1px solid var(--silver)" }}>
                   <td style={{ padding: "12px 14px" }}>
                     <div style={{ fontWeight: 600 }}>{v.contact_name}</div>
-                    <div className="muted" style={{ fontSize: 12 }}>
+                    <div className="muted" style={{ fontSize: "0.75rem" }}>
                       <a href={`mailto:${v.contact_email}`}>{v.contact_email}</a>
                       {v.contact_phone ? <> · <a href={`tel:${v.contact_phone}`}>{v.contact_phone}</a></> : null}
                     </div>

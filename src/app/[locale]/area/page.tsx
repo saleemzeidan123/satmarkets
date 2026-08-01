@@ -54,8 +54,8 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{ap.eyebrow}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, margin: "10px 0 0" }}>{ap.h1}</h1>
-      <div className="muted" style={{ fontSize: 13.5, marginTop: 6 }}>{ap.intro}</div>
+      <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: "10px 0 0" }}>{ap.h1}</h1>
+      <div className="muted" style={{ fontSize: "0.84375rem", marginTop: 6 }}>{ap.intro}</div>
      </div>
      <div className="row gap10 wrap">
       <span className="chip">{ap.driveTime10} <Icon.chevd size={14} /></span>
@@ -106,7 +106,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div className="intel-2" style={{ padding: "20px 24px 0" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.footfallRhythm}</div><div className="muted" style={{ fontSize: 12.5 }}>{ap.hourlyIndex}</div></div>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.footfallRhythm}</div><div className="muted" style={{ fontSize: "0.78125rem" }}>{ap.hourlyIndex}</div></div>
        <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{ap.olaya}</span>
       </div>
       <div className="hours" style={{ height: 150, marginTop: 20, gap: 4 }}>
@@ -119,7 +119,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.catchmentFrom}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ap.catchmentFromSub}</div>
+      <div className="muted" style={{ fontSize: "0.78125rem" }}>{ap.catchmentFromSub}</div>
       <div className="col gap14" style={{ marginTop: 18 }}>
        {origins.map((o, i) => (
         <div key={i} className="hrow"><span className="nm">{o[0]}</span><span className="hbar"><i className={o[2]} style={{ width: o[1] + "%" }} /></span><span className="pc">{o[1]}%</span></div>
@@ -131,14 +131,14 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div className="intel-11" style={{ padding: "20px 24px 40px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, marginBottom: 4 }}>{ap.ageMix}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ap.ageMixSub}</div>
+      <div className="muted" style={{ fontSize: "0.78125rem" }}>{ap.ageMixSub}</div>
       <div className="row gap24 wrap" style={{ marginTop: 18, alignItems: "center" }}>
        <div className="donut" style={{ width: 132, height: 132, background: `conic-gradient(${stops})` }}>
-        <div className="hole"><span className="mono" style={{ fontSize: 18, fontWeight: 500 }}>62%</span><span style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)" }}>{ap.aged2544}</span></div>
+        <div className="hole"><span className="mono" style={{ fontSize: "1.125rem", fontWeight: 500 }}>62%</span><span style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)" }}>{ap.aged2544}</span></div>
        </div>
        <div className="col gap10 grow">
         {ages.map((a, i) => (
-         <div key={i} className="row between" style={{ fontSize: 12.5 }}>
+         <div key={i} className="row between" style={{ fontSize: "0.78125rem" }}>
           <span className="row gap8"><span style={{ width: 10, height: 10, borderRadius: 3, background: a[2], display: "inline-block" }} /> {a[0]}</span>
           <span className="mono muted">{a[1]}%</span>
          </div>
@@ -149,7 +149,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
 
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="row between">
-       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.coTenancy}</div><div className="muted" style={{ fontSize: 12.5 }}>{ap.coTenancySub}</div></div>
+       <div><div style={{ fontSize: "var(--fs-md)", fontWeight: 700 }}>{ap.coTenancy}</div><div className="muted" style={{ fontSize: "0.78125rem" }}>{ap.coTenancySub}</div></div>
        <span className="muted2"><Icon.store size={18} /></span>
       </div>
       <div className="col gap14" style={{ marginTop: 18 }}>
@@ -159,7 +159,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       </div>
       <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)" }}>
        <span style={{ color: "var(--harbor)" }}><Icon.check size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5 }}>{ap.coTenancyNote}</span>
+       <span className="muted" style={{ fontSize: "0.78125rem" }}>{ap.coTenancyNote}</span>
       </div>
      </div>
     </div>
@@ -167,13 +167,13 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
     <div style={{ padding: "8px 24px 48px" }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div className="eyebrow">{ap.howTitle}</div>
-      <h2 style={{ fontSize: 21, fontWeight: 700, margin: "10px 0 6px" }}>{ap.howH}</h2>
-      <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
+      <h2 style={{ fontSize: "1.3125rem", fontWeight: 700, margin: "10px 0 6px" }}>{ap.howH}</h2>
+      <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>
        {([[ap.srcMobileT, ap.srcMobileB], [ap.srcMojT, ap.srcMojB], [ap.srcSpendT, ap.srcSpendB], [ap.srcPublicT, ap.srcPublicB]] as [string, string][]).map((d,i)=>(
         <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-         <div style={{ fontSize: 13.5, fontWeight: 700 }}>{d[0]}</div>
+         <div style={{ fontSize: "0.84375rem", fontWeight: 700 }}>{d[0]}</div>
          <div className="muted" style={{ fontSize: "var(--fs-xs)", lineHeight: 1.5, marginTop: 4 }}>{d[1]}</div>
         </div>
        ))}
@@ -185,11 +185,11 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
         <span key={i} className="chip on" style={{ fontSize: "var(--fs-xs)" }}>{l}</span>
        ))}
       </div>
-      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>{ap.scoreBody}</p>
+      <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.55, margin: "12px 0 0", maxWidth: 720 }}>{ap.scoreBody}</p>
 
       <div className="row gap10" style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--silver)", alignItems: "flex-start" }}>
        <span style={{ color: "var(--harbor)", marginTop: 1 }}><Icon.shield size={15} /></span>
-       <span className="muted" style={{ fontSize: 12.5, lineHeight: 1.55 }}>{ap.pdplNote}</span>
+       <span className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.55 }}>{ap.pdplNote}</span>
       </div>
      </div>
     </div>

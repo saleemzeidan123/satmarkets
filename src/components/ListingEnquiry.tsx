@@ -199,9 +199,9 @@ export default function ListingEnquiry({
   return (
    <div className="card pad ld-enquiry">
     <div className="row gap8" style={{ color: "var(--harbor-d)", marginBottom: 10 }}>
-     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{t.enquirySent}</span>
+     <Icon.check size={20} /><span style={{ fontWeight: 700, fontSize: "0.9375rem", color: "var(--ink)" }}>{t.enquirySent}</span>
     </div>
-    <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.6 }}>
+    <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6 }}>
      {t.enquiryBody}
     </p>
     <div className="col gap10" style={{ marginTop: 16 }}>
@@ -216,8 +216,8 @@ export default function ListingEnquiry({
   <div className="card pad ld-enquiry">
    <div className="row between" style={{ alignItems: "flex-start" }}>
     <div>
-     <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{(() => { const pp = priceParts(price, lease ? "lease" : "sale", locale as Loc); return (<><bdi>{pp ? pp.value : t.onRequest}</bdi>{pp && <small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> <bdi>{pp.unit}</bdi></small>}</>); })()}</div>
-     <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{[type, netArea(area, locale as Loc), district].filter(Boolean).join(" · ")}</div>
+     <div className="mono" style={{ fontSize: "1.75rem", fontWeight: 500 }}>{(() => { const pp = priceParts(price, lease ? "lease" : "sale", locale as Loc); return (<><bdi>{pp ? pp.value : t.onRequest}</bdi>{pp && <small style={{ fontSize: "0.8125rem", color: "var(--slate)", fontWeight: 400 }}> <bdi>{pp.unit}</bdi></small>}</>); })()}</div>
+     <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4 }}>{[type, netArea(area, locale as Loc), district].filter(Boolean).join(" · ")}</div>
     </div>
     <button onClick={toggleSave} aria-label={saved ? t.saved : t.save} className="chip" style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : "var(--silver)", color: saved ? "var(--harbor)" : "var(--slate)" }}>
      <Icon.heart size={15} /> {saved ? t.saved : t.save}
@@ -256,18 +256,18 @@ export default function ListingEnquiry({
     </div>
    )}
 
-   {err && <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 10 }}>{err}</p>}
+   {err && <p role="alert" style={{ color: "#B3261E", fontSize: "0.78125rem", marginTop: 10 }}>{err}</p>}
    {!open && (
     <div style={{ marginTop: 18, borderTop: "1px solid var(--silver)", paddingTop: 14 }}>
      <div className="row between" style={{ marginBottom: 9, alignItems: "baseline" }}>
-      <span style={{ fontSize: 12.5, fontWeight: 700 }}>{t.bookViewing}</span>
+      <span style={{ fontSize: "0.78125rem", fontWeight: 700 }}>{t.bookViewing}</span>
       {/* Who confirms the viewing is a PARTY distinction, not a status: SAT-hosted is the
           branded path (Harbor Deep), lister-confirmed is neutral (slate). The neutral side
           was an off-palette teal, ruled out by D24, which also read as a positive outcome. */}
-      <span className="mono" style={{ fontSize: 10.5, color: satListed ? "var(--harbor-d)" : "var(--slate)" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
+      <span className="mono" style={{ fontSize: "0.65625rem", color: satListed ? "var(--harbor-d)" : "var(--slate)" }}>{satListed ? t.satHosts : t.listerConfirms}</span>
      </div>
      {vDone ? (
-      <div className="row gap8" style={{ fontSize: 13, alignItems: "flex-start" }}>
+      <div className="row gap8" style={{ fontSize: "0.8125rem", alignItems: "flex-start" }}>
        <span style={{ color: "var(--harbor-d)", flex: "none", marginTop: 1 }}><Icon.check size={16} /></span>
        <span style={{ lineHeight: 1.55 }}>{satListed ? t.vDoneSat : t.vDoneLister}</span>
       </div>
@@ -285,12 +285,12 @@ export default function ListingEnquiry({
        </fieldset>
        {slot && (
         <div className="col gap8" style={{ marginTop: 10 }}>
-         <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{t.twoQuick}</div>
+         <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.5 }}>{t.twoQuick}</div>
          {/* ELITE-4 J3-12: one answer per question, so radios again, inside a
              fieldset whose legend is the question being answered. */}
          {questions.map((q) => (
           <fieldset key={q.k} style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
-           <legend style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", padding: 0, margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</legend>
+           <legend style={{ fontSize: "0.71875rem", fontWeight: 600, color: "var(--slate)", padding: 0, margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</legend>
            <div className="row gap6 wrap" role="radiogroup" aria-label={ar ? q.ar : q.en}>
             {q.opts.map((o) => (
              <button key={o.v} type="button" role="radio" aria-checked={qual[q.k] === o.v} onClick={() => setQual((p) => ({ ...p, [q.k]: p[q.k] === o.v ? "" : o.v }))} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{ar ? o.ar : o.en}</button>
@@ -304,7 +304,7 @@ export default function ListingEnquiry({
          <label htmlFor="vw-email" className="sronly">{t.workEmail}</label>
          <input id="vw-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
          {/* ELITE-4 J3-10: the enquiry error announces, this one did not. */}
-         {vErr ? <div role="alert" style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
+         {vErr ? <div role="alert" style={{ fontSize: "0.78125rem", color: "var(--red)" }}>{vErr}</div> : null}
          <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? t.sending : t.requestSlot}</button>
         </div>
        )}
@@ -313,12 +313,12 @@ export default function ListingEnquiry({
     </div>
    )}
 
-   <div className="muted" style={{ fontSize: 11.5, marginTop: 14, lineHeight: 1.6 }}>{t.footer}</div>
+   <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 14, lineHeight: 1.6 }}>{t.footer}</div>
   </div>
  );
 }
 
 const fld: React.CSSProperties = {
  border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px",
- fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)", outline: "none", background: "var(--paper)", width: "100%",
+ fontSize: "0.875rem", fontFamily: "var(--sans)", color: "var(--ink)", outline: "none", background: "var(--paper)", width: "100%",
 };

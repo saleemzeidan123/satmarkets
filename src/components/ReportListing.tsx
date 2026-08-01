@@ -27,7 +27,7 @@ export default function ReportListing({ listingId, locale }: { listingId: string
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className="muted" style={{ background: "none", border: "none", padding: 0, marginTop: 14, cursor: "pointer", fontSize: 12.5, color: "var(--slate)", textDecoration: "underline", textUnderlineOffset: 3 }}>
+        className="muted" style={{ background: "none", border: "none", padding: 0, marginTop: 14, cursor: "pointer", fontSize: "0.78125rem", color: "var(--slate)", textDecoration: "underline", textUnderlineOffset: 3 }}>
         {t.link}
       </button>
     );
@@ -51,24 +51,24 @@ export default function ReportListing({ listingId, locale }: { listingId: string
   return (
     <div className="card pad" style={{ marginTop: 14, boxShadow: "none", border: "1px solid var(--silver)", maxWidth: 460 }}>
       {state === "done" ? (
-        <div ref={doneRef} tabIndex={-1} role="status" className="muted" style={{ fontSize: 12.5, display: "flex", gap: 6, alignItems: "center" }}>
+        <div ref={doneRef} tabIndex={-1} role="status" className="muted" style={{ fontSize: "0.78125rem", display: "flex", gap: 6, alignItems: "center" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C557F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
           {t.done}
         </div>
       ) : (
       <>
-      <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.prompt}</div>
-      <label htmlFor={`${uid}-reason`} style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.reason}</label>
+      <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.prompt}</div>
+      <label htmlFor={`${uid}-reason`} style={{ display: "block", fontSize: "0.75rem", color: "var(--slate)", marginTop: 10 }}>{t.reason}</label>
       <select id={`${uid}-reason`} value={reason} onChange={(e) => setReason(e.target.value)}
-        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "var(--paper)" }}>
+        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: "0.8125rem", background: "var(--paper)" }}>
         <option value="">{t.choose}</option>
         {Object.entries(t.reasons).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
       </select>
-      <label htmlFor={`${uid}-detail`} style={{ display: "block", fontSize: 12, color: "var(--slate)", marginTop: 10 }}>{t.detail}</label>
+      <label htmlFor={`${uid}-detail`} style={{ display: "block", fontSize: "0.75rem", color: "var(--slate)", marginTop: 10 }}>{t.detail}</label>
       <textarea id={`${uid}-detail`} value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} maxLength={1000}
-        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "var(--paper)", resize: "vertical", fontFamily: "inherit" }} />
+        style={{ width: "100%", marginTop: 4, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: "0.8125rem", background: "var(--paper)", resize: "vertical", fontFamily: "inherit" }} />
       {/* ELITE-4 J3-8: a failure the reporter is never told about. */}
-      {state === "error" && <p role="alert" style={{ color: "#B23B3B", fontSize: 12.5, marginTop: 8 }}>{t.err}</p>}
+      {state === "error" && <p role="alert" style={{ color: "#B23B3B", fontSize: "0.78125rem", marginTop: 8 }}>{t.err}</p>}
       <div className="row gap8" style={{ marginTop: 12 }}>
         <button type="button" onClick={submit} disabled={!reason || state === "busy"} className="btn primary sm" style={{ opacity: !reason || state === "busy" ? 0.6 : 1 }}>
           {state === "busy" ? t.sending : t.submit}

@@ -40,7 +40,7 @@ export default function NotificationsPage({ params }: { params: { locale: string
    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 48px" }}>
     <SampleBanner ar={ar} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14, marginBottom: 22 }}>
-     <div><div className="eyebrow">{d.title}</div><h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{unread > 0 ? `${unread} ${d.unread}` : d.caughtUp}</h1></div>
+     <div><div className="eyebrow">{d.title}</div><h1 style={{ fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{unread > 0 ? `${unread} ${d.unread}` : d.caughtUp}</h1></div>
      <div className="row gap8 wrap"><span className="btn secondary sm">{d.markAllRead}</span><span className="btn secondary sm"><Icon.gear size={14} /> {d.preferences}</span></div>
     </div>
     <div className="notif-grid">
@@ -52,8 +52,8 @@ export default function NotificationsPage({ params }: { params: { locale: string
          {g[1].map((n, i) => { const I = n[0]; const t = tone[n[1]]; return (
           <div key={i} className="lead-item" style={{ background: n[5] ? "var(--azure-wash)" : "transparent" }}>
            <span className="queue-ic" style={{ background: t[0], color: t[1] }}><I size={17} /></span>
-           <div className="grow"><div style={{ fontSize: 13.5, fontWeight: 600 }}>{n[2]}</div><div className="muted" style={{ fontSize: 12, marginTop: 2, lineHeight: 1.5 }}>{n[3]}</div></div>
-           <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono muted" style={{ fontSize: 10.5 }}>{n[4]}</div>{n[5] && <span style={{ display: "inline-block", marginTop: 6, width: 8, height: 8, borderRadius: "50%", background: "var(--azure)" }} />}</div>
+           <div className="grow"><div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{n[2]}</div><div className="muted" style={{ fontSize: "0.75rem", marginTop: 2, lineHeight: 1.5 }}>{n[3]}</div></div>
+           <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono muted" style={{ fontSize: "0.65625rem" }}>{n[4]}</div>{n[5] && <span style={{ display: "inline-block", marginTop: 6, width: 8, height: 8, borderRadius: "50%", background: "var(--azure)" }} />}</div>
           </div>
          ); })}
         </div>
@@ -65,11 +65,11 @@ export default function NotificationsPage({ params }: { params: { locale: string
       <div style={{ padding: "6px 20px 16px" }}>
        <div className="row gap10" style={{ alignItems: "center", paddingBottom: 8, marginBottom: 4, borderBottom: "1px solid var(--silver)" }}>
         <span className="grow" />
-        {chans.map((l, i) => <span key={i} className="mono muted" style={{ fontSize: 9.5, width: 30, textAlign: "center", lineHeight: 1.25 }}>{l}</span>)}
+        {chans.map((l, i) => <span key={i} className="mono muted" style={{ fontSize: "0.59375rem", width: 30, textAlign: "center", lineHeight: 1.25 }}>{l}</span>)}
        </div>
        {prefs.map((r, i) => (
         <div key={i} className="urow" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-         <span className="grow" style={{ fontSize: 13 }}>{r[0]}</span>
+         <span className="grow" style={{ fontSize: "0.8125rem" }}>{r[0]}</span>
          {[r[1], r[2], r[3]].map((on, j) => (
           <span key={j} title={chans[j]} style={{ width: 30, height: 18, borderRadius: 10, background: on ? "var(--azure)" : "var(--silver)", position: "relative", flex: "none" }}><span style={{ position: "absolute", width: 14, height: 14, borderRadius: "50%", background: "var(--paper)", top: 2, insetInlineStart: on ? 14 : 2, transition: ".15s" }} /></span>
          ))}

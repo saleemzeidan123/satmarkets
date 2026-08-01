@@ -30,7 +30,7 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
    <div className="row between wrap" style={{ padding: "13px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 12, flex: "none" }}>
     <div className="row gap12" style={{ alignItems: "center" }}>
      <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={17} /></span></span>
-     <div><h1 style={{ fontSize: 15, fontWeight: 700, margin: 0 }}>{d.buildingName}</h1><div className="mono muted" style={{ fontSize: 11 }}>{d.plansSub}</div></div>
+     <div><h1 style={{ fontSize: "0.9375rem", fontWeight: 700, margin: 0 }}>{d.buildingName}</h1><div className="mono muted" style={{ fontSize: "0.6875rem" }}>{d.plansSub}</div></div>
     </div>
     <div className="row gap8 wrap">
      <span className="ftype"><span className="ext">DWG</span> floor-plate-L18.dwg</span>
@@ -51,7 +51,7 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
          <div style={{ position: "absolute", left: 8, top: 8, width: "46%", height: "54%", border: "1px solid var(--silver-2)" }} />
          <div style={{ position: "absolute", right: 8, top: 8, width: "34%", height: "34%", border: "1px solid var(--silver-2)" }} />
         </div>
-        <div className="row between" style={{ marginTop: 7 }}><span style={{ fontSize: 11, fontWeight: 600 }}>{s[0]}</span><span className="mono muted" style={{ fontSize: 9 }}>{i + 1}</span></div>
+        <div className="row between" style={{ marginTop: 7 }}><span style={{ fontSize: "0.6875rem", fontWeight: 600 }}>{s[0]}</span><span className="mono muted" style={{ fontSize: "0.5625rem" }}>{i + 1}</span></div>
        </div>
       ))}
      </div>
@@ -66,7 +66,7 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
       ))}
       <div className="dim" style={{ left: "50%", top: 4, transform: "translateX(-50%)" }}>{d.dimW}</div>
       <div className="dim" style={{ left: 4, top: "50%", transform: "translateY(-50%) rotate(-90deg)" }}>{d.dimH}</div>
-      <div style={{ position: "absolute", right: 14, top: 14, display: "flex", flexDirection: "column", alignItems: "center", color: "var(--slate)" }}><span style={{ display: "inline-flex", transform: "rotate(-90deg)" }}><Icon.arrow size={16} /></span><span className="mono" style={{ fontSize: 9 }}>{d.north}</span></div>
+      <div style={{ position: "absolute", right: 14, top: 14, display: "flex", flexDirection: "column", alignItems: "center", color: "var(--slate)" }}><span style={{ display: "inline-flex", transform: "rotate(-90deg)" }}><Icon.arrow size={16} /></span><span className="mono" style={{ fontSize: "0.5625rem" }}>{d.north}</span></div>
      </div>
      <div className="vtool" style={{ position: "absolute", right: 18, bottom: 18 }}>
       <span><Icon.search size={16} /></span><span>−</span><span className="on"><Icon.target size={15} /></span><span>+</span>
@@ -83,13 +83,13 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
     {/* info rail */}
     <div className="docs-rail-r" style={{ width: 248, flex: "none", borderLeft: "1px solid var(--silver)", background: "var(--paper)", padding: 18, overflowY: "auto" }}>
      <div className="eyebrow" style={{ marginBottom: 12 }}>{d.sheetDetails}</div>
-     <div className="col gap10" style={{ fontSize: 12.5 }}>
+     <div className="col gap10" style={{ fontSize: "0.78125rem" }}>
       {details.map((r, i) => (
        <div key={i} className="row between" style={{ paddingBottom: 9, borderBottom: "1px solid var(--silver)" }}><span className="muted">{r[0]}</span><b style={{ fontWeight: 600 }}>{r[1]}</b></div>
       ))}
      </div>
      <div className="card pad" style={{ marginTop: 16, boxShadow: "none", background: "var(--cool)" }}>
-      <div className="row gap8"><span style={{ color: "var(--azure-d)" }}><Icon.spark size={15} /></span><div><div style={{ fontSize: 12.5, fontWeight: 600 }}>{d.aiRead}</div><div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5, marginTop: 4 }}>{d.aiDesc}</div></div></div>
+      <div className="row gap8"><span style={{ color: "var(--azure-d)" }}><Icon.spark size={15} /></span><div><div style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{d.aiRead}</div><div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.5, marginTop: 4 }}>{d.aiDesc}</div></div></div>
      </div>
      <div className="col gap8" style={{ marginTop: 16 }}>
       <span className="btn secondary sm" style={{ justifyContent: "center" }}><Icon.download size={14} /> {d.dlDwg}</span>

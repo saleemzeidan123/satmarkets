@@ -22,8 +22,8 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = (k: keyof Init, v: string) => setF((p) => ({ ...p, [k]: v }));
 
-  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
-  const lbl: React.CSSProperties = { display: "block", fontSize: 12, color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
+  const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: "0.84375rem", color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
+  const lbl: React.CSSProperties = { display: "block", fontSize: "0.75rem", color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
 
   const t = ar ? {
     aboutEn: "نبذة (بالإنجليزية)", aboutAr: "نبذة (بالعربية)", website: "الموقع الإلكتروني",
@@ -58,7 +58,7 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
 
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.hint}</p>
+      <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.hint}</p>
       {/* ELITE-4 J1-1: every label was bare, so no field had a programmatic name.
           Each control now carries an id and its label the matching htmlFor. */}
       <div>
@@ -91,7 +91,7 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <button type="submit" className="btn primary" disabled={busy}>{busy ? t.saving : t.save}</button>
-        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>{msg.text}</span>}
+        {msg && <span style={{ fontSize: "0.8125rem", color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>{msg.text}</span>}
       </div>
     </form>
   );

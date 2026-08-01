@@ -109,7 +109,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           <Logo />
           <div style={{ textAlign: "end" }}>
             <div className="eyebrow">{t.propertyFlyer}</div>
-            <div className="mono muted" style={{ fontSize: 11 }}>{l.reference_code || l.id.slice(0, 8)} · {today}</div>
+            <div className="mono muted" style={{ fontSize: "0.6875rem" }}>{l.reference_code || l.id.slice(0, 8)} · {today}</div>
           </div>
         </div>
         <img src={photoFor(l.asset_type, l.id)} alt={title} style={{ width: "100%", height: 260, objectFit: "cover", display: "block" }} />
@@ -124,13 +124,13 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
             <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
             <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
           </div>
-          <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: "12px 0 4px" }}>{title}</h1>
-          <div className="muted" style={{ fontSize: 13.5 }}>{dn}{l.districts?.city ? `, ${l.districts.city}` : ""}</div>
+          <h1 className="serif" style={{ fontSize: "1.625rem", fontWeight: 500, margin: "12px 0 4px" }}>{title}</h1>
+          <div className="muted" style={{ fontSize: "0.84375rem" }}>{dn}{l.districts?.city ? `, ${l.districts.city}` : ""}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))", gap: 12, marginTop: 18 }}>
             {([[t.area, areaFig], [t.grade, gradeLabel(l.building_grade, locale)], [t.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? t.askingRent : t.askingPrice, priceFig ?? t.onRequest]] as [string, string | null][]).filter((s) => s[1]).map((s, i) => (
               <div key={i} style={{ border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px" }}>
-                <div className="muted" style={{ fontSize: 10.5 }}>{s[0]}</div>
-                <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{s[1]}</div>
+                <div className="muted" style={{ fontSize: "0.65625rem" }}>{s[0]}</div>
+                <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 500, marginTop: 5 }}>{s[1]}</div>
               </div>
             ))}
           </div>
@@ -140,16 +140,16 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
                 <div className="eyebrow">{t.pricedInContext}</div>
                 <span className="tag">{t.platformSample}</span>
               </div>
-              <div style={{ fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>{ar ? v.line_ar : v.line_en}</div>
+              <div style={{ fontSize: "0.8125rem", lineHeight: 1.6, marginTop: 8 }}>{ar ? v.line_ar : v.line_en}</div>
               {/* Inside the same bordered block, because the block is what gets
                   printed and a sentence further down the page is a sentence a
                   folded flyer can lose. */}
               {idxStatements.map((s) => (
-                <div key={s} className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 6 }}>{s}</div>
+                <div key={s} className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 6 }}>{s}</div>
               ))}
             </div>
           )}
-          <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
+          <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 16 }}>
             {/* PKG-FIG2 closure, findings 131 and 132. This line read "Office average
                 {rate} SAR/m²/yr", which named a statistic the flyer never read and
                 spelled a unit the unit table already owns, beside a number formatted
@@ -162,14 +162,14 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
             ))}
           </div>
         </div>
-        <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 11.5, gap: 14, alignItems: "center" }}>
+        <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: "0.71875rem", gap: 14, alignItems: "center" }}>
           <div className="col gap4" style={{ minWidth: 0 }}>
             <span style={{ fontWeight: 600 }}>{t.footer}</span>
-            <span className="mono muted" style={{ fontSize: 11 }}>{SITE.replace(/^https?:\/\//, "")}/{locale}/listings/{l.id.slice(0, 8)}…</span>
+            <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{SITE.replace(/^https?:\/\//, "")}/{locale}/listings/{l.id.slice(0, 8)}…</span>
           </div>
           {qrSvg ? (
             <div className="row gap8" style={{ alignItems: "center", flex: "none" }}>
-              <span className="muted" style={{ fontSize: 10.5, maxWidth: 96, textAlign: "end", lineHeight: 1.45 }}>{t.scanHint}</span>
+              <span className="muted" style={{ fontSize: "0.65625rem", maxWidth: 96, textAlign: "end", lineHeight: 1.45 }}>{t.scanHint}</span>
               <div aria-label={t.qrAria} style={{ width: 104, height: 104, flex: "none", background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 8, overflow: "hidden", lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: qrSvg }} />
             </div>
           ) : null}

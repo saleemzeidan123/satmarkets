@@ -104,17 +104,17 @@ export default function VerificationSummary({
               className="row between gap10 wrap"
               style={{ alignItems: "flex-start" }}
             >
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--ink)" }}>
+              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--ink)" }}>
                 {verificationDimensionLabel(r.dimension, ar)}
               </span>
               <span style={{ minWidth: 0, textAlign: ar ? "left" : "right" }}>
-                <span style={{ fontSize: 13, fontWeight: good ? 600 : 500, color: tone }}>
+                <span style={{ fontSize: "0.8125rem", fontWeight: good ? 600 : 500, color: tone }}>
                   {verificationStateLabel(r.state, ar)}
                 </span>
                 {r.reasons.length > 0 ? (
                   <span
                     className="muted"
-                    style={{ display: "block", fontSize: 11.5, lineHeight: 1.6, marginTop: 2 }}
+                    style={{ display: "block", fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 2 }}
                   >
                     {r.reasons.map((x) => notVerifiedReasonText(x, ar)).join(ar ? "، " : ", ")}
                   </span>
@@ -132,7 +132,7 @@ export default function VerificationSummary({
             marginTop: 12,
             paddingTop: 10,
             borderTop: "1px solid var(--silver)",
-            fontSize: 12,
+            fontSize: "0.75rem",
             lineHeight: 1.7,
           }}
         >

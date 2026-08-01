@@ -68,22 +68,22 @@ export default function ListPage({ params }: { params: { locale: string } }) {
     <div style={{ position: "absolute", right: -30, bottom: -30, opacity: .3 }}><Mark size={240} base="#222A31" lit={HARBOR} /></div>
     <div style={{ position: "relative" }}>
      <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{lp.eyebrow}</div>
-     <h1 className="serif" style={{ fontSize: 30, fontWeight: 500, letterSpacing: "-.01em", margin: "14px 0 0", color: "var(--on-brand)" }}>{lp.h1}</h1>
-     <p style={{ fontSize: 14.5, lineHeight: 1.65, color: "#AEB6C0", margin: "16px 0 28px" }}>{lp.intro}</p>
+     <h1 className="serif" style={{ fontSize: "1.875rem", fontWeight: 500, letterSpacing: "-.01em", margin: "14px 0 0", color: "var(--on-brand)" }}>{lp.h1}</h1>
+     <p style={{ fontSize: "0.90625rem", lineHeight: 1.65, color: "#AEB6C0", margin: "16px 0 28px" }}>{lp.intro}</p>
      <div className="col gap16">
-      {sells.map((x, i) => { const I = x[0]; return <div key={i} className="row gap12"><span style={{ color: "var(--harbor-d)" }}><I size={18} /></span><span style={{ fontSize: 13.5, color: "#D6DCE3" }}>{x[1]}</span></div>; })}
+      {sells.map((x, i) => { const I = x[0]; return <div key={i} className="row gap12"><span style={{ color: "var(--harbor-d)" }}><I size={18} /></span><span style={{ fontSize: "0.84375rem", color: "#D6DCE3" }}>{x[1]}</span></div>; })}
      </div>
      <div style={{ marginTop: 36, padding: "16px 18px", background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 11 }}>
-      <div className="mono" style={{ fontSize: 11, color: "#8A93A0", letterSpacing: ".06em" }}>{lp.avgTimeLabel}</div>
-      <div className="mono tnum" style={{ fontSize: 22, fontWeight: 500, color: "var(--on-brand)", marginTop: 6 }}>{lp.avgTimeValue}</div>
-      <div style={{ fontSize: 12, lineHeight: 1.6, color: "#AEB6C0", marginTop: 8 }}>{lp.avgTimeNote}</div>
+      <div className="mono" style={{ fontSize: "0.6875rem", color: "#8A93A0", letterSpacing: ".06em" }}>{lp.avgTimeLabel}</div>
+      <div className="mono tnum" style={{ fontSize: "1.375rem", fontWeight: 500, color: "var(--on-brand)", marginTop: 6 }}>{lp.avgTimeValue}</div>
+      <div style={{ fontSize: "0.75rem", lineHeight: 1.6, color: "#AEB6C0", marginTop: 8 }}>{lp.avgTimeNote}</div>
      </div>
     </div>
    </div>
 
    <div className="list-form">
-    <h2 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", margin: "0 0 4px" }}>{lp.intakeTitle}</h2>
-    <p className="muted" style={{ fontSize: 14, margin: 0, maxWidth: 720, lineHeight: 1.65 }}>{lp.intakeSub}</p>
+    <h2 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.02em", margin: "0 0 4px" }}>{lp.intakeTitle}</h2>
+    <p className="muted" style={{ fontSize: "0.875rem", margin: 0, maxWidth: 720, lineHeight: 1.65 }}>{lp.intakeSub}</p>
 
     {/* An ordered list because these are stages in an order, and the number is
         written out rather than left to `list-style`, so it is a Western numeral
@@ -94,13 +94,13 @@ export default function ListPage({ params }: { params: { locale: string } }) {
        <span
         className="mono tnum"
         aria-hidden
-        style={{ flex: "0 0 auto", width: 26, height: 26, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 12, background: "var(--cool)", color: "var(--harbor)", border: "1px solid var(--silver)" }}
+        style={{ flex: "0 0 auto", width: 26, height: 26, borderRadius: 999, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", background: "var(--cool)", color: "var(--harbor)", border: "1px solid var(--silver)" }}
        >
         {s.index}
        </span>
        <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: 14.5, fontWeight: 600 }}>{s.title}</span>
-        <span className="muted" style={{ display: "block", fontSize: 13, lineHeight: 1.6, marginTop: 3 }}>{s.purpose}</span>
+        <span style={{ display: "block", fontSize: "0.90625rem", fontWeight: 600 }}>{s.title}</span>
+        <span className="muted" style={{ display: "block", fontSize: "0.8125rem", lineHeight: 1.6, marginTop: 3 }}>{s.purpose}</span>
        </span>
       </li>
      ))}
@@ -108,19 +108,19 @@ export default function ListPage({ params }: { params: { locale: string } }) {
     {/* Stated only when the two ends genuinely differ, so the page never says
         "10 or 10 steps" if an asset type is ever added that splits nothing. */}
     {size.minSteps !== size.maxSteps ? (
-     <p className="muted2" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "14px 0 0", maxWidth: 720 }}>{countNote}</p>
+     <p className="muted2" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "14px 0 0", maxWidth: 720 }}>{countNote}</p>
     ) : null}
 
     <div className="card pad" style={{ marginTop: 28, maxWidth: 720, background: "var(--cool)", boxShadow: "none" }}>
      <h3 className="eyebrow" style={{ margin: 0 }}>{lp.needTitle}</h3>
-     <p className="muted" style={{ fontSize: 13, lineHeight: 1.6, margin: "8px 0 0" }}>{lp.needSub}</p>
+     <p className="muted" style={{ fontSize: "0.8125rem", lineHeight: 1.6, margin: "8px 0 0" }}>{lp.needSub}</p>
      <ul style={{ listStyle: "none", margin: "16px 0 0", padding: 0 }}>
       {needs.map((r) => (
        <li key={r.key} className="row gap10" style={{ alignItems: "flex-start", marginTop: 12 }}>
         <span aria-hidden style={{ flex: "0 0 auto", color: "var(--harbor)", marginTop: 2 }}><Icon.check size={15} /></span>
         <span style={{ minWidth: 0 }}>
-         <span style={{ display: "block", fontSize: 13.5, fontWeight: 600 }}>{r.label}</span>
-         <span className="muted" style={{ display: "block", fontSize: 12.5, lineHeight: 1.6, marginTop: 2 }}>{r.why}</span>
+         <span style={{ display: "block", fontSize: "0.84375rem", fontWeight: 600 }}>{r.label}</span>
+         <span className="muted" style={{ display: "block", fontSize: "0.78125rem", lineHeight: 1.6, marginTop: 2 }}>{r.why}</span>
         </span>
        </li>
       ))}
@@ -129,7 +129,7 @@ export default function ListPage({ params }: { params: { locale: string } }) {
 
     {/* The only control on the route, and the sign-in requirement is stated
         before the click rather than discovered after it. */}
-    <p className="muted2" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "24px 0 0", maxWidth: 720 }}>{lp.signInNote}</p>
+    <p className="muted2" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "24px 0 0", maxWidth: 720 }}>{lp.signInNote}</p>
     <div className="row gap12 between wrap" style={{ marginTop: 14, maxWidth: 720 }}>
      <Link href={`/${params.locale}`} className="btn secondary"><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={15} /></span> {lp.back}</Link>
      <Link href={`/${params.locale}/dashboard/new`} className="btn primary lg">{lp.startDraft} <Icon.arrow size={16} /></Link>

@@ -112,12 +112,12 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
   const metroRow = (key: string) => metro ? (
     <div key={key} className="row between" style={{ gap: 12, padding: "11px 0", borderTop: "1px solid var(--silver)" }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.metro}</div>
-        <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? metro.name_ar : metro.name_en}{metro.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(metro.line)}</span> : null}</div>
+        <div style={{ fontSize: "0.71875rem", color: "var(--slate)" }}>{t.metro}</div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 500, marginTop: 2 }}>{ar ? metro.name_ar : metro.name_en}{metro.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(metro.line)}</span> : null}</div>
       </div>
       <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
-        <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>{num(metro.km)} {t.km}</div>
-        {metro.walkMin != null ? <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>~{metro.walkMin} {t.walk}</div> : null}
+        <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 600 }}>{num(metro.km)} {t.km}</div>
+        {metro.walkMin != null ? <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 2 }}>~{metro.walkMin} {t.walk}</div> : null}
       </div>
     </div>
   ) : null;
@@ -131,10 +131,10 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
     const computed = travel && travel.state === "computed" ? travel : null;
     return (
       <div style={{ textAlign: ar ? "left" : "right", whiteSpace: "nowrap" }}>
-        <div className="mono" style={{ fontSize: 14, fontWeight: 600 }}>
+        <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 600 }}>
           {computed ? `${computed.minutes} ${t.driveMin}` : `${num(km)} ${t.km}`}
         </div>
-        <div className="muted" style={{ fontSize: 11.5, marginTop: 2 }}>
+        <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 2 }}>
           {computed ? (t[computed.labelKey] || t.driving) : t.straightLine}
         </div>
       </div>
@@ -144,8 +144,8 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
   const airportRow = (key: string) => airport ? (
     <div key={key} className="row between" style={{ gap: 12, padding: "11px 0", borderTop: "1px solid var(--silver)" }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.airport}</div>
-        <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? airport.name_ar : airport.name_en}</div>
+        <div style={{ fontSize: "0.71875rem", color: "var(--slate)" }}>{t.airport}</div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 500, marginTop: 2 }}>{ar ? airport.name_ar : airport.name_en}</div>
       </div>
       {travelCell(airport.km, airport.travel)}
     </div>
@@ -154,8 +154,8 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
   const railRow = (key: string) => rail ? (
     <div key={key} className="row between" style={{ gap: 12, padding: "11px 0", borderTop: "1px solid var(--silver)" }}>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11.5, color: "var(--slate)" }}>{t.rail}</div>
-        <div style={{ fontSize: 14.5, fontWeight: 500, marginTop: 2 }}>{ar ? rail.name_ar : rail.name_en}{rail.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(rail.line)}</span> : null}</div>
+        <div style={{ fontSize: "0.71875rem", color: "var(--slate)" }}>{t.rail}</div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 500, marginTop: 2 }}>{ar ? rail.name_ar : rail.name_en}{rail.line ? <span className="muted" style={{ fontWeight: 400 }}> · {lineLabel(rail.line)}</span> : null}</div>
       </div>
       {travelCell(rail.km, rail.travel)}
     </div>
@@ -185,22 +185,22 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
   return (
     <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
       <div className="row between" style={{ gap: 10, flexWrap: "wrap" }}>
-        <div style={{ fontWeight: 600, fontSize: 15 }}>{t.title}</div>
-        <span className="mono muted" style={{ fontSize: 11 }}>{t.computed} {computedDate}</span>
+        <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{t.title}</div>
+        <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{t.computed} {computedDate}</span>
       </div>
       <div style={{ position: "relative", height: 260, marginTop: 12, borderRadius: 12, overflow: "hidden", border: "1px solid var(--silver)" }}>
         <div ref={ref} style={{ position: "absolute", inset: 0 }} aria-label={t.mapAria} role="img" />
         {status !== "ready" && (
-          <div aria-live="polite" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--slate)", pointerEvents: "none", fontSize: 12.5 }}>
+          <div aria-live="polite" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--cool)", color: "var(--slate)", pointerEvents: "none", fontSize: "0.78125rem" }}>
             {status === "error" ? t.mapUnavailable : t.loadingMap}
           </div>
         )}
       </div>
       <div className="row" style={{ gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.thisSpace}</span>
-        {metro ? <span className="row gap6" style={{ fontSize: 11.5, color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.metroDot}</span> : null}
+        <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.thisSpace}</span>
+        {metro ? <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.metroDot}</span> : null}
       </div>
-      <div style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 10 }}>
+      <div style={{ fontSize: "0.78125rem", color: "var(--slate)", marginTop: 10 }}>
         {exact ? t.exact : t.district}
       </div>
       {primaryShown.length > 0 && (
@@ -210,16 +210,16 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
       )}
       {lessShown.length > 0 && (
         <div style={{ marginTop: 14 }}>
-          <div className="mono muted" style={{ fontSize: 10.5, letterSpacing: ".08em", textTransform: "uppercase" }}>{t.less}</div>
+          <div className="mono muted" style={{ fontSize: "0.65625rem", letterSpacing: ".08em", textTransform: "uppercase" }}>{t.less}</div>
           {lessShown.map((k) => (
-            <div key={"l" + k} style={{ fontSize: 12.5, color: "var(--slate)", marginTop: 6 }}>
+            <div key={"l" + k} style={{ fontSize: "0.78125rem", color: "var(--slate)", marginTop: 6 }}>
               <span style={{ fontWeight: 500, color: "var(--ink)" }}>{lessLabel(k)}.</span> {lessReason(k)}
             </div>
           ))}
         </div>
       )}
-      <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{d.ld.locNote}</div>
-      <div className="mono muted" style={{ fontSize: 10.5, marginTop: 8 }}>{[metro ? t.srcMetro : null, rail ? t.srcRail : null, t.srcComputed, ...travelAttribution].filter(Boolean).join(" ")}</div>
+      <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.6, marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{d.ld.locNote}</div>
+      <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 8 }}>{[metro ? t.srcMetro : null, rail ? t.srcRail : null, t.srcComputed, ...travelAttribution].filter(Boolean).join(" ")}</div>
     </div>
   );
 }

@@ -130,16 +130,16 @@ export default async function MarketPage({ params }: { params: { locale: string 
         spatialCoverage: t.datasetCoverage,
       }} />
       <div className="eyebrow">{t.eyebrow}</div>
-      <h1 className="serif" style={{ fontSize: 34, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{t.h1}</h1>
-      <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 660, lineHeight: 1.6 }}>{t.intro}</p>
+      <h1 className="serif" style={{ fontSize: "2.125rem", fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0" }}>{t.h1}</h1>
+      <p className="muted" style={{ marginTop: 8, fontSize: "0.90625rem", maxWidth: 660, lineHeight: 1.6 }}>{t.intro}</p>
 
       <div style={{ marginTop: 22 }}><WatchBanner locale={params.locale as "en" | "ar"} /></div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginTop: 26 }}>
         {tiles.map((t, i) => (
           <div key={i} className="card" style={{ padding: "18px 20px" }}>
-            <div className="mono" style={{ fontSize: 28, fontWeight: 700, color: "var(--harbor)", letterSpacing: "-.02em" }}>{t[0]}</div>
-            <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{t[1]}</div>
+            <div className="mono" style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--harbor)", letterSpacing: "-.02em" }}>{t[0]}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", marginTop: 4 }}>{t[1]}</div>
           </div>
         ))}
       </div>
@@ -147,8 +147,8 @@ export default async function MarketPage({ params }: { params: { locale: string 
       {bandRows.length > 0 && (
         <section className="card" style={{ marginTop: 26, padding: "22px 24px" }}>
           <div className="row between wrap" style={{ alignItems: "baseline", gap: 10 }}>
-            <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.bandsTitle}</h2>
-            <span className="mono muted" style={{ fontSize: 11.5 }}>{(period || "") + t.bandsUnit}</span>
+            <h2 className="serif" style={{ fontSize: "1.3125rem", fontWeight: 500, margin: 0 }}>{t.bandsTitle}</h2>
+            <span className="mono muted" style={{ fontSize: "0.71875rem" }}>{(period || "") + t.bandsUnit}</span>
           </div>
           <div style={{ marginTop: 18 }}>
             {bandRows.map((r, i) => {
@@ -157,12 +157,12 @@ export default async function MarketPage({ params }: { params: { locale: string 
               const medPos = ((r.med - bandMin) / span) * 100;
               return (
                 <div key={i} className="row gap10" style={{ alignItems: "center", padding: "7px 0" }}>
-                  <span style={{ width: 150, flex: "none", fontSize: 12.5, fontWeight: 600 }}>{r.label}</span>
+                  <span style={{ width: 150, flex: "none", fontSize: "0.78125rem", fontWeight: 600 }}>{r.label}</span>
                   <div style={{ position: "relative", flex: 1, height: 14, background: "var(--cool)", borderRadius: 7 }}>
                     <span style={{ position: "absolute", insetInlineStart: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: "rgba(58,110,165,.28)", borderRadius: 7 }} />
                     <span style={{ position: "absolute", insetInlineStart: `calc(${medPos}% - 4px)`, top: 2, width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)" }} />
                   </div>
-                  <span className="mono" style={{ width: 118, flex: "none", fontSize: 11.5, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{/* PKG-FIG1, finding 127. This line branched the separator itself, one of
+                  <span className="mono" style={{ width: 118, flex: "none", fontSize: "0.71875rem", color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{/* PKG-FIG1, finding 127. This line branched the separator itself, one of
                       six places that did, which is how the tree ended up with four
                       spellings of one range. `formatRange` owns it. */}
                   {formatRange(r.low, r.high, ar ? "ar" : "en", 0)} · <b style={{ color: "var(--harbor)" }}>{nf(r.med)}</b></span>
@@ -170,23 +170,23 @@ export default async function MarketPage({ params }: { params: { locale: string 
               );
             })}
           </div>
-          <div className="muted" style={{ fontSize: 11.5, marginTop: 12 }}>{t.bandsCaption}</div>
+          <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 12 }}>{t.bandsCaption}</div>
           {/* Every figure on this page is derived from the same set of rows, so
               the sentence that governs them is stated once, beneath the chart
               that shows the most of them. */}
           {idxStatements.map((s) => (
-            <div key={s} className="muted" style={{ fontSize: 11.5, marginTop: 6, lineHeight: 1.7 }}>{s}</div>
+            <div key={s} className="muted" style={{ fontSize: "0.71875rem", marginTop: 6, lineHeight: 1.7 }}>{s}</div>
           ))}
         </section>
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 18, marginTop: 18 }}>
         <section className="card" style={{ padding: "22px 24px" }}>
-          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.supplyTitle}</h2>
+          <h2 className="serif" style={{ fontSize: "1.3125rem", fontWeight: 500, margin: 0 }}>{t.supplyTitle}</h2>
           <div style={{ marginTop: 16 }}>
             {assetMix.map(([a, n], i) => (
               <div key={i} className="row gap10" style={{ alignItems: "center", padding: "6px 0" }}>
-                <span style={{ width: 120, flex: "none", fontSize: 12.5 }}>{assetLabel(a, locale)}</span>
+                <span style={{ width: 120, flex: "none", fontSize: "0.78125rem" }}>{assetLabel(a, locale)}</span>
                 <div style={{ flex: 1, height: 10, background: "var(--cool)", borderRadius: 5 }}>
                   <span style={{ display: "block", width: `${Math.max((n / assetMax) * 100, 3)}%`, height: "100%", background: "var(--harbor)", borderRadius: 5, opacity: 0.85 }} />
                 </div>
@@ -195,22 +195,22 @@ export default async function MarketPage({ params }: { params: { locale: string 
             ))}
           </div>
           <div className="row gap10" style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--silver)", alignItems: "center" }}>
-            <span className="muted" style={{ fontSize: 12.5, flex: "none" }}>{t.dealsLabel}</span>
+            <span className="muted" style={{ fontSize: "0.78125rem", flex: "none" }}>{t.dealsLabel}</span>
             <div style={{ flex: 1, height: 10, borderRadius: 5, overflow: "hidden", display: "flex" }}>
               <span style={{ width: `${listings.length ? (leaseN / listings.length) * 100 : 50}%`, background: "var(--harbor)" }} />
               <span style={{ flex: 1, background: "rgba(58,110,165,.25)" }} />
             </div>
-            <span className="mono" style={{ fontSize: 11.5, color: "var(--slate)", flex: "none" }}>{fill(t.leaseSaleSplit, { lease: nf(leaseN), sale: nf(saleN) })}</span>
+            <span className="mono" style={{ fontSize: "0.71875rem", color: "var(--slate)", flex: "none" }}>{fill(t.leaseSaleSplit, { lease: nf(leaseN), sale: nf(saleN) })}</span>
           </div>
         </section>
 
         <section className="card" style={{ padding: "22px 24px" }}>
-          <h2 className="serif" style={{ fontSize: 21, fontWeight: 500, margin: 0 }}>{t.pricingTitle}</h2>
-          <p className="muted" style={{ fontSize: 12.5, marginTop: 6, lineHeight: 1.55 }}>{fill(t.quoteIntro, { count: formatCounted(graded, "leaseListing", locale) })}</p>
+          <h2 className="serif" style={{ fontSize: "1.3125rem", fontWeight: 500, margin: 0 }}>{t.pricingTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.78125rem", marginTop: 6, lineHeight: 1.55 }}>{fill(t.quoteIntro, { count: formatCounted(graded, "leaseListing", locale) })}</p>
           <div style={{ marginTop: 14 }}>
             {disc.map((d, i) => (
               <div key={i} style={{ padding: "8px 0" }}>
-                <div className="row between" style={{ fontSize: 12.5, marginBottom: 5 }}>
+                <div className="row between" style={{ fontSize: "0.78125rem", marginBottom: 5 }}>
                   <span style={{ fontWeight: 600 }}>{d.label}</span>
                   <span className="mono" style={{ color: d.c, fontWeight: 700 }}>{d.n} · {d.p}%</span>
                 </div>
@@ -220,7 +220,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
               </div>
             ))}
           </div>
-          <p className="muted" style={{ fontSize: 11.5, marginTop: 12, lineHeight: 1.55 }}>{t.pricingNote}</p>
+          <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 12, lineHeight: 1.55 }}>{t.pricingNote}</p>
         </section>
       </div>
 

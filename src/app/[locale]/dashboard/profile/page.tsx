@@ -51,8 +51,8 @@ export default async function ProfilePage({ params }: { params: { locale: string
     <div>
       <div className="row between wrap" style={{ alignItems: "flex-start", gap: 12, marginBottom: 18 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
-          <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>{t.sub}</div>
+          <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+          <div className="muted" style={{ fontSize: "0.8125rem", marginTop: 3 }}>{t.sub}</div>
         </div>
         <Link href={`/${lp}/lister/${a.id}`} className="chip" style={{ textDecoration: "none" }}><Icon.arrow size={15} /> {t.viewPublic}</Link>
       </div>
@@ -60,23 +60,23 @@ export default async function ProfilePage({ params }: { params: { locale: string
       <div className="dpanel" style={{ padding: 20 }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{t.name}</div>
-            <div style={{ fontSize: 14.5, fontWeight: 600, marginTop: 5 }}>{name}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.name}</div>
+            <div style={{ fontSize: "0.90625rem", fontWeight: 600, marginTop: 5 }}>{name}</div>
           </div>
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{t.type}</div>
-            <div style={{ fontSize: 13.5, marginTop: 6 }}>{t.typeLabels[a.type] || a.type}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.type}</div>
+            <div style={{ fontSize: "0.84375rem", marginTop: 6 }}>{t.typeLabels[a.type] || a.type}</div>
           </div>
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{t.verification}</div>
-            <div style={{ marginTop: 5 }}><span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: 13 }}>{verified ? t.verified : t.pending}</span></div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.verification}</div>
+            <div style={{ marginTop: 5 }}><span className={"statusdot " + (verified ? "ok" : "pend")} style={{ fontSize: "0.8125rem" }}>{verified ? t.verified : t.pending}</span></div>
           </div>
         </div>
-        <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.identityNote}</div>
+        <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.identityNote}</div>
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
-        <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 14 }}>{t.edit}</div>
+        <div style={{ fontSize: "0.90625rem", fontWeight: 700, marginBottom: 14 }}>{t.edit}</div>
         <ProfileForm
           locale={lp}
           init={{

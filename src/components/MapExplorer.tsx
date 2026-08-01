@@ -313,7 +313,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
    {!ready && (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-ivory-2/80 backdrop-blur-sm">
      <div className="h-7 w-7 animate-spin rounded-full border-2 border-signal/30 border-t-signal" />
-     <span className="text-[12.5px] text-charcoal/65">{L.loading}</span>
+     <span className="text-[0.78125rem] text-charcoal/65">{L.loading}</span>
     </div>
    )}
 
@@ -323,41 +323,41 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     <div className="flex flex-wrap items-center gap-2">
      <div className="pointer-events-auto inline-flex rounded-full border border-line bg-white/95 p-0.5 shadow-sm backdrop-blur">
       {(["pins", "heat", "zone"] as Mode[]).map((m) => (
-       <button key={m} onClick={() => setMode(m)} className={`rounded-full px-3 py-1 text-[12px] transition ${mode === m ? "bg-signal text-white" : "text-charcoal/65 hover:text-charcoal"}`}>{L[m]}</button>
+       <button key={m} onClick={() => setMode(m)} className={`rounded-full px-3 py-1 text-[0.75rem] transition ${mode === m ? "bg-signal text-white" : "text-charcoal/65 hover:text-charcoal"}`}>{L[m]}</button>
       ))}
      </div>
      {mode === "zone" && zoneCount != null && (
-      <span className="pointer-events-auto rounded-full bg-signal px-3 py-1 text-[12px] text-white shadow-sm">{zoneCount} {L.inZone}</span>
+      <span className="pointer-events-auto rounded-full bg-signal px-3 py-1 text-[0.75rem] text-white shadow-sm">{zoneCount} {L.inZone}</span>
      )}
      {mode === "zone" && (
-      <button onClick={clearZone} className="pointer-events-auto rounded-full border border-line bg-white/95 px-3 py-1 text-[12px] text-charcoal/65 shadow-sm backdrop-blur hover:text-charcoal">{L.clear}</button>
+      <button onClick={clearZone} className="pointer-events-auto rounded-full border border-line bg-white/95 px-3 py-1 text-[0.75rem] text-charcoal/65 shadow-sm backdrop-blur hover:text-charcoal">{L.clear}</button>
      )}
     </div>
     {/* asset chips (hidden in zone draw to reduce clutter) */}
     {mode !== "zone" && (
      <div className="chip-rail map-rail pointer-events-auto flex items-center gap-1.5 overflow-x-auto lg:flex-wrap lg:overflow-visible [&>button]:shrink-0" style={{ maxWidth: "100%" }}>
-      <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === "all" ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
+      <button onClick={() => setActive("all")} className={`pointer-events-auto rounded-full border px-3 py-1 text-[0.75rem] shadow-sm backdrop-blur transition ${active === "all" ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>{t.all}</button>
       {assetOrder.map((a) => (
-       <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[12px] shadow-sm backdrop-blur transition ${active === a ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
+       <button key={a} onClick={() => setActive(a)} className={`pointer-events-auto flex items-center gap-1.5 rounded-full border px-3 py-1 text-[0.75rem] shadow-sm backdrop-blur transition ${active === a ? "border-signal bg-signal text-white" : "border-line bg-white/90 text-charcoal/70 hover:border-signal/50"}`}>
         <span className="inline-block h-2 w-2 rounded-full" style={{ background: COLORS[a] || BRAND.clusterNeutral }} />{assetLabels[a] || a}
        </button>
       ))}
      </div>
     )}
     {mode === "zone" && zoneCount == null && (
-     <div className="pointer-events-none max-w-sm rounded-xl bg-charcoal/85 px-3 py-2 text-[12px] leading-snug text-ivory backdrop-blur">{L.drawHint}</div>
+     <div className="pointer-events-none max-w-sm rounded-xl bg-charcoal/85 px-3 py-2 text-[0.75rem] leading-snug text-ivory backdrop-blur">{L.drawHint}</div>
     )}
    </div>
 
    {/* result count (desktop; on mobile the carousel implies the set) */}
    {ready && mode !== "zone" && (
-    <div className="pointer-events-none absolute bottom-3 start-3 z-10 hidden rounded-full bg-charcoal/85 px-3 py-1 text-[11px] text-ivory backdrop-blur sm:block">{shown} {t.results}</div>
+    <div className="pointer-events-none absolute bottom-3 start-3 z-10 hidden rounded-full bg-charcoal/85 px-3 py-1 text-[0.6875rem] text-ivory backdrop-blur sm:block">{shown} {t.results}</div>
    )}
 
    {/* mobile synced carousel: swipe cards -> map pans, tap a pin -> rail scrolls */}
    {ready && mode === "pins" && inView.length > 0 && (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 sm:hidden">
-     <div className="mx-3 mb-1.5 inline-flex rounded-full bg-charcoal/80 px-2.5 py-0.5 text-[10px] text-ivory backdrop-blur">{L.swipeHint}</div>
+     <div className="mx-3 mb-1.5 inline-flex rounded-full bg-charcoal/80 px-2.5 py-0.5 text-[0.625rem] text-ivory backdrop-blur">{L.swipeHint}</div>
      <div ref={railRef} onScroll={onRailScroll} className="map-rail pointer-events-auto flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-3 pb-3" style={{ WebkitOverflowScrolling: "touch" }}>
       {inView.map((b) => {
        const on = b.id === selId;
@@ -368,20 +368,20 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
          <div className={`flex overflow-hidden rounded-2xl border bg-white shadow-lift transition ${on ? "border-signal ring-2 ring-signal/35" : "border-line"}`}>
           <img src={photoFor(b.asset, b.id)} alt="" className="h-[96px] w-[96px] shrink-0 object-cover" />
           <div className="min-w-0 flex-1 p-2.5">
-           <div className="truncate font-display text-[14px] leading-tight text-charcoal">{b.name}</div>
-           <div className="mt-0.5 truncate text-[11.5px] text-charcoal/65">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
+           <div className="truncate font-display text-[0.875rem] leading-tight text-charcoal">{b.name}</div>
+           <div className="mt-0.5 truncate text-[0.71875rem] text-charcoal/65">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
            {b.band != null ? (
             <div className="mt-1 flex items-baseline gap-1">
-             <span className="font-display text-[16px] text-charcoal">{fig(b.band)}</span>
-             <span className="text-[10px] text-charcoal/65">{unitFmt(b.unit, locale)}</span>
+             <span className="font-display text-[1rem] text-charcoal">{fig(b.band)}</span>
+             <span className="text-[0.625rem] text-charcoal/65">{unitFmt(b.unit, locale)}</span>
             </div>
-           ) : (<div className="mt-1 text-[11px] text-charcoal/65">{t.noData}</div>)}
+           ) : (<div className="mt-1 text-[0.6875rem] text-charcoal/65">{t.noData}</div>)}
            {b.band != null && b.bandNote ? (
-            <div className="mt-0.5 text-[10px] leading-snug text-charcoal/65">{b.bandNote}</div>
+            <div className="mt-0.5 text-[0.625rem] leading-snug text-charcoal/65">{b.bandNote}</div>
            ) : null}
            <div className="mt-1 flex items-center justify-between">
-            <span className="text-[11px] text-charcoal/70">{b.listings} {t.available}</span>
-            <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
+            <span className="text-[0.6875rem] text-charcoal/70">{b.listings} {t.available}</span>
+            <a href={`/${locale}/building/${b.id}`} className="text-[0.71875rem] font-medium text-signal">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
            </div>
           </div>
          </div>
@@ -399,24 +399,24 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
       <div className="relative h-32">
        <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
        <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
-       <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[10px] text-white" style={{ background: COLORS[sel.asset] || BRAND.clusterNeutral }}>{sel.assetLabel}</span>
+       <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[0.625rem] text-white" style={{ background: COLORS[sel.asset] || BRAND.clusterNeutral }}>{sel.assetLabel}</span>
       </div>
       <div className="p-4">
-       <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
-       <div className="mt-1 text-[12.5px] text-charcoal/65">{sel.place}{sel.size ? " · " + fig(sel.size) + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
+       <h3 className="font-display text-[1.0625rem] leading-snug text-charcoal">{sel.name}</h3>
+       <div className="mt-1 text-[0.78125rem] text-charcoal/65">{sel.place}{sel.size ? " · " + fig(sel.size) + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
        {sel.band != null ? (
         <div className="mt-3 rounded-xl border border-line bg-ivory-2/50 p-3">
-         <div className="text-[10px] uppercase tracking-wide text-charcoal/65">{t.rentBand}</div>
+         <div className="text-[0.625rem] uppercase tracking-wide text-charcoal/65">{t.rentBand}</div>
          <div className="mt-0.5 flex items-baseline gap-2">
           <span className="font-display text-2xl text-charcoal">{fig(sel.band)}</span>
-          <span className="text-[11px] text-charcoal/65">{sel.bandLow != null && sel.bandHigh != null ? formatRange(sel.bandLow, sel.bandHigh, locale, 0) + " · " : ""}{unitFmt(sel.unit, locale)}</span>
+          <span className="text-[0.6875rem] text-charcoal/65">{sel.bandLow != null && sel.bandHigh != null ? formatRange(sel.bandLow, sel.bandHigh, locale, 0) + " · " : ""}{unitFmt(sel.unit, locale)}</span>
          </div>
-         {sel.bandNote ? <div className="mt-1 text-[11px] leading-snug text-charcoal/65">{sel.bandNote}</div> : null}
+         {sel.bandNote ? <div className="mt-1 text-[0.6875rem] leading-snug text-charcoal/65">{sel.bandNote}</div> : null}
         </div>
-       ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/65">{t.noData}</div>)}
+       ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[0.75rem] text-charcoal/65">{t.noData}</div>)}
        <div className="mt-3 flex items-center justify-between">
-        <span className="text-[12.5px] text-charcoal/70">{sel.listings} {t.available}</span>
-        <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-signal hover:underline">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
+        <span className="text-[0.78125rem] text-charcoal/70">{sel.listings} {t.available}</span>
+        <a href={`/${locale}/building/${sel.id}`} className="text-[0.78125rem] font-medium text-signal hover:underline">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
        </div>
       </div>
      </div>

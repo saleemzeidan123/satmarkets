@@ -350,7 +350,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
         <div>
           <div className="eyebrow">{dl.exchange}</div>
-          <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>
+          <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>
         </div>
         <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
@@ -367,7 +367,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           <input key={k} type="hidden" name={k} value={v} />
         ))}
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <input name="q" defaultValue={searchParams.q || ""} aria-label={dl.searchPlaceholder} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
+        <input name="q" defaultValue={searchParams.q || ""} aria-label={dl.searchPlaceholder} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: "0.875rem", color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{dl.search}</button>
       </form>
       {/* ------------------------------------------------- the transparency row
@@ -376,7 +376,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           answer to. Every reading is shown back, and every one can be taken away. */}
       {parsedFull && (
         <div className="row gap8 wrap" style={{ marginTop: 10, alignItems: "center" }}>
-          {qChips.length > 0 && <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{dl.qUnderstood}:</span>}
+          {qChips.length > 0 && <span className="muted" style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{dl.qUnderstood}:</span>}
           {qChips.map((c) => (
             <Link key={c.key} href={qxHref(c.key)} className="chip on" style={{ textDecoration: "none" }} aria-label={fill(dl.qRemove, { what: c.label })}>
               {c.label} <span aria-hidden="true">✕</span>
@@ -384,17 +384,17 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           ))}
           {/* Only when the parser genuinely understood nothing. A person who has
               withdrawn every chip themselves is not owed an explanation of why. */}
-          {parsedFull.empty && <span className="muted" style={{ fontSize: 12.5 }}>{dl.qNothing}</span>}
-          <Link href={qClearHref} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dl.qClearSearch}</Link>
+          {parsedFull.empty && <span className="muted" style={{ fontSize: "0.78125rem" }}>{dl.qNothing}</span>}
+          <Link href={qClearHref} className="muted" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dl.qClearSearch}</Link>
         </div>
       )}
       {parsedFull && parsedFull.ignored.length > 0 && (
-        <p className="muted" style={{ marginTop: 6, fontSize: 12, lineHeight: 1.6, maxWidth: 720 }}>
+        <p className="muted" style={{ marginTop: 6, fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 720 }}>
           {fill(dl.qNotUsed, { what: parsedFull.ignored.join(ar ? "، " : ", ") })} {dl.qNotUsedWhy}
         </p>
       )}
       {qSizeT != null && (
-        <p className="muted" style={{ marginTop: 4, fontSize: 12, lineHeight: 1.6 }}>{fill(dl.qOrderedBySize, { v: formatArea(qSizeT, locale) })}</p>
+        <p className="muted" style={{ marginTop: 4, fontSize: "0.75rem", lineHeight: 1.6 }}>{fill(dl.qOrderedBySize, { v: formatArea(qSizeT, locale) })}</p>
       )}
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
         <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
@@ -404,11 +404,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           {Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
-          <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {dl.assetFilters}:</span>
+          <span className="muted" style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {dl.assetFilters}:</span>
           {facets.map((f) => {
             const cur = String((searchParams as Record<string, string | undefined>)[`f_${f.key}`] ?? "");
             const lbl = fieldLabel(f, locale);
-            const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", color: "var(--ink)" } as const;
+            const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: "0.8125rem", background: "#fff", color: "var(--ink)" } as const;
             if (f.type === "number" || f.type === "integer") {
               /* ELITE-4 J3-20: named by placeholder only, so unnamed once filled in. */
               return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} aria-label={`${lbl} ${dl.minimum}`} placeholder={`${lbl} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
@@ -427,7 +427,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           })}
           <button type="submit" className="btn primary" style={{ height: 34 }}>{dl.apply}</button>
           {facets.some((f) => (searchParams as Record<string, string | undefined>)[`f_${f.key}`]) && (
-            <a href={`/${locale}/listings?${Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`} className="muted" style={{ fontSize: 12.5, textDecoration: "none" }}>{dl.clear}</a>
+            <a href={`/${locale}/listings?${Object.entries(fparams).filter(([k]) => !k.startsWith("f_")).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&")}`} className="muted" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dl.clear}</a>
           )}
         </form>
       )}
@@ -437,8 +437,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       {(searchParams.district || searchParams.place || searchParams.city) && crumbLoc && (
         <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
-          <span style={{ fontWeight: 700, fontSize: 14, color: "var(--ink)" }}>{crumbLoc}</span>
-          <span className="muted" style={{ fontSize: 13 }}>· {formatCounted(shown.length, "space", locale)}</span>
+          <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--ink)" }}>{crumbLoc}</span>
+          <span className="muted" style={{ fontSize: "0.8125rem" }}>· {formatCounted(shown.length, "space", locale)}</span>
           <span style={{ flex: 1 }} />
           <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{dl.clear} ✕</Link>
         </div>
@@ -449,7 +449,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             said "مساحة" where this said "عرض". One counted noun answers both. */}
         {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
             and no announcement, so this count is the only thing that says it worked. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: 13 }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
           <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.properties}</Link>
           <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.insights}</Link>
@@ -461,11 +461,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
       {insightsView ? (
         <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)" }}>
           <div className="row between" style={{ padding: "14px 18px", borderBottom: "1px solid var(--silver)" }}>
-            <div style={{ fontSize: 14.5, fontWeight: 700 }}>{dl.indexCut}</div>
+            <div style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{dl.indexCut}</div>
             <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{dl.fullIndex}</Link>
           </div>
           {idx.length === 0 ? (
-            <p className="muted" style={{ padding: 18, margin: 0, fontSize: 13.5 }}>{dl.noSegments}</p>
+            <p className="muted" style={{ padding: 18, margin: 0, fontSize: "0.84375rem" }}>{dl.noSegments}</p>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 520 }}>
@@ -503,7 +503,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
               </table>
             </div>
           )}
-          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: 12 }}>
+          <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: "0.75rem" }}>
             {dl.sampleDisclaimer}
             {idxStatements.map((s) => (
               <div key={s} style={{ marginTop: 6, lineHeight: 1.7 }}>{s}</div>
@@ -540,7 +540,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? formatNumber(Number(price), locale) : dl.onRequest}<small> {formatUnit(l.deal_type === "lease" ? "sar_sqm_year" : "sar", locale, "short")}</small></div>
                       <div className="ttl">{listingTitle(l, ar ? "ar" : "en")}</div>
                       <div className="meta"><span>{dn || rcity}</span><i /><span>{formatArea(l.area_sqm, locale)}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
-                      {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
+                      {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: "0.65625rem", letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
                       {/* Finding 46. The label states the freshness in words and
                           carries the age, so the dot is decoration and stays
                           aria-hidden. The reserved verification green is gone from
@@ -553,7 +553,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                         return (
                           <div className="row gap6" style={{ marginTop: 5, alignItems: "flex-start" }}>
                             <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto", marginTop: 4 }} />
-                            <span className="mono" style={{ fontSize: 10.5, letterSpacing: ".02em", lineHeight: 1.35, color: c }}>{availabilityShortLabel(av, ar)}</span>
+                            <span className="mono" style={{ fontSize: "0.65625rem", letterSpacing: ".02em", lineHeight: 1.35, color: c }}>{availabilityShortLabel(av, ar)}</span>
                           </div>
                         );
                       })()}

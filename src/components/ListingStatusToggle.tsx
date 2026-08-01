@@ -69,11 +69,11 @@ export default function ListingStatusToggle({
         {busy ? t.working : status === "published" ? t.pause : t.resume}
       </button>
       {isBlocked && (
-        <span id={reasonId} style={{ color: "var(--slate)", fontSize: 11, maxWidth: 230, textAlign: "end", lineHeight: 1.5 }}>
+        <span id={reasonId} style={{ color: "var(--slate)", fontSize: "0.6875rem", maxWidth: 230, textAlign: "end", lineHeight: 1.5 }}>
           {t.cannot} {blocked}
         </span>
       )}
-      {err && <span role="alert" style={{ color: "var(--red)", fontSize: 11 }}>{err}</span>}
+      {err && <span role="alert" style={{ color: "var(--red)", fontSize: "0.6875rem" }}>{err}</span>}
     </div>
   );
 }

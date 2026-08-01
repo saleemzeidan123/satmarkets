@@ -46,16 +46,16 @@ export default function VerifyAccount({
   if (open) {
     return (
       <div style={{ minWidth: 260 }}>
-        <label htmlFor={`basis-${accountId}`} style={{ fontSize: 11.5, fontWeight: 600, display: "block", marginBottom: 4 }}>{t.basis}</label>
+        <label htmlFor={`basis-${accountId}`} style={{ fontSize: "0.71875rem", fontWeight: 600, display: "block", marginBottom: 4 }}>{t.basis}</label>
         <textarea
           id={`basis-${accountId}`}
           value={basis}
           onChange={(e) => setBasis(e.target.value)}
           placeholder={t.basisPh}
           rows={3}
-          style={{ width: "100%", border: "1px solid var(--silver)", borderRadius: 8, padding: "8px 10px", fontSize: 12.5, resize: "vertical" }}
+          style={{ width: "100%", border: "1px solid var(--silver)", borderRadius: 8, padding: "8px 10px", fontSize: "0.78125rem", resize: "vertical" }}
         />
-        {err && <div role="alert" style={{ color: "var(--red)", fontSize: 11.5, marginTop: 4 }}>{err}</div>}
+        {err && <div role="alert" style={{ color: "var(--red)", fontSize: "0.71875rem", marginTop: 4 }}>{err}</div>}
         <div className="row gap6" style={{ marginTop: 8 }}>
           <button type="button" className="btn primary sm" onClick={submit} disabled={busy}>{busy ? t.saving : t.save}</button>
           <button type="button" className="btn secondary sm" onClick={() => { setOpen(null); setErr(null); }}>{t.cancel}</button>

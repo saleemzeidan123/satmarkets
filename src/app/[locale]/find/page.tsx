@@ -278,11 +278,11 @@ export default function FindPage() {
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate">{t.needsNote}</p>
+            <p className="mt-2 text-[0.6875rem] leading-relaxed text-slate">{t.needsNote}</p>
           </div>
         )}
         <div className="col-span-2 sm:col-span-3">
-          <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "var(--on-brand)", padding: "11px 24px", borderRadius: 10, fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
+          <button type="submit" disabled={loading} style={{ background: "var(--ink, #0B2A4A)", color: "var(--on-brand)", padding: "11px 24px", borderRadius: 10, fontSize: "0.875rem", fontWeight: 600, border: "none", cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
             {loading ? T.loading : T.go}
           </button>
         </div>
@@ -322,7 +322,7 @@ export default function FindPage() {
                 ) : (
                   chip(r.verdict)
                 )}
-                <span className="text-[11px] text-slate">{r.fit_score}% {T.fit}</span>
+                <span className="text-[0.6875rem] text-slate">{r.fit_score}% {T.fit}</span>
               </div>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-slate">
@@ -336,7 +336,7 @@ export default function FindPage() {
             behind, because a label further from the figure than this is a label
             a reader can miss. */}
         {rows && rows.length > 0 && idxNotes.map((note) => (
-          <p key={note} className="text-[11px] leading-relaxed text-slate">{note}</p>
+          <p key={note} className="text-[0.6875rem] leading-relaxed text-slate">{note}</p>
         ))}
       </div>
     </main>

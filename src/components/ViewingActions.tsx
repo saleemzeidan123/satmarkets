@@ -17,14 +17,14 @@ export default function ViewingActions({ id, status }: { id: string; status: str
       if (j?.ok) { location.reload(); } else { setMsg(j?.error || "error"); setBusy(false); }
     } catch { setMsg("network error"); setBusy(false); }
   }
-  const btn = (color: string): CSSProperties => ({ fontSize: 11, padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "var(--paper)", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1, whiteSpace: "nowrap" });
+  const btn = (color: string): CSSProperties => ({ fontSize: "0.6875rem", padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "var(--paper)", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1, whiteSpace: "nowrap" });
   return (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {status === "requested" && <button disabled={busy} onClick={() => act("confirmed")} style={btn("var(--harbor-d)")}>Confirm</button>}
       {status === "requested" && <button disabled={busy} onClick={() => act("cancelled")} style={btn("var(--red)")}>Decline</button>}
       {status === "confirmed" && <button disabled={busy} onClick={() => act("completed")} style={btn("var(--harbor-d)")}>Completed</button>}
       {status === "confirmed" && <button disabled={busy} onClick={() => act("no_show")} style={btn("var(--amber-d)")}>No-show</button>}
-      {msg && <span style={{ fontSize: 11, color: "var(--red)" }}>{msg}</span>}
+      {msg && <span style={{ fontSize: "0.6875rem", color: "var(--red)" }}>{msg}</span>}
     </span>
   );
 }

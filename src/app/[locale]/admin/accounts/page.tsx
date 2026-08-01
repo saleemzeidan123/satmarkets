@@ -66,10 +66,10 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
           <span style={{ color: "var(--harbor)" }}><Icon.chart size={17} /></span>
           <span className="t">{t.title}</span>
           <span style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 11.5 }}>{rows.length}</span>
+          <span className="muted" style={{ fontSize: "0.71875rem" }}>{rows.length}</span>
         </div>
         {rows.length === 0 ? (
-          <div className="muted" style={{ padding: "22px 20px", fontSize: 12.5 }}>{t.empty}</div>
+          <div className="muted" style={{ padding: "22px 20px", fontSize: "0.78125rem" }}>{t.empty}</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table className="dt" style={{ minWidth: 720 }}>
@@ -89,14 +89,14 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                   return (
                     <tr key={a.id}>
                       <td>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{nm}</div>
-                        {a.legal_name && a.legal_name !== nm && <div className="muted" style={{ fontSize: 11.5 }}>{a.legal_name}</div>}
+                        <div style={{ fontWeight: 600, fontSize: "0.8125rem" }}>{nm}</div>
+                        {a.legal_name && a.legal_name !== nm && <div className="muted" style={{ fontSize: "0.71875rem" }}>{a.legal_name}</div>}
                       </td>
-                      <td className="muted" style={{ fontSize: 12.5 }}>{t.types[a.type] || a.type}</td>
-                      <td className="mono muted" style={{ fontSize: 11.5 }}>{a.cr_number || t.noCr}</td>
+                      <td className="muted" style={{ fontSize: "0.78125rem" }}>{t.types[a.type] || a.type}</td>
+                      <td className="mono muted" style={{ fontSize: "0.71875rem" }}>{a.cr_number || t.noCr}</td>
                       <td className="num mono" style={{ fontWeight: 600 }}>{counts.get(a.id) || 0}</td>
-                      <td><span className={"statusdot " + (ok ? "ok" : "pend")} style={{ fontSize: 12 }}>{ok ? t.verified : t.pending}</span></td>
-                      <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(a.created_at, ar)}</td>
+                      <td><span className={"statusdot " + (ok ? "ok" : "pend")} style={{ fontSize: "0.75rem" }}>{ok ? t.verified : t.pending}</span></td>
+                      <td className="num mono muted" style={{ fontSize: "0.71875rem" }}>{stamp(a.created_at, ar)}</td>
                       <td className="num">
                         <VerifyAccount
                           accountId={a.id}
@@ -112,7 +112,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
             </table>
           </div>
         )}
-        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
+        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
       </div>
 
       {/* The ledger behind the badge. Append-only: no update and no delete policy
@@ -123,10 +123,10 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
           <span style={{ color: "var(--harbor)" }}><Icon.shield size={17} /></span>
           <span className="t">{t.ledgerT}</span>
           <span style={{ flex: 1 }} />
-          <span className="muted" style={{ fontSize: 11.5 }}>{(events || []).length}</span>
+          <span className="muted" style={{ fontSize: "0.71875rem" }}>{(events || []).length}</span>
         </div>
         {!events || events.length === 0 ? (
-          <div className="muted" style={{ padding: "22px 20px 24px", fontSize: 12.5, lineHeight: 1.7, maxWidth: 560 }}>{t.ledgerEmpty}</div>
+          <div className="muted" style={{ padding: "22px 20px 24px", fontSize: "0.78125rem", lineHeight: 1.7, maxWidth: 560 }}>{t.ledgerEmpty}</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table className="dt" style={{ minWidth: 700 }}>
@@ -138,12 +138,12 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                   return (
                     <tr key={e.id}>
                       <td>
-                        <div style={{ fontWeight: 600, fontSize: 12.5 }}>{e.actor_email || ""}</div>
-                        <div className="muted" style={{ fontSize: 11.5 }}>{nm}</div>
+                        <div style={{ fontWeight: 600, fontSize: "0.78125rem" }}>{e.actor_email || ""}</div>
+                        <div className="muted" style={{ fontSize: "0.71875rem" }}>{nm}</div>
                       </td>
-                      <td className="mono" style={{ fontSize: 11.5 }}>{e.from_status} {ar ? "←" : "→"} <strong>{e.to_status}</strong></td>
-                      <td className="muted" style={{ fontSize: 12, lineHeight: 1.6, maxWidth: 320 }}>{e.basis}</td>
-                      <td className="num mono muted" style={{ fontSize: 11.5 }}>{stamp(e.created_at, ar)}</td>
+                      <td className="mono" style={{ fontSize: "0.71875rem" }}>{e.from_status} {ar ? "←" : "→"} <strong>{e.to_status}</strong></td>
+                      <td className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 320 }}>{e.basis}</td>
+                      <td className="num mono muted" style={{ fontSize: "0.71875rem" }}>{stamp(e.created_at, ar)}</td>
                     </tr>
                   );
                 })}

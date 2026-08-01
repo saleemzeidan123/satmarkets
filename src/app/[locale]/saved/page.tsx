@@ -111,7 +111,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
     const pct = Math.round(((c.now - c.was) / c.was) * 100);
     const down = c.now < c.was;
     return (
-      <span className="fig block text-[11px] font-semibold" style={{ color: down ? "var(--dv-quote-below)" : "var(--dv-quote-above)" }}>
+      <span className="fig block text-[0.6875rem] font-semibold" style={{ color: down ? "var(--dv-quote-below)" : "var(--dv-quote-above)" }}>
         {`${T.wasWord} ${c.was.toLocaleString("en-US")} · ${down ? T.downWord : T.upWord} ${Math.abs(pct)}%`}
       </span>
     );
@@ -127,11 +127,11 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
           <h1 className="mt-1 font-display text-3xl text-charcoal">{T.title} {!loading && listings.length > 0 ? <span className="fig text-charcoal">· {listings.length}</span> : null}</h1>
           <p className="mt-1 text-charcoal/70">{T.sub}</p>
         </div>
-        {listings.length > 0 ? <button onClick={clearAll} className="btn-ghost px-3.5 py-2 text-[13px] text-charcoal/70">{T.clear}</button> : null}
+        {listings.length > 0 ? <button onClick={clearAll} className="btn-ghost px-3.5 py-2 text-[0.8125rem] text-charcoal/70">{T.clear}</button> : null}
       </div>
 
       {pxCount > 0 && (
-        <div className="mt-5 rounded-xl border border-line bg-white/80 px-4 py-3 text-[13px] text-charcoal">
+        <div className="mt-5 rounded-xl border border-line bg-white/80 px-4 py-3 text-[0.8125rem] text-charcoal">
           {ar ? `تغيّرت أسعار ${pxCount} من مساحاتك المحفوظة منذ زيارتك الأخيرة. التفاصيل تحت كل سعر.` : `${pxCount} of your saved ${pxCount === 1 ? "space has" : "spaces have"} changed price since your last visit. Details under each price.`}
         </div>
       )}
@@ -152,7 +152,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
             {folderNames.map((n) => (
               <button key={n} onClick={() => setActiveFolder(n)} className={activeFolder === n ? "chip on" : "chip"}>{n} · {listings.filter((l) => folders[l.id] === n).length}</button>
             ))}
-            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/65">{onAccount ? T.fAccount : T.fDevice}</span>}
+            {folderNames.length > 0 && <span className="text-[0.6875rem] text-charcoal/65">{onAccount ? T.fAccount : T.fDevice}</span>}
           </div>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {shownL.map((l) => (
@@ -167,7 +167,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                       e.target.value = folders[l.id] || "";
                     } else setFolder(l.id, e.target.value);
                   }}
-                  className="mt-2 w-full rounded-lg border border-line bg-white px-2.5 py-1.5 text-[12.5px] text-charcoal/70"
+                  className="mt-2 w-full rounded-lg border border-line bg-white px-2.5 py-1.5 text-[0.78125rem] text-charcoal/70"
                 >
                   <option value="">{T.fNone}</option>
                   {folderNames.map((n) => (<option key={n} value={n}>{n}</option>))}
@@ -180,7 +180,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-display text-xl text-charcoal">{T.compare}</h2>
               {shownL.length >= 2 && (
-                <Link href={`/${locale}/compare?ids=${shownL.slice(0, 4).map((l) => l.id).join(",")}`} className="text-[13px] font-medium hover:underline" style={{ color: "var(--harbor)" }}>
+                <Link href={`/${locale}/compare?ids=${shownL.slice(0, 4).map((l) => l.id).join(",")}`} className="text-[0.8125rem] font-medium hover:underline" style={{ color: "var(--harbor)" }}>
                   {T.openCompare}
                 </Link>
               )}
@@ -189,8 +189,8 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-line">
-                    <th className="p-3 text-start text-[11px] uppercase tracking-wide text-charcoal/65"></th>
-                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
+                    <th className="p-3 text-start text-[0.6875rem] uppercase tracking-wide text-charcoal/65"></th>
+                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[0.875rem] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
                   </tr>
                 </thead>
                 <tbody className="text-charcoal/75">
@@ -205,7 +205,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
               </table>
             </div>
             {idxNotes.map((n) => (
-              <div key={n} className="px-3 pt-2 text-[11.5px] leading-relaxed text-charcoal/65">{n}</div>
+              <div key={n} className="px-3 pt-2 text-[0.71875rem] leading-relaxed text-charcoal/65">{n}</div>
             ))}
           </div>
         </>
@@ -215,7 +215,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (<tr className="border-b border-line/70"><td className="p-3 text-[11px] uppercase tracking-wide text-charcoal/65">{label}</td>{children}</tr>);
+  return (<tr className="border-b border-line/70"><td className="p-3 text-[0.6875rem] uppercase tracking-wide text-charcoal/65">{label}</td>{children}</tr>);
 }
 function Cell({ children }: { children: React.ReactNode }) {
   return (<td className="p-3 align-top">{children}</td>);

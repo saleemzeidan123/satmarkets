@@ -40,7 +40,7 @@ export default function LeadStatusControl({ id, locale, initial }: { id: string;
 
   return (
     <div>
-      <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 8 }}>{ar ? "الحالة" : "Status"}</div>
+      <div style={{ fontSize: "0.84375rem", fontWeight: 700, marginBottom: 8 }}>{ar ? "الحالة" : "Status"}</div>
       <div className="row gap8 wrap">
         {STATES.map((s) => {
           const on = status === s.v;
@@ -65,7 +65,7 @@ export default function LeadStatusControl({ id, locale, initial }: { id: string;
           );
         })}
       </div>
-      {err && <p style={{ fontSize: 12, color: "var(--red)", marginTop: 8, marginBottom: 0 }}>{err}</p>}
+      {err && <p style={{ fontSize: "0.75rem", color: "var(--red)", marginTop: 8, marginBottom: 0 }}>{err}</p>}
     </div>
   );
 }

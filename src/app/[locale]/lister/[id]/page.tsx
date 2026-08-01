@@ -103,43 +103,43 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
       <div className="card" style={{ padding: 22, boxShadow: "var(--sh-1)", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         {p.logo_url
           ? <img src={p.logo_url} alt={name} style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", flex: "none", border: "1px solid var(--silver)" }} />
-          : <span className="avatar" style={{ width: 64, height: 64, borderRadius: 12, fontSize: 22, background: "var(--harbor)", flex: "none" }}>{initials}</span>}
+          : <span className="avatar" style={{ width: 64, height: 64, borderRadius: 12, fontSize: "1.375rem", background: "var(--harbor)", flex: "none" }}>{initials}</span>}
         <div style={{ flex: 1, minWidth: 220 }}>
           <div className="row gap10 wrap" style={{ alignItems: "center" }}>
-            <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: 0 }}>{name}</h1>
+            <h1 className="serif" style={{ fontSize: "1.625rem", fontWeight: 500, margin: 0 }}>{name}</h1>
             <span className="tag">{role}</span>
             {identityVerified && <span className="verified"><span className="dot" />{verifiedBadgeText("identity", ar)}</span>}
           </div>
           {/* Verification is the whole brand: state plainly that SAT checked the
               identity, when the lister is verified. A binary fact, not a rank. */}
           {identityVerified && (
-            <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "var(--verified)", fontSize: 12.5 }}>
+            <div className="row gap6" style={{ marginTop: 8, alignItems: "center", color: "var(--verified)", fontSize: "0.78125rem" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
               <span style={{ fontWeight: 600 }}>{t.verifiedBy}</span>
             </div>
           )}
           {/* Dossier stat strip: facts true OF the lister. No ratings, no tiers. */}
-          <div className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center", fontSize: 13, color: "var(--slate)" }}>
+          <div className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center", fontSize: "0.8125rem", color: "var(--slate)" }}>
             <span style={{ color: "var(--ink)", fontWeight: 700 }}>{formatCounted(rows.length, "liveSpace", lp)}</span>
             {leaseCount > 0 && <><span aria-hidden="true">·</span><span>{leaseCount} {t.forLease}</span></>}
             {saleCount > 0 && <><span aria-hidden="true">·</span><span>{saleCount} {t.forSale}</span></>}
             {memberYear && <><span aria-hidden="true">·</span><span>{t.since} <bdi dir="ltr">{memberYear}</bdi></span></>}
           </div>
-          {about && <p className="muted" style={{ fontSize: 14, lineHeight: 1.7, marginTop: 12, maxWidth: 680 }}>{about}</p>}
-          <div className="row gap10 wrap" style={{ marginTop: 12, fontSize: 13 }}>
+          {about && <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, marginTop: 12, maxWidth: 680 }}>{about}</p>}
+          <div className="row gap10 wrap" style={{ marginTop: 12, fontSize: "0.8125rem" }}>
             {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}><Icon.pin size={14} /> {t.website}</a>}
             {p.public_phone && <a href={`tel:${p.public_phone}`} className="chip" style={{ textDecoration: "none" }}>{p.public_phone}</a>}
             {p.public_email && <a href={`mailto:${p.public_email}`} className="chip" style={{ textDecoration: "none" }}>{p.public_email}</a>}
           </div>
           {/* Neutrality disclosure: when the operator lists, say so plainly. */}
           {p.is_operator && (
-            <p className="muted" style={{ marginTop: 12, fontSize: 12, lineHeight: 1.6, maxWidth: 680, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{t.operator}</p>
+            <p className="muted" style={{ marginTop: 12, fontSize: "0.75rem", lineHeight: 1.6, maxWidth: 680, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>{t.operator}</p>
           )}
         </div>
       </div>
 
       <div style={{ marginTop: 26 }}>
-        <div className="modhead"><Icon.building size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.spaces}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: 13 }}>{rows.length}</span></div>
+        <div className="modhead"><Icon.building size={18} /><span className="ttl" style={{ fontWeight: 700 }}>{t.spaces}</span><span className="muted" style={{ marginInlineStart: 8, fontSize: "0.8125rem" }}>{rows.length}</span></div>
         {rows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>{t.none}</p>
         ) : (
@@ -154,9 +154,9 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
                     {/* The price and its unit were assembled here from four inline
                         strings, which is how an Arabic card could show a Latin unit.
                         Both now come from the shared unit formatter. */}
-                    <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price == null ? t.onReq : l.deal_type === "lease" ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)}</div>
-                    <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                    <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · {formatArea(l.area_sqm, lp)}</div>
+                    <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>{price == null ? t.onReq : l.deal_type === "lease" ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)}</div>
+                    <div style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
+                    <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 3 }}>{dn} · {formatArea(l.area_sqm, lp)}</div>
                   </div>
                 </Link>
               );

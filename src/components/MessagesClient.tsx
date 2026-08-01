@@ -127,8 +127,8 @@ export default function MessagesClient({
       <div className="dash" style={{ background: "var(--cool)" }}>
         <div className="dmain" style={{ display: "grid", placeItems: "center", padding: 40 }}>
           <div style={{ textAlign: "center", maxWidth: 420 }}>
-            <div style={{ fontSize: 18, fontWeight: 600 }}>{t.empty}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 8 }}>{t.emptyBody}</p>
+            <div style={{ fontSize: "1.125rem", fontWeight: 600 }}>{t.empty}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 8 }}>{t.emptyBody}</p>
             <Link href={`/${locale}/listings`} className="btn primary" style={{ marginTop: 16 }}>{t.browse}</Link>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function MessagesClient({
       <aside className="msg-list" style={{ width: 330, flex: "none", background: "var(--paper)", borderRight: "1px solid var(--silver)", display: "flex", flexDirection: "column" }}>
         <div className="dtopbar" style={{ padding: "16px 18px" }}>
           <div>
-            <h1 style={{ fontSize: 17 }}>{t.title}</h1>
+            <h1 style={{ fontSize: "1.0625rem" }}>{t.title}</h1>
             <div className="sub">{unreadTotal} {t.unread}</div>
           </div>
         </div>
@@ -162,10 +162,10 @@ export default function MessagesClient({
               </span>
               <div className="grow" style={{ minWidth: 0 }}>
                 <div className="row between">
-                  <span style={{ fontSize: 13.5, fontWeight: 600 }}>{c.counterpart}</span>
-                  <span className="mono muted" style={{ fontSize: 10 }}>{when(c.last_at)}</span>
+                  <span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{c.counterpart}</span>
+                  <span className="mono muted" style={{ fontSize: "0.625rem" }}>{when(c.last_at)}</span>
                 </div>
-                <div className="muted" style={{ fontSize: 11.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {c.listing_title}
                 </div>
               </div>
@@ -186,7 +186,7 @@ export default function MessagesClient({
               </button>
               <span className="avatar" style={{ background: "var(--harbor)" }}>{conv.counterpart.slice(0, 2).toUpperCase()}</span>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>{conv.counterpart}</h2>
+                <h2 style={{ fontSize: "1rem", fontWeight: 600, margin: 0 }}>{conv.counterpart}</h2>
                 <div className="sub">{conv.listing_title}</div>
               </div>
               <span style={{ flex: 1 }} />
@@ -206,7 +206,7 @@ export default function MessagesClient({
                         : { background: "var(--paper)", border: "1px solid var(--silver)" }
                     }>
                       {m.body}
-                      <div style={{ fontSize: 10, opacity: 0.55, marginTop: 6 }}>{when(m.created_at)}</div>
+                      <div style={{ fontSize: "0.625rem", opacity: 0.55, marginTop: 6 }}>{when(m.created_at)}</div>
                     </div>
                   );
                 })}
@@ -220,13 +220,13 @@ export default function MessagesClient({
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={t.write}
                   maxLength={4000}
-                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: 14, color: "var(--ink)" }}
+                  style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "0.875rem", color: "var(--ink)" }}
                 />
                 <button type="submit" disabled={busy || !input.trim()} className="btn primary sm" aria-label={t.send}>
                   <Icon.send size={15} />
                 </button>
               </form>
-              {err && <p role="alert" style={{ color: "var(--red)", fontSize: 12, marginTop: 8 }}>{err}</p>}
+              {err && <p role="alert" style={{ color: "var(--red)", fontSize: "0.75rem", marginTop: 8 }}>{err}</p>}
             </div>
           </>
         )}

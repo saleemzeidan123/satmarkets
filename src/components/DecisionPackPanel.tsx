@@ -84,12 +84,12 @@ export default function DecisionPackPanel({
 
   return (
     <section className="card" style={{ marginTop: 20, padding: 20, boxShadow: "var(--sh-1)" }}>
-      <h2 style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.head}</h2>
-      <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, margin: "6px 0 0", maxWidth: 640 }}>{t.sub}</p>
+      <h2 style={{ fontSize: "1.0625rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.head}</h2>
+      <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "6px 0 0", maxWidth: 640 }}>{t.sub}</p>
 
       {/* Comparisons: which hold across this set, which are withheld, and why. */}
       <div style={{ marginTop: 18 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)" }}>{t.canCompare}</div>
+        <div style={{ fontSize: "0.78125rem", fontWeight: 700, color: "var(--slate)" }}>{t.canCompare}</div>
         <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
           {pack.comparisons.map((c) => (
             <div
@@ -102,21 +102,21 @@ export default function DecisionPackPanel({
               }}
             >
               <div className="row gap12 wrap" style={{ alignItems: "baseline" }}>
-                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{comparabilityLabel(c.kind, ar)}</span>
+                <span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{comparabilityLabel(c.kind, ar)}</span>
                 {!c.comparable && (
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber-d)" }}>{t.held}</span>
+                  <span style={{ fontSize: "0.71875rem", fontWeight: 700, color: "var(--amber-d)" }}>{t.held}</span>
                 )}
               </div>
-              <p style={{ fontSize: 12.5, lineHeight: 1.6, margin: "5px 0 0", color: "var(--ink)" }}>
+              <p style={{ fontSize: "0.78125rem", lineHeight: 1.6, margin: "5px 0 0", color: "var(--ink)" }}>
                 {ar ? c.reason_ar : c.reason_en}
               </p>
               {(ar ? c.caveat_ar : c.caveat_en) ? (
-                <p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: "5px 0 0" }}>
+                <p className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.6, margin: "5px 0 0" }}>
                   {t.limit}: {ar ? c.caveat_ar : c.caveat_en}
                 </p>
               ) : null}
               {c.excluded_ids.length > 0 ? (
-                <p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: "5px 0 0" }}>
+                <p className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.6, margin: "5px 0 0" }}>
                   {t.excluded}: {c.excluded_ids.map(titleOf).join(ar ? "، " : ", ")}
                 </p>
               ) : null}
@@ -127,17 +127,17 @@ export default function DecisionPackPanel({
 
       {/* Readiness per candidate, with the state of every dimension the model emits. */}
       <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)" }}>{t.candidates}</div>
+        <div style={{ fontSize: "0.78125rem", fontWeight: 700, color: "var(--slate)" }}>{t.candidates}</div>
         <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
           {pack.candidates.map((c) => (
             <div key={c.listing_id} className="card pad" style={{ boxShadow: "none", border: "1px solid var(--silver)" }}>
               <div className="row between wrap" style={{ alignItems: "baseline", gap: 10 }}>
-                <span style={{ fontSize: 13.5, fontWeight: 600 }}>{titleOf(c.listing_id)}</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: TONE[c.readiness] }}>
+                <span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{titleOf(c.listing_id)}</span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: TONE[c.readiness] }}>
                   {readinessLabel(c.readiness, ar)}
                 </span>
               </div>
-              <div className="muted mono" style={{ fontSize: 11.5, marginTop: 4 }}>
+              <div className="muted mono" style={{ fontSize: "0.71875rem", marginTop: 4 }}>
                 <bdi dir="ltr">{t.counts(c)}</bdi>
               </div>
               <div style={{ display: "grid", gap: 4, marginTop: 8 }}>
@@ -145,19 +145,19 @@ export default function DecisionPackPanel({
                   .filter((d) => d.state !== "not_applicable")
                   .map((d) => (
                     <div key={d.kind} className="row gap12 wrap" style={{ alignItems: "baseline" }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, minWidth: 140 }}>{ar ? d.label_ar : d.label_en}</span>
+                      <span style={{ fontSize: "0.75rem", fontWeight: 600, minWidth: 140 }}>{ar ? d.label_ar : d.label_en}</span>
                       {/* flex: "1 1 200px", not flex:1 with minWidth:200. With a zero
                           basis the wrap decision is made as though this span were zero
                           wide, so the state label was kept on the same line and the
                           min width then pushed the row 16px past its card at 320px, in
                           both locales. Declaring the 200 as the basis makes the same
                           200 the number the line break is decided on. */}
-                      <span className="muted" style={{ fontSize: 12, flex: "1 1 200px", lineHeight: 1.55 }}>
+                      <span className="muted" style={{ fontSize: "0.75rem", flex: "1 1 200px", lineHeight: 1.55 }}>
                         {ar ? d.detail_ar : d.detail_en}
                       </span>
                       <span
                         style={{
-                          fontSize: 11,
+                          fontSize: "0.6875rem",
                           fontWeight: 700,
                           color: d.state === "unknown" || d.state === "stale" ? "var(--amber-d)" : "var(--slate)",
                         }}
@@ -175,11 +175,11 @@ export default function DecisionPackPanel({
       {/* The asks, deduplicated by wording across the shortlist. */}
       {asks.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--slate)" }}>{t.askHead}</div>
-          <p className="muted" style={{ fontSize: 12, lineHeight: 1.6, margin: "4px 0 0", maxWidth: 640 }}>{t.askSub}</p>
+          <div style={{ fontSize: "0.78125rem", fontWeight: 700, color: "var(--slate)" }}>{t.askHead}</div>
+          <p className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.6, margin: "4px 0 0", maxWidth: 640 }}>{t.askSub}</p>
           <ul style={{ margin: "8px 0 0", paddingInlineStart: 18, display: "grid", gap: 6 }}>
             {asks.map((a, i) => (
-              <li key={`${a.kind}-${i}`} style={{ fontSize: 12.5, lineHeight: 1.6 }}>
+              <li key={`${a.kind}-${i}`} style={{ fontSize: "0.78125rem", lineHeight: 1.6 }}>
                 {ar ? a.ask_ar : a.ask_en}{" "}
                 <span className="muted">
                   ({a.listing_ids.length} {t.spaces})

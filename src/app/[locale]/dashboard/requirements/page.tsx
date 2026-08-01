@@ -173,8 +173,8 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
-        <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>{t.sub}</div>
+        <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+        <div className="muted" style={{ fontSize: "0.8125rem", marginTop: 3 }}>{t.sub}</div>
       </div>
 
       <div className="dpanel">
@@ -182,22 +182,22 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
           <span style={{ color: "var(--harbor)" }}><Icon.target size={17} /></span>
           <span className="t">{t.title}</span>
           {rows.length > 0 && (
-            <span className="mono muted" style={{ fontSize: 11.5 }}><bdi>{t.counts(rows.length, openCount)}</bdi></span>
+            <span className="mono muted" style={{ fontSize: "0.71875rem" }}><bdi>{t.counts(rows.length, openCount)}</bdi></span>
           )}
           <span style={{ flex: 1 }} />
-          <Link href={`/${lp}/requirements`} style={{ fontSize: 12.5, color: "var(--azure-d)", fontWeight: 600, textDecoration: "none" }}>{t.browseAll}</Link>
+          <Link href={`/${lp}/requirements`} style={{ fontSize: "0.78125rem", color: "var(--azure-d)", fontWeight: 600, textDecoration: "none" }}>{t.browseAll}</Link>
         </div>
 
         {publishedCount === 0 ? (
           <div style={{ padding: "24px 20px 28px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.noneT}</div>
-            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 460 }}>{t.noneB}</div>
+            <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.noneT}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 460 }}>{t.noneB}</div>
             <Link href={`/${lp}/dashboard/new`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.newListing}</Link>
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: "24px 20px 28px" }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{t.emptyT}</div>
-            <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 5, maxWidth: 460 }}>{t.emptyB}</div>
+            <div style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{t.emptyT}</div>
+            <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 460 }}>{t.emptyB}</div>
             <Link href={`/${lp}/requirements`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.browseAll}</Link>
           </div>
         ) : (
@@ -226,18 +226,18 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
                   <span className="queue-ic"><Icon.doc size={16} /></span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="row gap8 wrap" style={{ alignItems: "center" }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 600 }}>{rtitle}</span>
+                      <span style={{ fontSize: "0.84375rem", fontWeight: 600 }}>{rtitle}</span>
                       <span
                         className="tag"
-                        style={{ fontSize: 10.5, color: tone.fg, background: tone.bg, borderColor: "transparent" }}
+                        style={{ fontSize: "0.65625rem", color: tone.fg, background: tone.bg, borderColor: "transparent" }}
                       >
                         {verdictLabel(result.verdict, ar)}
                       </span>
                     </div>
-                    <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>
+                    <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 3 }}>
                       <bdi>{loc ? `${loc} · ` : ""}{size}</bdi>
                     </div>
-                    <div style={{ fontSize: 11.5, color: "var(--harbor)", marginTop: 3 }}>
+                    <div style={{ fontSize: "0.71875rem", color: "var(--harbor)", marginTop: 3 }}>
                       {t.matchOn} <Link href={`/${lp}/dashboard/listings/${best.listingId}`} style={{ color: "var(--azure-d)", fontWeight: 600, textDecoration: "none" }}>{mtitle}</Link>
                     </div>
                   </div>
@@ -248,12 +248,12 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
                     the document, keyboard reachable, and readable by a screen
                     reader whether or not the summary has been opened. */}
                 <details style={{ marginTop: 10 }}>
-                  <summary style={{ fontSize: 12, color: "var(--slate)", cursor: "pointer" }}>
+                  <summary style={{ fontSize: "0.75rem", color: "var(--slate)", cursor: "pointer" }}>
                     {t.why} <bdi>({result.reasons.length})</bdi>
                   </summary>
                   <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 7 }}>
                     {result.reasons.map((r: MatchReason) => (
-                      <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.3, lineHeight: 1.6 }}>
+                      <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: "0.76875rem", lineHeight: 1.6 }}>
                         {/* The mark is decoration. The state reaches a reader
                             through the visually hidden word below, not through
                             this glyph and not through the colour. */}

@@ -41,14 +41,14 @@ export default function ListingCompleteness({ quality, ar }: { quality: ListingQ
     <div>
       <div className="row gap8" style={{ alignItems: "center", marginBottom: 6 }}>
         <span className="muted" style={{ display: "inline-flex" }}><Icon.info size={15} /></span>
-        <span style={{ fontSize: 14.5, fontWeight: 700 }}>{t.head}</span>
-        <span className="mono muted" style={{ fontSize: 11.5 }}>{t.counted}</span>
+        <span style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{t.head}</span>
+        <span className="mono muted" style={{ fontSize: "0.71875rem" }}>{t.counted}</span>
       </div>
 
       {quality.contradictions.length > 0 && (
         <div style={{ border: "1px solid var(--silver)", borderRadius: 6, padding: 12, marginTop: 12 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600 }}>{t.clash}</div>
-          <ul style={{ margin: "6px 0 0", paddingInlineStart: 18, fontSize: 12, lineHeight: 1.7 }}>
+          <div style={{ fontSize: "0.78125rem", fontWeight: 600 }}>{t.clash}</div>
+          <ul style={{ margin: "6px 0 0", paddingInlineStart: 18, fontSize: "0.75rem", lineHeight: 1.7 }}>
             {quality.contradictions.map((c) => (
               <li key={c.kind + c.fields.join()}>{ar ? c.statement_ar : c.statement_en}</li>
             ))}
@@ -57,22 +57,22 @@ export default function ListingCompleteness({ quality, ar }: { quality: ListingQ
       )}
 
       {missing.length === 0 ? (
-        <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.7, marginTop: 10 }}>{t.none}</p>
+        <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7, marginTop: 10 }}>{t.none}</p>
       ) : (
         <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 10 }}>
           {missing.map((c) => (
             <li key={c.key}>
-              <div style={{ fontSize: 13 }}>
+              <div style={{ fontSize: "0.8125rem" }}>
                 {ar ? c.label_ar : c.label_en}
-                <span className="muted" style={{ fontSize: 11.5 }}> · {weightLabel(c.weight, ar)}</span>
+                <span className="muted" style={{ fontSize: "0.71875rem" }}> · {weightLabel(c.weight, ar)}</span>
               </div>
-              <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 2 }}>{ar ? c.why_ar : c.why_en}</div>
+              <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 2 }}>{ar ? c.why_ar : c.why_en}</div>
             </li>
           ))}
         </ul>
       )}
 
-      <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.note}</div>
+      <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 14, borderTop: "1px solid var(--silver)", paddingTop: 12 }}>{t.note}</div>
     </div>
   );
 }

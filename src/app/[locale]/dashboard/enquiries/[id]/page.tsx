@@ -73,44 +73,44 @@ export default async function EnquiryPage({ params }: { params: { locale: string
 
   const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
     <div className="row between" style={{ padding: "10px 0", borderTop: "1px solid var(--silver)", gap: 12, alignItems: "flex-start" }}>
-      <span className="muted" style={{ fontSize: 12.5, flex: "none" }}>{k}</span>
-      <span style={{ fontSize: 13, textAlign: ar ? "left" : "right" }}>{v}</span>
+      <span className="muted" style={{ fontSize: "0.78125rem", flex: "none" }}>{k}</span>
+      <span style={{ fontSize: "0.8125rem", textAlign: ar ? "left" : "right" }}>{v}</span>
     </div>
   );
 
   return (
     <div style={{ maxWidth: 760 }}>
-      <Link href={`/${lp}/dashboard`} className="muted" style={{ fontSize: 12.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <Link href={`/${lp}/dashboard`} className="muted" style={{ fontSize: "0.78125rem", display: "inline-flex", alignItems: "center", gap: 6 }}>
         <span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={14} /></span> {t.back}
       </Link>
 
       <div className="eyebrow" style={{ marginTop: 14 }}>{t.eyebrow}</div>
-      <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.01em", margin: "8px 0 0" }}>{l.contact_name || t.eyebrow}</h1>
-      <div className="muted mono" style={{ fontSize: 12, marginTop: 4 }}>{t.received} {stamp}</div>
+      <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-.01em", margin: "8px 0 0" }}>{l.contact_name || t.eyebrow}</h1>
+      <div className="muted mono" style={{ fontSize: "0.75rem", marginTop: 4 }}>{t.received} {stamp}</div>
 
       {listing && (
         <Link href={`/${lp}/listings/${(listing as any).id}`} className="card pad row gap12" style={{ marginTop: 18, alignItems: "center", boxShadow: "var(--sh-1)" }}>
           <Photo kind={(listing as any).asset_type} h={44} style={{ width: 60, borderRadius: 8, flex: "none" }} />
           <div>
-            <div className="muted" style={{ fontSize: 11.5 }}>{t.about}</div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{title}</div>
+            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.about}</div>
+            <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>{title}</div>
           </div>
         </Link>
       )}
 
       <div className="card pad" style={{ marginTop: 16, boxShadow: "var(--sh-1)" }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700 }}>{t.message}</div>
-        <p style={{ fontSize: 14, lineHeight: 1.75, marginTop: 8, marginBottom: 0, whiteSpace: "pre-wrap", color: l.message ? "var(--ink)" : "var(--slate)" }}>
+        <div style={{ fontSize: "0.84375rem", fontWeight: 700 }}>{t.message}</div>
+        <p style={{ fontSize: "0.875rem", lineHeight: 1.75, marginTop: 8, marginBottom: 0, whiteSpace: "pre-wrap", color: l.message ? "var(--ink)" : "var(--slate)" }}>
           {l.message || t.noMessage}
         </p>
       </div>
 
       <div className="card pad" style={{ marginTop: 16, boxShadow: "var(--sh-1)" }}>
-        <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 4 }}>{t.contact}</div>
+        <div style={{ fontSize: "0.84375rem", fontWeight: 700, marginBottom: 4 }}>{t.contact}</div>
         <Row k={t.email} v={l.contact_email ? <a href={`mailto:${l.contact_email}`} style={{ color: "var(--azure-d)" }}>{l.contact_email}</a> : t.noPhone} />
         <Row k={t.phone} v={l.contact_phone ? <a href={`tel:${l.contact_phone}`} style={{ color: "var(--azure-d)" }}><bdi>{l.contact_phone}</bdi></a> : t.noPhone} />
         <Row k={t.path} v={l.path === "representation" ? t.rep : t.direct} />
-        <Row k={t.consent} v={<span className="muted" style={{ fontSize: 12.5 }}>{l.consent ? t.consentYes : t.consentNo}</span>} />
+        <Row k={t.consent} v={<span className="muted" style={{ fontSize: "0.78125rem" }}>{l.consent ? t.consentYes : t.consentNo}</span>} />
         {l.contact_email && (
           <a href={`mailto:${l.contact_email}`} className="btn primary sm" style={{ marginTop: 14 }}>{t.emailBtn}</a>
         )}
@@ -118,7 +118,7 @@ export default async function EnquiryPage({ params }: { params: { locale: string
 
       <div className="card pad" style={{ marginTop: 16, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}>
         <LeadStatusControl id={l.id} locale={lp} initial={l.status || "new"} />
-        <p className="muted" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 12, marginBottom: 0, paddingTop: 10, borderTop: "1px solid var(--silver)" }}>{t.replyB}</p>
+        <p className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.7, marginTop: 12, marginBottom: 0, paddingTop: 10, borderTop: "1px solid var(--silver)" }}>{t.replyB}</p>
       </div>
     </div>
   );

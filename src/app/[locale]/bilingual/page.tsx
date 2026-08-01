@@ -69,7 +69,7 @@ export default function BilingualPage({ params }: { params: { locale: string } }
           <div className="eyebrow">{c.eyebrow}</div>
           <h1
             className="serif"
-            style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
+            style={{ fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
           >
             {c.title}
           </h1>
@@ -82,16 +82,16 @@ export default function BilingualPage({ params }: { params: { locale: string } }
           <div style={{ display: "grid", gap: 12, marginTop: 28 }}>
             {rules.map((r, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{r[0]}</div>
-                <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{r[1]}</p>
+                <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{r[0]}</div>
+                <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{r[1]}</p>
               </div>
             ))}
           </div>
         </Reveal>
 
         <Reveal delay={140}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.countT}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.countB}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.countT}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.countB}</p>
           <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
             {SHOWN_NOUNS.map((noun) => (
               <div key={noun} className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
@@ -103,45 +103,45 @@ export default function BilingualPage({ params }: { params: { locale: string } }
                     alignItems: "baseline",
                   }}
                 >
-                  <div className="mono muted" style={{ fontSize: 12, direction: "ltr" }}>{noun}</div>
-                  <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{c.termsEn}</div>
-                  <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{c.termsAr}</div>
+                  <div className="mono muted" style={{ fontSize: "0.75rem", direction: "ltr" }}>{noun}</div>
+                  <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>{c.termsEn}</div>
+                  <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>{c.termsAr}</div>
                   {COUNT_BOUNDARIES.map((n) => (
                     <Fragment key={n}>
                       <div
                         className="mono"
-                        style={{ fontSize: 13, color: "var(--harbor)", fontWeight: 600, direction: "ltr" }}
+                        style={{ fontSize: "0.8125rem", color: "var(--harbor)", fontWeight: 600, direction: "ltr" }}
                       >
                         {formatInteger(n, lp)}
                       </div>
-                      <div style={{ fontSize: 13.5, ...enCell }}>{formatCounted(n, noun, "en")}</div>
-                      <div style={{ fontSize: 13.5, ...arCell }}>{formatCounted(n, noun, "ar")}</div>
+                      <div style={{ fontSize: "0.84375rem", ...enCell }}>{formatCounted(n, noun, "en")}</div>
+                      <div style={{ fontSize: "0.84375rem", ...arCell }}>{formatCounted(n, noun, "ar")}</div>
                     </Fragment>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-          <p className="muted" style={{ fontSize: 12.5, lineHeight: 1.6, marginTop: 10 }}>{c.countCaption}</p>
+          <p className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.6, marginTop: 10 }}>{c.countCaption}</p>
         </Reveal>
 
         <Reveal delay={200}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.termsT}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.termsB}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.termsT}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.termsB}</p>
           <div className="row gap12" style={{ alignItems: "baseline", marginTop: 14 }}>
-            <span className="mono" style={{ color: "var(--harbor)", fontWeight: 700, fontSize: 18 }}>
+            <span className="mono" style={{ color: "var(--harbor)", fontWeight: 700, fontSize: "1.125rem" }}>
               {formatInteger(terms.length, lp)}
             </span>
-            <span className="muted" style={{ fontSize: 13 }}>{c.termsCount}</span>
+            <span className="muted" style={{ fontSize: "0.8125rem" }}>{c.termsCount}</span>
           </div>
           <div className="card pad" style={{ marginTop: 12, boxShadow: "var(--sh-1)" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 12px", alignItems: "baseline" }}>
-              <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{c.termsEn}</div>
-              <div className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{c.termsAr}</div>
+              <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>{c.termsEn}</div>
+              <div className="muted" style={{ fontSize: "0.75rem", fontWeight: 600 }}>{c.termsAr}</div>
               {terms.map(([e, a]) => (
                 <Fragment key={e}>
-                  <div style={{ fontSize: 13, overflowWrap: "anywhere", ...enCell }}>{e}</div>
-                  <div style={{ fontSize: 13, overflowWrap: "anywhere", ...arCell }}>{a}</div>
+                  <div style={{ fontSize: "0.8125rem", overflowWrap: "anywhere", ...enCell }}>{e}</div>
+                  <div style={{ fontSize: "0.8125rem", overflowWrap: "anywhere", ...arCell }}>{a}</div>
                 </Fragment>
               ))}
             </div>

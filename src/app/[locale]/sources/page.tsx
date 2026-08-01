@@ -118,7 +118,7 @@ export default async function SourcesPage({ params }: { params: { locale: string
           <div className="eyebrow">{c.eyebrow}</div>
           <h1
             className="serif"
-            style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
+            style={{ fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
           >
             {c.title}
           </h1>
@@ -133,16 +133,16 @@ export default async function SourcesPage({ params }: { params: { locale: string
               className="card pad"
               style={{ marginTop: 24, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
             >
-              <div style={{ fontSize: 15, fontWeight: 700 }}>{unread[read.state][0]}</div>
-              <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{unread[read.state][1]}</p>
+              <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{unread[read.state][0]}</div>
+              <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{unread[read.state][1]}</p>
             </div>
           ) : (
             <>
               <div className="row gap12" style={{ alignItems: "baseline", marginTop: 26 }}>
-                <span className="mono" style={{ color: "var(--harbor)", fontWeight: 700, fontSize: 18 }}>
+                <span className="mono" style={{ color: "var(--harbor)", fontWeight: 700, fontSize: "1.125rem" }}>
                   {register.size}
                 </span>
-                <span className="muted" style={{ fontSize: 13 }}>{c.countLabel}</span>
+                <span className="muted" style={{ fontSize: "0.8125rem" }}>{c.countLabel}</span>
               </div>
               <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
                 {ids.map((id) => {
@@ -160,10 +160,10 @@ export default async function SourcesPage({ params }: { params: { locale: string
                     : [];
                   return (
                     <div key={id} className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>{key ? c[`s${key}T`] : id}</div>
-                      <div className="mono muted" style={{ fontSize: 11.5, marginTop: 2, direction: "ltr" }}>{id}</div>
+                      <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{key ? c[`s${key}T`] : id}</div>
+                      <div className="mono muted" style={{ fontSize: "0.71875rem", marginTop: 2, direction: "ltr" }}>{id}</div>
                       {key ? (
-                        <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 8 }}>{c[`s${key}B`]}</p>
+                        <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 8 }}>{c[`s${key}B`]}</p>
                       ) : null}
                       {r ? (
                         <div style={{ display: "grid", gap: 6, marginTop: 12 }}>
@@ -171,7 +171,7 @@ export default async function SourcesPage({ params }: { params: { locale: string
                             <div
                               key={i}
                               className="row gap12"
-                              style={{ alignItems: "baseline", justifyContent: "space-between", fontSize: 13 }}
+                              style={{ alignItems: "baseline", justifyContent: "space-between", fontSize: "0.8125rem" }}
                             >
                               <span className="muted">{row[0]}</span>
                               <span style={{ fontWeight: 600 }}>{row[1]}</span>
@@ -179,14 +179,14 @@ export default async function SourcesPage({ params }: { params: { locale: string
                           ))}
                           <div
                             className="row gap12"
-                            style={{ alignItems: "baseline", justifyContent: "space-between", fontSize: 13 }}
+                            style={{ alignItems: "baseline", justifyContent: "space-between", fontSize: "0.8125rem" }}
                           >
                             <span className="muted">{c.modelTitle}</span>
                             <span style={{ fontWeight: 600 }}>{model[r.modelInputPolicy]}</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="mono muted" style={{ fontSize: 12.5, marginTop: 10 }}>{c.notRecorded}</div>
+                        <div className="mono muted" style={{ fontSize: "0.78125rem", marginTop: 10 }}>{c.notRecorded}</div>
                       )}
                     </div>
                   );
@@ -204,19 +204,19 @@ export default async function SourcesPage({ params }: { params: { locale: string
                 className="card pad"
                 style={{ background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
               >
-                <div style={{ fontSize: 15, fontWeight: 700 }}>{n[0]}</div>
+                <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{n[0]}</div>
                 {n[2] ? (
                   <div className="row gap12" style={{ alignItems: "baseline", marginTop: 8 }}>
                     <span
                       className="mono"
-                      style={{ color: "var(--harbor)", fontWeight: 700, fontSize: 16, direction: "ltr" }}
+                      style={{ color: "var(--harbor)", fontWeight: 700, fontSize: "1rem", direction: "ltr" }}
                     >
                       {o10Count}
                     </span>
-                    <span className="muted" style={{ fontSize: 13 }}>{c.o10CountLabel}</span>
+                    <span className="muted" style={{ fontSize: "0.8125rem" }}>{c.o10CountLabel}</span>
                   </div>
                 ) : null}
-                <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{n[1]}</p>
+                <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{n[1]}</p>
               </div>
             ))}
           </div>

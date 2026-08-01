@@ -142,7 +142,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
     <div className="row between wrap" style={{ padding: "24px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
       <div className="eyebrow">{iv.eyebrow}</div>
-      <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{iv.assetTitle}</h1>
+      <h1 style={{ fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{iv.assetTitle}</h1>
       <div className="muted" style={{ fontSize: "var(--fs-base)", marginTop: 6 }}>{iv.assetSub}</div>
      </div>
      <div className="row gap10 wrap">
@@ -155,7 +155,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
      {kpis.map((k, i) => (
       <div key={i} className="statpill grow" style={{ minWidth: 150 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div className="v tnum" style={{ fontSize: 22 }}>{k[0]}</div>
+        <div className="v tnum" style={{ fontSize: "1.375rem" }}>{k[0]}</div>
         {k[3] && <span className={"delta " + k[3]}>▲</span>}
        </div>
        <div className="l">{k[1]}</div>

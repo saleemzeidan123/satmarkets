@@ -52,7 +52,7 @@ export default function VerificationPage({ params }: { params: { locale: string 
           <div className="eyebrow">{c.eyebrow}</div>
           <h1
             className="serif"
-            style={{ fontSize: "clamp(28px,4vw,40px)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
+            style={{ fontSize: "clamp(1.75rem,4vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}
           >
             {c.title}
           </h1>
@@ -62,18 +62,18 @@ export default function VerificationPage({ params }: { params: { locale: string 
         </Reveal>
 
         <Reveal delay={80}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.twoTitle}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.twoBody}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.twoTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.twoBody}</p>
           <div style={{ display: "grid", gap: 12, marginTop: 14 }}>
             {checks.map((x, i) => (
               <div key={i} className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
                 <div className="row gap12" style={{ alignItems: "baseline" }}>
-                  <span className="mono" style={{ color: "var(--harbor)", fontWeight: 600, fontSize: 13, flex: "none" }}>
+                  <span className="mono" style={{ color: "var(--harbor)", fontWeight: 600, fontSize: "0.8125rem", flex: "none" }}>
                     {"0" + (i + 1)}
                   </span>
                   <div>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{x[0]}</div>
-                    <div className="muted" style={{ fontSize: 13.5, lineHeight: 1.6, marginTop: 4 }}>{x[1]}</div>
+                    <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{x[0]}</div>
+                    <div className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6, marginTop: 4 }}>{x[1]}</div>
                   </div>
                 </div>
               </div>
@@ -82,14 +82,14 @@ export default function VerificationPage({ params }: { params: { locale: string 
         </Reveal>
 
         <Reveal delay={110}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.dimsTitle}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.dimsBody}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.dimsTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.dimsBody}</p>
           <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
             <div style={{ display: "grid", gap: 8 }}>
               {LISTING_DIMENSIONS.map((d) => (
                 <div key={d} className="row gap12" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{verificationDimensionLabel(d, ar)}</span>
-                  <span className="mono muted" style={{ fontSize: 12, direction: "ltr" }}>{d}</span>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{verificationDimensionLabel(d, ar)}</span>
+                  <span className="mono muted" style={{ fontSize: "0.75rem", direction: "ltr" }}>{d}</span>
                 </div>
               ))}
             </div>
@@ -97,14 +97,14 @@ export default function VerificationPage({ params }: { params: { locale: string 
         </Reveal>
 
         <Reveal delay={140}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.statesTitle}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.statesBody}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.statesTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.statesBody}</p>
           <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
             <div style={{ display: "grid", gap: 8 }}>
               {ALL_STATES.map((s) => (
                 <div key={s} className="row gap12" style={{ alignItems: "baseline", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 600 }}>{verificationStateLabel(s, ar)}</span>
-                  <span className="mono muted" style={{ fontSize: 12, direction: "ltr" }}>{s}</span>
+                  <span style={{ fontSize: "0.875rem", fontWeight: 600 }}>{verificationStateLabel(s, ar)}</span>
+                  <span className="mono muted" style={{ fontSize: "0.75rem", direction: "ltr" }}>{s}</span>
                 </div>
               ))}
             </div>
@@ -113,9 +113,9 @@ export default function VerificationPage({ params }: { params: { locale: string 
             className="card pad"
             style={{ marginTop: 14, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.unknownT}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.unknownB}</p>
-            <div className="mono" style={{ fontSize: 13, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.unknownT}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.unknownB}</p>
+            <div className="mono" style={{ fontSize: "0.8125rem", marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>
               {unknownLabel(ar)}
             </div>
           </div>
@@ -128,32 +128,32 @@ export default function VerificationPage({ params }: { params: { locale: string 
             className="card pad"
             style={{ marginTop: 14, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.collideT}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.collideB}</p>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.collideT}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.collideB}</p>
           </div>
         </Reveal>
 
         <Reveal delay={170}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.demoteTitle}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.demoteBody}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.demoteTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.demoteBody}</p>
           <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
             {DEMOTION_REASONS.map((r) => (
               <div key={r} className="card pad" style={{ boxShadow: "none", border: "1px solid var(--silver)", background: "var(--paper)" }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{notVerifiedReasonText(r, ar)}</div>
-                <div className="mono muted" style={{ fontSize: 12, marginTop: 3, direction: "ltr" }}>{r}</div>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>{notVerifiedReasonText(r, ar)}</div>
+                <div className="mono muted" style={{ fontSize: "0.75rem", marginTop: 3, direction: "ltr" }}>{r}</div>
               </div>
             ))}
           </div>
         </Reveal>
 
         <Reveal delay={200}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.gateTitle}</h2>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.gateBody}</p>
+          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-.01em", margin: "36px 0 4px" }}>{c.gateTitle}</h2>
+          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6, maxWidth: 680 }}>{c.gateBody}</p>
           <div style={{ display: "grid", gap: 8, marginTop: 14 }}>
             {ALL_GATE_REASONS.map((r) => (
               <div key={r} className="card pad" style={{ boxShadow: "none", border: "1px solid var(--silver)", background: "var(--paper)" }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{gateReasonText(r, ar)}</div>
-                <div className="mono muted" style={{ fontSize: 12, marginTop: 3, direction: "ltr" }}>{r}</div>
+                <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>{gateReasonText(r, ar)}</div>
+                <div className="mono muted" style={{ fontSize: "0.75rem", marginTop: 3, direction: "ltr" }}>{r}</div>
               </div>
             ))}
           </div>
@@ -161,9 +161,9 @@ export default function VerificationPage({ params }: { params: { locale: string 
 
         <Reveal delay={230}>
           <div className="card pad" style={{ marginTop: 26, boxShadow: "var(--sh-1)" }}>
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.todayTitle}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.todayBody}</p>
-            <div className="mono" style={{ fontSize: 12.5, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.todayTitle}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.todayBody}</p>
+            <div className="mono" style={{ fontSize: "0.78125rem", marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>
               {notVerifiedReasonText("relation_contradicted", ar)}
             </div>
           </div>
@@ -171,8 +171,8 @@ export default function VerificationPage({ params }: { params: { locale: string 
             className="card pad"
             style={{ marginTop: 14, background: "var(--paper)", boxShadow: "none", border: "1px solid var(--silver)" }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700 }}>{c.noteTitle}</div>
-            <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.7, marginTop: 6 }}>{c.noteBody}</p>
+            <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{c.noteTitle}</div>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 6 }}>{c.noteBody}</p>
             <Link href={`/${lp}/sources`} className="btn secondary sm" style={{ marginTop: 12 }}>
               {getDictionary(lp).sources.title}
             </Link>

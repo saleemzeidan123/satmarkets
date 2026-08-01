@@ -58,7 +58,7 @@ export default function SaveSearch({ locale, qs, label }: { locale: "en" | "ar";
           <button type="button" onClick={() => remove(s.qs)} aria-label={t.remove} style={{ border: "none", background: "none", cursor: "pointer", color: "var(--slate)", padding: 0 }}>✕</button>
         </span>
       ))}
-      {saved.length > 0 && <span className="muted" style={{ fontSize: 11 }}>{t.savedOnDevice}</span>}
+      {saved.length > 0 && <span className="muted" style={{ fontSize: "0.6875rem" }}>{t.savedOnDevice}</span>}
     </div>
   );
 }

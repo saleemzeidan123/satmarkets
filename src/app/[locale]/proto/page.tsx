@@ -17,22 +17,22 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
   const swatch = (name: string, v: string, note?: string) => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ height: 56, borderRadius: "var(--r-sm)", background: v, border: "1px solid var(--silver)" }} />
-      <div style={{ fontSize: 12.5, color: "var(--ink)", fontWeight: 600 }}>{name}</div>
-      <div className="mono" style={{ fontSize: 11, color: "var(--slate)" }}>{v}{note ? " · " + note : ""}</div>
+      <div style={{ fontSize: "0.78125rem", color: "var(--ink)", fontWeight: 600 }}>{name}</div>
+      <div className="mono" style={{ fontSize: "0.6875rem", color: "var(--slate)" }}>{v}{note ? " · " + note : ""}</div>
     </div>
   );
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <section style={{ marginBlockStart: "var(--space-7)" }}>
-      <h2 style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", marginBlockEnd: "var(--space-4)" }}>{title}</h2>
+      <h2 style={{ fontFamily: "var(--serif)", fontSize: "1.375rem", color: "var(--ink)", marginBlockEnd: "var(--space-4)" }}>{title}</h2>
       {children}
     </section>
   );
 
   return (
     <main style={{ maxWidth: 1100, marginInline: "auto", padding: "var(--space-6) var(--space-5)", color: "var(--ink)", fontFamily: "var(--sans)" }} dir={ar ? "rtl" : "ltr"}>
-      <p className="mono" style={{ fontSize: 12, color: "var(--harbor)", letterSpacing: ".08em", textTransform: "uppercase" }}>{t("Design system", "نظام التصميم")}</p>
-      <h1 style={{ fontFamily: "var(--serif)", fontSize: 34, marginBlockStart: 4 }}>{t("Verified Ground", "الأرض الموثّقة")}</h1>
+      <p className="mono" style={{ fontSize: "0.75rem", color: "var(--harbor)", letterSpacing: ".08em", textTransform: "uppercase" }}>{t("Design system", "نظام التصميم")}</p>
+      <h1 style={{ fontFamily: "var(--serif)", fontSize: "2.125rem", marginBlockStart: 4 }}>{t("Verified Ground", "الأرض الموثّقة")}</h1>
       <p style={{ color: "var(--slate)", maxWidth: 620, marginBlockStart: 8 }}>{t("Reference for the SAT Markets redesign: token roles and the trust-critical shared components. Sample content only.", "مرجع لإعادة تصميم سات ماركتس: أدوار الألوان والمكوّنات المشتركة الحرجة للثقة. محتوى تجريبي فقط.")}</p>
 
       <Section title={t("Color roles", "أدوار الألوان")}>
@@ -44,11 +44,11 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
           {swatch(t("Amber (caution)", "كهرماني (تنبيه)"), "#B7791F")}
           {swatch(t("Red (blocking)", "أحمر (حظر)"), "#C8412E")}
         </div>
-        <p style={{ fontSize: 12.5, color: "var(--slate)", marginBlockStart: "var(--space-4)" }}>{t("satestate gold is forbidden here and enforced by a build test.", "ذهبي ساتستيت محظور هنا ويُفرض ذلك باختبار بناء.")}</p>
+        <p style={{ fontSize: "0.78125rem", color: "var(--slate)", marginBlockStart: "var(--space-4)" }}>{t("satestate gold is forbidden here and enforced by a build test.", "ذهبي ساتستيت محظور هنا ويُفرض ذلك باختبار بناء.")}</p>
       </Section>
 
       <Section title={t("Verification capsule", "كبسولة التوثيق")}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--verified-wash)", color: "var(--verified)", border: "1px solid var(--green-line)", borderRadius: 999, paddingBlock: 6, paddingInline: 12, fontSize: 13, fontWeight: 600 }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--verified-wash)", color: "var(--verified)", border: "1px solid var(--green-line)", borderRadius: 999, paddingBlock: 6, paddingInline: 12, fontSize: "0.8125rem", fontWeight: 600 }}>
           <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--verified)" }} />
           {/* ADV-1. This read "Verified owner" plus a check date, which is the exact
               claim owner decision O3 retires, on the page a designer copies from. A
@@ -58,17 +58,17 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
       </Section>
 
       <Section title={t("Source footer", "تذييل المصدر")}>
-        <p style={{ fontSize: 12.5, color: "var(--slate)", borderInlineStart: "3px solid var(--harbor)", paddingInlineStart: 12 }}>
+        <p style={{ fontSize: "0.78125rem", color: "var(--slate)", borderInlineStart: "3px solid var(--harbor)", paddingInlineStart: 12 }}>
           {t(`Updated Q2 2026 · ${RENT_INDEX_SOURCE.en}, averages of registered contracts · indicative, not advice.`, `محدّث الربع الثاني 2026 · ${RENT_INDEX_SOURCE.ar}، متوسطات العقود المسجّلة · استرشادي وليس نصيحة.`)}
         </p>
       </Section>
 
       <Section title={t("Buttons", "الأزرار")}>
         <div style={{ display: "flex", gap: "var(--space-3)", flexWrap: "wrap" }}>
-          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "var(--harbor)", color: "var(--on-brand)", border: "none", fontSize: 14, fontWeight: 600 }}>{t("Primary", "أساسي")}</button>
-          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--ink)", border: "1px solid var(--silver-2)", fontSize: 14, fontWeight: 600 }}>{t("Secondary", "ثانوي")}</button>
-          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--harbor)", border: "none", fontSize: 14, fontWeight: 600 }}>{t("Ghost", "شبحي")}</button>
-          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--red)", border: "1px solid var(--red)", fontSize: 14, fontWeight: 600 }}>{t("Destructive", "حذف")}</button>
+          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "var(--harbor)", color: "var(--on-brand)", border: "none", fontSize: "0.875rem", fontWeight: 600 }}>{t("Primary", "أساسي")}</button>
+          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--ink)", border: "1px solid var(--silver-2)", fontSize: "0.875rem", fontWeight: 600 }}>{t("Secondary", "ثانوي")}</button>
+          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--harbor)", border: "none", fontSize: "0.875rem", fontWeight: 600 }}>{t("Ghost", "شبحي")}</button>
+          <button style={{ minHeight: 44, paddingInline: 18, borderRadius: "var(--r-sm)", background: "transparent", color: "var(--red)", border: "1px solid var(--red)", fontSize: "0.875rem", fontWeight: 600 }}>{t("Destructive", "حذف")}</button>
         </div>
       </Section>
 
@@ -76,16 +76,16 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
         <div style={{ maxWidth: 320, borderRadius: "var(--r-md)", border: "1px solid var(--silver)", overflow: "hidden", background: "var(--paper)" }}>
           <div style={{ height: 150, background: "linear-gradient(135deg,var(--harbor-d),var(--harbor))" }} />
           <div style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
-            <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Ownership verified", "الملكية موثّقة")}</span>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t(formatUnit("sar_sqm_year", "en", "short"), formatUnit("sar_sqm_year", "ar", "short"))}</span></div>
+            <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: "0.6875rem", fontWeight: 700 }}>{t("Ownership verified", "الملكية موثّقة")}</span>
+            <div style={{ fontSize: "1.125rem", fontWeight: 700 }}>1,650 <span style={{ fontSize: "0.75rem", color: "var(--slate)" }}>{t(formatUnit("sar_sqm_year", "en", "short"), formatUnit("sar_sqm_year", "ar", "short"))}</span></div>
             <div style={{ fontWeight: 600 }}>{t("Grade A Office, Al Olaya", "مكتب الفئة A، العليا")}</div>
             {/* PKG-FIG2 closure, finding 131. The line above this one was rewired to
                 the unit table in this very package and this one was not, two lines
                 apart in the same file, because the sweep looked for wrong spellings
                 and this spelling was right. It was right in the wrong language: the
                 Arabic card read "850 m²" in Latin script. */}
-            <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · " + formatArea(850, "en"), "العليا · " + formatArea(850, "ar"))}</div>
-            <div style={{ fontSize: 12.5, color: "var(--amber-d)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>
+            <div style={{ fontSize: "0.78125rem", color: "var(--slate)" }}>{t("Al Olaya · " + formatArea(850, "en"), "العليا · " + formatArea(850, "ar"))}</div>
+            <div style={{ fontSize: "0.78125rem", color: "var(--amber-d)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>
           </div>
         </div>
       </Section>
@@ -95,13 +95,13 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
           {["--space-1","--space-2","--space-3","--space-4","--space-5","--space-6"].map((s) => (
             <div key={s} style={{ textAlign: "center" }}>
               <div style={{ width: `var(${s})`, height: `var(${s})`, background: "var(--harbor)", borderRadius: 2, marginInline: "auto" }} />
-              <div className="mono" style={{ fontSize: 10, color: "var(--slate)", marginBlockStart: 6 }}>{s.replace("--space-","s")}</div>
+              <div className="mono" style={{ fontSize: "0.625rem", color: "var(--slate)", marginBlockStart: 6 }}>{s.replace("--space-","s")}</div>
             </div>
           ))}
           {["--r-sm","--r-md","--r-lg"].map((r) => (
             <div key={r} style={{ textAlign: "center" }}>
               <div style={{ width: 40, height: 40, background: "var(--cool)", border: "1px solid var(--silver-2)", borderRadius: `var(${r})` }} />
-              <div className="mono" style={{ fontSize: 10, color: "var(--slate)", marginBlockStart: 6 }}>{r.replace("--r-","")}</div>
+              <div className="mono" style={{ fontSize: "0.625rem", color: "var(--slate)", marginBlockStart: 6 }}>{r.replace("--r-","")}</div>
             </div>
           ))}
         </div>
