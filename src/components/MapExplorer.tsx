@@ -10,6 +10,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
 import { getDictionary } from "@/i18n/getDictionary";
 import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
+import { formatInteger, formatRange } from "@/lib/format";
 
 export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
@@ -51,6 +52,12 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
  assetOrder: string[]; assetLabels: Record<string, string>;
 }) {
  const ar = locale === "ar";
+ // PKG-FIG1, finding 125. Every figure on the map was a bare `toLocaleString()`
+ // in a client component, so the band, the pin label and the selected building's
+ // size all resolved their digits from the reader's device rather than from the
+ // page. `sel.bandHigh ?? 0` separately invented a band ceiling of zero whenever
+ // the high end was absent, which is a figure nobody published.
+ const fig = (n: number) => formatInteger(Math.round(n), locale);
  const ref = useRef<HTMLDivElement>(null);
  const mapRef = useRef<any>(null);
  const [active, setActive] = useState<string>("all");
@@ -77,7 +84,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
  function buildFC(list: MapBuilding[]) {
   return { type: "FeatureCollection", features: list.map((b) => ({
    type: "Feature", geometry: { type: "Point", coordinates: [b.lng, b.lat] },
-   properties: { ...b, priceLabel: b.band != null ? Math.round(b.band).toLocaleString() : "" },
+   properties: { ...b, priceLabel: b.band != null ? formatInteger(Math.round(b.band), locale) : "" },
   })) };
  }
  const filtered = () => (activeRef.current === "all" ? buildings : buildings.filter((b) => b.asset === activeRef.current));
@@ -355,7 +362,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
            <div className="mt-0.5 truncate text-[11.5px] text-charcoal/55">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
            {b.band != null ? (
             <div className="mt-1 flex items-baseline gap-1">
-             <span className="font-display text-[16px] text-charcoal">{Math.round(b.band).toLocaleString()}</span>
+             <span className="font-display text-[16px] text-charcoal">{fig(b.band)}</span>
              <span className="text-[10px] text-charcoal/50">{unitFmt(b.unit, locale)}</span>
             </div>
            ) : (<div className="mt-1 text-[11px] text-charcoal/40">{t.noData}</div>)}
@@ -386,13 +393,13 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
       </div>
       <div className="p-4">
        <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
-       <div className="mt-1 text-[12.5px] text-charcoal/55">{sel.place}{sel.size ? " · " + sel.size.toLocaleString() + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
+       <div className="mt-1 text-[12.5px] text-charcoal/55">{sel.place}{sel.size ? " · " + fig(sel.size) + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
        {sel.band != null ? (
         <div className="mt-3 rounded-xl border border-line bg-ivory-2/50 p-3">
          <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{t.rentBand}</div>
          <div className="mt-0.5 flex items-baseline gap-2">
-          <span className="font-display text-2xl text-charcoal">{Math.round(sel.band).toLocaleString()}</span>
-          <span className="text-[11px] text-charcoal/55">{sel.bandLow ? sel.bandLow.toLocaleString() + (locale === "ar" ? " إلى " : "–") + (sel.bandHigh ?? 0).toLocaleString() + " · " : ""}{unitFmt(sel.unit, locale)}</span>
+          <span className="font-display text-2xl text-charcoal">{fig(sel.band)}</span>
+          <span className="text-[11px] text-charcoal/55">{sel.bandLow != null && sel.bandHigh != null ? formatRange(sel.bandLow, sel.bandHigh, locale, 0) + " · " : ""}{unitFmt(sel.unit, locale)}</span>
          </div>
          {sel.bandNote ? <div className="mt-1 text-[11px] leading-snug text-charcoal/55">{sel.bandNote}</div> : null}
         </div>

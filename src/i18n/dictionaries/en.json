@@ -879,7 +879,7 @@
     "buy": "Buy",
     "sizeRange": "Size range (m²)",
     "to": "to",
-    "budgetCeiling": "Budget ceiling (SAR/m²·yr)",
+    "budgetCeiling": "Budget ceiling (SAR/m²/yr)",
     "mustHaves": "Must-haves",
     "optional": "(optional)",
     "moveIn": "Move-in timeline",

@@ -5,6 +5,8 @@
 // / good value" call, grounded in SAT's own verified index. Indicative market
 // context, NOT financial advice (per the Rent Index doctrine).
 
+import { formatRange } from "../format";
+
 export interface IndexRow {
   asset_type: string;
   segment: string;
@@ -157,8 +159,14 @@ export function marketVerdict(
   const distAr = districtAr || row.district_label_ar || dist;
   const segEn = SEG_LABEL_EN[row.segment] || row.segment;
   const segAr = SEG_LABEL_AR[row.segment] || row.segment;
-  const bandEn = `band ${num(low)}–${num(high)}`;
-  const bandAr = `النطاق ${num(low)}–${num(high)}`;
+  // PKG-FIG1, finding 127. `bandAr` built the Arabic sentence
+  // "النطاق 1,800-2,900" with an en dash, which is the construction the Arabic
+  // gate bans inside `src/i18n` and could not see here, because the gate was
+  // scoped to a directory rather than to the language. Arabic takes إلى between
+  // two figures. `formatRange` decides that once, for both languages, and the
+  // gate now follows any string that carries Arabic script.
+  const bandEn = `band ${formatRange(low, high, "en", 0)}`;
+  const bandAr = `النطاق ${formatRange(low, high, "ar", 0)}`;
   const absD = Math.abs(deltaPct);
 
   let verdictEn: string, verdictAr: string;

@@ -6,6 +6,7 @@ import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satki
 import Reveal from "@/components/Reveal";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
+import { formatInteger, formatRange } from "@/lib/format";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; badges: string[]; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
@@ -37,6 +38,13 @@ const ASSETS = [
 export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
  const router = useRouter();
  const ar = locale === "ar";
+ // PKG-FIG1, finding 125. These three figures are the published Rent Index band,
+ // and they were rendered with a bare `toLocaleString()`, which resolves the
+ // DEVICE locale in a client component. On a phone set to Arabic the front door
+ // of the site printed the attributed published band in Arabic-Indic digits,
+ // against the standing law that both languages use Western numerals. Same
+ // defect as finding 123, on the one page every visitor sees first.
+ const fig = (n: number) => formatInteger(Math.round(n), ar ? "ar" : "en");
  const H = getDictionary(ar ? "ar" : "en").home;
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [bi, setBi] = useState(0);
@@ -415,10 +423,14 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{formatPeriod(band.period, ar)}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
-        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{Math.round(band.median).toLocaleString()}</span>
+        <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{fig(band.median)}</span>
         <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{H.medianUnit}</span>
        </div>
-       <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{ar ? `النطاق المنشور: ${Math.round(band.low).toLocaleString()} إلى ${Math.round(band.high).toLocaleString()}` : `Published band: ${Math.round(band.low).toLocaleString()} to ${Math.round(band.high).toLocaleString()}`}</div>
+       <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{/* PKG-FIG1, finding 127. The connective was spelled here too, in both
+           languages, on the site's front door. `formatRange` is the one place
+           that knows Arabic takes إلى between two figures and that the pair has
+           to be isolated so an RTL line cannot reorder it. */}
+       {ar ? `النطاق المنشور: ${formatRange(band.low, band.high, "ar", 0)}` : `Published band: ${formatRange(band.low, band.high, "en", 0)}`}</div>
        {/* A year-on-year figure and a rising curve used to sit here. The curve was
            nine hand-placed coordinates in an SVG path, drawn to look like a trend.
            Year-on-year needs two periods of the same series and we have one, so

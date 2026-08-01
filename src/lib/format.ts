@@ -85,10 +85,27 @@ export function formatPercent(n: number, locale: Loc = "en", opts: { signed?: bo
   return locale === "ar" ? bidiIsolate(`${sign}${body}`) : `${sign}${body}`;
 }
 
-/** An inclusive numeric range. Always reads low to high, in both languages. */
+/**
+ * An inclusive numeric range, always low to high, in the separator the reading
+ * language uses.
+ *
+ * PKG-FIG1, finding 127. This function already existed, and six surfaces spelled
+ * the separator themselves anyway, in four different ways: `1,800-2,900` with an
+ * en dash and no spaces, the same with spaces, ` إلى ` branched inline, and this.
+ * One of the six built the Arabic verdict sentence `النطاق 1,800-2,900` in source,
+ * which puts inside Arabic prose the dash the Arabic gate exists to keep out of
+ * it, in a file the gate did not walk. Arabic does not take a dash between two
+ * figures: it takes إلى, and on a right-to-left line a dash between figures can
+ * also be read as a minus sign.
+ *
+ * The isolate is the second half of the same defect. This module's own header
+ * names a range as a composite that has to be wrapped so the surrounding
+ * paragraph cannot reorder its parts, and this was the one composite formatter
+ * here that never did it.
+ */
 export function formatRange(low: number, high: number, locale: Loc = "en", dp = 2): string {
   const body = `${formatDecimal(low, locale, dp)} ${locale === "ar" ? "إلى" : "to"} ${formatDecimal(high, locale, dp)}`;
-  return body;
+  return locale === "ar" ? bidiIsolate(body) : body;
 }
 
 // -------------------------------------------------------------------- units

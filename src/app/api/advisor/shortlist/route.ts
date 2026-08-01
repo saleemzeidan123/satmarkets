@@ -13,7 +13,7 @@ import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { underwrite } from "@/lib/market/underwrite";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
-import { type Loc } from "@/lib/format";
+import { type Loc, formatRange, formatUnit } from "@/lib/format";
 import { listingTitle } from "@/lib/listingTitle";
 
 export const runtime = "nodejs";
@@ -190,8 +190,15 @@ export async function POST(req: NextRequest) {
       .map((r: any) => r.asking_rent_sqm)
       .filter((v: any) => v != null)
       .map(Number);
-    const lo = prices.length ? Math.min(...prices).toLocaleString("en-US") : null;
-    const hi = prices.length ? Math.max(...prices).toLocaleString("en-US") : null;
+    // PKG-FIG1, finding 128. `.map(Number)` above turns an unparseable stored
+    // price into `NaN`, and `Math.min` of a list containing one is `NaN`, which
+    // `toLocaleString` rendered as the string "NaN" and which is truthy, so the
+    // Advisor would have said "Asking runs NaN to NaN". A figure that will not
+    // parse is not a figure a lister stated, so it leaves the range rather than
+    // entering the sentence.
+    const stated = prices.filter((n: number) => Number.isFinite(n));
+    const lo = stated.length ? Math.min(...stated) : null;
+    const hi = stated.length ? Math.max(...stated) : null;
     const within = shown.filter((r: any) => r.verdict?.status === "within" || r.verdict?.status === "below").length;
     // The asking range is the listings' own data and is always sayable. The
     // second half of the sentence counts spaces against the index band, which is
@@ -199,8 +206,13 @@ export async function POST(req: NextRequest) {
     // the decision. Saying "0 at or below their index band" when every band was
     // withheld would report an absence of permission as a market fact.
     const graded = shown.filter((r: any) => r.verdict?.status && r.verdict.status !== "na").length;
-    const range = lo && hi
-      ? (locale === "ar" ? ` الأسعار المعلنة من ${lo} إلى ${hi} ريال/م²·سنة` : ` Asking runs ${lo} to ${hi} SAR/m²·yr`)
+    // The unit came from `format.ts` rather than from here the moment it was
+    // written out longhand: the English spelled it `SAR/m²·yr` with a middle dot
+    // where every visitor surface serves `SAR/m²/yr` with a slash, which is an
+    // eighth spelling of the unit finding 120 already consolidated once.
+    const askUnit = formatUnit("sar_sqm_year", locale, "short");
+    const range = lo !== null && hi !== null
+      ? (locale === "ar" ? ` الأسعار المعلنة من ${formatRange(lo, hi, "ar", 0)} ${askUnit}` : ` Asking runs ${formatRange(lo, hi, "en", 0)} ${askUnit}`)
       : "";
     const band = range && graded > 0
       ? (locale === "ar" ? `، منها ${within} ضمن نطاق المؤشر أو أدنى` : `, with ${within} at or below their index band`)

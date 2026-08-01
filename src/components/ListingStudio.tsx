@@ -5,7 +5,7 @@ import MediaBrief from "@/components/MediaBrief";
 import LocationPicker from "@/components/LocationPicker";
 import { intakeFields, type AssetField } from "@/lib/assetFields";
 import { assetLabel, dealLabel } from "@/lib/labels";
-import { formatArea, formatMoney } from "@/lib/format";
+import { askingPrice, netArea } from "@/lib/listingFigures";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
 import type { DistrictPoint } from "@/lib/nearestDistrict";
@@ -699,8 +699,26 @@ export default function ListingStudio({
     const isAr = l === "ar";
     const title = isAr ? f.title_ar : f.title_en;
     const body = isAr ? f.description_ar : f.description_en;
-    const area = Number(f.area_sqm);
-    const price = Number(f.price);
+    // PKG-FIG1, finding 126. This block is captioned "As a visitor will read
+    // it", which is a claim about fidelity, and its figures broke the claim. The
+    // price was rendered as `formatMoney(price) + " per sqm per year"`, in Arabic
+    // " للمتر المربع سنوياً": a seventh spelling of a unit no visitor surface
+    // renders anywhere. The public card, the compare table, the map pin and the
+    // printable flyer all serve `SAR/m2/yr` and its Arabic form. So the one
+    // screen built to let a lister check that their price reads correctly showed
+    // it to them in a sentence the market never sees, and the unit was decided
+    // here by `f.deal_type === "sale"` rather than by the module every visitor
+    // surface reads.
+    //
+    // Both figures now come from `listingFigures.ts`, so the caption is true by
+    // construction rather than by two authors agreeing. An unstated figure draws
+    // nothing here for the same reason it draws nothing there. The lister is not
+    // left guessing: the missing-facts panel sitting directly above this preview
+    // is what names an absent fact, and it reads that from `listingQuality.ts`,
+    // which owns the definition. This preview's job is to be the visitor's view,
+    // not a second opinion on completeness.
+    const areaText = netArea(f.area_sqm, l);
+    const priceText = askingPrice(f.price, f.deal_type, l);
     const d = districts.find((x) => x.id === place.districtId);
     const dName = placeName(d, isAr ? "ar" : "en") || null;
     return (
@@ -713,10 +731,11 @@ export default function ListingStudio({
           {assetLabel(f.asset_type, l)} · {dealLabel(f.deal_type, l)}
           {dName ? ` · ${dName}` : ""}
         </div>
-        <div className="text-[13px] text-charcoal/70">
-          {Number.isFinite(area) && f.area_sqm !== "" ? formatArea(area, l) : (isAr ? "بلا مساحة" : "No area")}
-          {Number.isFinite(price) && f.price !== "" ? ` · ${formatMoney(price, l)}${f.deal_type === "sale" ? "" : (isAr ? " للمتر المربع سنوياً" : " per sqm per year")}` : ""}
-        </div>
+        {(areaText || priceText) && (
+          <div className="text-[13px] text-charcoal/70">
+            {areaText ?? ""}{areaText && priceText ? " · " : ""}{priceText ?? ""}
+          </div>
+        )}
         {body && <p className="text-[13px] text-charcoal/60 mt-2 whitespace-pre-line">{body}</p>}
       </div>
     );

@@ -1453,6 +1453,59 @@ cannot be reached through the GET-only evidence channel available here, so for t
 verification is the test suite, the typecheck and the production build, and the deployment evidence
 establishes only that the corrected code is the code being served.
 
+## PKG-FIG1, the grammar of a figure, on the surfaces that answer a person
+
+Findings 125, 126, 127 and 128. The sibling of PKG-DEM2 and PKG-SUP2, aimed at what is left after
+those two: the front door, the explore map, the Listing Studio preview, the Advisor and the match
+explainer. Same defect class, further from the record. A surface that spells a figure has privately
+decided what the figure means, and by this package the surfaces still doing it were the ones that
+answer a person rather than list a row.
+
+The worst of it was on the front door. `MarketingHome.tsx` and `MapExplorer.tsx` are client
+components and both called `toLocaleString()` with no locale on the published, REGA-attributed Rent
+Index band, so an Arabic-locale phone read the one externally attributed figure on the site in
+Arabic-Indic digits, on the first screen. Two invented band bounds went with it, where one stated end
+printed beside an absent end as a range ending at zero.
+
+`scripts/ar-lint.mjs` gained a rule scoped to the language rather than to a directory: a string
+literal carrying Arabic script may not carry an en dash. The old pair of rules banned it inside
+`src/i18n` and banned the em dash everywhere, which left Arabic copy written in source unguarded, and
+`src/lib/market/verdict.ts` was building `النطاق 1,800-2,900` there. The new rule was proved to fire
+against a deliberate probe before the probe was removed.
+
+Finding 128 was found by running `src/lib/figureGrammar.test.ts` for the first time and treating its
+failures as a discovery instrument. It is the biggest of the four and the least visible: the Advisor
+quoted the published band with the stored column key `sar_sqm_yr` printed where the unit belongs, the
+shortlist could reach `Asking runs NaN to NaN`, and the match explainer told an occupier their
+ceiling was "2000 per sqm", with no currency and no period, for a number their own form collected
+under the label "Budget ceiling (SAR/m2/yr)".
+
+One correction ran the other way. `requirementFigures.budgetCeiling` rendered a purchase budget as a
+bare SAR total, and the test asserting it should was itself wrong: `RequirementForm` has one
+unconditional budget field under one label, and `matching.ts` compares the column it fills against a
+rate per square metre for sales as well as leases. The renderer was the only one of the three that
+disagreed. Both were corrected and the test now carries the record it was wrong about.
+
+Deliberately not done, recorded rather than left silent:
+
+Finding 127's prose tail. `WatchBanner.tsx`, `market/analyser.ts`, `market/valueEvidence.ts` and
+`agents/tools.ts` build a range inside a larger sentence that carries its own preposition. All are
+locale-pinned, none uses a dash, and the Arabic case was checked by hand against the Unicode Bidi
+Algorithm before it was excluded: a bare range inside an already-RTL paragraph reads low then high
+correctly. Consolidating them would churn asserted AI answer text for no reader-facing gain.
+
+An owner decision, recorded rather than taken: whether a requirement's purchase budget should be a
+total rather than a rate per square metre. Today the form collects one budget under one label and the
+matcher reads it as a rate, so a rate is what it is. If a purchase budget should be a total, the FORM
+is what changes first, and the column almost certainly has to split in two, because one column cannot
+hold two units. That is a decision about intake and it is not taken here.
+
+Also out of scope and unchanged: `area/page.tsx`'s English-only age bucket labels behind the ADV-5C
+mobility gate; `listings/page.tsx`'s median cell, which passes an explicit locale and breaks no law;
+the Listing Studio's ungated inline Arabic literals, which overlap the deferred BASE prose strings;
+and the single-character placeholders standing for an absent value on `compare`, `listings`,
+`rent-index` and `ops`.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

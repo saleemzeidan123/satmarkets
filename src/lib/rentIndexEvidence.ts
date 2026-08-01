@@ -81,7 +81,7 @@ import {
   type Sufficiency,
   normalizeStatisticKind,
 } from "./evidence";
-import { type Loc, formatInteger, resolveUnitKey } from "./format";
+import { type Loc, formatInteger, formatRange, resolveUnitKey } from "./format";
 import { parsePeriod } from "./market/period";
 import { REGA_RENT_INDEX_SOURCE_ID } from "./sources/catalogue";
 import type { SourceRights } from "./sourceRights";
@@ -295,9 +295,14 @@ export function rentIndexPassports(
       ...base,
       ...origin,
       field: "rent_index_band",
-      // The same en dash the table cell prints, so the passport and the figure
-      // beside it cannot disagree about what was displayed.
-      value: `${formatInteger(Math.round(low), lp)}–${formatInteger(Math.round(high), lp)}`,
+      // PKG-FIG1, finding 127. This used to spell the separator itself and say
+      // so in a comment: "the same en dash the table cell prints, so the passport
+      // and the figure beside it cannot disagree about what was displayed". That
+      // is the right requirement held together by the wrong mechanism, since it
+      // depended on two authors in two files remembering one character. Both now
+      // render from `formatRange`, so they agree by construction, and the Arabic
+      // passport value stops carrying a dash Arabic does not use.
+      value: formatRange(Math.round(low), Math.round(high), lp, 0),
       statistic: "range",
       // Always SAT's arithmetic. On a real cell that makes it the derived
       // display question rather than the redisplay one; on a simulated cell it

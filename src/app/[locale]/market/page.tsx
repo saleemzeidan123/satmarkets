@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, segmentLabel } from "@/lib/labels";
-import { fill, formatCounted } from "@/lib/format";
+import { fill, formatCounted, formatRange } from "@/lib/format";
 import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
 import JsonLd, { SITE } from "@/components/JsonLd";
@@ -152,7 +152,10 @@ export default async function MarketPage({ params }: { params: { locale: string 
                     <span style={{ position: "absolute", insetInlineStart: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: "rgba(58,110,165,.28)", borderRadius: 7 }} />
                     <span style={{ position: "absolute", insetInlineStart: `calc(${medPos}% - 4px)`, top: 2, width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)" }} />
                   </div>
-                  <span className="mono" style={{ width: 118, flex: "none", fontSize: 11.5, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{ar ? `${nf(r.low)} إلى ${nf(r.high)}` : `${nf(r.low)}–${nf(r.high)}`} · <b style={{ color: "var(--harbor)" }}>{nf(r.med)}</b></span>
+                  <span className="mono" style={{ width: 118, flex: "none", fontSize: 11.5, color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{/* PKG-FIG1, finding 127. This line branched the separator itself, one of
+                      six places that did, which is how the tree ended up with four
+                      spellings of one range. `formatRange` owns it. */}
+                  {formatRange(r.low, r.high, ar ? "ar" : "en", 0)} · <b style={{ color: "var(--harbor)" }}>{nf(r.med)}</b></span>
                 </div>
               );
             })}

@@ -46,9 +46,19 @@ test("percentages carry the sign only when asked, and isolate in Arabic", () => 
   assert.equal(plain(formatPercent(-1.8, "ar", { signed: true })), "-1.8%");
 });
 
-test("a range always reads low to high, in both languages", () => {
+test("a range always reads low to high, in both languages, and isolates in Arabic", () => {
   assert.equal(formatRange(1250.04, 1590.96, "en"), "1,250.04 to 1,590.96");
-  assert.equal(formatRange(1250.04, 1590.96, "ar"), "1,250.04 إلى 1,590.96");
+  // PKG-FIG1, finding 127. The module header names a range as a composite that
+  // must be wrapped so the surrounding paragraph cannot reorder its parts, and
+  // this was the one composite formatter here that returned its body bare. The
+  // assertion is on the isolate itself rather than on `plain()`, because
+  // `plain()` would pass either way and the isolate is the thing being fixed.
+  assert.equal(formatRange(1250.04, 1590.96, "ar"), `${FSI}1,250.04 إلى 1,590.96${PDI}`);
+  // The defect this replaces: a range built by hand with the separator spelled
+  // at the call site, which is how the tree ended up with four spellings of one
+  // range and an en dash inside Arabic prose.
+  const byHand = (lo: string, hi: string) => `${lo}\u2013${hi}`;
+  assert.notEqual(plain(formatRange(1250, 1591, "ar", 0)), byHand("1,250", "1,591"));
 });
 
 // --------------------------------------------------------------------- units

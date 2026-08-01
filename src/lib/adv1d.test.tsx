@@ -222,7 +222,23 @@ test("Codex gate: EN and AR carry identical values and identical periods", () =>
   for (const field of en.keys()) {
     const a = en.get(field)!;
     const b = ar.get(field)!;
-    assert.equal(a.value, b.value, `${field}: the two languages print different numbers`);
+    // PKG-FIG1, finding 127. This gate's own message says what it is for: "the
+    // two languages print different numbers". It enforced that by comparing the
+    // whole rendered string, which also forbade the two languages from using
+    // their own words, and forcing one string on both is precisely what put an
+    // en dash inside Arabic copy. A range is not a bare figure: English joins
+    // two numbers with a word or a dash, Arabic joins them with إلى. The gate now
+    // makes both halves of the claim explicitly, and together they are stricter
+    // than the single equality they replace: the FIGURES must match in order,
+    // and the two strings must differ by nothing except the connective and the
+    // invisible isolate.
+    const figures = (s: unknown) => String(s ?? "").match(/[0-9][0-9,.]*/g) ?? [];
+    assert.deepEqual(figures(a.value), figures(b.value), `${field}: the two languages print different numbers`);
+    assert.equal(
+      String(a.value ?? "").replace(/ to /g, "|"),
+      String(b.value ?? "").replace(/[\u2068\u2069]/g, "").replace(/ إلى /g, "|"),
+      `${field}: the two languages differ by more than the connective`,
+    );
     assert.equal(a.period, b.period, `${field}: the two languages report different periods`);
     assert.equal(a.asOf, b.asOf, `${field}: the two languages report different last-true dates`);
     assert.equal(a.unit, b.unit, `${field}: the two languages report different units`);
@@ -515,14 +531,26 @@ test("Codex gate: the Advisor passport carries the figure the Advisor printed, i
     const band = views.get("rent_index_band")!;
     const msg = renderValue(ev!, loc);
     assert.ok(msg.includes(avg.value!), `${loc}: the answer printed an average the passport does not carry`);
-    const [low, high] = band.value!.split("–");
-    assert.ok(msg.includes(low) && msg.includes(high), `${loc}: the answer printed a band the passport does not carry`);
+    // PKG-FIG1, finding 127. This split the passport value on a literal en dash,
+    // which tied the gate to one language's separator and broke the moment the
+    // Arabic stopped using it. It now takes every figure the passport carries and
+    // requires all of them in the sentence, which is the claim the message makes,
+    // with no separator in it at all.
+    const bandFigures = band.value!.match(/[0-9][0-9,.]*/g) ?? [];
+    assert.ok(bandFigures.length >= 2, `${loc}: the passport band no longer carries two figures`);
+    for (const figure of bandFigures) {
+      assert.ok(msg.includes(figure), `${loc}: the answer printed a band the passport does not carry`);
+    }
     // Codex gate: EN and AR values and periods identical.
     for (const [field, v] of views) {
       const key = `${field}:value`;
       const per = `${field}:period`;
       if (seen.has(key)) {
-        assert.equal(v.value, seen.get(key), `${field}: the two languages carry different values`);
+        assert.deepEqual(
+          String(v.value ?? "").match(/[0-9][0-9,.]*/g) ?? [],
+          String(seen.get(key) ?? "").match(/[0-9][0-9,.]*/g) ?? [],
+          `${field}: the two languages carry different values`,
+        );
         assert.equal(v.period, seen.get(per), `${field}: the two languages carry different periods`);
       }
       seen.set(key, v.value!);

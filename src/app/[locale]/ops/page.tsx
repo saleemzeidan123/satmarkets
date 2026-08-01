@@ -9,6 +9,7 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
+import { formatRange } from "@/lib/format";
 
 type Seg = "blended" | "grade_a" | "grade_b" | "modern";
 type Row = {
@@ -333,7 +334,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
                   <tr className="border-t border-slate-100 align-top">
                     <td className="px-3 py-2 text-slate-900">{ar ? c.districtAr : c.district}{c.unresolved && <span className="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800">{t("unresolved", "غير محلول")}</span>}{c.note && <span className="ms-1 rounded bg-slate-100 px-1 text-xs text-slate-600">{ar ? c.noteAr : c.note}</span>}</td>
                     <td className="px-3 py-2 text-slate-600">{t(c.asset, c.assetAr)} · {t(c.segEn, c.segAr)}</td>
-                    <td className="px-3 py-2 text-slate-600"><bdi dir="ltr">{fmt(c.low)}–{fmt(c.high)}</bdi></td>
+                    <td className="px-3 py-2 text-slate-600">{formatRange(c.low, c.high, ar ? "ar" : "en", 0)}</td>
                     <td className="px-3 py-2 text-slate-900">{c.verdict === "sufficient" && c.median != null ? (<span><bdi dir="ltr">{fmt(c.median)}</bdi>{c.verdict === "sufficient" && <a href={rentIndex} className="ms-1 text-sky-600 underline">{t("→ live cell", "→ الخلية المنشورة")}</a>}</span>) : c.verdict === "disagree" ? t("Not published", "غير منشور") : t("Thin sample", "عينة قليلة")}</td>
                     <td className="px-3 py-2">{verdictChip(c)}</td>
                     <td className="px-3 py-2"><button onClick={() => setOpenCell((o) => ({ ...o, [c.k]: !o[c.k] }))} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600">{isOpen ? "▾ " : "▸ "}<bdi dir="ltr">{c.rows.length}</bdi></button></td>
@@ -341,7 +342,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
                   </tr>
                   {isOpen && (<tr className="border-t border-slate-100 bg-slate-50/60"><td colSpan={7} className="px-3 py-2">
                     <table className="w-full text-xs"><thead className="text-slate-400"><tr><th className="px-2 py-1 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-2 py-1 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-2 py-1 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-2 py-1 text-start font-medium">{t("Basis", "الأساس")}</th><th className="px-2 py-1 text-start font-medium">{t("Sufficient", "كافٍ")}</th></tr></thead>
-                    <tbody>{c.rows.map((r, ri) => (<tr key={ri} className="border-t border-slate-100"><td className="px-2 py-1 text-slate-600">{ar ? r.sourceAr : r.source} · {r.period}</td><td className="px-2 py-1 text-slate-600"><bdi dir="ltr">{fmt(r.low)}–{fmt(r.high)}</bdi></td><td className="px-2 py-1 text-slate-600"><bdi dir="ltr">{fmt(r.median)}</bdi></td><td className="px-2 py-1 text-slate-500">{ar ? r.basisAr : r.basis}</td><td className="px-2 py-1">{r.sufficient ? <span className="text-emerald-600">{t("yes", "نعم")}</span> : <span className="text-amber-600">{t("no", "لا")}</span>}</td></tr>))}</tbody></table>
+                    <tbody>{c.rows.map((r, ri) => (<tr key={ri} className="border-t border-slate-100"><td className="px-2 py-1 text-slate-600">{ar ? r.sourceAr : r.source} · {r.period}</td><td className="px-2 py-1 text-slate-600">{formatRange(r.low, r.high, ar ? "ar" : "en", 0)}</td><td className="px-2 py-1 text-slate-600"><bdi dir="ltr">{fmt(r.median)}</bdi></td><td className="px-2 py-1 text-slate-500">{ar ? r.basisAr : r.basis}</td><td className="px-2 py-1">{r.sufficient ? <span className="text-emerald-600">{t("yes", "نعم")}</span> : <span className="text-amber-600">{t("no", "لا")}</span>}</td></tr>))}</tbody></table>
                     {c.verdict === "disagree" && <p className="mt-1 text-xs text-amber-700">{t("Sources spread " + Math.round(c.spreadPct * 100) + "% apart, beyond the 12% tolerance. Conservative resolution: hold, do not publish a median.", "المصادر متباعدة " + Math.round(c.spreadPct * 100) + "٪، خارج حد 12٪. الحل المتحفظ: تعليق، دون نشر وسيط.")}</p>}
                   </td></tr>)}
                 </Fragment>);

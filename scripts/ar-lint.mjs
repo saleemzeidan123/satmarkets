@@ -96,5 +96,42 @@ for (const f of all) {
   }
 }
 
+// PKG-FIG1, finding 127. The en dash, scoped to the LANGUAGE rather than to a
+// directory.
+//
+// The narrow walk at the top of this file bans it inside src/i18n, and the em
+// dash sweep above deliberately leaves it alone everywhere else, because in
+// English it is the correct numeric range separator ("1,800-2,900"). That pair
+// of rules assumed Arabic copy lives only in the dictionaries. It does not:
+// src/lib/market/verdict.ts built the Arabic verdict sentence
+// "النطاق 1,800-2,900" in source, and neither rule could see it, so the
+// construction the gate exists to prevent shipped in the one place the gate did
+// not look.
+//
+// The rule therefore follows the Arabic. A quoted string or template chunk that
+// carries Arabic script may not also carry an en dash, wherever it is written.
+// Arabic takes إلى between two figures, formatRange() in src/lib/format.ts is
+// where that is decided for both languages, and a caller spelling it again is
+// the defect rather than an alternative.
+//
+// Two limits, stated rather than implied. A literal that renders INTO Arabic
+// without containing any Arabic itself, because its locale arrives as a
+// parameter, is invisible to this rule; that is exactly what
+// src/lib/rentIndexEvidence.ts was, and it is why the range call sites were
+// routed through formatRange() rather than left for the gate to catch. And JSX
+// text content is not a string literal, so a dash typed between two elements is
+// not seen either.
+const ARABIC_SCRIPT = /[\u0600-\u06FF]/;
+const EN_DASH = /\u2013/;
+const LITERAL = /"[^"\n]*"|'[^'\n]*'|`[^`]*`/g;
+for (const f of all) {
+  const t = fs.readFileSync(f, "utf8");
+  const hits = (t.match(LITERAL) || []).filter((s) => ARABIC_SCRIPT.test(s) && EN_DASH.test(s));
+  if (hits.length) {
+    console.error(`${f}: ${hits.length}x en dash inside Arabic copy -> Arabic takes the word, not a dash; render the range with formatRange()`);
+    bad++;
+  }
+}
+
 if (bad) { console.error(`ar-lint: ${bad} violation groups`); process.exit(1); }
 else console.log("ar-lint: clean");

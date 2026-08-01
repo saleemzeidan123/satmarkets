@@ -140,14 +140,42 @@ test("the unit is spelled by format.ts, once per locale, on every surface", () =
   assert.equal(visible(formatUnit("sqm", "ar")), "م²");
 });
 
-test("a lease budget is per square metre per year and a purchase budget is not", () => {
+test("the budget carries one unit for every deal type, because one form fills the column", () => {
+  // PKG-FIG1, finding 128. This test used to assert the opposite, and the
+  // opposite was wrong. It was written from the shape of the argument list
+  // rather than from the record.
+  //
+  // The record: `RequirementForm` has ONE budget input. It is not conditional on
+  // the deal type, and its label reads "Budget ceiling (SAR/m²/yr)" and, in
+  // Arabic, "سقف الميزانية (ريال/م²·سنة)". That label is what the occupier is
+  // looking at while they type the number, so it is what the number means. It is
+  // the same class of evidence finding 120 turned on: the form that fills the
+  // column, not the column name and not the route type.
+  //
+  // `matching.ts` reads the same column and compares it against
+  // `ratePerSqm(listing)`, which for a sale divides the sale price by the area.
+  // So the comparison already treats a purchase budget as a rate per square
+  // metre. Rendering it as a bare `SAR` total made one stored column mean two
+  // different things depending on which screen was reading it.
   for (const locale of LOCALES) {
     const lease = visible(budgetCeiling(1400, "lease", locale));
-    const buy = visible(budgetCeiling(9000000, "buy", locale));
-    assert.ok(lease.endsWith(visible(formatUnit("sar_sqm_year", locale, "short"))), `${locale}: ${lease}`);
-    assert.ok(buy.endsWith(visible(formatUnit("sar", locale, "short"))), `${locale}: ${buy}`);
-    assert.notEqual(lease.replace(/[\d,]/g, ""), buy.replace(/[\d,]/g, ""));
+    const buy = visible(budgetCeiling(9000, "buy", locale));
+    const unit = visible(formatUnit("sar_sqm_year", locale, "short"));
+    assert.ok(lease.endsWith(unit), `${locale}: ${lease}`);
+    assert.ok(buy.endsWith(unit), `${locale}: ${buy}`);
+    // Nothing but the digits differs, which is the property: the deal type moves
+    // the figure and never the unit.
+    assert.equal(lease.replace(/[\d,]/g, ""), buy.replace(/[\d,]/g, ""));
   }
+  // The spelling that shipped, kept beside the fixed one so this guard fails
+  // against the code it replaced rather than merely restating the new code.
+  const shipped = (deal: string, locale: Loc) => formatUnit(deal === "lease" ? "sar_sqm_year" : "sar", locale, "short");
+  assert.notEqual(visible(shipped("buy", "en")), visible(formatUnit("sar_sqm_year", "en", "short")));
+
+  // Whether a purchase budget SHOULD be a total is an owner decision about
+  // intake, recorded in the roadmap rather than taken here. If it should, the
+  // form changes first and the column almost certainly has to split in two,
+  // because one column cannot hold two units.
 });
 
 // ---------------------------------------------------------------------------

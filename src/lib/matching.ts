@@ -31,7 +31,8 @@
 // Pure: no I/O, no React, no clock of its own beyond an injected `now`.
 
 import { foldText } from "./textFold";
-import { formatCounted } from "./format";
+import { formatArea, formatCounted, formatWithUnit, type Loc } from "./format";
+import { sizeRange } from "./requirementFigures";
 import { availabilityOf } from "./availability";
 import { assetLabel, cityLabel, dealLabel } from "./labels";
 import { isUrgentTimeline, timelineLabel, mustHaveLabel } from "./requirementIntake";
@@ -131,7 +132,17 @@ const num = (v: unknown): number | null => {
 // Western numerals in both languages (Law 7). Whole numbers stay whole; anything
 // else keeps one decimal, which is as much precision as a rate or a margin
 // carries in a sentence a person reads.
+//
+// PKG-FIG1, finding 128. `fmt` survives only for the PERCENTAGES, which carry
+// their own word ("percent", "بالمئة") and no unit. Every figure that has a unit
+// left it. It said `${fmt(budget)} per sqm`, in Arabic `${fmt(budget)} للمتر
+// المربع`, which names an area and NO CURRENCY AND NO PERIOD: the occupier was
+// shown a ceiling of "2000 per sqm" for a number the form collected under the
+// label "Budget ceiling (SAR/m²·yr)". A rate with the currency taken off is not
+// a smaller version of the figure, it is a different figure, and the reader has
+// no way to tell which one they are looking at.
 const fmt = (n: number): string => (Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10));
+const money = (n: number, locale: Loc): string => formatWithUnit(n, "sar_sqm_year", locale, "short", 0);
 
 const same = (a: unknown, b: unknown): boolean => {
   const x = foldText(String(a ?? ""));
@@ -287,15 +298,23 @@ export function matchReasons(
   const max = num(req.size_max_sqm);
   if (min !== null || max !== null) {
     const area = num(listing.area_sqm);
-    const range_en = min !== null && max !== null ? `${fmt(min)} to ${fmt(max)} sqm`
-      : min !== null ? `at least ${fmt(min)} sqm` : `up to ${fmt(max as number)} sqm`;
-    const range_ar = min !== null && max !== null ? `من ${fmt(min)} إلى ${fmt(max)} متر مربع`
-      : min !== null ? `${fmt(min)} متر مربع على الأقل` : `حتى ${fmt(max as number)} متر مربع`;
+    // PKG-FIG1, finding 128. These four lines built a requirement's size range
+    // by hand, in a unit spelling no surface on this platform renders: `sqm` and
+    // `متر مربع`, where every visitor screen, the flyer and `format.ts` itself
+    // say `m²` and `م²`. `fmt` is `String(n)`, so the figures arrived ungrouped
+    // as well: the occupier read "1200 sqm" where the listing card beside it read
+    // "1,200 m²". `requirementFigures.sizeRange` already renders exactly this
+    // fact, in both languages, isolated, with the half-open case handled, and it
+    // was written for this column. The match explanation is read by the occupier
+    // and by the lister, so it is a visitor surface and it takes the visitor
+    // spelling.
+    const range_en = sizeRange(min, max, "en") as string;
+    const range_ar = sizeRange(min, max, "ar") as string;
     if (area === null) {
       out.push(reason({
         key: "size", dimension: "size", state: "unknown",
         label_en: "Size", label_ar: "المساحة",
-        reason_en: `The requirement is for ${range_en}. This listing does not state an area.`,
+        reason_en: `The requirement is ${range_en}. This listing does not state an area.`,
         reason_ar: `المتطلب ${range_ar}. هذه القائمة لا تذكر المساحة.`,
         remedy_en: "The lister states the area in square metres.",
         remedy_ar: "يذكر المُدرِج المساحة بالمتر المربع.",
@@ -308,22 +327,22 @@ export function matchReasons(
         out.push(reason({
           key: "size", dimension: "size", state: "met",
           label_en: "Size", label_ar: "المساحة",
-          reason_en: `${fmt(area)} sqm falls inside the requirement of ${range_en}.`,
-          reason_ar: `${fmt(area)} متر مربع ضمن المطلوب ${range_ar}.`,
+          reason_en: `${formatArea(area, "en")} falls inside the requirement, ${range_en}.`,
+          reason_ar: `${formatArea(area, "ar")} ضمن المطلوب ${range_ar}.`,
         }));
       } else if (off <= SIZE_TOLERANCE_PCT) {
         out.push(reason({
           key: "size", dimension: "size", state: "tolerance",
           label_en: "Size", label_ar: "المساحة",
-          reason_en: `${fmt(area)} sqm is ${fmt(off)} percent outside the requirement of ${range_en}, within the ${SIZE_TOLERANCE_PCT} percent margin SAT treats as a possible answer.`,
-          reason_ar: `${fmt(area)} متر مربع خارج المطلوب ${range_ar} بنسبة ${fmt(off)} بالمئة، ضمن هامش ${SIZE_TOLERANCE_PCT} بالمئة الذي تعدّه سات إجابة محتملة.`,
+          reason_en: `${formatArea(area, "en")} is ${fmt(off)} percent outside the requirement, ${range_en}, within the ${SIZE_TOLERANCE_PCT} percent margin SAT treats as a possible answer.`,
+          reason_ar: `${formatArea(area, "ar")} خارج المطلوب ${range_ar} بنسبة ${fmt(off)} بالمئة، ضمن هامش ${SIZE_TOLERANCE_PCT} بالمئة الذي تعدّه سات إجابة محتملة.`,
         }));
       } else {
         out.push(reason({
           key: "size", dimension: "size", state: "failed",
           label_en: "Size", label_ar: "المساحة",
-          reason_en: `${fmt(area)} sqm is ${fmt(off)} percent outside the requirement of ${range_en}.`,
-          reason_ar: `${fmt(area)} متر مربع خارج المطلوب ${range_ar} بنسبة ${fmt(off)} بالمئة.`,
+          reason_en: `${formatArea(area, "en")} is ${fmt(off)} percent outside the requirement, ${range_en}.`,
+          reason_ar: `${formatArea(area, "ar")} خارج المطلوب ${range_ar} بنسبة ${fmt(off)} بالمئة.`,
         }));
       }
     }
@@ -346,8 +365,8 @@ export function matchReasons(
       out.push(reason({
         key: "budget", dimension: "budget", state: "unknown",
         label_en: "Budget", label_ar: "الميزانية",
-        reason_en: `The requirement sets a ceiling of ${fmt(budget)} per sqm. ${missing_en}`,
-        reason_ar: `المتطلب يضع سقفاً قدره ${fmt(budget)} للمتر المربع. ${missing_ar}`,
+        reason_en: `The requirement sets a ceiling of ${money(budget, "en")}. ${missing_en}`,
+        reason_ar: `المتطلب يضع سقفاً قدره ${money(budget, "ar")}. ${missing_ar}`,
         remedy_en: listing.deal_type === "sale" ? "The lister states the price and the area." : "The lister states the asking rent per square metre.",
         remedy_ar: listing.deal_type === "sale" ? "يذكر المُدرِج السعر والمساحة." : "يذكر المُدرِج الإيجار المطلوب للمتر المربع.",
       }));
@@ -355,8 +374,8 @@ export function matchReasons(
       out.push(reason({
         key: "budget", dimension: "budget", state: "met",
         label_en: "Budget", label_ar: "الميزانية",
-        reason_en: `${fmt(rate)} per sqm is at or below the ceiling of ${fmt(budget)}.`,
-        reason_ar: `${fmt(rate)} للمتر المربع عند السقف ${fmt(budget)} أو دونه.`,
+        reason_en: `${money(rate, "en")} is at or below the ceiling of ${money(budget, "en")}.`,
+        reason_ar: `${money(rate, "ar")} عند السقف ${money(budget, "ar")} أو دونه.`,
       }));
     } else {
       const over = ((rate - budget) / budget) * 100;
@@ -364,15 +383,15 @@ export function matchReasons(
         out.push(reason({
           key: "budget", dimension: "budget", state: "tolerance",
           label_en: "Budget", label_ar: "الميزانية",
-          reason_en: `${fmt(rate)} per sqm is ${fmt(over)} percent above the ceiling of ${fmt(budget)}, within the ${BUDGET_TOLERANCE_PCT} percent margin SAT treats as a possible answer.`,
-          reason_ar: `${fmt(rate)} للمتر المربع أعلى من السقف ${fmt(budget)} بنسبة ${fmt(over)} بالمئة، ضمن هامش ${BUDGET_TOLERANCE_PCT} بالمئة الذي تعدّه سات إجابة محتملة.`,
+          reason_en: `${money(rate, "en")} is ${fmt(over)} percent above the ceiling of ${money(budget, "en")}, within the ${BUDGET_TOLERANCE_PCT} percent margin SAT treats as a possible answer.`,
+          reason_ar: `${money(rate, "ar")} أعلى من السقف ${money(budget, "ar")} بنسبة ${fmt(over)} بالمئة، ضمن هامش ${BUDGET_TOLERANCE_PCT} بالمئة الذي تعدّه سات إجابة محتملة.`,
         }));
       } else {
         out.push(reason({
           key: "budget", dimension: "budget", state: "failed",
           label_en: "Budget", label_ar: "الميزانية",
-          reason_en: `${fmt(rate)} per sqm is ${fmt(over)} percent above the ceiling of ${fmt(budget)}.`,
-          reason_ar: `${fmt(rate)} للمتر المربع أعلى من السقف ${fmt(budget)} بنسبة ${fmt(over)} بالمئة.`,
+          reason_en: `${money(rate, "en")} is ${fmt(over)} percent above the ceiling of ${money(budget, "en")}.`,
+          reason_ar: `${money(rate, "ar")} أعلى من السقف ${money(budget, "ar")} بنسبة ${fmt(over)} بالمئة.`,
         }));
       }
     }

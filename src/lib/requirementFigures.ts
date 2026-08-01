@@ -103,13 +103,37 @@ export function sizeRange(min: unknown, max: unknown, locale: Loc): StatedFigure
  * a ceiling on both now, and the ceiling is part of the figure rather than a
  * word a caller remembers to add.
  *
- * A lease budget is per square metre per year and a purchase budget is a total,
- * which is why the deal type is an argument: the unit is not a property of the
- * number.
+ * PKG-FIG1, finding 128. THE DEAL TYPE DOES NOT CHANGE THIS UNIT, AND THIS
+ * FUNCTION USED TO THINK IT DID.
+ *
+ * It rendered a non-lease budget as a bare `sar`, on the stated reasoning that
+ * "a purchase budget is a total". That reasoning was not read off the record. The
+ * record says otherwise in three places, and they agree with each other:
+ *
+ *   1. `RequirementForm` has ONE budget field, with no deal-type branch, under
+ *      one label: "Budget ceiling (SAR/m²·yr)" and, in Arabic,
+ *      "سقف الميزانية (ريال/م²·سنة)". That is the form that fills the column,
+ *      so it is what the occupier was actually asked for, whatever they are
+ *      buying. It is the same class of evidence finding 120 turned on.
+ *   2. The column is named `budget_sqm_max`.
+ *   3. `matching.ts` compares this column against `ratePerSqm(listing)`, and for
+ *      a sale that helper divides the sale price by the area to get a rate per
+ *      square metre. The matcher has always read this column as a rate.
+ *
+ * So the board was telling a buyer their ceiling was 9,000,000 SAR outright
+ * while the matcher was testing 9,000,000 against a price per square metre. One
+ * column cannot mean both. The form is the evidence and the display now follows
+ * it.
+ *
+ * If a purchase budget should be a total, the FORM is what changes first: a
+ * deal-conditional label, and almost certainly a second column, since one column
+ * cannot hold two units. That is an owner decision about intake, recorded here
+ * rather than taken here, and it is not something a display function may decide
+ * on its own by picking a different unit at render time.
  */
 export function budgetCeiling(budget: unknown, deal: string | null | undefined, locale: Loc): StatedFigure {
   const n = num(budget);
   if (n === null) return null;
-  const unit = formatUnit(deal === "lease" ? "sar_sqm_year" : "sar", locale, "short");
+  const unit = formatUnit("sar_sqm_year", locale, "short");
   return isolate(`${WORD.upTo[locale]} ${formatInteger(n, locale)} ${unit}`, locale);
 }

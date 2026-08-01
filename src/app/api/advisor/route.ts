@@ -4,6 +4,7 @@ import { releaseVisibleInventory } from "@/lib/inventory";
 import { allowShared } from "@/lib/ratelimit";
 import { unsourcedFigure } from "@/lib/market/guard";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
+import { formatInteger, formatRange, formatUnit } from "@/lib/format";
 import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type PeriodStatus } from "@/lib/market/valueEvidence";
 import { readNumericIntent } from "@/lib/market/numericIntent";
 import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
@@ -429,9 +430,36 @@ export async function POST(req: NextRequest) {
     // Periods are rendered through the shared bilingual helper, never as the raw
     // "2026-Q2" storage form (Codex item 5).
     const baselinePeriod = displayPeriod(band.period, arq);
-    const baseline = arq
-      ? `من ${band.band_low} إلى ${band.band_high} ${band.unit}، المتوسط ${band.median}، للفترة ${baselinePeriod}`
-      : `${band.band_low} to ${band.band_high} ${band.unit}, average ${band.median}, for ${baselinePeriod}`;
+    // PKG-FIG1, finding 128. This clause interpolated `band.band_low`,
+    // `band.band_high`, `band.median` and `band.unit` straight out of the row.
+    //
+    // The three figures are `numeric`, which PostgREST hands back as strings, so
+    // they arrived here already rendered by the database: ungrouped, and with
+    // whatever scale the column carries. The fourth is worse. `band.unit` is the
+    // STORED UNIT KEY, and `src/lib/ingest/rentBasePipeline.ts` writes that key
+    // as the literal `sar_sqm_yr`, which is why `format.ts` carries it as an
+    // alias. So an Arabic answer quoting the published REGA band ended in a
+    // Latin snake_case identifier, on the one sentence in this file that is
+    // wrapped in a licence decision and carries a passport.
+    //
+    // Six lines above, this file states that periods are rendered through the
+    // shared bilingual helper and never as the raw "2026-Q2" storage form, which
+    // is Codex item 5. The unit standing immediately beside that period WAS the
+    // raw storage form. Same rule, same sentence, now applied to both.
+    //
+    // A figure that will not parse is not a figure the index published, so the
+    // whole clause is withheld rather than printed as NaN, and the answer falls
+    // back to the shape it already takes when the licence withholds it.
+    const bLow = Number(band.band_low), bHigh = Number(band.band_high), bMedian = Number(band.median);
+    const baseline: string | null = [bLow, bHigh, bMedian].every((n) => Number.isFinite(n))
+      ? (arq
+        ? `من ${formatRange(bLow, bHigh, "ar", 0)} ${formatUnit(band.unit, "ar", "short")}، المتوسط ${formatInteger(bMedian, "ar")}، للفترة ${baselinePeriod}`
+        : `${formatRange(bLow, bHigh, "en", 0)} ${formatUnit(band.unit, "en", "short")}, average ${formatInteger(bMedian, "en")}, for ${baselinePeriod}`)
+      : null;
+    // Codex item 2 read together with the line above: a figure that cannot be
+    // rendered must not reach the browser through the JSON either, so one
+    // decision governs the sentence and the payload rather than two.
+    const showBaseline = wGate.mayShowFigure && baseline !== null;
     // WE CANNOT ALERT ANYONE, SO WE DO NOT SAY WE WILL.
     //
     // This used to answer: "I am watching X for you. When the index next updates, I
@@ -463,7 +491,7 @@ export async function POST(req: NextRequest) {
     const tail = arq
       ? `لا يمكنني إشعارك تلقائياً بعد، لذا راجع مؤشر الإيجارات عند تحديثه.`
       : `I cannot alert you automatically yet, so check the Rent Index when it next updates.`;
-    const message = wGate.mayShowFigure
+    const message = showBaseline
       ? advisorQuoteMessage(
           wGate,
           arq
@@ -477,7 +505,7 @@ export async function POST(req: NextRequest) {
       // Codex item 2 again. `toPublicSegment` carries the average and both band
       // ends, so it is a figure leaving the server and is omitted outright when
       // the decision withheld one. The client already guards on its absence.
-      ...(wGate.mayShowFigure ? { band: toPublicSegment(band as IndexRowLike, wGate.sourceText) } : {}),
+      ...(showBaseline ? { band: toPublicSegment(band as IndexRowLike, wGate.sourceText) } : {}),
       threshold,
       saved,
       quote: wGate.kind,

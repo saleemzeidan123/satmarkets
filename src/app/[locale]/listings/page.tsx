@@ -39,7 +39,7 @@ import { CHECK_METHODS } from "@/lib/listingVerification";
 import { verifiedBadges } from "@/components/VerificationState";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, formatArea, formatCounted, formatNumber, formatUnit } from "@/lib/format";
+import { fill, formatArea, formatCounted, formatNumber, formatRange, formatUnit } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 import { placeName } from "@/lib/displayName";
 
@@ -464,7 +464,14 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + segmentLabel(r.segment, locale) : ""}</td>
                       <td className="num mono">{show && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dl.na)}</td>
-                      <td className="num mono muted">{show && r.band_low != null && r.band_high != null ? <bdi dir="ltr">{`${Number(r.band_low).toLocaleString("en-US")} – ${Number(r.band_high).toLocaleString("en-US")}`}</bdi> : (dl.thinSample)}</td>
+                      {/* PKG-FIG1, finding 127. The cell spelled the separator as a spaced
+                          en dash and forced the whole range left to right, which is right
+                          for a bare figure and wrong for a range whose Arabic separator is
+                          a word. `formatRange` states it once, for both languages, and
+                          isolates the composite instead of overriding its direction.
+                          `rentIndexEvidence.ts` renders the passport value from the same
+                          call, so the two cannot disagree about what was displayed. */}
+                      <td className="num mono muted">{show && r.band_low != null && r.band_high != null ? formatRange(Number(r.band_low), Number(r.band_high), ar ? "ar" : "en", 0) : (dl.thinSample)}</td>
                       {/* This column reports the sample, which is a separate
                           question from whether the figure may be published, so
                           it keeps saying what it always said. The sentences
