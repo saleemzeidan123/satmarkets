@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { Icon, Photo } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
 import AvailabilityReaffirm from "@/components/AvailabilityReaffirm";
 import { listerAvailability } from "@/lib/availability";
@@ -130,14 +131,15 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
             <Link href={`/${lp}/list`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.emptyC}</Link>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.title}>
             <table className="dt" style={{ minWidth: 640 }}>
+              <caption className="sronly">{t.title}</caption>
               <thead>
                 <tr>
-                  <th>{t.thListing}</th>
-                  <th style={{ textAlign: "right" }}>{t.thEnq}</th>
-                  <th>{t.thStatus}</th>
-                  <th style={{ textAlign: "right" }}>{t.thAction}</th>
+                  <th scope="col">{t.thListing}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thEnq}</th>
+                  <th scope="col">{t.thStatus}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thAction}</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,7 +241,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>
           <div>{t.note}</div>

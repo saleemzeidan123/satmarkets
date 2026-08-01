@@ -9,6 +9,7 @@ import { listingTitle } from "@/lib/listingTitle";
 import { fetchAccountSaved, promoteDeviceFolders, setShortlist } from "@/lib/saved";
 import type { Listing } from "@/lib/types";
 import { netArea, askingPrice } from "@/lib/listingFigures";
+import ScrollRegion from "@/components/ScrollRegion";
 
 const KEY = "satm_saved";
 const FKEY = "satm_saved_folders";
@@ -185,12 +186,13 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                 </Link>
               )}
             </div>
-            <div className="mt-3 overflow-x-auto rounded-2xl border border-line bg-white">
+            <ScrollRegion label={T.compare} className="mt-3 rounded-2xl border border-line bg-white">
               <table className="w-full min-w-[640px] text-sm">
+                <caption className="sronly">{T.compare}</caption>
                 <thead>
                   <tr className="border-b border-line">
-                    <th className="p-3 text-start text-[0.6875rem] uppercase tracking-wide text-charcoal/65"></th>
-                    {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[0.875rem] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
+                    <th scope="col" className="p-3 text-start text-[0.6875rem] uppercase tracking-wide text-charcoal/65"></th>
+                    {shownL.map((l) => (<th scope="col" key={l.id} className="p-3 text-start font-display text-[0.875rem] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
                   </tr>
                 </thead>
                 <tbody className="text-charcoal/75">
@@ -203,7 +205,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
             {idxNotes.map((n) => (
               <div key={n} className="px-3 pt-2 text-[0.71875rem] leading-relaxed text-charcoal/65">{n}</div>
             ))}
@@ -215,7 +217,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (<tr className="border-b border-line/70"><td className="p-3 text-[0.6875rem] uppercase tracking-wide text-charcoal/65">{label}</td>{children}</tr>);
+  return (<tr className="border-b border-line/70"><th scope="row" className="p-3 text-start font-normal text-[0.6875rem] uppercase tracking-wide text-charcoal/65">{label}</th>{children}</tr>);
 }
 function Cell({ children }: { children: React.ReactNode }) {
   return (<td className="p-3 align-top">{children}</td>);

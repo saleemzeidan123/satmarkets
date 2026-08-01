@@ -1341,3 +1341,233 @@ test("a requirement title states the script it is actually written in", () => {
     );
   }
 });
+
+// ---------------------------------------------------------------------------
+// RC11. Findings 148, 149 and 168, which are three reports of one property: the
+// box a wide thing does not fit in was never given a name, a role or a way in.
+//
+//   148: `table.dt{display:block}` inside the ≤920px fit guard. It made the
+//   table scroll, and it removed the table role from the accessibility tree
+//   while thead, tr, th and td kept their display:table-* values, so at exactly
+//   the width where a reader most needs column context the header cells stopped
+//   being associated with the data cells (SC 1.3.1).
+//
+//   149: the scroll wrapper was a bare `<div>`. Not focusable, no role, no
+//   name, so on any viewport narrower than the table a keyboard or switch user
+//   could not pan it. Tabbing to a link inside the table scrolls the box as a
+//   side effect, which is not the same thing: the enquiry-count column on the
+//   lister inventory holds nothing focusable at all (SC 2.1.1, SC 1.4.10).
+//
+//   168: no table in the product had a caption, and no `<th>` anywhere had a
+//   `scope`. A table announced as "table with 5 columns and 12 rows" and
+//   nothing else is a table the reader has to guess at (SC 1.3.1).
+//
+// All three are relationships between a table and the box around it, so the
+// repository could not see any of them by reading either one. These rules check
+// the relationship: every table names itself and its columns, no stylesheet
+// takes a table's role away to make it fit, and every box that scrolls sideways
+// is a ScrollRegion rather than a bare div.
+//
+// What this cannot do is prove what a reader hears. `scope="col"` and a
+// `<caption>` are evidence that the markup is right. Screen-reader verification
+// of these tables is recorded as outstanding in docs/findings-register.md.
+// ---------------------------------------------------------------------------
+
+/** Every `<table` in a file, paired with the source that follows its opening tag. */
+function tablesIn(src: string): { at: number; after: string }[] {
+  const out: { at: number; after: string }[] = [];
+  let i = -1;
+  while ((i = src.indexOf("<table", i + 1)) !== -1) {
+    if (/[\w-]/.test(src[i + 6] ?? "")) continue; // <tablefoo, not a table
+    const gt = src.indexOf(">", i);
+    if (gt === -1) continue;
+    out.push({ at: src.slice(0, i).split("\n").length, after: src.slice(gt + 1) });
+  }
+  return out;
+}
+
+/** Every `<thead>…</thead>` block in a file. */
+function theadsIn(src: string): string[] {
+  const out: string[] = [];
+  let i = -1;
+  while ((i = src.indexOf("<thead", i + 1)) !== -1) {
+    const end = src.indexOf("</thead>", i);
+    if (end === -1) continue;
+    out.push(src.slice(i, end));
+  }
+  return out;
+}
+
+test("every data table names itself", () => {
+  const bad: string[] = [];
+  let seen = 0;
+  for (const f of ALL) {
+    for (const t of tablesIn(f.src)) {
+      seen += 1;
+      if (!/^\s*<caption className="sronly">/.test(t.after)) bad.push(`${f.path}:${t.at}`);
+    }
+  }
+  assert.ok(seen >= 21, `the table scan found ${seen} tables and has stopped working`);
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 168. A table with no caption is announced by its dimensions and nothing else, so a " +
+      "reader arriving at it by table navigation is told how many columns there are and never " +
+      "what they are of. The caption is the first child, is visually hidden with the platform " +
+      "`sronly` class, and reuses the heading already printed above the table rather than " +
+      "inventing a second name for the same thing.",
+  );
+});
+
+test("every data table names its columns", () => {
+  const bad: string[] = [];
+  let seen = 0;
+  for (const f of ALL) {
+    for (const block of theadsIn(f.src)) {
+      for (const m of block.matchAll(/<th(?=[\s>])[^>]*>/g)) {
+        seen += 1;
+        if (!/\bscope=/.test(m[0])) bad.push(`${f.path}: ${m[0].slice(0, 60)}`);
+      }
+    }
+  }
+  assert.ok(seen >= 90, `the header scan found ${seen} header cells and has stopped working`);
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 168. Without `scope`, the association between a header cell and the cells beneath " +
+      "it is left to the browser's heuristic, which is a guess about a layout rather than a " +
+      "statement about the data. Every header cell in a thead is a column header and says so.",
+  );
+});
+
+test("no stylesheet takes a table's role away to make it fit", () => {
+  for (const sheet of ["src/styles/globals.css", "src/styles/sat-platform.css"]) {
+    const css = readFileSync(join(ROOT, ...sheet.split("/")), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    for (const m of css.matchAll(/table\.dt[^{}]*\{([^}]*)\}/g)) {
+      assert.doesNotMatch(
+        m[1],
+        /display\s*:\s*(block|flex|grid)/,
+        `finding 148. ${sheet}. Overriding a table's display value drops the table role from the ` +
+          "accessibility tree while its rows and cells keep theirs, so the header cells stop " +
+          "being associated with the data cells at exactly the width where that association " +
+          "matters most. Overflow belongs to the box, not to the table: see `.scrollx`.",
+      );
+    }
+  }
+});
+
+test("the wrapper class owns overflow at every width, not only on a phone", () => {
+  const css = readFileSync(join(ROOT, "src", "styles", "sat-platform.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+  const at = css.indexOf(".scrollx{");
+  assert.ok(at !== -1, "finding 149. `.scrollx` is the box a wide region scrolls in.");
+  const before = css.slice(0, at);
+  assert.equal(
+    (before.match(/\{/g) ?? []).length - (before.match(/\}/g) ?? []).length,
+    0,
+    "finding 149. The rule is declared at the top level, not inside a media query. A table with " +
+      "a minWidth overflows whenever its column is narrower than that, which a desktop split " +
+      "view does as readily as a phone, so a breakpoint would leave the defect standing at " +
+      "every width above it.",
+  );
+  assert.match(
+    css.slice(at, at + 200),
+    /\.scrollx\{[^}]*overflow-x:auto[^}]*min-width:0/,
+    "finding 149. `min-width:0` is the grid and flex min-content release: without it a scroller " +
+      "inside a 1fr track is widened by its own content instead of scrolling, and the region " +
+      "never reports itself scrollable.",
+  );
+  assert.match(
+    css.slice(at, at + 400),
+    /\.scrollx:focus-visible\{outline:2px solid/,
+    "finding 149. A tab stop with no visible focus is SC 2.4.7 traded for SC 2.1.1. The ring is " +
+      "inset because most of these wrappers sit inside a `.card` with overflow:hidden.",
+  );
+});
+
+/** path -> why a horizontal scroller in that file is allowed to stay a bare element. */
+const BARE_SCROLLER_EXEMPT: Record<string, string> = {
+  "src/components/MarketingHome.tsx":
+    "The hero asset rail is a row of buttons with explicit previous and next controls beside " +
+    "it, so every item is reachable by Tab and the rail is pannable without a pointer.",
+  "src/components/MapExplorer.tsx":
+    "Both rails hold only focusable children, a chip row of buttons and a card row of links, " +
+    "so focus movement reaches every item and pans the rail as a consequence.",
+  "src/components/ListingStudio.tsx":
+    "The step nav is a row of buttons inside a named `<nav>`, so it is already both reachable " +
+    "and announced.",
+};
+
+test("a box that scrolls sideways is a ScrollRegion", () => {
+  const bad: string[] = [];
+  for (const f of ALL) {
+    if (BARE_SCROLLER_EXEMPT[f.path]) continue;
+    if (f.path === "src/components/ScrollRegion.tsx") continue;
+    if (/overflowX:\s*"auto"/.test(f.src) || /\boverflow-x-auto\b/.test(f.src)) bad.push(f.path);
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 149. A bare div with `overflow-x: auto` is not focusable, carries no role and has " +
+      "no name, so content wider than it is unreachable without a pointer whenever that content " +
+      "holds nothing focusable. ScrollRegion measures, and becomes a named, focusable region " +
+      "only at the sizes where there is something to pan.",
+  );
+});
+
+test("every exemption from the scroller rule still describes a real file", () => {
+  for (const path of Object.keys(BARE_SCROLLER_EXEMPT)) {
+    const f = ALL.find((x) => x.path === path);
+    assert.ok(f, `${path} is exempt from the scroller rule and no longer exists`);
+    assert.ok(
+      /overflowX:\s*"auto"/.test(f!.src) || /\boverflow-x-auto\b/.test(f!.src),
+      `${path} is exempt from the scroller rule and no longer has a horizontal scroller. An ` +
+        "exemption that describes nothing is a rule with a hole in it.",
+    );
+  }
+});
+
+test("the scroll region states only what it measured", () => {
+  const src = code(readFileSync(join(ROOT, "src", "components", "ScrollRegion.tsx"), "utf8"));
+  assert.match(
+    src,
+    /setScrollable\(el\.scrollWidth - el\.clientWidth > 1\)/,
+    "finding 149. The same evidence the browser uses to decide whether to paint a scrollbar, " +
+      "with one device pixel of tolerance so a fractional layout width is not read as overflow.",
+  );
+  assert.match(
+    src,
+    /\{\.\.\.\(scrollable \? \{ tabIndex: 0, role: "region", "aria-label": label \} : \{\}\)\}/,
+    "findings 149 and 200. The register recorded the blocker honestly: a tab stop is a new stop " +
+      "in the page's tab order and a region needs a name. Both objections are true, and both " +
+      "only matter when the box actually scrolls, so the attributes are conditional on the " +
+      "measurement rather than on the markup.",
+  );
+  assert.match(
+    src,
+    /new ResizeObserver\(measure\)/,
+    "finding 149. A viewport rotation resizes the wrapper; a filter that removes a column " +
+      "resizes the table inside a wrapper that never moved. Both change the answer.",
+  );
+  assert.ok(
+    !/useState\(true\)/.test(src),
+    "finding 149. The server cannot compare a minWidth to a viewport it cannot see, so the " +
+      "server render is always the non-scrollable form and the effect corrects it.",
+  );
+});
+
+test("every ScrollRegion is given a name to use if it needs one", () => {
+  const bad: string[] = [];
+  for (const f of ALL) {
+    if (f.path === "src/components/ScrollRegion.tsx") continue;
+    for (const m of f.src.matchAll(/<ScrollRegion(?=[\s>])[^>]*>/g)) {
+      if (!/\blabel=/.test(m[0])) bad.push(`${f.path}: ${m[0].slice(0, 60)}`);
+    }
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 149. A region with no accessible name is announced as a region and nothing else, " +
+      "which is worse than no region at all. The name is the same string the surface already " +
+      "prints as its heading or caption.",
+  );
+});

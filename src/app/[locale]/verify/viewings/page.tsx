@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
 import ViewingActions from "@/components/ViewingActions";
+import ScrollRegion from "@/components/ScrollRegion";
 
 export const dynamic = "force-dynamic";
 
@@ -43,9 +44,10 @@ export default async function ViewingsQueue() {
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Viewing requests</h1>
       <p style={{ color: "var(--slate)", margin: "0 0 4px" }}>{rows.length} requests, {pending} awaiting a decision. SAT-listed viewings are SAT&apos;s to host; owner-listed viewings route to the lister once accounts go live, until then this queue serves both with the route shown.</p>
       <p style={{ color: "var(--slate)", fontSize: "0.75rem", margin: "0 0 20px" }}>The brief is what the requester stated; the platform never scores people.</p>
-      <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
+      <ScrollRegion label="Viewing requests" style={{ border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["Slot (Riyadh)", "Listing", "Route", "Requester", "Stated brief", "Status", "Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <caption className="sronly">Viewing requests</caption>
+          <thead><tr>{["Slot (Riyadh)", "Listing", "Route", "Requester", "Stated brief", "Status", "Action"].map((h) => <th scope="col" key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td style={td} colSpan={7}>No viewing requests yet.</td></tr>}
             {rows.map((r) => (
@@ -61,7 +63,7 @@ export default async function ViewingsQueue() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </main>
   );
 }

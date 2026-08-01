@@ -7,6 +7,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import WatchBanner from "@/components/WatchBanner";
+import ScrollRegion from "@/components/ScrollRegion";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 import { assetLabel, segmentLabel } from "@/lib/labels";
@@ -375,9 +376,10 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
        <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>{ri.tableTitle}</div>
        <span className="chip" style={{ borderColor: "var(--silver)" }}>{ri.sortYoY} <Icon.chevd size={14} /></span>
       </div>
-      <div style={{ overflowX: "auto" }}>
+      <ScrollRegion label={ri.tableTitle}>
        <table className="dt" style={{ minWidth: 640 }}>
-        <thead><tr><th>{ri.thLocation}</th><th>{ri.thAsset}</th><th style={{ textAlign: "right" }}>{statUnitHeading(cells, loc, { neutral: ri.thStat, pattern: C.statUnit })}</th><th style={{ textAlign: "right" }}>{withUnit(ri.thBand, cells, loc, C.statUnit)}</th><th style={{ textAlign: "right" }}>{ri.thData}</th><th style={{ textAlign: "right" }}>{ri.thSource}</th></tr></thead>
+        <caption className="sronly">{ri.tableTitle}</caption>
+        <thead><tr><th scope="col">{ri.thLocation}</th><th scope="col">{ri.thAsset}</th><th scope="col" style={{ textAlign: "right" }}>{statUnitHeading(cells, loc, { neutral: ri.thStat, pattern: C.statUnit })}</th><th scope="col" style={{ textAlign: "right" }}>{withUnit(ri.thBand, cells, loc, C.statUnit)}</th><th scope="col" style={{ textAlign: "right" }}>{ri.thData}</th><th scope="col" style={{ textAlign: "right" }}>{ri.thSource}</th></tr></thead>
         <tbody>
          {districts.map((d, i) => (
           <tr key={i}>
@@ -400,7 +402,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
          ))}
         </tbody>
        </table>
-      </div>
+      </ScrollRegion>
       {/* ADV-1E, Codex item 3. The explicit meaning, in the reader's language,
           inside the same card as the figures it qualifies and immediately below
           them. One line per kind actually present, so a table of real cleared

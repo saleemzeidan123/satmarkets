@@ -4,6 +4,7 @@ import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 import { formatInteger, formatUnit } from "@/lib/format";
+import ScrollRegion from "@/components/ScrollRegion";
 
 type Tier = { nm: string; who: string; price: string; unit: string; feat: boolean; ghost?: boolean; cta: string; pts: string[] };
 
@@ -95,16 +96,17 @@ export default function PricingPage({ params }: { params: { locale: string } }) 
     <div style={{ padding: "36px 24px 48px" }}>
      <h2 className="serif" style={{ fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-.02em", margin: "0 0 16px" }}>{dict.pricing.compareLimits}</h2>
      <div className="card" style={{ overflow: "hidden", boxShadow: "none" }}>
-      <div style={{ overflowX: "auto" }}>
+      <ScrollRegion label={dict.pricing.compareLimits}>
        <table className="matrix">
-        <thead><tr><th></th><th>{heads[0]}</th><th>{heads[1]}</th><th style={{ color: "var(--azure-d)" }}>{heads[2]}</th><th>{heads[3]}</th><th>{heads[4]}</th></tr></thead>
+        <caption className="sronly">{dict.pricing.compareLimits}</caption>
+        <thead><tr><th scope="col"></th><th scope="col">{heads[0]}</th><th scope="col">{heads[1]}</th><th scope="col" style={{ color: "var(--azure-d)" }}>{heads[2]}</th><th scope="col">{heads[3]}</th><th scope="col">{heads[4]}</th></tr></thead>
         <tbody>
          {matrix.map((r, i) => r[0] === "grp"
           ? <tr key={i} className="grp"><td colSpan={6}>{r[1]}</td></tr>
-          : <tr key={i}><td>{r[0]}</td>{r.slice(1).map((v, j) => <td key={j}>{cell(v)}</td>)}</tr>)}
+          : <tr key={i}><th scope="row">{r[0]}</th>{r.slice(1).map((v, j) => <td key={j}>{cell(v)}</td>)}</tr>)}
         </tbody>
        </table>
-      </div>
+      </ScrollRegion>
      </div>
     </div>
    </div>

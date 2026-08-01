@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import { listingTitle } from "@/lib/listingTitle";
 
 // Every enquiry on the owner's own listings. The dashboard showed the five most
@@ -100,12 +101,13 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
             <Link href={`/${lp}/dashboard/listings`} className="btn secondary sm" style={{ marginTop: 12 }}>{t.emptyC}</Link>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.title}>
             <table className="dt" style={{ minWidth: 640 }}>
+              <caption className="sronly">{t.title}</caption>
               <thead>
                 <tr>
-                  <th>{t.thWho}</th><th>{t.thListing}</th><th>{t.thPath}</th>
-                  <th style={{ textAlign: "right" }}>{t.thWhen}</th>
+                  <th scope="col">{t.thWho}</th><th scope="col">{t.thListing}</th><th scope="col">{t.thPath}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thWhen}</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,7 +129,7 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </div>
     </div>

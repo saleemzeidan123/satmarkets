@@ -10,6 +10,7 @@ import { listingTitle } from "@/lib/listingTitle";
 import { parseQuery, dropKeys, matchesQuery, type QueryVocab } from "@/lib/search/queryParse";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import dynamic from "next/dynamic";
 import type { DistrictBubble, ExactPin } from "@/components/ListingsMap";
 
@@ -480,9 +481,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           {idx.length === 0 ? (
             <p className="muted" style={{ padding: 18, margin: 0, fontSize: "0.84375rem" }}>{dl.noSegments}</p>
           ) : (
-            <div style={{ overflowX: "auto" }}>
+            <ScrollRegion label={dl.indexCut}>
               <table className="dt" style={{ minWidth: 520 }}>
-                <thead><tr><th>{dl.colLocation}</th><th>{dl.colAsset}</th><th style={{ textAlign: "right" }}>{statUnitHeading(idxCells, locale, { neutral: dl.colStat, pattern: dict.common.statUnit })}</th><th style={{ textAlign: "right" }}>{withUnit(dl.colBand, idxCells, locale, dict.common.statUnit)}</th><th style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
+                <caption className="sronly">{dl.indexCut}</caption>
+                <thead><tr><th scope="col">{dl.colLocation}</th><th scope="col">{dl.colAsset}</th><th scope="col" style={{ textAlign: "right" }}>{statUnitHeading(idxCells, locale, { neutral: dl.colStat, pattern: dict.common.statUnit })}</th><th scope="col" style={{ textAlign: "right" }}>{withUnit(dl.colBand, idxCells, locale, dict.common.statUnit)}</th><th scope="col" style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
                 <tbody>
                   {idx.map((q, i: number) => {
                     const r: any = q.row;
@@ -514,7 +516,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
           )}
           <div className="muted" style={{ padding: "12px 18px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: "0.75rem" }}>
             {dl.sampleDisclaimer}

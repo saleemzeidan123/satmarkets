@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { listingTitle } from "@/lib/listingTitle";
 import ViewingDecision from "@/components/ViewingDecision";
+import ScrollRegion from "@/components/ScrollRegion";
 
 // Viewing requests on the lister's own listings.
 //
@@ -102,15 +103,19 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
     <div className="col gap14">
       {head}
 
-      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+      {/* The card is the scroller. `overflow: "hidden"` was dropped from it because
+          `.scrollx` sets overflow-x, which computes overflow-y to auto and clips to the
+          card radius exactly as the shorthand did, while still allowing a pan. */}
+      <ScrollRegion label={t.title} className="card" style={{ padding: 0 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84375rem" }}>
+          <caption className="sronly">{t.title}</caption>
           <thead>
             <tr style={{ background: "var(--cool)", textAlign: ar ? "right" : "left" }}>
-              <th style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thWho}</th>
-              <th style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thListing}</th>
-              <th style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thWhen}</th>
-              <th style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thState}</th>
-              <th style={{ padding: "10px 14px" }} />
+              <th scope="col" style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thWho}</th>
+              <th scope="col" style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thListing}</th>
+              <th scope="col" style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thWhen}</th>
+              <th scope="col" style={{ padding: "10px 14px", fontWeight: 600 }}>{t.thState}</th>
+              <th scope="col" style={{ padding: "10px 14px" }} />
             </tr>
           </thead>
           <tbody>
@@ -136,7 +141,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
             })}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </div>
   );
 }

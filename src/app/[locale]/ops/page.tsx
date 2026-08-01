@@ -10,6 +10,7 @@
 import { Fragment, useMemo, useState } from "react";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 import { formatRange } from "@/lib/format";
+import ScrollRegion from "@/components/ScrollRegion";
 
 type Seg = "blended" | "grade_a" | "grade_b" | "modern";
 type Row = {
@@ -324,9 +325,10 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
       <section id="board">
         <H n="04" en="Reconciliation board" arr="لوحة مطابقة المصادر" />
         <p className="mb-2 text-xs text-slate">{t("One row per cell (district × asset × segment). The verdict reconciles every source in the cell: where REGA and a broker cover the same cell and their medians fall outside tolerance the cell reads Disagreement and does not publish a number until resolved. Thin is conservative, not an error. An override can only make a cell more conservative. Expand a row to see the contributing sources.", "صف لكل خلية (الحي × الأصل × الشريحة). يوفّق الحكم كل مصادر الخلية: حين يغطي ريجا ووسيط الخلية نفسها ويخرج وسيطاهما عن الحد تُقرأ الخلية تعارض المصادر ولا تنشر رقماً حتى تُحلّ. القليل تحفظ لا خطأ. التجاوز يجعل الخلية أكثر تحفظاً فقط. وسّع الصف لرؤية المصادر المساهمة.")}</p>
-        <div className="overflow-x-auto rounded-lg border border-silver">
+        <ScrollRegion label={t("Reconciliation board", "لوحة مطابقة المصادر")} className="rounded-lg border border-silver">
           <table className="w-full text-sm">
-            <thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th className="px-3 py-2 text-start font-medium">{t("Sources", "المصادر")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
+            <caption className="sronly">{t("Reconciliation board", "لوحة مطابقة المصادر")}</caption>
+            <thead className="bg-cool text-slate"><tr><th scope="col" className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Sources", "المصادر")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
             <tbody>
               {cells.map((c) => {
                 const isOpen = !!openCell[c.k];
@@ -341,7 +343,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
                     <td className="px-3 py-2">{c.verdict === "override" ? <button onClick={() => doRelease(c)} disabled={!can("admin")} className={btn}>{t("Release override", "رفع التجاوز")}</button> : c.unresolved ? <button onClick={() => doResolve(c)} disabled={!can("review")} className={btn}>{t("Resolve district", "حل الحي")}</button> : c.verdict === "sufficient" ? <button onClick={() => doForceThin(c)} disabled={!can("review")} className={btn}>{t("Force thin", "إجبار قليل")}</button> : <span className="text-xs text-slate">–</span>}</td>
                   </tr>
                   {isOpen && (<tr className="border-t border-silver bg-cool/60"><td colSpan={7} className="px-3 py-2">
-                    <table className="w-full text-xs"><thead className="text-slate"><tr><th className="px-2 py-1 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-2 py-1 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-2 py-1 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-2 py-1 text-start font-medium">{t("Basis", "الأساس")}</th><th className="px-2 py-1 text-start font-medium">{t("Sufficient", "كافٍ")}</th></tr></thead>
+                    <table className="w-full text-xs"><caption className="sronly">{t("Contributing sources", "المصادر المساهمة")}</caption><thead className="text-slate"><tr><th scope="col" className="px-2 py-1 text-start font-medium">{t("Source", "المصدر")}</th><th scope="col" className="px-2 py-1 text-start font-medium">{t("Band", "النطاق")}</th><th scope="col" className="px-2 py-1 text-start font-medium">{t("Median", "الوسيط")}</th><th scope="col" className="px-2 py-1 text-start font-medium">{t("Basis", "الأساس")}</th><th scope="col" className="px-2 py-1 text-start font-medium">{t("Sufficient", "كافٍ")}</th></tr></thead>
                     <tbody>{c.rows.map((r, ri) => (<tr key={ri} className="border-t border-silver"><td className="px-2 py-1 text-slate">{ar ? r.sourceAr : r.source} · {r.period}</td><td className="px-2 py-1 text-slate">{formatRange(r.low, r.high, ar ? "ar" : "en", 0)}</td><td className="px-2 py-1 text-slate"><bdi dir="ltr">{fmt(r.median)}</bdi></td><td className="px-2 py-1 text-slate">{ar ? r.basisAr : r.basis}</td><td className="px-2 py-1">{r.sufficient ? <span className="text-emerald-600">{t("yes", "نعم")}</span> : <span className="text-amber-d">{t("no", "لا")}</span>}</td></tr>))}</tbody></table>
                     {c.verdict === "disagree" && <p className="mt-1 text-xs text-amber-d">{t("Sources spread " + Math.round(c.spreadPct * 100) + "% apart, beyond the 12% tolerance. Conservative resolution: hold, do not publish a median.", "المصادر متباعدة " + Math.round(c.spreadPct * 100) + "٪، خارج حد 12٪. الحل المتحفظ: تعليق، دون نشر وسيط.")}</p>}
                   </td></tr>)}
@@ -349,14 +351,15 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </section>
 
       <section id="gate">
         <H n="05" en="Verification gate queue" arr="طابور بوابة التحقق" />
-        <div className="overflow-x-auto rounded-lg border border-silver">
+        <ScrollRegion label={t("Verification gate queue", "طابور بوابة التحقق")} className="rounded-lg border border-silver">
           <table className="w-full text-sm">
-            <thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
+            <caption className="sronly">{t("Verification gate queue", "طابور بوابة التحقق")}</caption>
+            <thead className="bg-cool text-slate"><tr><th scope="col" className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
             <tbody>
               {listings.map((l) => { const st = listStatus(l); const blocked = !gatesPass(l); const gr = gateReason(l); return (<tr key={l.ref} className="border-t border-silver">
                 <td className="px-3 py-2"><span className="font-medium text-ink" dir="ltr">{l.ref}</span><span className="text-slate"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span>{l.dup && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("duplicate deed", "صك مكرر")}</span>}</td>
@@ -368,7 +371,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
               </tr>); })}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
         <p className="mt-2 text-xs text-slate">{t("Approve is disabled until Nafath, a valid permit, and the deed all pass; the disabled button names the failing gate. The asymmetry rule applies here too: a failed gate can never be published.", "الاعتماد معطّل حتى تجتاز نفاذ ورخصة سارية والصك جميعاً؛ الزر المعطّل يذكر البوابة المتعثرة. قاعدة عدم التناظر تنطبق هنا أيضاً: البوابة غير المجتازة لا تُنشَر أبداً.")}</p>
       </section>
 
@@ -376,7 +379,7 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
         <H n="06" en="Audit trail" arr="سجل التدقيق" />
         <div className="mb-2 flex items-center justify-between"><p className="text-xs text-slate">{t("In-memory in this slice. Times in KSA (UTC+3). Append-only once persisted.", "في الذاكرة في هذه المرحلة. الأوقات بتوقيت السعودية (UTC+3). للإضافة فقط بعد الحفظ.")}</p>{audit.length > 0 && <button onClick={exportAudit} className="rounded border border-silver-2 px-2 py-0.5 text-xs text-ink-2">{t("Audit CSV", "تصدير سجل CSV")}</button>}</div>
         {audit.length === 0 ? (<p className="text-sm text-slate">{t("No actions yet. Enter your name, switch to Reviewer or Admin, and act on a row.", "لا إجراءات بعد. أدخل اسمك، وبدّل إلى مراجع أو مدير، وتصرّف على صف.")}</p>) : (
-          <div className="overflow-x-auto rounded-lg border border-silver"><table className="w-full text-sm"><thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("Time (KSA)", "الوقت (السعودية)")}</th><th className="px-3 py-2 text-start font-medium">{t("Operator", "المشغّل")}</th><th className="px-3 py-2 text-start font-medium">{t("Role", "الدور")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "الإجراء")}</th><th className="px-3 py-2 text-start font-medium">{t("Target", "الهدف")}</th><th className="px-3 py-2 text-start font-medium">{t("Change", "التغيير")}</th><th className="px-3 py-2 text-start font-medium">{t("Reason", "السبب")}</th></tr></thead><tbody>{audit.map((a, i) => (<tr key={i} className="border-t border-silver"><td className="px-3 py-2 text-slate" dir="ltr">{a.ts}</td><td className="px-3 py-2 text-slate">{a.op}</td><td className="px-3 py-2 text-slate">{a.role}</td><td className="px-3 py-2 text-ink">{a.action}</td><td className="px-3 py-2 text-slate" dir="ltr">{a.target}</td><td className="px-3 py-2 text-slate">{a.change}</td><td className="px-3 py-2 text-slate">{a.reason}</td></tr>))}</tbody></table></div>
+          <ScrollRegion label={t("Audit trail", "سجل التدقيق")} className="rounded-lg border border-silver"><table className="w-full text-sm"><caption className="sronly">{t("Audit trail", "سجل التدقيق")}</caption><thead className="bg-cool text-slate"><tr><th scope="col" className="px-3 py-2 text-start font-medium">{t("Time (KSA)", "الوقت (السعودية)")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Operator", "المشغّل")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Role", "الدور")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Action", "الإجراء")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Target", "الهدف")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Change", "التغيير")}</th><th scope="col" className="px-3 py-2 text-start font-medium">{t("Reason", "السبب")}</th></tr></thead><tbody>{audit.map((a, i) => (<tr key={i} className="border-t border-silver"><td className="px-3 py-2 text-slate" dir="ltr">{a.ts}</td><td className="px-3 py-2 text-slate">{a.op}</td><td className="px-3 py-2 text-slate">{a.role}</td><td className="px-3 py-2 text-ink">{a.action}</td><td className="px-3 py-2 text-slate" dir="ltr">{a.target}</td><td className="px-3 py-2 text-slate">{a.change}</td><td className="px-3 py-2 text-slate">{a.reason}</td></tr>))}</tbody></table></ScrollRegion>
         )}
       </section>
 

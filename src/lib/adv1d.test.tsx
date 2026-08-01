@@ -372,17 +372,26 @@ test("Codex gate: the machine-readable REGA claim does not ride on simulated row
 // ---------------------------------------------------------------------------
 
 test("Codex gate: the disclosure is mounted outside the horizontally scrolling table", () => {
-  // The district table is `min-width: 640` inside `overflow-x: auto`, so at 320
-  // and 360 it already scrolls sideways. A `<details>` inside a cell would add
-  // the width of its longest evidence row to that scroll width, and a reader on
-  // a phone would scroll horizontally to read the evidence for a figure. The
+  // The district table is `min-width: 640` inside a horizontal scroller, so at
+  // 320 and 360 it already scrolls sideways. A `<details>` inside a cell would
+  // add the width of its longest evidence row to that scroll width, and a reader
+  // on a phone would scroll horizontally to read the evidence for a figure. The
   // 44px half of this gate is measured against the built stylesheet in
   // `EvidencePassport.render.test.tsx`; this is the placement half.
+  //
+  // RC11 moved the scroller from a bare `<div style={{ overflowX: "auto" }}>` to
+  // `<ScrollRegion>`, which is the same box with a name, a role and a conditional
+  // tab stop. The locator follows the box, not the style property it used to
+  // carry, so this gate keeps testing placement rather than a spelling.
   const code = codeOnly(readFileSync(PAGE, "utf8"));
-  const scroller = code.indexOf("overflowX");
+  const scroller = code.indexOf("<ScrollRegion");
   const tableEnd = code.indexOf("tableNote");
   const mount = code.indexOf("<EvidencePassport");
   assert.ok(scroller > 0 && tableEnd > scroller, "the table markup is not where this test expects it");
+  assert.ok(
+    code.indexOf("</ScrollRegion>") < tableEnd,
+    "the scroll region is still open where the note is rendered, so this ordering proves nothing",
+  );
   assert.ok(mount > tableEnd, "the passport was mounted inside the horizontally scrolling table");
   // And the evidence grid's tracks never demand more than the container has.
   assert.ok(

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import VerifyAccount from "@/components/VerifyAccount";
 import { entityName } from "@/lib/displayName";
 
@@ -71,15 +72,16 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
         {rows.length === 0 ? (
           <div className="muted" style={{ padding: "22px 20px", fontSize: "0.78125rem" }}>{t.empty}</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.title}>
             <table className="dt" style={{ minWidth: 720 }}>
+              <caption className="sronly">{t.title}</caption>
               <thead>
                 <tr>
-                  <th>{t.thName}</th><th>{t.thType}</th><th>{t.thCr}</th>
-                  <th style={{ textAlign: "right" }}>{t.thListings}</th>
-                  <th>{t.thStatus}</th>
-                  <th style={{ textAlign: "right" }}>{t.thWhen}</th>
-                  <th style={{ textAlign: "right" }}>{t.thAction}</th>
+                  <th scope="col">{t.thName}</th><th scope="col">{t.thType}</th><th scope="col">{t.thCr}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thListings}</th>
+                  <th scope="col">{t.thStatus}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thWhen}</th>
+                  <th scope="col" style={{ textAlign: "right" }}>{t.thAction}</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,7 +112,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
       </div>
@@ -128,9 +130,10 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
         {!events || events.length === 0 ? (
           <div className="muted" style={{ padding: "22px 20px 24px", fontSize: "0.78125rem", lineHeight: 1.7, maxWidth: 560 }}>{t.ledgerEmpty}</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.ledgerT}>
             <table className="dt" style={{ minWidth: 700 }}>
-              <thead><tr><th>{t.lWho}</th><th>{t.lWhat}</th><th>{t.lBasis}</th><th style={{ textAlign: "right" }}>{t.lWhen}</th></tr></thead>
+              <caption className="sronly">{t.ledgerT}</caption>
+              <thead><tr><th scope="col">{t.lWho}</th><th scope="col">{t.lWhat}</th><th scope="col">{t.lBasis}</th><th scope="col" style={{ textAlign: "right" }}>{t.lWhen}</th></tr></thead>
               <tbody>
                 {events.map((e: any) => {
                   const acct = rows.find((x: any) => x.id === e.account_id);
@@ -149,7 +152,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </div>
     </AdminShell>

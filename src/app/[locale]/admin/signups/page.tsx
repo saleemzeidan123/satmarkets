@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 
 export const dynamic = "force-dynamic";
 
@@ -48,10 +49,11 @@ export default async function AdminSignupsPage({ params }: { params: { locale: s
             <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65, marginTop: 5, maxWidth: 420 }}>{t.emptyB}</div>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.title}>
             <table className="dt" style={{ minWidth: 680 }}>
+              <caption className="sronly">{t.title}</caption>
               <thead>
-                <tr><th>{t.thWho}</th><th>{t.thRole}</th><th>{t.thContact}</th><th style={{ textAlign: "right" }}>{t.thWhen}</th></tr>
+                <tr><th scope="col">{t.thWho}</th><th scope="col">{t.thRole}</th><th scope="col">{t.thContact}</th><th scope="col" style={{ textAlign: "right" }}>{t.thWhen}</th></tr>
               </thead>
               <tbody>
                 {list.map((r: any) => (
@@ -70,7 +72,7 @@ export default async function AdminSignupsPage({ params }: { params: { locale: s
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <div className="muted" style={{ padding: "12px 20px 16px", fontSize: "0.71875rem", lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
       </div>

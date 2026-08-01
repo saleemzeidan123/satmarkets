@@ -30,6 +30,7 @@ function npv(rate: number, flows: number[]) { return flows.reduce((s, f, i) => s
 function irr(flows: number[]) { let lo = -0.9, hi = 1.5; for (let i = 0; i < 90; i++) { const m = (lo + hi) / 2; if (npv(m, flows) > 0) lo = m; else hi = m; } return (lo + hi) / 2; }
 
 import SampleBanner from "@/components/SampleBanner";
+import ScrollRegion from "@/components/ScrollRegion";
 export default function InvestPage({ params }: { params: { locale: string } }) {
  const ar = params.locale === "ar";
  const iv = getDictionary(params.locale === "ar" ? "ar" : "en").invest;
@@ -252,9 +253,10 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
             records. There is no such query and there are no such records. */}
         <span className="tag">{iv.compsIllustrative}</span>
        </div>
-       <div style={{ overflowX: "auto" }}>
+       <ScrollRegion label={iv.compsTitle}>
         <table className="dt" style={{ minWidth: 560 }}>
-         <thead><tr><th>{iv.thAsset}</th><th>{iv.thDate}</th><th style={{ textAlign: "right" }}>{iv.thSarM2}</th><th style={{ textAlign: "right" }}>{iv.thCapRate}</th><th style={{ textAlign: "right" }}>{iv.thPrice}</th><th style={{ textAlign: "right" }}>{iv.thSource}</th></tr></thead>
+         <caption className="sronly">{iv.compsTitle}</caption>
+         <thead><tr><th scope="col">{iv.thAsset}</th><th scope="col">{iv.thDate}</th><th scope="col" style={{ textAlign: "right" }}>{iv.thSarM2}</th><th scope="col" style={{ textAlign: "right" }}>{iv.thCapRate}</th><th scope="col" style={{ textAlign: "right" }}>{iv.thPrice}</th><th scope="col" style={{ textAlign: "right" }}>{iv.thSource}</th></tr></thead>
          <tbody>
           {comps.map((c, i) => (
            <tr key={i}>
@@ -270,7 +272,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
           ))}
          </tbody>
         </table>
-       </div>
+       </ScrollRegion>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
         <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
         <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{iv.compsNote}</span>

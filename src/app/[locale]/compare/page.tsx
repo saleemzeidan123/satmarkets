@@ -16,6 +16,7 @@ import type { PackListing } from "@/lib/decisionPack";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { listingPlace } from "@/lib/listingTitle";
 import { netArea, askingPrice, annualTotal } from "@/lib/listingFigures";
+import ScrollRegion from "@/components/ScrollRegion";
 
 type SP = { ids?: string };
 
@@ -123,7 +124,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
         </div>
 
         <div style={{ padding: "24px 24px 44px" }}>
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={cp.sideBySide}>
             <div className="card" style={{ overflow: "hidden", boxShadow: "var(--sh-1)", minWidth: 260 + items.length * 200 }}>
               <div style={{ display: "grid", gridTemplateColumns: GRID }}>
                 <div style={{ borderRight: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)" }} />
@@ -168,7 +169,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
                 ))}
               </div>
             </div>
-          </div>
+          </ScrollRegion>
 
           <div className="row gap10" style={{ marginTop: 16 }}>
             <span style={{ color: "var(--harbor)" }}><Icon.info size={15} /></span>

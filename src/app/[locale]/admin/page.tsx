@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import { listingTitle } from "@/lib/listingTitle";
 
 // Every figure here is a live count from the database, or it is not shown.
@@ -84,9 +85,10 @@ export default async function AdminPage({ params }: { params: { locale: string }
         {leads.length === 0 ? (
           <div className="muted" style={{ padding: "22px 20px", fontSize: "0.78125rem" }}>{t.recentEmpty}</div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <ScrollRegion label={t.recent}>
             <table className="dt" style={{ minWidth: 520 }}>
-              <thead><tr><th>{t.thWho}</th><th>{t.thListing}</th><th style={{ textAlign: "right" }}>{t.thWhen}</th></tr></thead>
+              <caption className="sronly">{t.recent}</caption>
+              <thead><tr><th scope="col">{t.thWho}</th><th scope="col">{t.thListing}</th><th scope="col" style={{ textAlign: "right" }}>{t.thWhen}</th></tr></thead>
               <tbody>
                 {leads.map((l: any) => (
                   <tr key={l.id}>
@@ -101,7 +103,7 @@ export default async function AdminPage({ params }: { params: { locale: string }
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </div>
 

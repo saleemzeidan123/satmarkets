@@ -677,9 +677,69 @@ rather than by extension.
 
 RC10 is closed.
 
-**RC11. Table semantics, findings 148, 149 and 168.** `display:block` dropping
+**RC11, slice O, done. Findings 148, 149 and 168.** `display:block` dropping
 table semantics at phone widths; a horizontal scroll wrapper unreachable by
 keyboard; and the Insights table with no caption and no `scope`.
+
+Three findings, one cause: the table was made responsible for its own overflow.
+It is not. A table is a grid of related cells; the box it does not fit in belongs
+to the box. Every consequence in this bucket follows from that inversion.
+`table.dt{display:block}` inside the 920px fit guard is the usual way people make
+a table scroll, and it works, and it also removes the table role from the
+accessibility tree while `thead`, `tr`, `th` and `td` keep their `display:table-*`
+values, so at exactly the width where a reader most needs column context the
+header cells stop being associated with the data cells. That is 148. The wrapper
+that scrolls instead, `<div style={{ overflowX: "auto" }}>`, is not focusable,
+carries no role and has no name, so nobody without a pointer can pan it; the
+enquiry-count column on the lister inventory contains nothing focusable at all
+and is simply unreachable. That is 149. And a table whose name lives in a `<div>`
+above it has no accessible name of its own. That is 168.
+
+The repair is one primitive and one class. `.scrollx` in `sat-platform.css`
+declares `overflow-x:auto;max-width:100%;min-width:0` unconditionally, at the top
+level rather than inside a media query, because content with a `minWidth`
+overflows whenever its column is narrower than that, which a desktop split view
+does as readily as a phone; the old rule only scrolled below 920px, so between
+920px and the table's own `minWidth` the excess was clipped by
+`html,body{overflow-x:clip}` and silently unreachable. With overflow owned at
+every width, `display:block` could simply be deleted. `ScrollRegion.tsx` owns the
+part of the job CSS cannot express: it measures `scrollWidth - clientWidth > 1` on
+mount and through a `ResizeObserver` on both itself and its content, and applies
+`tabIndex={0}`, `role="region"` and `aria-label` only while that is true. Both
+halves of the recorded blocker on 149 were real and both were true only when the
+region actually scrolls, so the answer is to state what is true at that size
+rather than to state it always. This is finding 200's sticky-rail reasoning
+applied again: let the layout decide, not the markup.
+
+Scope was widened twice on purpose. First from the three named surfaces to all 21
+data tables, because the findings were register-blocked on "the same pattern
+appears on other data surfaces" and the commission says to fix systemic causes
+before individual occurrences. Then from tables to any horizontal scroller, after
+the sweep found the `/compare` comparison grid (`minWidth: 260 + items.length *
+200`) and the `/deal` stepper (`minWidth: 460`) carrying the identical 149 defect
+on content that is not a table. That is why the component is named for the box and
+not for what is in it, and why the guard can assert an absolute invariant, no bare
+`overflowX: "auto"` anywhere, with three exemptions carrying reasons, rather than
+a table-shaped one with unexplained gaps. The three exempt rails, the
+`MarketingHome` hero assets, the two `MapExplorer` rails and the `ListingStudio`
+step nav, hold only buttons and links, so focus movement pans them; a table cell
+containing plain text is what focus movement cannot reach.
+
+168's recorded deferral, "adding a caption means adding dictionary keys that this
+pass was instructed not to touch", turned out to be false, and finding out why is
+most of that fix: all 21 tables already render a visible title, and that title is
+already a dictionary value in scope at the call site. So every caption reuses the
+string the reader can already see. No dictionary key was added for any caption.
+Exactly one key pair was added in the whole slice, `deal.progress`, and it names
+the stepper region on `/deal`, which is not a table.
+
+Evidence: typecheck clean; 1641 tests passing, 8 of them new guards on this slice;
+`ar-lint: clean`; prose GATE 0 in 0 files; the reflow probe returning PASS over the
+same 14 viewport renders with track widths numerically identical to the RC7
+baseline, which is the evidence that deleting `display:block` and adding a caption
+to every table in the platform moved no layout; the radio probe PASS at 5 groups in
+both languages. Automated source scan and browser-emulated measurement in Chromium.
+Not a physical device, not an actual screen reader, not independently audited.
 
 **RC12. Media and motion, findings 170, 164 and 165.** A listing video with no
 captions track; a map flight animation as a JavaScript duration no reduced-motion

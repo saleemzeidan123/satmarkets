@@ -5,6 +5,7 @@ import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
 import SampleBanner from "@/components/SampleBanner";
+import ScrollRegion from "@/components/ScrollRegion";
 export default function DealPage({ params }: { params: { locale: string } }) {
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
@@ -37,7 +38,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
      <span className="freeze open lg"><span className="dot" />{d.freezeTag}</span>
     </div>
 
-    <div className="card pad" style={{ marginTop: 22, boxShadow: "var(--sh-1)", overflowX: "auto" }}>
+    <ScrollRegion label={d.progress} className="card pad" style={{ marginTop: 22, boxShadow: "var(--sh-1)" }}>
      <div className="stepper" style={{ minWidth: 460 }}>
       {steps.map((s, i) => (
        <div key={i} className={"st " + s[1]}>
@@ -46,7 +47,7 @@ export default function DealPage({ params }: { params: { locale: string } }) {
        </div>
       ))}
      </div>
-    </div>
+    </ScrollRegion>
 
     <div className="deal-grid" style={{ marginTop: 18 }}>
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>

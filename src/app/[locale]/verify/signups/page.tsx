@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
 import SignupActions from "@/components/SignupActions";
+import ScrollRegion from "@/components/ScrollRegion";
 
 export const dynamic = "force-dynamic";
 
@@ -49,9 +50,10 @@ export default async function SignupQueue() {
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Signup requests</h1>
       <p style={{ color: "var(--slate)", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request verified; account provisioning follows when auth goes live.</p>
-      <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
+      <ScrollRegion label="Signup requests" style={{ border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["When", "Role", "Name", "Company", "Contact", "Details", "Lang", "Status", "Notes", "Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <caption className="sronly">Signup requests</caption>
+          <thead><tr>{["When", "Role", "Name", "Company", "Contact", "Details", "Lang", "Status", "Notes", "Action"].map((h) => <th scope="col" key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.length === 0 && <tr><td style={td} colSpan={10}>No requests yet.</td></tr>}
             {rows.map((r) => (
@@ -70,7 +72,7 @@ export default async function SignupQueue() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </main>
   );
 }

@@ -101,10 +101,10 @@ const FLOOR_EXEMPT: Record<string, string> = {
     "minmax(40px,auto) is a 40px label gutter on the internal bilingual comparison page, " +
     "which is a development surface, not a product journey. 40px is below every content " +
     "box measured here, so it cannot be the wider of the two.",
-  "src/styles/sat-platform.css:695":
+  "src/styles/sat-platform.css:705":
     ".lst-split's 300px track is the search results map panel. It does not need a min() " +
-    "escape because it is removed entirely below its own breakpoint: sat-platform.css:700 " +
-    "sets `.lst-split{grid-template-columns:1fr}` and :701 sets `.lst-map-panel{display:none}` " +
+    "escape because it is removed entirely below its own breakpoint: sat-platform.css:710 " +
+    "sets `.lst-split{grid-template-columns:1fr}` and :711 sets `.lst-map-panel{display:none}` " +
     "at max-width:1080px, so the 300px track exists only at widths where 300px fits.",
 };
 

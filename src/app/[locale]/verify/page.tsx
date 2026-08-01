@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import ReviewActions from "@/components/ReviewActions";
 import { permitOf } from "@/lib/gate";
 import { documentLabel } from "@/lib/documentKinds";
+import ScrollRegion from "@/components/ScrollRegion";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +73,10 @@ export default async function VerifyQueue() {
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Verification review queue</h1>
       <p style={{ color: "var(--slate)", margin: "0 0 4px" }}>{total} listings, {verified} verified, {toReview} need review. Verification is recorded against the listing; no status is asserted that the data does not carry.</p>
       <p style={{ color: "var(--slate)", fontSize: "0.75rem", margin: "0 0 20px" }}>Approve and reject act on the listing immediately, gated on your SAT session. Document links open the private file through a short-lived, download-only signed URL.</p>
-      <div style={{ overflowX: "auto", border: "1px solid var(--silver)", borderRadius: 12 }}>
+      <ScrollRegion label="Verification review queue" style={{ border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead><tr>{["Ref","Title","Account","Acct status","Status","Owner","Auth","Method","Verified at","Doc","Ad permit","Action"].map((h) => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <caption className="sronly">Verification review queue</caption>
+          <thead><tr>{["Ref","Title","Account","Acct status","Status","Owner","Auth","Method","Verified at","Doc","Ad permit","Action"].map((h) => <th scope="col" key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} style={{ background: needs(r) ? "#FBF3E6" : "var(--paper)" }}>
@@ -104,7 +106,7 @@ export default async function VerifyQueue() {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollRegion>
     </main>
   );
 }

@@ -5,6 +5,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { fill, unitText } from "@/lib/format";
 
 import SampleBanner from "@/components/SampleBanner";
+import ScrollRegion from "@/components/ScrollRegion";
 import { localeMeta } from "@/lib/meta";
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
@@ -135,9 +136,10 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
             transaction records, and this table holds none. */}
         <span className="tag">{hb.compsIllustrative}</span>
        </div>
-       <div style={{ overflowX: "auto" }}>
+       <ScrollRegion label={hb.compsTitle}>
         <table className="dt" style={{ minWidth: 620 }}>
-         <thead><tr><th>{hb.thAsset}</th><th>{hb.thDate}</th><th style={{ textAlign: ar ? "left" : "right" }}>{hb.thSarM2}</th><th style={{ textAlign: ar ? "left" : "right" }}>{hb.thCapRate}</th><th style={{ textAlign: ar ? "left" : "right" }}>{hb.thPrice}</th><th style={{ textAlign: ar ? "left" : "right" }}>{hb.thSource}</th></tr></thead>
+         <caption className="sronly">{hb.compsTitle}</caption>
+         <thead><tr><th scope="col">{hb.thAsset}</th><th scope="col">{hb.thDate}</th><th scope="col" style={{ textAlign: ar ? "left" : "right" }}>{hb.thSarM2}</th><th scope="col" style={{ textAlign: ar ? "left" : "right" }}>{hb.thCapRate}</th><th scope="col" style={{ textAlign: ar ? "left" : "right" }}>{hb.thPrice}</th><th scope="col" style={{ textAlign: ar ? "left" : "right" }}>{hb.thSource}</th></tr></thead>
          <tbody>
           {comps.map((c, i) => (
            <tr key={i}>
@@ -155,7 +157,7 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
           ))}
          </tbody>
         </table>
-       </div>
+       </ScrollRegion>
        <div className="row gap10" style={{ padding: "13px 20px", borderTop: "1px solid var(--silver)", background: "var(--cool)" }}>
         <span style={{ color: "var(--amber)" }}><Icon.info size={15} /></span>
         <span className="muted" style={{ fontSize: "0.78125rem" }}>{hb.compsNote}</span>

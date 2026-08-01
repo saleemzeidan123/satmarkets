@@ -3,6 +3,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { Icon, Photo } from "@/components/satkit";
+import ScrollRegion from "@/components/ScrollRegion";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { gateFailures, gateReasonText, type GateReason } from "@/lib/gate";
@@ -261,9 +262,10 @@ export default async function DashboardPage({ params }: { params: { locale: stri
    <div className="dpanel" style={{ marginTop: 18 }}>
     <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.building size={17} /></span><span className="t">{db.navMyListings}</span><span style={{ flex: 1 }} />{listRows.length > 0 && <Link href={`/${lp}/dashboard/listings`} style={{ fontSize: "0.78125rem", color: "var(--azure-d)", fontWeight: 600 }}>{db.viewAll}</Link>}</div>
     {listRows.length === 0 ? <EmptyState title={ar ? "لا عروض بعد" : "No listings yet"} body={ar ? "أدرج مساحتك الأولى ليبدأ ظهورها للمستأجرين الباحثين في الرياض." : "List your first space and it starts reaching occupiers searching in Riyadh."} cta={ar ? "أدرج مساحة" : "List a space"} href={`/${lp}/list`} /> : (
-     <div style={{ overflowX: "auto" }}>
+     <ScrollRegion label={db.navMyListings}>
       <table className="dt" style={{ minWidth: 460 }}>
-       <thead><tr><th>{db.thListing}</th><th style={{ textAlign: ar ? "left" : "right" }}>{db.thStatus}</th></tr></thead>
+       <caption className="sronly">{db.navMyListings}</caption>
+       <thead><tr><th scope="col">{db.thListing}</th><th scope="col" style={{ textAlign: ar ? "left" : "right" }}>{db.thStatus}</th></tr></thead>
        <tbody>
         {listRows.map((l) => (
          <tr key={l.id} style={{ position: "relative" }}>
@@ -278,7 +280,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
         ))}
        </tbody>
       </table>
-     </div>
+     </ScrollRegion>
     )}
    </div>
 
