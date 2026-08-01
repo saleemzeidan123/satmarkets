@@ -551,7 +551,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             );
           })()}
           {canSeeDocs && ownerDocs.length > 0 && (
-            <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--line)" }}>
+            <div className="card pad" style={{ marginTop: 22, boxShadow: "none", border: "1px solid var(--silver)" }}>
               <div style={{ fontWeight: 600, fontSize: 15 }}>{(dict as any).ld.verifDocs}</div>
               <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{(dict as any).ld.verifDocsNote}</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, alignItems: "start" }}>
