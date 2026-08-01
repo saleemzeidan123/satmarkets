@@ -322,8 +322,20 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                 )}
               </div>
 
-              <div className="field">
-                <label htmlFor="pr-size-min">{pr.sizeRange}</label>
+              {/* Finding 181. This was a <div> whose one <label htmlFor="pr-size-min">
+                  read the visible caption while the control it named carried an
+                  aria-label of "Smallest size", so the accessible name did not contain
+                  the visible one. A speech user saying the words printed on the screen
+                  addressed a control that does not answer to them, which is SC 2.5.3,
+                  and the second input had no visible label associated with it at all.
+                  A sweep of src found this one site pair and no other, so it is a
+                  defect and not a pattern.
+                  Two inputs under one caption are a group. The caption is now a legend,
+                  matching the three sibling groups already in this form, and each name
+                  begins with the visible caption and then says which end of the range
+                  it is. The Arabic uses the Arabic comma. */}
+              <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend style={{ padding: 0 }}>{pr.sizeRange}</legend>
                 <div className="row gap10">
                   <input
                     id="pr-size-min" name="sizeMin" inputMode="numeric" className="input grow" value={sizeMin}
@@ -338,7 +350,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                   />
                 </div>
                 {fieldNote("size")}
-              </div>
+              </fieldset>
 
               <div className="field">
                 <label htmlFor="pr-budget">{pr.budgetCeiling}</label>

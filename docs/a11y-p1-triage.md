@@ -108,6 +108,48 @@ name; size inputs whose visible label and accessible name share no words; and a
 geocode result list with no combobox or listbox semantics. Five findings, one
 pattern: the group is drawn visually and never expressed structurally.
 
+Closed in slice G, four of the five. The systemic cause turned out to be two
+missing stylesheet rules rather than four markup sites. There was no `fieldset`
+rule and no `legend` rule anywhere in `src/styles/`, which is what made the group
+element look like a visual change and kept it deferred. It is not one: Tailwind
+preflight, loaded at `globals.css:1`, already zeroes fieldset margin, padding and
+border, so the box was inert all along. What preflight does not reset is
+`min-inline-size: min-content`, a user-agent default unique to fieldset that stops
+the element shrinking below its content, which is RC7's property again and would
+have turned an accessibility fix into a reflow defect at 400 percent zoom.
+`fieldset{min-inline-size:0}` handles it once for the platform. The second rule,
+`.field legend` matching `.field label`, is the other half of Codex's instruction
+not to reduce visual quality to satisfy accessibility, and it deliberately also
+corrects three legends in `RequirementForm.tsx` that had been rendering at body
+size beside 0.75rem siblings since they were written, which no finding had caught.
+
+Three corrections came out of the work. Finding 157's deferral treated row index,
+file name and `aria-labelledby` as three alternatives needing participant evidence
+to choose between; they are complements, and the objection raised against each is
+answered by another, so index plus name settles it without a research round.
+Finding 180 is two defects and not one: the unreachable clearing branch is real,
+but a radio group with no attach-nothing member is incomplete even if that branch
+had worked, because a toggle was written into a control type that has no toggle
+semantics. Finding 181 is a defect and not a pattern, proven by an `src`-wide
+sweep for a visible label overridden by a differing `aria-label`, which found one
+site pair and no other.
+
+Finding 153 is split out to slice H. It is the only bare `<label>` left anywhere
+in the four critical journeys and is exempted by name, with its reason, in
+`src/lib/formGroups.test.ts`, so the guard passes without forgetting it: there is
+no control for that caption to point at until `LocationPicker` grows managed
+option ids, `aria-activedescendant` and direction-aware arrow keys.
+
+A note on line drift. The two new stylesheet rules moved every line below them,
+which the RC7 guard's exemption audit caught immediately by design. The pointers
+inside `reflow.test.ts` and `scripts/reflow-probe.mjs` were re-aimed, and the
+comment stripper in the new guard was changed to preserve line count so its
+exemption keys stay equal to real file line numbers. Finding 184's closure note in
+the register still quotes `sat-platform.css:617`, `:682`, `:687` and `:688`, which
+were correct when written and are now `:622`, `:687`, `:692` and `:693`; the
+closure record is left as written rather than retrofitted, and this paragraph is
+the correction.
+
 **RC9. State and announcement, findings 167, 182, 187, 156 and 145.** View toggles
 exposing no current or pressed state; `aria-pressed` misused for a single-valued
 choice; client-fetched requirement content arriving outside any live region;

@@ -20,7 +20,7 @@ import test from "node:test";
 // Both were reachable only by looking. Nothing in the repository could see
 // them, and the second one is invisible even to a browser check written the
 // obvious way, because `html,body{max-width:100%;overflow-x:clip}` at
-// sat-platform.css:617 and globals.css:220 means clipped overflow is not
+// sat-platform.css:622 and globals.css:220 means clipped overflow is not
 // scrollable overflow: `scrollWidth - clientWidth` reports zero on every page
 // of this site whatever the layout does. A 320px card in a 272px box loses its
 // right 48px silently. That is how this survived review.
@@ -101,10 +101,10 @@ const FLOOR_EXEMPT: Record<string, string> = {
     "minmax(40px,auto) is a 40px label gutter on the internal bilingual comparison page, " +
     "which is a development surface, not a product journey. 40px is below every content " +
     "box measured here, so it cannot be the wider of the two.",
-  "src/styles/sat-platform.css:682":
+  "src/styles/sat-platform.css:687":
     ".lst-split's 300px track is the search results map panel. It does not need a min() " +
-    "escape because it is removed entirely below its own breakpoint: sat-platform.css:687 " +
-    "sets `.lst-split{grid-template-columns:1fr}` and :688 sets `.lst-map-panel{display:none}` " +
+    "escape because it is removed entirely below its own breakpoint: sat-platform.css:692 " +
+    "sets `.lst-split{grid-template-columns:1fr}` and :693 sets `.lst-map-panel{display:none}` " +
     "at max-width:1080px, so the 300px track exists only at widths where 300px fits.",
 };
 

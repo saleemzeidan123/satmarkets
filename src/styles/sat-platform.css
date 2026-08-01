@@ -311,6 +311,11 @@
 .statpill .l{font-size:0.71875rem;color:var(--slate);margin-top:4px;}
 .field{display:flex;flex-direction:column;gap:7px;}
 .field label{font-size:0.75rem;font-weight:600;color:var(--ink);}
+/* PKG-A11Y-1 RC8. There was no rule for legend anywhere in this stylesheet, so
+   the groups already written correctly rendered their caption at body size
+   beside sibling labels at 0.75rem. Accessibility does not get to make the page
+   look worse: a legend is a label, and it now matches the labels it sits with. */
+.field legend{font-size:0.75rem;font-weight:600;color:var(--ink);padding:0;}
 .field .hint,.hint{font-size:0.71875rem;color:var(--slate);}
 /* A <select> takes its intrinsic width from its LONGEST option, and a form control is
    not shrinkable by default, so a long bilingual space-type label pushed the advisor

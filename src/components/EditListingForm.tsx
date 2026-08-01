@@ -95,6 +95,11 @@ export default function EditListingForm({
   const inp: React.CSSProperties = { width: "100%", borderRadius: 8, border: "1px solid var(--silver-2)", padding: "9px 11px", fontSize: "0.84375rem", color: "var(--ink)", background: "var(--paper)", fontFamily: "var(--sans)" };
   const lbl: React.CSSProperties = { display: "block", fontSize: "0.75rem", color: "var(--slate)", marginBottom: 5, fontWeight: 600 };
   const hint: React.CSSProperties = { fontSize: "0.6875rem", color: "var(--slate)", marginTop: 4, opacity: 0.8 };
+  // Finding 159, used by the contact channels group at the foot of this form.
+  // The margin, padding and border are already zero under Tailwind preflight;
+  // they are repeated here because this form styles itself entirely through
+  // inline objects and a reader of this file should not have to know that.
+  const fset: React.CSSProperties = { border: 0, margin: 0, padding: 0, minInlineSize: 0 };
 
   const t = ar ? {
     titleEn: "العنوان بالإنجليزية", titleAr: "العنوان بالعربية",
@@ -369,8 +374,18 @@ export default function EditListingForm({
           <input id="contact_email" style={inp} type="email" value={f.contact_email} onChange={(e) => set("contact_email", e.target.value)} />
         </div>
       </div>
-      <div>
-        <label style={lbl}>{t.channels}</label>
+      {/* Finding 159. Four checkboxes sat under a bare <label> that pointed at
+          nothing, so "How people reach you" named no control and the four boxes
+          arrived as four unrelated choices with no statement of what they are
+          choosing between. A reader moving through the form by control heard
+          "WhatsApp checkbox" with nothing to say which question it answers.
+          The group is now the element that means a group, with the caption as its
+          legend, which is exactly what ListingStudio.tsx:717 already ships for the
+          same four channels. It is visually inert: preflight resets fieldset
+          margin, padding and border, `fset` restates that, and the legend carries
+          the same `lbl` object the label carried. */}
+      <fieldset style={fset}>
+        <legend style={lbl}>{t.channels}</legend>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14, fontSize: "0.8125rem" }}>
           {(["whatsapp", "call", "email", "message"] as const).map((k) => (
             <label key={k} style={{ display: "inline-flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
@@ -378,7 +393,7 @@ export default function EditListingForm({
             </label>
           ))}
         </div>
-      </div>
+      </fieldset>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }} aria-busy={busy || undefined}>
         {/* ELITE-4 J2-6: `disabled` would blur the button the instant it is pressed. */}
         <button type="submit" className="btn primary" aria-disabled={busy || undefined} style={{ opacity: busy ? 0.65 : 1 }}>{busy ? t.saving : t.save}</button>

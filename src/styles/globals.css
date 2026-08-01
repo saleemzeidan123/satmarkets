@@ -219,6 +219,19 @@ html[dir="rtl"]{
 /* mobile: never allow horizontal scroll from full-bleed sections */
 html, body { overflow-x: clip; }
 
+/* PKG-A11Y-1 RC8. A group of related controls is a <fieldset>, and this package
+   converts several groups to it. Tailwind preflight already resets fieldset
+   margin, padding and border, so the element carries no visual weight of its
+   own. What preflight does not reset is `min-inline-size: min-content`, a UA
+   default unique to fieldset which stops the element shrinking below the
+   intrinsic width of its contents. That is the same property RC7 removed from
+   grid tracks: a box that cannot become narrower than its content is a box that
+   clips at 400 percent zoom, and on this site the clip is silent because html
+   and body are `overflow-x:clip`. Several fieldsets in this repository already
+   set `min-width:0` inline, which was this rule being rediscovered one site at
+   a time. */
+fieldset { min-inline-size: 0; }
+
 /* ---- advanced header ---- */
 .site-header { background: rgba(246,248,251,0.62); backdrop-filter: blur(14px) saturate(140%); border-bottom: 1px solid transparent; transition: background .25s ease, border-color .25s ease, box-shadow .25s ease; }
 .site-header.scrolled { background: rgba(246,248,251,0.9); border-bottom-color: rgba(28,33,38,0.08); box-shadow: 0 10px 30px -22px rgba(20,24,28,0.4); }

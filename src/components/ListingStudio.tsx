@@ -571,11 +571,18 @@ export default function ListingStudio({
               onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setDocFiles(arr); setDocKinds(arr.map(() => "deed" as DocumentKind)); }}
               className="text-[0.8125rem]"
             />
+            {/* Finding 157. Every row's select carried the same accessible name, so a
+                lister uploading four documents met four controls all called "Document
+                type" with no way to tell which file each one classifies: the file name
+                is beside it on screen and reaches no reader. The name now carries the
+                row number and the file name. The number is what guarantees uniqueness,
+                because two uploads may legitimately share a name, and it also carries
+                the case where the name is empty. Western numerals in both languages. */}
             {docFiles.map((file, i) => (
               <div key={i} className="flex items-center gap-2">
                 <span className="text-[0.6875rem] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                 <select
-                  aria-label={t("Document type", "نوع المستند")}
+                  aria-label={`${t("Document type", "نوع المستند")} ${i + 1}: ${file.name || t("unnamed file", "ملف بلا اسم")}`}
                   value={docKinds[i] ?? "deed"}
                   onChange={(e) => setDocKinds((p) => { const c = [...p]; c[i] = e.target.value as DocumentKind; return c; })}
                   className="text-[0.75rem] border border-charcoal/20 rounded px-1.5 py-1"
@@ -644,11 +651,12 @@ export default function ListingStudio({
                 onChange={(e) => { touch(); const arr = Array.from(e.target.files ?? []); setFloorFiles(arr); setFloorTypes(arr.map(() => defaultPlanType(f.asset_type))); }}
                 className="text-[0.8125rem]"
               />
+              {/* Finding 157, the same defect on the plan rows. */}
               {floorFiles.map((file, i) => (
                 <div key={i} className="flex items-center gap-2 mt-1.5">
                   <span className="text-[0.6875rem] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                   <select
-                    aria-label={t("Plan type", "نوع المخطط")}
+                    aria-label={`${t("Plan type", "نوع المخطط")} ${i + 1}: ${file.name || t("unnamed file", "ملف بلا اسم")}`}
                     value={floorTypes[i] ?? defaultPlanType(f.asset_type)}
                     onChange={(e) => setFloorTypes((p) => { const c = [...p]; c[i] = e.target.value as PlanType; return c; })}
                     className="text-[0.75rem] border border-charcoal/20 rounded px-1.5 py-1"

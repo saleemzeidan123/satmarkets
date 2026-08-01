@@ -249,7 +249,7 @@ async function run(browser, tracks) {
             narrow = Math.min(narrow, Math.round(kw * 10) / 10);
             // How far a grid item sticks out of its own grid box. This is the
             // number that matters here, and not the document scroll width,
-            // because sat-platform.css:617 and globals.css:220 both set
+            // because sat-platform.css:622 and globals.css:220 both set
             // `html,body{overflow-x:clip}`. Clipped overflow is not scrollable
             // overflow: the document reports zero and the content is simply cut
             // off and unreachable. Any reflow check written against

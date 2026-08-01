@@ -166,8 +166,14 @@ export default function RequirementDetail({ params }: { params: { locale: string
        {matchesLoading ? (
         <p className="muted" style={{ fontSize: "0.78125rem", margin: "0 0 12px" }}>{t.matchesLoading}…</p>
        ) : matches ? (
-        <div style={{ marginBottom: 14 }}>
-         <div style={{ fontSize: "0.84375rem", fontWeight: 700 }}>{t.matchesH}</div>
+        /* Finding 180. This was a <div> with a bold <div> caption over a set of
+           radios, so the caption named nothing and the group was not a group. It is
+           now a fieldset with the same caption as its legend, which needed no new
+           string. The legend restates the styling the caption div carried, and
+           `minInlineSize: 0` keeps the fieldset shrinkable, which the UA default
+           otherwise prevents. */
+        <fieldset style={{ border: 0, padding: 0, margin: "0 0 14px", minInlineSize: 0 }}>
+         <legend style={{ fontSize: "0.84375rem", fontWeight: 700, padding: 0 }}>{t.matchesH}</legend>
          <p className="muted" style={{ fontSize: "0.76875rem", margin: "3px 0 10px", lineHeight: 1.6 }}>{t.matchesP}</p>
          {matches.matches.length === 0 ? (
           <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.matchesNone}</p>
@@ -213,18 +219,36 @@ export default function RequirementDetail({ params }: { params: { locale: string
                 ))}
                </ul>
               </details>
+              {/* Finding 180. Every radio in this group read "Attach this listing to
+                  your response", identically, so the four or five options were told
+                  apart only by which card they were drawn inside, which is a visual
+                  fact and not an announced one. The listing title is beside the radio
+                  on screen and now also inside its name. */}
               <label className="row gap8" style={{ alignItems: "center", marginTop: 10, fontSize: "0.78125rem", cursor: "pointer" }}>
                <input
                 type="radio"
                 name="attach-listing"
                 checked={on}
-                onChange={() => setAttached(on ? null : m.listing_id)}
+                onChange={() => setAttached(m.listing_id)}
                />
                <span>{on ? t.matchesAttached : t.matchesAttach}</span>
+               <span className="sronly">{mt}</span>
               </label>
              </div>
             );
            })}
+           {/* Finding 180. A radio group needs a way back out of it. Every option here
+              attached something, so once a lister selected a listing the only way to
+              send a response with nothing attached was to reload the panel. The old
+              onChange read `setAttached(on ? null : m.listing_id)`, which looks like a
+              toggle and is not one: a radio's change event does not fire on the option
+              that is already selected, so the clearing branch was unreachable. The
+              choice of attaching nothing is now an option like any other, which is
+              also the one that starts selected. */}
+           <label className="row gap8" style={{ alignItems: "center", fontSize: "0.78125rem", cursor: "pointer" }}>
+            <input type="radio" name="attach-listing" checked={attached === null} onChange={() => setAttached(null)} />
+            <span>{t.matchesAttachNone}</span>
+           </label>
            {matches.truncated ? <p className="muted" style={{ fontSize: "0.75rem", margin: 0 }}>{t.matchesTruncated}</p> : null}
           </div>
          )}
@@ -232,7 +256,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
           <bdi>{t.matchesMargins.replace("{size}", String(matches.tolerances.size_pct)).replace("{budget}", String(matches.tolerances.budget_pct))}</bdi>
           {matches.excluded_count > 0 ? <> <bdi>{matches.excluded_count}</bdi> {t.matchesExcluded}</> : null}
          </p>
-        </div>
+        </fieldset>
        ) : matchesErr ? (
         <p style={{ color: "var(--status-error)", fontSize: "0.78125rem", margin: "0 0 12px", lineHeight: 1.6 }}>{t.matchesErr}</p>
        ) : null}
