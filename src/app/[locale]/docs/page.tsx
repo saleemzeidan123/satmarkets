@@ -1,4 +1,5 @@
 import { isLocale } from "@/i18n/config";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -29,7 +30,20 @@ export default function DocsPage({ params }: { params: { locale: string } }) {
    {/* top bar */}
    <div className="row between wrap" style={{ padding: "13px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 12, flex: "none" }}>
     <div className="row gap12" style={{ alignItems: "center" }}>
-     <span style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={17} /></span></span>
+     {/* RC13, finding 147. This chevron was a `<span>`: a back control drawn as a
+         disc, in the position a reader expects a back control, that could not be
+         focused, could not be activated and went nowhere. It was the only thing
+         on the page that looked like a way out, and /docs is an APP-tier route,
+         so there was no header, no footer and no tab bar behind it either. The
+         page had zero links of any kind.
+
+         The hit area is 44px to clear the SAT touch floor while the disc stays
+         32px, and the negative margin absorbs the difference so the row's
+         layout is unchanged. The chevron is mirrored for English because it
+         points back along the reading direction, not left. */}
+     <Link href={`/${params.locale}`} aria-label={d.backHome} style={{ width: 44, height: 44, margin: -6, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--ink)", textDecoration: "none", flex: "none" }}>
+      <span aria-hidden="true" style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--cool)", display: "flex", alignItems: "center", justifyContent: "center" }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={17} /></span></span>
+     </Link>
      <div><h1 style={{ fontSize: "0.9375rem", fontWeight: 700, margin: 0 }}>{d.buildingName}</h1><div className="mono muted" style={{ fontSize: "0.6875rem" }}>{d.plansSub}</div></div>
     </div>
     <div className="row gap8 wrap">

@@ -1,33 +1,39 @@
 "use client";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { chromeTier } from "@/lib/chrome";
 
-// Chrome has three tiers, not two.
+// Chrome has three tiers, and the tables that define them live in
+// `src/lib/chrome.ts` so a test can call the classification rather than grep the
+// alternation. Each route there records WHY it sits in the tier it sits in.
 //
-// APP: routes that carry their own navigation rail (the dashboard/admin shell).
-//   They get neither the marketing header nor the marketing footer, because both
-//   would duplicate navigation the page already has.
-//
-// PRODUCT: routes a signed-in person uses to do work: the deal room, saved,
-//   compare, notifications, the listing entry point. These have no nav of their
-//   own, so they keep the header. What they must NOT have is the marketing
-//   footer, which carries the mega sitemap and a "List, lease or invest, on
-//   verified ground" sales banner. Selling the product to someone who is already
-//   mid-transaction inside it is a hierarchy failure at the page level.
-//
-// MARKETING: everything else. Full chrome.
-const APP = /\/(dashboard|admin|signup|advisor|messages|docs|agent|thinking-map)(\/|$)/;
-const PRODUCT = /\/(deal|notifications|saved|compare|list|invest|find|post-requirement)(\/|$)/;
-
-export default function ChromeGate({ header, footer, children }: { header: ReactNode; footer: ReactNode; children: ReactNode }) {
-  const path = usePathname() || "";
-  const isApp = APP.test(path);
-  const isProduct = !isApp && PRODUCT.test(path);
+// The `notice` slot is separate from `header` for a reason that finding 147
+// exposed. The release-state notice used to be nested inside the header node
+// this component receives, so withholding the header from the APP tier also
+// withheld a disclosure the layout's own comment describes as "persistent and
+// site wide". Navigation and disclosure are two different decisions and only one
+// of them belongs to a tier: a reader on /advisor needs to be told the figures
+// in front of them are sample data whether or not that route also wants a
+// marketing sitemap. `notice` therefore renders on every tier, unconditionally,
+// and must stay outside the tier tests below.
+export default function ChromeGate({
+  notice,
+  header,
+  footer,
+  children,
+}: {
+  notice?: ReactNode;
+  header: ReactNode;
+  footer: ReactNode;
+  children: ReactNode;
+}) {
+  const tier = chromeTier(usePathname() || "");
   return (
     <>
-      {!isApp && header}
+      {notice}
+      {tier !== "app" && header}
       {children}
-      {!isApp && !isProduct && footer}
+      {tier === "marketing" && footer}
     </>
   );
 }

@@ -54,6 +54,37 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       { href: `/${locale}/login`, label: signIn },
     ]},
   ];
+  /*
+   * RC13, finding 147. These two used to be the two branches of one ternary
+   * nested inside the header node passed to ChromeGate, which meant the tier
+   * that withholds the header also withheld the release-state disclosure. They
+   * are separated here because they answer different questions.
+   *
+   * `previewNotice` states that everything on this deployment is sample data.
+   * That is true of every route, including the ones with their own navigation
+   * rail, and /advisor is in SITEMAP_ROUTES, so it is a publicly reachable
+   * surface that was rendering figures with no disclosure at all. It is passed
+   * to `notice`, which ChromeGate renders on every tier.
+   *
+   * `marketingNotice` is a rent-index promotion with a link. It is marketing, it
+   * belongs to the marketing chrome, and it stays inside the header node.
+   *
+   * Exactly one of the two is non-null for a given PREVIEW value and the notice
+   * slot precedes the header slot, so the rendered DOM order is unchanged.
+   */
+  const previewNotice = PREVIEW ? (
+      <div role="status" className="topnotice preview-notice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFBEB", color: "#78350F", borderBottom: "1px solid #FCD34D", padding: "8px 24px", fontSize: "0.78125rem", lineHeight: 1.5, flexWrap: "wrap", textAlign: "center" }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2" style={{ flex: "none" }}><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
+        <span style={{ fontWeight: 600 }}>{dict.layout.preview}</span>
+      </div>
+  ) : null;
+  const marketingNotice = PREVIEW ? null : (
+      <div className="topnotice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--ink)", color: "var(--on-brand)", padding: "8px 24px", fontSize: "0.78125rem", flexWrap: "wrap" }}>
+        <svg width="16" height="16" viewBox="0 0 100 100" style={{ flex: "none" }}><rect x="7" y="7" width="32" height="48" rx="3" fill="#F6F8FB"/><rect x="44" y="7" width="49" height="48" rx="3" fill="#3A6EA5"/><rect x="7" y="59" width="32" height="34" rx="3" fill="#F6F8FB"/><rect x="44" y="59" width="49" height="34" rx="3" fill="#F6F8FB"/></svg>
+        <span style={{ color: "rgba(255,255,255,.86)" }}>{dict.layout.notice}</span>
+        <Link href={`/${locale}/rent-index`} style={{ color: "var(--azure-l)", fontWeight: 600, textDecoration: "none" }}>{dict.layout.explore}</Link>
+      </div>
+  );
   return (
     <>
       <a href="#main" className="skip-link">{dict.layout.skip}</a>
@@ -63,19 +94,8 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
           entry point. The SearchAction is only honest now that /listings actually
           narrows on `q`. */}
       <JsonLd data={website(locale as "en" | "ar")} />
-      <ChromeGate header={<>
-      {PREVIEW ? (
-      <div role="status" className="topnotice preview-notice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: "#FFFBEB", color: "#78350F", borderBottom: "1px solid #FCD34D", padding: "8px 24px", fontSize: "0.78125rem", lineHeight: 1.5, flexWrap: "wrap", textAlign: "center" }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2" style={{ flex: "none" }}><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg>
-        <span style={{ fontWeight: 600 }}>{dict.layout.preview}</span>
-      </div>
-      ) : (
-      <div className="topnotice" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, background: "var(--ink)", color: "var(--on-brand)", padding: "8px 24px", fontSize: "0.78125rem", flexWrap: "wrap" }}>
-        <svg width="16" height="16" viewBox="0 0 100 100" style={{ flex: "none" }}><rect x="7" y="7" width="32" height="48" rx="3" fill="#F6F8FB"/><rect x="44" y="7" width="49" height="48" rx="3" fill="#3A6EA5"/><rect x="7" y="59" width="32" height="34" rx="3" fill="#F6F8FB"/><rect x="44" y="59" width="49" height="34" rx="3" fill="#F6F8FB"/></svg>
-        <span style={{ color: "rgba(255,255,255,.86)" }}>{dict.layout.notice}</span>
-        <Link href={`/${locale}/rent-index`} style={{ color: "var(--azure-l)", fontWeight: 600, textDecoration: "none" }}>{dict.layout.explore}</Link>
-      </div>
-      )}
+      <ChromeGate notice={previewNotice} header={<>
+      {marketingNotice}
       <Header locale={locale} dict={dict} />
       </>} footer={<><SatFooter locale={locale} /><TabBar locale={locale} /></>}>
       <main id="main" tabIndex={-1} className="min-h-[70vh] has-tabbar">{children}</main>

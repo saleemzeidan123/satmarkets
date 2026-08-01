@@ -887,6 +887,36 @@ visitor loses the marketing header and footer. Journey 1. It is a routing
 classification defect that happens to have an accessibility consequence, and it
 does not generalise to any other route.
 
+*Corrected in RC13.* The sentence above is half right and the half that is wrong
+was the more useful half. Checking every other APP member rather than accepting
+the claim confirmed that the NAVIGATION consequence is confined to `/signup`:
+`agent` and `thinking-map` are bare `redirect()` pages, `dashboard` and
+`messages` are session gated and carry rails with links out, `admin` links out to
+the listings and accounts its pages are about, and `advisor` has a persistent
+back-to-home link in `.dtopbar` that survives both media queries that hide its
+rails. Two other things did generalise, and neither was in the 55.
+
+The first is a disclosure, not navigation. `layout.tsx` nests the release-state
+preview notice inside the `header` node it hands to `ChromeGate`, so the APP tier
+was withholding the statement that everything on the deployment is sample data.
+Three APP routes are session gated and one renders its own `SampleBanner`, but
+`/advisor` is in `SITEMAP_ROUTES`, which makes it a publicly reachable surface
+rendering figures with no release-state statement anywhere on the page. Recorded
+as finding 204.
+
+The second is `/docs`, which contained zero `<Link>` elements of any kind and
+drew its back control as a `<span>`. An APP route has no header, no footer and no
+tab bar, so a page in that tier with no link on it is a page with no way off it.
+Recorded as finding 205.
+
+The repair is therefore not the reclassification the finding asks for. One switch
+was deciding two different questions, and the fix separates them: the tier tables
+move to `src/lib/chrome.ts` where each route records why it is in the tier it is
+in and a test can call the classification rather than grep it, `ChromeGate` takes
+a `notice` slot rendered on every tier, and `/docs` gets a real link. `signup`
+falls to the MARKETING default rather than being moved to a third list, because
+the default is what a route nobody has classified should get.
+
 **Finding 192**, the consent label promising a withdrawal that has no route,
 control or channel. Journey 1. Classified here rather than as a root cause because
 it is one label and one missing control, but it is the most serious row in the
