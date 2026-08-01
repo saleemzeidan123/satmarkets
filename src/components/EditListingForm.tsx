@@ -5,7 +5,7 @@ import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from 
 import { changedArabic } from "@/lib/listingArabic";
 import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
 import LocationPicker from "@/components/LocationPicker";
-import type { DistrictPoint } from "@/lib/nearestDistrict";
+import type { LocationPoint } from "@/lib/nearestLocation";
 
 // The owner's self-serve editor for a listing. It covers the fields an owner may
 // safely change: the headline, description, size, price, contact routing, AND the
@@ -66,7 +66,7 @@ export default function EditListingForm({
   pinned?: boolean;
   /** Still intake. A draft may be repositioned until it publishes; a live listing gets one placement. Wording only. */
   draft?: boolean;
-  districts?: DistrictPoint[];
+  districts?: LocationPoint[];
 }) {
   const ar = locale === "ar";
   const loc: "en" | "ar" = ar ? "ar" : "en";

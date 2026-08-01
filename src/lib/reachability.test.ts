@@ -75,11 +75,6 @@ const ALLOWED_UNREACHED: readonly Unreached[] = [
     reason:
       "ADV-5A address normalisation, re-exported only through that barrel. No surface calls it because no location source is contracted, which is the same dependency that makes every geo provider decision resolve to denied today. address.test.ts keeps it correct against the day one is.",
   },
-  {
-    file: "src/lib/locationKind.ts",
-    reason:
-      "The typed taxonomy that keeps Law 7: a development is never a district. It turns a stored kind into the correct label and an umbrella label for mixed lists. The surfaces that render a location currently carry the label from the query rather than through this module, so it has no importer, and taxonomy.test.ts is what stops the distinction being lost while that is true.",
-  },
 ];
 
 // ---------------------------------------------------------------------------

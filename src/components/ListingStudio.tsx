@@ -9,7 +9,7 @@ import { assetLabel, dealLabel } from "@/lib/labels";
 import { askingPrice, netArea } from "@/lib/listingFigures";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
-import type { DistrictPoint } from "@/lib/nearestDistrict";
+import type { LocationPoint } from "@/lib/nearestLocation";
 import { placeName } from "@/lib/displayName";
 import {
   PHOTO_SET_MIN,
@@ -242,7 +242,7 @@ export default function ListingStudio({
   initial,
 }: {
   locale: string;
-  districts: DistrictPoint[];
+  districts: LocationPoint[];
   initial?: StudioInitial | null;
 }) {
   const router = useRouter();
