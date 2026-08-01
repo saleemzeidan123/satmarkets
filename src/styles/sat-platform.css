@@ -151,6 +151,14 @@
 .btn.wash{background:var(--azure-wash);color:var(--azure-d);}
 .chip{display:inline-flex;align-items:center;gap:7px;font-size:0.78125rem;font-weight:500;color:var(--slate);background:var(--paper);border:1px solid var(--silver-2);border-radius:8px;padding:7px 12px;white-space:nowrap;line-height:1;}
 .chip.on{color:var(--azure-d);background:var(--azure-wash);border-color:var(--azure-l);}
+/* RC9a. A .chip is now also the visible face of a native radio: the input is
+   .sronly inside the label, so the focus ring has to be drawn by the label, the
+   same way .seg label does at :223. Without this the keyboard user selecting an
+   asset type or a viewing slot has no visible focus at all, which is SC 2.4.7,
+   and the reason four hand-built radiogroups were replaced by the platform
+   control is that every one of them had already lost some other part of the
+   contract the role promises. */
+.chip:has(input:focus-visible){outline:2px solid var(--azure);outline-offset:2px;}
 /* A .chip is nowrap by default, which is right in a .chip-rail (it scrolls) but wrong
    for a WRAPPING row of full-sentence suggestions: a single long chip cannot shrink,
    so at 320px the advisor's "Is 1,600 SAR/m2 fair for Granada offices?" chip ran 282px

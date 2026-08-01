@@ -273,10 +273,23 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                 {fieldNote("title")}
               </div>
 
+              {/* Finding 182. `aria-pressed={asset === a}` described eight independent
+                  toggles, when `asset` is one string and choosing a second chip silently
+                  unchooses the first. That is a radio group. The register deferred it as
+                  "a structural rewrite" needing roving tabindex and arrow keys, and that
+                  reasoning was wrong: the correct control is three lines below this one,
+                  where transaction type is already a native radio inside a `.seg` label,
+                  and a native radio brings roving tabindex, arrow keys, RTL-correct arrow
+                  direction and form participation with no JavaScript at all. The inner
+                  `role="group"` is gone because the fieldset was already the group and the
+                  `name` is what binds the radios. */}
               <fieldset className="field" style={{ border: 0, padding: 0, margin: 0 }}>
                 <legend style={{ padding: 0 }}>{pr.assetType}</legend>
-                <div className="row gap8 wrap" role="group">{REQUIREMENT_ASSET_TYPES.map((a) => (
-                  <button key={a} type="button" aria-pressed={asset === a} className={"chip" + (asset === a ? " on" : "")} style={chip} onClick={() => setAsset(a)}>{assetLabel(a, locale)}</button>
+                <div className="row gap8 wrap">{REQUIREMENT_ASSET_TYPES.map((a) => (
+                  <label key={a} className={"chip" + (asset === a ? " on" : "")} style={chip}>
+                    <input type="radio" name="asset" value={a} checked={asset === a} onChange={() => setAsset(a)} className="sronly" />
+                    {assetLabel(a, locale)}
+                  </label>
                 ))}</div>
               </fieldset>
 

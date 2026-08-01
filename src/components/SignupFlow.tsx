@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 
 type Role = "occupier" | "owner" | "broker" | "investor";
@@ -23,6 +23,7 @@ export default function SignupFlow({ locale }: Props) {
   const [name, setName] = useState(""); const [company, setCompany] = useState("");
   const [email, setEmail] = useState(""); const [phone, setPhone] = useState("");
   const [busy, setBusy] = useState(false); const [done, setDone] = useState(false); const [err, setErr] = useState("");
+  const uid = useId();
 
   const roles: { v: Role; h: string; p: string }[] = [
     { v: "occupier", h: t("I need a space", "أحتاج مساحة"), p: t("Find, compare and lease or buy commercial space", "ابحث وقارن واستأجر أو اشترِ مساحة تجارية") },
@@ -38,13 +39,27 @@ export default function SignupFlow({ locale }: Props) {
 
   /* ELITE-4 J1-2 + J1-3: a single-choice chip row was an unnamed <div> of plain
      buttons whose selection lived only in the "chip on" class. It is a named
-     fieldset/legend group now, with a radiogroup and radios that expose aria-checked. */
+     fieldset/legend group now, with a radiogroup and radios that expose aria-checked.
+     RC9a, finding 197: that repair took the role and left the keyboard behind. A
+     `role="radiogroup"` of `role="radio"` buttons promises one tab stop and arrow
+     keys that move the choice; these were eight separate tab stops on which the
+     arrow keys did nothing, so the contract the role announced was not the one the
+     control honoured, and a keyboard user was told to press arrows that had no
+     effect. They are native radios now. The browser supplies roving tabindex, arrow
+     keys, Home and End, and it reverses the horizontal arrows under `dir="rtl"`
+     without being asked, which is the part a hand-built group in a bilingual product
+     is most likely to get wrong. The group name is per-instance because these radios
+     are not inside a `<form>`, so without a unique name every group in the document
+     would be one group. */
   const sel = (k: string, label: string, opts: [string, string][]) => (
     <fieldset style={fs}>
-      <legend id={"lg-" + k} style={{ ...lbl, padding: 0 }}>{label}</legend>
-      <div className="row gap8 wrap" role="radiogroup" aria-labelledby={"lg-" + k}>
+      <legend style={{ ...lbl, padding: 0 }}>{label}</legend>
+      <div className="row gap8 wrap">
         {opts.map(([v, l]) => (
-          <button key={v} type="button" role="radio" aria-checked={d[k] === v} onClick={() => setD((p) => ({ ...p, [k]: v }))} className={d[k] === v ? "chip on" : "chip"}>{l}</button>
+          <label key={v} className={d[k] === v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>
+            <input type="radio" name={`${uid}-${k}`} value={v} checked={d[k] === v} onChange={() => setD((p) => ({ ...p, [k]: v }))} className="sronly" />
+            {l}
+          </label>
         ))}
       </div>
     </fieldset>

@@ -200,6 +200,90 @@ Listing Studio per-step state announced but not visible; and a signup step state
 by colour alone. The unifying defect is that state is expressed to one audience
 and not the other, in both directions.
 
+Closed in slice I, the one-of-many half of RC9. RC9 was scoped by root cause
+rather than by finding, and the first cut through it is the distinction between a
+control that expresses a choice and a control that expresses a status. Finding
+182 is the first kind. Findings 145, 156, 167 and 187 are the second, and they
+are left to slices RC9b, RC9c and RC9d because reconciling them means deciding
+what the visible state should be, not correcting a control that already exists.
+
+The finding named one site. The scan found four. `aria-pressed` on the asset
+chips was what 182 reported, and a repository-wide search for the class it
+belongs to returned three more: `SignupFlow.tsx:45-47`, and
+`ListingEnquiry.tsx:280-282` and `:294-296`. Those three were not mislabelled the
+way 182 was. They declared `role="radiogroup"` and `role="radio"` correctly and
+then failed to implement what those roles promise, which is worse than saying the
+wrong thing, because a keyboard user who trusts the role presses the arrow keys
+and nothing moves. Each rebuild had lost a different piece. 182 lost the mutual
+exclusion from the accessibility tree while keeping it in the state. 197 lost the
+roving tabindex and the arrow keys. 198 lost those and also added a deselect that
+a radio cannot do, and named itself twice. Four sites, one cause, four different
+symptoms, which is precisely the shape Codex's instruction to fix systemic causes
+before individual occurrences is aimed at.
+
+The register's reason for deferring 182 was wrong, and correcting it is the most
+useful thing in this slice. It read that converting to `role="radio"` inside a
+`role="radiogroup"` "also requires roving tabindex and arrow-key handling to be
+written, which is a structural rewrite larger than a bug fix." That is an
+accurate description of the cost of the ARIA authoring pattern and an inaccurate
+description of the work, because the ARIA pattern is not the control this needed.
+A native `<input type="radio">` inside the existing label supplies roving
+tabindex, arrow keys, wrapping, direction-correct horizontal arrows, form
+participation and the impossibility of clearing a chosen option, and none of it
+has to be written. The proof that this was available rather than merely arguable
+is that it was already three lines below the defect in the same file: the
+transaction-type control at `RequirementForm.tsx:296` has been exactly this
+since the deal-type and timeline selectors were converted from `<span onClick>`,
+and the technique is written down in the comment on `.sronly` at
+`globals.css:498`. The deferral priced the pattern it was looking at instead of
+the one already shipping one screen down. Three further sites were built the same
+way in the interval.
+
+The deselect was removed rather than reproduced, and that is a deliberate
+behaviour change. Both ListingEnquiry groups let a second press on the chosen
+option clear it, which is a real affordance and not obviously a bug: a person who
+picked the wrong viewing slot might reasonably want to unpick it. It is still
+wrong here, because it was unannounced, undiscoverable, and contradicted the role
+the control claimed. If an explicit no-preference state is wanted it belongs in
+the group as an option with a written label, where it can be reached by the same
+arrow keys as everything else. Two guard tests assert the exact former handler
+text is gone, because this is the kind of thing that returns quietly.
+
+One CSS rule was added, and it is the reason this conversion did not trade one
+failure for another. The input is `.sronly`, a one pixel clipped box at margin
+-1px, so the browser draws its focus ring somewhere nobody can see. Converting
+the chips without `.chip:has(input:focus-visible)` at `sat-platform.css:161`
+would have fixed SC 4.1.2 by breaking SC 2.4.7. The rule is copied from
+`.seg label:has(input:focus-visible)` at `:223`, which is the same solution the
+`.seg` conversion had already found, so the fix is a second use of a settled
+answer rather than a new invention.
+
+None of that would be evidence if it were only reasoned about. `aria-pressed` was
+wrong on those chips for as long as it was, and the three `role="radiogroup"`
+sites were built after the correct control already existed in the codebase,
+because in both cases somebody made a claim about behaviour without rendering
+it. So the claim is measured: `scripts/radio-probe.mjs` builds the five groups
+from the shipped markup with the shipped stylesheet, renders them under a coarse
+pointer at 390 wide in both directions, and presses the keys. Twenty-four options
+across five groups are six tab stops. ArrowDown walks and wraps; ArrowUp steps
+back. ArrowRight advances in `ltr` and retreats in `rtl`, which is the one part
+of the contract that depends on writing direction and the part every hand-built
+group here would have had to code and none did. Two presses of Space on the
+chosen option leave it chosen. The label carries a 2px `rgb(58, 110, 165)` ring.
+The smallest target is 48 by 60 in Arabic and 49.5 by 58 in English, both above
+the 44px SAT floor. The already-correct `.seg` group is in the probe as a control
+row, so a future failure is attributable: if every row fails the stylesheet
+moved, and if only the chip rows fail this slice did.
+
+Visual quality was not traded for any of this, and the evidence is the same
+non-regression the earlier slices used. `scripts/reflow-probe.mjs` returns the
+identical fourteen rows and identical track widths it returned at the RC7 and RC8
+baselines, `edit-numbers=1@246 edit-contact=1@246 profile-links=1@246
+req-stats=1@226 compare-skeleton=4@25.3 req-cards=1@272` at the 400 percent
+reference, so replacing four `<button>` groups with `<label>` groups moved no
+layout. The chips keep `.chip` and `.chip.on`. Nothing about the design changed
+except that it now works from a keyboard.
+
 **RC10. Locale leakage in constructed controls, findings 18, 160, 162, 22 and
 171.** Map controls in English in the Arabic build; the MapLibre container with no
 accessible name and its built-in controls constructed with no locale; lightbox

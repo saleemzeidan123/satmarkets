@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { ContactChannels } from "@/components/ContactBar";
@@ -111,6 +111,10 @@ export default function ListingEnquiry({
  const [vDone, setVDone] = useState(false);
  const [vErr, setVErr] = useState("");
  const [qual, setQual] = useState<Record<string, string>>({});
+ // RC9a, finding 198. These radios are not inside a `<form>`, so their group is
+ // the whole document and a fixed `name` would merge two enquiry panels, or this
+ // panel and any other, into one group. The id is per-instance.
+ const uid = useId();
  const questions: Q[] = (!lease ? QUAL_SALE : (QUAL[assetType || ""] || QUAL_DEFAULT)).slice(0, 2);
 
  useEffect(() => {
@@ -274,12 +278,26 @@ export default function ListingEnquiry({
      ) : (
       <>
        {/* ELITE-4 J3-12: one slot at a time, so these are radios. Selection used to
-           be carried by a class name alone, which no assistive technology can read. */}
+           be carried by a class name alone, which no assistive technology can read.
+           RC9a, finding 198: that repair declared the role and then broke it twice.
+           There were no arrow keys and no roving tabindex, so every slot was its own
+           tab stop; and the handler read `slot === sl.iso ? null : sl.iso`, which
+           unchecks a radio by pressing it again, something a radio cannot do. An
+           enquirer using a screen reader was therefore told the group behaved one way
+           while it behaved another. Native radios now. The deselect is deliberately
+           gone rather than reproduced: it was the half of the behaviour the declared
+           role forbade, it was barely reachable from the keyboard, and changing a
+           choice, which is what an optional question actually needs, still works. The
+           duplicate `aria-label` went with the role; the legend already names the
+           group, and carrying both made the browser say it twice. */}
        <fieldset style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
         <legend className="sronly">{t.bookViewing}</legend>
-        <div className="chip-rail row gap6" role="radiogroup" aria-label={t.bookViewing} style={{ maxWidth: "100%" }}>
+        <div className="chip-rail row gap6" style={{ maxWidth: "100%" }}>
          {slots.map((sl) => (
-          <button key={sl.iso} type="button" role="radio" aria-checked={slot === sl.iso} onClick={() => setSlot(slot === sl.iso ? null : sl.iso)} className={slot === sl.iso ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{sl.label}</button>
+          <label key={sl.iso} className={slot === sl.iso ? "chip on" : "chip"} style={{ cursor: "pointer" }}>
+           <input type="radio" name={`${uid}-slot`} value={sl.iso} checked={slot === sl.iso} onChange={() => setSlot(sl.iso)} className="sronly" />
+           {sl.label}
+          </label>
          ))}
         </div>
        </fieldset>
@@ -287,13 +305,19 @@ export default function ListingEnquiry({
         <div className="col gap8" style={{ marginTop: 10 }}>
          <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.5 }}>{t.twoQuick}</div>
          {/* ELITE-4 J3-12: one answer per question, so radios again, inside a
-             fieldset whose legend is the question being answered. */}
+             fieldset whose legend is the question being answered. RC9a, finding 198:
+             the same two defects as the slot rail above, in the same shape, and the
+             same repair. The legend is the question, so the group needs no
+             `aria-label` saying the question a second time. */}
          {questions.map((q) => (
           <fieldset key={q.k} style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
            <legend style={{ fontSize: "0.71875rem", fontWeight: 600, color: "var(--slate)", padding: 0, margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</legend>
-           <div className="row gap6 wrap" role="radiogroup" aria-label={ar ? q.ar : q.en}>
+           <div className="row gap6 wrap">
             {q.opts.map((o) => (
-             <button key={o.v} type="button" role="radio" aria-checked={qual[q.k] === o.v} onClick={() => setQual((p) => ({ ...p, [q.k]: p[q.k] === o.v ? "" : o.v }))} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{ar ? o.ar : o.en}</button>
+             <label key={o.v} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>
+              <input type="radio" name={`${uid}-${q.k}`} value={o.v} checked={qual[q.k] === o.v} onChange={() => setQual((p) => ({ ...p, [q.k]: o.v }))} className="sronly" />
+              {ar ? o.ar : o.en}
+             </label>
             ))}
            </div>
           </fieldset>

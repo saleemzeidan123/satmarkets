@@ -63,6 +63,11 @@ const JOURNEYS = [
   // control both listing journeys use to place a building, and finding 153 lived
   // in it.
   "src/components/LocationPicker.tsx",
+  // Added in slice I. SignupFlow is the whole of journey 1 after the route shell,
+  // and ListingEnquiry is where journey 3 ends, so a scan that stopped at the route
+  // file was scanning the wrapper and not the work. Both held findings this slice.
+  "src/components/SignupFlow.tsx",
+  "src/components/ListingEnquiry.tsx",
 ];
 
 function rel(p: string): string {
@@ -439,5 +444,179 @@ test("a fieldset can shrink, and a legend looks like the label it stands in for"
       "for legend at all, so groups written correctly rendered their caption at body size " +
       "beside sibling labels at 0.75rem. Codex: do not reduce visual quality to satisfy " +
       "accessibility.",
+  );
+});
+
+
+// ---------------------------------------------------------------------------
+// RC9a. One-of-many choices, findings 182, 197 and 198.
+//
+// Four groups in this product were hand-built out of buttons and ARIA when the
+// platform already ships the control. Each rebuild lost a different piece of the
+// contract, and no two lost the same piece:
+//
+//   182: `aria-pressed` on a single-valued choice, so eight independent toggles
+//   were announced where there is exactly one answer.
+//   197: the right role with no keyboard, so `role="radiogroup"` promised one tab
+//   stop and arrow keys, and delivered eight tab stops and arrows that did nothing.
+//   198: the right role with a handler that unchecks a radio by pressing it again,
+//   which a radio cannot do, plus a duplicated accessible name.
+//
+// That spread is the argument for the rule below rather than for three fixes. A
+// native `<input type="radio">` inside a `.chip` label brings roving tabindex,
+// arrow keys, Home and End, RTL-correct arrow direction, and form participation,
+// and it cannot drift out of contract because none of it is written here.
+
+/** Every file under src that ships, so this rule is not bounded by the journeys. */
+const ALL: { path: string; src: string }[] = (() => {
+  const out: { path: string; src: string }[] = [];
+  for (const p of walk(join(ROOT, "src"))) {
+    if (/\.test\.tsx?$/.test(p)) continue;
+    out.push({ path: rel(p), src: code(readFileSync(p, "utf8")) });
+  }
+  return out;
+})();
+
+/** path -> why a hand-built radio group is allowed to stay in that file. */
+const HAND_BUILT_RADIO_EXEMPT: Record<string, string> = {};
+
+test("a one-of-many choice uses the platform radio, not a rebuilt one", () => {
+  const bad: string[] = [];
+  for (const f of ALL) {
+    if (HAND_BUILT_RADIO_EXEMPT[f.path]) continue;
+    for (const m of f.src.matchAll(/role="(radio|radiogroup)"/g)) {
+      bad.push(`${f.path}:${f.src.slice(0, m.index).split("\n").length} ${m[0]}`);
+    }
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    "findings 197 and 198. `role=\"radiogroup\"` and `role=\"radio\"` are a promise about " +
+      "the keyboard: one tab stop for the whole group, arrow keys that move the choice, " +
+      "Home and End, and no way to reach the unchecked state again. Every hand-built group " +
+      "in this repository broke at least one half of that promise, and the two in " +
+      "ListingEnquiry broke it in a way no user could have reported, because the control " +
+      "behaved correctly to a mouse and lied to everything else. Write " +
+      "`<label className=\"chip\"><input type=\"radio\" name={...} className=\"sronly\" ... />` " +
+      "instead: the browser owns the contract, and it reverses the horizontal arrows under " +
+      "dir=\"rtl\" without being asked, which is the part a bilingual product is most likely " +
+      "to get wrong by hand. If a genuine case needs the ARIA pattern, add the file to " +
+      "HAND_BUILT_RADIO_EXEMPT with the keyboard handling it implements.",
+  );
+});
+
+test("aria-pressed describes a toggle, never a choice among several", () => {
+  const bad: string[] = [];
+  for (const f of ALL) {
+    for (const m of f.src.matchAll(/aria-pressed=\{([^}]*)\}/g)) {
+      if (/===|!==/.test(m[1])) bad.push(`${f.path}:${f.src.slice(0, m.index).split("\n").length} ${m[0]}`);
+    }
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 182. `aria-pressed={a === b}` is an equality against one value, which means " +
+      "the state being described is single-valued, which means the control is not a toggle. " +
+      "A toggle asks whether this one thing is on, and the honest expressions for that are a " +
+      "boolean of its own or a membership test: `aria-pressed={saved}`, " +
+      "`aria-pressed={chips.includes(v)}`. Both shapes are in this repository and both are " +
+      "correct. If the answer is one of several, it is a radio group; see the rule above.",
+  );
+});
+
+test("the four converted groups are native radios bound by a name", () => {
+  const want: [string, RegExp, string][] = [
+    [
+      "src/app/[locale]/post-requirement/RequirementForm.tsx",
+      /<input type="radio" name="asset" value=\{a\} checked=\{asset === a\}/,
+      "finding 182, the asset type row. The form is a real <form>, so a literal name is " +
+        "enough to bind the group and it matches the `name=\"deal\"` radios already in the " +
+        "same file.",
+    ],
+    [
+      "src/components/SignupFlow.tsx",
+      /<input type="radio" name=\{`\$\{uid\}-\$\{k\}`\}/,
+      "finding 197, the single-choice chip rows in signup. Not inside a <form>, so the " +
+        "group is the document and a literal name would merge size, timeline, portfolio, " +
+        "docs and ticket into one group.",
+    ],
+    [
+      "src/components/ListingEnquiry.tsx",
+      /<input type="radio" name=\{`\$\{uid\}-slot`\}/,
+      "finding 198, the viewing slot rail.",
+    ],
+    [
+      "src/components/ListingEnquiry.tsx",
+      /<input type="radio" name=\{`\$\{uid\}-\$\{q\.k\}`\}/,
+      "finding 198, the qualification questions.",
+    ],
+  ];
+  for (const [path, re, why] of want) {
+    assert.match(
+      file(path),
+      re,
+      `${path} no longer carries the converted control. ${why} The rule above only proves ` +
+        "the ARIA rebuild is gone; a rewrite that dropped the group entirely, or that " +
+        "reverted to plain buttons carrying state in a class name, would satisfy it while " +
+        "losing the fix.",
+    );
+  }
+});
+
+test("choosing a slot or an answer cannot uncheck it", () => {
+  const src = file("src/components/ListingEnquiry.tsx");
+  assert.doesNotMatch(
+    src,
+    /slot === sl\.iso \? null : sl\.iso/,
+    "finding 198. This handler unchecked a radio by pressing it again. A radio group has " +
+      "no path back to nothing chosen once something is, and the deselect was the half of " +
+      "the behaviour the declared role forbade. If an explicit no-preference state is ever " +
+      "wanted, it is an option in the group with a written label, not an invisible second " +
+      "meaning attached to the option already chosen.",
+  );
+  assert.doesNotMatch(
+    src,
+    /p\[q\.k\] === o\.v \? "" : o\.v/,
+    "finding 198, the same handler shape on the qualification answers.",
+  );
+});
+
+test("a chip that holds a radio draws the focus the radio cannot", () => {
+  const platform = readFileSync(join(ROOT, "src", "styles", "sat-platform.css"), "utf8");
+  assert.match(
+    platform,
+    /\.chip:has\(input:focus-visible\)/,
+    "RC9a. The radio inside a .chip is .sronly, which is a one pixel clipped box, so the " +
+      "browser draws the focus ring somewhere no one can see it. The label has to draw it " +
+      "instead, exactly as `.seg label:has(input:focus-visible)` already does for the " +
+      "transaction type control. Without this rule the conversion trades finding 182 for an " +
+      "SC 2.4.7 failure, which is not a trade this package is willing to make.",
+  );
+});
+
+test("the radio probe stays in the repository", () => {
+  const p = join(ROOT, "scripts", "radio-probe.mjs");
+  const src = readFileSync(p, "utf8");
+  assert.match(
+    src,
+    /hasTouch/,
+    "scripts/radio-probe.mjs must keep rendering under a coarse pointer. The 44px SAT floor " +
+      "is declared inside `@media (pointer: coarse)`, so a desktop run measures the chips at " +
+      "their compact height and reports a pass it did not earn.",
+  );
+  assert.match(
+    src,
+    /ArrowRight/,
+    "scripts/radio-probe.mjs must keep pressing the horizontal arrows in both directions. " +
+      "Direction-correct arrows are the part of the radio contract that cannot be read out " +
+      "of the markup, and it is the part every hand-built group in this repository lost. " +
+      "Measured: in ltr ArrowRight advances, in rtl it retreats.",
+  );
+  assert.match(
+    src,
+    /closest\("label"\)/,
+    "scripts/radio-probe.mjs must keep reading the focus ring and the touch target off the " +
+      "LABEL. The input is `.sronly`, a one pixel clipped box: measured on the input, both " +
+      "checks pass while the user sees no ring and can hit nothing.",
   );
 });
