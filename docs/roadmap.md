@@ -1301,6 +1301,40 @@ markup and tests each against the validator's own predicate, and which carries a
 asserting the eight literals the shipped form held still fail that predicate. A live POST remains
 the one piece of evidence this package does not have.
 
+**What the live sweep found after the ship, and the correction it forced (finding 113).** The
+stop condition asks for live evidence, and live evidence is worth having only if it is allowed to
+disagree with a closure. It did.
+
+Finding 108, "the read side stopped printing tokens", was closed against the tokens the new form
+writes. Measured against the deployed corpus it was true of every future row and almost no
+present one. `GET /api/requirements` on `dpl_5p9z42CxnpbVY4PHQFjtSgUvjJza` returns six real rows
+whose must-haves are `Fitted`, `Parking`, `Metro nearby`, `24/7 access`, `Raised floor`, `Dock
+doors`, `Street-front`, `Heavy power` and `High footfall`: display phrases the old form stored in
+whichever language the visitor happened to be reading. `mustHaveLabel` resolved a stored value by
+lowercasing it and comparing it to the token, so only the single-word phrases matched, and five of
+the six rows on the board still showed an Arabic reader Latin script.
+
+Corrected inside the same package rather than left for a reader to find. A stored value is now
+recognised by its own label in either language as well as by its token, matching case
+insensitively and treating the space and the underscore as one character, because "Metro nearby",
+"metro nearby" and `metro_nearby` are one condition written three ways. That is a reading of what
+the row already says, not a new claim about it.
+
+`Heavy power` and `High footfall` were never offered by any form, so there is no token they belong
+to and choosing one would file a condition under a name the visitor never gave. They keep their own
+words. The other half of finding 113, a supervised one-time migration rewriting the stored phrases
+as tokens, needs a database write channel this environment does not have and stays open.
+
+Two tests in `src/lib/requirementIntake.test.tsx` guard the reading, and the first was run against
+the pre-fix lookup and fails there. Suite is 1431 tests.
+
+The second live-evidence limitation, also stated rather than worked around:
+`/[locale]/requirements` and `/[locale]/requirements/[id]` are client components that fetch on
+mount, so their served HTML is the loading state and the labelled read side cannot be observed in
+any GET. What was verified instead is the payload they render and the labelling function itself,
+under test, against exactly the values that payload carries. Making that substitution explicit is
+what turned the defect up: the substitute evidence was the corpus, and the corpus disagreed.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

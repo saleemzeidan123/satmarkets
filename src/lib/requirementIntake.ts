@@ -195,11 +195,44 @@ export const MUST_HAVE_TOKENS: readonly string[] = MUST_HAVE_OPTIONS.map((o) => 
  * Falls back to the raw value, because rows written before this vocabulary
  * existed carry the English or the Arabic phrase itself, and a requirement's own
  * words are worth more than a placeholder.
+ *
+ * PKG-DEM1 live sweep, finding 113. That fallback was measured against the
+ * deployed corpus and it was carrying almost all of it. `GET /api/requirements`
+ * on the shipped deployment returns six real rows holding "Fitted", "Parking",
+ * "Metro nearby", "24/7 access", "Raised floor", "Dock doors", "Street-front",
+ * "Heavy power" and "High footfall": display phrases the old form stored in
+ * whichever language the visitor was reading. Only the single-word ones happen
+ * to lowercase into a token, so five of the six rows showed an Arabic reader
+ * English phrases and the read-side repair reached almost nobody who is on the
+ * board today.
+ *
+ * A stored value is therefore recognised by its own label in either language as
+ * well as by its token. That is a reading of what the row already says, not a
+ * new claim about it: "Fitted" is the English label of `fitted`, so an Arabic
+ * reader is shown مجهّز, and an Arabic phrase stored by the old form resolves
+ * the same way for an English reader. Matching ignores case, and treats the
+ * space and the underscore as the same character, because "Metro nearby",
+ * "metro nearby" and `metro_nearby` are one condition written three ways.
+ *
+ * A phrase outside the vocabulary still falls back to itself. "Heavy power" and
+ * "High footfall" were never offered by any form, so there is no token they
+ * belong to, and inventing one would file a condition under a name the visitor
+ * never chose. The row's own words are shown instead. The real repair for those
+ * is a supervised data migration, which is finding 113's open half.
  */
+const MUST_HAVE_BY_KEY: ReadonlyMap<string, MustHaveOption> = (() => {
+  const norm = (s: string): string => s.trim().toLowerCase().replace(/_/g, " ");
+  const m = new Map<string, MustHaveOption>();
+  for (const o of MUST_HAVE_OPTIONS) {
+    for (const k of [o.token, o.label_en, o.label_ar]) m.set(norm(k), o);
+  }
+  return m;
+})();
+
 export function mustHaveLabel(value: string | null | undefined, ar: boolean): string {
   const v = String(value ?? "").trim();
   if (!v) return "";
-  const found = MUST_HAVE_OPTIONS.find((o) => o.token === v.toLowerCase());
+  const found = MUST_HAVE_BY_KEY.get(v.toLowerCase().replace(/_/g, " "));
   if (!found) return v;
   return ar ? found.label_ar : found.label_en;
 }

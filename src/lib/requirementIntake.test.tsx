@@ -15,6 +15,7 @@ import {
   isUrgentTimeline,
   groupLocations,
   locationLabel,
+  mustHaveLabel,
   type IntakeLocation,
 } from "@/lib/requirementIntake";
 import { matchListing, type MatchListing } from "@/lib/matching";
@@ -421,4 +422,53 @@ test("the vocabulary keeps a stored value readable after it stops being offered"
   assert.equal(timelineLabel("1-3 months", false), "1-3 months");
   assert.equal(timelineLabel(null, true), "");
   assert.equal(TIMELINE_OPTIONS.filter((o) => o.urgent).length, 2);
+});
+
+// PKG-DEM1 live sweep, finding 113. The read-side repair was written against the
+// tokens the new form writes, and then measured against the corpus that is
+// actually on the board. `GET /api/requirements` on the shipped deployment
+// returns six real rows, and every must-have on them is a display phrase the old
+// form stored in the visitor's reading language. Under a token-only lookup, only
+// the single-word ones resolved, so five of the six rows still showed an Arabic
+// reader English text. These are the phrases that deployment returned.
+const LIVE_MUST_HAVES: readonly string[] = [
+  "Fitted", "Parking", "Metro nearby", "24/7 access", "Raised floor",
+  "Dock doors", "Street-front", "Heavy power", "High footfall",
+];
+
+test("a condition stored as its own words is read in the reader's language", () => {
+  for (const o of MUST_HAVE_OPTIONS) {
+    // The token, and each of the two labels, are three spellings of one
+    // condition, and each must reach the reader's own spelling of it.
+    for (const stored of [o.token, o.label_en, o.label_ar, o.token.toUpperCase(), ` ${o.label_en} `]) {
+      assert.equal(mustHaveLabel(stored, true), o.label_ar, `"${stored}" must read as ${o.label_ar} in Arabic`);
+      assert.equal(mustHaveLabel(stored, false), o.label_en, `"${stored}" must read as ${o.label_en} in English`);
+    }
+  }
+
+  // The live rows, by name. Seven of the nine phrases are in the vocabulary and
+  // must now resolve; an Arabic reader of the board sees no Latin script for
+  // them. This is the assertion that fails if the alias lookup is removed.
+  const known = LIVE_MUST_HAVES.filter((p) => p !== "Heavy power" && p !== "High footfall");
+  for (const p of known) {
+    const ar = mustHaveLabel(p, true);
+    assert.equal(/[A-Za-z]/.test(ar), false, `an Arabic reader is shown "${ar}" for the stored value "${p}"`);
+  }
+});
+
+test("a condition no form ever offered keeps its own words rather than being filed under a token", () => {
+  // "Heavy power" and "High footfall" are on live rows and were never chips.
+  // There is no token they belong to, and choosing one would file a condition
+  // under a name the visitor never gave. The row's own words are the honest
+  // answer, and the open half of finding 113 is the data migration, not this.
+  for (const p of ["Heavy power", "High footfall"]) {
+    assert.equal(mustHaveLabel(p, true), p);
+    assert.equal(mustHaveLabel(p, false), p);
+  }
+  assert.equal(mustHaveLabel("", true), "");
+  assert.equal(mustHaveLabel(null, false), "");
+
+  // Sensitivity: a lookup loose enough to swallow anything would have to fail
+  // here. A phrase that merely contains a label is not that label.
+  assert.equal(mustHaveLabel("Fitted out to shell", false), "Fitted out to shell");
 });

@@ -152,7 +152,65 @@ piece of evidence this package does not have, and it is stated rather than worke
 
 ## 8. Live evidence
 
-Recorded after the ship in section 9 of this file.
+Deployment `dpl_5p9z42CxnpbVY4PHQFjtSgUvjJza`, commit `8a1853a`, state READY, target production,
+served at `satmarkets-b6d5rhf0i-sat-markets.vercel.app`. READY is also the production build
+evidence, because `npm run build` cannot complete in this environment: `next/font` reaches Google
+Fonts and the egress proxy refuses it.
+
+Each assertion below was made against the served HTML with `<script>` and `<style>` blocks stripped
+first. That is not a formality. The whole active-locale dictionary is serialised into the payload
+(finding 99), so any assertion about the presence or absence of a word, made against the raw
+response, would be reading the copy deck of every other route.
+
+**`/en/post-requirement`.** Six move-in radios, `Immediate`, `Q1`, `Q2`, `Q3`, `Q4` and `Flexible`,
+which is exactly the offered subset of the accepted tokens. None carries `checked`. One `checked`
+attribute exists on the whole page and it is `deal=lease`, which is a two-value question with a
+defensible default and an accepted value either way. The location control holds 78 options: one
+empty placeholder and 77 district ids, all distinct, under 21 `optgroup` labels. Seven asset chips
+and seven must-have chips, the asset chips reading `Office`, `Retail & F&B`, `Warehouse`,
+`Medical`, `Showroom`, `Serviced` and `Education`, which is `assetLabel`'s wording rather than the
+title-cased token. Every `<label for>` on the page names a control that exists.
+
+**`/ar/post-requirement`.** `dir="rtl"` and `lang="ar"`. The same six timeline values under Arabic
+labels, none checked. 78 options, 77 ids, 21 `optgroup` labels, and no Latin character in any
+group label or any option's text. Fourteen chips, all Arabic. No orphan labels. This is also the
+live evidence for finding 104: the 21 groups read الرياض, جدة, الخبر, الدمام, مكة المكرمة,
+المدينة المنورة, الظهران, الأحساء, الجبيل, الطائف, ينبع, أبها, الخرج, بريدة, تبوك, جازان, حائل,
+خميس مشيط, سكاكا, عرعر and نجران, where before the package fifteen of them appeared in Latin script
+inside an Arabic sentence.
+
+**`GET /api/requirements`.** Six rows, `sample: false`, the same six the package was scoped
+against.
+
+**What the live sweep found, and what was done about it.** The must-haves on those six rows are
+`Fitted`, `Parking`, `Metro nearby`, `24/7 access`, `Raised floor`, `Dock doors`, `Street-front`,
+`Heavy power` and `High footfall`: display phrases the old form stored in whichever language the
+visitor was reading. `mustHaveLabel` resolved a stored value by lowercasing it and comparing it to
+the token, so only the single-word ones matched, and five of the six rows still showed an Arabic
+reader Latin script. Finding 108 was closed against the tokens the new form writes, which made it
+true of every future row and almost no present one. That is corrected in this same package rather
+than left for a reader to discover: a stored value is now recognised by its own label in either
+language as well as by its token, ignoring case and treating the space and the underscore as one
+character. `Heavy power` and `High footfall` were never offered by any form, so they belong to no
+token and keep their own words. The remaining half, a supervised migration rewriting the stored
+phrases as tokens, needs a database write channel this environment does not have and is finding
+113's open half. Two tests guard the reading, and the first of them was run against the pre-fix
+lookup and fails there.
+
+**What could not be verified live, stated rather than worked around.** Two things.
+
+The submission path. `web_fetch_vercel_url` is the only channel to the deployment from this
+environment and it issues GET only, so no requirement was posted to the running site. What stands
+behind the write path is the shared vocabulary plus the tests, which read the values out of the
+rendered markup and put them against the validator's own predicate.
+
+The rendered read side. `/[locale]/requirements` and `/[locale]/requirements/[id]` are client
+components that fetch on mount, so the served HTML is the loading state: `/ar/requirements/aa892eae`
+returns جاري تحميل الطلب and no card. The labelled timelines and must-haves therefore cannot be
+observed in a GET of those pages at all. What was verified instead is the payload they render
+(above) and the labelling function itself, under test, against exactly the values that payload
+carries. Naming this is what turned the must-have defect up: the substitute evidence was the
+corpus, and the corpus disagreed with the closure.
 
 ## 9. Next package
 
