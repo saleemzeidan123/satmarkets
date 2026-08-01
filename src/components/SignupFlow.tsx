@@ -88,6 +88,41 @@ export default function SignupFlow({ locale }: Props) {
   const doneRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => { if (done) doneRef.current?.focus(); }, [done]);
 
+  /* RC9b, finding 145: the three bars above were the only indication of how far
+     through the signup a person was, and they carried it in colour alone. A bar is
+     harbor or silver and nothing else; there was no text, no name for the step and
+     no count, so a screen reader met three empty spans and a person who cannot
+     separate those two colours met nothing at all. The count and the step name are
+     text now and the bars are decoration, which is the honest split: SC 1.4.1 is
+     satisfied because the information no longer depends on colour, and SC 1.3.1
+     because it is in the accessibility tree rather than implied by styling. The
+     wording is deliberately the same shape as ListingStudio's existing
+     "Step {index} of {length}" line, because the register asked for these two
+     surfaces to be reconciled rather than separately patched.
+
+     Not an <h2>. sat-platform.css:638 sets h2 { font-size: clamp(1.3125rem, 6.6vw,
+     1.875rem) !important } inside @media (max-width: 600px), and an inline style
+     cannot outrank !important, so a step name marked up as a heading would render
+     at 21 to 30 pixels on a phone directly above a 4 pixel bar. That is a visual
+     regression, and the instruction is to resolve the interaction properly rather
+     than trade the design away for the semantics.
+
+     RC9b, finding 199: changing step unmounts the Continue or Back button that
+     currently holds focus, so focus falls to document.body with nothing announced
+     and the next Tab restarts from the top of the document. This is the same class
+     as J1-5 above, one screen earlier. The wrapper is a named group that takes
+     programmatic focus, so the move lands somewhere that says which step opened and
+     where it sits in the sequence. The guard keeps the first render alone: focusing
+     on mount would drag the viewport past the page heading for someone who arrived
+     by ordinary navigation. */
+  const STEP_NAMES = [t("Your role", "دورك"), t("About your work", "عن عملك"), t("Your details", "بياناتك")];
+  const stepRef = useRef<HTMLDivElement | null>(null);
+  const mounted = useRef(false);
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    stepRef.current?.focus();
+  }, [step]);
+
   async function submit() {
     setBusy(true); setErr("");
     try {
@@ -129,9 +164,15 @@ export default function SignupFlow({ locale }: Props) {
     );
   }
 
+  const stepLine = t(`Step ${step + 1} of 3`, `الخطوة ${step + 1} من 3`);
+
   return (
-    <div>
-      <div className="row gap6" style={{ marginBottom: 20 }}>
+    <div ref={stepRef} tabIndex={-1} role="group" aria-label={ar ? `${stepLine}، ${STEP_NAMES[step]}` : `${stepLine}, ${STEP_NAMES[step]}`}>
+      <div className="row gap8" style={{ justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
+        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--slate)" }}>{STEP_NAMES[step]}</span>
+        <span className="muted fig" style={{ fontSize: "0.75rem" }}>{stepLine}</span>
+      </div>
+      <div className="row gap6" aria-hidden="true" style={{ marginBottom: 20 }}>
         {[0, 1, 2].map((i) => <span key={i} style={{ height: 4, borderRadius: 2, flex: 1, background: i <= step ? "var(--harbor)" : "var(--silver)", transition: "background .2s" }} />)}
       </div>
 

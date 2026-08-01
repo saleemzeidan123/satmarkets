@@ -997,7 +997,25 @@ export default function ListingStudio({
                       object wholesale, so every numeric shade of it stops existing and
                       the class compiles to nothing. This marker was invisible. */}
                   {p && p.state === "blocked" && <span className="ms-1.5 text-red" aria-hidden="true">!</span>}
-                  <span className="sr-only">{p ? ` ${stateLabel(p.state, ar)}` : ""}</span>
+                  {/* RC9b, finding 156: the four step states were carried on screen by
+                      border and text colour alone. Only "blocked" had a non-colour
+                      marker, and it was the invisible one above, so in practice a
+                      person who cannot separate signal from charcoal saw twelve
+                      identical chips. The count is the non-colour carrier: 0 of 5
+                      reads as not started, 5 of 5 as done, anything between as part
+                      done. It is the phrasing this component already uses twice, at
+                      :955 for the whole listing and again on the current step, so it
+                      introduces no new vocabulary and needs no legend. The blocked "!"
+                      stays because a blocked step can be 4 of 5 and so is not
+                      separable by the count alone. Western numerals in both languages,
+                      which this platform requires anyway. It costs about 28 pixels of
+                      width on a rail that already scrolls horizontally, so it buys the
+                      distinction with scrolling rather than with layout. */}
+                  {p && p.askable > 0 && <span className="ms-1.5 fig" aria-hidden="true">{p.answered}/{p.askable}</span>}
+                  <span className="sr-only">
+                    {p ? ` ${stateLabel(p.state, ar)}` : ""}
+                    {p && p.askable > 0 ? t(`, ${p.answered} of ${p.askable} facts supplied`, `، ${p.answered} من ${p.askable} حقيقة مُدخلة`) : ""}
+                  </span>
                 </button>
               </li>
             );

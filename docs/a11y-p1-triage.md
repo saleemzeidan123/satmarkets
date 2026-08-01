@@ -284,6 +284,99 @@ reference, so replacing four `<button>` groups with `<label>` groups moved no
 layout. The chips keep `.chip` and `.chip.on`. Nothing about the design changed
 except that it now works from a keyboard.
 
+*Closed in slice J, the progress-and-step-state half of RC9.* Findings 145 and
+156, plus finding 199 found while fixing 145.
+
+The register had deferred both of these for the same stated reason, that the
+remedy was a choice about the shape of onboarding rather than a defect with one
+obvious repair, and that no participant evidence about how people actually read
+these surfaces was available. That reasoning was half right and it is worth
+saying which half, because the same reasoning is what deferred finding 182 into
+four sites. It was right that neither finding named its own fix. It was wrong
+that the fix therefore needed evidence this environment could not obtain,
+because the register had already written down the answer in the same sentence
+that deferred it: Listing Studio solves this problem, one panel above the rail
+that fails it, with a `Step 2 of 7` line and a `3 of 9 facts supplied` line.
+Reconciling a broken surface with a working one in the same product is not a
+matter of taste and does not need a participant to authorise it.
+
+So both fixes adopt the phrasing that already exists rather than inventing a
+second vocabulary for the same idea.
+
+*Finding 145, signup.* Three bare `<span>` bars, 4 pixels tall, no content, the
+only difference between done and pending being `--harbor` against `--silver`.
+Nothing in the accessibility tree and nothing at all for a person who cannot
+separate those two fills. The step is written down now: the step name on the
+start side, `Step {step + 1} of 3` and `الخطوة {step + 1} من 3` on the end
+side, both at 0.75rem, above the bar. The bars became `aria-hidden`, which is
+the honest half of the change rather than an afterthought: three empty spans
+were never anything but noise to a screen reader, and once the count sits
+beside them in text they would be a second announcement of one fact. Step names
+come from what each step actually asks, not from an abstract sequence: `Your
+role`, `About your work`, `Your details`.
+
+One design constraint decided the markup and is recorded because it is
+invisible in the result. The step name is not an `<h2>`. `sat-platform.css:638`
+declares `h2 { font-size: clamp(1.3125rem, 6.6vw, 1.875rem) !important; }`
+inside `@media (max-width: 600px)`. That is an unscoped `!important` of exactly
+the class finding 194 records, and an inline `style` cannot outrank it, so a
+step name marked up as a heading would render at 21 to 30 pixels on a phone,
+directly above a 4 pixel bar, in a panel whose next line is 0.78125rem. The
+instruction for this package is to resolve the interaction and the design
+properly rather than reduce visual quality to satisfy accessibility, so the
+heading was not the answer. The naming that a heading would have supplied is
+carried instead by the focusable group that finding 199 required anyway, which
+means one structure does both jobs and neither is bolted on.
+
+*Finding 199, signup, filed and closed in the same slice.* Every step change is
+driven by a `Continue` or `Back` button that lives inside the panel being
+replaced, so the render that draws the next step destroys the element holding
+focus. Focus falls to `document.body`, nothing is announced, and the next Tab
+restarts at the top of the document, which means reaching the first field of
+step 2 costs the entire header every time. This is not a new class of defect in
+this file: ELITE-4 J1-5 fixed exactly this on the success panel, one screen
+later. The repair had simply never been carried back to the two transitions
+that come first, which is the same pattern as 182, a correct fix applied at the
+site where it was reported and nowhere else. The wrapper is now a
+`tabIndex={-1} role="group"` named with the step line and the step name, and a
+`mounted` ref keeps the first render alone, because focusing on mount would
+drag the viewport past the page heading for someone who simply navigated to the
+page. That would be a different SC 2.4.3 failure, not a fix for this one.
+
+*Finding 156, the Studio rail.* The recorded finding was precise about what was
+missing and left the placement open, asking whether the states belonged on the
+rail chips, in a summary above the panel, or nowhere, on a rail that already
+scrolls horizontally at narrow widths. The judgement taken is the rail, because
+the state belongs to the step and the chips are where the steps are; a summary
+above the panel would describe steps that are not on screen next to a step that
+is. Each chip renders `{p.answered}/{p.askable}` visibly and `aria-hidden`,
+guarded by `p.askable > 0` so the review step does not print `0/0`. The count
+is the non-colour carrier: `0/5` reads as not started, `5/5` as done, anything
+between as part done, with no dependence on `border-signal` against
+`border-line` or `text-signal` against `text-charcoal/70`. It is not new
+wording; it is the `answered of askable` phrasing this component already prints
+twice on the same screen.
+
+Two decisions inside that fix are worth stating. The `!` blocked marker stays,
+because a blocked step can be 4 of 5 and so is not separable by the count
+alone; the count distinguishes three of the four states and the marker
+distinguishes the fourth. And the visible `4/5` is hidden from assistive
+technology while the `sr-only` span gains the count in words, because a
+fraction read aloud is not what the mark means on screen. Both languages use
+Western numerals, which this platform requires regardless, and the Arabic
+separator is `،`.
+
+The cost is about 28 pixels per chip on a rail that is already `overflow-x-auto`
+with `min-w-max`. That buys the distinction with horizontal scrolling rather
+than with layout, which is the trade this rail was built to absorb. The reflow
+probe reports the same fourteen viewport renders as at RC7, RC8 and RC9a, with
+identical numbers, so nothing else moved.
+
+*Evidence.* Automated source scan and guard tests for all three findings, and
+the browser-emulated reflow probe as non-regression evidence for 156. None of
+this was tested on a physical device, none with an actual screen reader and
+none independently audited. WCAG 2.2 AA conformance is not claimed from it.
+
 **RC10. Locale leakage in constructed controls, findings 18, 160, 162, 22 and
 171.** Map controls in English in the Arabic build; the MapLibre container with no
 accessible name and its built-in controls constructed with no locale; lightbox

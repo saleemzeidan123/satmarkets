@@ -620,3 +620,126 @@ test("the radio probe stays in the repository", () => {
       "checks pass while the user sees no ring and can hit nothing.",
   );
 });
+
+// ---------------------------------------------------------------------------
+// RC9b, findings 145, 156 and 199: progress and step state.
+//
+// Two multi-step surfaces reported where a person had reached, and both reported
+// it in colour and nothing else. Signup drew three bars, harbor behind, silver
+// ahead, with no text at all. The Studio's rail drew twelve chips whose only
+// difference was a border and a text colour. In both cases the accessibility
+// tree held less than the screen did, and the screen itself held nothing for
+// anyone who cannot separate the two colours (SC 1.4.1, SC 1.3.1).
+//
+// The Studio already solved the same problem correctly one panel above the rail,
+// with a "Step 2 of 7" line and an "3 of 9 facts supplied" line. The register
+// asked for these to be reconciled rather than separately patched, so the fixes
+// adopt that existing phrasing on both surfaces instead of inventing a second
+// vocabulary for the same idea.
+//
+// Finding 199 is the third one, found while fixing 145: advancing a step
+// unmounts the button that holds focus, so focus falls to document.body and the
+// next Tab restarts at the top of the document (SC 2.4.3). Signup already had
+// this repair on its success panel; it did not have it on the two step changes
+// that come first.
+
+test("signup states the step in text, not only in the colour of a bar", () => {
+  const src = file("src/components/SignupFlow.tsx");
+  assert.match(
+    src,
+    /Step \$\{step \+ 1\} of 3/,
+    "finding 145. The count has to be readable text. It is deliberately the same shape as " +
+      "the Studio's `Step ${step.index} of ${steps.length}` line, which is the reconciliation " +
+      "the register asked for.",
+  );
+  assert.match(
+    src,
+    /الخطوة \$\{step \+ 1\} من 3/,
+    "finding 145 in Arabic, with Western numerals, which this platform requires in both " +
+      "languages.",
+  );
+  assert.match(
+    src,
+    /const STEP_NAMES = \[/,
+    "finding 145. A count alone says how far, not what of. Each step is named from what it " +
+      "actually asks.",
+  );
+  assert.doesNotMatch(
+    src,
+    /<h2[^>]*>\{STEP_NAMES/,
+    "finding 145. The step name must not be a heading. sat-platform.css:638 sets " +
+      "`h2 { font-size: clamp(1.3125rem, 6.6vw, 1.875rem) !important }` under " +
+      "`@media (max-width: 600px)`, and an inline style cannot outrank !important, so a " +
+      "heading here renders at 21 to 30 pixels on a phone above a 4 pixel bar. The " +
+      "instruction is to resolve the interaction properly, not to spend the design on the " +
+      "semantics.",
+  );
+});
+
+test("the three signup bars are decoration once the step is written down", () => {
+  const src = file("src/components/SignupFlow.tsx");
+  assert.match(
+    src,
+    /<div className="row gap6" aria-hidden="true"/,
+    "finding 145. Three empty spans in the accessibility tree are noise, and once the count " +
+      "is text beside them they would be a second announcement of the same fact. They are " +
+      "decoration now. This assertion is the pair to the one above: hiding the bars is only " +
+      "safe while the text exists, so neither change may be reverted alone.",
+  );
+});
+
+test("changing a signup step moves focus to the step that opened", () => {
+  const src = file("src/components/SignupFlow.tsx");
+  assert.match(
+    src,
+    /stepRef\.current\?\.focus\(\)/,
+    "finding 199. setStep unmounts the Continue or Back button that currently holds focus, " +
+      "so focus falls to document.body with nothing announced and the next Tab restarts from " +
+      "the top of the document. This is the same defect class as the already-fixed success " +
+      "panel, one screen earlier.",
+  );
+  assert.match(
+    src,
+    /if \(!mounted\.current\) \{ mounted\.current = true; return; \}/,
+    "finding 199. The first render must not take focus. Moving focus on mount would drag " +
+      "the viewport past the page heading for someone who arrived by ordinary navigation, " +
+      "which is a different SC 2.4.3 failure, not a fix for this one.",
+  );
+  assert.match(
+    src,
+    /ref=\{stepRef\} tabIndex=\{-1\} role="group" aria-label=/,
+    "finding 199. Focus has to land somewhere that says something. A bare focusable div " +
+      "announces nothing; the named group announces which step opened and where it sits.",
+  );
+  assert.doesNotMatch(
+    src,
+    /outline:\s*(none|0)/,
+    "finding 199. A container that takes programmatic focus must not have its focus " +
+      "indicator removed (SC 2.4.7).",
+  );
+});
+
+test("each studio rail step carries its state without colour", () => {
+  const src = file("src/components/ListingStudio.tsx");
+  assert.match(
+    src,
+    /\{p && p\.askable > 0 && <span className="ms-1\.5 fig" aria-hidden="true">\{p\.answered\}\/\{p\.askable\}<\/span>\}/,
+    "finding 156. Four states were carried by border and text colour alone, and the one " +
+      "non-colour marker that existed compiled to nothing (see the text-red note in the " +
+      "component). The count separates not started from part done from done with no colour " +
+      "at all, and it reuses the phrasing already on screen twice in the same component.",
+  );
+  assert.match(
+    src,
+    /p\.state === "blocked" && <span className="ms-1\.5 text-red"/,
+    "finding 156. The blocked marker stays. A blocked step can be 4 of 5, so the count " +
+      "alone does not separate it from a step that is merely unfinished.",
+  );
+  assert.match(
+    src,
+    /\$\{p\.answered\} of \$\{p\.askable\} facts supplied`, `، \$\{p\.answered\} من \$\{p\.askable\} حقيقة مُدخلة/,
+    "finding 156. The visible count is aria-hidden because `4/5` read aloud as a fraction " +
+      "is not what it means. The screen reader gets the state word and the count in words, " +
+      "in the language of the page, with the Arabic comma.",
+  );
+});
