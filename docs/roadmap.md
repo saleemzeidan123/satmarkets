@@ -1617,6 +1617,14 @@ source's methodology, REGA publishing averages of registered contracts, not our 
 `statisticLabel` would also produce ungrammatical Arabic, because the label carries the definite
 article.
 
+Live evidence, `1cfb308b` on `satmarkets-kb9l9mzq9`, against the preceding production deployment
+`1a56dd84` as the control. Arabic Rent Index head before: `المتوسط ريال/م²` and `النطاق (ريال/م²)`.
+After: `المتوسط، ريال/م²·سنة` and `النطاق، ريال/م²·سنة`. The proof the statistic is read rather than
+typed is that the same resolver answers `Average` on the Rent Index and `median` on `/market` on the
+same deployment, because the two pages read different rows. Full table in
+`docs/handback-pkg-fig2.md` section 12, including the one control fetch that failed and is recorded as
+missing rather than described.
+
 
 ## Parked (deliberate)
 

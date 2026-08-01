@@ -212,8 +212,68 @@ and nothing more is claimed for them.
 
 ## 12. Live evidence
 
-Pending the deployment reaching READY. Filled below in this same section, not in section 13, which is
-blockers.
+Deployment `dpl_RPKfh9J5jdaZD1kn5DeyjjgL447U`, commit `1cfb308b`, state READY, fetched through
+`mcp__Vercel__web_fetch_vercel_url` at `satmarkets-kb9l9mzq9-sat-markets.vercel.app`. Every count
+below is over the payload with `<script>` and `<style>` removed and with U+2060 stripped, because
+`formatUnit` inserts word joiners around the separators and a plain search for `SAR/m²/yr` returns
+zero against a payload that plainly contains it.
+
+The negative control is the immediately preceding production deployment,
+`satmarkets-edt424ejh-sat-markets.vercel.app`, commit `1a56dd84`, which is the same site one commit
+earlier. This matters more than the absence counts do: a string being absent from the fixed build
+proves nothing on its own, since a typo would also be absent. The control shows the string was there
+before.
+
+`/ar/rent-index`, before and after, district table head:
+
+| | statistic column | band column |
+|---|---|---|
+| `1a56dd84` | `المتوسط ريال/م²` | `النطاق (ريال/م²)` |
+| `1cfb308b` | `المتوسط، ريال/م²·سنة` | `النطاق، ريال/م²·سنة` |
+
+The English half of the control could not be fetched: `web_fetch_vercel_url` answered
+`Failed to create protection bypass: 409 Conflict` for `/en/rent-index` on the control deployment,
+twice. The Arabic control carries the same defect from the same two dictionary keys, so the class is
+demonstrated; the English control is simply missing and is recorded as missing rather than described.
+
+On `1cfb308b`, the resolved headings and captions, all counted in the stripped body:
+
+| surface | English | Arabic |
+|---|---|---|
+| `/rent-index` statistic column | `Average, SAR/m²/yr` | `المتوسط، ريال/م²·سنة` |
+| `/rent-index` band column | `Band, SAR/m²/yr` | `النطاق، ريال/م²·سنة` |
+| `/rent-index` heat subtitle | `Darker is a higher figure, SAR/m²/yr. Districts with too thin a sample are left blank` | `الأغمق يعني رقماً أعلى، ريال/م²·سنة. والأحياء ذات العيّنة الرقيقة تُترك فارغة` |
+| `/rent-index` office KPI | `1,122` / `Office rent, average across cells, SAR/m²/yr` | `إيجار المكاتب، المتوسط عبر الخلايا` |
+| `/rent-index` retail KPI | `1,745` / `Retail rent, average across cells, SAR/m²/yr` | `إيجار التجزئة، المتوسط عبر الخلايا` |
+| `/listings?view=insights` index cut | `Average, SAR/m²/yr` and `Band, SAR/m²/yr` | `المتوسط، ريال/م²·سنة` and `النطاق، ريال/م²·سنة` |
+| `/market` median KPI | `1,180.25` / `Office rent, median across cells, SAR/m²/yr` | `1,180.25` / `إيجار المكاتب، الوسيط عبر الخلايا، ريال/م²·سنة` |
+| `/` band caption | `1,421` / `Average, SAR/m²/yr` | `1,421` / `المتوسط، ريال/م²·سنة` |
+| `/hbu` stabilised NOI | `4.40M` / `Stabilised NOI, SAR/yr` | `4.40M` / `صافي الدخل التشغيلي المستقر، ريال/سنة` |
+
+Four things in that table are worth naming rather than leaving to be noticed.
+
+The `/market` KPI is the one that proves the statistic is read and not typed. The same resolver, over
+the same table, on the same deployment, answers `Average` on the Rent Index and `median` on `/market`,
+because `/market` reads the median rows and the Rent Index reads the average ones. A typed word cannot
+do that.
+
+The two languages disagree on the separator on purpose. English `SAR/m²/yr`, Arabic `ريال/م²·سنة`.
+That is the `format.ts` canon recorded in section 7, not a defect found late.
+
+Every payload checked contains zero Arabic-Indic digits, including the four Arabic ones, which is the
+Western-numerals law holding across the surfaces this package touched.
+
+`/listings` with no query string renders no index cut at all, so the first two fetches of it found no
+`<th>` and no heading to check. The cut is behind `?view=insights`. That is existing behaviour, not
+something this package changed, but it is the reason the evidence above cites the query string: a
+fetch of the bare route would have been an empty check reported as a pass.
+
+One observation recorded rather than fixed. `/en/invest` still renders a comps table headed `SAR/m²`
+from `invest.thSarM2`, and `/hbu` renders the same heading from `hbu.thSarM2`. Both sit over
+deliberately simulated illustrative rows behind the sample banner, not over published index figures,
+so neither is the finding-132 defect, which is a heading that misdescribes real records. They are two
+of the forty-six unit-shaped dictionary strings per locale already recorded as deferred in section 11,
+and they stay deferred here rather than being swept in at the end of a package.
 
 ## 13. Blockers, unchanged
 
