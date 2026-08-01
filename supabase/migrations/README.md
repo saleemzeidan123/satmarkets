@@ -17,6 +17,29 @@ history:
 - `20260712202342_fix_create_requirement_enum_casts.sql`
 - `20260712213623_rls_tighten_pii_tables.sql`  ← the RLS lock-down (SM-P0-008)
 
+## Pending, owner must apply
+
+One migration in this directory is authored but NOT applied. The build agent has
+no write access to the database: `apply_migration` and `execute_sql` are both
+permission denied from its environment, so it can check a migration in and it
+cannot run one.
+
+- `20260801_requirement_city_is_never_assumed.sql` (finding 117). Removes
+  `coalesce(nullif(payload->>'city',''), 'Riyadh')` from `create_requirement` and
+  raises instead. Until it runs, a caller that reaches the RPC without a city
+  still has the requirement filed in Riyadh. The HTTP route refuses such a
+  request at its own layer and has since PKG-DEM1, so the defect is not reachable
+  through the product today; the RPC is SECURITY DEFINER and callable by `anon`,
+  so the route is one caller and not a gate.
+
+Apply with the Supabase CLI, or paste the file into the SQL editor:
+
+    supabase link --project-ref ltqgwpivmumfwqdxwwgo
+    supabase db push
+
+After it is applied, `docs/findings-register.md` row 117 moves from "Migration
+authored, awaiting owner application" to closed, with the applied date.
+
 ## Completing the export (owner, local, one-time)
 
 The 26 earlier migrations (the base schema, RBAC, rent index, requirements spine,
