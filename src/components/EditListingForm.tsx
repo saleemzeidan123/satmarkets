@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
+import { changedArabic } from "@/lib/listingArabic";
 
 // The owner's self-serve editor for a listing. It covers the fields an owner may
 // safely change: the headline, description, size, price, contact routing, AND the
@@ -172,9 +173,13 @@ export default function EditListingForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title_en: f.title_en,
-          title_ar: f.title_ar,
           description_en: f.description_en,
-          description_ar: f.description_ar,
+          // Only when the lister actually changed them: the API stamps
+          // `title_ar_src_hash` against the English of the same save whenever the
+          // body carries the Arabic, and stamping that on a save the lister spent
+          // entirely in the English box would record a fact nobody performed. See
+          // `changedArabic`.
+          ...changedArabic(f, init),
           area_sqm: f.area_sqm,
           price: f.price,
           video_url: f.video_url,

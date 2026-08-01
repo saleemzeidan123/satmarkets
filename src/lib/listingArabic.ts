@@ -88,3 +88,34 @@ export function arabicState(f: ArabicField | null | undefined): ArabicState {
 export function arabicIsBehind(f: ArabicField | null | undefined): boolean {
   return arabicState(f) === "stale";
 }
+
+/**
+ * The Arabic fields a save should actually send, which is the ones that changed.
+ *
+ * WHY THIS EXISTS, AND WHY IT IS NOT A MICRO-OPTIMISATION.
+ *
+ * `PATCH /api/listings/[id]` re-stamps `title_ar_src_hash` whenever the body
+ * carries `title_ar`, against whichever English the same save is writing. That is
+ * right when the lister touched the Arabic: the stamp then records a true fact,
+ * that this Arabic answers this English. It is wrong when they did not. A form
+ * that posts every field on every save would stamp that fact onto a row where the
+ * lister changed only the English sentence and left the Arabic exactly as it was,
+ * and the record would then assert something nobody did.
+ *
+ * The cost is not theoretical. The stamp is what `/api/listings/[id]/translate`
+ * reads to decide whether the Arabic still answers the English, so a false stamp
+ * permanently exempts that row from ever being refreshed, and it is what
+ * `arabicState` above reads, so the lister would be shown "current" on Arabic that
+ * describes a space in terms their own English no longer uses. Sending only what
+ * changed keeps both readings true, and it is the reason `stale` is a state this
+ * form can actually reach rather than one it quietly erases on every save.
+ */
+export function changedArabic(
+  next: { title_ar: string; description_ar: string },
+  init: { title_ar: string; description_ar: string },
+): { title_ar?: string; description_ar?: string } {
+  const out: { title_ar?: string; description_ar?: string } = {};
+  if (trimmed(next.title_ar) !== trimmed(init.title_ar)) out.title_ar = next.title_ar;
+  if (trimmed(next.description_ar) !== trimmed(init.description_ar)) out.description_ar = next.description_ar;
+  return out;
+}
