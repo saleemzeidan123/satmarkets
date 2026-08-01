@@ -6,6 +6,11 @@ public-data dossier) and `strategy-reconciliation.md` (the Competitive Advantage
 Strategy classified against live HEAD, which is what the ADV programme below is
 converted from).
 
+**Read `status-ledger.md` first.** It is the canonical answer to what is shipped, what is
+deployed, what is open and what is owed. This file is the narrative record of how each
+package was reasoned about; the ledger is the current state. Where the two disagree, the
+ledger is corrected and this file is left as the historical record it is.
+
 ## Shipped and verified (recent sessions)
 
 - **Google OAuth** for occupier sign-in — live and published to production.
