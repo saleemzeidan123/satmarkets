@@ -839,6 +839,37 @@ and it turned out not to need one. The standing quality rule already says verifi
 only for evidence-backed verification, and a date the lister typed is not a check anybody ran.
 The exception was deleted from the green gate rather than narrowed.
 
+Closed in `b7349c4`, deployed on `dpl_DRoPVDchC7Bhxj6QPgBTENuRABPj`. Handback in
+`docs/handback-pkg-av1.md`, which also records what the deployed evidence turned up: every
+record in the sampled preview corpus is in the aging state, `availability_confirmed_at` equals
+`published_at` in all of them, and the oldest cross the 60-day stale threshold on 15 August
+2026. Nothing has ever been re-affirmed because nothing can be.
+
+## PKG-AV2, the re-affirmation the card now asks for (finding 11, next)
+
+**User journey improved.** A lister keeping their own inventory truthful, and the tenant on the
+other side of it who now reads an age instead of a claim.
+
+**Observed problem.** PKG-AV1 made the card say "Last confirmed 46 days ago". There is no
+surface on which a lister can answer that. The remaining half of finding 11 (P0).
+
+**Measurable outcome expected.** A lister can re-affirm a published listing's availability from
+their own workspace, the timestamp moves, and the browse card returns to the fresh sentence
+without any other field changing.
+
+**Simplest acceptable implementation.** The write path already exists: `PATCH
+/api/listings/[id]` accepts `availability_confirmed_at` behind the field permission check. What
+is missing is the lister-side action, the state around it (which of my listings are aging or
+stale) and honest confirmation copy. No notification system, no cron, no scheduled expiry.
+
+**What is deliberately not built.** No automatic expiry of a stale listing, no email or SMS
+reminder, no lister scoring, no bulk re-affirm-everything button. An affirmation SAT prompted
+into existence with one click across a whole portfolio is not more truthful than the date it
+replaced, and Law 3 says the date must be a real event.
+
+**Stop condition.** A lister can re-affirm, the two thresholds are visible to them before they
+do, all gates green, deployed evidence in both locales.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).
