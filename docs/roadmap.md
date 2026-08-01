@@ -840,12 +840,18 @@ only for evidence-backed verification, and a date the lister typed is not a chec
 The exception was deleted from the green gate rather than narrowed.
 
 Closed in `b7349c4`, deployed on `dpl_DRoPVDchC7Bhxj6QPgBTENuRABPj`. Handback in
-`docs/handback-pkg-av1.md`, which also records what the deployed evidence turned up: every
-record in the sampled preview corpus is in the aging state, `availability_confirmed_at` equals
-`published_at` in all of them, and the oldest cross the 60-day stale threshold on 15 August
-2026. Nothing has ever been re-affirmed because nothing can be.
+`docs/handback-pkg-av1.md`, which also records what the deployed evidence turned up:
+`availability_confirmed_at` equals `published_at` on every record, and the oldest cross the
+60-day stale threshold on 15 August 2026. Nothing has ever been re-affirmed because nothing can
+be.
 
-## PKG-AV2, the re-affirmation the card now asks for (finding 11, next)
+**Correction recorded at PKG-AV2 closure.** That handback said the whole sampled corpus was in
+the aging state. A full record-level read of the 50 published rows at PKG-AV2 closure shows 3
+fresh and 47 aging, ages 17, 19, 33, 34 and 46 days. The sample PKG-AV1 examined was aging; the
+corpus is not entirely so. The `availability_confirmed_at` equals `published_at` finding holds on
+all 50.
+
+## PKG-AV2, the re-affirmation the card now asks for (finding 11, closed)
 
 **User journey improved.** A lister keeping their own inventory truthful, and the tenant on the
 other side of it who now reads an age instead of a claim.
@@ -869,6 +875,46 @@ replaced, and Law 3 says the date must be a real event.
 
 **Stop condition.** A lister can re-affirm, the two thresholds are visible to them before they
 do, all gates green, deployed evidence in both locales.
+
+Closed in `ee9f3a9`, deployed on `dpl_9hctvptNTHBwpPQvBQKKhxScez4D`, state READY. Handback in
+`docs/handback-pkg-av2.md`. Stop condition met on every clause except the last, which is met
+only in part and is recorded as such: the deployed evidence in both locales covers the session
+gate, the absence of any lister-copy leak, and the public sentence at exact EN and AR parity,
+but the rendered lister dashboard is behind a session and the only live channel in this
+environment is GET-only and unauthenticated, so that surface could not be fetched. The
+lister-side composition is evidenced by test and by running the shipped function against the
+real deployed ages.
+
+## PKG-NM1, one name per listing in the reader's language (finding 66's other half, next)
+
+**User journey improved.** An Arabic reader anywhere a listing is named, and the lister who does
+not know their listing is unreadable to half the market.
+
+**Observed problem.** `listingTitle()` exists and its header states that the other language's
+title is deliberately not a rung on the fallback ladder. Its source guard enforces only the
+fallback to `reference_code`. The forbidden other-language fallback survives as
+`(ar ? l.title_ar : l.title_en) || l.title_en` at nine call sites, including the public
+`/brokers` page and every page of the lister workspace. Evidence, record-level rather than
+inferred: of the 50 published rows the public API returns, `title_ar` is blank on one,
+`SATM-BB3FCB59`, published, district present. That reader is shown English.
+
+**Measurable outcome expected.** Zero surviving instances of the other-language fallback, a
+source guard that fails if one returns, and a lister whose listing has no Arabic title told so
+on their own row along with what an Arabic reader is shown instead.
+
+**Simplest acceptable implementation.** Migrate the nine call sites to `listingTitle()`, widen
+the existing `listingTitle.test.ts` source guard from the reference-code pattern to the
+other-language pattern, add the `districts` embed on the queries whose data the fallback ladder
+needs, and add one line to the lister row when `title_ar` is blank.
+
+**What is deliberately not built.** No machine translation of titles, no title-quality score, no
+blocking of publication on a missing Arabic title, no prompt to write one at publish time. The
+lister is told what a reader sees; SAT does not write the lister's words for them and does not
+invent a name it cannot source.
+
+**Stop condition.** The guard catches the pattern, no call site carries it, the blank-Arabic row
+is named correctly on the public surface in both locales on the deployment, and the lister is
+told.
 
 ## Parked (deliberate)
 
