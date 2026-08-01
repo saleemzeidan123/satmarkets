@@ -8,6 +8,7 @@ import {
   matchListing,
   matchReasons,
   ratePerSqm,
+  stateLabel,
   verdictFrom,
   verdictLabel,
   type MatchListing,
@@ -300,4 +301,14 @@ test("the verdict word is the same word everywhere, in both languages", () => {
     assert.match(verdictLabel(v, true), /[؀-ۿ]/);
   }
   assert.notEqual(verdictLabel("exact", false), verdictLabel("possible", false));
+});
+
+test("every dimension state has a word in both languages", () => {
+  for (const s of ["met", "tolerance", "unknown", "failed"] as const) {
+    assert.ok(stateLabel(s, false).length > 0);
+    assert.match(stateLabel(s, true), /[؀-ۿ]/);
+  }
+  // ELITE-4 J4-6: the glyph beside each dimension is decoration; the word is
+  // the only thing a screen reader gets, so two states may never share one.
+  assert.notEqual(stateLabel("met", false), stateLabel("failed", false));
 });

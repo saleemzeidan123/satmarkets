@@ -81,6 +81,10 @@ export default function EditListingForm({
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // ELITE-4 J2-8: which registry fields the pre-flight named. The message span
+  // used to be the only trace of them, so no control was marked invalid and
+  // nothing pointed a screen reader at the sentence that named it.
+  const [invalid, setInvalid] = useState<string[]>([]);
   // Null until the lister places a pin in this session. The PATCH carries lat and
   // lng only then, so a save that touched nothing on the map never sends
   // coordinates and can never be read as a relocation.
@@ -101,6 +105,8 @@ export default function EditListingForm({
     price: priceFieldLabel(init.deal_type, "ar"),
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
+    // ELITE-4 J2-21: success and failure used to differ by colour alone.
+    okTag: "تم.", failTag: "لم يتم.",
     details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
     statedNote: "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات.",
     missing: "أكمل الحقول المطلوبة: ",
@@ -118,6 +124,8 @@ export default function EditListingForm({
     price: priceFieldLabel(init.deal_type, "en"),
     phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
+    // ELITE-4 J2-21: success and failure used to differ by colour alone.
+    okTag: "Done.", failTag: "Not saved.",
     details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",
     statedNote: "Everything you enter shows as stated by the lister until SAT verifies it.",
     missing: "Please complete the required fields: ",
@@ -132,10 +140,22 @@ export default function EditListingForm({
     const label = fieldLabel(field, loc) + (field.required ? " *" : "");
     const help = ar ? field.help_ar : field.help_en;
     const val = attrs[field.key];
+    /* ELITE-4 J2-3: every registry control was an unnamed box beside an
+       unattached <label>. The id is derived from the field key, so it is unique
+       per field and cannot collide with the base fields above. */
+    const fid = `edit-attr-${field.key}`;
+    /* ELITE-4 J2-8: a field the pre-flight named is marked invalid and pointed at
+       the sentence that named it. */
+    const bad = invalid.includes(field.key);
+    const flag = {
+      "aria-invalid": bad || undefined,
+      "aria-describedby": bad ? "edit-save-msg" : undefined,
+      "aria-required": field.required || undefined,
+    };
     if (field.type === "boolean") {
       return (
         <label key={field.key} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13.5, cursor: "pointer" }}>
-          <input type="checkbox" checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
+          <input id={fid} type="checkbox" aria-required={field.required || undefined} checked={val === true} onChange={(e) => setAttr(field.key, e.target.checked)} />
           <span>{ar ? field.label_ar : field.label_en}</span>
         </label>
       );
@@ -143,8 +163,8 @@ export default function EditListingForm({
     if (field.type === "tristate") {
       return (
         <div key={field.key}>
-          <label style={lbl}>{label}</label>
-          <select style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
+          <label style={lbl} htmlFor={fid}>{label}</label>
+          <select id={fid} {...flag} style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
             <option value="">{t.notSpec}</option>
             <option value="yes">{t.yes}</option>
             <option value="no">{t.no}</option>
@@ -157,8 +177,8 @@ export default function EditListingForm({
       const opts = field.validation?.enum ?? [];
       return (
         <div key={field.key}>
-          <label style={lbl}>{label}</label>
-          <select style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
+          <label style={lbl} htmlFor={fid}>{label}</label>
+          <select id={fid} {...flag} style={inp} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)}>
             <option value="">{t.choose}</option>
             {opts.map((o) => <option key={o} value={o}>{field.options?.[o]?.[ar ? 1 : 0] ?? o.replace(/_/g, " ")}</option>)}
           </select>
@@ -169,8 +189,8 @@ export default function EditListingForm({
     const numeric = field.type === "number" || field.type === "integer" || field.type === "money";
     return (
       <div key={field.key}>
-        <label style={lbl}>{label}</label>
-        <input style={inp} type={numeric ? "number" : "text"} step={numeric ? "any" : undefined} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} placeholder={ar ? field.label_ar : field.label_en} />
+        <label style={lbl} htmlFor={fid}>{label}</label>
+        <input id={fid} {...flag} style={inp} type={numeric ? "number" : "text"} step={numeric ? "any" : undefined} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} placeholder={ar ? field.label_ar : field.label_en} />
         {help && <p style={hint}>{help}</p>}
       </div>
     );
@@ -180,7 +200,12 @@ export default function EditListingForm({
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    // ELITE-4 J2-6: the submit button carries `aria-disabled` rather than
+    // `disabled`, so it is never blurred mid-save. This guard is the no-op that
+    // `aria-disabled` promises.
+    if (busy) return;
     setMsg(null);
+    setInvalid([]);
     // Pre-flight the required per-asset fields so the owner sees which are missing
     // rather than a generic server rejection. The server remains authoritative.
     const missing = perAsset.filter(
@@ -188,6 +213,14 @@ export default function EditListingForm({
     );
     if (missing.length) {
       setMsg({ ok: false, text: t.missing + missing.map((x) => (ar ? x.label_ar : x.label_en)).join(ar ? "، " : ", ") });
+      // ELITE-4 J2-8: the named fields are marked invalid, described by the alert,
+      // and the first of them takes focus, so the sentence is not the only trace.
+      setInvalid(missing.map((x) => x.key));
+      if (typeof document !== "undefined") {
+        window.requestAnimationFrame(() => {
+          document.getElementById(`edit-attr-${missing[0].key}`)?.focus();
+        });
+      }
       return;
     }
     setBusy(true);
@@ -252,13 +285,15 @@ export default function EditListingForm({
         {descArBehind && <p style={hint}>{t.behind}</p>}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        {/* ELITE-4 J2-3: these labels named nothing. Every control below now carries
+            an id and every label the matching htmlFor, as the Studio already did. */}
         <div>
-          <label style={lbl}>{t.area}</label>
-          <input style={inp} type="number" step="any" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} />
+          <label style={lbl} htmlFor="area_sqm">{t.area}</label>
+          <input id="area_sqm" style={inp} type="number" step="any" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>{t.price}</label>
-          <input style={inp} type="number" step="any" value={f.price} onChange={(e) => set("price", e.target.value)} />
+          <label style={lbl} htmlFor="price">{t.price}</label>
+          <input id="price" style={inp} type="number" step="any" value={f.price} onChange={(e) => set("price", e.target.value)} />
         </div>
       </div>
 
@@ -305,17 +340,17 @@ export default function EditListingForm({
       )}
 
       <div>
-        <label style={lbl}>{t.video}</label>
-        <input style={inp} value={f.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
+        <label style={lbl} htmlFor="video_url">{t.video}</label>
+        <input id="video_url" style={inp} value={f.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
-          <label style={lbl}>{t.phone}</label>
-          <input style={inp} value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />
+          <label style={lbl} htmlFor="contact_phone">{t.phone}</label>
+          <input id="contact_phone" style={inp} value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>{t.email}</label>
-          <input style={inp} type="email" value={f.contact_email} onChange={(e) => set("contact_email", e.target.value)} />
+          <label style={lbl} htmlFor="contact_email">{t.email}</label>
+          <input id="contact_email" style={inp} type="email" value={f.contact_email} onChange={(e) => set("contact_email", e.target.value)} />
         </div>
       </div>
       <div>
@@ -328,9 +363,16 @@ export default function EditListingForm({
           ))}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button type="submit" className="btn primary" disabled={busy}>{busy ? t.saving : t.save}</button>
-        {msg && <span style={{ fontSize: 13, color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>{msg.text}</span>}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }} aria-busy={busy || undefined}>
+        {/* ELITE-4 J2-6: `disabled` would blur the button the instant it is pressed. */}
+        <button type="submit" className="btn primary" aria-disabled={busy || undefined} style={{ opacity: busy ? 0.65 : 1 }}>{busy ? t.saving : t.save}</button>
+        {/* ELITE-4 J2-8 and J2-21: the outcome is announced, and it is named in
+            words rather than told apart by colour alone. */}
+        {msg && (
+          <span id="edit-save-msg" role="alert" style={{ fontSize: 13, color: msg.ok ? "var(--harbor-d)" : "var(--red)" }}>
+            <strong>{msg.ok ? t.okTag : t.failTag}</strong> {msg.text}
+          </span>
+        )}
       </div>
     </form>
   );

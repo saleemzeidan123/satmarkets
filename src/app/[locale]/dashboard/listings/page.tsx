@@ -41,7 +41,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ",
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string,string>,
     view: "اعرض", note: "الإيقاف المؤقّت يزيل العرض من السوق فوراً. وإعادة النشر تخضع لبوابة النشر نفسها: لا يعود العرض إلى السوق بلا تصريح إعلان ساري.",
-    cannot: "تعذّرت إعادة النشر:",
+    cannot: "تعذّرت إعادة النشر:", updateFailed: "تعذّر تحديث الحالة. حاول مرة أخرى.",
     occupiersSee: "يرى الباحثون:",
     reaffirm: "ما زالت متاحة اليوم", reaffirmWorking: "جارٍ الحفظ", reaffirmDone: "تم التأكيد اليوم",
     reaffirmFailed: "تعذّر تسجيل التأكيد. حاول مرة أخرى.",
@@ -57,7 +57,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     pause: "Pause", resume: "Republish", working: "Working",
     st: { published: "Published", archived: "Paused", draft: "Draft", pending_review: "In review", approved: "Approved", rejected: "Rejected" } as Record<string,string>,
     view: "View", note: "Pausing takes the listing off the market immediately. Republishing goes through the same publish gate as any other listing: nothing returns to the market without a valid advertising permit.",
-    cannot: "Cannot republish:",
+    cannot: "Cannot republish:", updateFailed: "That status change could not be saved. Try again.",
     occupiersSee: "Occupiers see:",
     reaffirm: "Still available today", reaffirmWorking: "Saving", reaffirmDone: "Confirmed today",
     reaffirmFailed: "That could not be recorded. Try again.",
@@ -210,10 +210,16 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                                 )}
                                 <div className="muted" style={{ fontSize: 11, lineHeight: 1.6 }}>{av.note}</div>
                                 {av.worthReaffirming && (
-                                  <AvailabilityReaffirm
-                                    id={l.id}
-                                    t={{ action: t.reaffirm, working: t.reaffirmWorking, done: t.reaffirmDone, failed: t.reaffirmFailed }}
-                                  />
+                                  /* ELITE-4 J2-2: `a.rowlink::after` paints a full-row hit
+                                     overlay over this cell, and only `.rowact` is lifted
+                                     above it. Without this wrapper, pressing the
+                                     affirmation opened the detail page instead. */
+                                  <span className="rowact" style={{ display: "inline-flex" }}>
+                                    <AvailabilityReaffirm
+                                      id={l.id}
+                                      t={{ action: t.reaffirm, working: t.reaffirmWorking, done: t.reaffirmDone, failed: t.reaffirmFailed }}
+                                    />
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -224,7 +230,8 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                       <td><span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12 }}>{t.st[l.status] || l.status}</span></td>
                       <td className="num">
                         <span className="rowact" style={{ display: "inline-flex" }}>
-                          <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
+                          {/* ELITE-4 J2-20: the failure sentence is supplied in the reader's language. */}
+                          <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot, failed: t.updateFailed }} />
                         </span>
                       </td>
                     </tr>

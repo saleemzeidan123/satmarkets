@@ -573,3 +573,19 @@ export function verdictLabel(v: MatchVerdict, ar: boolean): string {
   if (v === "needs_clarification") return ar ? "يحتاج توضيحاً" : "Needs clarification";
   return ar ? "غير مطابق" : "Not a match";
 }
+
+/* ELITE-4 J4-6: the state of one dimension, as a word.
+ *
+ * `reason_en` states both sides of the comparison and never a verdict word
+ * alone, and `label_en` is the dimension name, so the exposed text of a reason
+ * row names nothing about its state. Every surface carried the state in a
+ * colour and in a glyph marked aria-hidden, which left a screen reader unable
+ * to tell a met dimension from a failed one. This is that word, in both
+ * languages, rendered visually hidden beside each row. It is deliberately not
+ * shown to sighted readers, who already have the mark and the sentence. */
+export function stateLabel(s: MatchState, ar: boolean): string {
+  if (s === "met") return ar ? "مستوفى" : "Met";
+  if (s === "tolerance") return ar ? "ضمن الهامش المعلن" : "Within the published margin";
+  if (s === "unknown") return ar ? "سؤال مفتوح" : "Open question";
+  return ar ? "غير مستوفى" : "Not met";
+}

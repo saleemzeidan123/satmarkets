@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 type Role = "occupier" | "owner" | "broker" | "investor";
@@ -33,21 +33,45 @@ export default function SignupFlow({ locale }: Props) {
   const ASSET = [["office", t("Office", "مكاتب")], ["retail", t("Retail & F&B", "تجزئة ومطاعم")], ["medical", t("Medical", "طبي")], ["warehouse", t("Warehouse", "مستودعات")], ["showroom", t("Showroom", "معارض")], ["serviced", t("Serviced", "مكاتب مخدومة")], ["land", t("Land", "أراضٍ")], ["other", t("Other", "أخرى")]] as const;
   const toggleChip = (v: string) => setChips((c) => (c.includes(v) ? c.filter((x) => x !== v) : [...c, v]));
 
-  const sel = (k: string, opts: [string, string][]) => (
-    <div className="row gap8 wrap">
-      {opts.map(([v, l]) => (
-        <button key={v} type="button" onClick={() => setD((p) => ({ ...p, [k]: v }))} className={d[k] === v ? "chip on" : "chip"}>{l}</button>
-      ))}
-    </div>
+  const lbl: React.CSSProperties = { display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--slate)", marginBottom: 7 };
+  const fs: React.CSSProperties = { border: 0, padding: 0, margin: 0, minWidth: 0 };
+
+  /* ELITE-4 J1-2 + J1-3: a single-choice chip row was an unnamed <div> of plain
+     buttons whose selection lived only in the "chip on" class. It is a named
+     fieldset/legend group now, with a radiogroup and radios that expose aria-checked. */
+  const sel = (k: string, label: string, opts: [string, string][]) => (
+    <fieldset style={fs}>
+      <legend id={"lg-" + k} style={{ ...lbl, padding: 0 }}>{label}</legend>
+      <div className="row gap8 wrap" role="radiogroup" aria-labelledby={"lg-" + k}>
+        {opts.map(([v, l]) => (
+          <button key={v} type="button" role="radio" aria-checked={d[k] === v} onClick={() => setD((p) => ({ ...p, [k]: v }))} className={d[k] === v ? "chip on" : "chip"}>{l}</button>
+        ))}
+      </div>
+    </fieldset>
   );
-  const field = (label: string, node: JSX.Element) => (
-    <div><div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--slate)", marginBottom: 7 }}>{label}</div>{node}</div>
+  /* ELITE-4 J1-2: the label was a plain <div>, so the control was named by its
+     placeholder alone. It is a real <label htmlFor> bound to the control id now. */
+  const field = (id: string, label: string, node: JSX.Element) => (
+    <div><label htmlFor={id} style={lbl}>{label}</label>{node}</div>
+  );
+  /* ELITE-4 J1-2: multi-select chip groups carried no group name at all. */
+  const group = (label: string, node: JSX.Element) => (
+    <fieldset style={fs}>
+      <legend style={{ ...lbl, padding: 0 }}>{label}</legend>
+      {node}
+    </fieldset>
   );
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
   const falOk = role !== "broker" || /^\d{5,12}$/.test((d.fal || "").trim());
+  const falBad = !falOk && (d.fal || "").length > 0;
   const step1Ok = role === "occupier" || role === "owner" ? chips.length > 0 : role === "broker" ? falOk && (d.fal || "").length > 0 : true;
   const step2Ok = name.trim().length >= 2 && emailOk && (role !== "broker" || company.trim().length > 1);
+
+  /* ELITE-4 J1-5: setDone(true) unmounts the focused submit button, dropping focus
+     to document.body with nothing announced. Move focus to the success panel. */
+  const doneRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { if (done) doneRef.current?.focus(); }, [done]);
 
   async function submit() {
     setBusy(true); setErr("");
@@ -71,7 +95,7 @@ export default function SignupFlow({ locale }: Props) {
         ? [t("We check your FAL licence against the register", "نتحقق من رخصة فال في السجل"), t("A short call to agree how you work the exchange", "مكالمة قصيرة للاتفاق على طريقة عملك في المنصة"), t("Your verified broker account opens", "يُفتح حساب الوسيط الموثّق")]
         : [t("We confirm your details", "نتأكد من بياناتك"), t("Your account opens", "يُفتح حسابك"), t("You get matched supply and market data from day one", "تصلك العروض المطابقة وبيانات السوق من اليوم الأول")];
     return (
-      <div className="card" style={{ padding: 28, textAlign: "center" }}>
+      <div ref={doneRef} tabIndex={-1} role="status" className="card" style={{ padding: 28, textAlign: "center" }}>
         <div style={{ width: 52, height: 52, borderRadius: "50%", background: "var(--azure-wash)", color: "var(--harbor-d)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto" }}>
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
         </div>
@@ -110,20 +134,24 @@ export default function SignupFlow({ locale }: Props) {
 
       {step === 1 && role && (
         <div className="col gap16">
-          {(role === "occupier" || role === "owner") && field(role === "occupier" ? t("What are you looking for?", "ما الذي تبحث عنه؟") : t("What do you own?", "ما الذي تملكه؟"), (
-            <div className="row gap8 wrap">{ASSET.map(([v, l]) => <button key={v} type="button" onClick={() => toggleChip(v)} className={chips.includes(v) ? "chip on" : "chip"}>{l}</button>)}</div>
+          {/* ELITE-4 J1-3: multi-select, so each chip is a toggle button with aria-pressed. */}
+          {(role === "occupier" || role === "owner") && group(role === "occupier" ? t("What are you looking for?", "ما الذي تبحث عنه؟") : t("What do you own?", "ما الذي تملكه؟"), (
+            <div className="row gap8 wrap">{ASSET.map(([v, l]) => <button key={v} type="button" aria-pressed={chips.includes(v)} onClick={() => toggleChip(v)} className={chips.includes(v) ? "chip on" : "chip"}>{l}</button>)}</div>
           ))}
-          {role === "occupier" && field(t("Size", "المساحة"), sel("size", [["u200", t("Under 200 m²", "أقل من 200 م²")], ["200_1000", "200-1,000 m²"], ["o1000", t("Over 1,000 m²", "أكثر من 1,000 م²")]]))}
-          {role === "occupier" && field(t("When do you need it?", "متى تحتاجها؟"), sel("timeline", [["now", t("Now", "الآن")], ["3m", t("Within 3 months", "خلال 3 أشهر")], ["later", t("Exploring", "أستكشف")]]))}
-          {role === "owner" && field(t("How many properties?", "كم عقاراً؟"), sel("portfolio", [["1", t("One", "واحد")], ["2_5", "2-5"], ["6p", "6+"]]))}
-          {role === "owner" && field(t("Can you provide the title deed or an authorization?", "هل يمكنك تقديم الصك أو تفويض؟"), sel("docs", [["yes", t("Yes", "نعم")], ["help", t("I need help with this", "أحتاج مساعدة في ذلك")]]))}
-          {role === "broker" && field(t("FAL licence number", "رقم رخصة فال"), (
-            <><input className="input fig" inputMode="numeric" placeholder={t("Digits only", "أرقام فقط")} value={d.fal || ""} onChange={(e) => setD((p) => ({ ...p, fal: e.target.value.replace(/[^\d]/g, "") }))} />
-            {!falOk && (d.fal || "").length > 0 ? <div style={{ fontSize: 12, color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div className="muted" style={{ fontSize: 12, marginTop: 5 }}>{t("SAT reviews it before your account opens. Automated checks against the REGA register arrive before launch.", "تراجعه سات قبل فتح حسابك. التحقق الآلي مقابل سجل الهيئة العامة للعقار يصل قبل الإطلاق.")}</div>}</>
+          {role === "occupier" && sel("size", t("Size", "المساحة"), [["u200", t("Under 200 m²", "أقل من 200 م²")], ["200_1000", "200-1,000 m²"], ["o1000", t("Over 1,000 m²", "أكثر من 1,000 م²")]])}
+          {role === "occupier" && sel("timeline", t("When do you need it?", "متى تحتاجها؟"), [["now", t("Now", "الآن")], ["3m", t("Within 3 months", "خلال 3 أشهر")], ["later", t("Exploring", "أستكشف")]])}
+          {role === "owner" && sel("portfolio", t("How many properties?", "كم عقاراً؟"), [["1", t("One", "واحد")], ["2_5", "2-5"], ["6p", "6+"]])}
+          {role === "owner" && sel("docs", t("Can you provide the title deed or an authorization?", "هل يمكنك تقديم الصك أو تفويض؟"), [["yes", t("Yes", "نعم")], ["help", t("I need help with this", "أحتاج مساعدة في ذلك")]])}
+          {/* ELITE-4 J1-7: the "5 to 12 digits" message was orphaned. It has an id, the
+              input points at it with aria-describedby, aria-invalid carries the state,
+              and role="alert" announces it as it appears. */}
+          {role === "broker" && field("su-fal", t("FAL licence number", "رقم رخصة فال"), (
+            <><input id="su-fal" className="input fig" inputMode="numeric" aria-invalid={falBad} aria-describedby={falBad ? "su-fal-err" : "su-fal-hint"} placeholder={t("Digits only", "أرقام فقط")} value={d.fal || ""} onChange={(e) => setD((p) => ({ ...p, fal: e.target.value.replace(/[^\d]/g, "") }))} />
+            {falBad ? <div id="su-fal-err" role="alert" style={{ fontSize: 12, color: "var(--red)", marginTop: 5 }}>{t("5 to 12 digits", "من 5 إلى 12 رقماً")}</div> : <div id="su-fal-hint" className="muted" style={{ fontSize: 12, marginTop: 5 }}>{t("SAT reviews it before your account opens. Automated checks against the REGA register arrive before launch.", "تراجعه سات قبل فتح حسابك. التحقق الآلي مقابل سجل الهيئة العامة للعقار يصل قبل الإطلاق.")}</div>}</>
           ))}
-          {role === "investor" && field(t("Ticket size", "حجم الاستثمار"), sel("ticket", [["u5", t("Under SAR 5M", "أقل من 5 ملايين ريال")], ["5_50", t("SAR 5-50M", "5-50 مليون ريال")], ["o50", t("Over SAR 50M", "أكثر من 50 مليون ريال")]]))}
-          {role === "investor" && field(t("Focus", "التركيز"), (
-            <div className="row gap8 wrap">{ASSET.slice(0, 7).map(([v, l]) => <button key={v} type="button" onClick={() => toggleChip(v)} className={chips.includes(v) ? "chip on" : "chip"}>{l}</button>)}</div>
+          {role === "investor" && sel("ticket", t("Ticket size", "حجم الاستثمار"), [["u5", t("Under SAR 5M", "أقل من 5 ملايين ريال")], ["5_50", t("SAR 5-50M", "5-50 مليون ريال")], ["o50", t("Over SAR 50M", "أكثر من 50 مليون ريال")]])}
+          {role === "investor" && group(t("Focus", "التركيز"), (
+            <div className="row gap8 wrap">{ASSET.slice(0, 7).map(([v, l]) => <button key={v} type="button" aria-pressed={chips.includes(v)} onClick={() => toggleChip(v)} className={chips.includes(v) ? "chip on" : "chip"}>{l}</button>)}</div>
           ))}
           <div className="row gap10" style={{ marginTop: 4 }}>
             <button type="button" className="btn secondary" onClick={() => setStep(0)}>{t("Back", "رجوع")}</button>
@@ -134,11 +162,12 @@ export default function SignupFlow({ locale }: Props) {
 
       {step === 2 && (
         <div className="col gap14">
-          {field(t("Full name", "الاسم الكامل"), <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Your name", "اسمك")} autoComplete="name" />)}
-          {field(role === "broker" ? t("Brokerage", "المكتب العقاري") : t("Company (optional)", "الشركة (اختياري)"), <input className="input" value={company} onChange={(e) => setCompany(e.target.value)} placeholder={role === "broker" ? t("Licensed entity name", "اسم المنشأة المرخّصة") : t("Company name", "اسم الشركة")} autoComplete="organization" />)}
-          {field(t("Work email", "البريد الإلكتروني"), <input className="input" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.sa" autoComplete="email" />)}
-          {field(t("Mobile (optional)", "الجوال (اختياري)"), <input className="input fig" type="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" autoComplete="tel" />)}
-          {err ? <div style={{ fontSize: 13, color: "var(--red)" }}>{err}</div> : null}
+          {field("su-name", t("Full name", "الاسم الكامل"), <input id="su-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("Your name", "اسمك")} autoComplete="name" />)}
+          {field("su-company", role === "broker" ? t("Brokerage", "المكتب العقاري") : t("Company (optional)", "الشركة (اختياري)"), <input id="su-company" className="input" value={company} onChange={(e) => setCompany(e.target.value)} placeholder={role === "broker" ? t("Licensed entity name", "اسم المنشأة المرخّصة") : t("Company name", "اسم الشركة")} autoComplete="organization" />)}
+          {field("su-email", t("Work email", "البريد الإلكتروني"), <input id="su-email" className="input" type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.sa" autoComplete="email" />)}
+          {field("su-phone", t("Mobile (optional)", "الجوال (اختياري)"), <input id="su-phone" className="input fig" type="tel" dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+966 5X XXX XXXX" autoComplete="tel" />)}
+          {/* ELITE-4 J1-4: submit failure was a bare div, silent to assistive tech. */}
+          {err ? <div role="alert" style={{ fontSize: 13, color: "var(--red)" }}>{err}</div> : null}
           <div className="row gap10" style={{ marginTop: 4 }}>
             <button type="button" className="btn secondary" onClick={() => setStep(1)}>{t("Back", "رجوع")}</button>
             <button type="button" className="btn primary grow" style={{ justifyContent: "center", opacity: step2Ok && !busy ? 1 : 0.5 }} disabled={!step2Ok || busy} onClick={submit}>{busy ? t("Sending...", "جارٍ الإرسال...") : t("Request my account", "اطلب حسابي")}</button>

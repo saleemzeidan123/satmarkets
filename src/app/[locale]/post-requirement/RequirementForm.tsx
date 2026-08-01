@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -53,7 +53,9 @@ import {
 
 type Done = { ref: string; match: number; notified: string[]; id: string };
 
-const FIELD_ORDER = ["title", "location", "size", "name", "email"] as const;
+/* ELITE-4 J4-7: consent is a blocking condition, so it is a named field with
+   its own error node and its own place in the focus order. */
+const FIELD_ORDER = ["title", "location", "size", "name", "email", "consent"] as const;
 type FieldKey = (typeof FIELD_ORDER)[number];
 
 export default function RequirementForm({ locale, locations }: { locale: "en" | "ar"; locations: IntakeLocation[] }) {
@@ -83,6 +85,23 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
   const [fieldErr, setFieldErr] = useState<Partial<Record<FieldKey, string>>>({});
 
   const formRef = useRef<HTMLFormElement>(null);
+  const doneRef = useRef<HTMLDivElement>(null);
+
+  /* ELITE-4 J4-7. Two blocking conditions the dictionary has no sentence for.
+     Written here, in both languages, rather than added to the locale files. */
+  const t = {
+    errConsent: ar ? "وافق على النشر قبل الإرسال." : "Agree to the posting terms before sending.",
+    errNoLocations: ar
+      ? "لا يمكن الإرسال الآن، فقائمة المواقع غير متاحة."
+      : "This cannot be sent right now, the location list is unavailable.",
+  };
+
+  /* ELITE-4 J4-3: the success card replaces the form, which unmounts the button
+     the visitor just pressed and drops focus to the document. Focus is moved to
+     the card, which is also a live region, so the outcome is announced whether
+     the reader is following focus or listening. Declared above the early return
+     so the hook order never changes. */
+  useEffect(() => { if (done) doneRef.current?.focus(); }, [done]);
 
   const toggle = (arr: string[], set: (v: string[]) => void, v: string) =>
     set(arr.includes(v) ? arr.filter((x) => x !== v) : [...arr, v]);
@@ -100,6 +119,10 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
     if (sizeMin && sizeMax && Number.isFinite(lo) && Number.isFinite(hi) && lo > hi) e.size = pr.errSizeOrder;
     if (!cName.trim()) e.name = pr.errRequired;
     if (!cEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(cEmail.trim())) e.email = pr.errEmail;
+    // ELITE-4 J4-7. The checkbox used to gate the button instead of the rules,
+    // so an unticked box left the visitor with a control they could not focus
+    // and no statement of what was wrong.
+    if (!consent) e.consent = t.errConsent;
     return e;
   }
 
@@ -113,6 +136,12 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
   }
 
   async function submit() {
+    /* ELITE-4 J4-7. The button is focusable and activatable at all times now,
+       so the two conditions that used to disable it are guarded here. An empty
+       location list is not something the visitor can fix, so it is stated in
+       the summary rather than pinned to a control that is not rendered. */
+    if (busy) return;
+    if (groups.length === 0) { setErr(t.errNoLocations); return; }
     const e = validate();
     setFieldErr(e);
     if (Object.keys(e).length) {
@@ -162,7 +191,8 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
     return (
       <div style={{ background: "var(--cool)" }}>
         <div style={{ padding: "40px 24px 56px", maxWidth: 720, margin: "0 auto" }}>
-          <div className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
+          {/* ELITE-4 J4-3 */}
+          <div ref={doneRef} tabIndex={-1} role="status" className="card pad" style={{ boxShadow: "var(--sh-1)", textAlign: "center" }}>
             <span style={{ width: 56, height: 56, borderRadius: "50%", background: "var(--harbor-d)", color: "var(--on-brand)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}><Icon.check size={28} /></span>
             <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
             <h1 style={{ fontSize: 24, fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
@@ -363,15 +393,32 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
               </div>
               {/* Real consent, not a badge asserting it. */}
               <label htmlFor="pr-consent" className="row gap10" style={{ alignItems: "flex-start", cursor: "pointer" }}>
-                <input id="pr-consent" name="consent" type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, width: 16, height: 16, flex: "none" }} />
+                <input
+                  id="pr-consent" name="consent" type="checkbox" required checked={consent}
+                  onChange={(e) => setConsent(e.target.checked)}
+                  aria-invalid={fieldErr.consent ? true : undefined} aria-describedby={describedBy("consent")}
+                  style={{ marginTop: 3, width: 16, height: 16, flex: "none" }}
+                />
                 <span style={{ fontSize: 13, lineHeight: 1.6 }}>{pr.consentLabel}</span>
               </label>
+              {/* ELITE-4 J4-7: the reason the visitor cannot post, beside the
+                  control that carries it, and the target `focusFirst` returns
+                  them to. */}
+              {fieldNote("consent")}
             </div>
           </div>
 
           <div className="row between wrap" style={{ marginTop: 26, gap: 12 }}>
             <span className="muted" style={{ fontSize: 12.5 }}>{pr.privacyNote}</span>
-            <button type="submit" className="btn primary lg" disabled={busy || !consent || groups.length === 0}>{busy ? pr.posting : pr.postReqBtn} <Icon.arrow size={16} /></button>
+            {/* ELITE-4 J4-7: `disabled` made this unfocusable and unreadable while
+                the visitor had no idea what was blocking them. `aria-disabled`
+                keeps it in the tab order and lets a press produce the error
+                that names the condition. `submit` guards every condition. */}
+            <button
+              type="submit" className="btn primary lg"
+              aria-disabled={busy || !consent || groups.length === 0 || undefined}
+              style={busy || !consent || groups.length === 0 ? { opacity: 0.6 } : undefined}
+            >{busy ? pr.posting : pr.postReqBtn} <Icon.arrow size={16} /></button>
           </div>
         </form>
       </div>
@@ -379,5 +426,9 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
   );
 }
 
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", outline: "none", width: "100%" };
+/* ELITE-4 J4-1: `outline: "none"` used to sit here and was spread onto nine
+   controls, leaving a 1.17:1 box-shadow as the only focus affordance. The
+   visible ring comes from `.input:focus-visible` in the shared stylesheet, and
+   an inline `outline` cannot be overridden by a stylesheet, so it is gone. */
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px", fontSize: 14, color: "var(--ink)", background: "var(--paper)", width: "100%" };
 const chip: React.CSSProperties = { cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" };

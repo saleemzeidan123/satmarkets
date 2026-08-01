@@ -25,6 +25,9 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   const [saved, setSaved] = useState(0);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  /* ELITE-4 J3-37: Escape closed the panel and left focus on nothing. */
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
+  const MENU_ID = "hdr-account-menu";
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 6);
@@ -41,7 +44,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setOpen(false); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { setOpen(false); menuBtnRef.current?.focus(); } };
     document.addEventListener("mousedown", onDoc); document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
   }, [open]);
@@ -91,8 +94,15 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
           <div className="relative" ref={menuRef}>
             <button
               type="button"
-              aria-label={menuLabel}
+              ref={menuBtnRef}
+              /* ELITE-4 J3-38: aria-label replaces the button's contents, so the saved
+                 count in the badge was not in the name at all. It is folded in here,
+                 and the badge itself is hidden from the name to avoid saying it twice. */
+              aria-label={saved > 0 ? `${menuLabel}, ${savedLabel} ${saved}` : menuLabel}
               aria-expanded={open}
+              /* ELITE-4 J3-37: the trigger never said it opens a popup, nor which one. */
+              aria-haspopup="true"
+              aria-controls={open ? MENU_ID : undefined}
               onClick={() => setOpen((v) => !v)}
               className={`inline-flex h-9 items-center gap-2 rounded-lg border border-line px-2.5 text-charcoal/80 transition-colors hover:border-charcoal/25 hover:bg-ivory-2 ${open ? "border-charcoal/25 bg-ivory-2" : ""}`}
             >
@@ -100,11 +110,12 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 {open ? <><path d="M6 6l12 12"/><path d="M18 6l-12 12"/></> : <><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></>}
               </svg>
               <span className="hidden text-[13px] font-medium sm:inline">{menuLabel}</span>
-              {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
+              {saved > 0 ? <span aria-hidden="true" className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
             </button>
 
             {open && (
-              <div className="absolute end-0 top-full z-50 mt-2 w-[270px] overflow-hidden rounded-xl border border-line bg-ivory shadow-[0_18px_44px_rgba(20,24,28,0.20)]">
+              /* ELITE-4 J3-37: the popup itself was an anonymous div. */
+              <div id={MENU_ID} role="group" aria-label={menuLabel} className="absolute end-0 top-full z-50 mt-2 w-[270px] overflow-hidden rounded-xl border border-line bg-ivory shadow-[0_18px_44px_rgba(20,24,28,0.20)]">
                 <div className="border-b border-line bg-ivory-2 px-4 py-3">
                   <p className="text-[14px] font-semibold text-charcoal">{welcomeTitle}</p>
                   <p className="mt-0.5 text-[11.5px] text-charcoal/55">{welcomeSub}</p>
@@ -121,7 +132,8 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
                 <div className="border-t border-line px-2 py-2">
                   <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/40">{accountLabel}</p>
-                  <Link href={`/${locale}/saved`} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">
+                  {/* ELITE-4 J3-38: the badge is a bare number beside the link text. */}
+                  <Link href={`/${locale}/saved`} aria-label={saved > 0 ? `${savedLabel} ${saved}` : undefined} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">
                     <span>{savedLabel}</span>
                     {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[9px] font-medium text-white fig">{saved}</span> : null}
                   </Link>

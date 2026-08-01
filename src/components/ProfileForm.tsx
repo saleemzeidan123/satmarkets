@@ -59,32 +59,34 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <p className="muted" style={{ fontSize: 12.5, margin: 0 }}>{t.hint}</p>
+      {/* ELITE-4 J1-1: every label was bare, so no field had a programmatic name.
+          Each control now carries an id and its label the matching htmlFor. */}
       <div>
-        <label style={lbl}>{t.aboutEn}</label>
-        <textarea style={{ ...inp, minHeight: 88, resize: "vertical" }} value={f.about_en} onChange={(e) => set("about_en", e.target.value)} />
+        <label htmlFor="pf-about-en" style={lbl}>{t.aboutEn}</label>
+        <textarea id="pf-about-en" style={{ ...inp, minHeight: 88, resize: "vertical" }} value={f.about_en} onChange={(e) => set("about_en", e.target.value)} />
       </div>
       <div>
-        <label style={lbl}>{t.aboutAr}</label>
-        <textarea dir="rtl" style={{ ...inp, minHeight: 88, resize: "vertical" }} value={f.about_ar} onChange={(e) => set("about_ar", e.target.value)} />
+        <label htmlFor="pf-about-ar" style={lbl}>{t.aboutAr}</label>
+        <textarea id="pf-about-ar" dir="rtl" style={{ ...inp, minHeight: 88, resize: "vertical" }} value={f.about_ar} onChange={(e) => set("about_ar", e.target.value)} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
-          <label style={lbl}>{t.website}</label>
-          <input style={inp} value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" />
+          <label htmlFor="pf-website" style={lbl}>{t.website}</label>
+          <input id="pf-website" style={inp} value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" />
         </div>
         <div>
-          <label style={lbl}>{t.logo}</label>
-          <input style={inp} value={f.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://" />
+          <label htmlFor="pf-logo" style={lbl}>{t.logo}</label>
+          <input id="pf-logo" style={inp} value={f.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://" />
         </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>
-          <label style={lbl}>{t.email}</label>
-          <input style={inp} type="email" value={f.public_email} onChange={(e) => set("public_email", e.target.value)} />
+          <label htmlFor="pf-public-email" style={lbl}>{t.email}</label>
+          <input id="pf-public-email" style={inp} type="email" value={f.public_email} onChange={(e) => set("public_email", e.target.value)} />
         </div>
         <div>
-          <label style={lbl}>{t.phone}</label>
-          <input style={inp} value={f.public_phone} onChange={(e) => set("public_phone", e.target.value)} />
+          <label htmlFor="pf-public-phone" style={lbl}>{t.phone}</label>
+          <input id="pf-public-phone" style={inp} value={f.public_phone} onChange={(e) => set("public_phone", e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

@@ -1454,6 +1454,8 @@
     "interestedP": "Owners and brokers who can fill this requirement appear here. The occupier chooses who to talk to.",
     "appearAs": "You appear as your account. Only owners and brokers on SAT Markets can register interest.",
     "placeholder": "What you have that matches (size, district, fit-out)",
+    "msgLabel": "Your message to the occupier",
+    "matchesErr": "Your listings could not be checked. Close this panel and open it again to retry.",
     "signIn": "Sign in",
     "cancel": "Cancel",
     "registering": "Registering",

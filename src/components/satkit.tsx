@@ -56,7 +56,7 @@ export function Logo({ size = 28, rev = false, lg = false, base, lit, sub }: { s
 type IcP = { size?: number; sw?: number; fill?: string; stroke?: string };
 function Ic({ size = 18, sw = 1.6, fill = "none", stroke = "currentColor", children, vb = 24 }: IcP & { children?: React.ReactNode; vb?: number }) {
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${vb} ${vb}`} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}>
+    <svg aria-hidden="true" focusable="false" width={size} height={size} viewBox={`0 0 ${vb} ${vb}`} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={{ flex: "none" }}>
       {children}
     </svg>
   );

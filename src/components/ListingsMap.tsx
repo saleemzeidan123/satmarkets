@@ -38,6 +38,17 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
   const readyRef = useRef(false);
   const selectedRef = useRef<string | null>(null);
   const [moved, setMoved] = useState(false);
+  /* ELITE-4 J3-3 / J3-5: refs for the keyboard equivalents of the canvas marks and
+     for the dialog behaviour of the full-screen panel below 1080px. */
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const applyRef = useRef<((m: any, id: string | null) => void) | null>(null);
+  // Names for the parts of the map that exist only on the canvas. Local and inline,
+  // in the pattern this file already uses for the legend below.
+  const t3 = ar
+    ? { mapRegion: "خريطة المساحات المعروضة", districtList: "الأحياء على الخريطة", pinList: "المباني على الخريطة", spaces: "مساحة" }
+    : { mapRegion: "Map of listed spaces", districtList: "Districts on the map", pinList: "Buildings on the map", spaces: "spaces" };
 
   useEffect(() => {
     let map: any; let ro: ResizeObserver | undefined;
@@ -112,6 +123,9 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
         if (id && m.getSource("d")) m.setFeatureState({ source: "d", id }, { selected: true });
       } catch {}
     };
+    /* ELITE-4 J3-3: publish the selection handler so the visually-hidden district
+       buttons below drive exactly the same state as a click on the canvas. */
+    applyRef.current = applySelected;
 
     const wire = (m: any, maplibregl: any) => {
       const tip = new maplibregl.Popup({ closeButton: false, offset: 12 });
@@ -224,21 +238,94 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubbles, pins, selectedDistrict]);
 
+  /* ELITE-4 J3-3: the keyboard path into a district bubble. Same feature state and
+     same navigation as the canvas click handler, reached from a real button. */
+  const selectDistrict = (b: DistrictBubble) => {
+    const m = mapRef.current;
+    if (m) {
+      applyRef.current?.(m, b.id);
+      try { m.flyTo({ center: [b.lng, b.lat] as [number, number], zoom: Math.max(m.getZoom(), 12.5), duration: 650 }); } catch {}
+    }
+    const sp = new URLSearchParams(baseParams); sp.set("district", b.id);
+    router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false });
+  };
+  const searchThisArea = () => {
+    const m = mapRef.current; if (!m || !moved) return;
+    const b = m.getBounds();
+    const sp = new URLSearchParams(baseParams);
+    sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(","));
+    setMoved(false);
+    router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false });
+  };
+
+  /* ELITE-4 J3-5: below 1080px the panel is a full-screen overlay. It behaves like
+     a dialog now: focus moves in, Tab stays in, Escape closes, focus goes back. */
+  useEffect(() => {
+    if (!open) return;
+    const toggle = toggleRef.current;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setOpen(false); return; }
+      if (e.key !== "Tab") return;
+      const root = panelRef.current;
+      if (!root) return;
+      const f = Array.from(root.querySelectorAll<HTMLElement>('button, a[href], [tabindex]:not([tabindex="-1"])'));
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      const act = document.activeElement as HTMLElement | null;
+      const inside = !!act && root.contains(act);
+      if (e.shiftKey && (!inside || act === first)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (!inside || act === last)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    closeRef.current?.focus();
+    return () => { document.removeEventListener("keydown", onKey); if (toggle && document.contains(toggle)) toggle.focus(); };
+  }, [open]);
+
   return (
     <>
       <style>{`.listing.lst-hl{outline:2px solid var(--harbor);outline-offset:1px;border-radius:14px}`}</style>
-      <div className={"lst-map-panel" + (open ? " open" : "")}>
+      {/* ELITE-4 J3-3 / J3-5: the panel is a named region, and a named modal dialog
+          while it is the full-screen overlay. */}
+      <div ref={panelRef} className={"lst-map-panel" + (open ? " open" : "")}
+        role={open ? "dialog" : "region"} aria-modal={open ? true : undefined} aria-label={t3.mapRegion}>
         <div ref={ref} style={{ position: "absolute", inset: 0 }} />
+        {/* ELITE-4 J3-3: district filtering and pin navigation are bound to MapLibre
+            pointer events on a canvas, so neither can be reached with a keyboard.
+            These are the same two actions as real, focusable controls. */}
+        <div className="sronly">
+          <h3>{t3.districtList}</h3>
+          <ul>
+            {bubbles.map((b) => (
+              <li key={b.id}>
+                <button type="button" onClick={() => selectDistrict(b)} aria-current={selectedDistrict === b.id ? "true" : undefined}>
+                  {b.name}, {b.count} {t3.spaces}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {pins.length > 0 ? (
+            <>
+              <h3>{t3.pinList}</h3>
+              <ul>
+                {pins.map((p) => (
+                  <li key={p.id}><a href={`/${locale}/listings/${p.id}`}>{p.title}{p.price ? `, ${p.price}` : ""}</a></li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
         {status !== "ready" && (
           <div aria-live="polite" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 6, background: "var(--cool)", color: "var(--slate)", pointerEvents: "none", padding: 20, textAlign: "center" }}>
             <span className="mono" style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--slate-2)" }}>{status === "error" ? t2.mapUnavailable : t2.loadingMap}</span>
             <span style={{ fontSize: 12.5, maxWidth: 240 }}>{status === "error" ? t2.browseList : t2.oneMoment}</span>
           </div>
         )}
-        {moved && (
-          <button type="button" onClick={() => { const m = mapRef.current; if (!m) return; const b = m.getBounds(); const sp = new URLSearchParams(baseParams); sp.set("bbox", [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].map((n: number) => n.toFixed(4)).join(",")); setMoved(false); router.push(`/${locale}/listings?${sp.toString()}`, { scroll: false }); }} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "var(--paper)", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600 }}>{t2.searchArea}</button>
-        )}
-        <button type="button" className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
+        {/* ELITE-4 J3-4: `moved` is only ever set from drag and zoom pointer events, so
+            rendering this button on `moved` alone put bounding-box search out of reach of
+            a keyboard entirely. It is always present now, and inert until the viewport
+            has actually changed. */}
+        <button type="button" onClick={searchThisArea} aria-disabled={!moved} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "var(--paper)", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600, opacity: moved ? 1 : 0.55, cursor: moved ? "pointer" : "default" }}>{t2.searchArea}</button>
+        <button type="button" ref={closeRef} className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
         {/* Legend: names the two mark types so a click is never a mystery. Bubbles are
             district centroids (approximate); green dots are exact building points. */}
         <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: 11.5, color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
@@ -248,7 +335,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
           )}
         </div>
       </div>
-      <button type="button" className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{t2.showMap}</button>
+      <button type="button" ref={toggleRef} className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{t2.showMap}</button>
     </>
   );
 }

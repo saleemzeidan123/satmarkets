@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -32,6 +32,11 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
  const [password, setPassword] = useState("");
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState<string | null>(null);
+
+ // ELITE-4 J1-6: setStep("sent") unmounts the magic-link button that had focus, so
+ // focus fell to document.body and nothing was announced. Move focus to the panel.
+ const sentRef = useRef<HTMLDivElement | null>(null);
+ useEffect(() => { if (step === "sent") sentRef.current?.focus(); }, [step]);
 
  async function passwordSignIn(e: React.FormEvent) {
   e.preventDefault();
@@ -115,7 +120,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
     )}
 
     {step === "sent" && (
-     <div className="text-center">
+     <div ref={sentRef} tabIndex={-1} role="status" className="text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--azure-wash)", color: "var(--harbor-d)" }}>
        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4 13 5 5L20 7"/></svg>
       </div>

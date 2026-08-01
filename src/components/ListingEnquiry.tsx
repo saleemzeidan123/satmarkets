@@ -239,9 +239,14 @@ export default function ListingEnquiry({
 
    {open ? (
     <form onSubmit={(e) => { e.preventDefault(); submit(open); }} className="col gap10" style={{ marginTop: 18 }}>
-     <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
-     <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
-     <textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={ar ? `أنا مهتم بهذه المساحة (${type}) في ${district}...` : `I'm interested in this ${type.toLowerCase()} in ${district}...`} rows={3} style={{ ...fld, resize: "vertical" }} />
+     {/* ELITE-4 J3-11: a placeholder is not a label. It is not exposed as the
+         accessible name and it disappears the moment anything is typed. */}
+     <label htmlFor="enq-name" className="sronly">{t.yourName}</label>
+     <input id="enq-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
+     <label htmlFor="enq-email" className="sronly">{t.workEmail}</label>
+     <input id="enq-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
+     <label htmlFor="enq-msg" className="sronly">{ar ? "رسالتك" : "Your message"}</label>
+     <textarea id="enq-msg" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={ar ? `أنا مهتم بهذه المساحة (${type}) في ${district}...` : `I'm interested in this ${type.toLowerCase()} in ${district}...`} rows={3} style={{ ...fld, resize: "vertical" }} />
      <button type="submit" disabled={busy || !name.trim() || !email.trim()} className="btn primary" style={{ justifyContent: "center", minHeight: 44, opacity: busy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{busy ? t.sending : t.sendEnquiry}</button>
      <button type="button" onClick={() => { setOpen(null); setErr(""); }} className="btn ghost" style={{ justifyContent: "center", minHeight: 44 }}>{t.cancel}</button>
     </form>
@@ -268,27 +273,38 @@ export default function ListingEnquiry({
       </div>
      ) : (
       <>
-       <div className="chip-rail row gap6" style={{ maxWidth: "100%" }}>
-        {slots.map((sl) => (
-         <button key={sl.iso} type="button" onClick={() => setSlot(slot === sl.iso ? null : sl.iso)} className={slot === sl.iso ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{sl.label}</button>
-        ))}
-       </div>
+       {/* ELITE-4 J3-12: one slot at a time, so these are radios. Selection used to
+           be carried by a class name alone, which no assistive technology can read. */}
+       <fieldset style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
+        <legend className="sronly">{t.bookViewing}</legend>
+        <div className="chip-rail row gap6" role="radiogroup" aria-label={t.bookViewing} style={{ maxWidth: "100%" }}>
+         {slots.map((sl) => (
+          <button key={sl.iso} type="button" role="radio" aria-checked={slot === sl.iso} onClick={() => setSlot(slot === sl.iso ? null : sl.iso)} className={slot === sl.iso ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{sl.label}</button>
+         ))}
+        </div>
+       </fieldset>
        {slot && (
         <div className="col gap8" style={{ marginTop: 10 }}>
          <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.5 }}>{t.twoQuick}</div>
+         {/* ELITE-4 J3-12: one answer per question, so radios again, inside a
+             fieldset whose legend is the question being answered. */}
          {questions.map((q) => (
-          <div key={q.k}>
-           <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</div>
-           <div className="row gap6 wrap">
+          <fieldset key={q.k} style={{ border: "none", padding: 0, margin: 0, minWidth: 0 }}>
+           <legend style={{ fontSize: 11.5, fontWeight: 600, color: "var(--slate)", padding: 0, margin: "4px 0 5px" }}>{ar ? q.ar : q.en}</legend>
+           <div className="row gap6 wrap" role="radiogroup" aria-label={ar ? q.ar : q.en}>
             {q.opts.map((o) => (
-             <button key={o.v} type="button" onClick={() => setQual((p) => ({ ...p, [q.k]: p[q.k] === o.v ? "" : o.v }))} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{ar ? o.ar : o.en}</button>
+             <button key={o.v} type="button" role="radio" aria-checked={qual[q.k] === o.v} onClick={() => setQual((p) => ({ ...p, [q.k]: p[q.k] === o.v ? "" : o.v }))} className={qual[q.k] === o.v ? "chip on" : "chip"} style={{ cursor: "pointer" }}>{ar ? o.ar : o.en}</button>
             ))}
            </div>
-          </div>
+          </fieldset>
          ))}
-         <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
-         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
-         {vErr ? <div style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
+         {/* ELITE-4 J3-11: same two unlabelled fields, second copy. */}
+         <label htmlFor="vw-name" className="sronly">{t.yourName}</label>
+         <input id="vw-name" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.yourName} style={fld} />
+         <label htmlFor="vw-email" className="sronly">{t.workEmail}</label>
+         <input id="vw-email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.workEmail} type="email" style={fld} />
+         {/* ELITE-4 J3-10: the enquiry error announces, this one did not. */}
+         {vErr ? <div role="alert" style={{ fontSize: 12.5, color: "var(--red)" }}>{vErr}</div> : null}
          <button type="button" disabled={vBusy || !name.trim() || !email.trim()} onClick={submitViewing} className="btn primary" style={{ justifyContent: "center", opacity: vBusy || !name.trim() || !email.trim() ? 0.6 : 1 }}>{vBusy ? t.sending : t.requestSlot}</button>
         </div>
        )}

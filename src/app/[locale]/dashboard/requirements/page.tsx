@@ -11,6 +11,7 @@ import {
   matchListing,
   compareMatches,
   verdictLabel,
+  stateLabel,
   type MatchListing,
   type MatchRequirement,
   type MatchResult,
@@ -253,8 +254,9 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
                   <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 7 }}>
                     {result.reasons.map((r: MatchReason) => (
                       <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.3, lineHeight: 1.6 }}>
-                        {/* The state is a word as well as a mark, so it does not
-                            depend on colour or on the glyph rendering. */}
+                        {/* The mark is decoration. The state reaches a reader
+                            through the visually hidden word below, not through
+                            this glyph and not through the colour. */}
                         <span
                           aria-hidden="true"
                           className="mono"
@@ -266,6 +268,10 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
                           {NOTE[r.state]}
                         </span>
                         <span style={{ minWidth: 0 }}>
+                          {/* ELITE-4 J4-6: the state as a word. The glyph above
+                              is aria-hidden and the colour is not exposed, so
+                              the state used to reach nobody using a reader. */}
+                          <span className="sronly">{stateLabel(r.state, ar)}. </span>
                           <span style={{ fontWeight: 600 }}>{ar ? r.label_ar : r.label_en}</span>
                           <span className="muted"> {ar ? r.reason_ar : r.reason_en}</span>
                           {(ar ? r.remedy_ar : r.remedy_en) ? (

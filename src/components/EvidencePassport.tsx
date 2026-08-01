@@ -174,13 +174,17 @@ export default function EvidencePassport({
     [ar ? "الاستخدام في المساعد" : "Use by the assistant", permissionLabel(view.permissions.aiUse, ar)],
   ];
 
-  const summaryAria = ar
-    ? `دليل ${label}: ${evidenceStateLabel(view.state, ar)}`
-    : `Evidence for ${label}: ${evidenceStateLabel(view.state, ar)}`;
-
   return (
     <details className="evi">
-      <summary className="evi-sum" aria-label={summaryAria}>
+      {/* ELITE-4 J3-21: this summary carried an aria-label, and an aria-label wins
+          over every child. So the one thing the passport exists to say, the
+          provenance tier on the chip below, was replaced in the accessible name by
+          a sentence that did not contain it, and voice control could not say what
+          it saw. The name is computed from the children now. The only thing the
+          children did not carry was the figure being explained, so that is added
+          here, hidden, and the visible tier text stays in the name. */}
+      <summary className="evi-sum">
+        <span className="sronly">{label}</span>
         {/* No date on the chip, deliberately.
  *
  * `ProvenanceChip` will append "· checked 10 Jul 2026" when it is given a

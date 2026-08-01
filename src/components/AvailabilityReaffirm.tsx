@@ -34,6 +34,10 @@ export default function AvailabilityReaffirm({
   const [err, setErr] = useState<string | null>(null);
 
   async function go() {
+    // ELITE-4 J2-5 / J2-6: the button is never given the `disabled` attribute, so
+    // it cannot be blurred out from under the person pressing it. The no-op guard
+    // is what `aria-disabled` promises.
+    if (busy || done) return;
     setBusy(true);
     setErr(null);
     try {
@@ -57,19 +61,23 @@ export default function AvailabilityReaffirm({
     }
   }
 
-  if (done) {
-    return (
-      <span role="status" className="mono" style={{ color: "var(--harbor-d)", fontSize: 11 }}>
-        {t.done}
-      </span>
-    );
-  }
-
+  // ELITE-4 J2-5. The success branch used to replace the button with a bare
+  // affirmation span. The button carried focus at that moment, so unmounting it
+  // dropped focus to document.body and the lister lost their place in the row.
+  // The button now stays mounted and is relabelled, and the live region is
+  // rendered unconditionally so only its text changes.
   return (
-    <span className="col" style={{ alignItems: "flex-start", gap: 4 }}>
-      <button type="button" className="btn secondary sm" onClick={go} disabled={busy}>
-        {busy ? t.working : t.action}
+    <span className="col" style={{ alignItems: "flex-start", gap: 4 }} aria-busy={busy || undefined}>
+      <button
+        type="button"
+        className="btn secondary sm"
+        onClick={go}
+        aria-disabled={busy || done || undefined}
+        style={{ opacity: busy || done ? 0.65 : 1, color: done ? "var(--harbor-d)" : undefined }}
+      >
+        {done ? t.done : busy ? t.working : t.action}
       </button>
+      <span role="status" className="sronly">{done ? t.done : ""}</span>
       {err && (
         <span role="alert" style={{ color: "var(--red)", fontSize: 11, lineHeight: 1.5 }}>
           {err}

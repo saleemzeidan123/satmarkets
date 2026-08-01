@@ -354,7 +354,9 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         </div>
         <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
-      <form method="get" className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
+      {/* ELITE-4 J3-19: the site's main search was an unnamed input in an unnamed
+          form, so neither the landmark nor the box could be found or announced. */}
+      <form method="get" role="search" aria-label={dl.search} className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
         {/* A GET form submits only the fields it carries, so without these the box
             silently discarded the deal, city, district, grade, fitout, facet, sort
             and map area a person had already chosen. Typing a sentence should narrow
@@ -365,7 +367,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           <input key={k} type="hidden" name={k} value={v} />
         ))}
         <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <input name="q" defaultValue={searchParams.q || ""} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
+        <input name="q" defaultValue={searchParams.q || ""} aria-label={dl.searchPlaceholder} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: 14, color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
         <button type="submit" className="btn primary">{dl.search}</button>
       </form>
       {/* ------------------------------------------------- the transparency row
@@ -408,13 +410,16 @@ export default async function ListingsPage({ params, searchParams }: { params: {
             const lbl = fieldLabel(f, locale);
             const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", color: "var(--ink)" } as const;
             if (f.type === "number" || f.type === "integer") {
-              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
+              /* ELITE-4 J3-20: named by placeholder only, so unnamed once filled in. */
+              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} aria-label={`${lbl} ${dl.minimum}`} placeholder={`${lbl} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
             }
             const opts: [string, string][] = f.type === "tristate" || f.type === "boolean"
               ? [["yes", dl.yes], ["no", dl.no]]
               : (f.validation?.enum ?? []).map((v) => [v, f.options?.[v]?.[ar ? 1 : 0] ?? v.replace(/_/g, " ")] as [string, string]);
             return (
-              <select key={f.key} name={`f_${f.key}`} defaultValue={cur} style={inpStyle}>
+              /* ELITE-4 J3-20: the only name this had was the placeholder option, which
+                 stops being the selected text the moment a value is chosen. */
+              <select key={f.key} name={`f_${f.key}`} defaultValue={cur} aria-label={lbl} style={inpStyle}>
                 <option value="">{lbl}: {dl.any}</option>
                 {opts.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
@@ -442,7 +447,9 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         {/* The result count printed one Arabic noun form after every number, and
             it disagreed with the count in the location header two lines up, which
             said "مساحة" where this said "عرض". One counted noun answers both. */}
-        <div className="muted" style={{ fontSize: 13 }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
+            and no announcement, so this count is the only thing that says it worked. */}
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: 13 }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
         <div className="row gap8 wrap">
           <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.properties}</Link>
           <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.insights}</Link>

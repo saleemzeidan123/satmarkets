@@ -31,7 +31,14 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const [q, setQ] = useState("");
   const [places, setPlaces] = useState<{ label: string; sub: string }[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
+  /* ELITE-4 J3-16: Escape and an outside click both unmounted the panel and left
+     focus nowhere. Each pill keeps a ref so focus can go back to the control that
+     opened the panel. */
+  const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const prevOpen = useRef<string | null>(null);
   const t = (en: string, arr: string) => (ar ? arr : en);
+  /* ELITE-4 J3-17: one id for the single panel, so a pill can point at what it opens. */
+  const PANEL_ID = "fb-panel";
 
   useEffect(() => {
     const onDoc = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(null); };
@@ -40,6 +47,16 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
   }, []);
+  useEffect(() => {
+    const prev = prevOpen.current;
+    prevOpen.current = open;
+    if (!prev || open) return;
+    const el = pillRefs.current[prev];
+    const act = document.activeElement as HTMLElement | null;
+    // Only reclaim focus if the panel took it with it. If the user clicked another
+    // control outside, that control keeps focus.
+    if (el && (!act || act === document.body || (wrapRef.current ? wrapRef.current.contains(act) : false))) el.focus();
+  }, [open]);
   useEffect(() => {
     const s = q.trim();
     if (s.length < 2) { setPlaces([]); return; }
@@ -90,22 +107,27 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const activePrice = params.sp ? `${Number(params.sp).toLocaleString("en-US")}` : (params.spmin || params.spmax ? SALE_PRICES.find((s) => s[1] === (params.spmin || "") && s[2] === (params.spmax || ""))?.[0] : "");
 
   const pill = (key: string, label: string, active: boolean, right?: boolean) => (
-    <button type="button" key={key} onClick={() => setOpen(open === key ? null : key)} aria-expanded={open === key}
+    <button type="button" key={key} ref={(el) => { pillRefs.current[key] = el; }} onClick={() => setOpen(open === key ? null : key)}
+      /* ELITE-4 J3-17: the pill said it was expanded but never said what it opens. */
+      aria-expanded={open === key} aria-haspopup="true" aria-controls={open === key ? PANEL_ID : undefined}
       className="chip" style={{ height: 38, padding: "0 13px", borderRadius: 999, gap: 7, cursor: "pointer", marginInlineStart: right ? "auto" : undefined,
         borderColor: active || open === key ? "var(--azure)" : "var(--silver-2)", background: active ? "var(--azure-wash)" : "var(--paper)", color: active ? "var(--azure-d)" : "var(--ink)", fontSize: "var(--fs-base)", whiteSpace: "nowrap" }}>
       {label}<span style={{ fontSize: "var(--fs-sm)", color: "var(--slate-2)", transform: open === key ? "rotate(180deg)" : undefined }}>▾</span>
     </button>
   );
+  /* ELITE-4 J3-13: a tick glyph is not a state. These rows pick one value out of a
+     list, so they carry the checked state themselves and the glyph is decoration. */
   const row = (label: React.ReactNode, active: boolean, on: () => void, rightTxt?: string) => (
-    <button type="button" onClick={on} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: active ? "var(--azure-wash)" : "transparent", color: "var(--ink)" }}>
+    <button type="button" onClick={on} role="menuitemradio" aria-checked={active} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: active ? "var(--azure-wash)" : "transparent", color: "var(--ink)" }}>
       <span style={{ flex: 1 }}>{label}</span>
       {rightTxt ? <span className="mono" style={{ fontSize: "var(--fs-xs)", color: "var(--slate-2)" }}>{rightTxt}</span> : null}
-      {active ? <span style={{ color: "var(--azure-d)" }}>✓</span> : null}
+      {active ? <span aria-hidden="true" style={{ color: "var(--azure-d)" }}>✓</span> : null}
     </button>
   );
+  /* ELITE-4 J3-13: multi-select rows, so a real checked state. */
   const check = (label: string, on: boolean, toggle: () => void, count?: number) => (
-    <button key={label} type="button" onClick={toggle} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: "transparent", color: "var(--ink)" }}>
-      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--on-brand)", fontSize: "var(--fs-xs)" }}>{on ? "✓" : ""}</span>
+    <button key={label} type="button" onClick={toggle} role="checkbox" aria-checked={on} style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: ar ? "right" : "left", padding: "10px 10px", border: "none", borderRadius: 8, cursor: "pointer", fontSize: "var(--fs-md)", background: "transparent", color: "var(--ink)" }}>
+      <span style={{ width: 20, height: 20, flex: "0 0 auto", borderRadius: 5, border: `1.5px solid ${on ? "var(--azure)" : "var(--silver-2)"}`, background: on ? "var(--azure)" : "transparent", display: "inline-flex", alignItems: "center", justifyContent: "center", color: "var(--on-brand)", fontSize: "var(--fs-xs)" }} aria-hidden="true">{on ? "✓" : ""}</span>
       <span style={{ flex: 1 }}>{label}</span>
       {count != null ? <span className="mono" style={{ fontSize: "var(--fs-2xs)", color: "var(--slate-2)" }}>{count}</span> : null}
     </button>
@@ -114,7 +136,9 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const renderPanel = () => {
     if (open === "loc") return (
       <div>
-        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")}
+        {/* ELITE-4 J3-18: autoFocus lands here, so an unnamed box is the first thing
+            a screen-reader user meets in this panel. */}
+        <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")} placeholder={t("Search any city or district in Saudi Arabia", "ابحث عن أي مدينة أو حي في السعودية")}
           className="input" style={{ width: "100%", height: 42, padding: "0 12px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box", textAlign: ar ? "right" : "left" }} />
         <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "8px 2px 6px" }}>{q.trim() ? t("Indexed areas first, then all of Saudi Arabia.", "المناطق المفهرسة أولاً، ثم كل السعودية.") : t("Areas with listed spaces. Type to search all of Saudi Arabia.", "مناطق بها مساحات معروضة. اكتب للبحث في كل السعودية.")}</div>
         {cities.map((c) => {
@@ -152,7 +176,8 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
           <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact size, we show the nearest", "أو أدخل مساحة محددة، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("sz") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ sz: v, smin: "", smax: "" }); }} className="row gap8">
-            <input name="sz" defaultValue={params.sz || ""} inputMode="numeric" placeholder={t("e.g. 350", "مثال 350")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
+            {/* ELITE-4 J3-18 */}
+            <input name="sz" defaultValue={params.sz || ""} inputMode="numeric" aria-label={t("Exact size in m²", "مساحة محددة بالمتر المربع")} placeholder={t("e.g. 350", "مثال 350")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("m²", "م²")}</button>
           </form>
         </div>
@@ -165,7 +190,8 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
           <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact price, we show the nearest", "أو أدخل سعراً محدداً، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("sp") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ sp: v, spmin: "", spmax: "" }); }} className="row gap8">
-            <input name="sp" defaultValue={params.sp || ""} inputMode="numeric" placeholder={t("e.g. 12,000,000", "مثال 12,000,000")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
+            {/* ELITE-4 J3-18 */}
+            <input name="sp" defaultValue={params.sp || ""} inputMode="numeric" aria-label={t("Exact sale price in SAR", "سعر بيع محدد بالريال")} placeholder={t("e.g. 12,000,000", "مثال 12,000,000")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("SAR", "ريال")}</button>
           </form>
         </div>
@@ -181,7 +207,8 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
           <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact rent, we show the nearest", "أو أدخل إيجاراً محدداً، ونعرض الأقرب")}</div>
           <form onSubmit={(e) => { e.preventDefault(); const v = (new FormData(e.currentTarget).get("rt") as string || "").replace(/[^0-9]/g, ""); if (v) nav({ rt: v, pmin: "", pmax: "" }); }} className="row gap8">
-            <input name="rt" defaultValue={params.rt || ""} inputMode="numeric" placeholder={t("e.g. 1,800", "مثال 1,800")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
+            {/* ELITE-4 J3-18 */}
+            <input name="rt" defaultValue={params.rt || ""} inputMode="numeric" aria-label={t("Exact rent in SAR", "إيجار محدد بالريال")} placeholder={t("e.g. 1,800", "مثال 1,800")} className="input" style={{ flex: 1, height: 42, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", fontSize: "var(--fs-input)", boxSizing: "border-box" }} />
             <button type="submit" className="btn primary" style={{ height: 42 }}>{t("SAR", "ريال")}</button>
           </form>
         </div>
@@ -217,9 +244,11 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {pill("rent", isSale ? (activePrice || t("Price", "السعر")) : (activeRent || t("Rent", "الإيجار")), isSale ? !!activePrice : !!activeRent)}
         {pill("grade", gradeSel.length ? `${t("Grade", "الفئة")} (${gradeSel.length})` : t("Grade", "الفئة"), gradeSel.length > 0)}
         {pill("fit", fitSel.length ? `${t("Fit-out", "التجهيز")} (${fitSel.length})` : t("Fit-out", "التجهيز"), fitSel.length > 0)}
-        <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} className="chip"
+        {/* ELITE-4 J3-14: a toggle with no pressed state, whose own name began with a
+            tick glyph that a screen reader read out as part of the label. */}
+        <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} aria-pressed={!!params.verified} className="chip"
           style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "var(--verified)" : "var(--ink)", fontSize: "var(--fs-base)" }}>
-          {params.verified ? "✓ " : ""}{t("Ownership verified", "الملكية موثّقة")}
+          {params.verified ? <span aria-hidden="true">✓ </span> : null}{t("Ownership verified", "الملكية موثّقة")}
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}
       </div>
@@ -238,7 +267,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         </div>
       ) : null}
       {open ? (
-        <div className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
+        <div id={PANEL_ID} role="group" className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
           {renderPanel()}
         </div>
       ) : null}

@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
+import { stateLabel } from "@/lib/matching";
 import type { MatchReason, MatchVerdict } from "@/lib/matching";
 
 // PKG-DEM1, finding 100's read side. The stored timeline and must-have tokens are
@@ -60,6 +61,10 @@ export default function RequirementDetail({ params }: { params: { locale: string
  const [needAuth, setNeedAuth] = useState(false);
  const [matches, setMatches] = useState<MatchPayload | null>(null);
  const [matchesLoading, setMatchesLoading] = useState(false);
+ /* ELITE-4 J4-5: a failed matches fetch used to end with the panel simply
+    showing nothing, which reads as "you have no listings" rather than as a
+    request that did not complete. */
+ const [matchesErr, setMatchesErr] = useState(false);
  const [attached, setAttached] = useState<string | null>(null);
 
  const load = () => fetch(`/api/requirements/${params.id}`).then((r) => r.json()).then((j) => { setReq(j.requirement); setInts(j.interests || []); setSummary(j.summary || { total: 0, owners: 0, brokers: 0 }); setIdentitiesVisible(!!j.identitiesVisible); setLoading(false); }).catch(() => setLoading(false));
@@ -75,10 +80,13 @@ export default function RequirementDetail({ params }: { params: { locale: string
   setShow(next);
   if (!next || matches || matchesLoading) return;
   setMatchesLoading(true);
+  setMatchesErr(false);
   fetch(`/api/requirements/${params.id}/matches`)
    .then((r) => (r.ok ? r.json() : null))
    .then((j) => { if (j) setMatches(j as MatchPayload); setMatchesLoading(false); })
-   .catch(() => setMatchesLoading(false));
+   /* ELITE-4 J4-5: a network failure is not a permission answer, so it is
+      stated rather than left as an empty panel. */
+   .catch(() => { setMatchesErr(true); setMatchesLoading(false); });
  }
 
  async function register() {
@@ -142,14 +150,19 @@ export default function RequirementDetail({ params }: { params: { locale: string
     <div className="card pad" style={{ marginTop: 18, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center", marginBottom: 4 }}>
       <div style={{ fontSize: 16, fontWeight: 700 }}>{t.interestedH} {summary.total ? `· ${summary.total}` : ""}</div>
-      <button className="btn primary sm" onClick={openPanel}><Icon.plus size={14} /> {t.haveSpace}</button>
+      {/* ELITE-4 J4-4: this button is the disclosure for the panel below it. */}
+      <button className="btn primary sm" onClick={openPanel} aria-expanded={show} aria-controls="req-response-panel"><Icon.plus size={14} /> {t.haveSpace}</button>
      </div>
      <p className="muted" style={{ fontSize: 12.5, margin: "0 0 14px" }}>{t.interestedP}</p>
 
      {show && (
-      <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)", marginBottom: 14 }}>
+      <div id="req-response-panel" className="card pad" style={{ boxShadow: "none", background: "var(--cool)", marginBottom: 14 }}>
        <p className="muted" style={{ fontSize: 12.5, margin: "0 0 10px" }}>{t.appearAs}</p>
 
+       {/* ELITE-4 J4-5: the matches arrive after the panel opens, so the region
+           that holds them announces its own changes and reports that it is
+           busy while the request is in flight. */}
+       <div aria-live="polite" aria-busy={matchesLoading}>
        {matchesLoading ? (
         <p className="muted" style={{ fontSize: 12.5, margin: "0 0 12px" }}>{t.matchesLoading}…</p>
        ) : matches ? (
@@ -182,10 +195,14 @@ export default function RequirementDetail({ params }: { params: { locale: string
                <ul style={{ listStyle: "none", margin: "8px 0 0", padding: 0, display: "grid", gap: 7 }}>
                 {m.reasons.map((r) => (
                  <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.3, lineHeight: 1.6 }}>
-                  {/* The state is carried by the label and the sentence as well
-                      as by this mark, so nothing depends on colour alone. */}
+                  {/* The mark is decoration. The state reaches a reader through
+                      the visually hidden word below, not through this. */}
                   <span aria-hidden="true" className="mono" style={{ flex: "none", width: 16, textAlign: "center", color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention)" }}>{NOTE[r.state]}</span>
                   <span style={{ minWidth: 0 }}>
+                   {/* ELITE-4 J4-6: the state as a word. The mark above it is
+                       aria-hidden and the colour is not exposed at all, so
+                       without this the state reached nobody using a reader. */}
+                   <span className="sronly">{stateLabel(r.state, ar)}. </span>
                    <span style={{ fontWeight: 600 }}>{ar ? r.label_ar : r.label_en}</span>
                    <span className="muted"> {ar ? r.reason_ar : r.reason_en}</span>
                    {(ar ? r.remedy_ar : r.remedy_en) ? (
@@ -216,9 +233,15 @@ export default function RequirementDetail({ params }: { params: { locale: string
           {matches.excluded_count > 0 ? <> <bdi>{matches.excluded_count}</bdi> {t.matchesExcluded}</> : null}
          </p>
         </div>
+       ) : matchesErr ? (
+        <p style={{ color: "var(--status-error)", fontSize: 12.5, margin: "0 0 12px", lineHeight: 1.6 }}>{t.matchesErr}</p>
        ) : null}
+       </div>
 
-       <textarea className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={`${t.placeholder}…`} style={{ ...inp, minHeight: 64, resize: "vertical" }} />
+       {/* ELITE-4 J4-2: the only field in this flow, and it had no id, no label
+           and no accessible name of any kind. */}
+       <label htmlFor="req-interest-msg" style={{ display: "block", fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>{t.msgLabel}</label>
+       <textarea id="req-interest-msg" className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={`${t.placeholder}…`} style={{ ...inp, minHeight: 64, resize: "vertical" }} />
        {err && (
         <p role="alert" style={{ color: "#B3261E", fontSize: 12.5, marginTop: 8 }}>
          {err}{needAuth ? <> <Link href={`/${locale}/login`} style={{ color: "var(--azure-d)", fontWeight: 600 }}>{t.signIn}</Link></> : null}
@@ -284,4 +307,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
   </div>
  );
 }
-const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", outline: "none", width: "100%" };
+/* ELITE-4 J4-1: `outline: "none"` is gone. The visible focus ring is
+   `.input:focus-visible` in the shared stylesheet, and an inline outline
+   cannot be overridden from a stylesheet. */
+const inp: React.CSSProperties = { border: "1px solid var(--silver)", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, color: "var(--ink)", background: "var(--paper)", width: "100%" };

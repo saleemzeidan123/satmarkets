@@ -18,11 +18,18 @@ export default function ListingStatusToggle({
   id: string;
   status: string;
   blocked?: string | null;
-  t: { pause: string; resume: string; working: string; cannot: string };
+  /** `failed` is optional so the manage screen, which does not pass it, still
+   *  compiles; the fallback reads the language off the strings it did pass. */
+  t: { pause: string; resume: string; working: string; cannot: string; failed?: string };
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // ELITE-4 J2-20: this said "Could not update." in English to an Arabic reader.
+  // The sentence now comes from the caller, and where the caller is silent it is
+  // chosen by the language of the labels the caller did supply.
+  const failedText = t.failed ?? (/[\u0600-\u06FF]/.test(t.working + t.cannot) ? "تعذّر التحديث." : "Could not update.");
+  const reasonId = `status-blocked-${id}`;
 
   const canToggle = status === "published" || status === "archived";
   if (!canToggle) return null;
@@ -30,31 +37,39 @@ export default function ListingStatusToggle({
   const isBlocked = status === "archived" && !!blocked;
 
   async function go() {
+    // ELITE-4 J2-6: no `disabled` attribute anywhere on this control, so pressing
+    // it cannot blur it. This guard is the behaviour `aria-disabled` announces.
+    if (busy || isBlocked) return;
     setBusy(true); setErr(null);
     try {
       const res = await fetch(`/api/listings/${id}/status`, { method: "POST" });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(j.error || "Could not update."); setBusy(false); return; }
+      if (!res.ok) { setErr(j.error || failedText); setBusy(false); return; }
       setBusy(false);
       router.refresh();
     } catch {
-      setErr("Could not update."); setBusy(false);
+      setErr(failedText); setBusy(false);
     }
   }
 
   return (
-    <div className="col" style={{ alignItems: "flex-end", gap: 4 }}>
+    <div className="col" style={{ alignItems: "flex-end", gap: 4 }} aria-busy={busy || undefined}>
+      {/* ELITE-4 J2-10: the reason used to live on `title=` of a button that was
+          simultaneously `disabled`, which keyboard and screen reader users could
+          neither reach nor hover. It is now the button's own description, read
+          from the span already on screen. */}
       <button
         type="button"
         className="btn secondary sm"
         onClick={go}
-        disabled={busy || isBlocked}
-        title={isBlocked ? blocked || undefined : undefined}
+        aria-disabled={busy || isBlocked || undefined}
+        aria-describedby={isBlocked ? reasonId : undefined}
+        style={{ opacity: busy || isBlocked ? 0.65 : 1 }}
       >
         {busy ? t.working : status === "published" ? t.pause : t.resume}
       </button>
       {isBlocked && (
-        <span style={{ color: "var(--slate)", fontSize: 11, maxWidth: 230, textAlign: "end", lineHeight: 1.5 }}>
+        <span id={reasonId} style={{ color: "var(--slate)", fontSize: 11, maxWidth: 230, textAlign: "end", lineHeight: 1.5 }}>
           {t.cannot} {blocked}
         </span>
       )}

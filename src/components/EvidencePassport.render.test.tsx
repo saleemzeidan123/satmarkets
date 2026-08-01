@@ -82,7 +82,18 @@ test("render: the passport is a native disclosure with a named summary", () => {
     // summary and the detail panel is outside it, which is what makes the panel
     // closed until asked for.
     const sum = html.slice(html.indexOf("<summary"), html.indexOf("</summary>"));
-    assert.match(sum, /aria-label="[^"]+"/, "the summary has no accessible name");
+    // ELITE-4 J3-21. This used to assert the summary carried an aria-label. That
+    // was the defect, not the fix: an aria-label replaces every child in the name
+    // computation, so the provenance tier on the chip, which is the whole point of
+    // the passport, was not in the name a screen reader read or a voice-control
+    // user could speak. The name is computed from the children now, so what is
+    // asserted here is the absence of the override, plus (below, unchanged) that
+    // the figure is still named inside the summary, which a visually hidden span
+    // now carries.
+    assert.ok(
+      !/<summary[^>]*aria-label=/.test(sum),
+      "the summary overrides its visible children with an aria-label again"
+    );
     assert.ok(
       sum.includes(ar ? "الإيجار المطلوب" : "Asking rent"),
       "the summary does not name the figure it explains"

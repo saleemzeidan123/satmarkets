@@ -50,9 +50,14 @@ export default function ProvenanceChip({
   const md = size === "md";
 
   return (
+    /* ELITE-4 J3-22: this was a bare span carrying aria-label. A span maps to
+       role="generic", and aria-label is not honoured on a generic element, so the
+       fuller provenance sentence could be dropped altogether. It is real text now,
+       visually hidden, which also keeps the visible tier label inside the
+       accessible name of any control this chip sits in (the Evidence Passport
+       summary is one). */
     <span
       title={aria}
-      aria-label={aria}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -77,6 +82,7 @@ export default function ProvenanceChip({
         />
       )}
       {label}
+      <span className="sronly">{aria}</span>
     </span>
   );
 }

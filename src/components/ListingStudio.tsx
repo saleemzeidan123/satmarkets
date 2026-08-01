@@ -354,13 +354,43 @@ export default function ListingStudio({
     return placeName(d, ar ? "ar" : "en") || null;
   }, [districts, place.districtId, ar]);
 
-  const go = (id: string) => { setCurrent(id); setError(null); if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "auto" }); };
+  // ELITE-4 J2-7. A step change replaces the whole panel and unmounts the control
+  // that was pressed, so focus fell to document.body and nothing announced the new
+  // step. Focus is moved to the step heading, which carries tabIndex={-1}.
+  //
+  // ELITE-4 J2-11. `keepError` exists because `save()` sets an error and then calls
+  // `go()` to carry the lister to the step that holds it; the unconditional
+  // setError(null) here landed in the same batch and threw the sentence away
+  // before it could be read.
+  const go = (id: string, keepError = false) => {
+    setCurrent(id);
+    if (!keepError) setError(null);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      window.requestAnimationFrame(() => { document.getElementById("step-title")?.focus(); });
+    }
+  };
+
+  // ELITE-4 J2-11: which facts are holding the save, by check key, so the controls
+  // that hold it can say so themselves rather than leaving one comma-joined
+  // sentence to carry all of them.
+  const blockedKeys = useMemo(() => new Set(saveBlockers.map((c) => c.key)), [saveBlockers]);
+  const flagFor = (checkKey: string, required?: boolean) => {
+    const bad = error !== null && blockedKeys.has(checkKey);
+    return {
+      "aria-invalid": bad || undefined,
+      "aria-describedby": bad ? "studio-error" : undefined,
+      "aria-required": required || undefined,
+    };
+  };
 
   function renderField(field: AssetField) {
     const label = fieldLabel(field, loc) + (field.required ? " *" : "");
     const hint = ar ? field.help_ar : field.help_en;
     const val = attrs[field.key];
     const id = `attr-${field.key}`;
+    /* ELITE-4 J2-11: a registry field that is holding the save says so on itself. */
+    const flag = flagFor(`field:${field.key}`, field.required);
     if (field.type === "boolean") {
       return (
         <label key={field.key} className="flex items-center gap-2 text-[13px] py-1.5">
@@ -373,7 +403,7 @@ export default function ListingStudio({
       return (
         <div key={field.key}>
           <label className={lbl} htmlFor={id}>{label}</label>
-          <select id={id} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
+          <select id={id} {...flag} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
             <option value="">{t("Not specified", "غير محدّد")}</option>
             <option value="yes">{t("Yes", "نعم")}</option>
             <option value="no">{t("No", "لا")}</option>
@@ -387,7 +417,7 @@ export default function ListingStudio({
       return (
         <div key={field.key}>
           <label className={lbl} htmlFor={id}>{label}</label>
-          <select id={id} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
+          <select id={id} {...flag} value={(val as string) ?? ""} onChange={(e) => setAttr(field.key, e.target.value)} className={inp}>
             <option value="">{t("Select", "اختر")}</option>
             {opts.map((o) => <option key={o} value={o}>{field.options?.[o]?.[ar ? 1 : 0] ?? o.replace(/_/g, " ")}</option>)}
           </select>
@@ -401,6 +431,7 @@ export default function ListingStudio({
         <label className={lbl} htmlFor={id}>{label}</label>
         <input
           id={id}
+          {...flag}
           type={numeric ? "number" : "text"}
           inputMode={numeric ? "numeric" : undefined}
           value={(val as string) ?? ""}
@@ -418,7 +449,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="title_en">{t("English title", "العنوان بالإنجليزية")} *</label>
-            <input id="title_en" dir="ltr" value={f.title_en} onChange={(e) => set("title_en", e.target.value)} className={inp} />
+            <input id="title_en" {...flagFor("title_en", true)} dir="ltr" value={f.title_en} onChange={(e) => set("title_en", e.target.value)} className={inp} />
             <p className={help}>{t("What a searcher reads first in the results list.", "أول ما يقرأه الباحث في قائمة النتائج.")}</p>
           </div>
         );
@@ -449,7 +480,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="area_sqm">{areaFieldLabel(loc)} *</label>
-            <input id="area_sqm" type="number" inputMode="numeric" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} className={inp} />
+            <input id="area_sqm" {...flagFor("area_sqm", true)} type="number" inputMode="numeric" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} className={inp} />
             <p className={help}>{t("Area sets the unit rate and every comparison this listing appears in.", "المساحة تحدد سعر المتر وكل مقارنة تظهر فيها هذه القائمة.")}</p>
           </div>
         );
@@ -459,7 +490,7 @@ export default function ListingStudio({
             <label className={lbl} htmlFor="price">
               {priceFieldLabel(f.deal_type, loc)} *
             </label>
-            <input id="price" type="number" inputMode="numeric" value={f.price} onChange={(e) => set("price", e.target.value)} className={inp} />
+            <input id="price" {...flagFor("price", true)} type="number" inputMode="numeric" value={f.price} onChange={(e) => set("price", e.target.value)} className={inp} />
           </div>
         );
       case "availability_confirmed":
@@ -480,6 +511,7 @@ export default function ListingStudio({
             <label className={lbl} htmlFor="ad_permit_no">{t("Advertising licence number (10 digits)", "رقم رخصة الإعلان (10 أرقام)")} *</label>
             <input
               id="ad_permit_no"
+              {...flagFor("ad_permit", true)}
               inputMode="numeric"
               dir="ltr"
               value={f.ad_permit_no}
@@ -493,7 +525,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="ad_permit_expires_at">{t("Licence expiry date", "تاريخ انتهاء الرخصة")} *</label>
-            <input id="ad_permit_expires_at" type="date" value={f.ad_permit_expires_at} onChange={(e) => set("ad_permit_expires_at", e.target.value)} className={inp} />
+            <input id="ad_permit_expires_at" {...flagFor("permit_expiry", true)} type="date" value={f.ad_permit_expires_at} onChange={(e) => set("ad_permit_expires_at", e.target.value)} className={inp} />
             <p className={help}>{t("The advertisement is withdrawn automatically on that date.", "يُسحب الإعلان تلقائياً في ذلك التاريخ.")}</p>
           </div>
         );
@@ -508,7 +540,7 @@ export default function ListingStudio({
               </select>
             </div>
             <label className="flex items-start gap-2 text-[13px]">
-              <input type="checkbox" checked={rightToMarket} onChange={(e) => { touch(); setRightToMarket(e.target.checked); }} className="mt-0.5" />
+              <input type="checkbox" {...flagFor("right_to_market", true)} checked={rightToMarket} onChange={(e) => { touch(); setRightToMarket(e.target.checked); }} className="mt-0.5" />
               <span>{t("I confirm I have the right to market this property.", "أقرّ بأن لدي حق تسويق هذا العقار.")} *</span>
             </label>
           </div>
@@ -568,6 +600,7 @@ export default function ListingStudio({
               <input
                 key={`photo-${uploadRound}`}
                 id="photo_files"
+                aria-required="true"
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
@@ -650,7 +683,9 @@ export default function ListingStudio({
       case "coordinates":
         return (
           <div key={key}>
-            <div className={lbl}>{t("Place the building on the map", "حدّد موقع المبنى على الخريطة")} *</div>
+            {/* ELITE-4 J2-11: LocationPicker owns several controls, so the group
+                carries the state rather than any one box inside it. */}
+            <div className={lbl} {...flagFor("coordinates")}>{t("Place the building on the map", "حدّد موقع المبنى على الخريطة")} *</div>
             <LocationPicker locale={loc} districts={districts} value={place} onChange={(v) => { touch(); setPlace(v); }} />
           </div>
         );
@@ -673,7 +708,7 @@ export default function ListingStudio({
           <div key={key} className="space-y-2">
             <div>
               <label className={lbl} htmlFor="contact_phone">{t("Contact phone (WhatsApp and calls)", "هاتف التواصل (واتساب واتصال)")} *</label>
-              <input id="contact_phone" dir="ltr" inputMode="tel" value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} className={inp} />
+              <input id="contact_phone" aria-required="true" dir="ltr" inputMode="tel" value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} className={inp} />
             </div>
             <div>
               <label className={lbl} htmlFor="contact_email">{t("Contact email", "البريد الإلكتروني")}</label>
@@ -743,27 +778,29 @@ export default function ListingStudio({
   }
 
   async function save() {
+    // ELITE-4 J2-6: the no-op `aria-disabled` promises.
+    if (busy) return;
     setError(null);
     if (isBroker && !docFiles.some((_, i) => docKinds[i] === "authorization")) {
       setError(t(
         "As a broker, add your authorization to market on the licence step and set its type to authorization.",
         "بصفتك وسيطاً، أضف تفويض التسويق في خطوة الترخيص واختر نوعه: تفويض بالتسويق.",
       ));
-      go("compliance");
+      go("compliance", true);
       return;
     }
     if (saveBlockers.length > 0) {
       const names = saveBlockers.map((c) => (ar ? c.label_ar : c.label_en)).join(ar ? "، " : ", ");
       setError(t("Saving needs these first: ", "الحفظ يحتاج هذه أولاً: ") + names);
       const target = stepOfCheck.get(saveBlockers[0].key);
-      if (target) go(target);
+      if (target) go(target, true);
       return;
     }
     // Not a completeness reading: the model records that an expiry date was
     // supplied, and the write path separately refuses one already in the past.
     if (Date.parse(f.ad_permit_expires_at) <= Date.now()) {
       setError(t("That licence has already expired.", "انتهت صلاحية هذه الرخصة."));
-      go("compliance");
+      go("compliance", true);
       return;
     }
 
@@ -893,7 +930,7 @@ export default function ListingStudio({
   const resumeId = resumeStepId(steps, quality);
 
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-2xl" aria-busy={busy || undefined}>
       <div className="rounded-lg border border-line bg-ivory-2/40 p-3">
         <div className="flex items-baseline justify-between gap-3">
           <div className="text-[12px] text-charcoal/70">
@@ -953,9 +990,19 @@ export default function ListingStudio({
         </ol>
       </nav>
 
+      {/* ELITE-4 J2-11: the alert used to sit BELOW the step it was about, while
+          `go()` scrolled the window to the top, so the lister was carried to a step
+          whose explanation was off the bottom of the screen. */}
+      {error && <p id="studio-error" role="alert" className="mt-3 text-sm text-red">{error}</p>}
+
       <section className="mt-4 rounded-lg border border-line p-4" aria-labelledby="step-title">
-        <h2 id="step-title" className="font-display text-lg text-charcoal">{ar ? step.title_ar : step.title_en}</h2>
+        {/* ELITE-4 J2-7: the heading takes focus after every step change. */}
+        <h2 id="step-title" tabIndex={-1} className="font-display text-lg text-charcoal">{ar ? step.title_ar : step.title_en}</h2>
         <p className="text-[12px] text-charcoal/55 mt-1">{ar ? step.purpose_ar : step.purpose_en}</p>
+        {/* ELITE-4 J2-11: the asterisk had no key anywhere on the screen. */}
+        {step.kind !== "review" && (
+          <p className="text-[11px] text-charcoal/45 mt-1">{t("* marks a fact this listing cannot be saved without.", "* يشير إلى حقيقة لا يمكن حفظ العرض بدونها.")}</p>
+        )}
 
         <div className="mt-4 space-y-3">
           {step.kind === "asset" && (
@@ -1059,8 +1106,6 @@ export default function ListingStudio({
         )}
       </section>
 
-      {error && <p role="alert" className="mt-3 text-sm text-red">{error}</p>}
-
       {/* Saving keeps the lister here. The note says what was saved and where it
           can be picked up again, which is the address in the browser bar, and it
           disappears the moment anything changes, because from then on the server
@@ -1079,7 +1124,7 @@ export default function ListingStudio({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2" aria-busy={busy || undefined}>
         <button
           type="button"
           disabled={at === 0}
@@ -1097,11 +1142,13 @@ export default function ListingStudio({
             {t("Next", "التالي")}
           </button>
         )}
+        {/* ELITE-4 J2-6: `disabled` would blur this button the instant it is
+            pressed, which is the one moment the lister needs to stay on it. */}
         <button
           type="button"
-          disabled={busy}
+          aria-disabled={busy || undefined}
           onClick={save}
-          className="rounded bg-signal px-4 py-2 min-h-[44px] text-[13px] text-white disabled:opacity-60"
+          className={"rounded bg-signal px-4 py-2 min-h-[44px] text-[13px] text-white" + (busy ? " opacity-60" : "")}
         >
           {busy
             ? t("Saving...", "جارٍ الحفظ...")
