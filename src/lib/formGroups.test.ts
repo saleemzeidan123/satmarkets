@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import test from "node:test";
+import { INTAKE_ERROR_CODES } from "./listingIntakeErrors";
 
 // ---------------------------------------------------------------------------
 // Why this file exists
@@ -99,9 +100,31 @@ const MAP_SITES = [
   "src/components/LocationPicker.tsx",
 ];
 
-function mapSite(path: string): string {
+/**
+ * The source of one named file outside the journey scan, comments stripped.
+ *
+ * Renamed from `mapSite` in slice N, which had been the map-specific reader,
+ * because slice N needs the same thing for the two listing intake routes. The
+ * reason for a literal list rather than a search is unchanged and applies to
+ * both: the point of these tests is that the list is complete, and a scan that
+ * derived its own targets from the files it was checking could never fail on a
+ * file somebody forgot to add.
+ */
+function outside(path: string): string {
   return code(readFileSync(join(ROOT, ...path.split("/")), "utf8"));
 }
+
+/**
+ * The two routes that accept a listing, on create and on edit.
+ *
+ * Finding 22 is a property of the pair, not of either: `ListingStudio` posts to
+ * the first and `EditListingForm` patches the second, and both used to render
+ * whatever English sentence came back. A guard that read only the client files
+ * would pass the moment the clients stopped rendering `error`, while a route
+ * that answered with no code at all went on producing the generic sentence for
+ * every refusal, which is the defect wearing a quieter shirt.
+ */
+const INTAKE_ROUTES = ["src/app/api/listings/route.ts", "src/app/api/listings/[id]/route.ts"];
 
 function rel(p: string): string {
   return relative(ROOT, p).split(sep).join("/");
@@ -1041,7 +1064,7 @@ test("closing the response panel hands focus back to the control that opened it"
 
 test("every MapLibre map is constructed with the platform locale", () => {
   for (const path of MAP_SITES) {
-    const src = mapSite(path);
+    const src = outside(path);
     const constructions = src.match(/new maplibregl\.Map\(\{[^}]*\}/g) ?? [];
     assert.equal(
       constructions.length,
@@ -1067,7 +1090,7 @@ test("every MapLibre map is constructed with the platform locale", () => {
 
 test("no map turns on a control whose name the platform does not supply", () => {
   for (const path of MAP_SITES) {
-    const src = mapSite(path);
+    const src = outside(path);
     for (const control of src.match(/new maplibregl\.NavigationControl\(\{[^}]*\}/g) ?? []) {
       assert.match(
         control,
@@ -1136,4 +1159,185 @@ test("the lightbox reads its control names from the dictionary", () => {
     "finding 162. One pre-translated string threaded in as a prop is what made this file look " +
       "bilingual while the rest of it was English. The locale replaces it.",
   );
+});
+
+// ---------------------------------------------------------------------------
+// Slice N. Findings 22 and 171.
+//
+// Both are the same shape as the four this file was opened for: a relationship
+// the repository could not see. Finding 22 is a relationship between a route
+// and the person reading its answer, and finding 171 between a paragraph and
+// the page it was dropped into. Neither is visible in any single line.
+// ---------------------------------------------------------------------------
+
+/**
+ * Every object literal a route hands to `NextResponse.json` that carries an
+ * error, with the line the call starts on.
+ *
+ * Brace matched rather than read line by line, because the location
+ * contradiction answer is written across four lines and a line scan reports it
+ * as a refusal with no code when the code is sitting on the next line. That is
+ * the same class of false accusation the `aria-label` reader had in slice M,
+ * and it is worth the twenty lines to not repeat it.
+ */
+function errorPayloads(src: string): { line: number; text: string }[] {
+  const out: { line: number; text: string }[] = [];
+  const KEY = "NextResponse.json(";
+  for (let i = src.indexOf(KEY); i >= 0; i = src.indexOf(KEY, i + 1)) {
+    const start = src.indexOf("{", i + KEY.length);
+    if (start < 0) continue;
+    if (src.slice(i + KEY.length, start).trim() !== "") continue;
+    let depth = 0;
+    let end = -1;
+    for (let j = start; j < src.length; j++) {
+      if (src[j] === "{") depth++;
+      else if (src[j] === "}" && --depth === 0) { end = j; break; }
+    }
+    if (end < 0) continue;
+    const text = src.slice(start, end + 1);
+    if (!/\berror\s*:/.test(text)) continue;
+    out.push({ line: src.slice(0, i).split("\n").length, text });
+  }
+  return out;
+}
+
+/**
+ * The codes one such payload can emit.
+ *
+ * A payload may emit two, because two refusals differ only by whether the deal
+ * is a lease or a sale and the route states that as a ternary. Everything
+ * before the last `?` is the condition, not an answer, and dropping it is what
+ * stops `"lease"` from being read as a code.
+ */
+function codesIn(payload: string): string[] {
+  const k = payload.indexOf("code:");
+  if (k < 0) return [];
+  let seg = payload.slice(k + "code:".length);
+  const cut = seg.search(/,\s*fields?\s*:/);
+  if (cut >= 0) seg = seg.slice(0, cut);
+  const q = seg.lastIndexOf("?");
+  if (q >= 0) seg = seg.slice(q + 1);
+  return [...seg.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]);
+}
+
+test("every refusal from the listing intake states a reason the client can name", () => {
+  const bad: string[] = [];
+  for (const path of INTAKE_ROUTES) {
+    for (const p of errorPayloads(outside(path))) {
+      if (!codesIn(p.text).length) bad.push(`${path}:${p.line} ${p.text.replace(/\s+/g, " ").slice(0, 90)}`);
+    }
+  }
+  assert.deepEqual(
+    bad,
+    [],
+    "finding 22. `error` is an English sentence composed in the route, and it used to be " +
+      "rendered to the lister verbatim, so every refusal in the Arabic new listing flow " +
+      "arrived in English. The sentence stays on the wire for logs and API consumers. What " +
+      "the browser reads is `code`, named on the client in the language the page is already " +
+      `rendering. A refusal with no code can only be named generically. Offenders:\n${bad.join("\n")}`,
+  );
+});
+
+test("the intake codes and the sentences that name them are the same set", () => {
+  const emitted = new Set<string>();
+  for (const path of INTAKE_ROUTES) {
+    for (const p of errorPayloads(outside(path))) for (const c of codesIn(p.text)) emitted.add(c);
+  }
+  const named = new Set(INTAKE_ERROR_CODES as readonly string[]);
+  const unnamed = [...emitted].filter((c) => !named.has(c)).sort();
+  const unused = [...named].filter((c) => !emitted.has(c)).sort();
+  assert.deepEqual(
+    unnamed,
+    [],
+    "finding 22. A code with no entry in listingIntakeErrors falls to the generic save " +
+      "failure, which is the right failure mode and the wrong outcome: the lister is told " +
+      `something went wrong instead of what went wrong. Add the sentence pair.\n${unnamed.join("\n")}`,
+  );
+  assert.deepEqual(
+    unused,
+    [],
+    "finding 22. An entry no route emits is a sentence nobody will ever read, in two " +
+      "languages, that the next reader of the table has to check the routes to rule out. " +
+      `Delete it with the check it belonged to.\n${unused.join("\n")}`,
+  );
+});
+
+test("neither listing form renders the sentence the route composed", () => {
+  for (const [path, expr] of [
+    ["src/components/ListingStudio.tsx", /\bjson\.error\b/],
+    ["src/components/EditListingForm.tsx", /\bj\.error\b/],
+  ] as const) {
+    const src = file(path);
+    assert.doesNotMatch(
+      src,
+      expr,
+      `finding 22. ${path} used to put the route's English sentence on screen, including, on ` +
+        "a failed write, PostgREST's own internal message. `error_ar` is a different field " +
+        "and is deliberately still read: where the route can state a record specific " +
+        "bilingual pair it is better than anything a table can hold.",
+    );
+    assert.match(
+      src,
+      /intakeErrorMessage\(\w+\.code, ar\)/,
+      `finding 22. ${path} names the code in the reader's language. The other sixteen client ` +
+        "sites in this repository that still render a server composed English sentence are " +
+        "recorded as finding 203 and are out of this slice's scope.",
+    );
+  }
+});
+
+test("the new listing route says it is misconfigured in both languages", () => {
+  const src = file("src/app/[locale]/dashboard/new/page.tsx");
+  assert.doesNotMatch(
+    src,
+    /Not configured\./,
+    "finding 22. The misconfiguration branch was two English words. It is rare, which is why " +
+      "it survived every sweep of the visible form, and a lister who reaches it can do " +
+      "nothing about it and is owed an explanation in their own language.",
+  );
+  assert.ok(
+    src.includes("خدمة حفظ العروض غير متاحة"),
+    "finding 22. The Arabic half of that branch.",
+  );
+});
+
+test("the listing description states the script it is actually written in", () => {
+  const src = file("src/app/[locale]/listings/[id]/page.tsx");
+  assert.match(
+    src,
+    /const descAttrs = textLangAttrs\(descText\);/,
+    "finding 171. This is the one paragraph on the page SAT did not compose. Everything else " +
+      "comes from the dictionary or a controlled vocabulary and is in the reader's language " +
+      "by construction; this is prose a stranger typed, and the column it arrived in is that " +
+      "stranger's declaration rather than a measurement.",
+  );
+  assert.match(
+    src,
+    /\{descText && <p className="muted" lang=\{descAttrs\.lang\} dir=\{descAttrs\.dir\}/,
+    "finding 171. Carrying neither attribute, the paragraph inherited both from HtmlLangDir, " +
+      "so English prose on an Arabic page was announced with Arabic phonetics and the bidi " +
+      "algorithm resolved the run against the page direction. `dir` is never omitted now.",
+  );
+});
+
+test("a requirement title states the script it is actually written in", () => {
+  for (const [path, expr] of [
+    ["src/app/[locale]/requirements/page.tsx", "textLangAttrs((ar && r.titleAr) || r.title)"],
+    ["src/app/[locale]/requirements/[id]/page.tsx", "textLangAttrs((ar && req.titleAr) || req.title)"],
+  ] as const) {
+    const src = file(path);
+    assert.ok(
+      src.includes(expr),
+      `finding 171's class on journey 4. ${path}. listingTitle.ts already refuses to cross ` +
+        "languages, and says so in its own doc comment; the requirement path has no such " +
+        "protection, so `(ar && titleAr) || title` hands an Arabic reader the English title " +
+        "whenever no Arabic one was written. That it does so at all is finding 202. This " +
+        "states the truth about whatever text the fallback produced.",
+    );
+    assert.match(
+      src,
+      /lang=\{titleAttrs\.lang\} dir=\{titleAttrs\.dir\}/,
+      `finding 171's class on journey 4. ${path} renders the attributes it computed.`,
+    );
+  }
 });

@@ -5,6 +5,7 @@ import MediaBrief from "@/components/MediaBrief";
 import LocationPicker from "@/components/LocationPicker";
 import { intakeFields, type AssetField } from "@/lib/assetFields";
 import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
+import { intakeErrorMessage } from "@/lib/listingIntakeErrors";
 import { assetLabel, dealLabel } from "@/lib/labels";
 import { askingPrice, netArea } from "@/lib/listingFigures";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
@@ -853,9 +854,35 @@ export default function ListingStudio({
           : { ...shared, asset_type: f.asset_type, right_to_market_confirmed: rightToMarket },
       ),
     });
-    const json = (await res.json().catch(() => ({}))) as { id?: string; error?: string };
+    const json = (await res.json().catch(() => ({}))) as {
+      id?: string;
+      error?: string;
+      error_ar?: string;
+      code?: string;
+      field?: string;
+    };
     if (!res.ok) {
-      setError(json.error || t("Could not save the listing.", "تعذّر حفظ العرض."));
+      /* RC10, finding 22. `json.error` used to be rendered here, and it is an
+         English sentence composed in the route, so every refusal on this form
+         was delivered to an Arabic lister in English: the wrong area, the
+         expired licence, the missing permit, the pin outside the Kingdom, and
+         on a failed write PostgREST's own internal message. The route now
+         states a stable code and `listingIntakeErrors.ts` names it in the
+         language this page is already rendering, so the English sentence stays
+         on the wire for logs and API consumers and reaches nobody.
+
+         Two refinements. The edit route answers a location contradiction with
+         a record-specific bilingual pair rather than a generic reason, and that
+         pair is better than anything a table can hold, so it is preferred when
+         it is there. And a rejected registry attribute names its own field:
+         the route sends the field key, and the label comes from `fieldLabel`,
+         the same function that drew the box the lister typed into, rather than
+         from the route's `label_en`. */
+      const specific = ar ? json.error_ar : undefined;
+      const named = intakeErrorMessage(json.code, ar);
+      const fld = json.field ? intakeFields(f.asset_type).find((x) => x.key === json.field) : undefined;
+      const prefix = fld ? fieldLabel(fld, loc) + ": " : "";
+      setError(specific || prefix + named);
       setBusy(false);
       return;
     }

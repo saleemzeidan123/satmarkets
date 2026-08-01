@@ -36,7 +36,18 @@ export default async function NewListingPage({
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const sb = getSupabaseServer();
-  if (!sb) return <p className="text-charcoal/65">Not configured.</p>;
+  /* RC10, finding 22. The one hardcoded English sentence left on this route:
+     the misconfiguration branch, which an Arabic lister reaches with no warning
+     and cannot act on. It is a rare branch, which is exactly why it survived
+     every earlier sweep of the visible form. */
+  if (!sb)
+    return (
+      <p className="text-charcoal/65">
+        {locale === "ar"
+          ? "خدمة حفظ العروض غير متاحة الآن. أعد المحاولة بعد قليل."
+          : "The listing store is not available right now. Try again in a moment."}
+      </p>
+    );
   // This used to fall back to a hardcoded PREVIEW_ACCOUNT, which was SAT's own
   // account id, so an unauthenticated visitor was silently pointed at SAT's
   // inventory. Listing requires a real, verified account. No fallback.

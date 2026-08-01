@@ -9,7 +9,7 @@ import { hashSource } from "@/lib/translate/translateToArabic";
 const CONTACT_CHANNELS = ["whatsapp", "call", "email", "message"];
 
 export async function GET(req: NextRequest) {
-  if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const supabase = getSupabaseServer();
   if (!supabase) return NextResponse.json({ listings: [], note: "supabase not configured" });
   const { searchParams } = new URL(req.url);
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (asset) query = query.eq("asset_type", asset);
   if (district) query = query.eq("district_id", district);
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: error.message, code: "save_failed" }, { status: 500 });
   return NextResponse.json({ listings: data ?? [] });
 }
 
@@ -29,49 +29,49 @@ export async function GET(req: NextRequest) {
 // AND the per-asset registry attributes server-side, and writes registry
 // column-backed values to their columns while the rest go to `attributes`.
 export async function POST(req: NextRequest) {
-  if (!allow("listings-create", req, 10)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listings-create", req, 10)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
-  if (!su) return NextResponse.json({ error: "Sign in to list a space." }, { status: 401 });
-  if (!su.accountId) return NextResponse.json({ error: "Finish creating your account before listing." }, { status: 403 });
+  if (!su) return NextResponse.json({ error: "Sign in to list a space.", code: "sign_in_to_list" }, { status: 401 });
+  if (!su.accountId) return NextResponse.json({ error: "Finish creating your account before listing.", code: "account_incomplete" }, { status: 403 });
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 
   const title_en = String(body.title_en ?? "").trim();
-  if (!title_en) return NextResponse.json({ error: "A title is required." }, { status: 400 });
+  if (!title_en) return NextResponse.json({ error: "A title is required.", code: "title_required" }, { status: 400 });
 
   const asset_type = String(body.asset_type ?? "").trim();
-  if (!asset_type) return NextResponse.json({ error: "Choose an asset type." }, { status: 400 });
+  if (!asset_type) return NextResponse.json({ error: "Choose an asset type.", code: "asset_type_required" }, { status: 400 });
   const deal_type = body.deal_type === "sale" ? "sale" : "lease";
 
   const area_sqm = Number(body.area_sqm);
-  if (!Number.isFinite(area_sqm) || area_sqm <= 0) return NextResponse.json({ error: "Enter a valid area." }, { status: 400 });
+  if (!Number.isFinite(area_sqm) || area_sqm <= 0) return NextResponse.json({ error: "Enter a valid area.", code: "area_invalid" }, { status: 400 });
 
   const price = Number(body.price);
   if (!Number.isFinite(price) || price <= 0) {
-    return NextResponse.json({ error: deal_type === "lease" ? "Enter the asking rent." : "Enter the sale price." }, { status: 400 });
+    return NextResponse.json({ error: deal_type === "lease" ? "Enter the asking rent." : "Enter the sale price.", code: deal_type === "lease" ? "rent_invalid" : "price_invalid" }, { status: 400 });
   }
 
   // Advertising licence: enforced here AND by the database. A listing cannot
   // publish without a valid one, so it is collected at intake, not later.
   const ad_permit_no = String(body.ad_permit_no ?? "").replace(/\D/g, "");
-  if (!/^\d{10}$/.test(ad_permit_no)) return NextResponse.json({ error: "Enter the 10 digit real estate advertising licence number." }, { status: 400 });
+  if (!/^\d{10}$/.test(ad_permit_no)) return NextResponse.json({ error: "Enter the 10 digit real estate advertising licence number.", code: "permit_number_invalid" }, { status: 400 });
   const ad_permit_expires_at = String(body.ad_permit_expires_at ?? "");
   const expiresMs = Date.parse(ad_permit_expires_at);
-  if (!ad_permit_expires_at || Number.isNaN(expiresMs)) return NextResponse.json({ error: "Enter the date the advertising licence expires." }, { status: 400 });
-  if (expiresMs <= Date.now()) return NextResponse.json({ error: "That licence has already expired." }, { status: 400 });
+  if (!ad_permit_expires_at || Number.isNaN(expiresMs)) return NextResponse.json({ error: "Enter the date the advertising licence expires.", code: "permit_expiry_required" }, { status: 400 });
+  if (expiresMs <= Date.now()) return NextResponse.json({ error: "That licence has already expired.", code: "permit_expired" }, { status: 400 });
 
-  if (body.right_to_market_confirmed !== true) return NextResponse.json({ error: "Confirm you have the right to market this property." }, { status: 400 });
+  if (body.right_to_market_confirmed !== true) return NextResponse.json({ error: "Confirm you have the right to market this property.", code: "right_to_market_required" }, { status: 400 });
 
   // Exact building coordinates from the map pin. Required, and validated to Saudi
   // bounds. A listing with no location is not useful, so it is mandatory here too.
   if (body.lat == null || body.lat === "" || body.lng == null || body.lng === "") {
-    return NextResponse.json({ error: "The property location is required." }, { status: 400 });
+    return NextResponse.json({ error: "The property location is required.", code: "location_required" }, { status: 400 });
   }
   const lat = Number(body.lat);
   const lng = Number(body.lng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 16 || lat > 33 || lng < 34 || lng > 56) {
-    return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
+    return NextResponse.json({ error: "The pinned location is outside Saudi Arabia.", code: "location_outside_sa" }, { status: 400 });
   }
 
   // A broker's authorization-to-market is now uploaded as a PRIVATE verification
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
 
   // Per-asset registry attributes, validated and split into typed columns vs jsonb.
   const { attributes, columns, errors } = coerceAndValidateAttributes(asset_type, (body.attributes as Record<string, unknown>) ?? {});
-  if (errors.length) return NextResponse.json({ error: "Some property details are invalid.", fields: errors }, { status: 400 });
+  if (errors.length) return NextResponse.json({ error: "Some property details are invalid.", code: "details_invalid", fields: errors }, { status: 400 });
 
   const contact_channels = Array.isArray(body.contact_channels)
     ? (body.contact_channels as unknown[]).map(String).filter((c) => CONTACT_CHANNELS.includes(c))
@@ -117,13 +117,13 @@ export async function POST(req: NextRequest) {
   let availability_confirmed_at: string | null = null;
   if (availabilityRaw) {
     const ms = Date.parse(availabilityRaw);
-    if (Number.isNaN(ms)) return NextResponse.json({ error: "That availability date could not be read." }, { status: 400 });
-    if (ms > Date.now() + 60_000) return NextResponse.json({ error: "Availability is confirmed as of today, not a future date." }, { status: 400 });
+    if (Number.isNaN(ms)) return NextResponse.json({ error: "That availability date could not be read.", code: "availability_unreadable" }, { status: 400 });
+    if (ms > Date.now() + 60_000) return NextResponse.json({ error: "Availability is confirmed as of today, not a future date.", code: "availability_future" }, { status: 400 });
     availability_confirmed_at = new Date(ms).toISOString();
   }
 
   const supabase = getSupabaseServer();
-  if (!supabase) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+  if (!supabase) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
 
   const { data, error } = await supabase
     .from("listings")
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     .select("id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ error: error.message, code: "save_failed" }, { status: 400 });
   const id = data?.id as string | undefined;
 
   // Attach photo URLs as listing_media rows (best effort; the listing is already

@@ -34,22 +34,22 @@ const BASE_OWNED_COLUMNS = new Set(["asking_rent_sqm", "sale_price"]);
 // hash of title_en does not match, and Arabic a lister wrote themselves must not
 // be replaced by a machine rendering of the English.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!allow("listing-edit", req, 30)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listing-edit", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
-  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
+  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit" }, { status: 401 });
 
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const { data: listing } = await sb
     .from("listings")
     .select("id, account_id, deal_type, asset_type, attributes, status, title_en, description_en, lat, lng, district_id")
     .eq("id", params.id)
     .single();
-  if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  if (!listing) return NextResponse.json({ error: "Listing not found.", code: "not_found" }, { status: 404 });
   if ((listing as { account_id: string }).account_id !== su.accountId) {
-    return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
+    return NextResponse.json({ error: "This is not your listing.", code: "not_yours" }, { status: 403 });
   }
   const assetType = (listing as { asset_type: string }).asset_type;
   const existingAttrs = ((listing as { attributes?: Record<string, unknown> }).attributes) ?? {};
@@ -73,7 +73,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   if (can("title_en") && typeof body.title_en === "string") {
     const t = body.title_en.trim();
-    if (!t) return NextResponse.json({ error: "A title is required." }, { status: 400 });
+    if (!t) return NextResponse.json({ error: "A title is required.", code: "title_required" }, { status: 400 });
     patch.title_en = t.slice(0, 160);
   }
   if (can("description_en") && typeof body.description_en === "string") {
@@ -99,13 +99,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   if (can("area_sqm") && body.area_sqm != null && body.area_sqm !== "") {
     const a = Number(body.area_sqm);
-    if (!Number.isFinite(a) || a <= 0) return NextResponse.json({ error: "Enter a valid area." }, { status: 400 });
+    if (!Number.isFinite(a) || a <= 0) return NextResponse.json({ error: "Enter a valid area.", code: "area_invalid" }, { status: 400 });
     patch.area_sqm = a;
   }
   if (can("price") && body.price != null && body.price !== "") {
     const p = Number(body.price);
     if (!Number.isFinite(p) || p <= 0) {
-      return NextResponse.json({ error: dealType === "lease" ? "Enter a valid asking rent." : "Enter a valid sale price." }, { status: 400 });
+      return NextResponse.json({ error: dealType === "lease" ? "Enter a valid asking rent." : "Enter a valid sale price.", code: dealType === "lease" ? "rent_invalid" : "price_invalid" }, { status: 400 });
     }
     patch.asking_rent_sqm = dealType === "lease" ? p : null;
     patch.sale_price = dealType === "sale" ? p : null;
@@ -123,8 +123,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       patch.availability_confirmed_at = null;
     } else {
       const ms = Date.parse(raw);
-      if (Number.isNaN(ms)) return NextResponse.json({ error: "That availability date could not be read." }, { status: 400 });
-      if (ms > Date.now() + 60_000) return NextResponse.json({ error: "Availability is confirmed as of today, not a future date." }, { status: 400 });
+      if (Number.isNaN(ms)) return NextResponse.json({ error: "That availability date could not be read.", code: "availability_unreadable" }, { status: 400 });
+      if (ms > Date.now() + 60_000) return NextResponse.json({ error: "Availability is confirmed as of today, not a future date.", code: "availability_future" }, { status: 400 });
       patch.availability_confirmed_at = new Date(ms).toISOString();
     }
   }
@@ -141,12 +141,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     (listing as { lat?: number | null }).lat != null && (listing as { lng?: number | null }).lng != null;
   if (body.lat != null && body.lat !== "" && body.lng != null && body.lng !== "") {
     if (!mayFillAbsent("lat", stage, pinned) || !mayFillAbsent("lng", stage, pinned)) {
-      return NextResponse.json({ error: "The location of a published listing is changed by SAT." }, { status: 403 });
+      return NextResponse.json({ error: "The location of a published listing is changed by SAT.", code: "location_locked" }, { status: 403 });
     }
     const lat = Number(body.lat);
     const lng = Number(body.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 16 || lat > 33 || lng < 34 || lng > 56) {
-      return NextResponse.json({ error: "The pinned location is outside Saudi Arabia." }, { status: 400 });
+      return NextResponse.json({ error: "The pinned location is outside Saudi Arabia.", code: "location_outside_sa" }, { status: 400 });
     }
     patch.lat = lat;
     patch.lng = lng;
@@ -193,19 +193,19 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   if (typeof body.ad_permit_no === "string" && body.ad_permit_no.trim() !== "") {
     if (!can("ad_permit_no")) {
-      return NextResponse.json({ error: "The advertising licence on a published listing is changed by SAT." }, { status: 403 });
+      return NextResponse.json({ error: "The advertising licence on a published listing is changed by SAT.", code: "permit_locked" }, { status: 403 });
     }
     const permit = body.ad_permit_no.replace(/\D/g, "");
-    if (!/^\d{10}$/.test(permit)) return NextResponse.json({ error: "Enter the 10 digit real estate advertising licence number." }, { status: 400 });
+    if (!/^\d{10}$/.test(permit)) return NextResponse.json({ error: "Enter the 10 digit real estate advertising licence number.", code: "permit_number_invalid" }, { status: 400 });
     patch.ad_permit_no = permit;
   }
   if (typeof body.ad_permit_expires_at === "string" && body.ad_permit_expires_at.trim() !== "") {
     if (!can("ad_permit_expires_at")) {
-      return NextResponse.json({ error: "The advertising licence on a published listing is changed by SAT." }, { status: 403 });
+      return NextResponse.json({ error: "The advertising licence on a published listing is changed by SAT.", code: "permit_locked" }, { status: 403 });
     }
     const ms = Date.parse(body.ad_permit_expires_at);
-    if (Number.isNaN(ms)) return NextResponse.json({ error: "Enter the date the advertising licence expires." }, { status: 400 });
-    if (ms <= Date.now()) return NextResponse.json({ error: "That licence has already expired." }, { status: 400 });
+    if (Number.isNaN(ms)) return NextResponse.json({ error: "Enter the date the advertising licence expires.", code: "permit_expiry_required" }, { status: 400 });
+    if (ms <= Date.now()) return NextResponse.json({ error: "That licence has already expired.", code: "permit_expired" }, { status: 400 });
     patch.ad_permit_expires_at = body.ad_permit_expires_at;
   }
   if (typeof body.lister_type === "string" && can("lister_type")) {
@@ -234,7 +234,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (errors.length) {
       const field = intakeFields(assetType).find((f) => f.key === errors[0].key);
       const label = field ? field.label_en : errors[0].key;
-      return NextResponse.json({ error: `${label}: ${errors[0].message}`, field: errors[0].key }, { status: 400 });
+      return NextResponse.json({ error: `${label}: ${errors[0].message}`, code: "field_invalid", field: errors[0].key }, { status: 400 });
     }
     for (const [col, val] of Object.entries(columns)) {
       if (!BASE_OWNED_COLUMNS.has(col)) patch[col] = val;
@@ -246,7 +246,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Session client: RLS ("owner manage own listings") allows this update. The
     // verification-column guard never fires because this patch never names one.
     const { error } = await sb.from("listings").update(patch).eq("id", params.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) return NextResponse.json({ error: error.message, code: "save_failed" }, { status: 400 });
   }
 
   // Photo links added after the first save. The create path attaches them as

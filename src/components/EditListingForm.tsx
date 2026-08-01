@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 import { changedArabic } from "@/lib/listingArabic";
 import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
+import { intakeErrorMessage } from "@/lib/listingIntakeErrors";
 import LocationPicker from "@/components/LocationPicker";
 import type { LocationPoint } from "@/lib/nearestLocation";
 
@@ -255,8 +256,20 @@ export default function EditListingForm({
           ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
         }),
       });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setMsg({ ok: false, text: j.error || t.err }); setBusy(false); return; }
+      const j = (await res.json().catch(() => ({}))) as { error?: string; error_ar?: string; code?: string; field?: string };
+      if (!res.ok) {
+        /* RC10, finding 22. The same repair as ListingStudio's, on the second
+           client of the same route. `j.error` is the route's English sentence
+           and is no longer rendered; the code is named in the reader's language,
+           a record-specific Arabic statement is preferred when the route sends
+           one, and a rejected registry attribute is prefixed with the label this
+           form itself drew rather than with the route's `label_en`. */
+        const fld = j.field ? intakeFields(assetType).find((x) => x.key === j.field) : undefined;
+        const prefix = fld ? fieldLabel(fld, loc) + ": " : "";
+        setMsg({ ok: false, text: (ar ? j.error_ar : undefined) || prefix + intakeErrorMessage(j.code, ar) });
+        setBusy(false);
+        return;
+      }
       setMsg({ ok: true, text: t.saved });
       setBusy(false);
       router.refresh();

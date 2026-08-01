@@ -6,6 +6,7 @@ import { Icon } from "@/components/satkit";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
+import { textLangAttrs } from "@/lib/textScript";
 
 // PKG-DEM1, finding 100's read side. A requirement's timeline and must-haves are
 // stored as tokens, and this board printed the tokens. `Q3` is readable enough in
@@ -115,6 +116,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
        // not drawing its line rather than by drawing the line around nothing.
        const size = sizeRange(r.sizeMin, r.sizeMax, locale);
        const budget = budgetCeiling(r.budget, r.deal, locale);
+       const titleAttrs = textLangAttrs((ar && r.titleAr) || r.title);
        return (
        <Link key={r.id} href={`/${locale}/requirements/${r.id}`} className="card pad lift" style={{ boxShadow: "var(--sh-1)", textDecoration: "none", color: "inherit", display: "block" }}>
         <div className="row between" style={{ alignItems: "center" }}>
@@ -124,7 +126,17 @@ export default function RequirementsBoard({ params }: { params: { locale: string
           <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{r.ref}</span>
          </span>
         </div>
-        <div style={{ fontSize: "0.96875rem", fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
+        {/* RC10, finding 171's class on journey 4. A brief's title is prose the
+            occupier typed, and this fallback hands an Arabic reader the English
+            title whenever no Arabic one was written, so the title on this card
+            is regularly not in the language of the page it sits on. The script
+            is read from the text and declared, so a screen reader stops
+            pronouncing English with Arabic phonetics and the bidi algorithm
+            stops resolving the run against the page direction. That the reader
+            is shown the other language's title at all is a separate parity
+            defect and is recorded as finding 202; this states the truth about
+            whatever text the fallback produced. */}
+        <div lang={titleAttrs.lang} dir={titleAttrs.dir} style={{ fontSize: "0.96875rem", fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
         <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7 }}>
          <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</div>
          {size || budget ? (

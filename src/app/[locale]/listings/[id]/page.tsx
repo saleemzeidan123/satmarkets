@@ -25,6 +25,7 @@ import LocationFacts from "@/components/LocationFacts";
 import ReportListing from "@/components/ReportListing";
 import { nearest, relevanceFor, walkMinutes, WALKABLE_KM } from "@/lib/locationFacts";
 import { travelTime } from "@/lib/location/travel";
+import { textLangAttrs } from "@/lib/textScript";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
 import EvidencePassport from "@/components/EvidencePassport";
@@ -220,6 +221,27 @@ export default async function ListingDetail({ params }: { params: { locale: stri
       computedDate: new Date().toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" }),
     };
   }
+
+  /* RC10, finding 171. The one paragraph on this page that SAT did not write.
+     Everything else here is composed from the dictionary or from a controlled
+     vocabulary, so it is in the reader's language by construction. The
+     description is prose a stranger typed into a textarea, and the column it
+     came out of is a declaration by that stranger, not a measurement. A lister
+     who writes the whole listing in English pastes the same paragraph into both
+     description fields; a lister writing in Arabic drops an English building
+     name or unit specification into the middle of one. Either way the paragraph
+     carried no `lang` and no `dir` and inherited both from `HtmlLangDir`, so
+     English prose on an Arabic page was announced with Arabic phonetics, which
+     is not accented English but noise, and the bidi algorithm resolved the run
+     against the page direction and could reorder it on screen.
+
+     `textLangAttrs` reads the script out of the text rather than trusting the
+     column, and refuses to answer for anything short or genuinely mixed, where
+     it returns `dir="auto"` and no `lang`. That is not a weaker fix than a
+     declaration; it is the honest one. `dir` is never omitted now, so the
+     paragraph is no longer resolved against the page by default. */
+  const descText = ar ? l.description_ar : l.description_en;
+  const descAttrs = textLangAttrs(descText);
 
   return (
     <div className="ld-page" style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
@@ -565,7 +587,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               </div>
             </div>
           )}
-          {(ar ? l.description_ar : l.description_en) && <p className="muted" style={{ fontSize: "0.90625rem", lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{ar ? l.description_ar : l.description_en}</p>}
+          {descText && <p className="muted" lang={descAttrs.lang} dir={descAttrs.dir} style={{ fontSize: "0.90625rem", lineHeight: 1.7, maxWidth: 640, marginTop: 22 }}>{descText}</p>}
           {locFactsProps ? (
             <LocationFacts locale={locale as "en" | "ar"} {...locFactsProps} />
           ) : (

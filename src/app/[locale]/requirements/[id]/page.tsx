@@ -6,6 +6,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
+import { textLangAttrs } from "@/lib/textScript";
 import { stateLabel } from "@/lib/matching";
 import type { MatchReason, MatchVerdict } from "@/lib/matching";
 
@@ -155,6 +156,8 @@ export default function RequirementDetail({ params }: { params: { locale: string
   </div>
  );
 
+ const titleAttrs = textLangAttrs((ar && req.titleAr) || req.title);
+
  return (
   <div style={{ background: "var(--cool)" }} aria-busy={false}>
    {statusRegion}
@@ -165,7 +168,12 @@ export default function RequirementDetail({ params }: { params: { locale: string
       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(req.asset, locale)} · {req.deal === "lease" ? t.lease : t.buy}</span>
       <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{req.ref}</span>
      </div>
-     <h1 style={{ fontSize: "1.4375rem", fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
+     {/* RC10, finding 171's class on journey 4. Same paragraph of reasoning as
+         the board card: the title is prose the occupier typed, the fallback
+         regularly puts it on a page of the other language, and the script is
+         read from the text rather than assumed from the column it arrived in.
+         The parity defect behind the fallback is finding 202. */}
+     <h1 lang={titleAttrs.lang} dir={titleAttrs.dir} style={{ fontSize: "1.4375rem", fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
      <div className="muted" style={{ fontSize: "0.84375rem" }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 120px), 1fr))", gap: 12, marginTop: 18 }}>
       {([

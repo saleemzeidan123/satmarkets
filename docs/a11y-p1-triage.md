@@ -619,10 +619,63 @@ that neither of them has. It is now a brace counter rather than a pattern. A
 guard that accuses correct code is worse than one that misses a defect, because
 the next person to meet it learns to work around the test rather than to read it.
 
-Left in RC10: finding 171, the listing description paragraph declaring neither
-`lang` nor `dir`, and finding 22, English leakage in the Arabic new-listing flow,
-whose register row carries no detail and has to be re-established against the
-current tree before it can be closed or restated.
+**RC10, slice N. Text nobody in this codebase wrote, findings 171 and 22.**
+Slice M closed the names MapLibre writes for itself. Slice N closes the two
+places where text a stranger typed, or a route composed, reaches a reader in the
+wrong language.
+
+Finding 171 is the listing description. It is the one paragraph on the detail
+page that SAT did not compose: everything else there comes from the dictionary or
+a controlled vocabulary and is in the reader's language by construction. The
+column it arrived in, `description_en` or `description_ar`, is a declaration by
+the person who filed it rather than a measurement, and it is wrong in both
+directions often enough to matter. The register had this recorded as blocked on a
+data-model question, which was the right caution and the wrong conclusion. The
+passport solves the equivalent problem with a stored flag, and that is correct
+there because a correction reason is filed through one field with one recorded
+language; adding such a column here would only move the problem, because the new
+flag would be the field name again. What is available is the text. Script is not
+inferred, it is read. `src/lib/textScript.ts` counts letters, excludes both
+Arabic-Indic digit ranges because SAT writes Western numerals in both languages,
+requires eight letters and a seventy percent share before it will answer, and
+returns null for everything else including genuinely mixed text, where the caller
+states `dir="auto"` rather than a direction nobody checked. `dir` is never
+omitted now.
+
+The same class turned up twice more on journey 4, and only one half of it was
+fixed. Both requirement surfaces render a title as `(ar && titleAr) || title`,
+which hands an Arabic reader the English title whenever no Arabic one was
+written. Both now declare the script of whatever that fallback produced, so the
+run is announced with the right phonetics and resolved in the right direction.
+That the crossing happens at all is a parity decision rather than a markup
+defect, and `listingTitle.ts` has already taken the opposite decision one journey
+over and says so in its own doc comment. It is recorded as finding 202 and left
+for a package that can decide how a requirement title is composed.
+
+Finding 22 is not what its one-line register row suggested. Every visible string
+on the intake form is already bilingual; the leakage is on the unhappy path. The
+two listing routes refuse a save for twenty-six distinct reasons, every one an
+English sentence composed in the route, and `ListingStudio` rendered it verbatim.
+Two were worse than untranslated: the edit route composed `${label}: ${message}`
+from the English registry label, and both routes returned PostgREST's own
+`error.message` to the browser on a failed write. The fix follows a precedent
+already in the tree rather than inventing a convention, because
+`/api/listings/[id]` already answered one case with `{ error, error_ar, code }`.
+Every error response now carries a code, `src/lib/listingIntakeErrors.ts` names
+the codes in the reader's language, and `error` stays on the wire in English for
+logs and API consumers where nobody renders it. A route knows what happened and
+does not know who is reading. An unrecognised code falls to the generic sentence
+in the reader's language, so a route added later cannot reintroduce the defect by
+forgetting the table: the worst it can do is be vague.
+
+Establishing that scope found a wider class and it is recorded rather than
+absorbed. Sixteen further client sites render `j.error || <fallback>`, and four
+of those fallbacks are themselves English literals shown in both languages,
+including the single word `error`. They span all four journeys. That is finding
+203, and the remedy is the one this slice just proved, applied deliberately
+rather than by extension.
+
+RC10 is closed.
 
 **RC11. Table semantics, findings 148, 149 and 168.** `display:block` dropping
 table semantics at phone widths; a horizontal scroll wrapper unreachable by
