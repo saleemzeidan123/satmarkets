@@ -450,9 +450,22 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
             and no announcement, so this count is the only thing that says it worked. */}
         <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        {/* RC9c, finding 167. These two are links: each one changes the URL and the
+            server renders a different view from it, so the state they carry is "this
+            is the page you are on", and `aria-current="page"` is that state. They are
+            not toggle buttons and `aria-pressed` would misdescribe them.
+
+            The weight is the other half. `.chip.on` differs from `.chip` in text
+            colour, background and border colour and in nothing else, so which view
+            was open was carried by colour alone (SC 1.4.1). The active chip is 700
+            here, which is a difference in form rather than in hue. It is done inline
+            on this pair rather than in `.chip.on`, because `.chip.on` is now also the
+            selected face of every native radio the platform draws after RC9a, and
+            reweighting all of them is a cosmetic sweep this package has no evidence
+            for and no mandate to make. */}
         <div className="row gap8 wrap">
-          <Link href={`/${locale}/listings${qsWith()}`} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.properties}</Link>
-          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none" }}>{dl.insights}</Link>
+          <Link href={`/${locale}/listings${qsWith()}`} aria-current={!insightsView ? "page" : undefined} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none", fontWeight: !insightsView ? 700 : undefined }}>{dl.properties}</Link>
+          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} aria-current={insightsView ? "page" : undefined} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none", fontWeight: insightsView ? 700 : undefined }}>{dl.insights}</Link>
         </div>
       </div>
       <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={saveLabel} />

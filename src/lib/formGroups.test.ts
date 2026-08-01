@@ -68,6 +68,12 @@ const JOURNEYS = [
   // file was scanning the wrapper and not the work. Both held findings this slice.
   "src/components/SignupFlow.tsx",
   "src/components/ListingEnquiry.tsx",
+  // Added in slice K. The listings route file draws the split view's header and
+  // its view pair, but the map half of that split, and every dialog semantic
+  // attached to it, lives here. Findings 167 and 200 are both about which of the
+  // two controls is a navigation and which opens a dialog, so a scan that saw
+  // only one side of the split could not check either one.
+  "src/components/ListingsMap.tsx",
 ];
 
 function rel(p: string): string {
@@ -741,5 +747,103 @@ test("each studio rail step carries its state without colour", () => {
     "finding 156. The visible count is aria-hidden because `4/5` read aloud as a fraction " +
       "is not what it means. The screen reader gets the state word and the count in words, " +
       "in the language of the page, with the Arabic comma.",
+  );
+});
+
+// ---------------------------------------------------------------------------
+// RC9c, findings 167 and 200: which control is a navigation and which is a
+// dialog trigger.
+//
+// Finding 167 named two controls that expose no state and proposed a different
+// attribute for each, then deferred on the ground that deciding which is which
+// is a structural question about the split view. It is, and the structure is
+// legible in the stylesheet: above 1080px the map panel is a persistent region
+// in the split grid and the toggle is display:none; below it the panel is
+// position:fixed over the viewport with a focus trap and Escape, which is a
+// modal dialog. So the chip pair is navigation and the toggle is a dialog
+// trigger, which means aria-current on the first and aria-haspopup, not
+// aria-expanded, on the second.
+//
+// Finding 200 is what that reading exposed: the dialog semantics were keyed on
+// `open` alone, which knows nothing about the viewport, so a map opened narrow
+// and then widened kept role="dialog" and aria-modal="true" while being drawn
+// inline in the grid.
+
+test("the listings view pair is navigation and says which page you are on", () => {
+  const src = file("src/app/[locale]/listings/page.tsx");
+  const currents = src.match(/aria-current=\{(!?)insightsView \? "page" : undefined\}/g) || [];
+  assert.equal(
+    currents.length,
+    2,
+    "finding 167. Both chips are `Link`s whose href changes the view the server renders, so " +
+      "each one is a page and the active one carries `aria-current=\"page\"`. `aria-pressed` " +
+      "would describe a toggle button, which these are not.",
+  );
+  assert.doesNotMatch(
+    src,
+    /aria-pressed=\{!?insightsView/,
+    "finding 167. A link is not a toggle button. If this pair ever becomes buttons the " +
+      "navigation goes with them, and that is a decision to record, not a swap to make " +
+      "quietly.",
+  );
+  assert.match(
+    src,
+    /fontWeight: insightsView \? 700 : undefined/,
+    "finding 167, SC 1.4.1. `.chip.on` differs from `.chip` in text colour, background and " +
+      "border colour and in nothing else, so the open view was carried by colour alone. The " +
+      "weight is the non-colour carrier. It is inline on this pair on purpose: `.chip.on` is " +
+      "also the selected face of every native radio drawn after RC9a, and reweighting all of " +
+      "them is a cosmetic sweep with no evidence behind it.",
+  );
+});
+
+test("the map toggle opens a dialog and says so", () => {
+  const src = file("src/components/ListingsMap.tsx");
+  assert.match(
+    src,
+    /className="btn primary lst-map-toggle" aria-haspopup="dialog"/,
+    "finding 167. The panel this button opens is role=\"dialog\" with aria-modal, a focus " +
+      "trap and Escape. `aria-expanded` describes content that expands in place and ARIA " +
+      "authoring practice says not to put it on a control that opens a modal, so the " +
+      "attribute that matches the behaviour is aria-haspopup=\"dialog\".",
+  );
+  assert.doesNotMatch(
+    src,
+    /aria-expanded/,
+    "finding 167. Adding aria-expanded here would announce a disclosure contract the control " +
+      "does not honour, which is the same mistake findings 182, 197 and 198 were about, in " +
+      "the other direction.",
+  );
+});
+
+test("the map claims to be modal only while the layout actually makes it modal", () => {
+  const src = file("src/components/ListingsMap.tsx");
+  assert.match(
+    src,
+    /window\.matchMedia\("\(max-width:1080px\)"\)/,
+    "finding 200. The stylesheet turns the panel into a full-screen overlay at max-width " +
+      "1080px and leaves it a sticky region above that. The semantics have to read the same " +
+      "breakpoint, or they describe a layout that is not on screen.",
+  );
+  assert.match(
+    src,
+    /role=\{modal \? "dialog" : "region"\} aria-modal=\{modal \? true : undefined\}/,
+    "finding 200. Keyed on `open` alone, a map opened on a phone and then widened past " +
+      "1080px was drawn inline in the split grid while still telling a screen reader that " +
+      "the rest of the page was inert.",
+  );
+  assert.match(
+    src,
+    /if \(!mq\.matches\) setOpen\(false\)/,
+    "finding 200. Leaving the overlay layout must close the panel. Otherwise the focus-return " +
+      "in the trap effect aims at a toggle the wide layout has set to display:none, and focus " +
+      "goes nowhere.",
+  );
+  assert.match(
+    src,
+    /if \(!modal\) return;/,
+    "finding 200. The focus trap belongs to the overlay, not to the region. Trapping Tab " +
+      "inside a panel that sits in the page flow beside the list would make the list " +
+      "unreachable.",
   );
 });

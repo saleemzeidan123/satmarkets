@@ -38,6 +38,40 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
   const readyRef = useRef(false);
   const selectedRef = useRef<string | null>(null);
   const [moved, setMoved] = useState(false);
+  /* RC9c, finding 167 and finding 200. The register deferred 167 because settling
+     which of these controls is a navigation and which is a disclosure is a
+     structural decision about the split view rather than an attribute patch, and
+     that is right. The structure, read off sat-platform.css:695-706, is this: above
+     1080px the panel is a persistent region inside the split grid and
+     `.lst-map-toggle` is `display:none`, so there is no toggle to describe. Below
+     1080px the panel is hidden until `.open`, and `.open` makes it `position:fixed`
+     over the whole viewport, which is why this file already gives it `role="dialog"`,
+     `aria-modal`, a focus trap and Escape.
+
+     So the toggle is not a disclosure. It opens a modal dialog, and `aria-expanded`
+     is the wrong attribute for that: it describes content that expands in place,
+     and ARIA authoring practice specifically says not to put it on a control that
+     opens a modal. `aria-haspopup="dialog"` is the attribute that matches what the
+     button actually does, and it is on the button below.
+
+     Finding 200, found while settling that: `open` was viewport-blind. Open the map
+     on a phone, rotate to landscape or resize past 1080px, and the panel is drawn
+     inline in the split grid by the wide-viewport rules while still carrying
+     `role="dialog"` and `aria-modal="true"`, which tells a screen reader that the
+     entire rest of the page is inert when it is not. The layout decides the
+     semantics, so the semantics have to read the layout. `overlay` tracks the same
+     1080px breakpoint the stylesheet uses, and leaving the overlay layout closes the
+     panel, which also keeps the focus-return in the trap effect from aiming at a
+     button that the wide layout has set to `display:none`. */
+  const [overlay, setOverlay] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width:1080px)");
+    const sync = () => { setOverlay(mq.matches); if (!mq.matches) setOpen(false); };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const modal = open && overlay;
   /* ELITE-4 J3-3 / J3-5: refs for the keyboard equivalents of the canvas marks and
      for the dialog behaviour of the full-screen panel below 1080px. */
   const panelRef = useRef<HTMLDivElement>(null);
@@ -261,7 +295,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
   /* ELITE-4 J3-5: below 1080px the panel is a full-screen overlay. It behaves like
      a dialog now: focus moves in, Tab stays in, Escape closes, focus goes back. */
   useEffect(() => {
-    if (!open) return;
+    if (!modal) return;
     const toggle = toggleRef.current;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setOpen(false); return; }
@@ -278,8 +312,8 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
     };
     document.addEventListener("keydown", onKey);
     closeRef.current?.focus();
-    return () => { document.removeEventListener("keydown", onKey); if (toggle && document.contains(toggle)) toggle.focus(); };
-  }, [open]);
+    return () => { document.removeEventListener("keydown", onKey); if (toggle && document.contains(toggle) && toggle.offsetParent !== null) toggle.focus(); };
+  }, [modal]);
 
   return (
     <>
@@ -287,7 +321,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       {/* ELITE-4 J3-3 / J3-5: the panel is a named region, and a named modal dialog
           while it is the full-screen overlay. */}
       <div ref={panelRef} className={"lst-map-panel" + (open ? " open" : "")}
-        role={open ? "dialog" : "region"} aria-modal={open ? true : undefined} aria-label={t3.mapRegion}>
+        role={modal ? "dialog" : "region"} aria-modal={modal ? true : undefined} aria-label={t3.mapRegion}>
         <div ref={ref} style={{ position: "absolute", inset: 0 }} />
         {/* ELITE-4 J3-3: district filtering and pin navigation are bound to MapLibre
             pointer events on a canvas, so neither can be reached with a keyboard.
@@ -335,7 +369,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
           )}
         </div>
       </div>
-      <button type="button" ref={toggleRef} className="btn primary lst-map-toggle" onClick={() => setOpen(true)}>{t2.showMap}</button>
+      <button type="button" ref={toggleRef} className="btn primary lst-map-toggle" aria-haspopup="dialog" onClick={() => setOpen(true)}>{t2.showMap}</button>
     </>
   );
 }

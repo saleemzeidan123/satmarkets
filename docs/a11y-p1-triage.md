@@ -377,6 +377,83 @@ the browser-emulated reflow probe as non-regression evidence for 156. None of
 this was tested on a physical device, none with an actual screen reader and
 none independently audited. WCAG 2.2 AA conformance is not claimed from it.
 
+**RC9c. Which control is a navigation and which is a dialog trigger, findings
+167 and 200.**
+
+Finding 167 was deferred twice, and both deferrals said the same thing in
+different words: the two controls on the listings split view look like a pair
+but want opposite remedies, and choosing between them is a decision about what
+the split view is rather than an attribute to add. Slice K made that decision,
+and it was made by reading the stylesheet rather than the component, because the
+stylesheet is where the behaviour actually lives.
+
+`src/styles/sat-platform.css:695-706` says it plainly. Above 1080 pixels
+`.lst-split` is `minmax(0,1fr) minmax(300px,40%)`, `.lst-map-panel` is a sticky
+element in the second column, and `.lst-map-toggle` is `display:none`. There is
+no control, and the map is a region of the page sitting beside the results.
+Below 1080 pixels the second column is gone, the panel is hidden until it gains
+`.open`, and `.open` sets `position:fixed;inset:0;z-index:90`. That is a layer
+over the whole viewport, and the component had already, correctly, given it
+`role="dialog"`, `aria-modal`, a focus trap and Escape.
+
+So the properties and insights chips and the show map button are not two
+instances of one pattern. The chips are two `Link` elements that change the URL
+and reload the route. That is navigation, and the attribute that says which one
+you are on is `aria-current="page"`. The map button opens a modal dialog, and
+the attribute for that is `aria-haspopup="dialog"`.
+
+The register's own proposed remedy for the button, `aria-expanded`, is wrong,
+and slice K corrected the register rather than implementing it. `aria-expanded`
+describes content that expands in place while the rest of the page stays
+reachable. ARIA authoring practice excludes modal dialog triggers from it
+specifically, because announcing a control as collapsed or expanded while the
+thing it opens covers the screen and holds focus describes the opposite of what
+happens. A guard test now asserts `aria-expanded` is absent from the file, so
+the suggestion is not reinstated by a later reader of that row.
+
+SC 1.4.1 is a separate obligation and `aria-current` does not discharge it,
+because nothing about it is visible. The active chip takes `fontWeight: 700`
+inline. Inline and not on `.chip.on`, because since RC9a `.chip.on` is the
+selected face of every native radio on the platform, and reweighting all of them
+to fix one pair would be a cosmetic sweep with no evidence behind it. The rule
+that visual quality is not reduced to satisfy accessibility cuts both ways: it
+also forbids changing the look of controls that have no finding against them.
+
+Finding 200 came out of the same reading, and it is the more serious of the two.
+Every dialog semantic on the map was keyed on `open`, which records a button
+press and knows nothing about the viewport. The button only exists below the
+breakpoint, and so does the overlay, but `open` survives a resize. A map opened
+narrow and then widened, an ordinary tablet rotation or window drag, was drawn
+inline in the split grid while still carrying `role="dialog"` and
+`aria-modal="true"`. `aria-modal="true"` instructs assistive technology to treat
+everything outside the element as inert, so the results, the filters and the
+view pair sitting visibly beside the map were removed from the accessibility
+tree while remaining fully operable by mouse and keyboard, and the close button
+that would have ended the state had been set to `display:none` by the same
+media query. The focus trap ran there too, cycling inside a panel that covered
+nothing.
+
+The fix makes the layout decide. `overlay` tracks
+`window.matchMedia("(max-width:1080px)")` through a `change` listener, `modal`
+is `open && overlay`, and leaving overlay also closes the panel so it never sits
+open in a layout with no visible way out. `role`, `aria-modal`, the trap and
+Escape are all gated on `modal`; above the breakpoint the panel is a plain
+`role="region"` with the same name. The focus return checks
+`offsetParent !== null` before calling `focus()`, because a `display:none`
+element accepts the call and drops focus to the body, which is finding 199
+recreated. `matchMedia` is read in an effect and not during render, so server
+and first client render agree; the panel is simply not a dialog until the client
+has measured, which is the safe direction to be wrong in.
+
+One repository lesson worth recording. `src/components/ListingsMap.tsx` was not
+in the journey scan in `src/lib/formGroups.test.ts`. The listings route file was,
+and it draws the header and the view pair, so the scan looked complete while
+seeing only one half of a split view. The two new guard tests failed on the
+missing file before they could fail on anything real, which is the good failure
+mode, but the gap had been open since slice B. It is closed now, and it is the
+second time a shared component holding a journey's actual work sat outside a
+scan named after that journey.
+
 **RC10. Locale leakage in constructed controls, findings 18, 160, 162, 22 and
 171.** Map controls in English in the Arabic build; the MapLibre container with no
 accessible name and its built-in controls constructed with no locale; lightbox
