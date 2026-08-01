@@ -1394,6 +1394,65 @@ only that the corrected code and dictionary are the ones being served. The live 
 finding 119, two Arabic progress strings written `جاري` where the platform's other eight write
 `جارٍ`, fixed in the closure commit.
 
+## PKG-SUP2, one figure, one grammar, on every surface that shows a listing (closed)
+
+Findings 120 to 124. The supply-side twin of PKG-DEM2, and it exists for the same reason that one
+did: fourteen surfaces were each spelling a listing's price and area themselves, and a surface that
+spells a figure has also, privately, decided what the figure means. Three of them decided wrong and
+one of them decided nothing at all.
+
+The unit was the first of it. `listings.asking_rent_sqm` is collected by a form whose own label
+says the number is per square metre per year. The public listing page, the compare table, the map
+pin and the broker profile rendered it that way. `/dashboard`, `/dashboard/listings` and `/find`
+rendered it as `SAR/m²` with the year taken off, which means the lister who set an annual rate was
+the one reader shown it as something else, on the screen whose whole purpose is confirming that the
+price they entered is the price the market is being shown. The unit is decided once now, from the
+deal type, and no surface spells it.
+
+The absent figure was the second. `area_sqm` is nullable and seven surfaces interpolated it
+unguarded, so a listing that states no area printed the word `null` beside a unit. One of those
+surfaces is the printable flyer, where the defect leaves the building on paper. `/advisor` coerced
+the same null through `Number()` and showed `0 m²`, which is worse, because zero is a figure and
+nobody wrote it down. Every function in `src/lib/listingFigures.ts` returns `null` for a figure the
+record does not state, and `null` is not "zero", not "?" and not the empty string: it is the
+caller's instruction to draw no line at all. The flyer's tile grid became `auto-fit` so a dropped
+tile leaves no hole rather than a gap in a row of four.
+
+The numerals were the third, and they were the one already-live breach of a standing law.
+`Number(price).toLocaleString()` with no locale argument resolves the runtime default rather than
+the page's. Two of the surfaces doing it are client components, so on a phone set to Arabic the
+public explore grid and the saved shortlist rendered asking prices in Arabic-Indic digits. Western
+numerals in both languages is the first defect `format.ts` was written to kill, and it was still
+live on the most viewed surface on the site. Three server-side copies of the same call sat one
+environment setting away from the same result.
+
+Finding 124 was found while rewiring the rest and is the same error reached from the other end:
+`/api/advisor/shortlist` forwarded only the lease price column, which is null on every sale row, so
+an occupier who asked the Advisor to buy was shown inventory with no prices at all, and `/advisor`
+chose its unit by asking which column happened to be populated rather than what the deal type was.
+
+`priceParts` exists because three cards set the amount large and the unit quietly beside it. That
+is typography and it belongs to the card. Deciding what the unit says does not, which is why the
+split happens in the module: both halves still come from one place, and a caller cannot take the
+amount without the unit that qualifies it.
+
+Fifteen dictionary keys holding hand-spelled unit strings were deleted from each locale, every one
+checked for readers first. `common.sqm`, `building.perYear` and `locations.officeMedianSuf` were
+kept because they still have them. `src/lib/listingFigures.ts` holds no Arabic literals, since it
+delegates every string to `format.ts`, so unlike `requirementFigures.ts` it does not need adding to
+the `ar-lint` file list and has not been added.
+
+`src/lib/listingFigures.test.ts`, 22 tests. The guards read the module's output rather than its
+branches, and four of them reproduce the shipped expression beside the fixed one and watch the old
+one fail. Suite is 1472 tests, all passing.
+
+Verified on the deployment in both languages, with the limit stated rather than glossed: `/listings`,
+`/compare`, `/brokers`, a listing detail page and a printable flyer are reachable without a session
+and were checked live. `/dashboard`, `/dashboard/listings`, `/me` and `/saved` sit behind one and
+cannot be reached through the GET-only evidence channel available here, so for those four the
+verification is the test suite, the typecheck and the production build, and the deployment evidence
+establishes only that the corrected code is the code being served.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

@@ -106,6 +106,12 @@ export const UNITS = {
   sar_sqm_month: { en: { long: "SAR/m²/month", short: "SAR/m²/mo" }, ar: { long: "ريال/م²·شهر", short: "ريال/م²·شهر" } },
   sar_desk_month: { en: { long: "SAR/desk/month", short: "SAR/desk/mo" }, ar: { long: "ريال/مكتب·شهر", short: "ريال/مكتب·شهر" } },
   sar_sqm: { en: { long: "SAR/m²", short: "SAR/m²" }, ar: { long: "ريال/م²", short: "ريال/م²" } },
+  // PKG-SUP2. The whole-space annual rent, which is the per-square-metre rate
+  // times the area. The compare table spelled it inline as `SAR/yr` and
+  // `ريال/سنة`, so the claim two comments below this one, that the subscription
+  // price was the last unit outside this table, was not true when it was
+  // written: this one and `sar_sqm` were both still out here.
+  sar_year: { en: { long: "SAR/year", short: "SAR/yr" }, ar: { long: "ريال/سنة", short: "ريال/سنة" } },
   // A subscription price is per month and per nothing else. The pricing page
   // spelled it inline, "SAR/mo" and "ريال/شهر", the last unit on a public page
   // still living outside this table.
@@ -129,6 +135,7 @@ const UNIT_ALIASES: Record<string, UnitKey> = {
   "sar/desk/mo": "sar_desk_month", "sar_desk_month": "sar_desk_month",
   "sar/m2": "sar_sqm", "sar/m²": "sar_sqm",
   "sar/mo": "sar_month", "sar/month": "sar_month", "sar_month": "sar_month",
+  "sar/yr": "sar_year", "sar/year": "sar_year", "sar_year": "sar_year", "sar·yr": "sar_year",
   "m2": "sqm", "m²": "sqm", "sqm": "sqm",
   "sar": "sar", "kva": "kva", "%": "pct",
 };

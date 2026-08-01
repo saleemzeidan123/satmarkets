@@ -8,6 +8,7 @@ import { assetLabel, dealLabel, gradeLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { fetchAccountSaved, promoteDeviceFolders, setShortlist } from "@/lib/saved";
 import type { Listing } from "@/lib/types";
+import { netArea, askingPrice } from "@/lib/listingFigures";
 
 const KEY = "satm_saved";
 const FKEY = "satm_saved_folders";
@@ -96,12 +97,14 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
 
   const T = dict.saved;
 
-  const priceOf = (l: Listing) => {
-    const lease = l.deal_type === "lease";
-    const v = lease ? (l as any).asking_rent_sqm : (l as any).sale_price;
-    if (v == null) return T.onReq;
-    return `${Number(v).toLocaleString()} ${lease ? T.perYear : T.sar}`;
-  };
+  // PKG-SUP2, finding 123. This is a CLIENT component, and `toLocaleString()`
+  // with no argument resolves the device locale, so a shortlist opened on a
+  // phone set to Arabic rendered its prices in Arabic-Indic digits. That is the
+  // first defect the formatter was written to kill, and it was live here. The
+  // unit was also spelled a sixth way in this file: `SAR/m2 yr` in English
+  // against a different Arabic separator from every other surface.
+  const priceOf = (l: Listing) =>
+    askingPrice(l.deal_type === "sale" ? (l as any).sale_price : (l as any).asking_rent_sqm, l.deal_type, locale) ?? T.onReq;
   const pxNote = (id: string) => {
     const c = px[id];
     if (!c) return null;
@@ -154,7 +157,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {shownL.map((l) => (
               <div key={l.id}>
-                <ListingCard listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />
+                <ListingCard listing={l} locale={locale} ui={dict.ui} />
                 <select
                   value={folders[l.id] || ""}
                   onChange={(e) => {
@@ -195,7 +198,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
                   <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{T.noIndex}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? `${T.belowPre}${a}${T.belowSuf}` : v.status === "above" ? `${T.abovePre}${a}${T.aboveSuf}` : T.withinBand; const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
-                  <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{(l as any).area_sqm ? Number((l as any).area_sqm).toLocaleString("en-US") : dict.common.na}</span> {dict.common.sqm}</Cell>)}</Row>
+                  <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{netArea((l as any).area_sqm, locale) ?? dict.common.na}</span></Cell>)}</Row>
                   <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : dict.common.na}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
                 </tbody>

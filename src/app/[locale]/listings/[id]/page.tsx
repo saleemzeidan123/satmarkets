@@ -34,6 +34,7 @@ import { planLabel } from "@/lib/planTypes";
 import { getSessionUser } from "@/lib/auth/session";
 import { documentLabel } from "@/lib/documentKinds";
 import { videoEmbed } from "@/lib/videoEmbed";
+import { priceParts } from "@/lib/listingFigures";
 
 export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
   if (!isLocale(params.locale)) return {};
@@ -575,12 +576,14 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 14, marginTop: 14 }}>
                 {similar.map((s: any) => {
                   const sdn = s.districts ? (ar ? s.districts.name_ar : s.districts.name_en) : dn;
-                  const sp = s.deal_type === "lease" ? s.asking_rent_sqm : s.sale_price;
+                  // PKG-SUP2, finding 123. `toLocaleString()` with no argument
+                  // resolves the runtime default rather than the page locale.
+                  const spp = priceParts(s.deal_type === "sale" ? s.sale_price : s.asking_rent_sqm, s.deal_type, lp);
                   return (
                     <Link key={s.id} href={L(`/listings/${s.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{sp != null ? Number(sp).toLocaleString() : (dict.ld.onRequest)}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{sp != null ? " " + formatUnit(s.deal_type === "lease" ? "sar_sqm_year" : "sar", lp, "short") : ""}</small></div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}><bdi>{spp ? spp.value : dict.ld.onRequest}</bdi>{spp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + spp.unit}</small>}</div>
                         <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(s, ar ? "ar" : "en")}</div>
                         <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{sdn} · {formatArea(s.area_sqm, lp)}</div>
                       </div>
@@ -594,7 +597,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           <ReportListing listingId={l.id} locale={locale as "en" | "ar"} />
         </div>
         <div className="ld-side">
-          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} badges={verifiedBadgeTexts(l as any, filingAccountOf(lister), ar)} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} unit={formatUnit(lease ? "sar_sqm_year" : "sar", lp, "short")} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
+          <ListingEnquiry assetType={l.asset_type} satListed={!!l.is_sat_listed} badges={verifiedBadgeTexts(l as any, filingAccountOf(lister), ar)} listingId={l.id} price={price != null ? Number(price) : null} lease={lease} type={type} area={l.area_sqm} district={String(dn)} locale={locale} permit={l.ad_permit_no} contact={{ phone: l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null, email: l.contact_email || null, channels: Array.isArray(l.contact_channels) ? l.contact_channels : [], refCode: l.reference_code || "", title, url: `${SITE}/${locale}/listings/${l.id}`, messageHref: `/${locale}/messages` }} />
           <ContactBar listingId={l.id} phone={l.contact_phone || process.env.NEXT_PUBLIC_CONTACT_PHONE || null} email={l.contact_email || null} channels={Array.isArray(l.contact_channels) ? l.contact_channels : []} refCode={l.reference_code || ""} title={title} url={`${SITE}/${locale}/listings/${l.id}`} messageHref={`/${locale}/messages`} ar={ar} />
         </div>
       </div>

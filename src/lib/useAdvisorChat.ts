@@ -5,7 +5,7 @@ import { formatPeriod } from "@/lib/market/period";
 import { searchNote } from "@/lib/search/searchNote";
 import type { PublicEvidenceView } from "@/lib/evidenceView";
 
-export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number; asking_rent_sqm: number | null; sale_price: number | null; ownership_verified?: boolean | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
+export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number | null; deal_type: string | null; asking_rent_sqm: number | null; sale_price: number | null; ownership_verified?: boolean | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string;
  /**
   * ADV-1D. The Evidence Passports for the figures this answer displayed, built

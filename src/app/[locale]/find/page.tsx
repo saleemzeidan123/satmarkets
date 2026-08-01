@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { getDictionary } from "@/i18n/getDictionary";
+import { netArea, askingPrice } from "@/lib/listingFigures";
+import type { Loc } from "@/lib/format";
 
 type Verdict = {
   status: "below" | "within" | "above" | "na";
@@ -30,6 +32,8 @@ type Row = {
   district_ar: string | null;
   area_sqm: number | null;
   asking_rent_sqm: number | null;
+  deal_type: string | null;
+  sale_price: number | null;
   building_grade: string | null;
   fit_score: number;
   verdict: Verdict;
@@ -110,12 +114,10 @@ const NEEDS: Record<string, { v: string; en: string; ar: string }[]> = {
   ],
 };
 
-function n(v: number | null): string {
-  return v == null ? "" : Number(v).toLocaleString("en-US");
-}
 
 export default function FindPage() {
   const ar = usePathname().startsWith("/ar");
+  const loc: Loc = ar ? "ar" : "en";
   const t = getDictionary(ar ? "ar" : "en").findPage;
   const [assetType, setAssetType] = useState("office");
   const [dealType, setDealType] = useState("lease");
@@ -300,8 +302,16 @@ export default function FindPage() {
                 <div className="text-sm font-semibold text-slate-900">{ar ? r.name_ar : r.name_en}</div>
                 <div className="mt-0.5 text-xs text-slate-500">
                   {r.reference_code}
-                  {r.area_sqm != null && <> · <bdi dir="ltr">{n(r.area_sqm)} m²</bdi></>}
-                  {r.asking_rent_sqm != null && <> · {n(r.asking_rent_sqm)} {t.sarSqm}</>}
+                  {/* PKG-SUP2, finding 120. This line spelled the area and the
+                      rate itself, and it spelled the rate "SAR/m²", dropping the
+                      year that the form collecting the number puts in its own
+                      label. Both figures come from `listingFigures.ts` now, which
+                      also means a sale listing states its sale price here instead
+                      of stating nothing. */}
+                  {netArea(r.area_sqm, loc) && <> · <bdi dir="ltr">{netArea(r.area_sqm, loc)}</bdi></>}
+                  {askingPrice(r.deal_type === "sale" ? r.sale_price : r.asking_rent_sqm, r.deal_type, loc) && (
+                    <> · <bdi dir="ltr">{askingPrice(r.deal_type === "sale" ? r.sale_price : r.asking_rent_sqm, r.deal_type, loc)}</bdi></>
+                  )}
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">

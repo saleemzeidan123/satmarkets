@@ -29,6 +29,7 @@ import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { decidedRentIndexRows, quotableRentIndexRows } from "@/lib/market/quotable";
 import { listedSince, listedLabel } from "@/lib/listedSince";
+import { askingPrice } from "@/lib/listingFigures";
 import { availabilityOf, availabilityShortLabel, availabilityTone } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
@@ -162,7 +163,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (bids.length) {
       const { data: bs } = await sb.from("buildings").select("id,lat,lng").in("id", bids).not("lat", "is", null);
       const bmap = new Map((bs ?? []).map((b: any) => [b.id, b]));
-      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); coordByListing.set(l.id, { lat: Number(b.lat), lng: Number(b.lng) }); return { id: l.id, title: listingTitle(l, ar ? "ar" : "en"), lat: Number(b.lat), lng: Number(b.lng), price: l.deal_type === "lease" ? (l.asking_rent_sqm != null ? Number(l.asking_rent_sqm).toLocaleString("en-US") + (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : "") : (l.sale_price != null ? Number(l.sale_price).toLocaleString("en-US") + (ar ? " ريال" : " SAR") : "") }; });
+      pins = listings.filter((l: any) => bmap.get(l.building_id)).map((l: any) => { const b: any = bmap.get(l.building_id); coordByListing.set(l.id, { lat: Number(b.lat), lng: Number(b.lng) }); return { id: l.id, title: listingTitle(l, ar ? "ar" : "en"), lat: Number(b.lat), lng: Number(b.lng), price: askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale) ?? "" }; });
     }
   }
 

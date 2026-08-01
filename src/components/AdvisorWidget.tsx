@@ -7,6 +7,7 @@ import { assetLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { getDictionary } from "@/i18n/getDictionary";
+import { netArea, askingPrice } from "@/lib/listingFigures";
 
 /** Floating SAT Advisor: a Harbor quadrant-mark button on every page,
  *  bottom sheet on mobile, corner panel on desktop. Same /api/advisor
@@ -126,12 +127,17 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
             {m.results.map((l) => {
              const title = listingTitle(l, loc);
              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : "";
-             const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
+             // PKG-SUP2, findings 122 and 124. This row printed a bare number
+             // with no unit beside it, so the Advisor quoted a rent and a sale
+             // price in the same column with nothing to tell them apart, and it
+             // interpolated a nullable area straight into the line above.
+             const price = askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, loc);
+             const areaFig = netArea(l.area_sqm, loc);
              return (
               <Link key={l.id} href={`/${loc}/listings/${l.id}`} onClick={() => setOpen(false)} className="row gap10" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 10, padding: 9, textDecoration: "none", color: "inherit" }}>
                <span style={{ width: 36, height: 36, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={15} /></span>
-               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{assetLabel(l.asset_type, loc)} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{dn ? " · " + dn : ""}</div></div>
-               <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}>{price ? price.toLocaleString("en-US") : av.na}</div></div>
+               <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{title}</div><div className="mono muted" style={{ fontSize: 10.5, marginTop: 2 }}>{[assetLabel(l.asset_type, loc), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
+               <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: 13.5, fontWeight: 500 }}><bdi>{price ?? av.na}</bdi></div></div>
               </Link>
              );
             })}

@@ -8,6 +8,7 @@ import { assetLabel } from "@/lib/labels";
 import { listingTitle, listingPlace } from "@/lib/listingTitle";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
+import { netArea, askingPrice } from "@/lib/listingFigures";
 
 export const revalidate = 3600;
 
@@ -65,8 +66,8 @@ export default async function BrokersPage({ params }: { params: { locale: string
             {sample.map((l) => (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="card lift" style={{ padding: "14px 16px", textDecoration: "none", color: "inherit" }}>
                 <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} {b.sqmUnit} · {listingPlace(l, ar ? "ar" : "en")}</div>
-                <div className="mono" style={{ fontSize: 12, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>{l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString("en-US")} ${b.rentUnit}` : b.onRequest}</div>
+                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{[assetLabel(l.asset_type, locale), netArea(l.area_sqm, locale), listingPlace(l, ar ? "ar" : "en")].filter(Boolean).join(" · ")}</div>
+                <div className="mono" style={{ fontSize: 12, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>{askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale) ?? b.onRequest}</div>
               </Link>
             ))}
           </div>

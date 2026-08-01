@@ -16,6 +16,7 @@ import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { districtMobilityPanel } from "@/lib/location/panel";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { entityName } from "@/lib/displayName";
+import { netArea } from "@/lib/listingFigures";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 
@@ -110,7 +111,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
               <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{assetLabel(b.asset_type, locale)}</span>
               {grade && grade !== "N/A" ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{T.grade} {grade}</span> : null}
               {b.year_built ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur fig">{b.year_built}</span> : null}
-              {b.size_sqm ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur"><span className="fig">{Number(b.size_sqm).toLocaleString()}</span> {dict.common.sqm}</span> : null}
+              {b.size_sqm ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur"><bdi>{netArea(b.size_sqm, locale)}</bdi></span> : null}
               {b.owner_developer ? <span className="rounded-md bg-white/15 px-2 py-1 backdrop-blur">{b.owner_developer}</span> : null}
             </div>
           </div>
@@ -183,7 +184,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         <p className="mt-3 text-[14px] text-charcoal/50">{T.noUnits}</p>
       ) : (
         <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} sqm={dict.common.sqm} ui={dict.ui} />))}
+          {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} ui={dict.ui} />))}
         </div>
       )}
 

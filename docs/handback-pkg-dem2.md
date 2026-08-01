@@ -217,6 +217,13 @@ use `جارٍ`, including `reqDetail.matchesLoading` in the same dictionary obje
 `reqDetail.loading` and `reqDetail.registering` are corrected in this closure commit, so all ten
 agree. Finding 119.
 
+**The closure commit's own evidence.** Commit `2619d4c`, deployment
+`dpl_B3zv6rnM1qSmtpJjux32vrBPJdJA`, host `satmarkets-dzmud36r0-sat-markets.vercel.app`, READY,
+target production. `/ar/requirements/aa892eae-4106-4625-a2bf-ef362eb49d92` now serves
+`جارٍ تحميل الطلب`, and `جاري تحميل الطلب` and `جاري التسجيل` are absent from the payload
+altogether, so finding 119 is closed on the deployment rather than in the tree. The stripped markup
+still contains `null` 0, `NaN` 0, `undefined` 0 and `Infinity` 0.
+
 **The two standing limitations, unchanged.** `mcp__Vercel__web_fetch_vercel_url` is the only channel
 to the deployment from this environment and it issues GET only, so the requirement submission path
 cannot be exercised end to end from here. And `/[locale]/requirements` and

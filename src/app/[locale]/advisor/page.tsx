@@ -13,6 +13,7 @@ import EvidencePassport from "@/components/EvidencePassport";
 import { advisorQuoteMessage } from "@/lib/advisor/quote";
 import { type PublicQuoteKind } from "@/lib/publicQuote";
 import { statisticLabel } from "@/lib/evidence";
+import { netArea, priceParts } from "@/lib/listingFigures";
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
@@ -282,12 +283,18 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
           {m.results.map((l) => {
            const title = listingTitle(l, locale);
            const dn = l.districts ? (locale === "ar" ? l.districts.name_ar : l.districts.name_en) : "";
-           const price = l.asking_rent_sqm ?? l.sale_price ?? 0;
+           // PKG-SUP2, findings 122 and 124. The unit was chosen by asking whether
+           // `asking_rent_sqm` was set rather than by the deal type, and it was
+           // printed even when there was no price to qualify. The area went
+           // through `Number(l.area_sqm)`, so a listing that states no area was
+           // shown to the occupier as "0 m2".
+           const pp = priceParts(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale);
+           const areaFig = netArea(l.area_sqm, locale);
            return (
             <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 10, textDecoration: "none", color: "inherit" }}>
              <span style={{ width: 42, height: 42, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon.pin size={17} /></span>
-             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{assetLabel(l.asset_type, locale)} · {formatArea(Number(l.area_sqm), locale)}{dn ? " · " + dn : ""}</div></div>
-             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}>{price ? formatInteger(price, locale) : (av.na)}</div><div className="muted" style={{ fontSize: 10.5 }}>{l.asking_rent_sqm ? (av.unitSqmYr) : (av.sar)}</div></div>
+             <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 13.5, fontWeight: 600 }}>{title}</div><div className="mono muted" style={{ fontSize: "var(--fs-2xs)", marginTop: 3 }}>{[assetLabel(l.asset_type, locale), areaFig, dn].filter(Boolean).join(" · ")}</div></div>
+             <div style={{ textAlign: ar ? "left" : "right", flex: "none" }}><div className="mono" style={{ fontSize: "var(--fs-md)", fontWeight: 500 }}><bdi>{pp ? pp.value : av.na}</bdi></div>{pp && <div className="muted" style={{ fontSize: 10.5 }}><bdi>{pp.unit}</bdi></div>}</div>
             </Link>
            );
           })}

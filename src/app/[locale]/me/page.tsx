@@ -9,6 +9,7 @@ import { listingTitle, listingPlace } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listedSince, listedLabel } from "@/lib/listedSince";
+import { netArea, priceParts } from "@/lib/listingFigures";
 import SavedSearchRows, { type SavedSearchRow } from "@/components/SavedSearchRows";
 
 // The occupier's home. Demand-side users (a signed-in person with no supply account)
@@ -215,7 +216,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
                 <div key={v.id} className="card pad row between wrap" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
                     <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
                     <div className="mono" style={{ fontSize: 12.5, marginTop: 4 }}><bdi dir="ltr">{vWhen(v.scheduled_at)}</bdi>{passed && v.status === "requested" ? <span className="muted" style={{ marginInlineStart: 8 }}>{t.vPast}</span> : null}</div>
                   </div>
                   <div className="row gap12" style={{ alignItems: "center", flex: "none" }}>
@@ -243,7 +244,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
                 <div key={it.key} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
                     <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
                   </div>
                   {direct
                     ? <Link href={`/${lp}/listings/${l.id}`} className="btn secondary sm" style={{ textDecoration: "none", flex: "none" }}>{t.view}</Link>
@@ -282,14 +283,18 @@ export default async function OccupierHome({ params }: { params: { locale: strin
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16 }}>
                 {g.items.map((l: any) => {
                   const dn = listingPlace(l, ar ? "ar" : "en") || dict.ld.riyadh;
-                  const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+                  // PKG-SUP2, finding 123. The unit was spelled here by hand in
+                  // both languages, a fifth spelling of the same thing. The deal
+                  // type decides it once now, in `listingFigures.ts`, and the
+                  // amount stays separable so the card can keep the unit quiet.
+                  const pp = priceParts(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, lp);
                   return (
                     <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
                       <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
-                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}>{price != null ? Number(price).toLocaleString("en-US") : t.onReq}<small style={{ fontWeight: 400, color: "var(--slate)" }}>{price != null ? (l.deal_type === "lease" ? (ar ? " ريال/م²·سنة" : " SAR/m²·yr") : (ar ? " ريال" : " SAR")) : ""}</small></div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600 }}><bdi>{pp ? pp.value : t.onReq}{pp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + pp.unit}</small>}</bdi></div>
                         <div style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
+                        <div className="muted" style={{ fontSize: 11.5, marginTop: 3 }}>{dn}{netArea(l.area_sqm, lp) ? <> · <bdi dir="ltr">{netArea(l.area_sqm, lp)}</bdi></> : null}</div>
                       </div>
                     </Link>
                   );

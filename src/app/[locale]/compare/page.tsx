@@ -15,6 +15,7 @@ import DecisionPackPanel from "@/components/DecisionPackPanel";
 import type { PackListing } from "@/lib/decisionPack";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { listingPlace } from "@/lib/listingTitle";
+import { netArea, askingPrice, annualTotal } from "@/lib/listingFigures";
 
 type SP = { ids?: string };
 
@@ -81,11 +82,13 @@ export default async function ComparePage({ params, searchParams }: { params: { 
     );
   }
 
-  const priceCell = (l: any) => l.deal_type === "lease"
-    ? (l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString()} ${cp.sarSqmYr}` : (cp.onRequest))
-    : (l.sale_price != null ? `${Number(l.sale_price).toLocaleString()} ${cp.sar}` : (cp.onRequest));
-  const totalCell = (l: any) => (l.deal_type === "lease" && l.asking_rent_sqm != null && l.area_sqm != null)
-    ? `${Number(l.asking_rent_sqm * l.area_sqm).toLocaleString()} ${cp.sarYr}` : "–";
+  // PKG-SUP2, finding 123. `toLocaleString()` with no argument resolves the
+  // RUNTIME default locale, not the page's, so these three cells were one
+  // server-environment setting away from emitting non-Western digits into a
+  // comparison table. The unit was also spelled here, a third and fourth time.
+  // All of it is decided once now, by the deal type, in `listingFigures.ts`.
+  const priceCell = (l: any) => askingPrice(l.deal_type === "sale" ? l.sale_price : l.asking_rent_sqm, l.deal_type, locale) ?? cp.onRequest;
+  const totalCell = (l: any) => annualTotal(l.asking_rent_sqm, l.area_sqm, l.deal_type, locale) ?? "–";
 
   // best value = most below its district median (lease with a verdict)
   let bestIdx = -1, bestDelta = Infinity;
@@ -139,7 +142,7 @@ export default async function ComparePage({ params, searchParams }: { params: { 
               <HeaderRow label={cp.type} render={(l) => <span>{assetLabel(l.asset_type, locale)}</span>} />
               <HeaderRow label={cp.price} render={(l) => <span className="mono" style={{ fontWeight: 500 }}>{priceCell(l)}</span>} />
               <HeaderRow label={cp.totalYr} render={(l) => <span className="mono">{totalCell(l)}</span>} />
-              <HeaderRow label={cp.netArea} render={(l) => <span className="mono">{l.area_sqm != null ? `${Number(l.area_sqm).toLocaleString()} m²` : "–"}</span>} />
+              <HeaderRow label={cp.netArea} render={(l) => <span className="mono">{netArea(l.area_sqm, locale) ?? "–"}</span>} />
               <HeaderRow label={cp.grade} render={(l) => <span>{l.building_grade && l.building_grade !== "n_a" ? gradeLabel(l.building_grade, locale) : getDictionary(locale).common.na}</span>} />
               <HeaderRow label={cp.fitout} render={(l) => <span>{fitoutLabel(l.fitout_condition, locale)}</span>} />
               <HeaderRow label={cp.vsDistrictMedian} render={(l, i) => {

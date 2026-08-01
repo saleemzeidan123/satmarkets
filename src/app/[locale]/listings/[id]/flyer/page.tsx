@@ -7,6 +7,7 @@ import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { listingTitle, listingPlace, titleMissingIn } from "@/lib/listingTitle";
 import { photoFor } from "@/lib/photos";
 import { fill } from "@/lib/format";
+import { netArea, askingPrice } from "@/lib/listingFigures";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { Logo } from "@/components/satkit";
 import PrintButton from "@/components/PrintButton";
@@ -77,8 +78,14 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
   const title = listingTitle(l, ar ? "ar" : "en");
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";
-  const price = lease ? l.asking_rent_sqm : l.sale_price;
-  const unit = lease ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR");
+  // PKG-SUP2, findings 122 and 123. The area tile printed `${l.area_sqm} m²`
+  // unguarded, so a listing whose record states no area produced a tile reading
+  // "null m²" on a document a broker prints and hands to a client, where nothing
+  // can be corrected afterwards. The unit was also spelled here by hand, a fourth
+  // spelling of the same unit. Both now come from `listingFigures.ts`, and an
+  // unstated area draws no tile rather than a tile drawn around a hole.
+  const areaFig = netArea(l.area_sqm, locale);
+  const priceFig = askingPrice(lease ? l.asking_rent_sqm : l.sale_price, l.deal_type, locale);
   // C4, then ADV-1. This read ownership OR authorisation OR the row being our own
   // stock, and printed one green "Verified owner" tag for any of the three, onto a
   // document a landlord takes into a meeting. It now prints the badges the record
@@ -119,8 +126,8 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           </div>
           <h1 className="serif" style={{ fontSize: 26, fontWeight: 500, margin: "12px 0 4px" }}>{title}</h1>
           <div className="muted" style={{ fontSize: 13.5 }}>{dn}{l.districts?.city ? `, ${l.districts.city}` : ""}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 18 }}>
-            {[[t.area, `${l.area_sqm} m²`], [t.grade, gradeLabel(l.building_grade, locale)], [t.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? t.askingRent : t.askingPrice, price != null ? `${Number(price).toLocaleString("en-US")} ${unit}` : (t.onRequest)]].map((s, i) => (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))", gap: 12, marginTop: 18 }}>
+            {([[t.area, areaFig], [t.grade, gradeLabel(l.building_grade, locale)], [t.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? t.askingRent : t.askingPrice, priceFig ?? t.onRequest]] as [string, string | null][]).filter((s) => s[1]).map((s, i) => (
               <div key={i} style={{ border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px" }}>
                 <div className="muted" style={{ fontSize: 10.5 }}>{s[0]}</div>
                 <div className="mono" style={{ fontSize: 14, fontWeight: 500, marginTop: 5 }}>{s[1]}</div>

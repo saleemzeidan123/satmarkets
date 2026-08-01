@@ -7,15 +7,20 @@ import { assetLabel, gradeLabel, cityLabel, dealLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import SaveHeart from "@/components/SaveHeart";
 import { verifiedBadgeTexts } from "@/lib/listingVerification";
+import { netArea, priceParts } from "@/lib/listingFigures";
 
-export default function ListingCard({ listing, locale, sqm, ui }: {
-  listing: Listing; locale: Locale; sqm: string; ui: any;
+// PKG-SUP2. The `sqm` prop is gone. It was a unit string threaded in from two
+// callers, which meant this card could be handed a unit that did not match the
+// figure beside it, and it was interpolated outside the guard on a nullable
+// column, so a listing with no stated area printed "null m2" on the most
+// viewed surface on the site. The unit now travels with the figure.
+export default function ListingCard({ listing, locale, ui }: {
+  listing: Listing; locale: Locale; ui: any;
 }) {
   const title = listingTitle(listing, locale === "ar" ? "ar" : "en");
   const d = listing.districts;
   const dn = d ? (locale === "ar" ? d.name_ar : d.name_en) : "";
   const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
-  const lease = listing.deal_type === "lease";
   // ADV-1, owner decision O3. This read passesGate, the PUBLISH gate, and printed
   // "Verified listing" when it returned true. Two problems. The publish gate mirrors
   // the database trigger, whose ownership and authorisation legs default to PASS when
@@ -24,7 +29,13 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
   // authorisation, a right to market and a permit are, separately. The card now shows
   // exactly what this record earned, which today is nothing on all 88 published rows.
   const badges = verifiedBadgeTexts(listing as any, null, locale === "ar");
-  const price = lease ? listing.asking_rent_sqm : listing.sale_price;
+  // PKG-SUP2, finding 123. This is a CLIENT component and this was
+  // `toLocaleString()` with no locale argument, so the digits resolved from the
+  // DEVICE. On a phone set to Arabic, the public explore grid rendered its
+  // asking prices in Arabic-Indic numerals, against a standing law that says
+  // Western numerals in both languages.
+  const pp = priceParts(listing.deal_type === "sale" ? listing.sale_price : listing.asking_rent_sqm, listing.deal_type, locale, "long");
+  const areaFig = netArea(listing.area_sqm, locale);
   return (
     <Link href={`/${locale}/listings/${listing.id}`} className="card group relative block overflow-hidden">
       <div className="relative h-52 overflow-hidden">
@@ -40,13 +51,13 @@ export default function ListingCard({ listing, locale, sqm, ui }: {
         </div>
         <SaveHeart id={listing.id} label={ui.save || "Save"} />
         <div className="absolute bottom-3 start-3 text-white">
-          <div className="fig text-[22px] leading-none drop-shadow tracking-tight">{price != null ? Number(price).toLocaleString() : ui.onRequest}</div>
-          <div className="mt-1 text-[10px] opacity-90">{lease ? ui.perSqmYear : ui.sar}</div>
+          <div className="fig text-[22px] leading-none drop-shadow tracking-tight"><bdi>{pp ? pp.value : ui.onRequest}</bdi></div>
+          {pp && <div className="mt-1 text-[10px] opacity-90"><bdi>{pp.unit}</bdi></div>}
         </div>
       </div>
       <div className="p-4">
         <h3 className="font-display text-[17px] leading-snug text-charcoal line-clamp-1">{title}</h3>
-        <div className="mt-1 text-[13px] text-charcoal/55">{place}{place ? " · " : ""}<bdi dir="ltr">{listing.area_sqm} {sqm}</bdi>{listing.building_grade !== "n_a" ? " · " + gradeLabel(listing.building_grade, locale) : ""}</div>
+        <div className="mt-1 text-[13px] text-charcoal/55">{[place, areaFig, listing.building_grade !== "n_a" ? gradeLabel(listing.building_grade, locale) : ""].filter(Boolean).join(" · ")}</div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
           {/* This tick used to be unconditional, then it read the publish gate. It now
               names the gates this record has actually cleared. */}

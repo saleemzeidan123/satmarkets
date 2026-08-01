@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { ContactChannels } from "@/components/ContactBar";
 import { getDictionary } from "@/i18n/getDictionary";
+import { netArea, priceParts } from "@/lib/listingFigures";
+import type { Loc } from "@/lib/format";
 
 // SAT Markets does not act for anyone. There is one path off a listing and it goes to
 // the lister, not to us.
@@ -79,10 +81,14 @@ const QUAL_SALE: Q[] = [{ k: "ticket", en: "Ticket", ar: "قيمة الصفقة"
 const QUAL_DEFAULT: Q[] = [Q_ROLE, Q_TIME];
 
 export default function ListingEnquiry({
- listingId, price, lease, unit, type, area, district, locale, permit, assetType, satListed, contact, badges = [],
+ listingId, price, lease, type, area, district, locale, permit, assetType, satListed, contact, badges = [],
 }: {
- listingId: string; price: number | null; lease: boolean; unit: string;
- type: string; area: number; district: string; locale: string; permit?: string | null; assetType?: string; satListed?: boolean;
+ // PKG-SUP2. The `unit` prop is gone. A unit threaded in as a separate string
+ // can arrive not matching the figure it qualifies, and this panel is the one
+ // place on the site where a occupier decides whether to enquire on a price.
+ // The unit is derived from the deal type here, beside the figure.
+ listingId: string; price: number | null; lease: boolean;
+ type: string; area: number | null; district: string; locale: string; permit?: string | null; assetType?: string; satListed?: boolean;
  // Resolved on the server by src/lib/listingVerification.ts. Each string names the
  // gate it rests on; an empty list means the record has earned no badge (ADV-1).
  badges?: string[];
@@ -210,8 +216,8 @@ export default function ListingEnquiry({
   <div className="card pad ld-enquiry">
    <div className="row between" style={{ alignItems: "flex-start" }}>
     <div>
-     <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{price != null ? Number(price).toLocaleString() : t.onRequest}<small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> {price != null ? unit : ""}</small></div>
-     <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{type} · <bdi dir="ltr">{area} m²</bdi> · {district}</div>
+     <div className="mono" style={{ fontSize: 28, fontWeight: 500 }}>{(() => { const pp = priceParts(price, lease ? "lease" : "sale", locale as Loc); return (<><bdi>{pp ? pp.value : t.onRequest}</bdi>{pp && <small style={{ fontSize: 13, color: "var(--slate)", fontWeight: 400 }}> <bdi>{pp.unit}</bdi></small>}</>); })()}</div>
+     <div className="muted" style={{ fontSize: 12.5, marginTop: 4 }}>{[type, netArea(area, locale as Loc), district].filter(Boolean).join(" · ")}</div>
     </div>
     <button onClick={toggleSave} aria-label={saved ? t.saved : t.save} className="chip" style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : "var(--silver)", color: saved ? "var(--harbor)" : "var(--slate)" }}>
      <Icon.heart size={15} /> {saved ? t.saved : t.save}

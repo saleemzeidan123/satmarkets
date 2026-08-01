@@ -8,6 +8,9 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { gateFailures, gateReasonText, type GateReason } from "@/lib/gate";
 import { listingTitle } from "@/lib/listingTitle";
 import { placeName } from "@/lib/displayName";
+import { netArea, askingPrice } from "@/lib/listingFigures";
+import { sizeRange } from "@/lib/requirementFigures";
+import type { Loc } from "@/lib/format";
 
 // The owner Overview answers ONE question they sign in with: "did anything happen,
 // and what needs me?" So it leads with a needs-attention queue (Fable 5 consult):
@@ -36,6 +39,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  if (!isLocale(params.locale)) notFound();
  const lp = params.locale;
  const ar = lp === "ar";
+ const loc: Loc = ar ? "ar" : "en";
  const db = getDictionary(lp === "ar" ? "ar" : "en").dashboard;
  const su = await getSessionUser();
  if (!su) redirect(`/${lp}/login`);
@@ -147,7 +151,21 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   const isNew = (l.status || "new") === "new";
   return { id: l.id, ini: initials(nm), name: nm, listing: titleById.get(l.listing_id) || db.verifiedListing, time: ago(l.created_at, ar), isNew };
  });
- const matches = briefs.slice(0, 6).map((b: any) => ({ title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"), spec: (dmap.get(b.district_id) || b.city || rcity) + " · " + (b.size_min_sqm || "?") + (ar ? " إلى " : " to ") + (b.size_max_sqm || "?") + db.m2 }));
+ // PKG-SUP2, finding 121. This line advertised every brief to every lister as
+ // "<district> · ? to ? m²" when the occupier had left the size open, which they
+ // are allowed to do and which both size columns are nullable for. It also built
+ // the range itself, so it grouped nothing: a 12000 sqm brief read "12000". The
+ // public requirement board already renders this same pair through `sizeRange`,
+ // one click away, and now so does the surface a lister prospects from. An
+ // unstated size draws no size clause at all.
+ const matches = briefs.slice(0, 6).map((b: any) => {
+  const place = dmap.get(b.district_id) || b.city || rcity;
+  const size = sizeRange(b.size_min_sqm, b.size_max_sqm, loc);
+  return {
+   title: (ar ? (b.title_ar || b.title) : b.title) || (ar ? "طلب" : b.asset_type + " requirement"),
+   spec: size ? `${place} · ${size}` : place,
+  };
+ });
 
  const statusPill = (l: any, fails: GateReason[]): { label: string; cls: string } => {
   const isBlocked = fails.length > 0 && (l.status === "archived" || (l.status === "published" && fails.includes("permit_expired" as GateReason)));
@@ -162,11 +180,19 @@ export default async function DashboardPage({ params }: { params: { locale: stri
   }
  };
  const listRows = withGate.map(({ l, fails }) => {
-  const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+  // PKG-SUP2, finding 120. `asking_rent_sqm` is collected by a form whose own
+  // label reads "Asking rent (SAR per sqm per year)", and this line read it back
+  // as "SAR/m²" with the year taken off, so the lister who set an annual rate was
+  // the one reader shown it as something else. The area was printed ungrouped
+  // beside it. Both now come from the same functions the public surfaces use.
+  const area = netArea(l.area_sqm, loc);
+  const rent = askingPrice(l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price, l.deal_type, loc);
   return {
    id: l.id, title: titleOf(l), asset: l.asset_type,
-   place: (dmap.get(l.district_id) || rcity) + " · " + (l.area_sqm ? l.area_sqm + db.m2 : na),
-   rent: rent ? Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : db.onRequest,
+   // A listing with no stated area still says so here, because this is the
+   // lister's own management surface and the gap is the thing they came to fix.
+   place: (dmap.get(l.district_id) || rcity) + " · " + (area ?? na),
+   rent: rent ?? db.onRequest,
    pill: statusPill(l, fails),
   };
  });

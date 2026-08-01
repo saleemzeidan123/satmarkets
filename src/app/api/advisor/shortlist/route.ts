@@ -155,6 +155,13 @@ export async function POST(req: NextRequest) {
       district_ar: dist.name_ar ?? null,
       area_sqm: l.area_sqm,
       asking_rent_sqm: l.asking_rent_sqm,
+      // PKG-SUP2, finding 124. `asking_rent_sqm` is null on a sale listing,
+      // and it was the only price this payload carried, so a shortlist run
+      // with dealType "sale" returned rows whose price line was simply absent.
+      // The deal type travels with the figure now, because the deal type is
+      // what decides which column holds the price and what unit it carries.
+      deal_type: l.deal_type,
+      sale_price: l.sale_price,
       building_grade: l.building_grade,
       fit_score: fit,
       verdict: v,

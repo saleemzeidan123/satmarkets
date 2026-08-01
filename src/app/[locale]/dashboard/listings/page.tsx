@@ -11,6 +11,8 @@ import { listerAvailability } from "@/lib/availability";
 import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
 import { placeName } from "@/lib/displayName";
 import { gateFailures, gateReasonsText } from "@/lib/gate";
+import { netArea, askingPrice } from "@/lib/listingFigures";
+import type { Loc } from "@/lib/format";
 
 // The owner's own inventory, with controls. "My listings" in the dashboard nav used
 // to send owners to the PUBLIC explore page, where their listings appeared as
@@ -22,6 +24,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";
+  const loc: Loc = ar ? "ar" : "en";
   const db = getDictionary(ar ? "ar" : "en").dashboard;
 
   const su = await getSessionUser();
@@ -114,7 +117,16 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                   // description of it.
                   const otherMissing = titleMissingIn(l, otherLoc);
                   const otherShown = otherMissing ? listingTitle(row, otherLoc) : "";
-                  const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
+                  // PKG-SUP2, finding 120. This row read `asking_rent_sqm` back
+                  // as "SAR/m2" with the year taken off, on the one screen whose
+                  // whole purpose is letting the lister check that the price they
+                  // entered is the price the market is being shown. The form that
+                  // collected the number labels it "Asking rent (SAR per sqm per
+                  // year)". The unit is decided once now, by the deal type, in
+                  // `listingFigures.ts`.
+                  const rentFig = askingPrice(l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price, l.deal_type, loc);
+                  const areaFig = netArea(l.area_sqm, loc);
+                  const specLine = [dmap.get(l.district_id) || "", areaFig, rentFig].filter(Boolean).join(" · ");
                   const live = l.status === "published";
                   const n = enq.get(l.id) || 0;
                   // Why this listing cannot go back on the market, in the owner's language.
@@ -134,7 +146,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                           <div>
                             <Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{title}</Link>
                             <div className="mono muted" style={{ fontSize: 11 }}>
-                              <bdi>{(dmap.get(l.district_id) || "") + (l.area_sqm ? " · " + l.area_sqm + db.m2 : "") + (rent ? " · " + Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : "")}</bdi>
+                              <bdi>{specLine}</bdi>
                             </div>
                             {otherMissing && (
                               <div className="muted" style={{ fontSize: 11, lineHeight: 1.55, marginTop: 5, maxWidth: 330 }}>
