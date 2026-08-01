@@ -144,14 +144,84 @@ prose strings across 29 public entry points and 126 reachable source files.
 Opened and fixed in this package: 114, 115.
 Opened and partially addressed, with the open half stated: 116.
 Opened and left open with the reason: 117, 118.
+Opened by this package's own live evidence and fixed in the closure commit: 119.
 
-## 7. Live evidence
+## 7. A correction made during closure
 
-See section 8.
+The first commit of this package shipped three documents saying `scripts/ar-lint.mjs` reads
+`src/lib/requirementFigures.ts`. It did not. The edit adding the module to the lint's explicit file
+list was rejected and was not retried, and the module's own doc comment, this handback's section 3
+and the roadmap entry all asserted a gate that was not there. `npm run ar-lint` reported clean and
+that report did not cover the new file's Arabic, so the clean result was true and the reason given
+for it was false.
+
+It is applied now, and it was checked by watching it fail rather than by watching it pass: an
+Arabic-Indic digit was put into the module's `حتى`, `ar-lint` was run, and it reported
+`src/lib/requirementFigures.ts: 1x "٥"` and exited non-zero. The digit was reverted and `git diff`
+confirms the file is unchanged. A gate nobody has watched fail is a gate nobody knows works, which
+is the same rule the tests in section 5 are written to.
+
+The lesson is worth keeping rather than burying: a gate's coverage is a claim about the world, and
+this package asserted one in three places without checking it once.
 
 ## 8. Live evidence
 
-To be completed against the deployment for this package in both languages.
+Deployment `dpl_BJTZoWcdPKkpSFtZsR9sHGkozieR`, host `satmarkets-e0uigro4o-sat-markets.vercel.app`,
+commit `4909df0`, state READY, target production. Vercel READY is this package's production-build
+evidence, because `npm run build` cannot complete in this environment: `next/font` reaches Google
+Fonts and the sandbox egress proxy refuses it.
+
+**The data the fix was verified against, stated plainly.** `GET /api/requirements` returns 200 with
+`sample: false` and six rows, `R-20417` through `R-20422`, and **every one of them carries a non-null
+`sizeMin`, `sizeMax` and `budget`**. So the corpus contains no null-figure row today, and no live
+page renders the case this package exists for. The defect was reachable and not yet realised: the
+form has been submittable only since PKG-DEM1, and no visitor has yet posted a brief leaving size or
+budget blank. The fix is therefore verified against the module under test, and the deployment
+evidence below establishes that the corrected code and the corrected dictionary are the ones being
+served, not that a live null row now renders correctly. One row, `R-20417`, does carry
+`timeline: null`, which is the same shape on the field that PKG-DEM1 made nullable, and the board
+draws no clock line for it.
+
+**English board, `/en/requirements`.** 135,039 characters. With `<script>` and `<style>` removed,
+15,065 characters, containing `null` 0, `NaN` 0, `undefined` 0, `Not stated` 0, `Reply` 0. The
+served HTML is the loading state, `Loading requirements…`.
+
+**Arabic board, `/ar/requirements`.** 125,412 characters, `<html lang="ar" dir="rtl">`. Stripped,
+14,808 characters, containing `null` 0, `NaN` 0, `undefined` 0, `Infinity` 0, and `م²` 0, `متر مربع`
+0, `sqm` 0, since the figures are inside the client payload rather than the served markup. The four
+remaining `?` characters are all the `?dpl=` cache key on asset URLs. The four `إلى` are the skip
+link and two marketing lines, none of them a figure. The served HTML is the Arabic loading state,
+`جارٍ تحميل الطلبات…`.
+
+**English and Arabic requirement detail, `/{locale}/requirements/aa892eae-4106-4625-a2bf-ef362eb49d92`.**
+135,674 and 126,119 characters, `dir="ltr"` and `dir="rtl"` respectively. Stripped, both contain
+`null` 0, `NaN` 0, `undefined` 0, `Infinity` 0 and `Reply` 0. Both serve their loading state.
+
+**What the RSC payload proves, which the served markup cannot.** These four routes are client
+components that fetch on mount, so their served HTML is the loading state and carries no figure at
+all. The active locale's dictionary is serialised into the payload, so the payload is where the
+deployed strings can be read. In it, on all four pages: `reqDetail.figureUnstated` is present once
+(`Not stated`, `غير مذكورة`), `reqDetail.replyNote` is present once in the right language on each,
+and `req.upTo`, `req.rangeTo`, `reqDetail.rangeTo` and `reqDetail.reply` are absent, which is the
+seven deleted keys and the two added ones, confirmed on the deployment rather than in the tree. The
+`sarSqmYr` and `sar` keys that remain in the Arabic payload belong to the listing, shortlist,
+benchmark, location-score and compare namespaces, not to `reqDetail`.
+
+The stripping matters and is not decoration. Asserting a string's absence against the raw response
+would be meaningless here, because the whole dictionary is in it; asserting it against the stripped
+markup is what finding 99 exists to enforce.
+
+**One defect found by this evidence.** The Arabic board serves `جارٍ تحميل الطلبات…` and the Arabic
+detail page serves `جاري تحميل الطلب`, one click apart. Eight of the platform's ten progress strings
+use `جارٍ`, including `reqDetail.matchesLoading` in the same dictionary object as the offender.
+`reqDetail.loading` and `reqDetail.registering` are corrected in this closure commit, so all ten
+agree. Finding 119.
+
+**The two standing limitations, unchanged.** `mcp__Vercel__web_fetch_vercel_url` is the only channel
+to the deployment from this environment and it issues GET only, so the requirement submission path
+cannot be exercised end to end from here. And `/[locale]/requirements` and
+`/[locale]/requirements/[id]` are client components that fetch on mount, so the served HTML is the
+loading state and the rendered figures cannot be read from it at all.
 
 ## 9. Next package
 

@@ -1381,6 +1381,19 @@ the output string rather than the module's branches, and the sensitivity case re
 shipped expressions and watches them print `null to null m²` and `0`. Suite is 1450 tests, all
 passing.
 
+Corrected during closure: the first commit of this package said in three places that `ar-lint` reads
+the new module and it did not, because the edit adding it to the lint's file list was rejected and
+not retried. It is applied now, and it was checked by putting an Arabic-Indic digit into the
+module's `حتى` and watching the gate fail on it before reverting. A gate whose coverage is asserted
+and never tested is a claim, not a gate.
+
+Verified on `dpl_BJTZoWcdPKkpSFtZsR9sHGkozieR` in both languages, with the limit stated rather than
+glossed: all six live requirements carry non-null size and budget, so no live row exercises the null
+path and the fix is verified against the module under test while the deployment evidence establishes
+only that the corrected code and dictionary are the ones being served. The live sweep also found
+finding 119, two Arabic progress strings written `جاري` where the platform's other eight write
+`جارٍ`, fixed in the closure commit.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

@@ -29,10 +29,13 @@ const walk = (d) => {
 };
 walk("src/i18n");
 walk("src/lib/translate");
-// Shipped Arabic copy that lives outside the dictionaries: the label catalogue
-// and the unit and plural formatter tables. Both render straight into public
-// pages, so both must clear the same voice gate as src/i18n.
-for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts"]) {
+// Shipped Arabic copy that lives outside the dictionaries: the label catalogue,
+// the unit and plural formatter tables, and the requirement figure grammar. All
+// of them render straight into public pages, so all of them must clear the same
+// voice gate as src/i18n. `requirementFigures.ts` holds من, إلى and حتى, which
+// are the connectives a range is built from rather than copy, which is exactly
+// why they live in source and exactly why they still need the gate.
+for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts", "src/lib/requirementFigures.ts"]) {
   if (fs.existsSync(p)) files.push(p);
 }
 
