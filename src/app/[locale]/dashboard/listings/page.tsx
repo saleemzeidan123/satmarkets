@@ -6,6 +6,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { Icon, Photo } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
+import AvailabilityReaffirm from "@/components/AvailabilityReaffirm";
+import { listerAvailability } from "@/lib/availability";
 import { gateFailures, gateReasonsText } from "@/lib/gate";
 
 // The owner's own inventory, with controls. "My listings" in the dashboard nav used
@@ -34,6 +36,10 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string,string>,
     view: "اعرض", note: "الإيقاف المؤقّت يزيل العرض من السوق فوراً. وإعادة النشر تخضع لبوابة النشر نفسها: لا يعود العرض إلى السوق بلا تصريح إعلان ساري.",
     cannot: "تعذّرت إعادة النشر:",
+    occupiersSee: "يرى الباحثون:",
+    reaffirm: "ما زالت متاحة اليوم", reaffirmWorking: "جارٍ الحفظ", reaffirmDone: "تم التأكيد اليوم",
+    reaffirmFailed: "تعذّر تسجيل التأكيد. حاول مرة أخرى.",
+    availNote: "تأكيد التوفر يسجّل تاريخ اليوم على العرض ولا يغيّر أي حقل آخر. وهو قول تقرأه الباحثات والباحثون، فلا تؤكّد إلا مساحة تعرف أنها ما زالت متاحة.",
   } : {
     title: "My listings", sub: "Your listings, and where each one stands right now",
     thListing: "Listing", thEnq: "Enquiries", thStatus: "Status", thAction: "",
@@ -42,10 +48,14 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     st: { published: "Published", archived: "Paused", draft: "Draft", pending_review: "In review", approved: "Approved", rejected: "Rejected" } as Record<string,string>,
     view: "View", note: "Pausing takes the listing off the market immediately. Republishing goes through the same publish gate as any other listing: nothing returns to the market without a valid advertising permit.",
     cannot: "Cannot republish:",
+    occupiersSee: "Occupiers see:",
+    reaffirm: "Still available today", reaffirmWorking: "Saving", reaffirmDone: "Confirmed today",
+    reaffirmFailed: "That could not be recorded. Try again.",
+    availNote: "Confirming availability stamps today's date on that listing and changes nothing else. It is a statement occupiers read, so only confirm a space you know is still on the market.",
   };
 
   const [{ data: listings }, { data: leads }, { data: districts }] = await Promise.all([
-    sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at")
+    sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id,availability_confirmed_at,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at")
       .eq("account_id", su.accountId).order("created_at", { ascending: false }).order("id", { ascending: true }),
     sb.from("leads").select("id,listing_id"),
     sb.from("districts").select("id,name_en,name_ar"),
@@ -93,6 +103,12 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                   // Why this listing cannot go back on the market, in the owner's language.
                   const fails = l.status === "archived" ? gateFailures(l) : [];
                   const blocked = fails.length ? gateReasonsText(fails, ar) : null;
+                  // The availability line is a public claim, so it is shown to the
+                  // lister only where it is actually being made: on a listing that
+                  // is on the market. A paused or draft listing makes no claim to
+                  // anybody, and asking its owner to affirm one would be collecting
+                  // an affirmation nobody reads.
+                  const av = live ? listerAvailability(l.availability_confirmed_at, ar) : null;
                   return (
                     <tr key={l.id}>
                       <td>
@@ -103,6 +119,22 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                             <div className="mono muted" style={{ fontSize: 11 }}>
                               <bdi>{(dmap.get(l.district_id) || "") + (l.area_sqm ? " · " + l.area_sqm + db.m2 : "") + (rent ? " · " + Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : "")}</bdi>
                             </div>
+                            {av && (
+                              <div className="col" style={{ alignItems: "flex-start", gap: 4, marginTop: 7, maxWidth: 330 }}>
+                                {av.publicLine && (
+                                  <div className="mono" style={{ fontSize: 11, color: av.tone, lineHeight: 1.45 }}>
+                                    <bdi>{t.occupiersSee} {av.publicLine}</bdi>
+                                  </div>
+                                )}
+                                <div className="muted" style={{ fontSize: 11, lineHeight: 1.6 }}>{av.note}</div>
+                                {av.worthReaffirming && (
+                                  <AvailabilityReaffirm
+                                    id={l.id}
+                                    t={{ action: t.reaffirm, working: t.reaffirmWorking, done: t.reaffirmDone, failed: t.reaffirmFailed }}
+                                  />
+                                )}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -120,7 +152,10 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
             </table>
           </div>
         )}
-        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>{t.note}</div>
+        <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>
+          <div>{t.note}</div>
+          <div style={{ marginTop: 7 }}>{t.availNote}</div>
+        </div>
       </div>
     </div>
   );

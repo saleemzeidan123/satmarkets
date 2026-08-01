@@ -101,3 +101,87 @@ export function availabilityTone(state: AvailabilityState): string {
   if (state === "aging") return "var(--slate)";
   return "var(--harbor-d)";
 }
+
+// ---------------------------------------------------------------------------
+// The lister's side of the same sentence. PKG-AV2, finding 11.
+// ---------------------------------------------------------------------------
+//
+// PKG-AV1 made the browse card say "Last confirmed 46 days ago" and gave the
+// lister no way to answer it. The rule chosen for this side is that the lister
+// is shown the EXACT sentence an occupier reads, not a private paraphrase of
+// it, and is then told what happens next and on what schedule. A prompt that
+// only said "re-confirm your listing" would be asking for a click. This asks a
+// question the lister can actually answer, because it names the claim being
+// made on their behalf and the date that claim changes.
+//
+// Nothing here decides anything. The thresholds are the same two constants the
+// public label uses, so the two sides of the platform can never drift into
+// telling different people different things about the same timestamp.
+
+export interface ListerAvailability {
+  /** The sentence an occupier reads, or null when the listing carries no availability line at all. */
+  publicLine: string | null;
+  /** The colour that sentence is drawn in, so the lister sees their own copy of it. */
+  tone: string;
+  /** What happens next, and when. */
+  note: string;
+  /** Whether affirming today would change what an occupier reads. */
+  worthReaffirming: boolean;
+}
+
+/** Whole days from an affirmation of `days` old until it crosses `boundary`. Never negative. */
+export function daysUntilBoundary(days: number, boundary: number): number {
+  return Math.max(0, boundary + 1 - days);
+}
+
+export function listerAvailability(
+  confirmedAt: string | null | undefined,
+  ar: boolean,
+  now: number = Date.now(),
+): ListerAvailability {
+  const a = availabilityOf(confirmedAt, now);
+  if (!a) {
+    return {
+      publicLine: null,
+      tone: "var(--slate)",
+      worthReaffirming: true,
+      note: ar
+        ? "لم يُؤكَّد التوفر على هذا العرض من قبل، فلا يظهر للباحثين أي سطر توفر."
+        : "Availability has never been confirmed on this listing, so occupiers see no availability line at all.",
+    };
+  }
+  const publicLine = availabilityShortLabel(a, ar);
+  const tone = availabilityTone(a.state);
+  // `بعد` governs what follows, so the Arabic dual takes the oblique form here
+  // for the same reason `قبل` does above: "بعد يومين", never "بعد 2 يوماً".
+  if (a.state === "fresh") {
+    const left = daysUntilBoundary(a.days, FRESH_MAX_DAYS);
+    return {
+      publicLine,
+      tone,
+      worthReaffirming: false,
+      note: ar
+        ? `يقرأ الباحثون العرض متاحاً. بعد ${formatCounted(left, "day", "ar", { oblique: true })} يظهر عمر التأكيد بدلاً من كلمة متاح.`
+        : `Occupiers read this as available. In ${formatCounted(left, "day", "en")} the line shows the age of the confirmation instead.`,
+    };
+  }
+  if (a.state === "aging") {
+    const left = daysUntilBoundary(a.days, STALE_MIN_DAYS);
+    return {
+      publicLine,
+      tone,
+      worthReaffirming: true,
+      note: ar
+        ? `يرى الباحثون عمر التأكيد لا كلمة متاح. بعد ${formatCounted(left, "day", "ar", { oblique: true })} يُطلب منهم تأكيد التوفر معك.`
+        : `Occupiers are told how old the confirmation is, not that the space is available. In ${formatCounted(left, "day", "en")} they are asked to confirm availability with you.`,
+    };
+  }
+  return {
+    publicLine,
+    tone,
+    worthReaffirming: true,
+    note: ar
+      ? "يُطلب من الباحثين الآن تأكيد التوفر معك قبل التواصل."
+      : "Occupiers are now being told to confirm availability with you before they enquire.",
+  };
+}

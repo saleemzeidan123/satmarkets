@@ -7,6 +7,8 @@ import {
   availabilityShortLabel,
   availabilityAge,
   availabilityTone,
+  daysUntilBoundary,
+  listerAvailability,
   FRESH_MAX_DAYS,
   STALE_MIN_DAYS,
 } from "./availability";
@@ -137,4 +139,123 @@ test("no availability render path composes its own colour", () => {
     assert.equal(/av\.state\s*===/.test(code), false, `${f} still branches on availability state to pick a colour`);
     assert.match(code, /availabilityTone\(/, `${f} does not use the single tone writer`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// PKG-AV2: the lister's side of the same sentence (finding 11).
+// ---------------------------------------------------------------------------
+
+const codeOnly = (src: string) =>
+  src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+
+const digits = (s: string) => (s.match(/\d+/g) || []).join(",");
+
+test("the countdown to a boundary is inclusive of the day it changes, and never negative", () => {
+  assert.equal(daysUntilBoundary(FRESH_MAX_DAYS, FRESH_MAX_DAYS), 1);
+  assert.equal(daysUntilBoundary(FRESH_MAX_DAYS + 1, FRESH_MAX_DAYS), 0);
+  assert.equal(daysUntilBoundary(0, STALE_MIN_DAYS), STALE_MIN_DAYS + 1);
+  assert.equal(daysUntilBoundary(999, STALE_MIN_DAYS), 0);
+});
+
+test("the lister is shown the occupier's sentence rather than a private paraphrase of it", () => {
+  for (const state of STATES) {
+    const a = sample[state]();
+    const at = daysAgo(a.days);
+    for (const ar of [false, true]) {
+      assert.equal(
+        listerAvailability(at, ar, NOW).publicLine,
+        availabilityShortLabel(a, ar),
+        `${state}/${ar ? "ar" : "en"} shows the lister something other than what the card says`,
+      );
+      assert.equal(listerAvailability(at, ar, NOW).tone, availabilityTone(state));
+    }
+  }
+});
+
+test("a listing that has never been confirmed says so, and claims no age", () => {
+  for (const ar of [false, true]) {
+    const la = listerAvailability(null, ar, NOW);
+    assert.equal(la.publicLine, null);
+    assert.equal(la.worthReaffirming, true);
+    assert.equal(digits(la.note), "", "a listing with no confirmation must not be given a day count");
+  }
+});
+
+test("only a fresh affirmation is left alone; every other state is worth answering", () => {
+  assert.equal(listerAvailability(daysAgo(3), false, NOW).worthReaffirming, false);
+  assert.equal(listerAvailability(daysAgo(FRESH_MAX_DAYS), false, NOW).worthReaffirming, false);
+  assert.equal(listerAvailability(daysAgo(FRESH_MAX_DAYS + 1), false, NOW).worthReaffirming, true);
+  assert.equal(listerAvailability(daysAgo(STALE_MIN_DAYS + 1), false, NOW).worthReaffirming, true);
+  assert.equal(listerAvailability(null, false, NOW).worthReaffirming, true);
+});
+
+test("the note counts down to the real threshold, and both locales count the same days", () => {
+  // Fresh: the wording changes the day after FRESH_MAX_DAYS. Aging: the day after
+  // STALE_MIN_DAYS. If these ever disagree with availabilityOf, the lister is being
+  // told a date the public label will not honour.
+  const cases: [number, number][] = [
+    [3, FRESH_MAX_DAYS + 1 - 3],
+    [FRESH_MAX_DAYS, 1],
+    [FRESH_MAX_DAYS + 1, STALE_MIN_DAYS - FRESH_MAX_DAYS],
+    [STALE_MIN_DAYS, 1],
+  ];
+  for (const [age, left] of cases) {
+    const en = listerAvailability(daysAgo(age), false, NOW).note;
+    const ar = listerAvailability(daysAgo(age), true, NOW).note;
+    assert.equal(digits(en), String(left), `English note for a ${age} day old affirmation`);
+    // Arabic spells one and two rather than numbering them (يوم واحد, يومين), which
+    // is the counted-noun rule and not a numeral choice. From three up the figure is
+    // a Western numeral like every other figure on the platform, and it must be the
+    // same figure the English note gives.
+    if (left >= 3) assert.equal(digits(ar), digits(en), `the two locales disagree at ${age} days`);
+    else assert.equal(digits(ar), "", `Arabic numbered a count it should spell at ${age} days`);
+  }
+});
+
+test("a stale affirmation is not given a countdown, because the change has already happened", () => {
+  for (const ar of [false, true]) {
+    assert.equal(digits(listerAvailability(daysAgo(STALE_MIN_DAYS + 1), ar, NOW).note), "");
+  }
+});
+
+test("the lister note carries Western numerals in Arabic, like every other figure", () => {
+  for (const age of [0, 3, FRESH_MAX_DAYS + 5, STALE_MIN_DAYS + 5]) {
+    const la = listerAvailability(daysAgo(age), true, NOW);
+    assert.equal(/[٠-٩]/.test(la.note), false, `Arabic-Indic numeral at ${age} days`);
+    if (la.publicLine) assert.equal(/[٠-٩]/.test(la.publicLine), false);
+  }
+});
+
+test("the Arabic countdown takes the oblique dual, because the preposition governs it", () => {
+  // بعد, like قبل, is followed by the genitive: "بعد يومين", never "بعد 2 يوماً".
+  assert.match(listerAvailability(daysAgo(FRESH_MAX_DAYS - 1), true, NOW).note, /بعد يومين/);
+  assert.match(listerAvailability(daysAgo(STALE_MIN_DAYS - 1), true, NOW).note, /بعد يومين/);
+});
+
+test("every state says something different to the lister in each locale", () => {
+  const notes = new Set<string>();
+  for (const ar of [false, true]) {
+    notes.add(listerAvailability(null, ar, NOW).note);
+    for (const state of STATES) notes.add(listerAvailability(daysAgo(sample[state]().days), ar, NOW).note);
+  }
+  assert.equal(notes.size, 8, "two lister states are saying the same thing");
+});
+
+test("the lister workspace reads availability through the one module and offers the answer only where the claim is made", () => {
+  const page = codeOnly(readFileSync("src/app/[locale]/dashboard/listings/page.tsx", "utf8"));
+  assert.match(page, /availability_confirmed_at/, "the dashboard query does not read the timestamp it renders");
+  assert.match(page, /listerAvailability\(/, "the dashboard composes availability itself instead of using the module");
+  assert.equal(/av\.state\s*===/.test(page), false, "the dashboard branches on availability state");
+  assert.equal(/availabilityTone\(/.test(page), false, "the dashboard reaches past listerAvailability for the colour");
+  // A paused or draft listing makes no public availability claim, so no affirmation
+  // is collected for one.
+  assert.match(page, /live \? listerAvailability\(/, "availability is offered on listings that are not on the market");
+});
+
+test("the re-affirm control moves the timestamp and nothing else, one listing at a time", () => {
+  const c = codeOnly(readFileSync("src/components/AvailabilityReaffirm.tsx", "utf8"));
+  assert.match(c, /method:\s*"PATCH"/);
+  assert.match(c, /JSON\.stringify\(\{\s*availability_confirmed_at:[^}]+\}\)/, "the affirmation carries more than the date");
+  assert.equal(/\.map\(|\.forEach\(/.test(c), false, "a bulk affirmation path appeared; Law 3 says each date is one real event");
+  assert.equal(/\b(?:status|price|title_en|title_ar|ad_permit_no|deal_type)\s*:/.test(c), false, "the affirmation touches a field that is not availability");
 });
