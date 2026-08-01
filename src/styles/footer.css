@@ -54,3 +54,17 @@
   .foot .foot-mid{flex-direction:column;align-items:flex-start;gap:16px;}
   .foot .bottom{flex-direction:column;align-items:flex-start;gap:8px;text-align:left;}
 }
+
+/* PKG-A11Y-1 RC5, finding 139. The footer link columns are the densest stack of
+   touch targets on the site: `display:block` with `padding:5px 0` and a 13px label
+   resolves to about 31px, and on a phone the columns sit two abreast so a missed
+   tap lands on the neighbouring link rather than on nothing. The floor is declared
+   here rather than in the platform stylesheet's coarse-pointer block because
+   `.foot .foot-col a` is (0,2,1) and footer.css is imported last: an equally
+   specific rule written earlier would lose the `display` declaration on source
+   order and the floor would be inert. Finding 86 is the recorded precedent for
+   that exact mistake. Flex is used rather than extra padding so the row keeps its
+   label vertically centred and the column keeps its block stacking. */
+@media (pointer: coarse) {
+  .foot .foot-col a { display:flex; align-items:center; min-height:44px; padding:0; }
+}

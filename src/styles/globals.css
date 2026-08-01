@@ -230,7 +230,14 @@ html, body { overflow-x: clip; }
 .nav-link.active { color:#1C1A15; }
 .nav-link.active::after { transform: scaleX(1); }
 .lang-pill { display:inline-flex; align-items:center; gap:2px; border:1px solid rgba(28,33,38,0.10); border-radius:999px; padding:2px; background:#EEF1F5; }
-.lang-seg { padding:4px 11px; font-size:0.75rem; font-weight:600; letter-spacing:.02em; color: rgba(28,33,38,0.55); border-radius:999px; transition: background .18s ease, color .18s ease; }
+/* PKG-A11Y-1 RC5, finding 139. The inactive segment was rgba(28,33,38,0.55),
+   which composites over the pill background #EEF1F5 to 3.57:1 and fails SC 1.4.3
+   at this size and weight. It rises to the same /65 floor RC2 settled on for
+   muted text, which composites to 4.83:1, so no new grey enters the system and
+   the inactive segment still reads as inactive against the Harbor active one.
+   The 44px touch floor for this control is declared with the rest of the
+   coarse-pointer enumeration in sat-platform.css, not here. */
+.lang-seg { padding:4px 11px; font-size:0.75rem; font-weight:600; letter-spacing:.02em; color: rgba(28,33,38,0.65); border-radius:999px; transition: background .18s ease, color .18s ease; }
 .lang-seg:hover { color: rgba(28,33,38,0.85); }
 .lang-seg.on { background:#3A6EA5; color:#fff; }
 .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; color: rgba(28,33,38,0.6); transition: background .18s ease, color .18s ease; }

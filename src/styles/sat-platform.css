@@ -692,13 +692,54 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    compact desktop UI on precise pointers. min-height/min-width clamp up even where a
    control sets a smaller fixed height inline. Bare text links are intentionally
    excluded; icon-only controls opt in via .icon or [aria-label]. ---- */
+/* PKG-A11Y-1 RC5, findings 139 and 26. The enumeration above was the defect, not
+   the one control it was reported against. Four gaps were measured and all four
+   are closed here.
+
+   One. `.btn` matched the base class only. `.btn-gold`, `.btn-ink` and `.btn-ghost`
+   are used on their own in several places (the header's list-your-space link, the
+   404 and auth-callback returns), so a control that looks exactly like a button
+   was never seen by the floor. The family is enumerated rather than matched with
+   a substring, so a new variant fails the guard test in src/lib/touchTarget.test.ts
+   instead of silently opting out.
+
+   Two. `min-height` does nothing to a non-replaced inline box. Two of the three
+   bare `.btn-gold` anchors are inline, and so is every anchor in a footer column,
+   so the floor would have been declared and had no effect. The families that can
+   be inline are given `display:inline-flex` with centred alignment here, which is
+   also what stops a 44px box from rendering its label jammed against the top edge.
+
+   Three. The icon group set `min-width` and not `min-height`, so a 34px square
+   icon link became 44 wide by 34 tall: wider than it needed to be and still short.
+
+   Four. The site header's controls are Tailwind-only and carry no floor-bearing
+   class at all. Its nav links and account-menu rows resolved to roughly 36 and
+   37px while the menu trigger beside them, being a `button`, was already 44. The
+   header was inconsistent on touch before this rule and is uniform after it.
+   `.site-header a` is used rather than a bespoke hook class because every anchor
+   in the header is an interactive control; there is no prose there. The skip link
+   is not in the header (it is a sibling in src/app/[locale]/layout.tsx) and is
+   deliberately untouched: it is keyboard-only and never receives a touch. */
 @media (pointer: coarse) {
-  button, [role="button"], .btn, .chip, .tabs .t, .seg span, .seg label, .lang, .tabbar a,
-  select, summary, .melink {
+  button, [role="button"], .btn, .btn-gold, .btn-ink, .btn-ghost, .btn-light, .btn-outline,
+  .chip, .tabs .t, .seg span, .seg label, .lang, .lang-seg, .tabbar a,
+  select, summary, .melink, .icon-btn, .site-header a {
     min-height: 44px;
   }
-  button.icon, .btn.icon, button[aria-label], a[aria-label][class] {
+  .btn-gold, .btn-ink, .btn-ghost, .btn-light, .btn-outline, .lang-seg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* The header's own anchors stay block-level flex so that a row which sets
+     `justify-between` keeps its two ends apart; only the cross-axis is claimed. */
+  .site-header a {
+    display: flex;
+    align-items: center;
+  }
+  button.icon, .btn.icon, button[aria-label], a[aria-label][class], .icon-btn {
     min-width: 44px;
+    min-height: 44px;
   }
 }
 
