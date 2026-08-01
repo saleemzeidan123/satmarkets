@@ -10,6 +10,9 @@ import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, 
 import { getDictionary } from "@/i18n/getDictionary";
 import { fill, formatArea, formatInteger, formatRange } from "@/lib/format";
 import EvidencePassport from "@/components/EvidencePassport";
+// RC12, finding 164. See src/lib/motion.ts: the CSS reduced-motion block sets
+// `html{scroll-behavior:auto}`, which an explicit "smooth" never consults.
+import { scrollBehavior } from "@/lib/motion";
 import { advisorQuoteMessage } from "@/lib/advisor/quote";
 import { type PublicQuoteKind } from "@/lib/publicQuote";
 import { statisticLabel } from "@/lib/evidence";
@@ -85,7 +88,7 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
 
  const CHIPS = [av.chipPrice, av.chipBand, av.chipFair, av.chipWatch];
 
- useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy, tool]);
+ useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: scrollBehavior() }); }, [msgs, busy, tool]);
 
  function pickJob(j: (typeof JOBS)[number]) {
   if (j.tool === "value") { setTool("value"); return; }

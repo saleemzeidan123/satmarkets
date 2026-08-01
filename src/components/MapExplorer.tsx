@@ -12,6 +12,9 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { mapLocale } from "@/lib/mapLocale";
 import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
 import { formatInteger, formatRange, formatUnit, type Loc } from "@/lib/format";
+// RC12, finding 164. Selecting a pin scrolls the card rail to the match. Under
+// reduced motion it should arrive, not travel.
+import { scrollBehavior } from "@/lib/motion";
 
 export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
@@ -142,7 +145,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
  function scrollRailTo(id: string) {
   const rail = railRef.current; if (!rail) return;
   const el = rail.querySelector<HTMLElement>(`[data-bid="${id}"]`);
-  if (el) el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  if (el) el.scrollIntoView({ behavior: scrollBehavior(), inline: "center", block: "nearest" });
  }
 
  function recomputeZone() {

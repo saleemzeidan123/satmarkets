@@ -6,6 +6,9 @@ import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satki
 import Reveal from "@/components/Reveal";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
+// RC12, finding 164. The asset rail pages by animating a scroll, which the CSS
+// reduced-motion block cannot reach while the behaviour is stated explicitly.
+import { scrollBehavior } from "@/lib/motion";
 // PKG-FIG2 closure, finding 132. Type only, so nothing server-side is pulled
 // into the client bundle. The prop used to restate this shape by hand, which
 // is how it came to say `stat: "average" | "median" | null` over a producer
@@ -99,7 +102,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   const ro = new ResizeObserver(update); ro.observe(el);
   return () => { el.removeEventListener("scroll", update); el.removeEventListener("wheel", onWheel); ro.disconnect(); };
  }, [deal, ar]);
- const page = (d: number) => { const el = assetRef.current; if (!el) return; const amount = Math.round(el.clientWidth * 0.7); el.scrollBy({ left: (ar ? -d : d) * amount, behavior: "smooth" }); };
+ const page = (d: number) => { const el = assetRef.current; if (!el) return; const amount = Math.round(el.clientWidth * 0.7); el.scrollBy({ left: (ar ? -d : d) * amount, behavior: scrollBehavior() }); };
  const fadeLogical = !atStart && !atEnd ? "both" : atStart && !atEnd ? "end" : atEnd && !atStart ? "start" : "none";
  const fadePhysical = !ar ? fadeLogical : fadeLogical === "end" ? "start" : fadeLogical === "start" ? "end" : fadeLogical;
  useEffect(() => {

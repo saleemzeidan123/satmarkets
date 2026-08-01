@@ -154,7 +154,10 @@ const JOURNEYS = [
 
 /** path:line -> why that fixed pair is allowed to stay. */
 const PAIR_EXEMPT: Record<string, string> = {
-  "src/app/[locale]/advisor/page.tsx:182":
+  /* RC12, finding 164 moved this site three lines down when the advisor page
+     took the scrollBehavior() import. The exemption is re-pointed rather than
+     widened, which is the whole reason it carries a line number. */
+  "src/app/[locale]/advisor/page.tsx:185":
     ".adv-jobs-grid is overridden to a single column at max-width:820px by " +
     "globals.css:412, which fires well above every width at which the pair would be too " +
     "narrow. The inline value is the wide-screen case only.",

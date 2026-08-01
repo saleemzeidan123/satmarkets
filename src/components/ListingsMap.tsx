@@ -81,9 +81,19 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
   const applyRef = useRef<((m: any, id: string | null) => void) | null>(null);
   // Names for the parts of the map that exist only on the canvas. Local and inline,
   // in the pattern this file already uses for the legend below.
+  /* RC12, finding 165: the two legend lines moved in here from inline ternaries in
+     the markup, and each now names its own form. "Solid dot" and "Ring" are stated
+     alongside the meaning, not instead of it, which is the way round SC 1.3.3 asks
+     for: a reader who cannot see the swatch still learns what the two kinds of mark
+     are, and a reader who can see it learns which is which. The Arabic district line
+     also said "منطقة", region, where every other Arabic string on this surface says
+     "حي", district; a legend that renames the thing it is explaining is its own
+     defect. */
   const t3 = ar
-    ? { mapRegion: "خريطة المساحات المعروضة", districtList: "الأحياء على الخريطة", pinList: "المباني على الخريطة", spaces: "مساحة" }
-    : { mapRegion: "Map of listed spaces", districtList: "Districts on the map", pinList: "Buildings on the map", spaces: "spaces" };
+    ? { mapRegion: "خريطة المساحات المعروضة", districtList: "الأحياء على الخريطة", pinList: "المباني على الخريطة", spaces: "مساحة",
+        legendDistrict: "نقطة مصمتة · حي (تقديري)، انقر للتصفية", legendBuilding: "حلقة · مبنى واحد محدد" }
+    : { mapRegion: "Map of listed spaces", districtList: "Districts on the map", pinList: "Buildings on the map", spaces: "spaces",
+        legendDistrict: "Solid dot · district (approximate), click to filter", legendBuilding: "Ring · one exact building" };
 
   useEffect(() => {
     let map: any; let ro: ResizeObserver | undefined;
@@ -144,7 +154,19 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
       m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": MAP.pin } });
-      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": MAP.pin, "circle-radius": 6.5, "circle-stroke-width": 1.5, "circle-stroke-color": MAP.pinStroke, "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
+      /* RC12, finding 165. The exact-building mark is the district bubble inverted:
+         Paper fill, Harbor ring. Before this, both layers painted `circle-color`
+         from `MAP.pin` and `circle-stroke-color` from `MAP.pinStroke`, so the two
+         mark systems were the same colour in the same shape and a reader told them
+         apart by radius alone. Radius is a sensory characteristic and the district
+         bubble's radius is itself data (it scales by count), so at the small end of
+         RADIUS a one-building district and a building were very nearly the same
+         mark. Solid disc with a numeral inside means an aggregate; ring means one
+         building. The radius goes 6.5 to 7 and the stroke 1.5 to 2.5 because a ring
+         needs enough ring to read as one; the mark stays smaller than the smallest
+         bubble, so the size ordering that was doing all the work before is
+         preserved rather than replaced. */
+      m.addLayer({ id: "p-c", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": MAP.exactFill, "circle-radius": 7, "circle-stroke-width": 2.5, "circle-stroke-color": MAP.exactRing, "circle-opacity": P_FADE as any, "circle-stroke-opacity": P_FADE as any } });
       m.addLayer({ id: "p-hit", type: "circle", source: "p", minzoom: 11.5, paint: { "circle-color": MAP.hit, "circle-opacity": 0, "circle-radius": 16 } });
       applySelected(m, selectedRef.current);
     };
@@ -361,12 +383,18 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
             has actually changed. */}
         <button type="button" onClick={searchThisArea} aria-disabled={!moved} className="btn" style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 8, background: "var(--paper)", color: "var(--harbor)", border: "1px solid var(--silver)", boxShadow: "var(--sh-2)", fontWeight: 600, opacity: moved ? 1 : 0.55, cursor: moved ? "pointer" : "default" }}>{t2.searchArea}</button>
         <button type="button" ref={closeRef} className="btn primary lst-map-close" onClick={() => setOpen(false)}>{t2.closeMap}</button>
-        {/* Legend: names the two mark types so a click is never a mystery. Bubbles are
-            district centroids (approximate); green dots are exact building points. */}
+        {/* Legend: names the two mark types so a click is never a mystery, and since
+            RC12 (finding 165) it also names the FORM of each, because a legend whose
+            two swatches differ only in size is telling the reader to compare sizes.
+            The swatches mirror the canvas exactly: a solid Harbor disc for a district
+            aggregate, a Paper disc with a Harbor ring for one building. The comment
+            that used to sit here called the building marks "green dots", which they
+            have not been since the palette module took the value and D14 settled that
+            a pin is a location, not a verification. */}
         <div style={{ position: "absolute", insetInlineStart: 10, bottom: 10, background: "rgba(255,255,255,.94)", border: "1px solid var(--silver)", borderRadius: 8, padding: "7px 10px", fontSize: "0.71875rem", color: "var(--ink)", display: "grid", gap: 5, boxShadow: "var(--sh-1)", zIndex: 6 }}>
-          <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 13, height: 13, borderRadius: "50%", background: "var(--harbor)", border: "2px solid var(--on-brand)", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "منطقة (تقديري) · انقر للتصفية" : "District (approx.) · click to filter"}</span>
+          <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span aria-hidden="true" style={{ width: 13, height: 13, borderRadius: "50%", background: "var(--harbor)", border: "2px solid var(--on-brand)", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{t3.legendDistrict}</span>
           {pins.length > 0 && (
-            <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span style={{ width: 11, height: 11, borderRadius: "50%", background: "var(--harbor)", border: "1.5px solid var(--on-brand)", boxShadow: "0 0 0 1px var(--silver)", flex: "none" }} />{ar ? "مبنى محدد" : "Exact building"}</span>
+            <span style={{ display: "flex", gap: 7, alignItems: "center" }}><span aria-hidden="true" style={{ width: 13, height: 13, borderRadius: "50%", background: "var(--paper)", border: "2.5px solid var(--harbor)", flex: "none" }} />{t3.legendBuilding}</span>
           )}
         </div>
       </div>

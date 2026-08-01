@@ -57,6 +57,25 @@ export const MAP = {
   clusterSmall: BRAND.azureLight,
   clusterMid: BRAND.clusterNeutral,
   clusterLarge: BRAND.harbor,
+  /* RC12, finding 165. A district bubble and an exact building pin were both a
+     Harbor disc with a Paper stroke, so the only thing separating "one building"
+     from "a district containing this many buildings" was radius. Radius is a
+     sensory characteristic (SC 1.3.3) and hue is a colour (SC 1.4.1), and the two
+     marks shared the second and differed only in the first.
+
+     The exact-building mark is now the district bubble INVERTED: Paper fill,
+     Harbor ring. Solid disc means an aggregate and carries its count as a
+     numeral; ring means a single building. That difference survives greyscale,
+     every form of colour blindness and a 34-pixel-to-7-pixel size change, and it
+     costs the map nothing visually, because a ring reads as a point marker more
+     clearly than a filled dot does at this radius.
+
+     These are deliberately named roles rather than reuses of `pinStroke` and
+     `pin`, even though they resolve to the same two values today. The next
+     surface that needs the distinction should ask for the distinction, not
+     re-derive it from two roles that happen to be swappable. */
+  exactFill: BRAND.paper,
+  exactRing: BRAND.harbor,
   labelInk: BRAND.inkWarm,
   labelHalo: BRAND.paper,
   hit: "#000000",

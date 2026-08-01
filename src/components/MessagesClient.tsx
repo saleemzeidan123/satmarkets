@@ -3,6 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+// RC12, finding 164. A message thread scrolls on every new message, so an
+// unconditional smooth scroll is the most repeated animation in the product.
+import { scrollBehavior } from "@/lib/motion";
 
 export type ConvRow = {
   id: string;
@@ -89,7 +92,7 @@ export default function MessagesClient({
     return () => { cancelled = true; };
   }, [active]);
 
-  useEffect(() => { ref.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs]);
+  useEffect(() => { ref.current?.scrollTo({ top: 9e9, behavior: scrollBehavior() }); }, [msgs]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();

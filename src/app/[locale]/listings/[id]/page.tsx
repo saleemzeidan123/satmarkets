@@ -569,7 +569,36 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                     <iframe src={v.embedUrl} title={(dict as any).ld.videoTour} allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowFullScreen loading="lazy" referrerPolicy="strict-origin-when-cross-origin" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }} />
                   </div>
                 ) : v.kind === "file" ? (
-                  <video controls preload="none" src={v.src} style={{ width: "100%", borderRadius: 10, maxHeight: 440, background: "#000" }} />
+                  /* RC12, finding 170. SC 1.2.2 asks for captions on prerecorded
+                     synchronised media, and this branch cannot satisfy it today: the
+                     video URL is lister-supplied at upload time, no ingest path
+                     collects or stores a caption file, and there is no column on the
+                     listing record to hold one, so there is nothing for a `<track>`
+                     element to point at. Rendering an empty `<track>` would assert a
+                     captions track that does not exist, which is worse than the
+                     defect it pretends to fix.
+
+                     What ships instead is the truth, stated where it is useful. A
+                     reader who depends on captions learns before pressing play that
+                     this video has none, rather than after. The note is deliberately
+                     bare: it does not claim the written description carries the same
+                     information, because nobody has checked that a given lister's
+                     video says nothing the text does not.
+
+                     The `<video>` also had no accessible name at all, so a screen
+                     reader announced the player as "video". The iframe branch above
+                     has carried a `title` since it was written; this one now carries
+                     the same string.
+
+                     170 stays OPEN in the register. Captions are a content and ingest
+                     commitment, not a markup change, and the remaining work is named
+                     in the register row: a caption field on the listing media record,
+                     an upload path that accepts a WebVTT file per language, and an
+                     authored track per video in English and Arabic. */
+                  <>
+                    <video controls preload="none" src={v.src} title={(dict as any).ld.videoTour} aria-label={(dict as any).ld.videoTour} style={{ width: "100%", borderRadius: 10, maxHeight: 440, background: "#000" }} />
+                    <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>{(dict as any).ld.videoNoCaptions}</div>
+                  </>
                 ) : (
                   <a href={v.href} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}>{(dict as any).ld.watchVideo}</a>
                 )}

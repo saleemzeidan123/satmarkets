@@ -741,10 +741,142 @@ to every table in the platform moved no layout; the radio probe PASS at 5 groups
 both languages. Automated source scan and browser-emulated measurement in Chromium.
 Not a physical device, not an actual screen reader, not independently audited.
 
-**RC12. Media and motion, findings 170, 164 and 165.** A listing video with no
-captions track; a map flight animation as a JavaScript duration no reduced-motion
-query reaches; and district bubbles and building pins sharing fill and shape, so
-colour is the only carrier.
+Live, on the deployed production build at `3cf25b4`. `/en/pricing` and `/ar/pricing`
+both serve one `<div class="scrollx">` holding one `<table class="matrix">` whose
+first child is `<caption class="sronly">`, carrying the same visible heading the
+page prints above it: "Compare every limit" in English and the Arabic heading in
+Arabic. Six `scope="col"` header cells and thirteen `scope="row"` row headers in
+each language, identical counts, which is the parity evidence. The Arabic document
+is `dir="rtl"`. The built stylesheet at `/_next/static/css/474ae437c98c595c.css`
+contains `.scrollx{overflow-x:auto;max-width:100%;min-width:0;` and
+`.scrollx:focus-visible{outline:2px solid var(--azure);outline-offset:-2px}`, and
+`table.dt{width:100%;border-collapse:collapse}` with no `display` declaration on a
+`.dt` table at any width in the whole bundle, which is finding 148 closed against
+the artefact the browser actually loads rather than against the source that
+produced it.
+
+**RC12, slice P, done. Findings 164, 165 and 170.** A map flight animation as a
+JavaScript duration no reduced-motion query reaches; district bubbles and building
+pins sharing fill and shape, so colour is the only carrier; and a listing video
+with no captions track.
+
+Three findings, three different honest dispositions, and the differences are the
+substance of the slice.
+
+164's recorded diagnosis was wrong, and finding that out changed what got fixed.
+The row named the two `m.flyTo({ ..., duration: 650 })` calls in `ListingsMap.tsx`
+and observed, correctly, that there is no `matchMedia` call anywhere in that file
+and that the CSS reduced-motion block only zeroes custom properties MapLibre never
+reads. Both statements are true and the conclusion drawn from them is not, because
+the evidence is in the dependency rather than in our source.
+`node_modules/maplibre-gl/dist/maplibre-gl.js` at 4.7.1 defines `flyTo` as
+`if(!t.essential&&o.prefersReducedMotion){...return this.jumpTo(a,i)}`, has `easeTo`
+set `duration` to zero under the same condition, guards drag inertia with the same
+flag, and resolves `prefersReducedMotion` through a live
+`matchMedia("(prefers-reduced-motion: reduce)")` getter. A `flyTo` with a duration
+and no `essential: true` is therefore already an instantaneous jump for a reader who
+has asked for reduced motion. Rewriting those call sites would have added a second,
+weaker copy of a check the library performs correctly, which the operating rules
+forbid, so the register entry was corrected rather than obeyed.
+
+The class of defect is real, and looking for it properly found five live instances
+the row never named. `globals.css` line 295 sets `html{scroll-behavior:auto}` under
+the preference, which reads like coverage and is not: that declaration only decides
+what `behavior: "auto"` means, and `"auto"` is the default. A call that passes
+`behavior: "smooth"` states its own behaviour and the CSS property is never
+consulted. Five call sites did exactly that, for every reader, regardless of the
+setting: both chat transcripts, the advisor page transcript, the marketing asset
+rail's paging buttons and the map explorer's rail-to-selection sync. The transcripts
+are the worst of them, because a thread scrolls on every message and the animation
+therefore repeats for the whole length of a conversation. That is SC 2.3.3.
+
+The repair is one function. `src/lib/motion.ts` exports `prefersReducedMotion()` and
+`scrollBehavior()`, and all five sites now ask for a behaviour instead of stating
+one. It reads the query at call time rather than caching it at import, for the same
+reason MapLibre reads its getter live: the preference is an operating-system setting
+a reader can change while the page is open, and a value captured once would hold the
+answer from before they changed it. There is no React state and no listener, on
+purpose; nothing needs to re-render, and the next scroll simply asks again. It
+answers false on the server, false where `matchMedia` is absent and false if the
+query throws, because an unanswerable question about a preference is not a
+preference and defaulting to "reduce" would strip motion from readers who never
+asked for it, which is a different defect rather than a safe one. The guard is a
+source rule, since no CSS can see this: outside `motion.ts` the literal must not
+appear, and no camera call may pass `essential`, which is the single flag that would
+opt a `flyTo` back out of MapLibre's own handling. A third guard pins maplibre to 4.x
+and asserts both guard strings are present in the installed bundle, so if the
+dependency moves, the correction above has to be re-read before it can be trusted
+again.
+
+165 is fixed as recorded, and the repair is an inversion rather than a recolour.
+Adding a second hue would have moved the meaning from one colour to two colours,
+which SC 1.4.1 asks us not to do. Instead the exact-building mark became the
+district bubble turned inside out: Paper fill, Harbor ring, against the district's
+solid Harbor disc. A solid disc carrying a numeral means an aggregate; a ring means
+one building. That difference survives greyscale, every form of colour blindness and
+the whole 34-pixel-to-7-pixel range, which matters because the bubble's radius is
+itself data, so at the small end of the ramp a district holding one space and a
+single building were very nearly the same mark. The pin stays under the ramp's floor
+of 16, so the size ordering the map has always had is preserved rather than replaced,
+and the radius went 6.5 to 7 with the stroke 1.5 to 2.5 only because a ring needs
+enough ring to read as one. Two named palette roles, `exactFill` and `exactRing`,
+carry it rather than a reuse of `pinStroke` and `pin`, even though they resolve to the
+same two values today: the next surface that needs the distinction should ask for the
+distinction, not re-derive it from two roles that happen to be swappable.
+
+The legend was the other half of 165 and it needed more than a swatch swap. Both
+swatches are now the same 13px and differ by fill, so nothing in the legend is told
+apart by size any more, and both are `aria-hidden` because the text beside them says
+everything they say. The two strings moved out of inline ternaries into the
+component's `t3` object, and each now names its own form alongside its meaning:
+"Solid dot / district (approximate), click to filter" and "Ring / one exact
+building", with "نقطة مصمتة" and "حلقة" in Arabic. Naming the sensory characteristic
+alongside the meaning is the way round SC 1.3.3 asks for, and it is the opposite of
+what the old legend did, which was to draw two Harbor discs at 13px and 11px and
+leave a reader to compare two sizes with nothing between them. The Arabic district
+line also said "منطقة", region, where every other Arabic string on the surface says
+"حي"; a legend that renames the thing it is explaining is its own defect, and it is
+corrected here.
+
+`MapExplorer` was read and deliberately left alone, which is a decision rather than
+an omission. Its two mark systems are clusters and single points, they already differ
+by label, a count numeral against a price, and by colour family, a stepped neutral
+ramp against the asset-type categorical scale, and it has no legend at all. Adding a
+shape difference to a surface with nothing to name it would have introduced an
+unnamed sensory difference rather than removed one.
+
+170 stays open, and that is the honest answer rather than a deferral. SC 1.2.2 wants
+captions on prerecorded synchronised media, and there is nothing for a `<track>`
+element to point at: the video URL is lister-supplied at upload time, no ingest path
+collects or stores a caption file, and no column on the listing record could hold
+one. Emitting an empty `<track>` would assert a captions track that does not exist,
+which is worse than the defect it pretends to fix. What shipped is the part that
+could be true today. The `<video>` had no accessible name at all, so a screen reader
+announced it as "video"; it now carries `title` and `aria-label` from the same
+`ld.videoTour` string the YouTube and Vimeo branch beside it has always used. And a
+new bilingual line tells a reader who depends on captions that there are none before
+they press play rather than after. That line is deliberately bare: it does not claim
+the written description carries the same information, because nobody has checked that
+a given lister's video says nothing the text does not, and inferring that claim from
+the route type is exactly what owner ruling 3 forbids. The remaining work is named in
+the register row so it can be scheduled rather than rediscovered: a caption field on
+the listing media record, an upload path accepting a WebVTT file per language,
+validation that the file is a real cue list, and an authored track per video in both
+languages.
+
+Evidence: typecheck clean; 1655 tests passing, 14 of them new guards on this slice;
+`ar-lint: clean`; prose GATE 0 in 0 files; the reflow probe returning PASS over the
+same 14 viewport renders with track widths numerically identical to the RC7 baseline;
+the radio probe PASS at 5 groups in both languages. One stale line-number exemption in
+`reflow.test.ts` was re-pointed rather than widened, because the advisor page moved
+three lines when it took the import, and a line-keyed exemption that is not re-pointed
+silently starts excusing whatever moved into that line. Automated source scan,
+dependency-bundle read and browser-emulated measurement in Chromium. Not a physical
+device, not an actual screen reader, not independently audited. The reduced-motion
+behaviour under a real operating-system setting, and the two map marks as a reader
+actually sees them at 400 percent zoom, are independent-verification items; the map's
+non-visual path remains the two lists beside it, which already name districts and
+buildings separately.
 
 ## Bucket 2: journey-specific defects
 

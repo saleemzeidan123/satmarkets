@@ -8,6 +8,10 @@ import { listingTitle } from "@/lib/listingTitle";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { getDictionary } from "@/i18n/getDictionary";
 import { netArea, askingPrice } from "@/lib/listingFigures";
+// RC12, finding 164. An explicit `behavior: "smooth"` overrides the CSS
+// reduced-motion block, so the transcript scroll asks for the reader's
+// preference instead of stating a behaviour on their behalf.
+import { scrollBehavior } from "@/lib/motion";
 
 /** Floating SAT Advisor: a Harbor quadrant-mark button on every page,
  *  bottom sheet on mobile, corner panel on desktop. Same /api/advisor
@@ -31,7 +35,7 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
 
  const hidden = /\/(advisor|flyer|termsheet|verify|admin|dashboard|signup)(\/|$)/.test(path);
 
- useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: "smooth" }); }, [msgs, busy, open]);
+ useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: scrollBehavior() }); }, [msgs, busy, open]);
 
  useEffect(() => {
   if (!open) return;
