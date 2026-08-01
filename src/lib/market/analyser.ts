@@ -1,13 +1,20 @@
 // Pure logic for the Advisor deal-and-lease analyser (PKG-0B, Codex corrections).
 // Extracted from the page component so it can be regression-tested directly:
 // human labels (never internal keys), localized rate units, a hardened numeric
-// guard, non-implicit segment selection, and the bilingual result sentence with
-// the sample-range wording kept separate from the REGA average attribution.
+// guard, non-implicit segment selection, and the bilingual result sentence.
+//
+// FINDING 91. THIS FILE NO LONGER NAMES A SOURCE.
+//
+// The deal check used to end both languages with the rent index attribution,
+// composed here from a stored column with no licence consulted. It ran in the
+// browser, on a row the client had been handed, which is the furthest possible
+// point from the decision that knows whether the figure may be attributed at
+// all. The sentence now ends at the period and the indicative note; the source
+// clause, when there is one to make, arrives on the gate.
 
 import { assetLabel, segmentLabel } from "@/lib/labels";
 import { isSqmYear } from "@/lib/market/verdict";
 import { formatPeriod } from "@/lib/market/period";
-import { rentIndexSource } from "@/lib/market/attribution";
 
 export type Band = { low: number; average: number; high: number };
 
@@ -133,13 +140,13 @@ export function analyseDeal(input: DealInput): DealResult | null {
     const dAr = rate === average ? "عند المتوسط تماماً" : rate < average ? `أقل من المتوسط بنحو ${dm}%` : `أعلى من المتوسط بنحو ${dm}%`;
     text = `فحص الصفقة: ${spaceL}، ${input.locationLabel}، عند ${fmt(rate)} ${unitL}. ${vAr} (${fmt(low)} إلى ${fmt(high)}، المتوسط ${fmt(average)})، ${dAr}.` +
       (annual ? ` عند ${fmt(size!)} م² يعادل نحو ${fmt(annual)} ريال سنوياً.` : "") +
-      ` ${periodL}، ${rentIndexSource(true, ": ")}. استرشادي وليس نصيحة.`;
+      ` ${periodL}. استرشادي وليس نصيحة.`;
   } else {
     const vEn = verdict === "within" ? "sits within the sample indicative range" : verdict === "below" ? "sits below the sample indicative range" : "sits above the sample indicative range";
     const dEn = rate === average ? "exactly at the average" : rate < average ? `about ${dm}% below the average` : `about ${dm}% above the average`;
     text = `Deal check: ${spaceL}, ${input.locationLabel}, at ${fmt(rate)} ${unitL}. That ${vEn} (${fmt(low)} to ${fmt(high)}, average ${fmt(average)}), ${dEn}.` +
       (annual ? ` At ${fmt(size!)} m² that is about ${fmt(annual)} SAR a year.` : "") +
-      ` ${periodL}, ${rentIndexSource(false, ": ")}. Indicative, not advice.`;
+      ` ${periodL}. Indicative, not advice.`;
   }
   return { text, band, quoted: rate, verdict };
 }

@@ -17,7 +17,6 @@
 
 import { assetLabel } from "@/lib/labels";
 import { formatPeriod, parsePeriod } from "@/lib/market/period";
-import { rentIndexSourceLabel } from "@/lib/market/attribution";
 
 /** Whether the answer is built from the period the user actually asked for. */
 export type PeriodStatus = "match" | "unavailable" | "none";
@@ -30,7 +29,12 @@ export type PeriodRequest = {
 
 export type ValueEvidence = {
   evidenceId: string;              // the rent_index_published row id
-  source: string;                  // canonical source string as stored
+  // FINDING 91. There is no `source` here any more. This object described a row
+  // and, in the same breath, asserted its provenance, and the assertion was a
+  // default: a row with an empty column was handed the rent index authority's
+  // name. Provenance is a licence question and this file cannot ask one, so it
+  // no longer answers one. `rentIndexQuoteGate` decides the name beside the
+  // figure, and `advisorQuoteMessage` appends it to what this file composes.
   period: string;
   requestedPeriod: string | null;  // only ever a period the user explicitly asked for
   periodStatus: PeriodStatus;
@@ -123,7 +127,6 @@ export function buildValueEvidence(
   const pr: PeriodRequest = periodRequest ?? { requested: null, status: "none" };
   return {
     evidenceId: row.id,
-    source: row.source || "REGA Rental Index (Ejar)",
     period: row.period,
     requestedPeriod: pr.requested,
     periodStatus: pr.requested ? pr.status : "none",
@@ -225,10 +228,13 @@ export function arPeriodPhrase(period: string | null | undefined): string {
   return `${formatPeriod(p, true).replace(/\s*\d{4}\s*$/, "")} من عام ${parsed.year}`;
 }
 
-// Owner ruling 2. The source name is not written here any more. The Arabic form
-// composed at this line named no authority while its English twin named REGA, so
-// both now come from the one canonical constant.
-const sourceLabel = (source: string, ar: boolean): string => rentIndexSourceLabel(source, ar);
+// FINDING 91. THE SOURCE LABEL USED TO BE COMPOSED HERE, AND IS NOT ANY MORE.
+//
+// Owner ruling 2 had already pulled the two languages onto one canonical
+// constant, which fixed a divergence and left the deeper problem: a renderer
+// that names a source is a renderer asserting a right it never checked. The
+// name now travels on the gate, beside the figure, and this file writes the
+// figure only.
 
 function position(ev: ValueEvidence): "below" | "within" | "above" | null {
   if (ev.userFigure === null) return null;
@@ -244,7 +250,6 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
   const asset = assetLabel(ev.assetType, locale);
   const assetLower = ar ? asset : asset.toLowerCase();
   const unit = unitLabel(ev.unit, ar);
-  const src = sourceLabel(ev.source, ar);
   const period = displayPeriod(ev.period, ar);
   // Arabic prose forms: the definite asset noun, the period as a phrase, and the
   // two range shapes ("يتراوح ... بين ... و..." for the answer proper, "يمتد هذا
@@ -283,13 +288,13 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
     if (ar) {
       // "الفئة A" so the preposition attaches as بالفئة A, never as بـفئة A.
       const grade = ev.requestedSegmentLabelAr ? `ال${ev.requestedSegmentLabelAr}` : "تلك الفئة";
-      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً ${arPrefix("ب", grade)} في ${loc}. يغطي النطاق المنشور قطاع ${arAsset} ككل، وليس درجةً بعينها، لذلك لا يمكنني تقديمه كنطاق ${grade}. وكسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، في ${arPeriod}.${posSentence()} المصدر: ${src}.`;
+      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً ${arPrefix("ب", grade)} في ${loc}. يغطي النطاق المنشور قطاع ${arAsset} ككل، وليس درجةً بعينها، لذلك لا يمكنني تقديمه كنطاق ${grade}. وكسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، في ${arPeriod}.${posSentence()}`;
     }
-    return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. As general market context, that band runs ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
+    return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. As general market context, that band runs ${bandPhrase}, for ${period}.${posSentence()}`;
   }
 
   if (ar) {
-    return `${lead}يتراوح نطاق مؤشر الإيجارات ${arPrefix("ل", arAsset)} في ${loc} ${arBetween}، في ${arPeriod}.${posSentence()} المصدر: ${src}.`;
+    return `${lead}يتراوح نطاق مؤشر الإيجارات ${arPrefix("ل", arAsset)} في ${loc} ${arBetween}، في ${arPeriod}.${posSentence()}`;
   }
-  return `${lead}The Rent Index ${assetLower} band for ${loc} is ${bandPhrase}, for ${period}.${posSentence()} Source: ${src}.`;
+  return `${lead}The Rent Index ${assetLower} band for ${loc} is ${bandPhrase}, for ${period}.${posSentence()}`;
 }

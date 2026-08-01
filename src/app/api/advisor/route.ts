@@ -9,7 +9,6 @@ import { readNumericIntent } from "@/lib/market/numericIntent";
 import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
 import { allowedSources, userHistory } from "@/lib/advisor/history";
 import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
-import { rentIndexSourceLabel } from "@/lib/market/attribution";
 import { type RentIndexCell, rentIndexQuoteGate, withheldGate } from "@/lib/rentIndexEvidence";
 import { advisorQuoteMessage } from "@/lib/advisor/quote";
 import { getSourceRightsOrNull } from "@/lib/queries/sourceRights";
@@ -72,9 +71,14 @@ async function resolveDistrictId(supabase: any, name?: string | null): Promise<s
 // registered rental contracts. It used to say the figures came from JLL, CBRE and
 // Knight Frank. They did not, and all three forbid republication of their research
 // without written permission, so the Advisor may not name them.
-// Owner ruling 2. This used to carry its own escaped Arabic literal, a third
-// spelling of the source that named no authority. One canonical constant now.
-const srcLabel = (s: string, arabic: boolean): string => rentIndexSourceLabel(s, arabic);
+// FINDING 91. THE ROUTE NO LONGER SPELLS A SOURCE.
+//
+// Owner ruling 2 had already collapsed three spellings into one constant. What
+// remained was that the route decided, on its own, that a stored column was a
+// provenance worth printing: the watch answer appended "Source X" from
+// `band.source` whatever the licence said, and the value answer shipped the same
+// column in its payload. Both now read `sourceText` off the gate that decided
+// the figure, so the name and the number are one decision or neither is present.
 
 // Law 3 (structural): block any rent, price, or market figure in free-text
 // model output that is not present in the allowed source (the user's own words
@@ -345,7 +349,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       mode: "value",
       message,
-      band: toPublicSegment(band as IndexRowLike),
+      band: toPublicSegment(band as IndexRowLike, gate.sourceText),
       // The server is the ONLY place a user figure is identified. The client used to
       // re-parse the question with the same naive first-number regex, so it drew the
       // "your rate" marker on the chart from a year or an area even after the prose
@@ -463,8 +467,8 @@ export async function POST(req: NextRequest) {
       ? advisorQuoteMessage(
           wGate,
           arq
-            ? `${noted} خط الأساس هو نطاق المؤشر الحالي، ${baseline}. ${tail} المصدر ${srcLabel(band.source, true)}.`
-            : `${noted} The baseline is the current Rent Index band, ${baseline}. ${tail} Source ${srcLabel(band.source, false)}.`
+            ? `${noted} خط الأساس هو نطاق المؤشر الحالي، ${baseline}. ${tail}`
+            : `${noted} The baseline is the current Rent Index band, ${baseline}. ${tail}`
         )
       : `${noted} ${wGate.statement ?? ""} ${tail}`.replace(/\s+/g, " ").trim();
     return NextResponse.json({
@@ -473,7 +477,7 @@ export async function POST(req: NextRequest) {
       // Codex item 2 again. `toPublicSegment` carries the average and both band
       // ends, so it is a figure leaving the server and is omitted outright when
       // the decision withheld one. The client already guards on its absence.
-      ...(wGate.mayShowFigure ? { band: toPublicSegment(band as IndexRowLike) } : {}),
+      ...(wGate.mayShowFigure ? { band: toPublicSegment(band as IndexRowLike, wGate.sourceText) } : {}),
       threshold,
       saved,
       quote: wGate.kind,

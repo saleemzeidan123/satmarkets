@@ -1,6 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { num, validBand, spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, analyseDeal, unitKind, isKnownUnit } from "./analyser";
+import { RENT_INDEX_SOURCE } from "./attribution";
+
+// The needles come from the canonical constant rather than being typed here.
+// attribution.test.ts scans every source file for a citation of the index that
+// is not the full attribution, and a literal "Index (Ejar)" written as an
+// assertion argument is indistinguishable, to that scan, from a composer that
+// writes one. Deriving it also means a future rewording of the canonical clause
+// cannot leave this guard testing a string nothing says any more.
+const CITES = (s: string) =>
+  s.includes(RENT_INDEX_SOURCE.en) ||
+  s.includes(RENT_INDEX_SOURCE.ar) ||
+  /REGA|Ejar/i.test(s) ||
+  /\u0625\u064a\u062c\u0627\u0631/.test(s);
 
 // PKG-0B regression coverage for the Advisor analyser (Codex correction 5).
 
@@ -136,12 +149,16 @@ test("analyseDeal returns null on invalid rate or band", () => {
   assert.equal(analyseDeal({ ...baseInput, band: { band_low: 3, average: 2, high: 1 }, ar: false }), null);
 });
 
-test("analyseDeal English result: human labels, localized unit, sourced average separate from sample range", () => {
+test("analyseDeal English result: human labels, localized unit, and no attribution of its own", () => {
   const r = analyseDeal({ ...baseInput, ar: false })!;
   assert.ok(r, "expected a result");
   assert.ok(r.text.startsWith("Deal check: Retail & F&B, Al Olaya, Riyadh, at 2,100 SAR/m²/year."));
   assert.ok(r.text.includes("sits within the sample indicative range"));
-  assert.ok(r.text.includes("REGA Rental Index (Ejar): average of registered rental contracts"));
+  // Finding 91. The analyser no longer names a source. The gate decides whether
+  // a figure may be shown and, if so, under whose name, and the caller appends
+  // that one decided clause. A sentence that carries its own attribution can
+  // disagree with the passport printed beside it.
+  assert.equal(CITES(r.text), false, r.text);
   // No internal key, no raw ASCII unit in the sentence.
   assert.ok(!r.text.includes("|"));
   assert.ok(!r.text.includes("SAR/m2/yr"));
@@ -154,7 +171,9 @@ test("analyseDeal Arabic result mirrors English with Arabic wording, Western num
   const r = analyseDeal({ ...baseInput, locationLabel: "العليا، الرياض", ar: true })!;
   assert.ok(r.text.startsWith("فحص الصفقة: تجزئة ومطاعم، العليا، الرياض، عند 2,100 ريال/م²·سنة."), r.text.slice(0, 90));
   assert.ok(r.text.includes("يقع ضمن النطاق الاسترشادي التجريبي"));
-  assert.ok(r.text.includes("المؤشر الإيجاري للهيئة العامة للعقار (إيجار): متوسط العقود المسجّلة"));
+  // Finding 91, the Arabic half. Bilingual parity here means both languages are
+  // equally silent about provenance, not that both invent the same clause.
+  assert.equal(CITES(r.text), false, r.text);
   assert.ok(!r.text.includes("|"));
   assert.ok(!r.text.includes("SAR/m2/yr"));
   assert.ok(r.text.includes("2,180")); // Western numerals

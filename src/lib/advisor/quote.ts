@@ -47,9 +47,20 @@ import type { RentIndexQuoteGate } from "../rentIndexEvidence";
  */
 export function advisorQuoteMessage(gate: RentIndexQuoteGate, figureSentence: string): string {
   if (!gate.mayShowFigure) return gate.statement ?? figureSentence;
-  if (!gate.statement) return figureSentence;
-  const s = figureSentence.trim();
-  return s.endsWith(".") || s.endsWith("،") || s.endsWith("؟") || s.endsWith("!")
-    ? `${s} ${gate.statement}`
-    : `${s}. ${gate.statement}`;
+  // Finding 91. The attribution is appended here rather than composed upstream.
+  // `renderValue` used to print a source clause of its own, built from the row's
+  // stored column with the rent index authority as a default, which is how a
+  // synthetic figure came to be attributed to a party that never published it.
+  // The composer now writes the figure and nothing about where it came from; the
+  // decision writes the provenance. Order is figure, then source, then statement,
+  // so a reader meets the number, learns who stands behind it, and is told what
+  // kind of number it is, in that order.
+  const parts = [figureSentence.trim(), gate.proseSource, gate.statement].filter(
+    (p): p is string => typeof p === "string" && p.length > 0,
+  );
+  return parts.reduce((acc, p) =>
+    acc.endsWith(".") || acc.endsWith("،") || acc.endsWith("؟") || acc.endsWith("!")
+      ? `${acc} ${p}`
+      : `${acc}. ${p}`,
+  );
 }

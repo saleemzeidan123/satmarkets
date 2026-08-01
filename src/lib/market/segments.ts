@@ -43,7 +43,20 @@ export type PublicIndexSegment = {
   source: string | null;
 };
 
-export function toPublicSegment(row: IndexRowLike): PublicIndexSegment {
+/**
+ * FINDING 91. THE SECOND ARGUMENT IS REQUIRED, AND THE REQUIREMENT IS THE POINT.
+ *
+ * This mapper used to serialise `row.source`, the stored column, which is what
+ * we read and not what we may say. A synthetic row whose column happened to
+ * hold a registered id therefore shipped that id to every API consumer as the
+ * provenance of a number the source never published, with no licence consulted.
+ *
+ * `sourceText` comes from `rentIndexQuoteGate`, beside the figure it describes.
+ * It is a required parameter rather than an optional one because an optional
+ * parameter leaves the old path reachable, and because the compiler is the only
+ * reviewer that visits every call site.
+ */
+export function toPublicSegment(row: IndexRowLike, sourceText: string): PublicIndexSegment {
   return {
     district_label: row.district_label,
     district_label_ar: row.district_label_ar ?? null,
@@ -55,6 +68,8 @@ export function toPublicSegment(row: IndexRowLike): PublicIndexSegment {
     average: row.median,
     unit: row.unit,
     period: row.period,
-    source: row.source ?? null,
+    // Never `row.source`. The stored string is what we read; this is what we may
+    // say, and the two are different questions.
+    source: sourceText,
   };
 }

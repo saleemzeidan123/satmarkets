@@ -85,8 +85,9 @@ import { type Loc, formatInteger, resolveUnitKey } from "./format";
 import { parsePeriod } from "./market/period";
 import { REGA_RENT_INDEX_SOURCE_ID } from "./sources/catalogue";
 import type { SourceRights } from "./sourceRights";
-import { type PublicEvidenceView, publicEvidenceView } from "./evidenceView";
-import { type PublicQuoteKind, quoteStatement } from "./publicQuote";
+import { type PublicEvidenceView, publicEvidenceView, publicSourceText } from "./evidenceView";
+import { type PublicQuoteKind, SOURCE_NOT_DISCLOSED, quoteStatement } from "./publicQuote";
+import { rentIndexSourceLabel } from "./market/attribution";
 
 // ---------------------------------------------------------------------------
 // The row
@@ -390,7 +391,61 @@ export type RentIndexQuoteGate = {
    * travels as `statement`, in the prose, where a reader will actually meet it.
    */
   readonly passports: readonly PublicEvidenceView[];
+  /**
+   * The name a surface is permitted to print beside the figure, already in the
+   * reader's language.
+   *
+   * FINDING 91. ADV-1E made the FIGURE decision canonical and left the SOURCE
+   * NAME ungoverned, so every composer was free to write its own clause and one
+   * of them did: the deployed Advisor attributed a synthetic Al Olaya row to the
+   * rent index authority in prose, directly above an Evidence Passport, in the
+   * same response, that called the number sample data and carried a null source.
+   * The name is now decided here, once, beside the figure it belongs to, so a
+   * surface cannot obtain one without the other.
+   *
+   * Where no figure may be shown this is the not-disclosed phrase, never the
+   * withheld party's name. Codex item 4: if the source cannot legally be
+   * disclosed, it is not disclosed, and an object carrying a name is an object
+   * somebody will read the name off.
+   */
+  readonly sourceText: string;
+  /**
+   * The complete source sentence, or null when there is none to make.
+   *
+   * Finding 91. Prose surfaces used to assemble "Source: X." themselves, which
+   * is how a composer with no access to the decision came to write a clause the
+   * decision would have refused. Null whenever the figure is not shown, and also
+   * whenever `statement` already says everything a reader needs, so that a
+   * sample figure is not given a source line that repeats its own label back.
+   */
+  readonly proseSource: string | null;
 };
+
+/**
+ * The name, decided.
+ *
+ * A registered source is mapped onto its canonical clause, which is the only
+ * place on the platform allowed to spell the rent index attribution, so that a
+ * stored id and a printed name cannot drift apart. Everything else falls to
+ * `publicSourceText`, which is the single writer of source names and already
+ * knows when a figure is genuinely ours, when it is a labelled sample, and when
+ * the party may not be named at all.
+ */
+function gateSourceText(lead: PublicEvidenceView | null, ar: boolean): string {
+  if (!lead) return SOURCE_NOT_DISCLOSED[ar ? "ar" : "en"];
+  if (lead.source) {
+    const canonical = rentIndexSourceLabel(lead.source.id, ar);
+    if (canonical !== lead.source.id) return canonical;
+  }
+  return publicSourceText(lead, ar);
+}
+
+/** The clause, assembled once, in the reader's language. */
+function gateProseSource(sourceText: string, statement: string | null, mayShow: boolean, ar: boolean): string | null {
+  if (!mayShow) return null;
+  if (statement !== null && statement === sourceText) return null;
+  return ar ? `المصدر: ${sourceText}.` : `Source: ${sourceText}.`;
+}
 
 /**
  * `rights` is nullable and the null is load bearing, for the reason
@@ -410,18 +465,49 @@ export function rentIndexQuoteGate(
     views.find((v) => v.field === "rent_index_band") ??
     null;
 
-  const kind: PublicQuoteKind = lead ? lead.quote : "unavailable";
-  const mayShowFigure = kind === "authorized_public" || kind === "labelled_sample";
+  // FINDING 91, SECOND HOLE. THE QUOTE DECISION IS NOT THE ONLY DECISION.
+  //
+  // `decidePublicQuote` and `publishability` run beside each other in
+  // `publicEvidenceView`, and a figure survives only if BOTH allow it: the view's
+  // `value` is null whenever either says no. This gate read only the first of
+  // them. A passport that `publishability` had emptied still reported
+  // `authorized_public`, so `mayShowFigure` came back true, `passports` came back
+  // empty because the non-null filter removed the very view the decision was read
+  // from, and `proseSource` offered an attribution for a figure no passport was
+  // willing to carry. A surface following the gate would have printed a number it
+  // composed itself, attributed, with no evidence beneath it: Codex item 5's
+  // "the prose and the passport must never disagree", disagreeing.
+  //
+  // So the value's actual presence is part of the decision. Where the lead
+  // passport carries no value, the answer is `withheld`, which is the honest
+  // word: the row holds a figure and the public may not have it. `unavailable` is
+  // reserved for the case where there is no figure to begin with, and conflating
+  // the two would tell a reader the market has no number when what happened is
+  // that we may not show ours.
+  const leadKind: PublicQuoteKind = lead ? lead.quote : "unavailable";
+  const leadAllows = leadKind === "authorized_public" || leadKind === "labelled_sample";
+  const carried = lead !== null && lead.value !== null;
+  const kind: PublicQuoteKind = leadAllows && !carried ? "withheld" : leadKind;
+  const mayShowFigure = leadAllows && carried;
+  const ar = opts.locale === "ar";
+  const statement = quoteStatement(kind, ar);
+  // Finding 91. The name fails closed with the figure: where no figure may be
+  // shown there is no attribution to make, and the withheld source is not named
+  // even internally on this object, because an object that carries a name is an
+  // object somebody will read the name off.
+  const sourceText = mayShowFigure ? gateSourceText(lead, ar) : SOURCE_NOT_DISCLOSED[ar ? "ar" : "en"];
 
   return {
     kind,
     mayShowFigure,
-    statement: quoteStatement(kind, opts.locale === "ar"),
+    statement,
     // The same non-null filter the Advisor route has always applied, kept for
     // the same reason: a view whose value was withheld is not evidence for a
     // figure. Under this gate a withheld view cannot occur beside a shown figure
     // anyway, because the shown figure and the view come out of one decision.
     passports: mayShowFigure ? views.filter((v) => v.value !== null) : [],
+    sourceText,
+    proseSource: gateProseSource(sourceText, statement, mayShowFigure, ar),
   };
 }
 
@@ -432,5 +518,7 @@ export function withheldGate(locale: Loc): RentIndexQuoteGate {
     mayShowFigure: false,
     statement: quoteStatement("unavailable", locale === "ar"),
     passports: [],
+    sourceText: SOURCE_NOT_DISCLOSED[locale === "ar" ? "ar" : "en"],
+    proseSource: null,
   };
 }

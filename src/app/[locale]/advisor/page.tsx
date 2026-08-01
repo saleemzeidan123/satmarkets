@@ -23,7 +23,7 @@ import { statisticLabel } from "@/lib/evidence";
 // written once, server side, in the reader's language. Rendering the figure and
 // dropping the statement would put the label back at the mercy of a component,
 // which is the shape finding 90 took.
-type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string; quote?: string; statement?: string | null };
+type SegRow = { district_label: string; district_label_ar: string | null; district_id: string | null; asset_type: string; segment: string; band_low: string; band_high: string; average: string; unit: string; period: string; source: string; quote?: string; statement?: string | null; proseSource?: string | null };
 
 const XIcon = ({ size = 16 }: { size?: number }) => (
  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
@@ -129,6 +129,12 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
     mayShowFigure: true,
     statement: activeRow.statement ?? null,
     passports: [],
+    // Finding 91. The source text and the clause arrive on the row, decided by
+    // the same gate that decided the figure. The client composes neither: it
+    // used to end this sentence with an attribution the analyser built from the
+    // stored column, in a browser, with no licence in reach.
+    sourceText: activeRow.source,
+    proseSource: activeRow.proseSource ?? null,
    },
    res.text,
   );

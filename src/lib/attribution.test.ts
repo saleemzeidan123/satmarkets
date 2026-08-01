@@ -5,6 +5,57 @@ import { join } from "node:path";
 import { RENT_INDEX_SOURCE, RENT_INDEX_BASIS, rentIndexSource, rentIndexSourceLabel } from "@/lib/market/attribution";
 import { buildValueEvidence, renderValue, detectRequestedSegment } from "@/lib/market/valueEvidence";
 import { analyseDeal } from "@/lib/market/analyser";
+import { type RentIndexCell, rentIndexQuoteGate } from "@/lib/rentIndexEvidence";
+import { advisorQuoteMessage } from "@/lib/advisor/quote";
+import { SAMPLE_STATEMENT } from "@/lib/publicQuote";
+import type { SourceRights } from "@/lib/sourceRights";
+import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
+
+/**
+ * Strip comments before scanning a file for a string it must not say.
+ *
+ * The scans below look for a citation of the Rent Index that is not the full
+ * attribution. A comment explaining why a composer no longer writes one has to
+ * quote the thing it is explaining, and a comment that wraps the canonical
+ * clause across a newline leaves half of it behind, which reads to the scan as
+ * an unattributed citation. Neither reaches a user. What reaches a user is code.
+ */
+const codeOnly = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+
+const okRights = (over: Partial<SourceRights> = {}): SourceRights => ({
+  sourceId: REGA_RENT_INDEX_SOURCE_ID,
+  storagePolicy: "full",
+  redisplayPolicy: "public",
+  derivedDisplayPolicy: "public",
+  exportPolicy: "public",
+  aiRetrievalPolicy: "public",
+  modelInputPolicy: "none",
+  rightsStatus: "evidenced",
+  stopCondition: null,
+  reviewedAt: null,
+  reviewedNote: null,
+  ...over,
+});
+
+const GEO_EN = "Al Olaya, Riyadh";
+const GEO_AR = "العليا، الرياض";
+const geo = (loc: "en" | "ar") => (loc === "ar" ? GEO_AR : GEO_EN);
+
+const cell = (over: Partial<RentIndexCell> = {}): RentIndexCell => ({
+  district_id: "d1",
+  asset_type: "office",
+  segment: "all",
+  unit: "sar_sqm_yr",
+  period: "2026-Q2",
+  median: 1420,
+  band_low: 1250,
+  band_high: 1590,
+  sufficient: true,
+  stat_kind: "average",
+  data_class: "real",
+  is_demo: false,
+  ...over,
+});
 
 // Codex remediation Batch 1: Law 8. The Rent Index is derived from the REGA
 // Rental Index (Ejar) only. Public copy must never attribute figures to JLL,
@@ -75,7 +126,13 @@ test("the composed sentences and the shipped dictionary say the same words", () 
   // so a future dictionary edit cannot silently split the two apart again.
   for (const loc of ["en", "ar"] as const) {
     const d = JSON.parse(readFileSync(join("src", "i18n", "dictionaries", `${loc}.json`), "utf-8"));
-    assert.equal(d.advisor.sourceRega, RENT_INDEX_SOURCE[loc], `${loc}.advisor.sourceRega`);
+    // Finding 91. `advisor.sourceRentIndex` is the shipped attribution, and it
+    // carries the statistical basis as well as the owner, so the identity check
+    // lives here now. `advisor.sourceRega` was a bare authority name a component
+    // could print beside any figure; it is now a sentence about permission, and
+    // asserting it no longer names REGA is what stops it drifting back.
+    assert.equal(d.advisor.sourceRentIndex, rentIndexSource(loc === "ar"), `${loc}.advisor.sourceRentIndex`);
+    assert.equal(d.advisor.sourceRega.includes(RENT_INDEX_SOURCE[loc]), false, `${loc}.advisor.sourceRega: ${d.advisor.sourceRega}`);
     assert.equal(d.building.bandSource, RENT_INDEX_SOURCE[loc], `${loc}.building.bandSource`);
   }
 });
@@ -112,22 +169,58 @@ const ROW = {
   source: "rcri",
 };
 
-test("the rendered band names REGA in both languages, on both value branches", () => {
+test("the rendered band names no source on its own, and names REGA once the gate has authorized it", () => {
   const supported = buildValueEvidence(ROW, null, null)!;
   const mismatch = buildValueEvidence(ROW, detectRequestedSegment("Grade A office in Al Olaya"), null)!;
   assert.equal(mismatch.supportStatus, "segment_mismatch", "the fixture must exercise the scope-refusal branch");
+  // Finding 91. renderValue used to append the attribution unconditionally, on
+  // every branch, including for a synthetic row whose own passport said the
+  // opposite in the same response. The sentence is now silent about provenance.
   for (const ev of [supported, mismatch]) {
-    assert.ok(renderValue(ev, "en").includes(rentIndexSource(false)), renderValue(ev, "en"));
-    assert.ok(renderValue(ev, "ar").includes(rentIndexSource(true)), renderValue(ev, "ar"));
-    // The live Arabic defect, stated as the thing that must not happen.
-    assert.ok(renderValue(ev, "ar").includes("هيئة العامة للعقار"), "the Arabic band named no authority");
+    for (const loc of ["en", "ar"] as const) {
+      const t = renderValue(ev, loc);
+      assert.equal(t.includes(RENT_INDEX_SOURCE[loc]), false, t);
+      assert.equal(t.includes(RENT_INDEX_BASIS[loc]), false, t);
+    }
+  }
+  // And the authority is still named, once, when the gate has authorized it.
+  for (const loc of ["en", "ar"] as const) {
+    const g = rentIndexQuoteGate(cell(), { locale: loc, geography: geo(loc) }, okRights());
+    assert.equal(g.mayShowFigure, true, `${loc}: the authorized fixture must show a figure`);
+    const msg = advisorQuoteMessage(g, renderValue(supported, loc));
+    assert.ok(msg.includes(RENT_INDEX_SOURCE[loc]), msg);
+    assert.equal(msg.split(RENT_INDEX_SOURCE[loc]).length - 1, 1, `${loc}: the authority is named more than once`);
+  }
+  // The live Arabic defect, stated as the thing that must not happen.
+  const arMsg = advisorQuoteMessage(
+    rentIndexQuoteGate(cell(), { locale: "ar", geography: GEO_AR }, okRights()),
+    renderValue(supported, "ar"),
+  );
+  assert.ok(arMsg.includes("هيئة العامة للعقار"), "the Arabic answer named no authority");
+});
+
+test("a sample band is never attributed to REGA, in either language", () => {
+  // The deployed defect: a synthetic row whose passport read "Sample data for
+  // product testing" was introduced in prose as a REGA figure. One decision now
+  // produces both, so the two cannot disagree.
+  for (const loc of ["en", "ar"] as const) {
+    const g = rentIndexQuoteGate(
+      cell({ data_class: "synthetic", is_demo: true }),
+      { locale: loc, geography: geo(loc) },
+      okRights(),
+    );
+    assert.equal(g.kind, "labelled_sample", loc);
+    const msg = advisorQuoteMessage(g, "1,420");
+    assert.ok(msg.includes(SAMPLE_STATEMENT[loc]), msg);
+    assert.equal(msg.includes(RENT_INDEX_SOURCE[loc]), false, msg);
+    assert.equal(g.proseSource, null, `${loc}: a sample figure carries no source clause`);
   }
 });
 
-test("the deal check names REGA in both languages", () => {
+test("the deal check names no source, because the caller cannot decide one", () => {
   const base = { rate: "2100", size: "300", band: { band_low: 1800, average: 2180, band_high: 2400 }, unit: "SAR/m2/yr", assetType: "retail", segment: "all", locationLabel: "Al Olaya, Riyadh", period: "2026-Q2" };
-  assert.ok(analyseDeal({ ...base, ar: false })!.text.includes(rentIndexSource(false, ": ")));
-  assert.ok(analyseDeal({ ...base, locationLabel: "العليا، الرياض", ar: true })!.text.includes(rentIndexSource(true, ": ")));
+  assert.equal(analyseDeal({ ...base, ar: false })!.text.includes(RENT_INDEX_SOURCE.en), false);
+  assert.equal(analyseDeal({ ...base, locationLabel: GEO_AR, ar: true })!.text.includes(RENT_INDEX_SOURCE.ar), false);
 });
 
 test("no source file names the Rent Index without naming the authority", () => {
@@ -137,7 +230,7 @@ test("no source file names the Rent Index without naming the authority", () => {
   const offenders: string[] = [];
   for (const [path, text] of sourceFiles(SRC)) {
     if (SCAN_EXEMPT.has(path)) continue;
-    if (text.split(RENT_INDEX_SOURCE.ar).join("").includes("(إيجار)")) offenders.push(path);
+    if (codeOnly(text).split(RENT_INDEX_SOURCE.ar).join("").includes("(إيجار)")) offenders.push(path);
   }
   assert.deepEqual(offenders, [], `these files name the Rent Index without the REGA attribution: ${offenders.join(", ")}`);
 });
@@ -236,7 +329,7 @@ test("no source file cites the Rent Index in English without naming the authorit
   const offenders: string[] = [];
   for (const [path, text] of sourceFiles(SRC)) {
     if (SCAN_EXEMPT.has(path)) continue;
-    if (text.split(RENT_INDEX_SOURCE.en).join("").includes(INDEX_CITATION.en)) offenders.push(path);
+    if (codeOnly(text).split(RENT_INDEX_SOURCE.en).join("").includes(INDEX_CITATION.en)) offenders.push(path);
   }
   assert.deepEqual(offenders, [], `these files cite the Rent Index in English without REGA: ${offenders.join(", ")}`);
 });

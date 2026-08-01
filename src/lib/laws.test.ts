@@ -137,9 +137,15 @@ test("law: the public Rent Index payload exposes the figure as average, never me
   // avg_rent; source_registry: "Publishes AVERAGES, not medians"). The mapper is
   // the boundary; the route must use it.
   const row = { district_label: "Al Olaya", district_label_ar: "العليا", district_id: "d1", asset_type: "office", segment: "grade_a", band_low: 1800, band_high: 2900, median: 2400, unit: "SAR/m2/yr", period: "2026-Q2", source: "rega_ejar" };
-  const pub = toPublicSegment(row) as Record<string, unknown>;
+  // Finding 91. The second argument is the gate's decided source text. It is
+  // required so no caller can serialise `row.source`, which is what we read, in
+  // place of what we may say. The stored value here is "rega_ejar" and the
+  // decided text is deliberately different, so the assertion below fails if the
+  // mapper ever falls back to the column.
+  const pub = toPublicSegment(row, "Sample data for product testing. Not a published market figure.") as Record<string, unknown>;
   assert.equal(pub.average, 2400);
   assert.ok(!("median" in pub), "public segment payload must not expose a median key");
+  assert.equal(pub.source, "Sample data for product testing. Not a published market figure.", "the payload source must be the decided text, never the stored column");
   const segmentsRoute = readFileSync(join(ROOT, "app/api/index/segments/route.ts"), "utf8");
   assert.ok(segmentsRoute.includes("toPublicSegment"), "segments route must map rows through toPublicSegment");
   const advisorRoute = readFileSync(join(ROOT, "app/api/advisor/route.ts"), "utf8");

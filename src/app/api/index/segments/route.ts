@@ -91,7 +91,17 @@ export async function GET(req: Request) {
       withheld += 1;
       continue;
     }
-    segments.push({ ...toPublicSegment(row as IndexRowLike), quote: gate.kind, statement: gate.statement });
+    // Finding 91. `sourceText` replaces the stored `source` column, and
+    // `proseSource` travels with the row because the client composes a deal
+    // check sentence from it and must not write its own attribution. Both come
+    // out of the same gate as `quote` and `statement`, so a consumer reading
+    // this array cannot assemble a figure and a source that disagree.
+    segments.push({
+      ...toPublicSegment(row as IndexRowLike, gate.sourceText),
+      quote: gate.kind,
+      statement: gate.statement,
+      proseSource: gate.proseSource,
+    });
     // Codex item 3: sample data stays identified as sample data wherever the
     // figure goes, including into a payload a component will render without
     // reading this file. The statement travels on the row AND is collected here
