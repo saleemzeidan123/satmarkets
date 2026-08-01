@@ -80,7 +80,15 @@ export default async function DashboardLayout({
 
   return (
     <div className="dash">
-      <aside className="dside">
+      {/* Findings 143 and 161. This was an `<aside>` wrapping a `<div className="dnav">`,
+          so the eight destinations every signed-in lister reaches the product through
+          exposed a complementary landmark and no navigation one: a screen-reader user
+          jumping by landmark found nothing to jump to on any page under /dashboard.
+          The element is now the landmark, which also keeps the brand link, the account
+          link and sign-out inside it rather than stranding them outside every region.
+          It is visually inert: every rule in the dashboard shell keys on `.dside`,
+          `.dnav`, `.me` and `.brand`, and none on the element name. */}
+      <nav className="dside" aria-label={db.navRailLabel}>
         <div className="brand"><Link href={`/${lp}`} aria-label="SAT Markets"><Logo size={26} rev /></Link></div>
         <DashNav
           locale={lp}
@@ -103,11 +111,17 @@ export default async function DashboardLayout({
           </Link>
           <SignOutButton locale={lp} label={dict.login.signOut} />
         </div>
-      </aside>
+      </nav>
       <div className="dmain">
         <div className="dtopbar">
           <div>
-            <h1>{acctName}</h1>
+            {/* Finding 155. This was an `<h1>`, and it wraps every route under
+                /dashboard, so each page announced the account name as its first
+                heading and then its own real title second. The account name is not
+                what the page is about; it is the same on all of them. It keeps the
+                display face through `.font-display`, which is the same declaration
+                the `h1` was matching, in both scripts. */}
+            <div className="acct font-display">{acctName}</div>
             <div className="sub">{acctRole}</div>
           </div>
           <span style={{ flex: 1 }} />

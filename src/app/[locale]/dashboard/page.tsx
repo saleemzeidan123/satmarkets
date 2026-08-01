@@ -203,6 +203,16 @@ export default async function DashboardPage({ params }: { params: { locale: stri
 
  return (
   <>
+   {/* Finding 155. This page had no heading of its own at all. The only `h1` on it came
+       from the dashboard shell and read the account name, which is the same on every
+       route, so a reader navigating by heading learned nothing about where they were.
+       The shell's heading is gone and the page states its own title, in the pattern the
+       listings and enquiries surfaces already use. */}
+   <div style={{ marginBottom: 16 }}>
+    <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{db.navOverview}</h1>
+    <div className="muted" style={{ fontSize: "0.8125rem", marginTop: 3 }}>{ar ? "قائمتك ونشاطك وعروضك." : "Your queue, your activity and your inventory."}</div>
+   </div>
+
    {/* NEEDS ATTENTION. The whole top of the page, derived from real signals. */}
    <div className="dpanel" style={{ overflow: "hidden" }}>
     <div className="ph"><span style={{ color: "var(--harbor)" }}><Icon.inbox size={17} /></span><span className="t">{ar ? "يحتاج انتباهك" : "Needs your attention"}</span></div>

@@ -71,13 +71,28 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
     : s === "requested" ? "var(--amber-d)"
     : "var(--slate)";
 
+  // Finding 155. The page title was an `h2` on the populated branch and did not exist
+  // at all on the empty one, because the only `h1` came from the dashboard shell and
+  // read the account name. One title block now serves both branches, so the page has
+  // exactly one first-level heading whatever state it is in, and the empty state gets
+  // the heading it never had.
+  const head = (
+    <div>
+      <h1 style={{ fontSize: "1.375rem", fontWeight: 700, letterSpacing: "-.01em", margin: 0 }}>{t.title}</h1>
+      <div className="sub">{t.sub}</div>
+    </div>
+  );
+
   if (!rows.length) {
     return (
-      <div style={{ display: "grid", placeItems: "center", padding: "64px 24px" }}>
-        <div style={{ textAlign: "center", maxWidth: 460 }}>
-          <div style={{ fontSize: "1.125rem", fontWeight: 600 }}>{t.emptyT}</div>
-          <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 8 }}>{t.emptyB}</p>
-          <Link href={`/${lp}/dashboard/listings`} className="btn secondary" style={{ marginTop: 16 }}>{t.browse}</Link>
+      <div className="col gap14">
+        {head}
+        <div style={{ display: "grid", placeItems: "center", padding: "48px 24px" }}>
+          <div style={{ textAlign: "center", maxWidth: 460 }}>
+            <h2 style={{ fontSize: "1.125rem", fontWeight: 600, margin: 0 }}>{t.emptyT}</h2>
+            <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.7, marginTop: 8 }}>{t.emptyB}</p>
+            <Link href={`/${lp}/dashboard/listings`} className="btn secondary" style={{ marginTop: 16 }}>{t.browse}</Link>
+          </div>
         </div>
       </div>
     );
@@ -85,10 +100,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
 
   return (
     <div className="col gap14">
-      <div>
-        <h2 style={{ fontSize: "1.125rem", margin: 0 }}>{t.title}</h2>
-        <div className="sub">{t.sub}</div>
-      </div>
+      {head}
 
       <div className="card" style={{ padding: 0, overflow: "hidden" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.84375rem" }}>

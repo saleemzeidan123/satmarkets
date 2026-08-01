@@ -376,7 +376,15 @@ a.rowlink::after{content:"";position:absolute;inset:0;z-index:0;}
 table.dt .rowact{position:relative;z-index:1;}
 .dmain{flex:1;min-width:0;}
 .dtopbar{display:flex;align-items:center;gap:14px;padding:16px 30px;background:var(--paper);border-bottom:1px solid var(--silver);}
-.dtopbar h1{font-size:1.1875rem;font-weight:700;letter-spacing:-.01em;margin:0;}
+/* Finding 155. The topbar account name is no longer an `h1`, so this rule can no
+   longer key on one. The element carries `.font-display`, which is the same
+   declaration in globals.css that gave the heading its serif face in English and
+   its Arabic face under `[dir="rtl"]`, so the type is unchanged in both scripts.
+   One rendering does move, deliberately: the global mobile block below declares a
+   bare `h1{font-size:clamp(1.625rem,8vw,2.5rem)!important}`, which was inflating a
+   compact topbar label to as much as 2.5rem on a phone. It now matches the desktop
+   size at every width. */
+.dtopbar .acct{font-size:1.1875rem;font-weight:700;letter-spacing:-.01em;margin:0;}
 .dtopbar .sub{font-size:0.78125rem;color:var(--slate);margin-top:2px;}
 .dbody{padding:24px 30px 40px;}
 .dsearch{display:flex;align-items:center;gap:9px;background:var(--cool);border:1px solid var(--silver);border-radius:9px;padding:8px 12px;min-width:200px;color:var(--slate-2);font-size:0.8125rem;}

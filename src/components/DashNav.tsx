@@ -12,6 +12,20 @@ export type NavItem = { key: string; label: string; href?: string; badge?: numbe
 
 // The dashboard highlighted whichever item happened to be first in the array, so it
 // always claimed you were on Overview. It follows the route now.
+//
+// Finding 161. The landmark this component's links belong to is supplied by the
+// dashboard shell, which is a single `<nav aria-label>` wrapping the brand link, this
+// item list and the account and sign-out controls. It is deliberately NOT declared
+// here as well: a `<nav>` inside a `<nav>` is two navigation landmarks over one set of
+// destinations, and the second one would be unnamed.
+//
+// The item list is also deliberately not a `<ul>`. Below 900px `.dnav` becomes a
+// horizontal scroller, `flex-direction:row` with `flex:none` on each link, and a list
+// wrapper only keeps that layout through `display:contents`, which is the pattern known
+// to strip list semantics in some assistive technology. That trade buys an item count
+// and costs the layout and, in some readers, the semantics it was added for. The
+// destinations are already announced: each is a link inside a named navigation region,
+// and the current one carries `aria-current="page"` below.
 export default function DashNav({ locale, items }: { locale: string; items: NavItem[] }) {
   const path = usePathname() || "";
   const base = `/${locale}/dashboard`;
