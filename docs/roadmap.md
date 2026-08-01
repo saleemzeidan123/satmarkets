@@ -1787,7 +1787,21 @@ The select was widened to `*` before the count line was written, and the reason 
 file so it is not narrowed again for performance.
 
 Gates. `tsc --noEmit` clean, 1513 tests pass, `ar-lint` clean, `prose-scan` gate zero on public page
-source with the deferred BASE count unchanged at 366.
+source with the deferred BASE count unchanged at 366. Shipped as `44a143f`, built to production as
+`dpl_8ghGvXwiLToJZDwxVbCGqZFUcQQM` on `satmarkets-d134yxarx-sat-markets.vercel.app`, READY. That
+deployment also carries `d2d2fb5`, the PKG-LS2 closure commit for which GitHub never fired a
+deployment, so the READY gate PKG-LS2 was owed is now satisfied by this build rather than by its own.
+
+Live evidence on that deployment. `GET /api/listings` returns HTTP 200 and the same fifty rows with
+the same zeroes, which is the before measurement anchored on the build that carries the fix rather
+than on an earlier one. The public listing page renders in both languages, `/ar` at `lang="ar"
+dir="rtl"` and `/en`, both `noindex, nofollow`, and neither carries a single string from this package:
+zero occurrences of the panel heading, the facts on file line, the map label or the SAT assessment
+note in either language, and zero Arabic-Indic digits. That is the D24 boundary tested rather than
+asserted. The PKG-LS2 facets re-confirm on the same build, Arabic `الارتفاع الصافي (م) الأدنى`,
+`أبواب التحميل الأدنى`, `الطاقة (ك.ف.أ) الأدنى` and English `Clear height (m) min`, `Dock doors min`,
+`Power (kVA) min`, with the unitless middle field as the control in both and zero Latin unit
+leakage.
 
 Honest limits. The public endpoint carries no media count, so the photo and photo set checks read
 missing because the channel cannot decide them, not because it proved them absent; the `incomplete`
