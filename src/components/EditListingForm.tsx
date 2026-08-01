@@ -12,9 +12,23 @@ import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from 
 //
 // The registry renderer here is a deliberate sibling of the Listing Studio's:
 // same registry, same field types, dashboard styling instead of the Studio's.
+//
+// PKG-LS1. Both languages, in both title and description. Until this package the
+// form had one title box and one description box, both writing the English
+// columns, under labels that were translated into whatever language the lister
+// was reading. An Arabic-reading lister was therefore shown a box labelled
+// "العنوان" and their Arabic sentence was stored as the English title. The same
+// screen had just been given a PKG-NM1 notice telling them an Arabic reader sees
+// a generic description of their space, with no field on the page able to answer
+// it. `PATCH /api/listings/[id]` had accepted `title_ar` and `description_ar`
+// behind the same permission check the whole time, so nothing but the form was
+// missing. Labels now name their language, and the inputs carry the `dir` and
+// `lang` of the text they hold rather than of the interface around them.
 type Init = {
   title_en: string;
+  title_ar: string;
   description_en: string;
+  description_ar: string;
   area_sqm: string;
   price: string;
   deal_type: string;
@@ -35,9 +49,12 @@ const sectionLabel = (s: DisplaySection, ar: boolean): string => {
 };
 
 export default function EditListingForm({
-  id, locale, assetType, init, initAttrs,
+  id, locale, assetType, init, initAttrs, titleArBehind = false, descArBehind = false,
 }: {
   id: string; locale: string; assetType: string; init: Init; initAttrs: Record<string, unknown>;
+  /** The stored Arabic was written against English that has since changed. Decided on the server by `arabicIsBehind`, which is silent when the record cannot answer. */
+  titleArBehind?: boolean;
+  descArBehind?: boolean;
 }) {
   const ar = locale === "ar";
   const router = useRouter();
@@ -59,7 +76,11 @@ export default function EditListingForm({
   const hint: React.CSSProperties = { fontSize: 11, color: "var(--slate)", marginTop: 4, opacity: 0.8 };
 
   const t = ar ? {
-    title: "العنوان", desc: "الوصف", area: "المساحة (م²)",
+    titleEn: "العنوان بالإنجليزية", titleAr: "العنوان بالعربية",
+    descEn: "الوصف بالإنجليزية", descAr: "الوصف بالعربية",
+    arTitleHint: "إذا تركته فارغاً، يرى القارئ بالعربية وصفاً موجزاً للمساحة بدل عنوان كتبته أنت.",
+    behind: "كُتب هذا النص استناداً إلى نسخة إنجليزية سابقة، وقد لا يطابق ما هو منشور الآن.",
+    area: "المساحة (م²)",
     price: init.deal_type === "lease" ? "الإيجار المطلوب (ريال/م²·سنة)" : "سعر البيع (ريال)",
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
@@ -68,7 +89,11 @@ export default function EditListingForm({
     missing: "أكمل الحقول المطلوبة: ",
     chLabels: { whatsapp: "واتساب", call: "اتصال", email: "بريد", message: "رسالة عبر سات" } as Record<string, string>,
   } : {
-    title: "Title", desc: "Description", area: "Size (m²)",
+    titleEn: "English title", titleAr: "Arabic title",
+    descEn: "English description", descAr: "Arabic description",
+    arTitleHint: "Left empty, an Arabic reader is shown a short description of the space instead of a title you wrote.",
+    behind: "This was written against an earlier English version, so it may no longer match what is published.",
+    area: "Size (m²)",
     price: init.deal_type === "lease" ? "Asking rent (SAR/m²·yr)" : "Sale price (SAR)",
     phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
@@ -147,7 +172,9 @@ export default function EditListingForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           title_en: f.title_en,
+          title_ar: f.title_ar,
           description_en: f.description_en,
+          description_ar: f.description_ar,
           area_sqm: f.area_sqm,
           price: f.price,
           video_url: f.video_url,
@@ -170,12 +197,26 @@ export default function EditListingForm({
   return (
     <form onSubmit={save} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div>
-        <label style={lbl}>{t.title}</label>
-        <input style={inp} value={f.title_en} onChange={(e) => set("title_en", e.target.value)} required />
+        <label style={lbl} htmlFor="title_en">{t.titleEn}</label>
+        <input id="title_en" dir="ltr" lang="en" style={inp} value={f.title_en} onChange={(e) => set("title_en", e.target.value)} required />
       </div>
       <div>
-        <label style={lbl}>{t.desc}</label>
-        <textarea style={{ ...inp, minHeight: 92, resize: "vertical" }} value={f.description_en} onChange={(e) => set("description_en", e.target.value)} />
+        <label style={lbl} htmlFor="title_ar">{t.titleAr}</label>
+        <input id="title_ar" dir="rtl" lang="ar" style={inp} value={f.title_ar} onChange={(e) => set("title_ar", e.target.value)} />
+        {/* Not the Studio's "SAT drafts it from the English" line: only the Studio
+            calls the translate route, so on this screen that would be a promise
+            nothing keeps. What is true here is what an Arabic reader actually
+            gets when the field is empty. */}
+        <p style={hint}>{titleArBehind ? t.behind : t.arTitleHint}</p>
+      </div>
+      <div>
+        <label style={lbl} htmlFor="description_en">{t.descEn}</label>
+        <textarea id="description_en" dir="ltr" lang="en" style={{ ...inp, minHeight: 92, resize: "vertical" }} value={f.description_en} onChange={(e) => set("description_en", e.target.value)} />
+      </div>
+      <div>
+        <label style={lbl} htmlFor="description_ar">{t.descAr}</label>
+        <textarea id="description_ar" dir="rtl" lang="ar" style={{ ...inp, minHeight: 92, resize: "vertical" }} value={f.description_ar} onChange={(e) => set("description_ar", e.target.value)} />
+        {descArBehind && <p style={hint}>{t.behind}</p>}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div>

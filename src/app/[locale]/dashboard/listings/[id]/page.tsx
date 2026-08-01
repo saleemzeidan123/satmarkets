@@ -13,6 +13,8 @@ import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
 import { listingDimensionState, verifiedBadgeText } from "@/lib/listingVerification";
 import { intakeFields } from "@/lib/assetFields";
 import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
+import { arabicIsBehind } from "@/lib/listingArabic";
+import { hashSource } from "@/lib/translate/hash";
 
 const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 
@@ -134,6 +136,20 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   const otherLoc: "en" | "ar" = ar ? "en" : "ar";
   const otherMissing = titleMissingIn(L, otherLoc);
   const otherShown = otherMissing ? listingTitle(L, otherLoc) : "";
+  // PKG-LS1. Whether the Arabic on the row still answers the English on it. The
+  // comparison is the one `/api/listings/[id]/translate` makes when it decides
+  // what to rewrite, so the lister is not told a field is current on a row the
+  // translator is about to overwrite. Hashed here rather than in the form
+  // because the form is a client component and this is a node crypto call. Both
+  // read false when the record cannot answer: see `arabicState`.
+  const titleArBehind = arabicIsBehind({
+    value: L.title_ar, srcHash: L.title_ar_src_hash,
+    english: L.title_en, englishHash: L.title_en ? hashSource(L.title_en) : null,
+  });
+  const descArBehind = arabicIsBehind({
+    value: L.description_ar, srcHash: L.description_ar_src_hash,
+    english: L.description_en, englishHash: L.description_en ? hashSource(L.description_en) : null,
+  });
   // C4, then ADV-1. The owner was told their listing was verified when it was our
   // own stock, or when a broker had declared an authorisation. The dashboard is
   // where an owner learns what still has to happen, so it now reports the ownership
@@ -172,9 +188,13 @@ export default async function ManageListingPage({ params }: { params: { locale: 
           locale={lp}
           assetType={L.asset_type}
           initAttrs={initAttrs}
+          titleArBehind={titleArBehind}
+          descArBehind={descArBehind}
           init={{
             title_en: L.title_en || "",
+            title_ar: L.title_ar || "",
             description_en: L.description_en || "",
+            description_ar: L.description_ar || "",
             area_sqm: L.area_sqm != null ? String(L.area_sqm) : "",
             price: price != null ? String(price) : "",
             deal_type: L.deal_type,

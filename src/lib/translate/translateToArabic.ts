@@ -70,10 +70,12 @@ export interface TranslationCache {
 // gateway, so the recorded `ar_translation_model` is what actually replied
 // rather than what an environment variable hoped would.
 
-/** Stable hash of a source field. Any single-character edit flips it. */
-export function hashSource(text: string): string {
-  return createHash("sha256").update(text, "utf8").digest("hex");
-}
+// PKG-LS1. The definition moved to `./hash`, which has no gateway import, so a
+// page that only needs to know whether a field is stale can ask without pulling
+// a provider client into its bundle. Re-exported here so every existing importer
+// keeps working and there is still only one definition.
+export { hashSource } from "./hash";
+import { hashSource } from "./hash";
 
 // ASCII sentinels. Models preserve these reliably; the inner counter is letters
 // only so the number-masking pass below never re-matches a token.
