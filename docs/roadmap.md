@@ -2117,6 +2117,89 @@ ranking would change if a physical-device or specialist test became available, b
 convert some of the recorded queue from reasoned to observed.
 
 
+## PKG-ELITE-E1, slice F: the ELITE-8 event dictionary and product scorecard (Codex item 6)
+
+*User journey improved.* None directly, and saying otherwise would be the first dishonest line in
+this file. This slice improves the next decision about every journey. Slice E produced 54 recorded
+accessibility defects and no evidence about which of them costs a real person a task, and the slice D
+instrument can only watch ten people in a room. The dictionary is what turns the eleventh person
+onward into evidence.
+
+*Observed problem or unavoidable foundation.* Unavoidable foundation with an observed problem behind
+it. The observed problem is that every prioritisation argument made in this repository so far has
+come from reading, reasoning and severity labels, because no behavioural evidence of any kind exists.
+The foundation is that the cheapest path to that evidence is an SDK that ships a session recorder and
+a query string, and if the dictionary is written after somebody wants numbers, the argument about
+what may be collected happens under deadline. The prohibition has to exist before the pressure does.
+
+*Measurable outcome expected.* Twelve named measures. Two can be produced from records held at this
+commit, four in part, six not at all until O17 is answered or a research round runs. The outcome
+expected is a baseline from the first design-partner round, and the rule that no measure is ever
+reported without one.
+
+*Simplest acceptable implementation.* Typed data with tests, in two modules nothing imports. No
+emitter, no client, no endpoint, no table, no vendor, no environment variable. Holding the dictionary
+as TypeScript literals is what makes each rule Codex wrote an assertion in `events.test.ts` instead of
+a sentence in a document nobody runs.
+
+*What will not be built.* No analytics SDK, no collector, no ingestion endpoint, no event table, no
+dashboard, no session replay, no consent banner. Nothing in this slice sends a byte anywhere.
+
+*The date or evidence that decides whether to continue.* The answer to O17, opened in the status
+ledger in this slice. Until the lawful basis, the retention position and the user disclosure for
+first-party behavioural measurement are settled, a collector would be something built to stay off.
+
+**What shipped.** `src/lib/analytics/events.ts` holds 46 events across exactly the ten families Codex
+named: listing, missing fact, media, search, requirement, match, notification, passport, advisor and
+progression. Each carries the nine required attributes plus a `basisNote`, and a test asserts every
+note refers to the regulatory register or to a named open outcome rather than simply asserting a
+basis. 48 properties are catalogued with their exact shape and the reason each is not personal
+content. 30 are forbidden by name in a list rather than a comment, so a test can assert no event
+touches one and that the two name spaces do not overlap.
+
+Two of those are where a privacy promise usually fails quietly, so they are worth naming. Search
+records `facet_ids`, which filters were active, and never `facet_values`, what was typed into them.
+Advisor records whether a result was grounded, which typed tool produced it and whether it was
+refused, and never the prompt or the output. Both measures Codex asked for stay answerable and the
+content stays absent.
+
+**Why nothing is collected, and why it is two conditions rather than one.** `COLLECTION_AUTHORISED`
+is a module constant set to false for O17. It is not an environment variable, because a variable can
+be set by whoever holds the dashboard and a constant has to be changed in a commit next to the
+comment explaining the ruling. Separately, five notification events carry an unestablished basis
+under O12 and two comprehension events carry a consent basis with no surface that asks. `mayCollect`
+is the conjunction; `basisPermitsCollection` is split out so a test can ask what happens on the day
+O17 is answered without answering it. The asserted answer: 39 events would open and the notification
+family would stay shut.
+
+**The scorecard.** `src/lib/analytics/scorecard.ts` holds the twelve measures once each, with the
+question, definition, unit, sources, feeding events, cadence, the decision the number causes and the
+cheapest way to move it without improving anything. That last field exists because a measure with no
+stated distortion gets gamed eventually by someone acting in good faith. No measure carries a target
+and a test asserts no percentage and no target-shaped phrase appears in the file, because a target
+invented before a baseline is a figure with no source. Producible today: `data_freshness` and
+`accessibility_health`. In part: independent listing completion, requirement completion, match
+relevance and unsupported-figure incidents. Not at all: the remaining six.
+
+`unsupported_figure_incidents` is a count and never a rate, because the acceptable number is zero and
+a rate implies a budget. `accessibility_health` carries its own warning: slice E raised the open
+count from 57 to 111 while fixing 48 severe defects, and reading that rise as falling health would
+punish the pass that produced it.
+
+**Gate.** `npx tsc --noEmit` clean, `npm test` 1557 tests 0 failing including 30 new,
+`npm run ar-lint` clean, `node scripts/prose-scan.mjs` GATE 0 in 0 files, Vercel READY. There is no
+live EN or AR evidence and there cannot be: nothing in this slice renders. Both modules are recorded
+in `ALLOWED_UNREACHED`, whose companion test fails the moment either gains a consumer without the
+entry being removed on purpose. Full record in `docs/elite-8-event-dictionary.md`.
+
+**After this slice, the next highest-value action is not implementation. It is user research.** With
+slices A to F complete, this package has produced a research instrument, an accessibility queue and a
+measurement design, and all three are now waiting on the same input: real people using the product.
+The next action is recruiting the ten ELITE-1 participants and obtaining the owner decisions a round
+needs. Building more product surface ahead of that would be building against six requirements and
+zero registered interests, which is the reasoning Codex approved when this package opened.
+
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

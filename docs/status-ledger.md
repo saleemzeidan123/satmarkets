@@ -22,18 +22,18 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `ae7b198`, "PKG-ELITE-E1 slice E code: fix every critical and high accessibility defect found in the four-journey ELITE-4 manual pass", plus the slice E record commit this file ships in |
+| GitHub HEAD | `1b9bc0a`, "PKG-ELITE-E1 slice F: the ELITE-8 event dictionary and product scorecard as typed, fail-closed data", plus the slice F record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_DYFyVHfPMYX8XyBVupLNYBkCCCkz`, READY, target production |
-| Deployment URL | `satmarkets-14bq5f9br-sat-markets.vercel.app` |
+| Production deployment | `dpl_ApumXf7HKSm6Vxsf9LEHjLPETvmJ`, READY, target production |
+| Deployment URL | `satmarkets-caou5llry-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `ae7b198`, slice E code |
-| Build ready at | epoch ms 1785597301879 |
-| Deployment lag | One commit. Production carries `ae7b198`, the slice E code, and every accessibility fix in it is live and was checked on the deployed EN and AR pages. The slice E record commit this file ships in is newer and carries documentation only, no source change |
+| Commit deployed | `1b9bc0a`, slice F code |
+| Build ready at | epoch ms 1785599906050 |
+| Deployment lag | One commit. The slice F code is shipped and its build was confirmed READY at package close. The slice F record commit this file ships in is newer and carries documentation only, no source change. Slice F adds no rendered surface, so there is no page whose behaviour the lag could affect |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1527 tests, 0 failing |
+| Test suite | 1557 tests, 0 failing |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then a Vercel READY build |
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
@@ -74,6 +74,8 @@ regression is recorded in section 6 first.
 | PKG-ELITE-E1 slice C | Finding 137 resolved safely: a first pin may offer a location and never overwrite one, a contradiction refuses the write and blocks production counting | shipped `cf3504a` and `83dfdf3`, roadmap slice C section |
 | PKG-ELITE-E1 slice D | The ELITE-1 research instrument in English and Arabic, eleven artefacts at full parity | `docs/research/elite-1-instrument-en.md`, `docs/research/elite-1-instrument-ar.md`, roadmap slice D section |
 | PKG-ELITE-E1 slice E | The ELITE-4 manual accessibility pass over four journeys. 126 defects found, all 7 critical and all 41 high fixed, 54 of the remainder recorded | shipped `ae7b198`, `docs/accessibility-elite-4.md`, findings 139 to 192 |
+| PKG-ELITE-E1 slice F | The ELITE-8 event dictionary and product scorecard. 46 events across the ten named families, 48 catalogued properties, 30 forbidden by name, 12 measures with no invented target, nothing collected | shipped `1b9bc0a`, `docs/elite-8-event-dictionary.md`, O17 below |
+| PKG-ELITE-E1, whole package | Codex items 1 to 6 delivered, item 7 observed. Consolidated handback with scope, commits, gates, live EN and AR evidence, responsive limits, blockers and the next action | `docs/handback-pkg-elite-e1.md` |
 
 ---
 
@@ -111,6 +113,7 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 | O14 | Who inside an organization may release contact details or bind the organization | Progressive disclosure and mutual-interest contact release |
 | O15 | Attribution scope for the Rent Index, citation against navigation | Finding 45. A proposed rule is written and awaiting approval |
 | O16 | Whether availability freshness keeps the reserved green, and what the label must state | Finding 46's follow-up. One colour currently carries two unrelated meanings on one card |
+| **O17** | **The lawful basis, the retention position and the user disclosure for first-party behavioural measurement. Whether contract performance covers product measurement of an account the person asked for, what the raw retention window may be before aggregation, and what the person must be told and where** | **Every one of the 46 events in `src/lib/analytics/events.ts`. `COLLECTION_AUTHORISED` is a module constant set to false, not an environment variable, so switching it on is a commit rather than a dashboard setting. Answering O17 would open 39 events and would still leave the notification family shut, because O12 holds that separately** |
 
 ---
 
