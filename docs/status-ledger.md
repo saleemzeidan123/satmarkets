@@ -22,18 +22,18 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `83dfdf3`, "PKG-ELITE-E1 slice C2: a contradicted pin refuses the write, blocks production counting and reaches the lister in both languages", plus the slice D commit this file ships in |
+| GitHub HEAD | `ae7b198`, "PKG-ELITE-E1 slice E code: fix every critical and high accessibility defect found in the four-journey ELITE-4 manual pass", plus the slice E record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_8WbnMXz3coJE8yZTUw6BpoSeLp7R`, READY, target production |
-| Deployment URL | `satmarkets-jxf9i9mjj-sat-markets.vercel.app` |
+| Production deployment | `dpl_DYFyVHfPMYX8XyBVupLNYBkCCCkz`, READY, target production |
+| Deployment URL | `satmarkets-14bq5f9br-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `83dfdf3`, slice C2 |
-| Build ready at | epoch ms 1785592319861 |
-| Deployment lag | One commit. Production carries `83dfdf3`, slice C2, and slice C is fully live. The slice D commit this file ships in is newer and its build is unconfirmed until polled |
+| Commit deployed | `ae7b198`, slice E code |
+| Build ready at | epoch ms 1785597301879 |
+| Deployment lag | One commit. Production carries `ae7b198`, the slice E code, and every accessibility fix in it is live and was checked on the deployed EN and AR pages. The slice E record commit this file ships in is newer and carries documentation only, no source change |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1526 tests, 0 failing |
+| Test suite | 1527 tests, 0 failing |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then a Vercel READY build |
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
@@ -73,6 +73,7 @@ regression is recorded in section 6 first.
 | PKG-ELITE-E1 slice B | The working practice against environment reclamation, and the first recovery bundle | shipped `e2f776b`, section 10 below |
 | PKG-ELITE-E1 slice C | Finding 137 resolved safely: a first pin may offer a location and never overwrite one, a contradiction refuses the write and blocks production counting | shipped `cf3504a` and `83dfdf3`, roadmap slice C section |
 | PKG-ELITE-E1 slice D | The ELITE-1 research instrument in English and Arabic, eleven artefacts at full parity | `docs/research/elite-1-instrument-en.md`, `docs/research/elite-1-instrument-ar.md`, roadmap slice D section |
+| PKG-ELITE-E1 slice E | The ELITE-4 manual accessibility pass over four journeys. 126 defects found, all 7 critical and all 41 high fixed, 54 of the remainder recorded | shipped `ae7b198`, `docs/accessibility-elite-4.md`, findings 139 to 192 |
 
 ---
 
@@ -115,14 +116,20 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-138 findings recorded. 81 carry a status beginning "Closed". 57 do not. Counts read from
+192 findings recorded. 81 carry a status beginning "Closed". 111 do not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated.
+
+The jump from 57 open to 111 is slice E and nothing else. 54 recorded accessibility
+defects were added at once, findings 139 to 192, every one of them medium, low or
+cosmetic. No previously open finding changed status in this slice, and the open count
+rising is the pass working rather than the product getting worse: these defects existed
+before anybody looked, and 48 more severe ones were fixed in the same slice.
 
 | Severity | Not closed | Ranks |
 | --- | --- | --- |
 | P0 | 6 | 4, 9, 10, 11, 12, 114 |
-| P1 | 21 | 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 29, 30, 31, 32, 45, 50, 62, 117 |
-| P2 | 30 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 115, 116, 118, 138 |
+| P1 | 55 | 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 29, 30, 31, 32, 45, 50, 62, 117, 139, 140, 141, 143, 145, 147, 148, 149, 150, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 164, 165, 166, 167, 168, 170, 171, 174, 179, 180, 181, 182, 184, 187, 192 |
+| P2 | 50 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191 |
 
 Rank 113 is "Closed in PKG-DEM1 for the reading, open for the data" and is not counted
 above; its data half needs a write channel to the database that this environment does not
@@ -229,6 +236,9 @@ consecutive packages have now owed the same thing.
 | Photo and media presence | `GET /api/listings` carries no media count, so photo checks read as missing because the channel cannot decide them, not because they were proved absent | A media count on the public endpoint, or a session channel |
 | Database reads | `execute_sql`, `apply_migration` and `list_tables` are permission denied | Restored permission, or a read-only public route for each fact needed |
 | Real physical device testing | No device in this environment. Zoom, reflow, screen reader and touch behaviour can be reasoned about and tested in code, not observed | A human on a real device. This is a stated limit of slice E, not a claim it will make |
+| No accessibility automation in the repository | There is no axe, pa11y, jest-axe or Lighthouse step anywhere, and no accessibility npm script. `e2e/` holds two specs and neither is an accessibility spec | An automated harness, which slice E deliberately did not add because Codex item 7 forbids new tooling in this package |
+| No reachable development server | `curl http://localhost:3000/en/login` returns status 000 in this container, so no surface can be operated locally either | A running server in the container, or the session channel above |
+| No screen reader and no accessibility specialist | Neither exists in this environment | A human. Every one of the 126 slice E findings is source-read only and none is independently verified |
 | Interactive browser Advisor verification | Codex item 7. Needs a browser session against the deployment | Owner-side browser run, or a session channel |
 | `LocationPicker` visual fit at 320 to 430 pixels | Tailwind-classed component inside an inline-styled form, on a session-gated screen | The same session channel |
 

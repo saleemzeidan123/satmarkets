@@ -2002,6 +2002,121 @@ slice, research was ranked first and unstarted; after it, research is ranked fir
 E and F, the accessibility pass and the event dictionary, are the remaining engineering work that
 does not depend on the round, and they run next while the authorisation is outstanding.
 
+## PKG-ELITE-E1, slice E: the ELITE-4 manual accessibility pass over four journeys (Codex item 5)
+
+*User journey improved.* All four of them. This is not a polish slice. A keyboard-only or
+screen-reader user could not add a photo to a listing at any point, could not press the availability
+reaffirm control at all because it sat under a full-row link overlay, could not leave the gallery
+lightbox once inside it, and could not reach a single map pin. Each of those is a journey that ends,
+not a journey that is awkward.
+
+*Observed problem or unavoidable foundation.* Observed problem. Every defect below was found by
+reading the running source of the four journeys against the ten dimensions Codex named. None was
+hypothesised in advance and none came from a checklist applied without looking.
+
+*Measurable outcome expected.* Independent task completion for a keyboard-only participant in the
+ELITE-1 round. Slice D already measures independent completion, time, errors, help requests and
+abandonment, so the effect of this slice is measured by an instrument that exists rather than by an
+assertion made here.
+
+*Simplest acceptable implementation.* Native semantics wherever the platform supplies them, ARIA only
+where it does not. No component library, no automation vendor, no visual redesign, no new token. Four
+of the fixes are one attribute. The largest is a focus trap.
+
+*What will not be built.* No axe or automated accessibility harness, because Codex item 7 forbids new
+tooling in this package. No accessibility statement, no VPAT and no conformance claim. No contrast
+repaint: every contrast defect is recorded rather than fixed, because a token change reaches surfaces
+this pass did not read and belongs to the parked visual package.
+
+*The date or evidence that decides whether to continue.* The design-partner round. If a keyboard-only
+or screen-reader participant still cannot complete a core task, the remaining recorded defects are
+reprioritised on that evidence rather than on the severity label written here.
+
+**What was found.** 126 defects across the four journeys: 7 critical, 41 high, 52 medium, 23 low and
+3 cosmetic. All 7 critical and all 41 high are fixed and shipped in `ae7b198`. 54 of the remaining 78
+are recorded in `docs/findings-register.md` as findings 139 to 192.
+
+**The gap in that last number is stated rather than smoothed over.** The four per-journey audits were
+carried out in a working context that was compacted before the register was written, and 24 of the
+lower-severity items did not survive that compaction precisely enough to be restated truthfully.
+Writing plausible entries to reach 78 would have been worse than recording 54 and saying so. None of
+the missing 24 is a keyboard-blocking or name-missing defect, because every defect of those two kinds
+was graded critical or high and is therefore fixed.
+
+**The three environment facts that shaped the method, and bound every claim made.** There is no
+accessibility automation anywhere in this repository: no axe, no pa11y, no jest-axe, no Lighthouse
+step, no accessibility npm script, and `e2e/` holds two specs neither of which is one. No development
+server is reachable in this container: `http://localhost:3000/en/login` returns status 000. And the
+only live channel is unauthenticated GET, which cannot hold a session, while three of the four
+journeys are session gated for most of their length. So every finding in this pass was established by
+reading source. Nothing was established by operating the product with a keyboard, by listening to a
+screen reader, or by measuring a rendered contrast ratio. Contrast figures are arithmetic on declared
+token values, and the record says so wherever one appears.
+
+**The five-way labelling Codex required, answered honestly.** Automatically tested: 0, and the single
+automated accessibility assertion that existed in the whole codebase was one asserting the presence
+of an `aria-label` this pass removed as a defect, so it was inverted rather than kept. Manually
+tested by Claude: 126, all of them. Tested on a real physical device: 0. Independently tested by a
+human accessibility specialist: 0. Still awaiting verification: 126, fixed and recorded alike,
+because a source-read fix is a plausible fix and not a verified one. **No independent WCAG
+conformance is claimed anywhere in this slice.**
+
+**The repairs that mattered most.** A `.input:focus{outline:none}` rule at specificity (0,2,0) was
+beating the platform `input:focus-visible` rule at (0,1,1), so every text control in the requirement
+form and the signup flow had a 1.17 to 1 box shadow as its only focus affordance; that is one central
+fix reaching two journeys. The three media inputs were `display:none`, which removes an element from
+the tab order entirely. The availability control was under `a.rowlink::after`. The lightbox had no
+dialog role, no focus trap and no return path. The map published its entire content through a canvas
+and nothing else. The shared icon wrapper emitted every decorative glyph into the accessible name of
+whatever control contained it, which is one attribute fixing noise on all four journeys at once.
+
+**One latent bug was found in the course of the work and is worth naming, because it would have made
+another fix decorative.** `ListingStudio.save()` called `setError(msg)` and then `go(target)`, and
+`go()` cleared the error unconditionally in the same React batch, so the sentence was destroyed
+before it could render. `go()` now takes a `keepError` parameter and all three error-then-navigate
+sites pass it.
+
+**Three proposals from the audit were rejected during the fix, and the rejections are the useful
+part.** `role="img"` on `ProvenanceChip` would have made its contents presentational, and its
+description text does not contain its visible tier text, so it would have created exactly the
+label-in-name defect the neighbouring finding reports, on chips that render inside the passport
+summary. `role="menu"` was rejected twice, on the filter panel and the header popup, because free
+text inputs, headings and arbitrary links are not valid children of a `menu`. And the Share
+affordance on the listing detail page was removed rather than implemented: it was a non-interactive
+span styled as a chip, and inventing a share behaviour inside an accessibility pass would have been
+feature expansion under a package that forbids it.
+
+**Nine of the 54 recorded findings corrected the description they came from**, because each was
+re-verified against the shipped source rather than transcribed. The table-semantics breakpoint is
+920px and not 1024px. The tab bar items are not below the touch floor, only its viewport consumption
+is a defect. The Listing Studio step state is missing for sighted users on the steps that are not
+open, which is the inverse of how it was first written. The passport already uses a `<dl>` for its
+provenance rows. The heart glyph is already out of every accessible name, and the real residual is
+that the card carries no save control. Three quoted contrast ratios were recomputed and are not the
+figures first recorded.
+
+**Live evidence.** `ae7b198` is production, deployment `dpl_DYFyVHfPMYX8XyBVupLNYBkCCCkz`, READY.
+Checked on the deployed pages rather than locally: `/en/listings` carries `role="search"`, a
+`role="status"` polite result count, `aria-haspopup` on 10 filter pills, `aria-pressed` on the
+verified toggle and 90 decorative SVGs now carrying `focusable="false"`; `/ar/listings/[id]` renders
+`dir="rtl"`, 2 `<summary>` elements of which 0 carry an `aria-label`, which is the label-in-name fix
+live, and the Share chip is absent from the rendered document while its dictionary key survives only
+in the serialized payload. Every session-gated fix, which is most of journeys 1, 2 and 4, remains
+unverifiable from here and is recorded as such in section 9 of the status ledger.
+
+**Gates.** `npx tsc --noEmit` clean, `npm test` 1527 pass and 0 fail, `npm run ar-lint` clean,
+`node scripts/prose-scan.mjs` GATE 0 in 0 files, Vercel READY. Two strings added during the fixes
+were first written as a component-local bilingual object inside a public page, which the prose gate
+correctly refused; both now live in `reqDetail` in both dictionaries.
+
+**After this slice, the next highest-value action is implementation, specifically slice F.** The
+accessibility pass has produced a queue of 54 recorded defects and no behavioural evidence about
+which of them costs a real user a task. The event dictionary and scorecard are what turn the
+design-partner round into that evidence, so they precede any further accessibility remediation. That
+ranking would change if a physical-device or specialist test became available, because that would
+convert some of the recorded queue from reasoned to observed.
+
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).
