@@ -390,7 +390,9 @@
     "sampleTag": "Sample",
     "rangeTo": "to",
     "metaTitle": "Requirements | SAT Markets",
-    "metaDesc": "Post what you need and let owners and licensed brokers come to you. The demand board for Riyadh commercial space."
+    "metaDesc": "Post what you need and let owners and licensed brokers come to you. The demand board for commercial space on SAT Markets.",
+    "empty": "No requirements are open right now. Post one and owners and licensed brokers see it here.",
+    "timeline": "Move-in"
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence",
@@ -887,7 +889,6 @@
     "sizeRange": "Size range (m²)",
     "to": "to",
     "budgetCeiling": "Budget ceiling (SAR/m²·yr)",
-    "preferredDistricts": "Preferred districts",
     "mustHaves": "Must-haves",
     "optional": "(optional)",
     "moveIn": "Move-in timeline",
@@ -899,7 +900,19 @@
     "privacyNote": "Visible to owners, brokers & SAT · your identity stays private until you respond.",
     "posting": "Posting…",
     "postReqBtn": "Post requirement",
-    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with owners and licensed brokers on SAT Markets so they can respond to me. I can withdraw this at any time."
+    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with owners and licensed brokers on SAT Markets so they can respond to me. I can withdraw this at any time.",
+    "location": "Location",
+    "locationPh": "Choose a location",
+    "locationNote": "A requirement carries one location, so the count of matching spaces below is a count for that location. Post a second requirement for a second location.",
+    "locationsUnavailable": "Locations cannot be read right now, so a requirement cannot be posted. Please try again shortly.",
+    "sizeMinLabel": "Smallest size (m²)",
+    "sizeMaxLabel": "Largest size (m²)",
+    "moveInNote": "Leave this unanswered if you have no date in mind. An immediate requirement is matched against how recently availability was affirmed.",
+    "errRequired": "This is needed before the requirement can be posted.",
+    "errLocation": "Choose a location so the requirement reaches the right owners.",
+    "errEmail": "Enter a valid work email, so a response can reach you.",
+    "errSizeOrder": "The smallest size cannot be larger than the largest.",
+    "errSummary": "The requirement was not posted. The fields below say what is missing."
   },
   "compare": {
     "riyadh": "Riyadh",
@@ -1496,7 +1509,8 @@
     "matchesAttached": "Attached to your response",
     "matchesExcluded": "listings of yours are not offerable yet, so they were not compared. Drafts and expired advertising licences are never matched.",
     "matchesMargins": "Published margins: size {size} percent, budget {budget} percent.",
-    "matchesTruncated": "Showing the closest results only."
+    "matchesTruncated": "Showing the closest results only.",
+    "timelineUnstated": "No date given"
   },
   "locFacts": {
     "title": "Location facts",

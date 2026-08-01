@@ -16,7 +16,25 @@ const FITOUT: Record<string,[string,string]> = {
   fitted:["Fitted","مجهز"], furnished:["Furnished","مفروش"], n_a:["N/A","N/A"]
 };
 const CONF: Record<string,[string,string]> = { low:["Low","منخفضة"], medium:["Medium","متوسطة"], high:["High","عالية"] };
-const CITY: Record<string,[string,string]> = { Riyadh:["Riyadh","الرياض"], Jeddah:["Jeddah","جدة"], Dammam:["Dammam","الدمام"], Khobar:["Khobar","الخبر"], Makkah:["Makkah","مكة المكرمة"], Madinah:["Madinah","المدينة المنورة"] };
+// PKG-DEM1, finding 104. This table held six cities and the districts source
+// holds twenty one. `cityLabel` falls back to `prettifyKey`, which strips the
+// punctuation and leaves the script, so the Arabic locations directory printed
+// Dhahran, Taif, Al Ahsa, Jubail, Yanbu, Tabuk, Buraidah, Abha, Khamis Mushait,
+// Hail, Najran, Jazan, Al Kharj, Sakaka and Arar in Latin letters inside Arabic
+// sentences, on twenty of the seventy seven location cards. Measured on the
+// deployment, not inferred.
+//
+// The fifteen additions are proper nouns with settled Arabic spellings, which is
+// why they can be written here at all: naming a city is not asserting a figure.
+const CITY: Record<string,[string,string]> = {
+  Riyadh:["Riyadh","الرياض"], Jeddah:["Jeddah","جدة"], Dammam:["Dammam","الدمام"],
+  Khobar:["Khobar","الخبر"], Makkah:["Makkah","مكة المكرمة"], Madinah:["Madinah","المدينة المنورة"],
+  Dhahran:["Dhahran","الظهران"], Taif:["Taif","الطائف"], "Al Ahsa":["Al Ahsa","الأحساء"],
+  Jubail:["Jubail","الجبيل"], Yanbu:["Yanbu","ينبع"], Tabuk:["Tabuk","تبوك"],
+  Buraidah:["Buraidah","بريدة"], Abha:["Abha","أبها"], "Khamis Mushait":["Khamis Mushait","خميس مشيط"],
+  Hail:["Hail","حائل"], Najran:["Najran","نجران"], Jazan:["Jazan","جازان"],
+  "Al Kharj":["Al Kharj","الخرج"], Sakaka:["Sakaka","سكاكا"], Arar:["Arar","عرعر"],
+};
 const idx = (l: L) => (l === "ar" ? 1 : 0);
 export const assetLabel = (t: string, l: L) => (ASSET[t]?.[idx(l)]) ?? t;
 export const dealLabel = (t: string, l: L) => (DEAL[t]?.[idx(l)]) ?? t;
@@ -41,6 +59,17 @@ const CITY_ALIAS: Record<string, string[]> = {
   Khobar: ["al khobar", "alkhobar", "el khobar", "خبر"],
   Makkah: ["mecca", "makkah al mukarramah", "makkah almukarramah", "مكه", "مكه المكرمه"],
   Madinah: ["medina", "al madinah", "almadinah", "madinah al munawwarah", "المدينه", "المدينه المنوره"],
+  Dhahran: ["az zahran", "al dhahran", "zahran", "ظهران"],
+  Taif: ["al taif", "at taif", "altaif", "طائف"],
+  "Al Ahsa": ["ahsa", "al hasa", "hasa", "احساء"],
+  Jubail: ["al jubail", "aljubail", "جبيل"],
+  Yanbu: ["yanbu al bahr", "ينبع البحر"],
+  Buraidah: ["buraydah", "buraida"],
+  "Khamis Mushait": ["khamis mushayt", "khamis mishait"],
+  Hail: ["ha il", "hayil"],
+  Jazan: ["jizan", "gizan"],
+  "Al Kharj": ["kharj", "خرج"],
+  Sakaka: ["sakakah"],
 };
 
 const CITY_BY_FOLD: Record<string, string> = (() => {

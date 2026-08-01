@@ -4,7 +4,12 @@ import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
+import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import type { MatchReason, MatchVerdict } from "@/lib/matching";
+
+// PKG-DEM1, finding 100's read side. The stored timeline and must-have tokens are
+// named through the vocabulary the form renders from and the write path
+// validates against, so this page cannot start naming them a second way.
 
 interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
 interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; mine?: boolean; }
@@ -109,7 +114,10 @@ export default function RequirementDetail({ params }: { params: { locale: string
       {([
         [t.size, `${req.sizeMin} ${t.rangeTo} ${req.sizeMax} ${t.sqm}`],
         [t.budget, `${Number(req.budget).toLocaleString("en-US")} ${req.deal === "lease" ? t.sarSqmYr : t.sar}`],
-        [t.timeline, req.timeline || t.na],
+        // An unstated timeline is a real answer, not missing data: the column is
+        // nullable and the form deliberately pre-selects nothing. "n/a" would
+        // read as a figure we failed to collect.
+        [t.timeline, timelineLabel(req.timeline, ar) || t.timelineUnstated],
       ] as [string, string][]).map((s, i) => (
        <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
         <div className="muted" style={{ fontSize: 11 }}>{s[0]}</div>
@@ -119,7 +127,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
        </div>
       ))}
      </div>
-     {req.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 14 }}>{req.mustHaves.map((m, i) => <span key={i} className="chip on" style={{ fontSize: 11.5 }}>{m}</span>)}</div> : null}
+     {req.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 14 }}>{req.mustHaves.map((m, i) => <span key={i} className="chip on" style={{ fontSize: 11.5 }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
     </div>
 
     <div className="card pad" style={{ marginTop: 18, boxShadow: "var(--sh-1)" }}>

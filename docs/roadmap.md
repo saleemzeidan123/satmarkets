@@ -1177,7 +1177,7 @@ other routes. It is a payload and coupling fact rather than a truth defect, the 
 carry their own sample labelling where they are rendered, and narrowing it means changing how
 every page obtains its dictionary, so it is recorded rather than absorbed.
 
-## PKG-DEM1, the demand entry point stops rejecting its own visitors
+## PKG-DEM1, the demand entry point stops rejecting its own visitors (closed)
 
 **User journey improved.** The occupier, or the broker acting for one, who cannot find what they
 need in the published inventory, arrives on `/post-requirement` from the header, the requirements
@@ -1261,6 +1261,45 @@ districts source returns, with the same names in both languages, and that every 
 reaches a structured field rather than a note. A test asserts no count on the success card is a
 literal. Live evidence in English and Arabic shows the pre-selected timeline is an accepted value
 and that the district labels match the board's. All gates green.
+
+**What shipped, and where the stop condition was substituted.** Every clause above holds except
+one, and the exception is recorded rather than glossed.
+
+`src/lib/requirementIntake.ts` is the single vocabulary: each move-in option's stored token with
+its English and Arabic label and its urgency flag, the seven asset types, the two deal types and
+the seven must-have conditions. The form renders from it, `POST /api/requirements` validates
+against it and `matching.ts` derives its urgent set from it. `/post-requirement` became a server
+page that reads the districts table and passes the rows to `RequirementForm`, so the control
+offers the 77 locations across 21 cities the platform actually holds, grouped by city through the
+same `cityLabel` the locations directory uses, instead of five Riyadh ids held as literals. The
+city is no longer sent as a fact: the route derives it from the district row it now looks up.
+Errors are named against the control that carries them, focus moves to the first one, and one
+`role="alert"` summary sits above the fields. The success card counts `done.notified.length`.
+Both read surfaces, the board and the requirement detail page, name the stored tokens through the
+same vocabulary, so an Arabic reader is no longer shown `fitted` and `Q3`.
+
+The substituted clause is the last one: "Live evidence in English and Arabic shows the
+pre-selected timeline is an accepted value". Nothing is pre-selected, so there is no such
+evidence and there should not be. The column is nullable, the route accepts an empty timeline and
+one live row already carries none, which makes an unstated move-in date a real answer rather than
+missing data; a radio that arrives already chosen states a constraint the visitor never gave, on
+the one field that decides whether availability is scored at all. What replaces the clause is a
+test asserting that no move-in radio is rendered `checked` in either language, plus the live
+evidence that the values the rendered form emits are the accepted tokens.
+
+The multi-location clause is also answered differently from the way it was written. "Selected
+districts beyond the first go into a structured field" is not buildable against a record that
+holds one `district_id`; the honest minimum named in the same paragraph is what shipped, and what
+a real fix needs is written down as finding 102 rather than half built.
+
+**Live-evidence limitation, stated rather than worked around.** `web_fetch_vercel_url` is the only
+channel to the deployment from this environment and it issues GET only, so the submission path
+cannot be exercised end to end against the running site. What is verified live is what the two
+routes render in both languages. What stands behind the write path is the shared vocabulary and
+`src/lib/requirementIntake.test.tsx`, which reads the `value` attributes out of the rendered
+markup and tests each against the validator's own predicate, and which carries a sensitivity case
+asserting the eight literals the shipped form held still fail that predicate. A live POST remains
+the one piece of evidence this package does not have.
 
 ## Parked (deliberate)
 

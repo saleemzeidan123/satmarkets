@@ -34,15 +34,18 @@ import { foldText } from "./textFold";
 import { formatCounted } from "./format";
 import { availabilityOf } from "./availability";
 import { assetLabel, cityLabel, dealLabel } from "./labels";
+import { isUrgentTimeline, timelineLabel, mustHaveLabel } from "./requirementIntake";
 
 // Published tolerances. These are the only two places a near miss is allowed,
 // and both of them say so on the result.
 export const SIZE_TOLERANCE_PCT = 10;
 export const BUDGET_TOLERANCE_PCT = 10;
 
-// Timelines that make availability part of the question. A requirement due next
-// quarter is not answered by how recently a lister affirmed the space is free.
-const URGENT_TIMELINES = new Set(["asap", "immediate"]);
+// Timelines that make availability part of the question live in
+// `requirementIntake`, with the tokens the form offers and the labels each one
+// carries, because this set used to be a third independent literal: the form had
+// one list, the write path had another and this had a third, and the Arabic
+// urgent option matched none of them (PKG-DEM1, finding 100).
 
 export type MatchState = "met" | "tolerance" | "unknown" | "failed";
 
@@ -380,10 +383,13 @@ export function matchReasons(
   // never the publication date, so an old affirmation reads as an unknown rather
   // than as a live space.
   const timeline = String(req.timeline ?? "").trim();
-  if (timeline && URGENT_TIMELINES.has(foldText(timeline))) {
-    // The two urgent timelines read as one phrase in each language rather than
-    // as the stored token, so an Arabic reader is never shown an English word.
-    const tl = { en: timeline, ar: "فوري" };
+  if (timeline && isUrgentTimeline(timeline)) {
+    // The timeline reads as a label in each language rather than as the stored
+    // token, so an Arabic reader is never shown an English word. Both sides come
+    // from the vocabulary now: the English side used to print the raw token, so
+    // one requirement said "ASAP" and the next said "Immediate" for the same
+    // answer.
+    const tl = { en: timelineLabel(timeline, false), ar: timelineLabel(timeline, true) };
     const a = availabilityOf(listing.availability_confirmed_at, now);
     if (!a) {
       out.push(reason({
@@ -436,8 +442,8 @@ export function matchReasons(
     out.push(reason({
       key: `must_have:${k}`, dimension: "must_have", state: "unknown",
       label_en: "Must have", label_ar: "شرط أساسي",
-      reason_en: `The requirement lists "${phrase}". SAT holds no record that states whether this space has it.`,
-      reason_ar: `المتطلب يذكر "${phrase}". لا تحتفظ سات بسجل يبيّن توفره في هذه المساحة.`,
+      reason_en: `The requirement lists "${mustHaveLabel(phrase, false)}". SAT holds no record that states whether this space has it.`,
+      reason_ar: `المتطلب يذكر "${mustHaveLabel(phrase, true)}". لا تحتفظ سات بسجل يبيّن توفره في هذه المساحة.`,
       remedy_en: "The lister or the broker confirms it in writing.",
       remedy_ar: "يؤكده المُدرِج أو الوسيط كتابةً.",
     }));

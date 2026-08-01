@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
+import { isTimelineToken, REQUIREMENT_ASSET_TYPES, REQUIREMENT_DEAL_TYPES } from "@/lib/requirementIntake";
+import { cityKey } from "@/lib/labels";
 
-const ASSETS = ["office","retail","warehouse","medical","showroom","serviced","education"];
-const DEALS = ["lease","sale"];
+// PKG-DEM1. These were literals here and a shorter literal in the form, so the
+// public form silently refused to offer two asset types this route accepts.
+const ASSETS = REQUIREMENT_ASSET_TYPES;
+const DEALS = REQUIREMENT_DEAL_TYPES;
 
 // GET: the public requirements board (no contact info)
 export async function GET(req: NextRequest) {
@@ -52,7 +56,11 @@ export async function GET(req: NextRequest) {
 //
 // Now: strict validation, DB-issued sequential ref, one transactional RPC,
 // sanitized errors, and a 503 rather than a comforting lie.
-const TIMELINES = ["ASAP", "Q1", "Q2", "Q3", "Q4", "Flexible", "Immediate"];
+// PKG-DEM1, finding 100. The accepted timeline vocabulary was a literal here and
+// a different literal in the form, so the public form could not submit from its
+// shipped state: it pre-selected a value this route refused, and every Arabic
+// option it offered was refused. Both sides now read `requirementIntake`, which
+// is the only way two lists stop disagreeing.
 const num = (v: unknown): number | null => {
  if (v === null || v === undefined || v === "") return null;
  const n = Number(v);
@@ -84,7 +92,7 @@ export async function POST(req: NextRequest) {
  }
 
  const timeline = b.timeline ? String(b.timeline).trim() : "";
- if (timeline && !TIMELINES.includes(timeline)) return NextResponse.json({ error: "Choose a valid timeline." }, { status: 400 });
+ if (timeline && !isTimelineToken(timeline)) return NextResponse.json({ error: "Choose a valid timeline." }, { status: 400 });
 
  const mustHaves = Array.isArray(b.must_haves)
   ? b.must_haves.filter((m: unknown) => typeof m === "string" && m.length <= 60).slice(0, 12)
@@ -109,6 +117,32 @@ export async function POST(req: NextRequest) {
  // No storage means no requirement and no match count. Say so.
  if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
 
+ // PKG-DEM1, finding 105. The check above is a shape check: any well formed UUID
+ // passed it, so a requirement could be stored against a district that does not
+ // exist, and the board would then quietly fall back to the free text city. The
+ // district is looked up rather than pattern matched.
+ //
+ // And finding 102: `city` fell back to the literal "Riyadh" whenever the caller
+ // sent none, which stored a fact nobody stated. The city now comes from the
+ // district row, which is the only place it is actually known. A request with
+ // neither a real district nor a recognised city is refused rather than filed in
+ // a city it never named.
+ let city = "";
+ if (districtId) {
+  const { data: drow, error: derr } = await sb.from("districts").select("id,city").eq("id", districtId).maybeSingle();
+  if (derr) {
+   console.error("district lookup failed", derr);
+   return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
+  }
+  if (!drow) return NextResponse.json({ error: "Unknown district." }, { status: 400 });
+  city = String((drow as any).city ?? "").trim();
+ }
+ if (!city) {
+  const raw = String(b.city ?? "").trim();
+  city = (cityKey(raw) ?? "").slice(0, 80);
+ }
+ if (!city) return NextResponse.json({ error: "Choose a location." }, { status: 400 });
+
  // create_requirement() inserts the brief AND its notification rows in one
  // transaction, and the ref code comes from a database sequence.
  const { data, error } = await sb.rpc("create_requirement", {
@@ -117,7 +151,7 @@ export async function POST(req: NextRequest) {
    asset_type: b.asset_type,
    deal_type: b.deal_type,
    district_id: districtId,
-   city: b.city ? String(b.city).slice(0, 80) : "Riyadh",
+   city,
    size_min_sqm: sizeMin,
    size_max_sqm: sizeMax,
    budget_sqm_max: budget,
@@ -159,8 +193,13 @@ const NOTIFIED = ["SAT broker network", "Verified landlords in your locations", 
 // Preview-only. Set SITE_ENV=production (or NEXT_PUBLIC_SITE_ENV=production) to
 // switch every sample fallback off.
 const PREVIEW = (process.env.SITE_ENV ?? process.env.NEXT_PUBLIC_SITE_ENV) !== "production";
+// PKG-DEM1. The must-haves here were English phrases, so the preview board showed
+// an Arabic reader "Fitted" and "Dock doors" on every sample card, and one of them
+// was a condition the form has never offered. Sample data that cannot be produced
+// by the form misdescribes the product as surely as a wrong figure does. These are
+// the tokens the form writes.
 const MOCK = [
- { sample: true, id: "m1", ref: "SAMPLE-20418", title: "Regional HQ office, Grade A, KAFD", asset: "office", deal: "lease", district: "KAFD", city: "Riyadh", sizeMin: 500, sizeMax: 1200, budget: 3000, timeline: "Q3", mustHaves: ["Fitted","Parking","Metro nearby"], interest: 1 },
- { sample: true, id: "m2", ref: "SAMPLE-20420", title: "Fitted office, regional team, Al Olaya", asset: "office", deal: "lease", district: "Al Olaya", city: "Riyadh", sizeMin: 300, sizeMax: 700, budget: 2700, timeline: "Q4", mustHaves: ["Fitted","Raised floor"], interest: 0 },
- { sample: true, id: "m3", ref: "SAMPLE-20421", title: "Logistics warehouse, 2nd Industrial", asset: "warehouse", deal: "lease", district: "2nd Industrial", city: "Riyadh", sizeMin: 2000, sizeMax: 5000, budget: 320, timeline: "Q3", mustHaves: ["Dock doors","Heavy power"], interest: 0 },
+ { sample: true, id: "m1", ref: "SAMPLE-20418", title: "Regional HQ office, Grade A, KAFD", asset: "office", deal: "lease", district: "KAFD", city: "Riyadh", sizeMin: 500, sizeMax: 1200, budget: 3000, timeline: "Q3", mustHaves: ["fitted","parking","metro_nearby"], interest: 1 },
+ { sample: true, id: "m2", ref: "SAMPLE-20420", title: "Fitted office, regional team, Al Olaya", asset: "office", deal: "lease", district: "Al Olaya", city: "Riyadh", sizeMin: 300, sizeMax: 700, budget: 2700, timeline: "Q4", mustHaves: ["fitted","raised_floor"], interest: 0 },
+ { sample: true, id: "m3", ref: "SAMPLE-20421", title: "Logistics warehouse, 2nd Industrial", asset: "warehouse", deal: "lease", district: "2nd Industrial", city: "Riyadh", sizeMin: 2000, sizeMax: 5000, budget: 320, timeline: "Q3", mustHaves: ["dock_doors"], interest: 0 },
 ];

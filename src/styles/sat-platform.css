@@ -191,6 +191,18 @@
 .seg{display:inline-flex;background:var(--cool);border:1px solid var(--silver);border-radius:9px;padding:3px;gap:3px;}
 .seg span{font-size:12.5px;font-weight:600;color:var(--slate);padding:7px 14px;border-radius:6px;}
 .seg span.on{background:var(--paper);color:var(--ink);box-shadow:var(--sh-1);}
+/* PKG-DEM1. The segmented control had rules for `span` and for `button` and none
+   for `label`, and the one place it wraps real radios uses `label`, because that
+   is what a radio's own text has to be. So the demand form's transaction and
+   move-in controls carried `class="on"` on the selected option and looked exactly
+   like the unselected ones, in both languages and at every width: the state was
+   in the DOM and never on the screen. The `on` rule is deliberately identical to
+   the `span` one, so a reader who has met one segmented control has met all
+   three, and the focus ring is drawn on the label because the radio it wraps is
+   visually hidden and an outline on a one pixel box is not a focus ring. */
+.seg label{display:inline-flex;align-items:center;font-size:12.5px;font-weight:600;color:var(--slate);padding:7px 14px;border-radius:6px;}
+.seg label.on{background:var(--paper);color:var(--ink);box-shadow:var(--sh-1);}
+.seg label:has(input:focus-visible){outline:2px solid var(--azure);outline-offset:2px;}
 .photo{position:relative;overflow:hidden;border-radius:10px;background:#2a3340;}
 .photo .sky{position:absolute;inset:0;}
 .photo .grid{position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 1px,transparent 1px 13px),repeating-linear-gradient(0deg,rgba(255,255,255,.13) 0 1px,transparent 1px 17px);}
@@ -647,7 +659,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
    control sets a smaller fixed height inline. Bare text links are intentionally
    excluded; icon-only controls opt in via .icon or [aria-label]. ---- */
 @media (pointer: coarse) {
-  button, [role="button"], .btn, .chip, .tabs .t, .seg span, .lang, .tabbar a,
+  button, [role="button"], .btn, .chip, .tabs .t, .seg span, .seg label, .lang, .tabbar a,
   select, summary, .melink {
     min-height: 44px;
   }
