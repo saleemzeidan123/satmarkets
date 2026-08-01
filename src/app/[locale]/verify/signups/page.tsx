@@ -63,7 +63,7 @@ export default async function SignupQueue() {
                 <td style={td}><a href={`mailto:${r.email}`} style={{ color: "var(--harbor-d)" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, color: "var(--slate)" }}>{r.phone}</div> : null}</td>
                 <td style={{ ...td, maxWidth: 260 }}>{detailsSummary(r.details)}</td>
                 <td style={td}>{r.locale}</td>
-                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber)" }}>{r.status}</span></td>
+                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber-d)" }}>{r.status}</span></td>
                 <td style={{ ...td, maxWidth: 180, color: "var(--slate)", fontSize: 12 }}>{r.notes || ""}</td>
                 <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>

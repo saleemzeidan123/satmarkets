@@ -65,8 +65,8 @@ const ASSET_TYPES = [
 ];
 
 const inp = "w-full rounded border border-charcoal/20 px-3 py-2 min-h-[44px]";
-const lbl = "block text-[12px] text-charcoal/60 mb-1";
-const help = "text-[11px] text-charcoal/45 mt-1";
+const lbl = "block text-[12px] text-charcoal/70 mb-1";
+const help = "text-[11px] text-charcoal/65 mt-1";
 
 function stateLabel(state: StepState, ar: boolean): string {
   switch (state) {
@@ -549,16 +549,16 @@ export default function ListingStudio({
         return (
           <div key={key} className="space-y-2">
             <label className={lbl} htmlFor="doc_files">{t("Supporting documents (private)", "المستندات الداعمة (خاصة)")}</label>
-            <p className="text-[11px] text-charcoal/55">
+            <p className="text-[11px] text-charcoal/65">
               {t("For SAT review only. Never shown to viewers, and uploading one does not by itself confirm anything.", "لمراجعة سات فقط. لا تظهر للزوار، ورفعها لا يؤكد شيئاً بذاته.")}
             </p>
             {isBroker && (
-              <p className="text-[11px] text-charcoal/60">
+              <p className="text-[11px] text-charcoal/70">
                 {t("As a broker, include your authorization to market and set its type below.", "بصفتك وسيطاً، أرفق تفويض التسويق واختر نوعه أدناه.")}
               </p>
             )}
             {stored.documents > 0 && (
-              <p className="text-[11px] text-charcoal/60">
+              <p className="text-[11px] text-charcoal/70">
                 {t(`${stored.documents} already attached. Anything you add here is added to those.`, `${stored.documents} مرفقة بالفعل. ما تضيفه هنا يُضاف إليها.`)}
               </p>
             )}
@@ -573,7 +573,7 @@ export default function ListingStudio({
             />
             {docFiles.map((file, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-[11px] text-charcoal/55 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+                <span className="text-[11px] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                 <select
                   aria-label={t("Document type", "نوع المستند")}
                   value={docKinds[i] ?? "deed"}
@@ -593,7 +593,7 @@ export default function ListingStudio({
             <div>
               <label className={lbl} htmlFor="photo_files">{t("Upload photographs", "ارفع الصور")} *</label>
               {stored.photos > 0 && (
-                <p className="text-[11px] text-charcoal/60 mb-1">
+                <p className="text-[11px] text-charcoal/70 mb-1">
                   {t(`${stored.photos} photographs are already saved to this listing.`, `${stored.photos} صور محفوظة بالفعل في هذا العرض.`)}
                 </p>
               )}
@@ -618,7 +618,7 @@ export default function ListingStudio({
       case "photo_set": {
         const n = stored.photos + photoUrls.length + files.length;
         return (
-          <p key={key} className="text-[12px] text-charcoal/60">
+          <p key={key} className="text-[12px] text-charcoal/70">
             {n >= PHOTO_SET_MIN
               ? t(`${n} photographs, which reads as a set.`, `${n} صور، وهو ما يُقرأ كمجموعة.`)
               : t(`${n} of ${PHOTO_SET_MIN}. One photograph shows a wall. A set shows the space a viewer would walk.`, `${n} من ${PHOTO_SET_MIN}. الصورة الواحدة تُظهر جداراً. المجموعة تُظهر المساحة كما يراها الزائر.`)}
@@ -631,7 +631,7 @@ export default function ListingStudio({
             <div>
               <label className={lbl} htmlFor="floor_files">{t("Floor plans (image or PDF)", "المخططات (صورة أو PDF)")}</label>
               {stored.floorplans > 0 && (
-                <p className="text-[11px] text-charcoal/60 mb-1">
+                <p className="text-[11px] text-charcoal/70 mb-1">
                   {t(`${stored.floorplans} plans are already saved to this listing.`, `${stored.floorplans} مخططات محفوظة بالفعل في هذا العرض.`)}
                 </p>
               )}
@@ -646,7 +646,7 @@ export default function ListingStudio({
               />
               {floorFiles.map((file, i) => (
                 <div key={i} className="flex items-center gap-2 mt-1.5">
-                  <span className="text-[11px] text-charcoal/55 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
+                  <span className="text-[11px] text-charcoal/65 truncate" style={{ maxWidth: 150 }}>{file.name}</span>
                   <select
                     aria-label={t("Plan type", "نوع المخطط")}
                     value={floorTypes[i] ?? defaultPlanType(f.asset_type)}
@@ -668,7 +668,7 @@ export default function ListingStudio({
                 {f.deal_type === "sale" ? t("Offering memorandum (PDF)", "مذكرة العرض (PDF)") : t("Marketing brochure (PDF)", "الكتيّب التسويقي (PDF)")}
               </label>
               <input key={`brochure-${uploadRound}`} id="brochure" type="file" accept="application/pdf" onChange={(e) => { touch(); setBrochureFile(e.target.files?.[0] ?? null); }} className="text-[13px]" />
-              {brochureFile && <p className="text-[11px] text-charcoal/55 mt-1">{brochureFile.name.slice(0, 40)}</p>}
+              {brochureFile && <p className="text-[11px] text-charcoal/65 mt-1">{brochureFile.name.slice(0, 40)}</p>}
             </div>
           </div>
         );
@@ -691,7 +691,7 @@ export default function ListingStudio({
         );
       case "district":
         return (
-          <p key={key} className="text-[12px] text-charcoal/60">
+          <p key={key} className="text-[12px] text-charcoal/70">
             {districtName
               ? t(`District derived from the pin: ${districtName}. You can move the pin to change it.`, `الحي المشتق من الدبوس: ${districtName}. يمكنك تحريك الدبوس لتغييره.`)
               : t("The district is derived from the pin once you place it.", "يُشتق الحي من الدبوس بعد وضعه.")}
@@ -699,7 +699,7 @@ export default function ListingStudio({
         );
       case "building":
         return (
-          <p key={key} className="text-[12px] text-charcoal/60">
+          <p key={key} className="text-[12px] text-charcoal/70">
             {t("SAT links the building record after review, so building facts show as context rather than as facts about this space.", "تربط سات سجل المبنى بعد المراجعة، لتظهر حقائق المبنى كسياق لا كحقائق عن هذه المساحة.")}
           </p>
         );
@@ -759,7 +759,7 @@ export default function ListingStudio({
     const dName = placeName(d, isAr ? "ar" : "en") || null;
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="rounded border border-line p-3" lang={l}>
-        <div className="text-[11px] uppercase tracking-wide text-charcoal/45 mb-1">{isAr ? "العربية" : "English"}</div>
+        <div className="text-[11px] uppercase tracking-wide text-charcoal/65 mb-1">{isAr ? "العربية" : "English"}</div>
         <div className="font-display text-lg text-charcoal">
           {title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </div>
@@ -772,7 +772,7 @@ export default function ListingStudio({
             {areaText ?? ""}{areaText && priceText ? " · " : ""}{priceText ?? ""}
           </div>
         )}
-        {body && <p className="text-[13px] text-charcoal/60 mt-2 whitespace-pre-line">{body}</p>}
+        {body && <p className="text-[13px] text-charcoal/70 mt-2 whitespace-pre-line">{body}</p>}
       </div>
     );
   }
@@ -936,7 +936,7 @@ export default function ListingStudio({
           <div className="text-[12px] text-charcoal/70">
             {t(`Step ${step.index} of ${steps.length}`, `الخطوة ${step.index} من ${steps.length}`)}
           </div>
-          <div className="text-[12px] text-charcoal/60">
+          <div className="text-[12px] text-charcoal/70">
             {t(`${progress.answered} of ${progress.askable} facts supplied`, `${progress.answered} من ${progress.askable} حقيقة مُدخلة`)}
           </div>
         </div>
@@ -973,11 +973,11 @@ export default function ListingStudio({
                   aria-current={isHere ? "step" : undefined}
                   className={
                     "rounded border px-2.5 py-2 text-[12px] min-h-[44px] whitespace-nowrap " +
-                    (isHere ? "border-signal text-signal font-medium" : "border-line text-charcoal/60")
+                    (isHere ? "border-signal text-signal font-medium" : "border-line text-charcoal/70")
                   }
                 >
                   <span>{ar ? s.title_ar : s.title_en}</span>
-                  {/* text-red, not text-red-600. tailwind.config.ts sets colors.red to a
+                  {/* text-red, not text-red. tailwind.config.ts sets colors.red to a
                       single hex string, which replaces Tailwind's default red scale
                       object wholesale, so every numeric shade of it stops existing and
                       the class compiles to nothing. This marker was invisible. */}
@@ -998,10 +998,10 @@ export default function ListingStudio({
       <section className="mt-4 rounded-lg border border-line p-4" aria-labelledby="step-title">
         {/* ELITE-4 J2-7: the heading takes focus after every step change. */}
         <h2 id="step-title" tabIndex={-1} className="font-display text-lg text-charcoal">{ar ? step.title_ar : step.title_en}</h2>
-        <p className="text-[12px] text-charcoal/55 mt-1">{ar ? step.purpose_ar : step.purpose_en}</p>
+        <p className="text-[12px] text-charcoal/65 mt-1">{ar ? step.purpose_ar : step.purpose_en}</p>
         {/* ELITE-4 J2-11: the asterisk had no key anywhere on the screen. */}
         {step.kind !== "review" && (
-          <p className="text-[11px] text-charcoal/45 mt-1">{t("* marks a fact this listing cannot be saved without.", "* يشير إلى حقيقة لا يمكن حفظ العرض بدونها.")}</p>
+          <p className="text-[11px] text-charcoal/65 mt-1">{t("* marks a fact this listing cannot be saved without.", "* يشير إلى حقيقة لا يمكن حفظ العرض بدونها.")}</p>
         )}
 
         <div className="mt-4 space-y-3">
@@ -1014,7 +1014,7 @@ export default function ListingStudio({
                   value={f.asset_type}
                   disabled={listingId !== null}
                   onChange={(e) => onAssetChange(e.target.value)}
-                  className={inp + (listingId !== null ? " bg-charcoal/5 text-charcoal/60" : "")}
+                  className={inp + (listingId !== null ? " bg-charcoal/5 text-charcoal/70" : "")}
                 >
                   {ASSET_TYPES.map((a) => <option key={a} value={a}>{assetLabel(a, loc)}</option>)}
                 </select>
@@ -1065,7 +1065,7 @@ export default function ListingStudio({
               <div>
                 <div className="text-[12px] font-medium text-charcoal/80">{t("Still missing", "ما زال ناقصاً")}</div>
                 {missing.length === 0 ? (
-                  <p className="text-[12px] text-charcoal/60 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن تحملها هذه القائمة موجودة.")}</p>
+                  <p className="text-[12px] text-charcoal/70 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن تحملها هذه القائمة موجودة.")}</p>
                 ) : (
                   <ul className="mt-1.5 space-y-2">
                     {missing.map((c) => (
@@ -1077,8 +1077,8 @@ export default function ListingStudio({
                         >
                           {ar ? c.label_ar : c.label_en}
                         </button>
-                        <span className="text-charcoal/45"> · {weightLabel(c.weight, ar)}</span>
-                        <p className="text-[11px] text-charcoal/50">{ar ? c.why_ar : c.why_en}</p>
+                        <span className="text-charcoal/65"> · {weightLabel(c.weight, ar)}</span>
+                        <p className="text-[11px] text-charcoal/65">{ar ? c.why_ar : c.why_en}</p>
                       </li>
                     ))}
                   </ul>
@@ -1091,7 +1091,7 @@ export default function ListingStudio({
                   {preview("ar")}
                 </div>
               </div>
-              <p className="text-[11px] text-charcoal/50">
+              <p className="text-[11px] text-charcoal/65">
                 {t("Saved as a draft. SAT reviews a listing before it publishes, and nothing here is a confirmation by SAT.", "يُحفظ كمسودة. تراجع سات العرض قبل نشره، ولا شيء هنا تأكيد من سات.")}
               </p>
             </div>
@@ -1099,7 +1099,7 @@ export default function ListingStudio({
         </div>
 
         {here && here.askable > 0 && step.kind !== "review" && (
-          <p className="mt-4 text-[12px] text-charcoal/55">
+          <p className="mt-4 text-[12px] text-charcoal/65">
             {t(`${here.answered} of ${here.askable} on this step. `, `${here.answered} من ${here.askable} في هذه الخطوة. `)}
             {stateLabel(here.state, ar)}
           </p>
@@ -1156,7 +1156,7 @@ export default function ListingStudio({
               ? t("Save changes", "حفظ التغييرات")
               : t("Save draft", "حفظ المسودة")}
         </button>
-        <span className="text-[11px] text-charcoal/50">
+        <span className="text-[11px] text-charcoal/65">
           {saveBlockers.length === 0
             ? t("You can save now and finish later.", "يمكنك الحفظ الآن وإكمال الباقي لاحقاً.")
             : t(`${saveBlockers.length} facts are needed before this can be saved.`, `${saveBlockers.length} حقائق مطلوبة قبل الحفظ.`)}

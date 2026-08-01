@@ -98,7 +98,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         ...(b.district_id ? [{ "@type": "ListItem", position: 3, name: ar ? (b.district_label_ar || b.district_label) : b.district_label, item: `${SITE}/${locale}/listings?district=${b.district_id}` }] : []),
         { "@type": "ListItem", position: b.district_id ? 4 : 3, name, item: `${SITE}/${locale}/building/${b.id}` },
       ] }} />
-      <Link href={`/${locale}/map`} className="text-[13px] text-charcoal/55 hover:text-charcoal">{ar ? "→" : "←"} {T.back}</Link>
+      <Link href={`/${locale}/map`} className="text-[13px] text-charcoal/65 hover:text-charcoal">{ar ? "→" : "←"} {T.back}</Link>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="relative h-52 sm:h-60">
@@ -120,10 +120,10 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
           {band ? (
             <div>
-              <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{T.rentBand}</div>
+              <div className="text-[10px] uppercase tracking-wide text-charcoal/65">{T.rentBand}</div>
               <div className="mt-0.5 flex items-baseline gap-2">
                 <span className="fig text-[26px]" style={{ color: GOLD }}>{formatInteger(Math.round(band.median), locale)}</span>
-                <span className="fig text-[12px] text-charcoal/55">{/* PKG-FIG1, findings 125 and 127. A bare `toLocaleString()` resolves the
+                <span className="fig text-[12px] text-charcoal/65">{/* PKG-FIG1, findings 125 and 127. A bare `toLocaleString()` resolves the
                     runtime default rather than the page; a stated low with an absent high
                     printed "1,800-0"; and the separator was spelled here rather than read
                     from `formatRange`, which is the only place that knows Arabic takes
@@ -134,14 +134,14 @@ export default async function BuildingPage({ params }: { params: { locale: strin
                   rent_index_published, whose own data_class is synthetic. It now names
                   the source, which is also the attribution owner ruling 2 requires of
                   every Rent Index reference on the platform. */}
-              <div className="mt-1 text-[11px] text-charcoal/45">{T.bandSource}</div>
+              <div className="mt-1 text-[11px] text-charcoal/65">{T.bandSource}</div>
               {/* The sentence sits with the figure, not in a footer, because a
                   reader who sees the number and not the sentence has been told
                   something untrue about it. */}
-              {bandStatement ? <div className="mt-1 text-[11px] leading-snug text-charcoal/55">{bandStatement}</div> : null}
+              {bandStatement ? <div className="mt-1 text-[11px] leading-snug text-charcoal/65">{bandStatement}</div> : null}
             </div>
-          ) : <div className="text-[13px] text-charcoal/45">{T.noBand}</div>}
-          <span className="text-[13px] text-charcoal/60"><span className="fig">{listings.length}</span> {T.units}</span>
+          ) : <div className="text-[13px] text-charcoal/65">{T.noBand}</div>}
+          <span className="text-[13px] text-charcoal/70"><span className="fig">{listings.length}</span> {T.units}</span>
         </div>
       </div>
 
@@ -170,16 +170,16 @@ export default async function BuildingPage({ params }: { params: { locale: strin
         {mobility.available ? (
           <>
             <div className="mt-3 fig text-[26px]" style={{ color: TEAL }}>{mobility.value}</div>
-            <p className="mt-1 text-[11px] text-charcoal/60">
+            <p className="mt-1 text-[11px] text-charcoal/70">
               {T.mobilityK} <span className="fig">{mobility.k}</span> · {T.mobilityPeriod} <span className="fig">{mobility.periodEnd}</span> · {T.mobilityCoverage} <span className="fig">{Math.round(mobility.coverageShare * 100)}%</span>
             </p>
-            <p className="mt-1 text-[11px] text-charcoal/60">{mobility.method}</p>
-            <p className="mt-1 text-[11px] text-charcoal/60">{mobility.attribution}</p>
+            <p className="mt-1 text-[11px] text-charcoal/70">{mobility.method}</p>
+            <p className="mt-1 text-[11px] text-charcoal/70">{mobility.attribution}</p>
           </>
         ) : (
           <p className="mt-3 text-[13px] leading-relaxed text-charcoal/70">{T[mobility.statusKey]}</p>
         )}
-        <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/60">{T.mobilityRule}</p>
+        <p className="mt-4 border-t border-line pt-3 text-[12.5px] leading-relaxed text-charcoal/70">{T.mobilityRule}</p>
       </div>
 
       {/* The subtitle read "Verified" above the whole unit grid, which claimed for
@@ -187,7 +187,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
           states its own verification for itself. */}
       <SectionLabel n="02" title={T.unitsSec} sub="" />
       {listings.length === 0 ? (
-        <p className="mt-3 text-[14px] text-charcoal/50">{T.noUnits}</p>
+        <p className="mt-3 text-[14px] text-charcoal/65">{T.noUnits}</p>
       ) : (
         <div className="mt-3 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((l)=>(<ListingCard key={l.id} listing={l} locale={locale} ui={dict.ui} />))}
@@ -195,17 +195,17 @@ export default async function BuildingPage({ params }: { params: { locale: strin
       )}
 
       <div className="mt-6 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-4"><Link href={`/${locale}/area?district=${b.district_id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.areaReport} {ar ? "←" : "→"}</Link><Link href={`/${locale}/listings?asset=${b.asset_type}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.browseUse} {ar ? "←" : "→"}</Link><Link href={`/${locale}/rent-index`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-signal hover:underline">{T.rentIndexLink} {ar ? "←" : "→"}</Link></div>
-      <p className="mt-6 text-xs text-charcoal/40">{T.note}</p>
+      <p className="mt-6 text-xs text-charcoal/65">{T.note}</p>
     </section>
   );
 }
 
 function SectionLabel({ n, title, sub }: { n: string; title: string; sub: string }) {
-  return (<div className="mt-8 flex items-baseline gap-3 border-b border-line pb-2"><span className="fig text-[12px] text-charcoal">{n}</span><h2 className="font-display text-xl text-charcoal">{title}</h2>{sub ? <span className="text-[11px] uppercase tracking-wide text-charcoal/40">{sub}</span> : null}</div>);
+  return (<div className="mt-8 flex items-baseline gap-3 border-b border-line pb-2"><span className="fig text-[12px] text-charcoal">{n}</span><h2 className="font-display text-xl text-charcoal">{title}</h2>{sub ? <span className="text-[11px] uppercase tracking-wide text-charcoal/65">{sub}</span> : null}</div>);
 }
 function Kpi({ label, value, tone }: { label: string; value: string; tone: "live" | "verified" }) {
   const c = tone === "live" ? TEAL : GOLD;
-  return (<div className="card p-3.5"><div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-charcoal/45"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />{label}</div><div className="mt-1 fig text-[20px] tracking-tight" style={{ color: c }}>{value}</div></div>);
+  return (<div className="card p-3.5"><div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-charcoal/65"><span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: c }} />{label}</div><div className="mt-1 fig text-[20px] tracking-tight" style={{ color: c }}>{value}</div></div>);
 }
 // ADV-5B. `Card`, `Ring` and `Bar` were deleted with the panels they drew. The
 // sample-tag branch of `Card` is not worth keeping against a future need: a tag

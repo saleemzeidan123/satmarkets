@@ -171,7 +171,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
 
   // A confirmed viewing is harbor, not green. Green states that evidence was checked, and
   // a lister agreeing to a time is an agreement, not a verification.
-  const vTone = (s: string) => (s === "confirmed" ? "var(--harbor)" : s === "requested" ? "var(--amber)" : "var(--slate)");
+  const vTone = (s: string) => (s === "confirmed" ? "var(--harbor)" : s === "requested" ? "var(--amber-d)" : "var(--slate)");
   const vLabel = (s: string) =>
     ({ requested: t.vRequested, confirmed: t.vConfirmed, cancelled: t.vCancelled, completed: t.vCompleted, no_show: t.vNoShow } as Record<string, string>)[s] ?? s;
   const vWhen = (iso: string) =>

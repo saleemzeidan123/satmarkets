@@ -118,11 +118,11 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
               <div id={MENU_ID} role="group" aria-label={menuLabel} className="absolute end-0 top-full z-50 mt-2 w-[270px] overflow-hidden rounded-xl border border-line bg-ivory shadow-[0_18px_44px_rgba(20,24,28,0.20)]">
                 <div className="border-b border-line bg-ivory-2 px-4 py-3">
                   <p className="text-[14px] font-semibold text-charcoal">{welcomeTitle}</p>
-                  <p className="mt-0.5 text-[11.5px] text-charcoal/55">{welcomeSub}</p>
+                  <p className="mt-0.5 text-[11.5px] text-charcoal/65">{welcomeSub}</p>
                 </div>
 
                 <div className="px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/40">{browseLabel}</p>
+                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/65">{browseLabel}</p>
                   {nav.map((n) => (
                     <Link key={n.href} href={n.href} className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] hover:bg-ivory-2 ${active(n.href) ? "bg-ivory-2 font-medium text-charcoal" : "text-charcoal/80"}`}>
                       {n.label}
@@ -131,7 +131,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 </div>
 
                 <div className="border-t border-line px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/40">{accountLabel}</p>
+                  <p className="px-2 pb-1 pt-1 text-[10.5px] font-semibold uppercase tracking-wider text-charcoal/65">{accountLabel}</p>
                   {/* ELITE-4 J3-38: the badge is a bare number beside the link text. */}
                   <Link href={`/${locale}/saved`} aria-label={saved > 0 ? `${savedLabel} ${saved}` : undefined} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[14px] text-charcoal/80 hover:bg-ivory-2">
                     <span>{savedLabel}</span>
@@ -145,7 +145,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 </div>
 
                 <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:hidden">
-                  <span className="text-[12px] text-charcoal/55">{dict.nav.language}</span>
+                  <span className="text-[12px] text-charcoal/65">{dict.nav.language}</span>
                   <LanguageSwitch locale={locale} />
                 </div>
               </div>

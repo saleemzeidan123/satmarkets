@@ -33,7 +33,7 @@ import {
 
 const TONE: Record<PackReadiness, string> = {
   ready: "var(--harbor)",
-  ask_first: "var(--amber)",
+  ask_first: "var(--amber-d)",
   not_ready: "var(--slate)",
 };
 
@@ -104,7 +104,7 @@ export default function DecisionPackPanel({
               <div className="row gap12 wrap" style={{ alignItems: "baseline" }}>
                 <span style={{ fontSize: 13.5, fontWeight: 600 }}>{comparabilityLabel(c.kind, ar)}</span>
                 {!c.comparable && (
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber)" }}>{t.held}</span>
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--amber-d)" }}>{t.held}</span>
                 )}
               </div>
               <p style={{ fontSize: 12.5, lineHeight: 1.6, margin: "5px 0 0", color: "var(--ink)" }}>
@@ -159,7 +159,7 @@ export default function DecisionPackPanel({
                         style={{
                           fontSize: 11,
                           fontWeight: 700,
-                          color: d.state === "unknown" || d.state === "stale" ? "var(--amber)" : "var(--slate)",
+                          color: d.state === "unknown" || d.state === "stale" ? "var(--amber-d)" : "var(--slate)",
                         }}
                       >
                         {stateLabel(d.state, ar)}

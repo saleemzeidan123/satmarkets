@@ -139,19 +139,19 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
         {/* ELITE-4 J2-4: the box was named by its placeholder alone, which is not an
             accessible name once anything is typed into it. */}
         <input className={inp} aria-label={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")} placeholder={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")} value={q} onChange={(e) => setQ(e.target.value)} />
-        {resolving && <p className="text-[11px] text-charcoal/45 mt-1">{t("Resolving the map link...", "جارٍ فتح رابط الخريطة...")}</p>}
+        {resolving && <p className="text-[11px] text-charcoal/65 mt-1">{t("Resolving the map link...", "جارٍ فتح رابط الخريطة...")}</p>}
         {results.length > 0 && (
           <div className="absolute z-10 mt-1 w-full rounded border border-line bg-white shadow max-h-56 overflow-auto">
             {results.map((r, i) => (
               <button type="button" key={i} className="block w-full text-left px-3 py-2 hover:bg-ivory-2 text-[13px]" onClick={() => { setQ(r.label); setResults([]); place(r.lat, r.lng, true); }}>
-                <span className="font-medium">{r.label}</span>{r.sub ? <span className="text-charcoal/50"> · {r.sub}</span> : null}
+                <span className="font-medium">{r.label}</span>{r.sub ? <span className="text-charcoal/65"> · {r.sub}</span> : null}
               </button>
             ))}
           </div>
         )}
       </div>
       <div ref={mapEl} style={{ height: 260, borderRadius: 8, overflow: "hidden", border: "1px solid #dfe3e8" }} />
-      <p className="text-[11px] text-charcoal/45">{t("Click the map or drag the pin to your building. If no location is on file yet, the closest one is offered from your pin. It is a best match, not a confirmed boundary.", "انقر على الخريطة أو اسحب العلامة إلى المبنى. إذا لم يكن هناك موقع مسجّل بعد، يُقترح أقرب موقع من علامتك، وهو أقرب تطابق وليس حدوداً مؤكدة.")}</p>
+      <p className="text-[11px] text-charcoal/65">{t("Click the map or drag the pin to your building. If no location is on file yet, the closest one is offered from your pin. It is a best match, not a confirmed boundary.", "انقر على الخريطة أو اسحب العلامة إلى المبنى. إذا لم يكن هناك موقع مسجّل بعد، يُقترح أقرب موقع من علامتك، وهو أقرب تطابق وليس حدوداً مؤكدة.")}</p>
       <div className="flex gap-3">
         {/* ELITE-4 J2-4: both coordinate boxes were named by placeholder only. */}
         <input className={inp + " flex-1"} type="number" step="any" aria-label={t("Latitude", "خط العرض")} placeholder={t("Latitude", "خط العرض")} value={lat ?? ""}
@@ -159,10 +159,10 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
         <input className={inp + " flex-1"} type="number" step="any" aria-label={t("Longitude", "خط الطول")} placeholder={t("Longitude", "خط الطول")} value={lng ?? ""}
           onChange={(e) => { const v = e.target.value === "" ? null : Number(e.target.value); setLng(v); if (v != null && Number.isFinite(v) && lat != null) place(lat, v, true); }} />
       </div>
-      <div className="text-[12px] text-charcoal/60">
+      <div className="text-[12px] text-charcoal/70">
         {shown
-          ? <>{kindLabel(shown.kind, ar)}: <span className="font-medium">{placeName(shown, ar ? "ar" : "en")}</span>{shown.city ? <span className="text-charcoal/45">, {cityLabel(shown.city, ar ? "ar" : "en")}</span> : null} <span className="text-charcoal/40">({recorded ? t("on file", "المسجّل") : t("from your pin", "من موقع العلامة")})</span></>
-          : <span className="text-charcoal/45">{t("Place a pin to set the location.", "ضع علامة لتحديد الموقع.")}</span>}
+          ? <>{kindLabel(shown.kind, ar)}: <span className="font-medium">{placeName(shown, ar ? "ar" : "en")}</span>{shown.city ? <span className="text-charcoal/65">, {cityLabel(shown.city, ar ? "ar" : "en")}</span> : null} <span className="text-charcoal/65">({recorded ? t("on file", "المسجّل") : t("from your pin", "من موقع العلامة")})</span></>
+          : <span className="text-charcoal/65">{t("Place a pin to set the location.", "ضع علامة لتحديد الموقع.")}</span>}
       </div>
 
       {consistency.verdict === "contradicted" && (

@@ -57,12 +57,12 @@ export default function ListingCard({ listing, locale, ui }: {
       </div>
       <div className="p-4">
         <h3 className="font-display text-[17px] leading-snug text-charcoal line-clamp-1">{title}</h3>
-        <div className="mt-1 text-[13px] text-charcoal/55">{[place, areaFig, listing.building_grade !== "n_a" ? gradeLabel(listing.building_grade, locale) : ""].filter(Boolean).join(" · ")}</div>
+        <div className="mt-1 text-[13px] text-charcoal/65">{[place, areaFig, listing.building_grade !== "n_a" ? gradeLabel(listing.building_grade, locale) : ""].filter(Boolean).join(" · ")}</div>
         <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
           {/* This tick used to be unconditional, then it read the publish gate. It now
               names the gates this record has actually cleared. */}
           {badges.length > 0 ? (
-            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/50">
+            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/65">
               {/* The hex is literal because var() does not resolve in an SVG stroke
                   presentation attribute, and this tick once rendered off-palette teal,
                   which both broke the reservation and made the strongest signal on the
@@ -72,12 +72,12 @@ export default function ListingCard({ listing, locale, ui }: {
               {badges.join(locale === "ar" ? "، " : " · ")}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/40">
+            <span className="inline-flex items-center gap-1 text-[12px] text-charcoal/65">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/></svg>
               {ui.verificationIncomplete}
             </span>
           )}
-          <span className="text-[12px] text-charcoal/40 transition group-hover:text-signal">{ui.view} {locale === "ar" ? "←" : "→"}</span>
+          <span className="text-[12px] text-charcoal/65 transition group-hover:text-signal">{ui.view} {locale === "ar" ? "←" : "→"}</span>
         </div>
       </div>
     </Link>

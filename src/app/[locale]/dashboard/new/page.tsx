@@ -36,7 +36,7 @@ export default async function NewListingPage({
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const sb = getSupabaseServer();
-  if (!sb) return <p className="text-charcoal/50">Not configured.</p>;
+  if (!sb) return <p className="text-charcoal/65">Not configured.</p>;
   // This used to fall back to a hardcoded PREVIEW_ACCOUNT, which was SAT's own
   // account id, so an unauthenticated visitor was silently pointed at SAT's
   // inventory. Listing requires a real, verified account. No fallback.

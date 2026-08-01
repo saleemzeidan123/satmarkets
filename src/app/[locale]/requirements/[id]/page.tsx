@@ -180,7 +180,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
             // and answering a requirement verifies nothing.
             const tone = m.verdict === "exact"
               ? { fg: "var(--status-info)", bg: "var(--status-info-wash)" }
-              : { fg: "var(--status-attention)", bg: "var(--status-attention-wash)" };
+              : { fg: "var(--status-attention-text)", bg: "var(--status-attention-wash)" };
             const mt = (ar ? m.name_ar : m.name_en) || m.listing_id;
             return (
              <div key={m.listing_id} style={{ background: "var(--paper)", border: `1px solid ${on ? "var(--border-brand)" : "var(--silver)"}`, borderRadius: 11, padding: 12 }}>
@@ -197,7 +197,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
                  <li key={r.key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12.3, lineHeight: 1.6 }}>
                   {/* The mark is decoration. The state reaches a reader through
                       the visually hidden word below, not through this. */}
-                  <span aria-hidden="true" className="mono" style={{ flex: "none", width: 16, textAlign: "center", color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention)" }}>{NOTE[r.state]}</span>
+                  <span aria-hidden="true" className="mono" style={{ flex: "none", width: 16, textAlign: "center", color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention-text)" }}>{NOTE[r.state]}</span>
                   <span style={{ minWidth: 0 }}>
                    {/* ELITE-4 J4-6: the state as a word. The mark above it is
                        aria-hidden and the colour is not exposed at all, so

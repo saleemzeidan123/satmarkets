@@ -68,7 +68,7 @@ export default async function ViewingsPage({ params }: { params: { locale: strin
   const label = (s: string) => (t as any)[s] ?? s;
   const tone = (s: string) =>
     s === "confirmed" ? "var(--harbor)"
-    : s === "requested" ? "var(--amber)"
+    : s === "requested" ? "var(--amber-d)"
     : "var(--slate)";
 
   if (!rows.length) {

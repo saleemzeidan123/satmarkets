@@ -36,7 +36,7 @@ export default async function ViewingsQueue() {
   const { data } = await sb.from("viewings").select("id, created_at, scheduled_at, status, contact_name, contact_email, qualification, listings(reference_code, title_en, is_sat_listed)").order("created_at", { ascending: false }).limit(300);
   const rows = (data ?? []) as unknown as Row[];
   const pending = rows.filter((r) => r.status === "requested").length;
-  const sColor: Record<string, string> = { requested: "var(--amber)", confirmed: "var(--harbor-d)", completed: "var(--harbor-d)", cancelled: "var(--red)", no_show: "var(--red)" };
+  const sColor: Record<string, string> = { requested: "var(--amber-d)", confirmed: "var(--harbor-d)", completed: "var(--harbor-d)", cancelled: "var(--red)", no_show: "var(--red)" };
   return (
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: 11, letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>

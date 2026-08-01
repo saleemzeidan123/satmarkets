@@ -15,7 +15,12 @@ const config: Config = {
         azure: "#3A6EA5", "azure-d": "#2C557F", "azure-l": "#9DBBD6", "azure-wash": "#ECF2F8",
         brass: "#A88B5C", stone: "#EDE7DC",
         green: "#1B7A50", "green-wash": "#E7F4ED", "green-line": "#BFE3CF",
-        amber: "#B7791F", red: "#C8412E",
+        // `amber` stays the mark colour: it is used for dots, bars and icon fills where
+        // SC 1.4.11 asks 3 to 1 and #B7791F gives 3.64 to 1 on paper. It may not carry text.
+        // `amber-d` is the text-safe step, 5.91 to 1 on paper and 5.36 to 1 on `amber-wash`,
+        // introduced in PKG-A11Y-1 to close findings 166 and 179 without repainting the marks.
+        amber: "#B7791F", "amber-d": "#8A5A12", "amber-wash": "#FBF3E3", "amber-line": "#E4D2A6",
+        red: "#C8412E",
         line: "rgba(28,33,38,0.10)",
         charcoal: "#14181B",
         ivory: "#F6F8FB", "ivory-2": "#E9EDF1",

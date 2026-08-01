@@ -288,7 +288,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       <div className="side">
        <div className="h"><span className="freeze capped"><span className="dot" />{ri.capped}</span> {ri.cappedExisting}</div>
        <div className="sub">{ri.cappedBody}</div>
-       <div className="big" style={{ color: "var(--amber)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.cappedMovement}</span></div>
+       <div className="big" style={{ color: "var(--amber-d)" }}>≈ 0.0% <span style={{ fontSize: 13, color: "var(--slate)" }}>{ri.cappedMovement}</span></div>
       </div>
       <div className="side">
        <div className="h"><span className="freeze open"><span className="dot" />{ri.open}</span> {ri.openNew}</div>

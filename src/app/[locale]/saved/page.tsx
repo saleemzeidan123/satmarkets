@@ -125,7 +125,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
         <div>
           <div className="eyebrow">{T.title}</div>
           <h1 className="mt-1 font-display text-3xl text-charcoal">{T.title} {!loading && listings.length > 0 ? <span className="fig text-charcoal">· {listings.length}</span> : null}</h1>
-          <p className="mt-1 text-charcoal/60">{T.sub}</p>
+          <p className="mt-1 text-charcoal/70">{T.sub}</p>
         </div>
         {listings.length > 0 ? <button onClick={clearAll} className="btn-ghost px-3.5 py-2 text-[13px] text-charcoal/70">{T.clear}</button> : null}
       </div>
@@ -136,13 +136,13 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
         </div>
       )}
       {loading ? (
-        <p className="mt-10 text-charcoal/50">{T.loading}</p>
+        <p className="mt-10 text-charcoal/65">{T.loading}</p>
       ) : listings.length === 0 ? (
         <div className="mt-10 rounded-2xl border border-dashed border-line bg-white/60 p-10 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10 text-signal">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
           </div>
-          <p className="text-charcoal/60">{T.empty}</p>
+          <p className="text-charcoal/70">{T.empty}</p>
           <Link href={`/${locale}/listings`} className="btn-gold mt-5 inline-block px-5 py-2.5 text-sm font-medium">{T.browse}</Link>
         </div>
       ) : (
@@ -152,7 +152,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
             {folderNames.map((n) => (
               <button key={n} onClick={() => setActiveFolder(n)} className={activeFolder === n ? "chip on" : "chip"}>{n} · {listings.filter((l) => folders[l.id] === n).length}</button>
             ))}
-            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/40">{onAccount ? T.fAccount : T.fDevice}</span>}
+            {folderNames.length > 0 && <span className="text-[11px] text-charcoal/65">{onAccount ? T.fAccount : T.fDevice}</span>}
           </div>
           <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {shownL.map((l) => (
@@ -189,7 +189,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="border-b border-line">
-                    <th className="p-3 text-start text-[11px] uppercase tracking-wide text-charcoal/40"></th>
+                    <th className="p-3 text-start text-[11px] uppercase tracking-wide text-charcoal/65"></th>
                     {shownL.map((l) => (<th key={l.id} className="p-3 text-start font-display text-[14px] text-charcoal">{listingTitle(l, ar ? "ar" : "en")}</th>))}
                   </tr>
                 </thead>
@@ -197,7 +197,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
                   <Row label={T.deal}>{shownL.map((l) => <Cell key={l.id}>{dealLabel(l.deal_type, locale)}</Cell>)}</Row>
                   <Row label={T.type}>{shownL.map((l) => <Cell key={l.id}>{assetLabel(l.asset_type, locale)}</Cell>)}</Row>
                   <Row label={T.price}>{shownL.map((l) => <Cell key={l.id}><span className="fig text-charcoal">{priceOf(l)}</span>{pxNote(l.id)}</Cell>)}</Row>
-                  <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/40">{T.noIndex}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? `${T.belowPre}${a}${T.belowSuf}` : v.status === "above" ? `${T.abovePre}${a}${T.aboveSuf}` : T.withinBand; const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
+                  <Row label={T.vsIdx}>{shownL.map((l) => { const v = (l as any).vs_index; if (!v) return <Cell key={l.id}><span className="text-charcoal/65">{T.noIndex}</span></Cell>; const a = Math.abs(v.deltaPct ?? 0); const txt = v.status === "below" ? `${T.belowPre}${a}${T.belowSuf}` : v.status === "above" ? `${T.abovePre}${a}${T.aboveSuf}` : T.withinBand; const col = v.status === "below" ? "var(--dv-quote-below)" : v.status === "above" ? "var(--dv-quote-above)" : "var(--dv-quote-within)"; return <Cell key={l.id}><span className="fig" style={{ color: col, fontWeight: 600 }}>{txt}</span></Cell>; })}</Row>
                   <Row label={T.size}>{shownL.map((l) => <Cell key={l.id}><span className="fig">{netArea((l as any).area_sqm, locale) ?? dict.common.na}</span></Cell>)}</Row>
                   <Row label={T.grade}>{shownL.map((l) => <Cell key={l.id}>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? gradeLabel((l as any).building_grade, locale) : dict.common.na}</Cell>)}</Row>
                   <Row label={T.district}>{shownL.map((l) => <Cell key={l.id}>{distOf(l)}</Cell>)}</Row>
@@ -205,7 +205,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
               </table>
             </div>
             {idxNotes.map((n) => (
-              <div key={n} className="px-3 pt-2 text-[11.5px] leading-relaxed text-charcoal/55">{n}</div>
+              <div key={n} className="px-3 pt-2 text-[11.5px] leading-relaxed text-charcoal/65">{n}</div>
             ))}
           </div>
         </>
@@ -215,7 +215,7 @@ export default function SavedPage({ params }: { params: { locale: string } }) {
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (<tr className="border-b border-line/70"><td className="p-3 text-[11px] uppercase tracking-wide text-charcoal/40">{label}</td>{children}</tr>);
+  return (<tr className="border-b border-line/70"><td className="p-3 text-[11px] uppercase tracking-wide text-charcoal/65">{label}</td>{children}</tr>);
 }
 function Cell({ children }: { children: React.ReactNode }) {
   return (<td className="p-3 align-top">{children}</td>);

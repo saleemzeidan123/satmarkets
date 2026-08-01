@@ -889,7 +889,7 @@
     "privacyNote": "Visible to owners, brokers & SAT · your identity stays private until you respond.",
     "posting": "Posting…",
     "postReqBtn": "Post requirement",
-    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with owners and licensed brokers on SAT Markets so they can respond to me. I can withdraw this at any time.",
+    "consentLabel": "I agree that SAT Markets may share the details of this requirement, including my contact details, with owners and licensed brokers on SAT Markets so they can respond to me. This preview has no self-service control for withdrawing that consent yet.",
     "location": "Location",
     "locationPh": "Choose a location",
     "locationNote": "A requirement carries one location, so the count of matching spaces below is a count for that location. Post a second requirement for a second location.",

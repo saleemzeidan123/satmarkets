@@ -250,27 +250,27 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
     download("sat-audit-" + period + ".csv", head + "\n" + body);
   };
 
-  const H = ({ n, en, arr }: { n: string; en: string; arr: string }) => (<div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{n}</p><h2 className="text-lg font-semibold text-slate-900">{t(en, arr)}</h2></div>);
-  const btn = "rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 disabled:opacity-40";
+  const H = ({ n, en, arr }: { n: string; en: string; arr: string }) => (<div className="mb-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate">{n}</p><h2 className="text-lg font-semibold text-ink">{t(en, arr)}</h2></div>);
+  const btn = "rounded border border-silver-2 px-2 py-0.5 text-xs text-ink-2 disabled:opacity-40";
   const rentIndex = "/" + params.locale + "/rent-index";
 
   const verdictChip = (c: Cell) => {
-    if (c.verdict === "override") return (<span><span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Thin (override)", "قليل (تجاوز)")}</span><span className="ms-1 text-xs text-slate-400">{t("computed: ", "محسوب: ")}{c.computed === "sufficient" ? t("Sufficient", "كافٍ") : c.computed === "disagree" ? t("Disagreement", "تعارض") : t("Thin", "قليل")}</span></span>);
+    if (c.verdict === "override") return (<span><span className="rounded bg-amber-wash px-2 py-0.5 text-xs text-amber-d">{t("Thin (override)", "قليل (تجاوز)")}</span><span className="ms-1 text-xs text-slate">{t("computed: ", "محسوب: ")}{c.computed === "sufficient" ? t("Sufficient", "كافٍ") : c.computed === "disagree" ? t("Disagreement", "تعارض") : t("Thin", "قليل")}</span></span>);
     if (c.verdict === "sufficient") return <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{t("Sufficient", "كافٍ")}</span>;
-    if (c.verdict === "disagree") return <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Disagreement", "تعارض المصادر")}</span>;
-    return <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Thin", "قليل")}</span>;
+    if (c.verdict === "disagree") return <span className="rounded bg-amber-wash px-2 py-0.5 text-xs text-amber-d">{t("Disagreement", "تعارض المصادر")}</span>;
+    return <span className="rounded bg-amber-wash px-2 py-0.5 text-xs text-amber-d">{t("Thin", "قليل")}</span>;
   };
 
-  const tileTone = (bad: boolean, warnOnly?: boolean) => bad ? (warnOnly ? "border-amber-300 bg-amber-50 text-amber-900" : "border-rose-300 bg-rose-50 text-rose-900") : "border-slate-200 text-slate-900";
+  const tileTone = (bad: boolean, warnOnly?: boolean) => bad ? (warnOnly ? "border-amber-line bg-amber-wash text-amber-d" : "border-rose-300 bg-rose-50 text-rose-900") : "border-silver text-ink";
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 space-y-10">
-      <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">{t("SAMPLE DATA. Data-operations simulation. Everything below is synthetic and never reaches production. This page is not indexed.", "بيانات عيّنة. محاكاة عمليات البيانات. كل ما يظهر هنا اصطناعي ولا يصل إلى الإنتاج إطلاقاً. هذه الصفحة غير مفهرسة.")}</div>
+      <div className="rounded-lg border border-amber-line bg-amber-wash px-4 py-3 text-sm font-medium text-amber-d">{t("SAMPLE DATA. Data-operations simulation. Everything below is synthetic and never reaches production. This page is not indexed.", "بيانات عيّنة. محاكاة عمليات البيانات. كل ما يظهر هنا اصطناعي ولا يصل إلى الإنتاج إطلاقاً. هذه الصفحة غير مفهرسة.")}</div>
 
       <header>
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{t("Data Operations", "عمليات البيانات")}</p>
-        <h1 className="text-2xl font-semibold text-slate-900">{t("Ingestion console", "لوحة استقبال البيانات")}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-slate-600">{t("Open with the answer: what needs attention right now. Then advance the period, inject scenarios, and act as Reviewer or Admin. Overrides can only make data more conservative, never promote thin data to sufficient.", "ابدأ بالجواب: ما الذي يتطلب انتباهاً الآن. ثم قدّم الفترة، واحقن السيناريوهات، وتصرّف كمراجع أو مدير. التجاوزات تجعل البيانات أكثر تحفظاً فقط، ولا ترفع القليل إلى كافٍ أبداً.")}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate">{t("Data Operations", "عمليات البيانات")}</p>
+        <h1 className="text-2xl font-semibold text-ink">{t("Ingestion console", "لوحة استقبال البيانات")}</h1>
+        <p className="mt-1 max-w-2xl text-sm text-slate">{t("Open with the answer: what needs attention right now. Then advance the period, inject scenarios, and act as Reviewer or Admin. Overrides can only make data more conservative, never promote thin data to sufficient.", "ابدأ بالجواب: ما الذي يتطلب انتباهاً الآن. ثم قدّم الفترة، واحقن السيناريوهات، وتصرّف كمراجع أو مدير. التجاوزات تجعل البيانات أكثر تحفظاً فقط، ولا ترفع القليل إلى كافٍ أبداً.")}</p>
       </header>
 
       <section aria-label={t("Health", "الصحة")}>
@@ -286,64 +286,64 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
       <section>
         <H n="00" en="Needs attention" arr="يتطلب إجراء" />
         {worklist.length === 0 ? (<p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{t("Nothing needs attention. Sources fresh, cells reconciled, gate queue clear.", "لا شيء يتطلب انتباهاً. المصادر حديثة، الخلايا مطابَقة، وطابور البوابة نظيف.")}</p>) : (
-          <ul className="space-y-1.5">{worklist.map((w, i) => (<li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm"><span className="flex items-center gap-2"><span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (w.sev === "blocked" ? "bg-rose-500" : w.sev === "watch" ? "bg-amber-500" : "bg-slate-400")} /><span className="text-slate-700">{ar ? w.ar : w.en}</span></span><a href={w.anchor} className="shrink-0 rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600">{t("Go", "انتقال")}</a></li>))}</ul>
+          <ul className="space-y-1.5">{worklist.map((w, i) => (<li key={i} className="flex items-center justify-between gap-3 rounded-lg border border-silver px-3 py-2 text-sm"><span className="flex items-center gap-2"><span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (w.sev === "blocked" ? "bg-rose-500" : w.sev === "watch" ? "bg-amber" : "bg-mid")} /><span className="text-ink-2">{ar ? w.ar : w.en}</span></span><a href={w.anchor} className="shrink-0 rounded border border-silver-2 px-2 py-0.5 text-xs text-slate">{t("Go", "انتقال")}</a></li>))}</ul>
         )}
       </section>
 
       <section>
         <H n="01" en="Controls" arr="التحكم" />
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-slate-500">{t("Operator:", "المشغّل:")}</span>
-          <input value={op} onChange={(e) => setOp(e.target.value)} placeholder={t("your name", "اسمك")} className="rounded border border-slate-300 px-2 py-1 text-sm" />
-          <span className="ms-3 text-xs text-slate-500">{t("Role:", "الدور:")}</span>
-          {ROLES.map((r) => (<button key={r} onClick={() => setRole(r)} className={"rounded border px-3 py-1 text-sm " + (role === r ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700")}>{t(r === "viewer" ? "Viewer" : r === "reviewer" ? "Reviewer" : "Admin", r === "viewer" ? "مشاهد" : r === "reviewer" ? "مراجع" : "مدير")}</button>))}
-          <span className="ms-3 text-xs text-slate-500">{t("Sim period:", "الفترة:")}</span>
-          {["2026-06", "2026-07"].map((p) => (<button key={p} onClick={() => setPeriod(p)} className={"rounded border px-3 py-1 text-sm " + (period === p ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 text-slate-700")}>{p}</button>))}
-          <button onClick={exportCsv} className="ms-2 rounded border border-slate-300 px-3 py-1 text-sm text-slate-700">{t("Reconciliation CSV", "تصدير CSV للمطابقة")}</button>
+          <span className="text-xs text-slate">{t("Operator:", "المشغّل:")}</span>
+          <input value={op} onChange={(e) => setOp(e.target.value)} placeholder={t("your name", "اسمك")} className="rounded border border-silver-2 px-2 py-1 text-sm" />
+          <span className="ms-3 text-xs text-slate">{t("Role:", "الدور:")}</span>
+          {ROLES.map((r) => (<button key={r} onClick={() => setRole(r)} className={"rounded border px-3 py-1 text-sm " + (role === r ? "border-ink bg-ink text-white" : "border-silver-2 text-ink-2")}>{t(r === "viewer" ? "Viewer" : r === "reviewer" ? "Reviewer" : "Admin", r === "viewer" ? "مشاهد" : r === "reviewer" ? "مراجع" : "مدير")}</button>))}
+          <span className="ms-3 text-xs text-slate">{t("Sim period:", "الفترة:")}</span>
+          {["2026-06", "2026-07"].map((p) => (<button key={p} onClick={() => setPeriod(p)} className={"rounded border px-3 py-1 text-sm " + (period === p ? "border-ink bg-ink text-white" : "border-silver-2 text-ink-2")}>{p}</button>))}
+          <button onClick={exportCsv} className="ms-2 rounded border border-silver-2 px-3 py-1 text-sm text-ink-2">{t("Reconciliation CSV", "تصدير CSV للمطابقة")}</button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {SCENARIOS.map((s) => (<button key={s.id} onClick={() => toggle(s.id)} title={ar ? s.expAr : s.expEn} className={"rounded-full border px-3 py-1 text-xs " + (scn[s.id] ? "border-sky-500 bg-sky-50 text-sky-700" : "border-slate-300 text-slate-600")}>{t(s.en, s.ar)}</button>))}
+          {SCENARIOS.map((s) => (<button key={s.id} onClick={() => toggle(s.id)} title={ar ? s.expAr : s.expEn} className={"rounded-full border px-3 py-1 text-xs " + (scn[s.id] ? "border-sky-500 bg-sky-50 text-sky-700" : "border-silver-2 text-slate")}>{t(s.en, s.ar)}</button>))}
         </div>
         {SCENARIOS.some((s) => scn[s.id]) && (<div className="mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs text-sky-900"><p className="mb-1 font-medium">{t("Active scenarios, expected outcome:", "السيناريوهات النشطة، النتيجة المتوقعة:")}</p><ul className="list-disc space-y-0.5 ps-5">{SCENARIOS.filter((s) => scn[s.id]).map((s) => (<li key={s.id}>{t(s.en, s.ar)}: {t(s.expEn, s.expAr)}</li>))}</ul></div>)}
       </section>
 
       <section id="alerts">
         <H n="02" en="Alerts" arr="التنبيهات" />
-        {alerts.length === 0 ? (<p className="text-sm text-slate-500">{t("All sources fresh. No open alerts.", "جميع المصادر حديثة. لا تنبيهات مفتوحة.")}</p>) : (
-          <div className="space-y-2">{alerts.map((s) => (<div key={s.name} className="flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"><span>{(ar ? s.nameAr : s.name)}: {s.note}</span><button onClick={() => doAck(s.name)} disabled={!can("review")} className={btn}>{t("Acknowledge", "إقرار")}</button></div>))}</div>
+        {alerts.length === 0 ? (<p className="text-sm text-slate">{t("All sources fresh. No open alerts.", "جميع المصادر حديثة. لا تنبيهات مفتوحة.")}</p>) : (
+          <div className="space-y-2">{alerts.map((s) => (<div key={s.name} className="flex items-center justify-between rounded-lg border border-amber-line bg-amber-wash px-3 py-2 text-sm text-amber-d"><span>{(ar ? s.nameAr : s.name)}: {s.note}</span><button onClick={() => doAck(s.name)} disabled={!can("review")} className={btn}>{t("Acknowledge", "إقرار")}</button></div>))}</div>
         )}
       </section>
 
       <section id="sources">
         <H n="03" en="Source health" arr="حالة المصادر" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {sources.map((s) => (<div key={s.name} className="rounded-lg border border-slate-200 p-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-medium text-slate-900">{ar ? s.nameAr : s.name}</p><span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (s.ok ? "bg-emerald-500" : "bg-amber-500")} /></div><p className="mt-1 text-xs text-slate-500">{s.cad} · {s.last}</p><p className="mt-1 text-xs text-slate-600">{s.note}</p></div>))}
+          {sources.map((s) => (<div key={s.name} className="rounded-lg border border-silver p-3"><div className="flex items-center justify-between gap-2"><p className="text-sm font-medium text-ink">{ar ? s.nameAr : s.name}</p><span className={"inline-block h-2 w-2 shrink-0 rounded-full " + (s.ok ? "bg-emerald-500" : "bg-amber")} /></div><p className="mt-1 text-xs text-slate">{s.cad} · {s.last}</p><p className="mt-1 text-xs text-slate">{s.note}</p></div>))}
         </div>
       </section>
 
       <section id="board">
         <H n="04" en="Reconciliation board" arr="لوحة مطابقة المصادر" />
-        <p className="mb-2 text-xs text-slate-500">{t("One row per cell (district × asset × segment). The verdict reconciles every source in the cell: where REGA and a broker cover the same cell and their medians fall outside tolerance the cell reads Disagreement and does not publish a number until resolved. Thin is conservative, not an error. An override can only make a cell more conservative. Expand a row to see the contributing sources.", "صف لكل خلية (الحي × الأصل × الشريحة). يوفّق الحكم كل مصادر الخلية: حين يغطي ريجا ووسيط الخلية نفسها ويخرج وسيطاهما عن الحد تُقرأ الخلية تعارض المصادر ولا تنشر رقماً حتى تُحلّ. القليل تحفظ لا خطأ. التجاوز يجعل الخلية أكثر تحفظاً فقط. وسّع الصف لرؤية المصادر المساهمة.")}</p>
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <p className="mb-2 text-xs text-slate">{t("One row per cell (district × asset × segment). The verdict reconciles every source in the cell: where REGA and a broker cover the same cell and their medians fall outside tolerance the cell reads Disagreement and does not publish a number until resolved. Thin is conservative, not an error. An override can only make a cell more conservative. Expand a row to see the contributing sources.", "صف لكل خلية (الحي × الأصل × الشريحة). يوفّق الحكم كل مصادر الخلية: حين يغطي ريجا ووسيط الخلية نفسها ويخرج وسيطاهما عن الحد تُقرأ الخلية تعارض المصادر ولا تنشر رقماً حتى تُحلّ. القليل تحفظ لا خطأ. التجاوز يجعل الخلية أكثر تحفظاً فقط. وسّع الصف لرؤية المصادر المساهمة.")}</p>
+        <div className="overflow-x-auto rounded-lg border border-silver">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th className="px-3 py-2 text-start font-medium">{t("Sources", "المصادر")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
+            <thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("District", "الحي")}</th><th className="px-3 py-2 text-start font-medium">{t("Asset · Segment", "الأصل · الشريحة")}</th><th className="px-3 py-2 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-3 py-2 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-3 py-2 text-start font-medium">{t("Verdict", "الحكم")}</th><th className="px-3 py-2 text-start font-medium">{t("Sources", "المصادر")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "إجراء")}</th></tr></thead>
             <tbody>
               {cells.map((c) => {
                 const isOpen = !!openCell[c.k];
                 return (<Fragment key={c.k}>
-                  <tr className="border-t border-slate-100 align-top">
-                    <td className="px-3 py-2 text-slate-900">{ar ? c.districtAr : c.district}{c.unresolved && <span className="ms-1 rounded bg-amber-100 px-1 text-xs text-amber-800">{t("unresolved", "غير محلول")}</span>}{c.note && <span className="ms-1 rounded bg-slate-100 px-1 text-xs text-slate-600">{ar ? c.noteAr : c.note}</span>}</td>
-                    <td className="px-3 py-2 text-slate-600">{t(c.asset, c.assetAr)} · {t(c.segEn, c.segAr)}</td>
-                    <td className="px-3 py-2 text-slate-600">{formatRange(c.low, c.high, ar ? "ar" : "en", 0)}</td>
-                    <td className="px-3 py-2 text-slate-900">{c.verdict === "sufficient" && c.median != null ? (<span><bdi dir="ltr">{fmt(c.median)}</bdi>{c.verdict === "sufficient" && <a href={rentIndex} className="ms-1 text-sky-600 underline">{t("→ live cell", "→ الخلية المنشورة")}</a>}</span>) : c.verdict === "disagree" ? t("Not published", "غير منشور") : t("Thin sample", "عينة قليلة")}</td>
+                  <tr className="border-t border-silver align-top">
+                    <td className="px-3 py-2 text-ink">{ar ? c.districtAr : c.district}{c.unresolved && <span className="ms-1 rounded bg-amber-wash px-1 text-xs text-amber-d">{t("unresolved", "غير محلول")}</span>}{c.note && <span className="ms-1 rounded bg-silver px-1 text-xs text-slate">{ar ? c.noteAr : c.note}</span>}</td>
+                    <td className="px-3 py-2 text-slate">{t(c.asset, c.assetAr)} · {t(c.segEn, c.segAr)}</td>
+                    <td className="px-3 py-2 text-slate">{formatRange(c.low, c.high, ar ? "ar" : "en", 0)}</td>
+                    <td className="px-3 py-2 text-ink">{c.verdict === "sufficient" && c.median != null ? (<span><bdi dir="ltr">{fmt(c.median)}</bdi>{c.verdict === "sufficient" && <a href={rentIndex} className="ms-1 text-sky-600 underline">{t("→ live cell", "→ الخلية المنشورة")}</a>}</span>) : c.verdict === "disagree" ? t("Not published", "غير منشور") : t("Thin sample", "عينة قليلة")}</td>
                     <td className="px-3 py-2">{verdictChip(c)}</td>
-                    <td className="px-3 py-2"><button onClick={() => setOpenCell((o) => ({ ...o, [c.k]: !o[c.k] }))} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-600">{isOpen ? "▾ " : "▸ "}<bdi dir="ltr">{c.rows.length}</bdi></button></td>
-                    <td className="px-3 py-2">{c.verdict === "override" ? <button onClick={() => doRelease(c)} disabled={!can("admin")} className={btn}>{t("Release override", "رفع التجاوز")}</button> : c.unresolved ? <button onClick={() => doResolve(c)} disabled={!can("review")} className={btn}>{t("Resolve district", "حل الحي")}</button> : c.verdict === "sufficient" ? <button onClick={() => doForceThin(c)} disabled={!can("review")} className={btn}>{t("Force thin", "إجبار قليل")}</button> : <span className="text-xs text-slate-400">–</span>}</td>
+                    <td className="px-3 py-2"><button onClick={() => setOpenCell((o) => ({ ...o, [c.k]: !o[c.k] }))} className="rounded border border-silver-2 px-2 py-0.5 text-xs text-slate">{isOpen ? "▾ " : "▸ "}<bdi dir="ltr">{c.rows.length}</bdi></button></td>
+                    <td className="px-3 py-2">{c.verdict === "override" ? <button onClick={() => doRelease(c)} disabled={!can("admin")} className={btn}>{t("Release override", "رفع التجاوز")}</button> : c.unresolved ? <button onClick={() => doResolve(c)} disabled={!can("review")} className={btn}>{t("Resolve district", "حل الحي")}</button> : c.verdict === "sufficient" ? <button onClick={() => doForceThin(c)} disabled={!can("review")} className={btn}>{t("Force thin", "إجبار قليل")}</button> : <span className="text-xs text-slate">–</span>}</td>
                   </tr>
-                  {isOpen && (<tr className="border-t border-slate-100 bg-slate-50/60"><td colSpan={7} className="px-3 py-2">
-                    <table className="w-full text-xs"><thead className="text-slate-400"><tr><th className="px-2 py-1 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-2 py-1 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-2 py-1 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-2 py-1 text-start font-medium">{t("Basis", "الأساس")}</th><th className="px-2 py-1 text-start font-medium">{t("Sufficient", "كافٍ")}</th></tr></thead>
-                    <tbody>{c.rows.map((r, ri) => (<tr key={ri} className="border-t border-slate-100"><td className="px-2 py-1 text-slate-600">{ar ? r.sourceAr : r.source} · {r.period}</td><td className="px-2 py-1 text-slate-600">{formatRange(r.low, r.high, ar ? "ar" : "en", 0)}</td><td className="px-2 py-1 text-slate-600"><bdi dir="ltr">{fmt(r.median)}</bdi></td><td className="px-2 py-1 text-slate-500">{ar ? r.basisAr : r.basis}</td><td className="px-2 py-1">{r.sufficient ? <span className="text-emerald-600">{t("yes", "نعم")}</span> : <span className="text-amber-600">{t("no", "لا")}</span>}</td></tr>))}</tbody></table>
-                    {c.verdict === "disagree" && <p className="mt-1 text-xs text-amber-700">{t("Sources spread " + Math.round(c.spreadPct * 100) + "% apart, beyond the 12% tolerance. Conservative resolution: hold, do not publish a median.", "المصادر متباعدة " + Math.round(c.spreadPct * 100) + "٪، خارج حد 12٪. الحل المتحفظ: تعليق، دون نشر وسيط.")}</p>}
+                  {isOpen && (<tr className="border-t border-silver bg-cool/60"><td colSpan={7} className="px-3 py-2">
+                    <table className="w-full text-xs"><thead className="text-slate"><tr><th className="px-2 py-1 text-start font-medium">{t("Source", "المصدر")}</th><th className="px-2 py-1 text-start font-medium">{t("Band", "النطاق")}</th><th className="px-2 py-1 text-start font-medium">{t("Median", "الوسيط")}</th><th className="px-2 py-1 text-start font-medium">{t("Basis", "الأساس")}</th><th className="px-2 py-1 text-start font-medium">{t("Sufficient", "كافٍ")}</th></tr></thead>
+                    <tbody>{c.rows.map((r, ri) => (<tr key={ri} className="border-t border-silver"><td className="px-2 py-1 text-slate">{ar ? r.sourceAr : r.source} · {r.period}</td><td className="px-2 py-1 text-slate">{formatRange(r.low, r.high, ar ? "ar" : "en", 0)}</td><td className="px-2 py-1 text-slate"><bdi dir="ltr">{fmt(r.median)}</bdi></td><td className="px-2 py-1 text-slate">{ar ? r.basisAr : r.basis}</td><td className="px-2 py-1">{r.sufficient ? <span className="text-emerald-600">{t("yes", "نعم")}</span> : <span className="text-amber-d">{t("no", "لا")}</span>}</td></tr>))}</tbody></table>
+                    {c.verdict === "disagree" && <p className="mt-1 text-xs text-amber-d">{t("Sources spread " + Math.round(c.spreadPct * 100) + "% apart, beyond the 12% tolerance. Conservative resolution: hold, do not publish a median.", "المصادر متباعدة " + Math.round(c.spreadPct * 100) + "٪، خارج حد 12٪. الحل المتحفظ: تعليق، دون نشر وسيط.")}</p>}
                   </td></tr>)}
                 </Fragment>);
               })}
@@ -354,44 +354,44 @@ export default function OpsPage({ params }: { params: { locale: string } }) {
 
       <section id="gate">
         <H n="05" en="Verification gate queue" arr="طابور بوابة التحقق" />
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
+        <div className="overflow-x-auto rounded-lg border border-silver">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
+            <thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("Listing", "الإعلان")}</th><th className="px-3 py-2 text-start font-medium">{t("Nafath", "نفاذ")}</th><th className="px-3 py-2 text-start font-medium">{t("Permit", "الرخصة")}</th><th className="px-3 py-2 text-start font-medium">{t("Deed", "الصك")}</th><th className="px-3 py-2 text-start font-medium">{t("Status", "الحالة")}</th><th className="px-3 py-2 text-start font-medium">{t("Actions", "إجراءات")}</th></tr></thead>
             <tbody>
-              {listings.map((l) => { const st = listStatus(l); const blocked = !gatesPass(l); const gr = gateReason(l); return (<tr key={l.ref} className="border-t border-slate-100">
-                <td className="px-3 py-2"><span className="font-medium text-slate-900" dir="ltr">{l.ref}</span><span className="text-slate-500"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span>{l.dup && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("duplicate deed", "صك مكرر")}</span>}</td>
+              {listings.map((l) => { const st = listStatus(l); const blocked = !gatesPass(l); const gr = gateReason(l); return (<tr key={l.ref} className="border-t border-silver">
+                <td className="px-3 py-2"><span className="font-medium text-ink" dir="ltr">{l.ref}</span><span className="text-slate"> · {ar ? l.districtAr : l.district} · {t(l.asset, l.assetAr)} · {t(l.deal, l.dealAr)}</span>{l.dup && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("duplicate deed", "صك مكرر")}</span>}</td>
                 <td className="px-3 py-2">{l.nafath ? "✓" : <span className="text-rose-600">✕</span>}</td>
                 <td className="px-3 py-2"><span dir="ltr">{l.permit || "–"}</span>{l.permitOk === false && <span className="ms-1 rounded bg-rose-100 px-1 text-xs text-rose-700">{t("expired", "منتهية")}</span>}</td>
                 <td className="px-3 py-2">{l.deed === "valid" ? t("Valid", "سارٍ") : l.deed === "not_found" ? <span className="text-rose-600">{t("Not found", "غير موجود")}</span> : l.deed === "duplicate" ? <span className="text-rose-600">{t("Duplicate", "مكرر")}</span> : t("Pending", "قيد الانتظار")}</td>
-                <td className="px-3 py-2">{st === "published" || st === "approved" ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{st === "approved" ? t("Approved", "معتمد") : t("Published", "منشور")}</span> : st === "rejected" ? <span className="rounded bg-rose-50 px-2 py-0.5 text-xs text-rose-700">{t("Rejected", "مرفوض")}</span> : <span className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">{t("Held", "معلّق")}</span>}</td>
+                <td className="px-3 py-2">{st === "published" || st === "approved" ? <span className="rounded bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{st === "approved" ? t("Approved", "معتمد") : t("Published", "منشور")}</span> : st === "rejected" ? <span className="rounded bg-rose-50 px-2 py-0.5 text-xs text-rose-700">{t("Rejected", "مرفوض")}</span> : <span className="rounded bg-amber-wash px-2 py-0.5 text-xs text-amber-d">{t("Held", "معلّق")}</span>}</td>
                 <td className="px-3 py-2"><div className="flex flex-wrap items-center gap-1"><button onClick={() => doListing(l, "approved")} disabled={!can("review") || blocked} title={blocked ? (ar ? gr.ar : gr.en) : ""} className={btn}>{t("Approve", "اعتماد")}</button><button onClick={() => doListing(l, "rejected")} disabled={!can("review")} className={btn}>{t("Reject", "رفض")}</button><button onClick={() => doListing(l, "held")} disabled={!can("review")} className={btn}>{t("Hold", "تعليق")}</button>{blocked && gr.en && <span className="text-xs text-rose-600">{ar ? gr.ar : gr.en}</span>}</div></td>
               </tr>); })}
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-xs text-slate-500">{t("Approve is disabled until Nafath, a valid permit, and the deed all pass; the disabled button names the failing gate. The asymmetry rule applies here too: a failed gate can never be published.", "الاعتماد معطّل حتى تجتاز نفاذ ورخصة سارية والصك جميعاً؛ الزر المعطّل يذكر البوابة المتعثرة. قاعدة عدم التناظر تنطبق هنا أيضاً: البوابة غير المجتازة لا تُنشَر أبداً.")}</p>
+        <p className="mt-2 text-xs text-slate">{t("Approve is disabled until Nafath, a valid permit, and the deed all pass; the disabled button names the failing gate. The asymmetry rule applies here too: a failed gate can never be published.", "الاعتماد معطّل حتى تجتاز نفاذ ورخصة سارية والصك جميعاً؛ الزر المعطّل يذكر البوابة المتعثرة. قاعدة عدم التناظر تنطبق هنا أيضاً: البوابة غير المجتازة لا تُنشَر أبداً.")}</p>
       </section>
 
       <section id="audit">
         <H n="06" en="Audit trail" arr="سجل التدقيق" />
-        <div className="mb-2 flex items-center justify-between"><p className="text-xs text-slate-500">{t("In-memory in this slice. Times in KSA (UTC+3). Append-only once persisted.", "في الذاكرة في هذه المرحلة. الأوقات بتوقيت السعودية (UTC+3). للإضافة فقط بعد الحفظ.")}</p>{audit.length > 0 && <button onClick={exportAudit} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700">{t("Audit CSV", "تصدير سجل CSV")}</button>}</div>
-        {audit.length === 0 ? (<p className="text-sm text-slate-500">{t("No actions yet. Enter your name, switch to Reviewer or Admin, and act on a row.", "لا إجراءات بعد. أدخل اسمك، وبدّل إلى مراجع أو مدير، وتصرّف على صف.")}</p>) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200"><table className="w-full text-sm"><thead className="bg-slate-50 text-slate-500"><tr><th className="px-3 py-2 text-start font-medium">{t("Time (KSA)", "الوقت (السعودية)")}</th><th className="px-3 py-2 text-start font-medium">{t("Operator", "المشغّل")}</th><th className="px-3 py-2 text-start font-medium">{t("Role", "الدور")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "الإجراء")}</th><th className="px-3 py-2 text-start font-medium">{t("Target", "الهدف")}</th><th className="px-3 py-2 text-start font-medium">{t("Change", "التغيير")}</th><th className="px-3 py-2 text-start font-medium">{t("Reason", "السبب")}</th></tr></thead><tbody>{audit.map((a, i) => (<tr key={i} className="border-t border-slate-100"><td className="px-3 py-2 text-slate-600" dir="ltr">{a.ts}</td><td className="px-3 py-2 text-slate-600">{a.op}</td><td className="px-3 py-2 text-slate-600">{a.role}</td><td className="px-3 py-2 text-slate-900">{a.action}</td><td className="px-3 py-2 text-slate-600" dir="ltr">{a.target}</td><td className="px-3 py-2 text-slate-600">{a.change}</td><td className="px-3 py-2 text-slate-600">{a.reason}</td></tr>))}</tbody></table></div>
+        <div className="mb-2 flex items-center justify-between"><p className="text-xs text-slate">{t("In-memory in this slice. Times in KSA (UTC+3). Append-only once persisted.", "في الذاكرة في هذه المرحلة. الأوقات بتوقيت السعودية (UTC+3). للإضافة فقط بعد الحفظ.")}</p>{audit.length > 0 && <button onClick={exportAudit} className="rounded border border-silver-2 px-2 py-0.5 text-xs text-ink-2">{t("Audit CSV", "تصدير سجل CSV")}</button>}</div>
+        {audit.length === 0 ? (<p className="text-sm text-slate">{t("No actions yet. Enter your name, switch to Reviewer or Admin, and act on a row.", "لا إجراءات بعد. أدخل اسمك، وبدّل إلى مراجع أو مدير، وتصرّف على صف.")}</p>) : (
+          <div className="overflow-x-auto rounded-lg border border-silver"><table className="w-full text-sm"><thead className="bg-cool text-slate"><tr><th className="px-3 py-2 text-start font-medium">{t("Time (KSA)", "الوقت (السعودية)")}</th><th className="px-3 py-2 text-start font-medium">{t("Operator", "المشغّل")}</th><th className="px-3 py-2 text-start font-medium">{t("Role", "الدور")}</th><th className="px-3 py-2 text-start font-medium">{t("Action", "الإجراء")}</th><th className="px-3 py-2 text-start font-medium">{t("Target", "الهدف")}</th><th className="px-3 py-2 text-start font-medium">{t("Change", "التغيير")}</th><th className="px-3 py-2 text-start font-medium">{t("Reason", "السبب")}</th></tr></thead><tbody>{audit.map((a, i) => (<tr key={i} className="border-t border-silver"><td className="px-3 py-2 text-slate" dir="ltr">{a.ts}</td><td className="px-3 py-2 text-slate">{a.op}</td><td className="px-3 py-2 text-slate">{a.role}</td><td className="px-3 py-2 text-ink">{a.action}</td><td className="px-3 py-2 text-slate" dir="ltr">{a.target}</td><td className="px-3 py-2 text-slate">{a.change}</td><td className="px-3 py-2 text-slate">{a.reason}</td></tr>))}</tbody></table></div>
         )}
       </section>
 
       <section>
         <H n="07" en="Reports" arr="التقارير" />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900"><bdi dir="ltr">{cellsSuff}/{cells.length}</bdi></p><p className="text-xs text-slate-500">{t("Cells sufficient", "خلايا كافية")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900"><bdi dir="ltr">{pubCount}/{listings.length}</bdi></p><p className="text-xs text-slate-500">{t("Listings published", "إعلانات منشورة")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900"><bdi dir="ltr">{audit.length}</bdi></p><p className="text-xs text-slate-500">{t("Actions logged", "إجراءات مسجّلة")}</p></div>
-          <div className="rounded-lg border border-slate-200 p-3"><p className="text-2xl font-semibold text-slate-900"><bdi dir="ltr">{worklist.length}</bdi></p><p className="text-xs text-slate-500">{t("Items needing attention", "بنود تتطلب إجراء")}</p></div>
+          <div className="rounded-lg border border-silver p-3"><p className="text-2xl font-semibold text-ink"><bdi dir="ltr">{cellsSuff}/{cells.length}</bdi></p><p className="text-xs text-slate">{t("Cells sufficient", "خلايا كافية")}</p></div>
+          <div className="rounded-lg border border-silver p-3"><p className="text-2xl font-semibold text-ink"><bdi dir="ltr">{pubCount}/{listings.length}</bdi></p><p className="text-xs text-slate">{t("Listings published", "إعلانات منشورة")}</p></div>
+          <div className="rounded-lg border border-silver p-3"><p className="text-2xl font-semibold text-ink"><bdi dir="ltr">{audit.length}</bdi></p><p className="text-xs text-slate">{t("Actions logged", "إجراءات مسجّلة")}</p></div>
+          <div className="rounded-lg border border-silver p-3"><p className="text-2xl font-semibold text-ink"><bdi dir="ltr">{worklist.length}</bdi></p><p className="text-xs text-slate">{t("Items needing attention", "بنود تتطلب إجراء")}</p></div>
         </div>
-        <p className="mt-3 text-xs text-slate-500">{t("Next: in-page reason drawer (replacing prompts), URL-persisted filters and saved views, per-cell and per-source drill-down drawers, scenario regression suite. Then auth + append-only audit table + synthetic Supabase branch. Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: لوحة سبب داخل الصفحة بدل النوافذ، مرشّحات محفوظة في الرابط وعروض محفوظة، أدراج تفصيل لكل خلية ومصدر، مجموعة اختبار انحدار للسيناريوهات. ثم مصادقة وجدول تدقيق للإضافة فقط وفرع Supabase اصطناعي.")}</p>
+        <p className="mt-3 text-xs text-slate">{t("Next: in-page reason drawer (replacing prompts), URL-persisted filters and saved views, per-cell and per-source drill-down drawers, scenario regression suite. Then auth + append-only audit table + synthetic Supabase branch. Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: لوحة سبب داخل الصفحة بدل النوافذ، مرشّحات محفوظة في الرابط وعروض محفوظة، أدراج تفصيل لكل خلية ومصدر، مجموعة اختبار انحدار للسيناريوهات. ثم مصادقة وجدول تدقيق للإضافة فقط وفرع Supabase اصطناعي.")}</p>
       </section>
 
-      <footer className="border-t border-slate-100 pt-4 text-xs text-slate-400">{t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}</footer>
+      <footer className="border-t border-silver pt-4 text-xs text-slate">{t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}</footer>
     </main>
   );
 }

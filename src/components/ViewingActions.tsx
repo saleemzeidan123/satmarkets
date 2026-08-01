@@ -23,7 +23,7 @@ export default function ViewingActions({ id, status }: { id: string; status: str
       {status === "requested" && <button disabled={busy} onClick={() => act("confirmed")} style={btn("var(--harbor-d)")}>Confirm</button>}
       {status === "requested" && <button disabled={busy} onClick={() => act("cancelled")} style={btn("var(--red)")}>Decline</button>}
       {status === "confirmed" && <button disabled={busy} onClick={() => act("completed")} style={btn("var(--harbor-d)")}>Completed</button>}
-      {status === "confirmed" && <button disabled={busy} onClick={() => act("no_show")} style={btn("var(--amber)")}>No-show</button>}
+      {status === "confirmed" && <button disabled={busy} onClick={() => act("no_show")} style={btn("var(--amber-d)")}>No-show</button>}
       {msg && <span style={{ fontSize: 11, color: "var(--red)" }}>{msg}</span>}
     </span>
   );

@@ -208,8 +208,8 @@ export default function FindPage() {
   const chip = (v: Verdict) => {
     const map: Record<string, string> = {
       below: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      within: "bg-slate-50 text-slate-600 border-slate-200",
-      above: "bg-amber-50 text-amber-700 border-amber-200",
+      within: "bg-cool text-slate border-silver",
+      above: "bg-amber-wash text-amber-d border-amber-line",
       na: "bg-gray-50 text-gray-500 border-gray-200",
     };
     const label = ar
@@ -222,15 +222,15 @@ export default function FindPage() {
     );
   };
 
-  const inp = "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none";
+  const inp = "w-full rounded-lg border border-silver-2 px-3 py-2 text-sm focus:border-mid focus:outline-none";
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold text-slate-900">{T.h1}</h1>
-      <p className="mt-2 text-sm text-slate-600">{T.sub}</p>
+      <h1 className="text-2xl font-semibold text-ink">{T.h1}</h1>
+      <p className="mt-2 text-sm text-slate">{T.sub}</p>
 
-      <form onSubmit={run} className="mt-6 grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-3">
-        <label className="col-span-2 sm:col-span-1 text-xs text-slate-500">
+      <form onSubmit={run} className="mt-6 grid grid-cols-2 gap-3 rounded-2xl border border-silver bg-white p-4 sm:grid-cols-3">
+        <label className="col-span-2 sm:col-span-1 text-xs text-slate">
           {T.asset}
           <select value={assetType} onChange={(e) => { setAssetType(e.target.value); setNeeds([]); }} className={inp}>
             {ASSETS.map((a) => (
@@ -238,14 +238,14 @@ export default function FindPage() {
             ))}
           </select>
         </label>
-        <label className="text-xs text-slate-500">
+        <label className="text-xs text-slate">
           {T.deal}
           <select value={dealType} onChange={(e) => setDealType(e.target.value)} className={inp}>
             <option value="lease">{T.lease}</option>
             <option value="sale">{T.sale}</option>
           </select>
         </label>
-        <label className="text-xs text-slate-500">
+        <label className="text-xs text-slate">
           {T.grade}
           <select value={grade} onChange={(e) => setGrade(e.target.value)} className={inp}>
             {GRADES.map((g) => (
@@ -253,21 +253,21 @@ export default function FindPage() {
             ))}
           </select>
         </label>
-        <label className="text-xs text-slate-500">
+        <label className="text-xs text-slate">
           {T.sizeMin}
           <input value={sizeMin} onChange={(e) => setSizeMin(e.target.value)} inputMode="numeric" className={inp} />
         </label>
-        <label className="text-xs text-slate-500">
+        <label className="text-xs text-slate">
           {T.sizeMax}
           <input value={sizeMax} onChange={(e) => setSizeMax(e.target.value)} inputMode="numeric" className={inp} />
         </label>
-        <label className="text-xs text-slate-500">
+        <label className="text-xs text-slate">
           {T.budget}
           <input value={budget} onChange={(e) => setBudget(e.target.value)} inputMode="numeric" className={inp} />
         </label>
         {(NEEDS[assetType] || []).length > 0 && (
           <div className="col-span-2 sm:col-span-3">
-            <div className="text-xs text-slate-500">{t.assetNeeds}</div>
+            <div className="text-xs text-slate">{t.assetNeeds}</div>
             <div className="mt-2 flex flex-wrap gap-2">
               {(NEEDS[assetType] || []).map((n) => {
                 const on = needs.includes(n.v);
@@ -278,7 +278,7 @@ export default function FindPage() {
                 );
               })}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{t.needsNote}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate">{t.needsNote}</p>
           </div>
         )}
         <div className="col-span-2 sm:col-span-3">
@@ -288,19 +288,19 @@ export default function FindPage() {
         </div>
       </form>
 
-      {err && <p className="mt-4 text-sm text-red-600">{err}</p>}
-      {relaxed === "budget" && rows && rows.length > 0 && <p className="mt-4 text-xs text-amber-600">{T.relaxedBudget}</p>}
-      {relaxed === "budget+district" && rows && rows.length > 0 && <p className="mt-4 text-xs text-amber-600">{T.relaxedBoth}</p>}
+      {err && <p className="mt-4 text-sm text-red">{err}</p>}
+      {relaxed === "budget" && rows && rows.length > 0 && <p className="mt-4 text-xs text-amber-d">{T.relaxedBudget}</p>}
+      {relaxed === "budget+district" && rows && rows.length > 0 && <p className="mt-4 text-xs text-amber-d">{T.relaxedBoth}</p>}
 
-      {rows && rows.length === 0 && <p className="mt-6 text-sm text-slate-500">{T.none}</p>}
+      {rows && rows.length === 0 && <p className="mt-6 text-sm text-slate">{T.none}</p>}
 
       <div className="mt-6 space-y-3">
         {rows?.map((r) => (
-          <a key={r.id} href={`/${ar ? "ar" : "en"}/listings/${r.id}`} className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 hover:shadow-sm" style={{ textDecoration: "none", color: "inherit" }}>
+          <a key={r.id} href={`/${ar ? "ar" : "en"}/listings/${r.id}`} className="block rounded-2xl border border-silver bg-white p-4 transition hover:border-mid hover:shadow-sm" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-900">{ar ? r.name_ar : r.name_en}</div>
-                <div className="mt-0.5 text-xs text-slate-500">
+                <div className="text-sm font-semibold text-ink">{ar ? r.name_ar : r.name_en}</div>
+                <div className="mt-0.5 text-xs text-slate">
                   {r.reference_code}
                   {/* PKG-SUP2, finding 120. This line spelled the area and the
                       rate itself, and it spelled the rate "SAR/m²", dropping the
@@ -322,10 +322,10 @@ export default function FindPage() {
                 ) : (
                   chip(r.verdict)
                 )}
-                <span className="text-[11px] text-slate-400">{r.fit_score}% {T.fit}</span>
+                <span className="text-[11px] text-slate">{r.fit_score}% {T.fit}</span>
               </div>
             </div>
-            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+            <p className="mt-2 text-xs leading-relaxed text-slate">
               {r.underwrite && r.underwrite.status === "ok"
                 ? ar ? r.underwrite.line_ar : r.underwrite.line_en
                 : ar ? r.verdict.line_ar : r.verdict.line_en}
@@ -336,7 +336,7 @@ export default function FindPage() {
             behind, because a label further from the figure than this is a label
             a reader can miss. */}
         {rows && rows.length > 0 && idxNotes.map((note) => (
-          <p key={note} className="text-[11px] leading-relaxed text-slate-500">{note}</p>
+          <p key={note} className="text-[11px] leading-relaxed text-slate">{note}</p>
         ))}
       </div>
     </main>

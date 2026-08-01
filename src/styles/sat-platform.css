@@ -15,7 +15,16 @@
   --verified:#1B7A50; --verified-wash:#E7F4ED;
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:64px;
   --r-sm:8px; --r-md:16px; --r-lg:24px;
-  --amber:#B7791F; --red:#C8412E;
+  /* Two ambers, not one. Findings 166 and 179 recorded a single --amber carrying
+     both a 7px status dot and 10.5px to 12px status text. A dot is a non-text
+     component and SC 1.4.11 asks 3 to 1 of it, which #B7791F meets at 3.64 on
+     paper. The same value under text is 3.64 on paper, 3.30 on the attention wash
+     and 3.33 on the capped-freeze wash, all below the 4.5 SC 1.4.3 asks. Rather
+     than darken the mark and repaint every bar, icon and dot in the product,
+     --amber stays the mark and --amber-d is the value anything readable uses:
+     5.91 on paper, 5.36 on the attention wash, 5.40 on the capped wash, and 5.91
+     under white when it is the badge fill instead of the badge text. */
+  --amber:#B7791F; --amber-d:#8A5A12; --red:#C8412E;
   --sans:var(--font-sans),system-ui,sans-serif;
   --mono:var(--font-mono),ui-monospace,monospace;
   --serif:var(--font-serif),Georgia,serif;
@@ -41,6 +50,15 @@
      A darker amber than --attention so "needs reconfirming" reads as more urgent than a
      general caution, without borrowing the error red. */
   --status-stale:#B26B00; --status-stale-wash:#FBF4E6;
+  /* The readable half of each status pair. A status colour is used two ways: as a
+     mark (dot, rule, glyph, border) where 3 to 1 is the requirement, and under a
+     label where 4.5 to 1 is. --status-attention at 3.30 and --status-stale at
+     3.84 on their own washes satisfy the first and fail the second, so the label
+     takes the -text value and the mark keeps the original. --status-error is
+     absent from this list on purpose: --red is 4.94 on paper and its wash has no
+     consumer, so inventing a darker red would be a change with no defect behind
+     it. Add one here the day the error wash is first used under text. */
+  --status-attention-text:var(--amber-d); --status-stale-text:#A26100;
 
   /* Surfaces and canvas layers. */
   --surface-canvas:var(--cool); --surface-raised:var(--paper); --surface-sunken:#EEF1F5;
@@ -220,7 +238,8 @@
 @media(max-width:680px){.satmkt-hero{padding-left:16px!important;padding-right:16px!important;padding-top:40px!important;}}
 .freeze{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:4px 9px;border-radius:6px;white-space:nowrap;line-height:1;}
 .freeze .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;}
-.freeze.capped{color:var(--amber);background:#FBF4E6;border:1px solid #ECDCB6;}
+.freeze.capped{color:var(--amber-d);background:#FBF4E6;border:1px solid #ECDCB6;}
+.freeze.capped .dot{background:var(--amber);}
 .freeze.open{color:var(--azure-d);background:var(--azure-wash);border:1px solid var(--azure-l);}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--silver);overflow-x:auto;}
 .tabs .t{font-size:13.5px;font-weight:600;color:var(--slate);padding:13px 16px;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;display:flex;align-items:center;gap:8px;}
@@ -324,8 +343,16 @@ select.input,input.input{text-overflow:ellipsis;}
 .dnav a.on{background:rgba(255,255,255,.09);color:#fff;}
 .dnav a.on .ic{opacity:1;color:var(--azure-l);}
 .dnav a .badge{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--azure);color:#fff;border-radius:20px;padding:1px 7px;}
-.dnav a .badge.warn{background:var(--amber);}
-.dnav .sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#6B7480;text-transform:uppercase;padding:18px 12px 6px;}
+/* White on --amber is 3.64 to 1 and this badge is 10px mono, so the fill takes
+   the readable amber. The badge is a mark with text inside it, and the text is
+   the part the rule applies to. */
+.dnav a .badge.warn{background:var(--amber-d);}
+/* Finding 154. #6B7480 on the ink rail is 3.77 to 1 and this is 9.5px uppercase
+   mono, the smallest readable text in the product, so it is the last place a
+   borderline value belongs. #8A93A0 is already the rail value used by the
+   account role line two rules below and reaches 5.75 to 1, so the repair reuses
+   a colour the rail already carries instead of introducing a fourth grey. */
+.dnav .sec{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:#8A93A0;text-transform:uppercase;padding:18px 12px 6px;}
 .dside .me{margin-top:auto;display:flex;align-items:center;gap:6px;padding:6px;border-top:1px solid rgba(255,255,255,.08);}
 .dside .me .melink{display:flex;align-items:center;gap:10px;flex:1;min-width:0;padding:8px;border-radius:10px;text-decoration:none;transition:background .14s ease;}
 .dside .me .melink:hover{background:rgba(255,255,255,.08);}
@@ -369,7 +396,14 @@ table.dt .rowact{position:relative;z-index:1;}
 .queue-ic{width:34px;height:34px;border-radius:8px;background:var(--cool);display:flex;align-items:center;justify-content:center;color:var(--slate);flex:none;}
 .statusdot{display:inline-flex;align-items:center;gap:7px;font-size:12px;}
 .statusdot::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;}
-.statusdot.ok{color:var(--harbor-d);} .statusdot.pend{color:var(--amber);} .statusdot.off{color:var(--slate-2);} .statusdot.warn{color:var(--status-stale);}
+.statusdot.ok{color:var(--harbor-d);} .statusdot.off{color:var(--slate-2);}
+/* Finding 166. The dot is drawn with background:currentColor, so one declaration
+   was setting both a 7px mark and its 12px label. Splitting them lets the label
+   reach 4.5 to 1 while the dot keeps the colour the product signals with. */
+.statusdot.pend{color:var(--status-attention-text);}
+.statusdot.pend::before{background:var(--amber);}
+.statusdot.warn{color:var(--status-stale-text);}
+.statusdot.warn::before{background:var(--status-stale);}
 .dash-2col{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:18px;}
 /* Mobile app shell. The sidebar used to be display:none below 820px with nothing
    replacing it, so on a phone an owner lost My listings, Enquiries, Requirement

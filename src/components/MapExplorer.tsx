@@ -313,7 +313,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
    {!ready && (
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-ivory-2/80 backdrop-blur-sm">
      <div className="h-7 w-7 animate-spin rounded-full border-2 border-signal/30 border-t-signal" />
-     <span className="text-[12.5px] text-charcoal/55">{L.loading}</span>
+     <span className="text-[12.5px] text-charcoal/65">{L.loading}</span>
     </div>
    )}
 
@@ -369,18 +369,18 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
           <img src={photoFor(b.asset, b.id)} alt="" className="h-[96px] w-[96px] shrink-0 object-cover" />
           <div className="min-w-0 flex-1 p-2.5">
            <div className="truncate font-display text-[14px] leading-tight text-charcoal">{b.name}</div>
-           <div className="mt-0.5 truncate text-[11.5px] text-charcoal/55">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
+           <div className="mt-0.5 truncate text-[11.5px] text-charcoal/65">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
            {b.band != null ? (
             <div className="mt-1 flex items-baseline gap-1">
              <span className="font-display text-[16px] text-charcoal">{fig(b.band)}</span>
-             <span className="text-[10px] text-charcoal/50">{unitFmt(b.unit, locale)}</span>
+             <span className="text-[10px] text-charcoal/65">{unitFmt(b.unit, locale)}</span>
             </div>
-           ) : (<div className="mt-1 text-[11px] text-charcoal/40">{t.noData}</div>)}
+           ) : (<div className="mt-1 text-[11px] text-charcoal/65">{t.noData}</div>)}
            {b.band != null && b.bandNote ? (
-            <div className="mt-0.5 text-[10px] leading-snug text-charcoal/55">{b.bandNote}</div>
+            <div className="mt-0.5 text-[10px] leading-snug text-charcoal/65">{b.bandNote}</div>
            ) : null}
            <div className="mt-1 flex items-center justify-between">
-            <span className="text-[11px] text-charcoal/60">{b.listings} {t.available}</span>
+            <span className="text-[11px] text-charcoal/70">{b.listings} {t.available}</span>
             <a href={`/${locale}/building/${b.id}`} className="text-[11.5px] font-medium text-signal">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
            </div>
           </div>
@@ -403,19 +403,19 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
       </div>
       <div className="p-4">
        <h3 className="font-display text-[17px] leading-snug text-charcoal">{sel.name}</h3>
-       <div className="mt-1 text-[12.5px] text-charcoal/55">{sel.place}{sel.size ? " · " + fig(sel.size) + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
+       <div className="mt-1 text-[12.5px] text-charcoal/65">{sel.place}{sel.size ? " · " + fig(sel.size) + " " + t.sqm : ""}{gradeFmt(sel.grade) ? " · " + t.grade + " " + gradeFmt(sel.grade) : ""}</div>
        {sel.band != null ? (
         <div className="mt-3 rounded-xl border border-line bg-ivory-2/50 p-3">
-         <div className="text-[10px] uppercase tracking-wide text-charcoal/45">{t.rentBand}</div>
+         <div className="text-[10px] uppercase tracking-wide text-charcoal/65">{t.rentBand}</div>
          <div className="mt-0.5 flex items-baseline gap-2">
           <span className="font-display text-2xl text-charcoal">{fig(sel.band)}</span>
-          <span className="text-[11px] text-charcoal/55">{sel.bandLow != null && sel.bandHigh != null ? formatRange(sel.bandLow, sel.bandHigh, locale, 0) + " · " : ""}{unitFmt(sel.unit, locale)}</span>
+          <span className="text-[11px] text-charcoal/65">{sel.bandLow != null && sel.bandHigh != null ? formatRange(sel.bandLow, sel.bandHigh, locale, 0) + " · " : ""}{unitFmt(sel.unit, locale)}</span>
          </div>
-         {sel.bandNote ? <div className="mt-1 text-[11px] leading-snug text-charcoal/55">{sel.bandNote}</div> : null}
+         {sel.bandNote ? <div className="mt-1 text-[11px] leading-snug text-charcoal/65">{sel.bandNote}</div> : null}
         </div>
-       ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/45">{t.noData}</div>)}
+       ) : (<div className="mt-3 rounded-xl border border-dashed border-line p-3 text-[12px] text-charcoal/65">{t.noData}</div>)}
        <div className="mt-3 flex items-center justify-between">
-        <span className="text-[12.5px] text-charcoal/60">{sel.listings} {t.available}</span>
+        <span className="text-[12.5px] text-charcoal/70">{sel.listings} {t.available}</span>
         <a href={`/${locale}/building/${sel.id}`} className="text-[12.5px] font-medium text-signal hover:underline">{t.viewListings} {locale === "ar" ? "←" : "→"}</a>
        </div>
       </div>

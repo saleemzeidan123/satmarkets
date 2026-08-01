@@ -85,7 +85,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
                 and this spelling was right. It was right in the wrong language: the
                 Arabic card read "850 m²" in Latin script. */}
             <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · " + formatArea(850, "en"), "العليا · " + formatArea(850, "ar"))}</div>
-            <div style={{ fontSize: 12.5, color: "var(--amber)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>
+            <div style={{ fontSize: 12.5, color: "var(--amber-d)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>
           </div>
         </div>
       </Section>

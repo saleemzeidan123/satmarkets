@@ -47,10 +47,10 @@ export default function MediaBrief({
             <span aria-hidden="true" className={r.met ? "text-signal" : "text-amber"}>
               {r.met ? "✓" : "○"}
             </span>
-            <span className={r.met ? "text-charcoal/60" : "text-charcoal/80"}>
+            <span className={r.met ? "text-charcoal/70" : "text-charcoal/80"}>
               {ar ? r.statement_ar : r.statement_en}
               {!r.met && r.weight === "expected" && (
-                <span className="text-charcoal/45"> {t("(expected, not required)", "(متوقع وغير مطلوب)")}</span>
+                <span className="text-charcoal/65"> {t("(expected, not required)", "(متوقع وغير مطلوب)")}</span>
               )}
             </span>
           </li>
@@ -71,7 +71,7 @@ export default function MediaBrief({
 
       {open && (
         <div className="mt-2">
-          <p className="text-[11px] text-charcoal/55">
+          <p className="text-[11px] text-charcoal/65">
             {t(
               "Guidance for you, not a check on this listing. Nothing here reads the contents of a file, so nothing here is counted against you.",
               "إرشاد لك، وليس فحصاً لهذا الإعلان. لا شيء هنا يقرأ محتوى الملفات، ولذلك لا يُحسب شيء منه عليك.",
@@ -82,9 +82,9 @@ export default function MediaBrief({
               <li key={s.key}>
                 <div className="text-[12px] text-charcoal/85">
                   {ar ? s.label_ar : s.label_en}
-                  <span className="ms-2 text-[11px] text-charcoal/50">{shotWeightLabel(s.weight, ar)}</span>
+                  <span className="ms-2 text-[11px] text-charcoal/65">{shotWeightLabel(s.weight, ar)}</span>
                 </div>
-                <p className="text-[11px] text-charcoal/55 leading-relaxed">{ar ? s.why_ar : s.why_en}</p>
+                <p className="text-[11px] text-charcoal/65 leading-relaxed">{ar ? s.why_ar : s.why_en}</p>
               </li>
             ))}
           </ul>

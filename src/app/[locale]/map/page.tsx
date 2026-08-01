@@ -64,7 +64,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
 
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
-      <a href={`/${locale}/listings`} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-charcoal/60 transition hover:text-charcoal">{dict.map.back}</a>
+      <a href={`/${locale}/listings`} className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-medium text-charcoal/70 transition hover:text-charcoal">{dict.map.back}</a>
       <div className="text-[11px] font-medium uppercase tracking-[0.18em] intel-gold">{dict.map.eyebrow}</div>
       <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{dict.map.title}</h1>
       <p className="mt-2 max-w-2xl text-[15px] intel-muted">

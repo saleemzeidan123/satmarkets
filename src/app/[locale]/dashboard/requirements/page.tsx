@@ -219,7 +219,7 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
             // verification, and a match is not a verification of anything.
             const tone = result.verdict === "exact"
               ? { fg: "var(--status-info)", bg: "var(--status-info-wash)" }
-              : { fg: "var(--status-attention)", bg: "var(--status-attention-wash)" };
+              : { fg: "var(--status-attention-text)", bg: "var(--status-attention-wash)" };
             return (
               <div key={b.id} style={{ padding: "14px 18px", borderTop: "1px solid var(--silver)" }}>
                 <div className="row gap12" style={{ alignItems: "flex-start" }}>
@@ -262,7 +262,7 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
                           className="mono"
                           style={{
                             flex: "none", width: 16, textAlign: "center",
-                            color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention)",
+                            color: r.state === "failed" ? "var(--status-error)" : r.state === "met" ? "var(--slate)" : "var(--status-attention-text)",
                           }}
                         >
                           {NOTE[r.state]}
