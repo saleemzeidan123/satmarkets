@@ -478,3 +478,31 @@ test("a fully supplied listing reads strong with no essential missing", () => {
   assert.deepEqual(q.contradictions, []);
   assert.equal(q.band, "strong");
 });
+
+// PKG-LS3. A floor plan can arrive as a link in the column or as a listing_media
+// row of kind "floorplan". The check read only the column, so a lister who
+// uploaded a plan through the docs panel was told it was missing while the page
+// above them displayed it.
+test("a floor plan uploaded as media satisfies the floor plan check", () => {
+  const state = (f: ListingFacts) =>
+    assessListing(f, NOW).checks.find((c) => c.key === "floorplan")?.state;
+
+  const noColumn: ListingFacts = { ...complete(), floorplan_url: null };
+  assert.equal(state({ ...noColumn, floorplan_count: 1 }), "present");
+  assert.equal(state({ ...noColumn, floorplan_count: 3 }), "present");
+});
+
+test("neither a link nor an uploaded plan still reads missing", () => {
+  const state = (f: ListingFacts) =>
+    assessListing(f, NOW).checks.find((c) => c.key === "floorplan")?.state;
+
+  const base: ListingFacts = { ...complete(), floorplan_url: null };
+  assert.equal(state(base), "missing");
+  assert.equal(state({ ...base, floorplan_count: 0 }), "missing");
+  assert.equal(state({ ...base, floorplan_count: null }), "missing");
+  // A caller that cannot supply the count leaves it undefined and the check
+  // falls back to the column alone rather than assuming either way.
+  assert.equal(state({ ...base, floorplan_count: undefined }), "missing");
+  // The column on its own is unchanged by any of this.
+  assert.equal(state({ ...complete(), floorplan_count: 0 }), "present");
+});

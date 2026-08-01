@@ -123,6 +123,13 @@ export interface ListingFacts {
   attributes?: Record<string, unknown> | null;
   photo_count?: number | null;
   document_count?: number | null;
+  // A floor plan can arrive two ways: as a link in listings.floorplan_url, or as
+  // a listing_media row of kind "floorplan" uploaded through the docs panel. The
+  // second path never writes the column, so a check that read only the column
+  // would tell a lister their plan is missing while the page above shows it. A
+  // caller that knows the media count passes it here; one that does not leaves it
+  // undefined and the check falls back to the column alone.
+  floorplan_count?: number | null;
   [key: string]: unknown;    // registry fields that map to a typed column
 }
 
@@ -222,6 +229,7 @@ function platformChecks(facts: ListingFacts): QualityCheck[] {
 
   const photos = num(facts.photo_count) ?? 0;
   const docs = num(facts.document_count) ?? 0;
+  const plans = num(facts.floorplan_count) ?? 0;
   const permit = isFilled(facts.ad_permit_number) || isFilled(facts.ad_permit_no);
   const permitExpiry = time(facts.ad_permit_expires_at);
 
@@ -261,7 +269,7 @@ function platformChecks(facts: ListingFacts): QualityCheck[] {
       `Photograph set of ${PHOTO_SET_MIN} or more`, `مجموعة صور من ${PHOTO_SET_MIN} أو أكثر`,
       "One photograph shows a wall. A set shows the space a viewer would walk.",
       "الصورة الواحدة تُظهر جداراً. المجموعة تُظهر المساحة كما يراها الزائر."),
-    check("floorplan", "media", "expected", stateOf(isFilled(facts.floorplan_url)),
+    check("floorplan", "media", "expected", stateOf(isFilled(facts.floorplan_url) || plans > 0),
       "Floor plan", "المخطط",
       "A floor plan is how an occupier tests the space against a requirement.",
       "المخطط هو ما يقيس به المستأجر المساحة أمام متطلباته."),

@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 import { changedArabic } from "@/lib/listingArabic";
 import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
+import LocationPicker from "@/components/LocationPicker";
+import type { DistrictPoint } from "@/lib/nearestDistrict";
 
 // The owner's self-serve editor for a listing. It covers the fields an owner may
 // safely change: the headline, description, size, price, contact routing, AND the
@@ -52,11 +54,19 @@ const sectionLabel = (s: DisplaySection, ar: boolean): string => {
 
 export default function EditListingForm({
   id, locale, assetType, init, initAttrs, titleArBehind = false, descArBehind = false,
+  mayPin = false, pinned = false, draft = false, districts = [],
 }: {
   id: string; locale: string; assetType: string; init: Init; initAttrs: Record<string, unknown>;
   /** The stored Arabic was written against English that has since changed. Decided on the server by `arabicIsBehind`, which is silent when the record cannot answer. */
   titleArBehind?: boolean;
   descArBehind?: boolean;
+  /** The API would accept a pin for this listing right now. Decided on the server by `mayFillAbsent`, so the screen cannot offer a write the route refuses. */
+  mayPin?: boolean;
+  /** The listing already carries coordinates. Changes only the wording; the permission is `mayPin`. */
+  pinned?: boolean;
+  /** Still intake. A draft may be repositioned until it publishes; a live listing gets one placement. Wording only. */
+  draft?: boolean;
+  districts?: DistrictPoint[];
 }) {
   const ar = locale === "ar";
   const loc: "en" | "ar" = ar ? "ar" : "en";
@@ -71,6 +81,10 @@ export default function EditListingForm({
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  // Null until the lister places a pin in this session. The PATCH carries lat and
+  // lng only then, so a save that touched nothing on the map never sends
+  // coordinates and can never be read as a relocation.
+  const [pin, setPin] = useState<{ lat: number; lng: number } | null>(null);
   const set = (k: keyof Init, v: string) => setF((p) => ({ ...p, [k]: v }));
   const setAttr = (k: string, v: unknown) => setAttrs((p) => ({ ...p, [k]: v }));
 
@@ -91,6 +105,10 @@ export default function EditListingForm({
     statedNote: "كل ما تُدخله يظهر كأنه من ذكر المُعلن حتى تتحقق منه سات.",
     missing: "أكمل الحقول المطلوبة: ",
     chLabels: { whatsapp: "واتساب", call: "اتصال", email: "بريد", message: "رسالة عبر سات" } as Record<string, string>,
+    loc: "الموقع على الخريطة",
+    locNew: "لم يُحدَّد موقع هذا العرض على الخريطة، فهو لا يظهر على الخريطة ولا في بحث بنطاق. حدّده مرة واحدة هنا.",
+    locOnce: "بعد الحفظ، تعديل الموقع يمرّ عبر سات. الحي المسجّل لهذا العرض لا يتغيّر من هذه الشاشة.",
+    locDraft: "المسودة ما زالت مرحلة إدخال، ويمكنك تعديل الموقع حتى النشر. الحي المسجّل لا يتغيّر من هذه الشاشة.",
   } : {
     titleEn: "English title", titleAr: "Arabic title",
     descEn: "English description", descAr: "Arabic description",
@@ -104,6 +122,10 @@ export default function EditListingForm({
     statedNote: "Everything you enter shows as stated by the lister until SAT verifies it.",
     missing: "Please complete the required fields: ",
     chLabels: { whatsapp: "WhatsApp", call: "Call", email: "Email", message: "Message on SAT" } as Record<string, string>,
+    loc: "Map position",
+    locNew: "This listing has never been placed on the map, so it appears on no map and in no radius search. Place it once here.",
+    locOnce: "Once saved, moving the pin goes through SAT. The district recorded for this listing does not change from this screen.",
+    locDraft: "A draft is still intake, so you can adjust the position until it publishes. The recorded district does not change from this screen.",
   };
 
   function renderField(field: AssetField) {
@@ -189,6 +211,10 @@ export default function EditListingForm({
           contact_email: f.contact_email,
           contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
           attributes: attrs,
+          // Only when a pin was placed in this session, and never a district: the
+          // recorded district is what puts this listing in search today and moving
+          // it is not this form's to do.
+          ...(pin ? { lat: pin.lat, lng: pin.lng } : {}),
         }),
       });
       const j = await res.json().catch(() => ({}));
@@ -258,6 +284,23 @@ export default function EditListingForm({
             );
           })}
           <p style={hint}>{t.statedNote}</p>
+        </div>
+      )}
+
+      {/* Shown only where `PATCH /api/listings/[id]` would accept the write: a
+          draft at any time, and a live listing that has never been pinned. The
+          district is deliberately not sent from here, on either stage. */}
+      {mayPin && (
+        <div>
+          <label style={lbl}>{t.loc}</label>
+          {!pinned && <p style={{ ...hint, marginTop: 0, marginBottom: 8 }}>{t.locNew}</p>}
+          <LocationPicker
+            locale={loc}
+            districts={districts}
+            value={{ lat: pin?.lat ?? null, lng: pin?.lng ?? null, districtId: null }}
+            onChange={(v) => setPin({ lat: v.lat, lng: v.lng })}
+          />
+          <p style={hint}>{draft ? t.locDraft : t.locOnce}</p>
         </div>
       )}
 

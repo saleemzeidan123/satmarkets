@@ -9,6 +9,9 @@ import ListingStatusToggle from "@/components/ListingStatusToggle";
 import EditListingForm from "@/components/EditListingForm";
 import ListingMediaManager from "@/components/ListingMediaManager";
 import ListingDocsManager from "@/components/ListingDocsManager";
+import ListingCompleteness from "@/components/ListingCompleteness";
+import { assessListing, type ListingFacts } from "@/lib/listingQuality";
+import { stageOf, mayFillAbsent } from "@/lib/listingEdit";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
 import { listingDimensionState, verifiedBadgeText } from "@/lib/listingVerification";
 import { intakeFields } from "@/lib/assetFields";
@@ -103,6 +106,38 @@ export default async function ManageListingPage({ params }: { params: { locale: 
     const item = { id: m.id, url, isPdf, label: (ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar)) || null };
     if (m.kind === "brochure") brochures.push(item); else floorplans.push(item);
   }
+
+  // What is absent from this listing, read by the same model the Studio uses at
+  // creation. The row itself carries every column and the attributes blob, so the
+  // only facts it cannot supply are the counts, which are taken the way
+  // dashboard/new already takes them. listing_documents is the legal-document
+  // table and is counted alongside the brochure, because the "supporting
+  // documents" check asks whether there is anything for a later check to read.
+  const { count: legalDocCount } = await sb
+    .from("listing_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("listing_id", params.id)
+    .is("deleted_at", null);
+  const facts: ListingFacts = {
+    ...(L as Record<string, unknown>),
+    photo_count: photos.length,
+    floorplan_count: floorplans.length,
+    document_count: brochures.length + (legalDocCount ?? 0),
+  };
+  const quality = assessListing(facts);
+
+  // The one gap on a published listing that had no self-serve route at all. A
+  // listing that has never been pinned may receive its first pin; one that is
+  // already pinned is still SAT's to move, and the district is never moved by a
+  // lister on a live listing. The form is shown exactly where the API would
+  // accept the write, so the screen and the permission cannot drift apart.
+  const stage = stageOf(L.status);
+  const pinned = L.lat != null && L.lng != null;
+  const mayPin = mayFillAbsent("lat", stage, pinned);
+  const districts = mayPin
+    ? (await sb.from("districts_geo").select("id, name_en, name_ar, city, lat, lng").order("city")).data ?? []
+    : [];
+
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
     lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدَّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
@@ -182,6 +217,10 @@ export default async function ManageListingPage({ params }: { params: { locale: 
       </div>
 
       <div className="dpanel" style={{ padding: 20 }}>
+        <ListingCompleteness quality={quality} ar={ar} />
+      </div>
+
+      <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
         <div style={{ fontSize: 14.5, fontWeight: 700, marginBottom: 14 }}>{t.edit}</div>
         <EditListingForm
           id={L.id}
@@ -190,6 +229,10 @@ export default async function ManageListingPage({ params }: { params: { locale: 
           initAttrs={initAttrs}
           titleArBehind={titleArBehind}
           descArBehind={descArBehind}
+          mayPin={mayPin}
+          pinned={pinned}
+          draft={stage === "draft"}
+          districts={districts as any}
           init={{
             title_en: L.title_en || "",
             title_ar: L.title_ar || "",

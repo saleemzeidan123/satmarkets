@@ -12,6 +12,7 @@ import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
 import { placeName } from "@/lib/displayName";
 import { gateFailures, gateReasonsText } from "@/lib/gate";
 import { netArea, askingPrice } from "@/lib/listingFigures";
+import { assessListing, type ListingFacts } from "@/lib/listingQuality";
 import type { Loc } from "@/lib/format";
 
 // The owner's own inventory, with controls. "My listings" in the dashboard nav used
@@ -47,6 +48,8 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     availNote: "تأكيد التوفر يسجّل تاريخ اليوم على العرض ولا يغيّر أي حقل آخر. وهو قول تقرأه الباحثات والباحثون، فلا تؤكّد إلا مساحة تعرف أنها ما زالت متاحة.",
     otherSees: "يرى القارئ بالإنجليزية:",
     titleNote: "إن لم يُكتب عنوان العرض بإحدى اللغتين فلن يظهر عنوان مترجم، بل وصف عام للمساحة: النوع والحيّ. اكتب العنوان بنفسك من صفحة العرض، فلا تكتبه سات نيابة عنك.",
+    onFile: "حقيقة مسجّلة",
+    onFileNote: "عدد الحقائق المسجّلة هو عدّ لما هو موجود على العرض، لا تقييم من سات ولا شيء يراه الزائر. افتح العرض لترى ما ينقصه ولماذا يهمّ.",
   } : {
     title: "My listings", sub: "Your listings, and where each one stands right now",
     thListing: "Listing", thEnq: "Enquiries", thStatus: "Status", thAction: "",
@@ -61,16 +64,46 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     availNote: "Confirming availability stamps today's date on that listing and changes nothing else. It is a statement occupiers read, so only confirm a space you know is still on the market.",
     otherSees: "An Arabic reader sees:",
     titleNote: "Where a listing has no title in one of the two languages, no translated title appears: readers in that language are shown a plain description of the space, its type and its district. Write that title yourself from the listing page. SAT does not write it for you.",
+    onFile: "facts on file",
+    onFileNote: "The facts on file line counts what is present on a listing. It is not an assessment by SAT and no visitor sees it. Open a listing to read what is missing and why each one matters.",
   };
 
+  // The row select is `*` rather than a column list because the completeness line
+  // below is computed from the same model the manage page uses, and a model fed a
+  // narrowed row would report every unselected column as a fact the lister failed
+  // to supply. A wrong count on this screen is worse than no count.
   const [{ data: listings }, { data: leads }, { data: districts }] = await Promise.all([
-    sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id,availability_confirmed_at,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at")
+    sb.from("listings").select("*")
       .eq("account_id", su.accountId).order("created_at", { ascending: false }).order("id", { ascending: true }),
     sb.from("leads").select("id,listing_id"),
     sb.from("districts").select("id,name_en,name_ar,city"),
   ]);
 
   const rows = listings || [];
+
+  // Media and document counts for every row in two queries rather than two per
+  // row. Same composition as the manage page, so the number on this screen and the
+  // list on that one cannot disagree.
+  const ids = rows.map((l: any) => l.id);
+  const [{ data: mediaAll }, { data: docsAll }] = ids.length
+    ? await Promise.all([
+        sb.from("listing_media").select("listing_id,kind").in("listing_id", ids),
+        sb.from("listing_documents").select("listing_id").in("listing_id", ids).is("deleted_at", null),
+      ])
+    : [{ data: [] as any[] }, { data: [] as any[] }];
+  const counts = new Map<string, { photos: number; plans: number; docs: number }>();
+  const bump = (id: string, k: "photos" | "plans" | "docs") => {
+    const c = counts.get(id) ?? { photos: 0, plans: 0, docs: 0 };
+    c[k] += 1;
+    counts.set(id, c);
+  };
+  (mediaAll || []).forEach((m: any) => {
+    if (!m.listing_id) return;
+    if (m.kind === "photo") bump(m.listing_id, "photos");
+    else if (m.kind === "floorplan") bump(m.listing_id, "plans");
+    else if (m.kind === "brochure") bump(m.listing_id, "docs");
+  });
+  (docsAll || []).forEach((d: any) => { if (d.listing_id) bump(d.listing_id, "docs"); });
   // PKG-NM1. The district falls back to its own city, never to the other
   // language's name, so an Arabic owner is not shown "Al Olaya".
   const drow = new Map((districts || []).map((x: any) => [x.id, x]));
@@ -138,6 +171,18 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                   // anybody, and asking its owner to affirm one would be collecting
                   // an affirmation nobody reads.
                   const av = live ? listerAvailability(l.availability_confirmed_at, ar) : null;
+                  // How much of this listing is on file, in the same terms the
+                  // manage page states it. It is a count of absent facts, never a
+                  // score, a band or a colour: quality is not verification.
+                  const c = counts.get(l.id) ?? { photos: 0, plans: 0, docs: 0 };
+                  const q = assessListing({
+                    ...(l as Record<string, unknown>),
+                    photo_count: c.photos,
+                    floorplan_count: c.plans,
+                    document_count: c.docs,
+                  } as ListingFacts);
+                  const applicable = q.checks.filter((x) => x.state !== "not_applicable");
+                  const onFile = applicable.filter((x) => x.state === "present").length;
                   return (
                     <tr key={l.id}>
                       <td>
@@ -147,6 +192,9 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                             <Link href={`/${lp}/dashboard/listings/${l.id}`} className="rowlink" style={{ fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{title}</Link>
                             <div className="mono muted" style={{ fontSize: 11 }}>
                               <bdi>{specLine}</bdi>
+                            </div>
+                            <div className="mono muted" style={{ fontSize: 11, marginTop: 2 }}>
+                              <bdi>{onFile} {ar ? "من" : "of"} {applicable.length} {t.onFile}</bdi>
                             </div>
                             {otherMissing && (
                               <div className="muted" style={{ fontSize: 11, lineHeight: 1.55, marginTop: 5, maxWidth: 330 }}>
@@ -190,6 +238,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
           <div>{t.note}</div>
           <div style={{ marginTop: 7 }}>{t.availNote}</div>
           <div style={{ marginTop: 7 }}>{t.titleNote}</div>
+          <div style={{ marginTop: 7 }}>{t.onFileNote}</div>
         </div>
       </div>
     </div>

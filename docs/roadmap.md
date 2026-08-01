@@ -1721,6 +1721,82 @@ inventory density that would light the office facets is still owed, and the two 
 still owed a session-capable channel.
 
 
+## PKG-LS3, telling the lister what is missing, and giving them the one field that had no route (findings 135, 136, 137)
+
+**User journey improved.** A lister who has already published. Until now the product spoke to them
+once, inside the Listing Studio, and never again. After this package the screen they own the listing
+from names every fact absent from it and says why each one matters, in their own language, and the
+one gap that had no self serve route at any stage can be closed from that screen.
+
+**Observed problem.** Measured live on `3f13eb6` through `GET /api/listings`, which is public and
+unauthenticated and returns every column of every published row. Fifty rows, HTTP 200. Running the
+repository's own `assessListing` over them puts all fifty in the `incomplete` band. Description is
+absent in both languages on 50 of 50. Coordinates on 50 of 50. Supporting documents on 50 of 50.
+Floor plan on 49 of 50. Video on 49 of 50. Building on 44 of 50. Two rows carry no contact route at
+all and one has no Arabic title. Median score 60, range 40 to 76, zero contradictions. That is not a
+corpus that needs a better ranking algorithm. It is a corpus nobody was ever told about. The
+coordinates gap was worse than untold: `PATCH /api/listings/[id]` refused it outright with 403 and
+the words `The location of a published listing is changed by SAT.`, so an essential check named a gap
+the lister structurally could not close.
+
+**Measurable outcome expected.** Re-measure description, coordinate and document presence from the
+same public endpoint against today's 50 of 50 baseline. The claim being tested is that naming a gap
+to the person who can close it closes some of them; if the three counts have not moved, the panel is
+not the constraint and the next move is demand side, not another lister surface.
+
+**Simplest acceptable implementation.** One server rendered completeness panel on the manage screen,
+one count line per row on the inventory screen, the floor plan fix, and one narrow new editability
+category. No new dictionary keys, no new tables, no background jobs, no new dependency.
+
+**What will not be built.** No public quality badge, score, band or colour, because D24 holds that
+quality is not verification and this model must never produce one. No change to a pin that already
+exists. No movement of `district_id` on a live listing, from any screen, at any stage. No email
+nudges, no auto fill, no ranking penalty for an incomplete listing, no bulk action.
+
+**Date that decides whether to continue.** Re-measure on 1 September 2026.
+
+The narrowing that made the coordinates gap closable. `lat` and `lng` sit in `DRAFT_ONLY_EDITABLE`,
+and that rule is written against substitution: a reader relied on the pin, so moving it changes what
+was advertised. The reasoning does not reach a listing that never had a pin. Nothing was relied on,
+the space is on no map, and it answers no radius search. Supplying the first pin adds a fact;
+replacing an existing one substitutes one. `FILLABLE_WHEN_ABSENT` and `mayFillAbsent` in
+`listingEdit.ts` open exactly the first case. `mayFillAbsent` is a widening of `mayEdit` and never a
+narrowing, asserted by a test that walks every field in both existing sets at both stages, and it
+fails closed on a field nobody declared. `mayEdit` itself is byte identical, so every existing caller
+and test is untouched. The route tests the value on the row rather than what the client asserts, and
+the form is gated on the same predicate computed on the server and passed down as `mayPin`, so the
+screen cannot offer a write the route refuses.
+
+`district_id` is deliberately not in that set. Every published row already carries a district and
+that district is what places the listing in search today, so deriving a new one from a first pin
+would be a substitution wearing an addition's clothes. A first pin that disagrees with the recorded
+district is a real disagreement, and it is recorded as finding 137 rather than resolved silently.
+
+Finding 136 is smaller and was found by reading the model rather than the corpus. A floor plan
+arrives either as a link in `floorplan_url` or as a `listing_media` row of kind `floorplan`, and the
+check read only the column, so a lister who uploaded one through the docs panel was told it was
+missing while the page above them displayed it. The Studio hid this at creation time behind its own
+sentinel, which is why it only bit a lister returning to a listing that already exists. The count is
+optional on `ListingFacts`, so a caller that cannot supply it falls back to the column rather than
+assuming either way.
+
+One trap avoided rather than a defect fixed. The inventory query selected seventeen columns. Feeding
+such a row to `assessListing` would have reported every unselected column as a fact the lister failed
+to supply, producing an inflated and false missing count on the exact screen meant to build trust.
+The select was widened to `*` before the count line was written, and the reason is recorded in the
+file so it is not narrowed again for performance.
+
+Gates. `tsc --noEmit` clean, 1513 tests pass, `ar-lint` clean, `prose-scan` gate zero on public page
+source with the deferred BASE count unchanged at 366.
+
+Honest limits. The public endpoint carries no media count, so the photo and photo set checks read
+missing because the channel cannot decide them, not because it proved them absent; the `incomplete`
+band conclusion survives regardless, since description and coordinates alone are enough to produce
+it. Both screens changed here are session gated, and `web_fetch_vercel_url` is GET only and
+unauthenticated, so neither is live verifiable end to end from this environment. That is now the
+third package in a row owing the same evidence, and a session capable channel is the thing that would
+retire the debt.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

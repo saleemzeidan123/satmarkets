@@ -4,7 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { coerceAndValidateAttributes, editedAttributesJson } from "@/lib/intakeValidation";
 import { intakeFields } from "@/lib/assetFields";
-import { mayEdit, stageOf } from "@/lib/listingEdit";
+import { mayEdit, mayFillAbsent, stageOf } from "@/lib/listingEdit";
 import { hashSource } from "@/lib/translate/translateToArabic";
 
 export const runtime = "nodejs";
@@ -23,7 +23,9 @@ const BASE_OWNED_COLUMNS = new Set(["asking_rent_sqm", "sale_price"]);
 // the listing is still a draft, because a draft is intake and nobody has read it;
 // once it is public those are what the advertisement rests on and a change goes
 // through SAT. Verification flags, account, status and asset type are never the
-// lister's. The database guards the verification columns independently.
+// lister's. The database guards the verification columns independently. The one
+// widening is the first pin on a listing that has never had one, which adds a
+// fact rather than substituting one; see mayFillAbsent in listingEdit.ts.
 //
 // This route is also how the Listing Studio saves after the first time, so it
 // accepts the same Arabic the create path does, and stamps the source hash for
@@ -41,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { data: listing } = await sb
     .from("listings")
-    .select("id, account_id, deal_type, asset_type, attributes, status, title_en, description_en")
+    .select("id, account_id, deal_type, asset_type, attributes, status, title_en, description_en, lat, lng")
     .eq("id", params.id)
     .single();
   if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
@@ -128,8 +130,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // Draft-only corrections. Each is refused outright on a public listing rather
   // than silently dropped, so a client that tries is told why.
+  //
+  // The pin is the one exception, and only in one direction. A published listing
+  // that has never been pinned may receive its first pin, because nothing was
+  // relied on and the space is on no map until it has one. A pin that already
+  // exists is still SAT's to move. mayFillAbsent states that rule; the test below
+  // is against the value on the row, never against what the client asserts.
+  const pinned =
+    (listing as { lat?: number | null }).lat != null && (listing as { lng?: number | null }).lng != null;
   if (body.lat != null && body.lat !== "" && body.lng != null && body.lng !== "") {
-    if (!can("lat")) return NextResponse.json({ error: "The location of a published listing is changed by SAT." }, { status: 403 });
+    if (!mayFillAbsent("lat", stage, pinned) || !mayFillAbsent("lng", stage, pinned)) {
+      return NextResponse.json({ error: "The location of a published listing is changed by SAT." }, { status: 403 });
+    }
     const lat = Number(body.lat);
     const lng = Number(body.lng);
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < 16 || lat > 33 || lng < 34 || lng > 56) {

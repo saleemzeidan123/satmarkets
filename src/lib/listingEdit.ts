@@ -92,13 +92,47 @@ export const NEVER_EDITABLE: readonly string[] = [
   "is_demo",
 ];
 
+/**
+ * Fillable when absent, and only then.
+ *
+ * The draft-only rule above is written against substitution: a reader relied on
+ * the pin, so moving it changes what was advertised. That reasoning does not
+ * reach a listing that never had a pin. Nothing was relied on, the space is on
+ * no map, it answers no radius search, and every published row in the corpus is
+ * in exactly that state. Supplying the first pin adds a fact; replacing an
+ * existing one substitutes one. Only the first is opened here.
+ *
+ * district_id is deliberately not in this set even though the pin implies a
+ * district. Every published listing already carries a district and that district
+ * is what places it in search today, so letting a first pin overwrite it would
+ * be a substitution wearing an addition's clothes. A first pin that disagrees
+ * with the recorded district is a real disagreement; it is recorded as finding
+ * 137 rather than resolved silently here.
+ */
+export const FILLABLE_WHEN_ABSENT: readonly string[] = ["lat", "lng"];
+
 const ALWAYS = new Set(ALWAYS_EDITABLE);
 const DRAFT_ONLY = new Set(DRAFT_ONLY_EDITABLE);
+const FILL_ABSENT = new Set(FILLABLE_WHEN_ABSENT);
 
 /** Fails closed: an unknown field is not editable at any stage. */
 export function mayEdit(field: string, stage: ListingStage): boolean {
   if (ALWAYS.has(field)) return true;
   return stage === "draft" && DRAFT_ONLY.has(field);
+}
+
+/**
+ * Whether a lister may write this field given the stage and whether the field
+ * already holds a value.
+ *
+ * This is a widening of mayEdit and never a narrowing: anything mayEdit permits
+ * is permitted here too, at any value. It adds exactly one case, the first write
+ * to an empty fillable field on a live listing. It fails closed on an unknown
+ * field for the same reason mayEdit does.
+ */
+export function mayFillAbsent(field: string, stage: ListingStage, hasValue: boolean): boolean {
+  if (mayEdit(field, stage)) return true;
+  return !hasValue && FILL_ABSENT.has(field);
 }
 
 /** The fields a lister may change right now, in a stable order, for a caller that wants the set rather than the test. */
