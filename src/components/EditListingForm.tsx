@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 import { changedArabic } from "@/lib/listingArabic";
-import { formatUnit } from "@/lib/format";
+import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
 
 // The owner's self-serve editor for a listing. It covers the fields an owner may
 // safely change: the headline, description, size, price, contact routing, AND the
@@ -59,6 +59,7 @@ export default function EditListingForm({
   descArBehind?: boolean;
 }) {
   const ar = locale === "ar";
+  const loc: "en" | "ar" = ar ? "ar" : "en";
   const router = useRouter();
   const [f, setF] = useState<Init>(init);
   const [attrs, setAttrs] = useState<Record<string, unknown>>(initAttrs);
@@ -82,8 +83,8 @@ export default function EditListingForm({
     descEn: "الوصف بالإنجليزية", descAr: "الوصف بالعربية",
     arTitleHint: "إذا تركته فارغاً، يرى القارئ بالعربية وصفاً موجزاً للمساحة بدل عنوان كتبته أنت.",
     behind: "كُتب هذا النص استناداً إلى نسخة إنجليزية سابقة، وقد لا يطابق ما هو منشور الآن.",
-    area: "المساحة (م²)",
-    price: init.deal_type === "lease" ? `الإيجار المطلوب (${formatUnit("sar_sqm_year", "ar", "short")})` : `سعر البيع (${formatUnit("sar", "ar")})`,
+    area: areaFieldLabel("ar"),
+    price: priceFieldLabel(init.deal_type, "ar"),
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
     details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
@@ -95,8 +96,8 @@ export default function EditListingForm({
     descEn: "English description", descAr: "Arabic description",
     arTitleHint: "Left empty, an Arabic reader is shown a short description of the space instead of a title you wrote.",
     behind: "This was written against an earlier English version, so it may no longer match what is published.",
-    area: "Size (m²)",
-    price: init.deal_type === "lease" ? `Asking rent (${formatUnit("sar_sqm_year", "en", "short")})` : `Sale price (${formatUnit("sar", "en")})`,
+    area: areaFieldLabel("en"),
+    price: priceFieldLabel(init.deal_type, "en"),
     phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
     details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",
@@ -106,7 +107,7 @@ export default function EditListingForm({
   };
 
   function renderField(field: AssetField) {
-    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "") + (field.required ? " *" : "");
+    const label = fieldLabel(field, loc) + (field.required ? " *" : "");
     const help = ar ? field.help_ar : field.help_en;
     const val = attrs[field.key];
     if (field.type === "boolean") {

@@ -35,7 +35,11 @@ walk("src/lib/translate");
 // voice gate as src/i18n. `requirementFigures.ts` holds من, إلى and حتى, which
 // are the connectives a range is built from rather than copy, which is exactly
 // why they live in source and exactly why they still need the gate.
-for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts", "src/lib/requirementFigures.ts"]) {
+// PKG-LS2: `fieldLabel.ts` now holds the Arabic nouns above the two boxes a
+// lister types an area and a price into. That is shipped Arabic copy on the one
+// surface where getting it wrong changes what the stored number means, so it
+// clears the same gate as the label catalogue.
+for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts", "src/lib/requirementFigures.ts", "src/lib/fieldLabel.ts"]) {
   if (fs.existsSync(p)) files.push(p);
 }
 

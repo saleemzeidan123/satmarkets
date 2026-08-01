@@ -26,6 +26,7 @@ import SaveSearch from "@/components/SaveSearch";
 import DataState from "@/components/DataState";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
+import { fieldLabel } from "@/lib/fieldLabel";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { decidedRentIndexRows, quotableRentIndexRows } from "@/lib/market/quotable";
 import { listedSince, listedLabel } from "@/lib/listedSince";
@@ -404,10 +405,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           <span className="muted" style={{ fontSize: 12.5, fontWeight: 600 }}>{assetLabel(facetAsset, locale)} {dl.assetFilters}:</span>
           {facets.map((f) => {
             const cur = String((searchParams as Record<string, string | undefined>)[`f_${f.key}`] ?? "");
-            const lbl = ar ? f.label_ar : f.label_en;
+            const lbl = fieldLabel(f, locale);
             const inpStyle = { padding: "7px 10px", borderRadius: 8, border: "1px solid var(--silver)", fontSize: 13, background: "#fff", color: "var(--ink)" } as const;
             if (f.type === "number" || f.type === "integer") {
-              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl}${f.unit ? " (" + f.unit + ")" : ""} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
+              return <input key={f.key} name={`f_${f.key}`} type="number" defaultValue={cur} placeholder={`${lbl} ${dl.minimum}`} style={{ ...inpStyle, width: 170 }} />;
             }
             const opts: [string, string][] = f.type === "tristate" || f.type === "boolean"
               ? [["yes", dl.yes], ["no", dl.no]]

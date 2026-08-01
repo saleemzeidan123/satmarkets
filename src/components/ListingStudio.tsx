@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import MediaBrief from "@/components/MediaBrief";
 import LocationPicker from "@/components/LocationPicker";
 import { intakeFields, type AssetField } from "@/lib/assetFields";
+import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
 import { assetLabel, dealLabel } from "@/lib/labels";
 import { askingPrice, netArea } from "@/lib/listingFigures";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
@@ -356,7 +357,7 @@ export default function ListingStudio({
   const go = (id: string) => { setCurrent(id); setError(null); if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "auto" }); };
 
   function renderField(field: AssetField) {
-    const label = (ar ? field.label_ar : field.label_en) + (field.unit ? ` (${field.unit})` : "") + (field.required ? " *" : "");
+    const label = fieldLabel(field, loc) + (field.required ? " *" : "");
     const hint = ar ? field.help_ar : field.help_en;
     const val = attrs[field.key];
     const id = `attr-${field.key}`;
@@ -447,7 +448,7 @@ export default function ListingStudio({
       case "area_sqm":
         return (
           <div key={key}>
-            <label className={lbl} htmlFor="area_sqm">{t("Area (sqm)", "المساحة (متر مربع)")} *</label>
+            <label className={lbl} htmlFor="area_sqm">{areaFieldLabel(loc)} *</label>
             <input id="area_sqm" type="number" inputMode="numeric" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} className={inp} />
             <p className={help}>{t("Area sets the unit rate and every comparison this listing appears in.", "المساحة تحدد سعر المتر وكل مقارنة تظهر فيها هذه القائمة.")}</p>
           </div>
@@ -456,7 +457,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="price">
-              {f.deal_type === "sale" ? t("Sale price (SAR)", "سعر البيع (ريال)") : t("Asking rent (SAR per sqm per year)", "الإيجار المطلوب (ريال للمتر المربع سنوياً)")} *
+              {priceFieldLabel(f.deal_type, loc)} *
             </label>
             <input id="price" type="number" inputMode="numeric" value={f.price} onChange={(e) => set("price", e.target.value)} className={inp} />
           </div>
