@@ -1920,6 +1920,88 @@ journey that already exists, not a new capability, so it moves nothing about tha
 E and F of this package are the research instrument, the accessibility pass and the event dictionary,
 which is the same answer expressed as work.
 
+## PKG-ELITE-E1, slice D: the ELITE-1 research instrument, in both languages (Codex item 4)
+
+**The six required fields, before the slice.**
+
+*User journey improved.* None directly. This slice improves no journey; it is the instrument that
+decides which journey gets improved next. Every journey it observes already exists: organisation
+onboarding, Listing Studio, listing detail, search, comparison, requirement creation, matching,
+notification control.
+
+*Observed problem or unavoidable foundation.* Observed, and it is the reason this package exists at
+all. The product carries 50 published preview listings, 6 requirements and 0 registered interests.
+Six requirements and zero interests are not behavioural evidence, and the last four packages have
+each been decided from internal reasoning against the register rather than from anything a user did.
+That is a stable and worsening condition: the register can rank findings against each other but it
+cannot tell us which of them a landlord would actually hit. The instrument is what ends it.
+
+*Measurable outcome expected.* Ten sessions, 5 supply side and 5 demand side, each producing an
+independent completion rate per task, a time, an error count, a help count, an abandonment record,
+a verification comprehension score, a rent basis comprehension score and a confidence score. The
+threshold that turns those into work is written into the instrument rather than decided afterwards:
+a task below 3 of 5 independent completion is a build input for the next package, and any critical
+finding is fixed before round 2. That is the measurable outcome of this slice, and it is deliberately
+a measurement of the product rather than of the instrument.
+
+*Simplest acceptable implementation.* Two Markdown files at full parity, `docs/research/
+elite-1-instrument-en.md` and `docs/research/elite-1-instrument-ar.md`, carrying all eleven artefacts
+Codex named plus the standing constraints. No research tooling, no recruiting platform, no survey
+product, no consent-management service, no participant database in this repository. The round runs on
+the existing preview deployment with 10 ordinary preview accounts.
+
+*What will not be built.* No participant is contacted: recruitment is an owner item and no session is
+scheduled until the owner authorises it. No confidential commercial requirement is collected, and the
+instrument supplies fictional briefs precisely so that the tasks never need one. No market data, no
+demand estimate and no pricing evidence comes out of this round, and section 11 of the instrument says
+so in both languages. No conformance claim of any kind. No third-party analytics is wired to observe
+these sessions; the event dictionary is slice F and is a separate decision. No product change is made
+in this slice, because a slice that both writes the test and changes the thing under test measures
+nothing.
+
+*The date or evidence that decides whether to continue.* The instrument is complete when it is
+written; it does not continue. What continues is the round, and the round is blocked on one owner
+decision, which is authorising recruitment. If that authorisation has not arrived by 1 October 2026,
+the honest reading is that design-partner research is not the owner's next priority, and the ranking
+in this roadmap changes rather than the instrument.
+
+**The confidentiality position, stated once and carried in both files.** A tenant expansion plan, a
+rent under negotiation, a lease expiry and a named counterparty are confidential by default. The
+instrument does not ask for any of them, the facilitator does not write one down if it is volunteered,
+and no figure a participant states about their own portfolio reaches the product, a document or any
+later claim about the Saudi market. Recording requires explicit per-session consent before the
+recording starts, consent to observe is not consent to record, and consent to record is not consent
+to quote by name. The participant record kept in this repository carries side, role group, city,
+portfolio size or search scope, session language, prior platform use and device, and carries no name,
+employer, phone number or email.
+
+**What shipped.** Eleven artefacts in each language: participant criteria and a six-question screener
+with explicit exclusions; an invitation template sent by the owner; a consent and recording script
+whose third and fourth paragraphs may not be paraphrased; a facilitator guide with three permitted
+questions, an 8 minute task stop and a rule against the word just; test account and data requirements
+including a pre-round check that the preview carries enough inventory in both languages to run the
+demand-side tasks at all; 8 supply-side and 7 demand-side task scripts grounded in the real routes in
+`docs/routes.md`; an observation sheet with independent completion separated from completion after
+help; a five-level severity rubric assigned by the observer from what happened rather than from what
+the participant asked for; a task-success calculation that reports fractions alongside percentages
+because a denominator of 5 does not carry two significant figures; interview questions ordered so the
+comparison questions precede anything product-specific, with a named list of questions that are never
+asked; and a findings and retest template whose findings enter `docs/findings-register.md` under their
+own numbers so research and engineering findings rank against each other.
+
+Two task scripts exist to expose work this package already shipped. S4 puts finding 137 in front of a
+real user for the first time, and asks not whether the contradiction message is liked but whether it
+reads as a correction or as a rejection. D6 asks what participants expect about notification and
+visibility while O12 is unresolved and outbound matching notifications are off, which makes it direct
+input to that decision rather than a usability question, and it is one of the two tasks the guide
+forbids cutting for time.
+
+**After this slice, the next highest-value action is still user research, and it is now blocked on
+one owner authorisation rather than on missing preparation.** That is a change of kind: before this
+slice, research was ranked first and unstarted; after it, research is ranked first and ready. Slices
+E and F, the accessibility pass and the event dictionary, are the remaining engineering work that
+does not depend on the round, and they run next while the authorisation is outstanding.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

@@ -22,15 +22,15 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `cf3504a`, "PKG-ELITE-E1 slice C1: a pin may offer a location, never overwrite one, and never call a development a district", plus the slice C2 commit this file ships in |
+| GitHub HEAD | `83dfdf3`, "PKG-ELITE-E1 slice C2: a contradicted pin refuses the write, blocks production counting and reaches the lister in both languages", plus the slice D commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_oZSCqFV4GvEbKvdaYf9THe9xhJtr`, READY, target production |
-| Deployment URL | `satmarkets-pfoal49w9-sat-markets.vercel.app` |
+| Production deployment | `dpl_8WbnMXz3coJE8yZTUw6BpoSeLp7R`, READY, target production |
+| Deployment URL | `satmarkets-jxf9i9mjj-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `cf3504ac9517590384dc36ae618b877ec87c368b` |
-| Build ready at | epoch ms 1785591423747 |
-| Deployment lag | One commit. Production carries `cf3504a`, slice C1. The slice C2 commit this file ships in is newer and its build is unconfirmed until polled |
+| Commit deployed | `83dfdf3`, slice C2 |
+| Build ready at | epoch ms 1785592319861 |
+| Deployment lag | One commit. Production carries `83dfdf3`, slice C2, and slice C is fully live. The slice D commit this file ships in is newer and its build is unconfirmed until polled |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1526 tests, 0 failing |
@@ -69,6 +69,10 @@ regression is recorded in section 6 first.
 | PKG-DEM1, PKG-DEM2 | The demand entry point stops rejecting its visitors; a requirement's figures stop being invented | roadmap lines 1180 and 1338 |
 | PKG-FIG1, PKG-FIG2 | The grammar of a figure; one table for a unit | roadmap lines 1456 and 1509 |
 | Codex ten-item corrective package | Items 1 to 8 implemented, item 9 closed at `b2fc4b8` | `docs/elite-standard-reconciliation.md` |
+| PKG-ELITE-E1 slice A | The authoritative status ledger, this file | shipped `3b80cf9` |
+| PKG-ELITE-E1 slice B | The working practice against environment reclamation, and the first recovery bundle | shipped `e2f776b`, section 10 below |
+| PKG-ELITE-E1 slice C | Finding 137 resolved safely: a first pin may offer a location and never overwrite one, a contradiction refuses the write and blocks production counting | shipped `cf3504a` and `83dfdf3`, roadmap slice C section |
+| PKG-ELITE-E1 slice D | The ELITE-1 research instrument in English and Arabic, eleven artefacts at full parity | `docs/research/elite-1-instrument-en.md`, `docs/research/elite-1-instrument-ar.md`, roadmap slice D section |
 
 ---
 
@@ -185,7 +189,7 @@ work, per the governing directive and owner ruling 6.
 | **RLS advisory, `public.map_anchors`** | 104 rows of public reference geography. RLS off. SQL written for the owner in `docs/owner-actions-adv-1c1.md`, deliberately not auto-applied | The exposure is public-by-design data, so the risk today is future columns rather than current rows. Enabling RLS without the SELECT policy in the same transaction would take location facts off every listing page, which is why this is owner-run |
 | **RLS advisory, `public.spatial_ref_sys`** | 8500 rows. RLS off. Not to be modified blindly because the table may be PostGIS extension owned | Nothing user-facing. It is an advisory artefact of an extension, and acting on it without knowing the ownership risks breaking PostGIS |
 | Advisory re-check | `Supabase.get_advisors` now answers permission denied, as do `execute_sql`, `apply_migration` and `list_tables` | The two advisories above cannot be re-read from here. They are carried forward from the last successful read rather than re-confirmed, and this file says so rather than presenting them as current |
-| Design-partner recruitment | Not started. Owner side | The gate from E0 to E1. This is the binding constraint on the whole product, not any missing feature |
+| Design-partner recruitment | Not started. Owner side. The instrument is now written and ready to run: criteria, screener, invitation, consent script, facilitator guide, accounts, task scripts, observation sheet, severity rubric, success calculation, interview questions and findings template, in English and Arabic. What is missing is the authorisation to approach 10 people, and no participant is contacted before it | The gate from E0 to E1. This is the binding constraint on the whole product, not any missing feature. It is no longer blocked on preparation, only on the authorisation. If it has not arrived by 1 October 2026 the roadmap ranking changes rather than the instrument |
 | Saudi counsel memorandum | Not commissioned | O5, O13, and the FAL scope question surface by surface |
 | REGA and Ejar permitted use | Not obtained | O10 |
 | Enterprise AI agreement and processing terms | Not signed | External model processing stays off |
@@ -271,6 +275,14 @@ it. The practice below exists so that it can happen again without costing anythi
    device, with a `RECOVERY.md` stating how to restore from it. GitHub stays the
    authoritative remote; the bundle is a second copy held somewhere a container cannot
    reclaim.
+
+   **Blocked since slice C.** The device bridge is absent from this session: the
+   `remote-devices` tools do not resolve at all, so the persistent workspace cannot be
+   written to and the bundle has not been refreshed since slice B. This is recorded rather
+   than worked around. Nothing is at risk, because every slice since is committed and
+   pushed to GitHub, which this practice names as the authoritative remote and the bundle
+   only duplicates. The refresh happens at the first package close where the bridge is
+   present.
 
 **Intended deployment commit for the remainder of PKG-ELITE-E1:** each slice ships on its
 own commit to `main` and deploys to production on its own Vercel build. There is no
