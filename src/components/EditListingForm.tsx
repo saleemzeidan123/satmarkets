@@ -346,8 +346,16 @@ export default function EditListingForm({
           draft at any time, and a live listing that has never been pinned. The
           district is deliberately not sent from here, on either stage. */}
       {mayPin && (
-        <div>
-          <label style={lbl}>{t.loc}</label>
+        /* Finding 153. The caption over the picker was a bare <label>: no htmlFor,
+            no control inside it, so it named nothing at all. It could not be given
+            an htmlFor either, because the picker is not one control, it is a search
+            box, a map, and a latitude and a longitude. A caption over a set of
+            controls is a legend, which is what slice G established for the other
+            four groups in this package. This one waited for slice H because the
+            search box had to become a real combobox first, and a group whose
+            members are unannounced is a named box around silence. */
+        <fieldset style={fset}>
+          <legend style={lbl}>{t.loc}</legend>
           {!pinned && <p style={{ ...hint, marginTop: 0, marginBottom: 8 }}>{t.locNew}</p>}
           <LocationPicker
             locale={loc}
@@ -356,7 +364,7 @@ export default function EditListingForm({
             onChange={(v) => setPin({ lat: v.lat, lng: v.lng })}
           />
           <p style={hint}>{draft ? t.locDraft : t.locOnce}</p>
-        </div>
+        </fieldset>
       )}
 
       <div>

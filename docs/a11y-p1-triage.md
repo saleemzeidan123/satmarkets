@@ -150,6 +150,49 @@ were correct when written and are now `:622`, `:687`, `:692` and `:693`; the
 closure record is left as written rather than retrofitted, and this paragraph is
 the correction.
 
+Closed in slice H, the fifth. Finding 153 was the survivor, and the reason it
+survived is worth keeping: a caption cannot be attached to a set of controls that
+are not a set. `LocationPicker` is a search box, a map, a latitude and a longitude,
+so there was never a `htmlFor` to write, and a legend over controls that announce
+nothing is a named box around silence. Slice H built the APG combobox first: the
+input carries `role="combobox"`, `aria-expanded`, `aria-controls`,
+`aria-autocomplete` and `aria-activedescendant`, the results are a listbox of
+options rather than a run of buttons, and an always-present polite status region
+says the list appeared. Only then did the two captions become legends, at
+`EditListingForm.tsx:357` and `ListingStudio.tsx:703`.
+
+Three decisions inside that work are design positions rather than mechanics. The
+options are `<li>` and not `<button>`, because focus stays in the input and the
+active option is named, so a focusable option would put the same choice in the tab
+order twice and pull the caret out of the box being typed in; the pointer path uses
+`onMouseDown` so it fires before blur and lands in the same call the keyboard uses.
+The finding asked for arrow keys that respect direction, and the honest answer is
+that a vertically stacked list has no direction: Down, Up, Home and End are correct
+unchanged in both languages, and the direction-aware part is refusing to intercept
+Left and Right, which move the caret, already reverse themselves under RTL, and
+would break ordinary Arabic editing if taken. And `aria-invalid` was dropped from
+the Studio group rather than carried over, because it is not supported on
+`role="group"`; it was equally inert on the `<div>` it used to sit on, so the group
+now carries only the `aria-describedby` that points at the error naming it.
+
+Building the combobox exposed one defect that the old markup had been hiding, filed
+as finding 196 and fixed in the same slice: choosing a suggestion writes its label
+back into the search box, which retriggers the debounced query and reopens the list
+on the item just chosen. Untidy under a div of buttons; under a live region it
+re-announces a list the lister did not ask for, immediately after their choice was
+taken. A `chosen` ref suppresses that one echo and is released on the next
+keystroke, so typing the same string again still searches.
+
+`BARE_LABEL_EXEMPT` is now empty, and that is the point of keeping the map in the
+guard rather than deleting the mechanism. An exemption is a debt with a name on it,
+not a permanent category. `LocationPicker.tsx` also joined the guard's `JOURNEYS`
+list, so the component is scanned rather than merely excused. The reflow probe was
+re-run after two more div-to-fieldset conversions and returned track widths
+numerically identical to the RC7 baseline at all fourteen renders, which is the
+evidence that the semantic change moved no layout, and therefore that the RC8
+instruction not to trade visual quality for accessibility was honoured rather than
+asserted.
+
 **RC9. State and announcement, findings 167, 182, 187, 156 and 145.** View toggles
 exposing no current or pressed state; `aria-pressed` misused for a single-valued
 choice; client-fetched requirement content arriving outside any live region;

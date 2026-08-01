@@ -59,6 +59,10 @@ const JOURNEYS = [
   "src/components/ProfileForm.tsx",
   "src/components/ListingDocsManager.tsx",
   "src/components/ListingMediaManager.tsx",
+  // Added in slice H. It is a shared component rather than a route, but it is the
+  // control both listing journeys use to place a building, and finding 153 lived
+  // in it.
+  "src/components/LocationPicker.tsx",
 ];
 
 function rel(p: string): string {
@@ -110,14 +114,16 @@ function file(path: string): string {
 
 // ---------------------------------------------------------------------------
 
-/** path:line -> why that caption is allowed to name no control. */
-const BARE_LABEL_EXEMPT: Record<string, string> = {
-  "src/components/EditListingForm.tsx:350":
-    "the map position caption over LocationPicker. This is finding 153, which is a " +
-    "combobox rewrite rather than an element swap: the picker has to grow managed option " +
-    "ids, aria-activedescendant and direction-aware arrow keys before there is a control " +
-    "for a caption to point at. Deferred to slice H and recorded as open, not excused.",
-};
+/**
+ * path:line -> why that caption is allowed to name no control.
+ *
+ * Empty since slice H, and that is the point of keeping it. Slice G left one
+ * entry here, the map position caption over LocationPicker, because finding 153
+ * needed the picker's search box to become a real combobox before a caption had
+ * anything to be a caption of. Slice H did that work and the entry went. An
+ * exemption is a debt with a name on it, not a permanent category.
+ */
+const BARE_LABEL_EXEMPT: Record<string, string> = {};
 
 test("no caption in a critical journey names a control that does not exist", () => {
   const bad: string[] = [];
@@ -299,6 +305,117 @@ test("the attach-nothing option exists in both languages and is written in each 
       "selected, so an Arabic reader opening the panel would hear the English string first.",
   );
   assert.notEqual(a, e, "the Arabic attach-nothing option is the English string");
+});
+
+// ---------------------------------------------------------------------------
+// Slice H. Finding 153, and finding 196 which came out of fixing it.
+
+test("the location search box is a combobox that says what it controls", () => {
+  const src = file("src/components/LocationPicker.tsx");
+  for (const attr of [
+    'role="combobox"',
+    "aria-expanded={open}",
+    "aria-controls={listId}",
+    'aria-autocomplete="list"',
+    "aria-activedescendant={open && active >= 0 ? optId(active) : undefined}",
+  ]) {
+    assert.ok(
+      src.includes(attr),
+      `finding 153. The search box must declare \`${attr}\`. Before slice H it was a plain ` +
+        "input and the suggestions were a bare div of buttons, so the list opened and closed " +
+        "in silence: nothing said a list existed, nothing said how many were in it, and " +
+        "nothing tied the input to the thing it had produced. Each of these five is a " +
+        "different half of that sentence and none of them substitutes for another.",
+    );
+  }
+  assert.match(
+    src,
+    /role="listbox"[\s\S]{0,200}aria-label=/,
+    "finding 153. The suggestion list must be a named listbox. `aria-controls` pointing at " +
+      "a plain div names a region with no role, which is not what the combobox contract " +
+      "promises the reader is there.",
+  );
+  assert.match(
+    src,
+    /role="option"\s*\n?\s*aria-selected=\{i === active\}/,
+    "finding 153. Each suggestion must be an option that reports whether it is the active " +
+      "one. Without `aria-selected` the arrow keys move a highlight that only sight can see.",
+  );
+});
+
+test("the suggestion list is driven from the input and not from the tab order", () => {
+  const src = file("src/components/LocationPicker.tsx");
+  const list = src.slice(src.indexOf('role="listbox"'), src.indexOf("</ul>"));
+  assert.ok(list.length > 0, "the suggestion list has gone; the scan has stopped working");
+  assert.doesNotMatch(
+    list,
+    /<button/,
+    "finding 153. The options were <button> elements, which put every suggestion in the tab " +
+      "order as a separate stop. In this pattern focus stays in the text box and " +
+      "`aria-activedescendant` names the active option, so a focusable option would offer " +
+      "the same choice twice and take the caret out of the box the lister is typing in.",
+  );
+  assert.match(
+    list,
+    /onMouseDown=\{\(e\) => \{ e\.preventDefault\(\); choose\(i\); \}\}/,
+    "finding 153. The pointer path must be `onMouseDown` with the default prevented, so it " +
+      "fires before the input's blur and ends in the same `choose` call the keyboard uses. " +
+      "`onClick` on a non-focusable option after a blur is where these two paths drift apart.",
+  );
+});
+
+test("the arrow keys that move a vertical list are taken and the ones that move a caret are not", () => {
+  const src = file("src/components/LocationPicker.tsx");
+  for (const k of ["ArrowDown", "ArrowUp", "Home", "End", "Enter", "Escape", "Tab"]) {
+    assert.ok(src.includes(`e.key === "${k}"`), `finding 153. The combobox must handle ${k}.`);
+  }
+  for (const k of ["ArrowLeft", "ArrowRight"]) {
+    assert.ok(
+      !src.includes(`e.key === "${k}"`),
+      `finding 153. ${k} must NOT be intercepted. Inside a text box it moves the caret, it ` +
+        "already reverses itself under `dir=\"rtl\"` without any help, and taking it would " +
+        "break ordinary Arabic editing to serve a list the lister may not be looking at. " +
+        "Vertical has no direction, which is why Down and Up are the correct keys in both " +
+        "languages and why direction-awareness here means leaving the horizontal pair alone.",
+    );
+  }
+});
+
+test("choosing a suggestion does not reopen the list on the thing just chosen", () => {
+  const src = file("src/components/LocationPicker.tsx");
+  assert.match(
+    src,
+    /if \(chosen\.current !== null && s === chosen\.current\) return;/,
+    "finding 196. Choosing a suggestion writes its label into the search box, and that is a " +
+      "change to the query like any other, so the debounced search fires 350ms later and " +
+      "reopens the list on the item the lister has just picked. With a combobox that is " +
+      "worse than untidy: the reopen re-announces, and the reader is told a list appeared " +
+      "that they did not ask for and did not do anything to cause.",
+  );
+  assert.match(
+    src,
+    /onChange=\{\(e\) => \{ chosen\.current = null;/,
+    "finding 196. Typing must clear the suppressed query, or the lister who picks a " +
+      "suggestion, edits it back to what it was and expects the list again never gets it.",
+  );
+});
+
+test("the location caption is a group in both forms that place a building", () => {
+  assert.match(
+    file("src/components/EditListingForm.tsx"),
+    /<fieldset style=\{fset\}>\s*<legend style=\{lbl\}>\{t\.loc\}<\/legend>/,
+    "finding 153. The map position caption must be the group's legend. It cannot be a " +
+      "`htmlFor`, because the picker is a search box, a map, a latitude and a longitude, " +
+      "which is four controls and not one.",
+  );
+  assert.match(
+    file("src/components/ListingStudio.tsx"),
+    /<legend className=\{lbl\}>\{t\("Place the building on the map"/,
+    "finding 153. The Studio's coordinates step had the same caption on a <div> carrying a " +
+      "label class, which is styled text. Its own comment already said the picker owns " +
+      "several controls and the group carries the state; that reading was right and the " +
+      "element was wrong.",
+  );
 });
 
 test("a fieldset can shrink, and a legend looks like the label it stands in for", () => {

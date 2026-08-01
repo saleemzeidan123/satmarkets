@@ -690,12 +690,19 @@ export default function ListingStudio({
         );
       case "coordinates":
         return (
-          <div key={key}>
-            {/* ELITE-4 J2-11: LocationPicker owns several controls, so the group
-                carries the state rather than any one box inside it. */}
-            <div className={lbl} {...flagFor("coordinates")}>{t("Place the building on the map", "حدّد موقع المبنى على الخريطة")} *</div>
+          /* ELITE-4 J2-11: LocationPicker owns several controls, so the group
+             carries the state rather than any one box inside it. That was the right
+             reading and the wrong element. Finding 153, slice H: a <div> carrying a
+             label class is styled text, so the caption named nothing and the several
+             controls were not a group, they were a run of unrelated boxes. It is now
+             the element that means a group. Only `aria-describedby` is carried over
+             from `flagFor`, because `aria-invalid` is not supported on `group` and
+             was inert on the <div> too, so nothing is lost; the invalid state lives
+             on the controls, and the group now points at the error that named it. */
+          <fieldset key={key} style={{ border: 0, padding: 0, margin: 0, minInlineSize: 0 }} aria-describedby={flagFor("coordinates")["aria-describedby"]}>
+            <legend className={lbl}>{t("Place the building on the map", "حدّد موقع المبنى على الخريطة")} *</legend>
             <LocationPicker locale={loc} districts={districts} value={place} onChange={(v) => { touch(); setPlace(v); }} />
-          </div>
+          </fieldset>
         );
       case "district":
         return (

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { nearestLocation, locationById, type LocationPoint } from "@/lib/nearestLocation";
 import { parseLatLng, isMapShareUrl } from "@/lib/parseLatLng";
@@ -47,6 +47,20 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<Array<{ label: string; sub: string; lat: number; lng: number }>>([]);
   const [resolving, setResolving] = useState(false);
+
+  // Finding 153. The suggestion list is a combobox, so it needs stable ids to
+  // point `aria-controls` and `aria-activedescendant` at, and an active index
+  // that arrow keys move without moving focus off the input.
+  const uid = useId();
+  const listId = `${uid}-loc-list`;
+  const optId = (i: number) => `${uid}-loc-opt-${i}`;
+  const [active, setActive] = useState(-1);
+  const listRef = useRef<HTMLUListElement>(null);
+  // Finding 196. Choosing a suggestion writes its label back into the box, which
+  // is a change to `q` like any other, so the search effect fires again 350ms
+  // later and reopens the list on the item just chosen. This holds the one query
+  // string that must not be searched, so the reopen never happens.
+  const chosen = useRef<string | null>(null);
 
   const recorded = locationById(value.districtId, districts);
   const nearest = lat != null && lng != null ? nearestLocation(lat, lng, districts) : null;
@@ -103,6 +117,8 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
   useEffect(() => {
     const s = q.trim();
     if (s.length < 2) { setResults([]); setResolving(false); return; }
+    // Finding 196: this exact string is the one the lister just picked.
+    if (chosen.current !== null && s === chosen.current) return;
     // Coordinates already present in the pasted text: place immediately.
     const direct = parseLatLng(s);
     if (direct) { setResults([]); setResolving(false); place(direct.lat, direct.lng, true); return; }
@@ -129,25 +145,123 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
+  // Finding 153. A new set of suggestions has no active option. Without this the
+  // index survives the fetch and points at a row that is now a different place,
+  // or at no row at all, and `aria-activedescendant` names an id that has gone.
+  useEffect(() => { setActive(-1); }, [results]);
+
+  // Finding 153. The list scrolls at `max-h-56`, and the browser does not scroll
+  // it for us: the active option is named rather than focused, and only focus
+  // moves a scroll container on its own. Indexing `children` rather than a
+  // selector is deliberate, because `useId` puts colons in its ids and those are
+  // legal in HTML but not in a CSS selector.
+  useEffect(() => {
+    if (active < 0) return;
+    const el = listRef.current?.children[active] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [active]);
+
   // ELITE-4 J2-19: the Studio's equivalent input class carries a 44px minimum
   // height; this local copy had dropped it, so the coordinate boxes and the
   // search box fell under the touch-target floor.
   const inp = "w-full rounded border border-charcoal/20 px-3 py-2 min-h-[44px]";
+
+  const open = results.length > 0;
+
+  // Finding 153. One place where a suggestion is taken, so the keyboard and the
+  // pointer cannot drift apart.
+  const choose = (i: number) => {
+    const r = results[i];
+    if (!r) return;
+    chosen.current = r.label.trim();
+    setQ(r.label);
+    setResults([]);
+    setActive(-1);
+    place(r.lat, r.lng, true);
+  };
+
+  // Finding 153. Down and Up are the right keys in both directions, because the
+  // list is stacked vertically and vertical has no direction. Left and Right are
+  // deliberately NOT intercepted: inside a text box they move the caret, they
+  // already reverse themselves under `dir="rtl"`, and taking them would break
+  // ordinary Arabic editing to serve a list the lister may not even be looking
+  // at. That is what direction-aware means here. Focus never leaves the input;
+  // `aria-activedescendant` is what moves.
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open) return;
+    const last = results.length - 1;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => (a >= last ? 0 : a + 1)); return; }
+    if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => (a <= 0 ? last : a - 1)); return; }
+    if (e.key === "Home") { e.preventDefault(); setActive(0); return; }
+    if (e.key === "End") { e.preventDefault(); setActive(last); return; }
+    if (e.key === "Enter") { if (active >= 0) { e.preventDefault(); choose(active); } return; }
+    if (e.key === "Escape") { e.preventDefault(); setResults([]); setActive(-1); return; }
+    if (e.key === "Tab") { setResults([]); setActive(-1); }
+  };
+
   return (
     <div className="space-y-2">
       <div className="relative">
         {/* ELITE-4 J2-4: the box was named by its placeholder alone, which is not an
-            accessible name once anything is typed into it. */}
-        <input className={inp} aria-label={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")} placeholder={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")} value={q} onChange={(e) => setQ(e.target.value)} />
+            accessible name once anything is typed into it.
+            Finding 153: the box is now a combobox. Before this, results arrived in a
+            plain <div> of <button> elements with no role, no ids and nothing
+            announced, so the list opened and closed in silence and was reachable
+            only by tabbing past the input into what read as an unrelated group of
+            unnamed controls. */}
+        <input
+          className={inp}
+          role="combobox"
+          aria-expanded={open}
+          aria-controls={listId}
+          aria-autocomplete="list"
+          aria-activedescendant={open && active >= 0 ? optId(active) : undefined}
+          autoComplete="off"
+          aria-label={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")}
+          placeholder={t("Search, or paste a Google Maps link or coordinates", "ابحث، أو الصق رابط خرائط جوجل أو الإحداثيات")}
+          value={q}
+          onChange={(e) => { chosen.current = null; setActive(-1); setQ(e.target.value); }}
+          onKeyDown={onKey}
+        />
         {resolving && <p className="text-[0.6875rem] text-charcoal/65 mt-1">{t("Resolving the map link...", "جارٍ فتح رابط الخريطة...")}</p>}
-        {results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded border border-line bg-white shadow max-h-56 overflow-auto">
+        {/* Finding 153, SC 4.1.3. The list appearing is a status message: it is not
+            what the lister is looking at, and nothing else says it happened. The
+            region is always in the tree so that the first message is announced;
+            a region added at the same moment as its text often is not. */}
+        <p role="status" aria-live="polite" className="sronly">
+          {open
+            ? t(`Location suggestions: ${results.length}. Use the up and down arrows to review them and Enter to choose one.`,
+                `عدد اقتراحات الموقع: ${results.length}. استخدم سهمي الأعلى والأسفل للتنقل بينها، ومفتاح الإدخال Enter للاختيار.`)
+            : ""}
+        </p>
+        {open && (
+          <ul
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-label={t("Location suggestions", "اقتراحات الموقع")}
+            className="absolute z-10 mt-1 w-full rounded border border-line bg-white shadow max-h-56 overflow-auto"
+          >
             {results.map((r, i) => (
-              <button type="button" key={i} className="block w-full text-left px-3 py-2 hover:bg-ivory-2 text-[0.8125rem]" onClick={() => { setQ(r.label); setResults([]); place(r.lat, r.lng, true); }}>
+              /* The option is a <li>, not a <button>. In this pattern the input keeps
+                 focus and the active option is named by `aria-activedescendant`, so an
+                 option that were focusable would put the same choice in the tab order
+                 twice and take the caret out of the box the lister is typing in.
+                 onMouseDown, not onClick: mousedown fires before the input's blur, so
+                 the pointer path and the keyboard path end in the same call. */
+              <li
+                key={i}
+                id={optId(i)}
+                role="option"
+                aria-selected={i === active}
+                className={"block w-full px-3 py-2 text-[0.8125rem] cursor-pointer " + (i === active ? "bg-ivory-2" : "hover:bg-ivory-2")}
+                onMouseDown={(e) => { e.preventDefault(); choose(i); }}
+                onMouseEnter={() => setActive(i)}
+              >
                 <span className="font-medium">{r.label}</span>{r.sub ? <span className="text-charcoal/65"> · {r.sub}</span> : null}
-              </button>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
       <div ref={mapEl} style={{ height: 260, borderRadius: 8, overflow: "hidden", border: "1px solid #dfe3e8" }} />
