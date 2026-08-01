@@ -1051,7 +1051,7 @@ zero rows are currently stale, so the note this package added is correct and, on
 silent. Nine rows read `unknown` because no hash was ever stamped, and `unknown` says nothing at
 all, which is the intended behaviour and not a gap.
 
-## PKG-SUP1, the public listing entry stops simulating a form (open)
+## PKG-SUP1, the public listing entry stops simulating a form (closed)
 
 **User journey improved.** The owner or broker who has a space to market, arrives on `/list`
 from the header or the home page, and needs to know what SAT will ask them for before they
@@ -1108,6 +1108,159 @@ the rendered step list equals `studioSteps()` for a representative asset type in
 The dictionary keys that held mock values are gone and `ar-lint` is clean on the block that
 replaces them. Live evidence on the deployment in English and Arabic shows 0 orphan labels and 0
 occurrences of each fabricated value. All gates green.
+
+**Closed on `d6806b8`, deployed on `dpl_2mGUZD7s8ZdTBnMa2ZGQNkmiCfj7`, state READY.** Clause by
+clause against the stop condition above.
+
+*A render test over both locales proves every `<label>` has an associated control or is not a
+`<label>`.* Met, and met more generally than the clause asks. `src/lib/listIntake.test.tsx`
+renders the route with `renderToStaticMarkup` in both locales and runs `orphanLabels` over the
+markup, which accepts the two legitimate shapes, an explicit `for` naming the `id` of a control
+present in the same document, or a control nested inside the label, and reports everything else.
+The outcome on this route is zero, by construction: there are now no `<label>` elements at all.
+The guard is written against the shape rather than the count so that it keeps protecting the
+route as it grows, and it carries its own sensitivity test over four cases including the exact
+markup that shipped.
+
+*That none of the fabricated strings appears.* Met. Twelve literals are held in the test and
+checked against the stripped visible text in both locales. The dictionary is checked separately,
+because the markup guard alone would pass if the strings had merely moved.
+
+*That the rendered step list equals `studioSteps()` for a representative asset type in both
+languages.* Exceeded. The page does not compare itself to one representative type, it is computed
+from all of them: `intakeStages` lists a stage only where every asset type in `ASSET_FIELDS` has
+it, and the test asserts the kind sequence of every asset type equals the sequence the page
+shows. Two claims the page makes are pinned rather than assumed: that every stage has an unsplit
+occurrence somewhere, which is what lets a title be shown without a ", part 1" suffix that is
+true of a step and false of a stage; and that the asking figure is the only required fact whose
+label differs between lease and sale, checked over office and land in both languages, which is
+why that one label is joined with the reader's own "or".
+
+*The dictionary keys that held mock values are gone.* Met. The `list` block went from 43 keys to
+20 in both locales: 33 deleted, 10 added, 10 surviving. Key parity between the two files is
+exact and is asserted by `laws.test.ts`. `MarketingHome` reads `home.gradeAOfficeSuffix` and not
+`list.gradeAOffice`, which was checked before the deletion rather than after it.
+
+*`ar-lint` is clean on the block that replaces them.* Met. `ar-lint: clean`, and the `list` block
+is inside its BANNED scope, so the ten new Arabic values were linted rather than merely written.
+
+*Live evidence in English and Arabic shows 0 orphan labels and 0 occurrences of each fabricated
+value.* Met on `dpl_2mGUZD7s8ZdTBnMa2ZGQNkmiCfj7`. Both routes return 200 with 0 `<label>`, 0
+`<input>`, 0 `<textarea>`, 0 `<select>` and 0 `<form>`. Every fabricated literal, and "320", is
+absent from the visible text of both. The ten stage titles appear in intake order in both
+languages, all seven required facts appear with their labels, the range note reads "10 or 11
+steps" and "10 أو 11 خطوة", and the joined asking-figure label appears in both. Titles are the
+route's own, `List a space | SAT Markets` and `إدراج مساحة | سات ماركتس`, in place of the root
+layout's generic one, which is the `/list` half of finding 12. No em dash and no Arabic-Indic
+digit on either route.
+
+*All gates green.* `npx tsc --noEmit` RC 0. `npm test` 1408 pass, 0 fail, 0 cancelled, 0 skipped.
+`ar-lint: clean`. `prose-scan` RC 0. Vercel READY.
+
+**What the package found and did not plan for.** Finding 98, a defect class rather than a defect.
+`var(--line)` is not a declared custom property, and a declaration containing an unresolvable
+`var()` is invalid at computed-value time, so the whole declaration is discarded and the element
+renders with no border and no error. I introduced it in the new stage list, found it by grepping
+`src/styles` rather than by any gate, and the same sweep found it already shipped on the
+owner-documents card of the listing detail page. Both are fixed to `var(--silver)`, and
+`src/lib/cssVars.test.ts` now scans every non-test `.ts`, `.tsx` and `.css` file under `src`. It
+derives the legal declaration set rather than holding a list: the platform tokens from
+`src/styles/*.css`, and the `next/font` families from the `variable:` options in
+`src/app/layout.tsx`, which are injected onto the `html` element and appear in no stylesheet. An
+allow list of those four names would have accepted `--font-serif` forever, including after the
+font that declares it was deleted.
+
+**What the package found and did not fix.** Finding 99. The active locale's entire dictionary is
+serialised into every page's payload. On `/en/list` that is 141,202 of 165,422 characters of
+script against 2,906 characters of visible text, and it includes the sample strings of fifteen
+other routes. It is a payload and coupling fact rather than a truth defect, the sample values
+carry their own sample labelling where they are rendered, and narrowing it means changing how
+every page obtains its dictionary, so it is recorded rather than absorbed.
+
+## PKG-DEM1, the demand entry point stops rejecting its own visitors
+
+**User journey improved.** The occupier, or the broker acting for one, who cannot find what they
+need in the published inventory, arrives on `/post-requirement` from the header, the requirements
+board or the empty state of a search, and tells the market what they are looking for.
+
+**Observed problem.** The form does not submit. This is measured on
+`dpl_2mGUZD7s8ZdTBnMa2ZGQNkmiCfj7` rather than inferred from the source.
+
+The move-in control is a four-option segmented radio group. It ships
+`Immediate`, `1–3 months`, `3–6 months` and `Flexible` in English, and `فوري`, `1–3 أشهر`, `3–6
+أشهر` and `مرن` in Arabic, and the served HTML carries `checked=""` on `value="1–3 months"` and on
+`value="1–3 أشهر"`, so the rejected option is the one the page arrives with. `POST
+/api/requirements` validates `timeline` against `["ASAP","Q1","Q2","Q3","Q4","Flexible",
+"Immediate"]` and returns 400 `Choose a valid timeline.` for anything outside it. Two of the four
+English options and four of the four Arabic options are outside it.
+
+So an English visitor who completes every field and does not touch the move-in control is
+refused, and an Arabic visitor is refused whichever option they choose. The refusal renders as a
+single `role="alert"` card at the foot of the page carrying the server's one sentence, with
+nothing tying it to any of the fourteen controls, so the visitor is told their requirement is
+invalid and not told which answer to change. There is no test anywhere that submits this form,
+which is why a form and its own API have disagreed in production without anything failing.
+
+The live board corroborates it. `GET /api/requirements` returns six rows with `sample: false`,
+whose stored timelines are `null`, `Q3`, `ASAP`, `Q4`, `Q3` and `Q4`. Not one is a value this form
+can produce, which is consistent with no requirement ever having been filed through it.
+
+The urgency semantics fail one layer deeper. `matchListing` treats a timeline as urgent only when
+it folds to `asap` or `immediate`, and that is the branch that makes a listing's dated
+availability affirmation part of the match. `فوري` is exactly `Immediate`, and it is neither
+accepted by the route nor recognised by the matcher, so the single most decision-relevant thing
+an Arabic occupier can say about timing is dropped twice.
+
+Three further defects are the same drift class `/list` was cured of in PKG-SUP1. The five
+districts are name and UUID literals inside the client component; the Arabic label the form shows
+for KAFD is `كافد` while the districts table holds `واجهة الرياض المالية`, which is the name the
+board then displays for the requirement that visitor just filed, so a person is shown one name
+when choosing and a different one when reading back their own brief. The board already carries
+`Al Faisaliyah`, a district the fixed five does not offer. Only the first selected district is
+sent as `district_id` and the rest become `"Districts: " + …`, an English-keyed prose note that no
+matcher and no filter reads, so a visitor who selects three locations has two of them silently
+demoted to text. And the success card writes `3` as a literal beside the audiences caption while
+`done.notified` holds the list the route actually returned, so the number and the list beneath it
+are two different claims about the same fact.
+
+**Measurable outcome expected.** Every option the form offers is accepted by the route that
+receives it, in both languages, asserted by a test that submits every option rather than by
+reading. An Arabic occupier who needs a space immediately produces a requirement the matcher
+treats as urgent. Every district the form offers exists in the districts table under the name the
+form displays, and every district the visitor selects reaches a structured field. Zero
+hand-written counts on the success card.
+
+**Simplest acceptable implementation.** One shared timeline vocabulary, in
+`src/lib/requirementIntake.ts`, holding each option's stored token with its English and Arabic
+label, imported by the form for what it renders and by the route for what it accepts, so the two
+cannot disagree again. The stored token stays English and stays inside the set the matcher and
+the existing rows already use, because the six live rows and `matching.ts` are the system of
+record here and the form is the thing that is wrong. Arabic gets labels, not new tokens. The
+error path becomes field-level: the route already knows which field it rejected and should name
+it, and the form should move focus to that control rather than printing a sentence at the bottom.
+
+Districts come from the districts table through a small read endpoint or a server-rendered prop,
+with the same `name_en` and `name_ar` the board reads, so the label a visitor picks and the label
+they read back are one string. Selected districts beyond the first go into a structured field
+rather than a prose note; if the schema holds only one `district_id`, the honest minimum is to
+say so in the interface rather than to silently keep one, and the extra locations belong in a
+typed array the matcher can read. The success card reads `done.notified.length`.
+
+**What is deliberately not built.** No change to who is notified or how, because that is the
+route's own behaviour and this package is about the form telling the truth about it. No new
+Arabic marketing copy: the district names come from the table and the timeline labels are the
+platform's own. No relaxation of the route's validation to accept whatever the form sends, which
+would be fixing the wrong side and would let `1–3 months` into a column the matcher cannot read.
+No match-count claim beyond the real count the route already computes.
+
+**Stop condition.** A test enumerates every option the form renders in both languages and asserts
+each is accepted by the route's validator, and its own sensitivity case asserts the test fails
+against today's mismatched pair. A test asserts the Arabic urgent option produces a requirement
+`matchListing` treats as urgent. A test asserts every district the form offers is one the
+districts source returns, with the same names in both languages, and that every selected district
+reaches a structured field rather than a note. A test asserts no count on the success card is a
+literal. Live evidence in English and Arabic shows the pre-selected timeline is an accepted value
+and that the district labels match the board's. All gates green.
 
 ## Parked (deliberate)
 
