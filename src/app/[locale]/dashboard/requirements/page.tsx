@@ -6,6 +6,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
 import { listingTitle } from "@/lib/listingTitle";
 import { placeName } from "@/lib/displayName";
+import { sizeRange } from "@/lib/requirementFigures";
 import {
   matchListing,
   compareMatches,
@@ -70,8 +71,6 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
     noneT: "لا عروض منشورة بعد",
     noneB: "المطابقة تقارن المتطلبات المفتوحة بعروضك المنشورة. انشر عرضاً أولاً ثم عد إلى هذه الصفحة.",
     newListing: "عرض جديد",
-    to: " إلى ",
-    sqm: "متر مربع",
     counts: (a: number, b: number) => `${a} من ${b} متطلباً مفتوحاً`,
     unstated: "غير مذكورة",
   } : {
@@ -88,8 +87,6 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
     noneT: "No published listings yet",
     noneB: "Matching compares open requirements to your published listings. Publish a listing first, then come back to this page.",
     newListing: "New listing",
-    to: " to ",
-    sqm: "sqm",
     counts: (a: number, b: number) => `${a} of ${b} open requirements`,
     unstated: "not stated",
   };
@@ -207,11 +204,14 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
             const result = best.result;
             const rtitle = (ar ? (b.title_ar || b.title) : b.title) || String(b.ref_code ?? b.id);
             const loc = dname.get(b.district_id) || b.city || "";
-            const min = b.size_min_sqm == null ? null : Number(b.size_min_sqm);
-            const max = b.size_max_sqm == null ? null : Number(b.size_max_sqm);
-            const size = min == null && max == null
-              ? t.unstated
-              : `${min ?? "?"}${t.to}${max ?? "?"} ${t.sqm}`;
+            // PKG-DEM2, finding 115. This page read the nulls honestly and then
+            // spelled the figure itself: `200 to ? m²` for a half-open range,
+            // and a unit written `sqm` here and `m²` on the two public
+            // surfaces, so one stored fact had four renderings and only this
+            // one told the truth about an absent bound. The figure is read
+            // through the shared module now. `t.unstated` stays, because what
+            // to say in place of a figure belongs to the surface.
+            const size = sizeRange(b.size_min_sqm, b.size_max_sqm, ar ? "ar" : "en") ?? t.unstated;
             const mtitle = titleOf.get(best.listingId) || "";
             // Harbor for a result that met everything, amber for one that did
             // not. Confirmed green stays reserved for evidence-backed

@@ -5,13 +5,16 @@ import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
+import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
 import type { MatchReason, MatchVerdict } from "@/lib/matching";
 
 // PKG-DEM1, finding 100's read side. The stored timeline and must-have tokens are
 // named through the vocabulary the form renders from and the write path
 // validates against, so this page cannot start naming them a second way.
 
-interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; createdAt: string; }
+// PKG-DEM2, finding 114. Nullable in the column, optional on the form, and
+// declared here as though neither were true.
+interface Req { id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number | null; sizeMax: number | null; budget: number | null; timeline: string; mustHaves: string[]; createdAt: string; }
 interface Interest { id: string; type: string; name: string; org: string; message: string; createdAt: string; mine?: boolean; }
 interface Summary { total: number; owners: number; brokers: number; }
 
@@ -112,8 +115,14 @@ export default function RequirementDetail({ params }: { params: { locale: string
      <div className="muted" style={{ fontSize: 13.5 }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
       {([
-        [t.size, `${req.sizeMin} ${t.rangeTo} ${req.sizeMax} ${t.sqm}`],
-        [t.budget, `${Number(req.budget).toLocaleString("en-US")} ${req.deal === "lease" ? t.sarSqmYr : t.sar}`],
+        // PKG-DEM2, finding 114. `${req.sizeMin}` printed the word `null` for a
+        // size the occupier did not state, and `Number(null).toLocaleString()`
+        // printed a budget of `0` for one they did not state either: a figure
+        // nobody gave, on a card that reads as the occupier's own words. Both
+        // figures are read through one module now, and an unstated one says so
+        // in the reader's language rather than being filled in.
+        [t.size, sizeRange(req.sizeMin, req.sizeMax, locale) || t.figureUnstated],
+        [t.budget, budgetCeiling(req.budget, req.deal, locale) || t.figureUnstated],
         // An unstated timeline is a real answer, not missing data: the column is
         // nullable and the form deliberately pre-selects nothing. "n/a" would
         // read as a figure we failed to collect.
@@ -248,6 +257,17 @@ export default function RequirementDetail({ params }: { params: { locale: string
       </div>
      ) : (
       <div className="col gap10">
+       {/* PKG-DEM2, finding 116. Every response used to carry a Reply control
+           beside it. It was a `span` with no handler, no role and no keyboard
+           path, and there was nothing for it to open: this route returns a
+           respondent's name, organisation and message and deliberately returns
+           no email and no phone, so the platform holds no channel from the
+           occupier back to the person who answered. A control that cannot act
+           is a promise the product does not keep, and the occupier who posted
+           the requirement is the only person who ever saw it. It is gone, and
+           what a real reply needs is recorded in the findings register rather
+           than mocked up here. */}
+       <p className="muted" style={{ fontSize: 12, margin: "0 0 2px", lineHeight: 1.6 }}>{t.replyNote}</p>
        {ints.map((it) => (
         <div key={it.id} className="row gap12" style={{ background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 11, padding: 12, alignItems: "flex-start" }}>
          <span style={{ width: 34, height: 34, borderRadius: 8, flex: "none", background: "var(--azure-wash)", color: "var(--azure-d)", display: "flex", alignItems: "center", justifyContent: "center" }}>{it.type === "broker" ? <Icon.user size={16} /> : <Icon.shield size={16} />}</span>
@@ -255,7 +275,6 @@ export default function RequirementDetail({ params }: { params: { locale: string
           <div className="row gap8" style={{ alignItems: "center" }}><span style={{ fontSize: 13.5, fontWeight: 600 }}>{it.name || (it.type === "broker" ? t.aBroker : t.anOwner)}</span><span className="tag" style={{ fontSize: 10 }}>{it.type === "broker" ? t.broker : t.owner}</span></div>
           {it.message && <div className="muted" style={{ fontSize: 12.5, marginTop: 4, lineHeight: 1.5 }}>{it.message}</div>}
          </div>
-         <span className="btn secondary sm">{t.reply}</span>
         </div>
        ))}
       </div>

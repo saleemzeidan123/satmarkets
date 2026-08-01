@@ -1335,6 +1335,52 @@ any GET. What was verified instead is the payload they render and the labelling 
 under test, against exactly the values that payload carries. Making that substitution explicit is
 what turned the defect up: the substitute evidence was the corpus, and the corpus disagreed.
 
+## PKG-DEM2, a requirement's figures stop being invented (closed)
+
+Findings 114, 115 and 116. The package that follows PKG-DEM1 directly, and it exists because
+PKG-DEM1 made the path reachable: `/post-requirement` could not submit before it, so no live row
+had ever carried a null size or a null budget, and the two public surfaces that print those
+figures had never been asked to.
+
+Size and budget are optional on the form and nullable in the column. `RequirementForm` sends
+`Number(sizeMin) || null`, so a visitor who leaves either blank stores a null. The board then
+rendered `{r.sizeMin} to {r.sizeMax} m²` and `Number(r.budget).toLocaleString("en-US")`. The first
+printed the word `null` twice. The second, for a null budget, is not blank and is not an error: it
+is the string `0`. A visitor would have been shown a requirement whose occupier had stated no
+budget as a requirement with a budget of zero, and the detail card printed the same `0` under a
+row labelled `Budget`, where it reads as the occupier's own number. No figure on this platform may
+be invented, and this one was invented by arithmetic rather than by anybody's judgement, which is
+why no review caught it.
+
+The same stored fact also had four renderings across three surfaces, none through
+`src/lib/format.ts`. `src/lib/requirementFigures.ts` is now the one reader. Its contract is that
+each function returns a finished string or `null`, and `null` means the occupier did not state it;
+it never means a fetch failed and it is never a number. The surface supplies its own phrase for the
+unstated case, because what to say in place of a figure is a decision about a surface rather than
+about a figure: the board simply does not draw the line, and the labelled detail grid says "Not
+stated" and "غير مذكورة". A half-open range names the bound that exists, "from 500 m²" or "up to
+1,200 m²", rather than the `200 to ? m²` the dashboard printed, which invites the reader to supply
+the missing half. Equal bounds collapse to the single figure. The budget states itself as a
+ceiling on every surface, because the column is `budget_sqm_max`. `scripts/ar-lint.mjs` reads the
+new module, so its Arabic is inside the same banned-term gate as `format.ts`.
+
+The Reply control beside every response is gone. It was a `span` with no handler, no role and no
+keyboard path, and there was nothing for it to open: the route returns a respondent's name,
+organisation and message and deliberately no email and no phone, so the platform holds no channel
+from the occupier back to the person who answered. One honest sentence replaces it. What a real
+reply loop needs is finding 116 rather than a mock-up.
+
+Two defects found on the way and recorded rather than half fixed, both needing a database write
+channel this environment does not have: the `create_requirement` RPC still holds
+`coalesce(nullif(payload->>'city',''), 'Riyadh')` one layer under PKG-DEM1's city fix (finding
+117), and registering interest inserts no notification row, so the occupier is never told a
+response arrived (finding 118).
+
+`src/lib/requirementFigures.test.ts`, 19 tests, added by hand to the `test` script. The guards read
+the output string rather than the module's branches, and the sensitivity case reproduces both
+shipped expressions and watches them print `null to null m²` and `0`. Suite is 1450 tests, all
+passing.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

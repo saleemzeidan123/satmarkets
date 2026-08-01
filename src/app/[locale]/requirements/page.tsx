@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
+import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
 
 // PKG-DEM1, finding 100's read side. A requirement's timeline and must-haves are
 // stored as tokens, and this board printed the tokens. `Q3` is readable enough in
@@ -13,7 +14,11 @@ import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 // English. Both fields go through the vocabulary that defines them, which is the
 // same one the form renders from and the write path validates against.
 
-interface Req { sample?: boolean; id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number; sizeMax: number; budget: number; timeline: string; mustHaves: string[]; interest: number; }
+// PKG-DEM2, finding 114. `sizeMin`, `sizeMax` and `budget` were typed as
+// `number` and are nullable in the column, optional on the form and null on live
+// rows. The type said the null could not arrive; the renderer below printed it
+// when it did.
+interface Req { sample?: boolean; id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number | null; sizeMax: number | null; budget: number | null; timeline: string; mustHaves: string[]; interest: number; }
 
 export default function RequirementsBoard({ params }: { params: { locale: string } }) {
  const locale = params.locale === "ar" ? "ar" : "en";
@@ -52,7 +57,13 @@ export default function RequirementsBoard({ params }: { params: { locale: string
      </div>
     ) : (
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 16, marginTop: 28 }}>
-      {reqs.map((r) => (
+      {reqs.map((r) => {
+       // PKG-DEM2, finding 114. Both are optional on the form and nullable in
+       // the column, so both may be absent, and an absent figure is stated by
+       // not drawing its line rather than by drawing the line around nothing.
+       const size = sizeRange(r.sizeMin, r.sizeMax, locale);
+       const budget = budgetCeiling(r.budget, r.deal, locale);
+       return (
        <Link key={r.id} href={`/${locale}/requirements/${r.id}`} className="card pad lift" style={{ boxShadow: "var(--sh-1)", textDecoration: "none", color: "inherit", display: "block" }}>
         <div className="row between" style={{ alignItems: "center" }}>
          <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(r.asset, locale)} · {r.deal === "lease" ? (dict.req.lease) : (dict.req.buy)}</span>
@@ -64,7 +75,9 @@ export default function RequirementsBoard({ params }: { params: { locale: string
         <div style={{ fontSize: 15.5, fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
         <div className="muted" style={{ fontSize: 12.5, lineHeight: 1.7 }}>
          <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</div>
-         <div className="row gap6"><Icon.layers size={14} /> <bdi>{r.sizeMin} {dict.req.rangeTo} {r.sizeMax} {ar ? "م²" : "m²"}</bdi> · {dict.req.upTo} <bdi>{Number(r.budget).toLocaleString("en-US")} {r.deal === "lease" ? (ar ? "ريال/م²·سنة" : "SAR/m²·yr") : (ar ? "ريال" : "SAR")}</bdi></div>
+         {size || budget ? (
+          <div className="row gap6"><Icon.layers size={14} /> {size ? <bdi>{size}</bdi> : null}{size && budget ? " · " : ""}{budget ? <bdi>{budget}</bdi> : null}</div>
+         ) : null}
          {/* A brief with no move-in date is a real answer, and the column is
              nullable, so the clock and its empty line are not drawn at all
              rather than drawn beside nothing. */}
@@ -76,7 +89,8 @@ export default function RequirementsBoard({ params }: { params: { locale: string
          <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--azure-d)" }}>{dict.req.viewRespond}</span>
         </div>
        </Link>
-      ))}
+       );
+      })}
      </div>
     )}
    </div>
