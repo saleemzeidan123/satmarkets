@@ -75,6 +75,16 @@ const ALLOWED_UNREACHED: readonly Unreached[] = [
     reason:
       "ADV-5A address normalisation, re-exported only through that barrel. No surface calls it because no location source is contracted, which is the same dependency that makes every geo provider decision resolve to denied today. address.test.ts keeps it correct against the day one is.",
   },
+  {
+    file: "src/lib/analytics/events.ts",
+    reason:
+      "The ELITE-8 event dictionary, held as typed data rather than prose. It has no importer because it is not an emitter: nothing is collected while O17 leaves the lawful basis, the retention position and the user disclosure for first-party behavioural measurement unruled, and O12 holds the notification family separately. events.test.ts turns each of Codex item 6 rules into an assertion, so the dictionary cannot drift before the day a collector is written against it.",
+  },
+  {
+    file: "src/lib/analytics/scorecard.ts",
+    reason:
+      "The twelve measure product scorecard that the same dictionary feeds. It is unreached for the same recorded reason, and for a second one: ten of the twelve measures have no baseline because no design partner round has run, so there is nothing yet for a surface to render. events.test.ts asserts the two sides stay consistent and that no measure carries an invented target meanwhile.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
