@@ -22,15 +22,15 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `7aaab03`, "PKG-A11Y-1 slice R (RC14): a requirement is not filed in a city nobody stated", plus the RC15 record commit this file ships in |
+| GitHub HEAD | `e46ea91`, "PKG-A11Y-1 RC15: the consolidated handback, and two corrections to the record it reports on", plus the one-row record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_8wfQorDuSgikb34od8JG8ao7L7MM`, READY, target production |
-| Deployment URL | `satmarkets-5msvw3v3f-sat-markets.vercel.app` |
+| Production deployment | `dpl_EHeMFSx1njFCwAXGigWagowoBbzU`, READY, target production |
+| Deployment URL | `satmarkets-ba2ozu1df-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `7aaab03`, slice R code |
-| Build ready at | epoch ms 1785625695362, 69 seconds after build start |
-| Deployment lag | One commit. Every source change in PKG-A11Y-1 is deployed and its build was confirmed READY at the matching `meta.githubCommitSha`. The RC15 record commit this file ships in is newer and carries documentation only, no source change: the register corrections, the triage arithmetic correction, this ledger and the handback. No rendered surface changes in it, so there is no page whose behaviour the lag could affect |
+| Commit deployed | `e46ea91`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. The last commit carrying a source change is `7aaab03`, slice R |
+| Build ready at | epoch ms 1785626906193, 65 seconds after build start |
+| Deployment lag | One commit, and it terminates here. Every source change in PKG-A11Y-1 is deployed and each build was confirmed READY at the matching `meta.githubCommitSha`. The RC15 handback commit is itself deployed. The commit this row ships in is newer than the deployment it names, carries documentation only and changes no rendered surface, which is the smallest honest form of this row: a ledger cannot record its own deployment before that deployment exists, so it records the one before and says which |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1668 tests, 0 failing |
