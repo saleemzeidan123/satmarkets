@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
+import { placeName } from "@/lib/displayName";
 
 // GET one requirement + interest in it.
 //
@@ -70,9 +71,14 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   let district = r.city ?? "";
   let districtAr = r.city ?? "";
   if (r.district_id) {
-    const { data: d } = await sb.from("districts").select("name_en, name_ar").eq("id", r.district_id).single();
-    if (d?.name_en) district = d.name_en;
-    if (d?.name_ar || d?.name_en) districtAr = d.name_ar || d.name_en;
+    const { data: d } = await sb.from("districts").select("name_en, name_ar, city").eq("id", r.district_id).single();
+    // PKG-NM1. Each language is read on its own. A district we hold in one
+    // language only widens to its city in the other, and the requirement's own
+    // city stays the last resort.
+    if (d) {
+      district = placeName(d, "en") || district;
+      districtAr = placeName(d, "ar") || districtAr;
+    }
   }
 
   const requirement = {

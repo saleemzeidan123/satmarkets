@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
 import VerifyAccount from "@/components/VerifyAccount";
+import { entityName } from "@/lib/displayName";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
               </thead>
               <tbody>
                 {rows.map((a: any) => {
-                  const nm = (ar ? a.name_ar : a.name_en) || a.name_en;
+                  const nm = entityName(a, ar ? "ar" : "en");
                   const ok = a.verification_status === "verified";
                   return (
                     <tr key={a.id}>
@@ -133,7 +134,7 @@ export default async function AdminAccountsPage({ params }: { params: { locale: 
               <tbody>
                 {events.map((e: any) => {
                   const acct = rows.find((x: any) => x.id === e.account_id);
-                  const nm = acct ? ((ar ? acct.name_ar : acct.name_en) || acct.name_en) : e.account_id;
+                  const nm = acct ? entityName(acct, ar ? "ar" : "en") : e.account_id;
                   return (
                     <tr key={e.id}>
                       <td>

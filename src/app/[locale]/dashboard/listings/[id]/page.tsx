@@ -12,6 +12,7 @@ import ListingDocsManager from "@/components/ListingDocsManager";
 import { gateFailures, gateReasonsText, permitOf } from "@/lib/gate";
 import { listingDimensionState, verifiedBadgeText } from "@/lib/listingVerification";
 import { intakeFields } from "@/lib/assetFields";
+import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
 
 const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 
@@ -37,7 +38,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   // jsonb attributes, without enumerating 15 asset types' worth of columns here.
   const { data: l } = await sb
     .from("listings")
-    .select("*")
+    .select("*,districts(name_en,name_ar,city)")
     .eq("id", params.id)
     .single();
   if (!l) notFound();
@@ -106,19 +107,33 @@ export default async function ManageListingPage({ params }: { params: { locale: 
     permit: "رخصة الإعلان", expires: "تنتهي", pendingV: "قيد التحقّق",
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ", cannot: "تعذّرت إعادة النشر:",
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string, string>,
+    noOther: "لا يوجد عنوان إنجليزي لهذا العرض.",
+    otherSees: "يرى القارئ بالإنجليزية:",
+    otherNote: "اكتب العنوان الإنجليزي في تعديل التفاصيل أدناه. لا تكتب سات العنوان نيابة عنك.",
   } : {
     back: "My listings", edit: "Edit details", viewPublic: "View public listing", locked: "Licence and verification",
     lockedNote: "The advertising licence number and ownership verification are not edited here; changing them goes through SAT review and protects the Verified badge.",
     permit: "Advertising licence", expires: "Expires", pendingV: "Pending verification",
     pause: "Pause", resume: "Republish", working: "Working", cannot: "Cannot republish:",
     st: { published: "Published", archived: "Paused", draft: "Draft", pending_review: "In review", approved: "Approved", rejected: "Rejected" } as Record<string, string>,
+    noOther: "This listing has no Arabic title.",
+    otherSees: "An Arabic reader sees:",
+    otherNote: "Write the Arabic title in Edit details below. SAT does not write it for you.",
   };
 
   const live = L.status === "published";
   const fails = L.status === "archived" ? gateFailures(L) : [];
   const blocked = fails.length ? gateReasonsText(fails, ar) : null;
   const price = L.deal_type === "lease" ? L.asking_rent_sqm : L.sale_price;
-  const title = (ar ? L.title_ar : L.title_en) || L.title_en;
+  const title = listingTitle(L, ar ? "ar" : "en");
+  // PKG-NM1. What the other half of the market is shown. The owner writes one
+  // title, sees their listing named correctly on their own screen, and never
+  // learns that readers in the other language are handed a generic description
+  // of it. SAT does not translate the title for them: a machine translation of
+  // a name is a name SAT invented.
+  const otherLoc: "en" | "ar" = ar ? "en" : "ar";
+  const otherMissing = titleMissingIn(L, otherLoc);
+  const otherShown = otherMissing ? listingTitle(L, otherLoc) : "";
   // C4, then ADV-1. The owner was told their listing was verified when it was our
   // own stock, or when a broker had declared an authorisation. The dashboard is
   // where an owner learns what still has to happen, so it now reports the ownership
@@ -137,6 +152,12 @@ export default async function ManageListingPage({ params }: { params: { locale: 
             <span className={"statusdot " + (live ? "ok" : "pend")} style={{ fontSize: 12.5 }}>{t.st[L.status] || L.status}</span>
             <span className="muted" style={{ fontSize: 12.5 }}>· {assetLabel(L.asset_type, lp)} · {dealLabel(L.deal_type, lp)}</span>
           </div>
+          {otherMissing && (
+            <div className="muted" style={{ fontSize: 12, lineHeight: 1.6, marginTop: 8, maxWidth: 420 }}>
+              <div>{t.noOther} {t.otherSees} <bdi dir={otherLoc === "ar" ? "rtl" : "ltr"} style={{ color: "var(--ink)" }}>{otherShown}</bdi></div>
+              <div style={{ marginTop: 3 }}>{t.otherNote}</div>
+            </div>
+          )}
         </div>
         <div className="row gap10" style={{ alignItems: "center" }}>
           <Link href={`/${lp}/listings/${L.id}`} className="chip" style={{ textDecoration: "none" }}><Icon.arrow size={15} /> {t.viewPublic}</Link>

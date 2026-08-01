@@ -22,6 +22,10 @@ type Row = {
   reference_code: string;
   title_en: string | null;
   title_ar: string | null;
+  // PKG-NM1. The route names each listing in both languages through
+  // `listingTitle`, so this screen never picks between two raw columns.
+  name_en: string;
+  name_ar: string;
   district_en: string | null;
   district_ar: string | null;
   area_sqm: number | null;
@@ -293,7 +297,7 @@ export default function FindPage() {
           <a key={r.id} href={`/${ar ? "ar" : "en"}/listings/${r.id}`} className="block rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-slate-400 hover:shadow-sm" style={{ textDecoration: "none", color: "inherit" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-900">{ar ? r.title_ar || r.title_en : r.title_en}</div>
+                <div className="text-sm font-semibold text-slate-900">{ar ? r.name_ar : r.name_en}</div>
                 <div className="mt-0.5 text-xs text-slate-500">
                   {r.reference_code}
                   {r.area_sqm != null && <> · <bdi dir="ltr">{n(r.area_sqm)} m²</bdi></>}

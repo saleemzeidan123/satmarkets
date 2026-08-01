@@ -40,6 +40,7 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, formatArea, formatCounted, formatNumber, formatUnit } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
+import { placeName } from "@/lib/displayName";
 
 const ASSETS = ["office", "retail", "medical", "showroom", "warehouse", "serviced", "education", "land", "mixed_use", "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"];
 const GRADES = ["a_plus", "a", "b", "c"];
@@ -67,7 +68,7 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   let locLabel = "";
   if (searchParams.district) {
     const sb = getSupabaseServer();
-    if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar").eq("id", searchParams.district).single(); if (data) locLabel = ar ? (data.name_ar || data.name_en) : data.name_en; }
+    if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar,city").eq("id", searchParams.district).single(); if (data) locLabel = placeName(data, loc); }
   } else if (searchParams.place) locLabel = searchParams.place;
   else if (searchParams.city) locLabel = cityLabel(searchParams.city, loc);
   const asset = searchParams.asset && !searchParams.asset.includes(",") ? assetLabel(searchParams.asset, loc) : "";
@@ -150,7 +151,12 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     quotableIdx.rows.forEach(({ row }) => { const r: any = row; const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
     const counts = new Map<string, number>();
     listings.forEach((l: any) => { if (l.district_id) counts.set(l.district_id, (counts.get(l.district_id) ?? 0) + 1); });
-    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: ((ar ? g.name_ar : g.name_en) || g.name_en) + (g.kind === "development" ? " · " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    // PKG-NM1. `districts_geo` carries no city, so the city comes from the
+    // districts read just above: a bubble whose name is missing in the
+    // reader's language widens to its city rather than printing the other
+    // language's name on the map.
+    const gcity = new Map((allLocs ?? []).map((d: any) => [d.id, d.city]));
+    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: placeName({ ...g, city: gcity.get(g.id) }, ar ? "ar" : "en") + (g.kind === "development" ? " · " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
     locations = (allLocs ?? []).map((d: any) => ({ id: d.id, city: d.city || "Other", kind: d.kind || "district", en: d.name_en, ar: d.name_ar, count: counts.get(d.id) ?? 0 }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {

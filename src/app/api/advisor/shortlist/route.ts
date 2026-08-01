@@ -14,6 +14,7 @@ import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict
 import { underwrite } from "@/lib/market/underwrite";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { type Loc } from "@/lib/format";
+import { listingTitle } from "@/lib/listingTitle";
 
 export const runtime = "nodejs";
 
@@ -39,7 +40,7 @@ function sb() {
 }
 
 const SEL =
-  "id, reference_code, title_en, title_ar, asset_type, deal_type, area_sqm, asking_rent_sqm, building_grade, fitout_condition, district_id, sale_price, sale_price_sqm, service_charge_sqm, districts(name_en,name_ar)";
+  "id, reference_code, title_en, title_ar, asset_type, deal_type, area_sqm, asking_rent_sqm, building_grade, fitout_condition, district_id, sale_price, sale_price_sqm, service_charge_sqm, districts(name_en,name_ar,city)";
 
 function fitScore(l: any, b: Brief, verdictStatus: string): number {
   let s = 50;
@@ -145,6 +146,11 @@ export async function POST(req: NextRequest) {
       reference_code: l.reference_code,
       title_en: l.title_en,
       title_ar: l.title_ar,
+      // PKG-NM1. Each language is laddered independently by `listingTitle`,
+      // and neither is derived from the other: a row with no Arabic title is
+      // described in Arabic, never handed the English sentence.
+      name_en: listingTitle(l as any, "en"),
+      name_ar: listingTitle(l as any, "ar"),
       district_en: dist.name_en ?? null,
       district_ar: dist.name_ar ?? null,
       area_sqm: l.area_sqm,

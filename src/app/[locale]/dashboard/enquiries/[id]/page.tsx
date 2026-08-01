@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon, Photo } from "@/components/satkit";
 import LeadStatusControl from "@/components/LeadStatusControl";
+import { listingTitle } from "@/lib/listingTitle";
 
 // The enquiry an owner actually came for. The dashboard listed enquirers by name and
 // then had nowhere to send you: no message, no contact details, no way to reply. An
@@ -58,7 +59,7 @@ export default async function EnquiryPage({ params }: { params: { locale: string
   if (!lead) notFound();
 
   const { data: listing } = (lead as any).listing_id
-    ? await sb.from("listings").select("id,title_en,title_ar,asset_type,account_id,district_id").eq("id", (lead as any).listing_id).maybeSingle()
+    ? await sb.from("listings").select("id,title_en,title_ar,asset_type,reference_code,account_id,district_id,districts(name_en,name_ar,city)").eq("id", (lead as any).listing_id).maybeSingle()
     : { data: null as any };
 
   // Belt and braces on top of RLS: a lead on someone else's listing is Not found.
@@ -68,7 +69,7 @@ export default async function EnquiryPage({ params }: { params: { locale: string
   const stamp = new Date(l.created_at).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-GB", {
     day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Riyadh",
   });
-  const title = listing ? ((ar ? (listing as any).title_ar : (listing as any).title_en) || (listing as any).title_en) : null;
+  const title = listing ? listingTitle(listing as any, ar ? "ar" : "en") : null;
 
   const Row = ({ k, v }: { k: string; v: React.ReactNode }) => (
     <div className="row between" style={{ padding: "10px 0", borderTop: "1px solid var(--silver)", gap: 12, alignItems: "flex-start" }}>

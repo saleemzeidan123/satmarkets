@@ -8,6 +8,8 @@ import { Icon, Photo } from "@/components/satkit";
 import ListingStatusToggle from "@/components/ListingStatusToggle";
 import AvailabilityReaffirm from "@/components/AvailabilityReaffirm";
 import { listerAvailability } from "@/lib/availability";
+import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
+import { placeName } from "@/lib/displayName";
 import { gateFailures, gateReasonsText } from "@/lib/gate";
 
 // The owner's own inventory, with controls. "My listings" in the dashboard nav used
@@ -40,6 +42,8 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     reaffirm: "ما زالت متاحة اليوم", reaffirmWorking: "جارٍ الحفظ", reaffirmDone: "تم التأكيد اليوم",
     reaffirmFailed: "تعذّر تسجيل التأكيد. حاول مرة أخرى.",
     availNote: "تأكيد التوفر يسجّل تاريخ اليوم على العرض ولا يغيّر أي حقل آخر. وهو قول تقرأه الباحثات والباحثون، فلا تؤكّد إلا مساحة تعرف أنها ما زالت متاحة.",
+    otherSees: "يرى القارئ بالإنجليزية:",
+    titleNote: "إن لم يُكتب عنوان العرض بإحدى اللغتين فلن يظهر عنوان مترجم، بل وصف عام للمساحة: النوع والحيّ. اكتب العنوان بنفسك من صفحة العرض، فلا تكتبه سات نيابة عنك.",
   } : {
     title: "My listings", sub: "Your listings, and where each one stands right now",
     thListing: "Listing", thEnq: "Enquiries", thStatus: "Status", thAction: "",
@@ -52,17 +56,23 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
     reaffirm: "Still available today", reaffirmWorking: "Saving", reaffirmDone: "Confirmed today",
     reaffirmFailed: "That could not be recorded. Try again.",
     availNote: "Confirming availability stamps today's date on that listing and changes nothing else. It is a statement occupiers read, so only confirm a space you know is still on the market.",
+    otherSees: "An Arabic reader sees:",
+    titleNote: "Where a listing has no title in one of the two languages, no translated title appears: readers in that language are shown a plain description of the space, its type and its district. Write that title yourself from the listing page. SAT does not write it for you.",
   };
 
   const [{ data: listings }, { data: leads }, { data: districts }] = await Promise.all([
     sb.from("listings").select("id,title_en,title_ar,asset_type,status,area_sqm,asking_rent_sqm,sale_price,deal_type,district_id,availability_confirmed_at,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at")
       .eq("account_id", su.accountId).order("created_at", { ascending: false }).order("id", { ascending: true }),
     sb.from("leads").select("id,listing_id"),
-    sb.from("districts").select("id,name_en,name_ar"),
+    sb.from("districts").select("id,name_en,name_ar,city"),
   ]);
 
   const rows = listings || [];
-  const dmap = new Map((districts || []).map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
+  // PKG-NM1. The district falls back to its own city, never to the other
+  // language's name, so an Arabic owner is not shown "Al Olaya".
+  const drow = new Map((districts || []).map((x: any) => [x.id, x]));
+  const dmap = new Map((districts || []).map((x: any) => [x.id, placeName(x, ar ? "ar" : "en")]));
+  const otherLoc: "en" | "ar" = ar ? "en" : "ar";
   const enq = new Map<string, number>();
   (leads || []).forEach((l: any) => { if (l.listing_id) enq.set(l.listing_id, (enq.get(l.listing_id) || 0) + 1); });
 
@@ -96,7 +106,14 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
               </thead>
               <tbody>
                 {rows.map((l: any) => {
-                  const title = (ar ? l.title_ar : l.title_en) || l.title_en;
+                  const row = { ...l, districts: drow.get(l.district_id) ?? null };
+                  const title = listingTitle(row, ar ? "ar" : "en");
+                  // What the other half of the market is shown. The owner writes
+                  // one title, sees their listing named correctly on their own
+                  // screen, and never learns the other language reads a generic
+                  // description of it.
+                  const otherMissing = titleMissingIn(l, otherLoc);
+                  const otherShown = otherMissing ? listingTitle(row, otherLoc) : "";
                   const rent = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
                   const live = l.status === "published";
                   const n = enq.get(l.id) || 0;
@@ -119,6 +136,11 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                             <div className="mono muted" style={{ fontSize: 11 }}>
                               <bdi>{(dmap.get(l.district_id) || "") + (l.area_sqm ? " · " + l.area_sqm + db.m2 : "") + (rent ? " · " + Number(rent).toLocaleString("en-US") + (l.deal_type === "lease" ? db.sarSqm : db.sar) : "")}</bdi>
                             </div>
+                            {otherMissing && (
+                              <div className="muted" style={{ fontSize: 11, lineHeight: 1.55, marginTop: 5, maxWidth: 330 }}>
+                                {t.otherSees} <bdi dir={otherLoc === "ar" ? "rtl" : "ltr"}>{otherShown}</bdi>
+                              </div>
+                            )}
                             {av && (
                               <div className="col" style={{ alignItems: "flex-start", gap: 4, marginTop: 7, maxWidth: 330 }}>
                                 {av.publicLine && (
@@ -155,6 +177,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
         <div className="muted" style={{ padding: "12px 20px 16px", fontSize: 11.5, lineHeight: 1.6, borderTop: "1px solid var(--silver)" }}>
           <div>{t.note}</div>
           <div style={{ marginTop: 7 }}>{t.availNote}</div>
+          <div style={{ marginTop: 7 }}>{t.titleNote}</div>
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { cityLabel } from "@/lib/labels";
 import { callGeoSuggest } from "@/lib/location/gateway";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import type { GeoPlaceItem } from "@/lib/location/results";
+import { placeName } from "@/lib/displayName";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,7 +42,7 @@ async function indexedPlaces(q: string, lang: "en" | "ar", withIds: boolean): Pr
     if (!s) return [];
     const { data } = await sb.from("districts").select("id,city,name_en,name_ar,kind").or(`name_en.ilike.%${s}%,name_ar.ilike.%${s}%,slug.ilike.${s}%,slug.ilike.%-${s}%`).limit(6);
     return (data ?? []).map((d: any) => ({
-      label: (lang === "ar" ? (d.name_ar || d.name_en) : d.name_en) as string,
+      label: placeName(d, lang),
       sub: cityLabel(d.city, lang),
       kind: d.kind === "development" ? "development" : d.kind === "area" ? "place" : "district",
       ...(withIds ? { did: d.id as string } : {}),

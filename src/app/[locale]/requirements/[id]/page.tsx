@@ -17,6 +17,10 @@ interface MatchRow {
   listing_id: string;
   title_en: string | null;
   title_ar: string | null;
+  // PKG-NM1. The name in each language, already resolved by the route through
+  // `listingTitle`. This page picks its own and never borrows the other one.
+  name_en?: string | null;
+  name_ar?: string | null;
   verdict: MatchVerdict;
   verdict_en: string;
   verdict_ar: string;
@@ -147,7 +151,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
             const tone = m.verdict === "exact"
               ? { fg: "var(--status-info)", bg: "var(--status-info-wash)" }
               : { fg: "var(--status-attention)", bg: "var(--status-attention-wash)" };
-            const mt = (ar ? m.title_ar : m.title_en) || m.title_en || m.title_ar || m.listing_id;
+            const mt = (ar ? m.name_ar : m.name_en) || m.listing_id;
             return (
              <div key={m.listing_id} style={{ background: "var(--paper)", border: `1px solid ${on ? "var(--border-brand)" : "var(--silver)"}`, borderRadius: 11, padding: 12 }}>
               <div className="row gap8 wrap" style={{ alignItems: "center" }}>

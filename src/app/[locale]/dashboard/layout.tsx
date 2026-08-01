@@ -7,6 +7,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import SignOutButton from "@/components/SignOutButton";
 import DashNav from "@/components/DashNav";
 import { Icon, Logo } from "@/components/satkit";
+import { entityName } from "@/lib/displayName";
 
 // One shell for every owner page. The dashboard used to render its own sidebar
 // inline, so any sub-page (listings, enquiries) would have landed the owner in a
@@ -42,7 +43,7 @@ export default async function DashboardLayout({
     ]);
     if (acct) {
       const a: any = acct;
-      acctName = (ar ? a.name_ar : a.name_en) || a.name_en || acctName;
+      acctName = entityName(a, ar ? "ar" : "en") || acctName;
       // ADV-1. This read accounts.verification_status, a workflow status with zero
       // rows behind it in account_verifications, and printed "Verified owner" beside
       // the user's own name in their sidebar. The label states the ROLE, which is a

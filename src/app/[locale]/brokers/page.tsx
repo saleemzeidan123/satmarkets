@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
+import { listingTitle, listingPlace } from "@/lib/listingTitle";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
@@ -23,7 +24,7 @@ export default async function BrokersPage({ params }: { params: { locale: string
   const sb = getSupabaseServer();
   let sample: any[] = [];
   if (sb) {
-    const { data } = await releaseVisibleInventory(sb.from("listings").select("id,title_en,title_ar,asset_type,deal_type,asking_rent_sqm,area_sqm,districts(name_en,name_ar)").eq("status", "published")).eq("deal_type", "lease").limit(3);
+    const { data } = await releaseVisibleInventory(sb.from("listings").select("id,title_en,title_ar,asset_type,reference_code,deal_type,asking_rent_sqm,area_sqm,districts(name_en,name_ar,city)").eq("status", "published")).eq("deal_type", "lease").limit(3);
     sample = data ?? [];
   }
   const steps: [string, string][] = [
@@ -63,8 +64,8 @@ export default async function BrokersPage({ params }: { params: { locale: string
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, marginTop: 16 }}>
             {sample.map((l) => (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="card lift" style={{ padding: "14px 16px", textDecoration: "none", color: "inherit" }}>
-                <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{(ar ? l.title_ar : l.title_en) || l.title_en}</div>
-                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} {b.sqmUnit} · {(ar ? l.districts?.name_ar : l.districts?.name_en) || ""}</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
+                <div className="muted" style={{ fontSize: 11.5, marginTop: 4 }}>{assetLabel(l.asset_type, locale)} · {l.area_sqm} {b.sqmUnit} · {listingPlace(l, ar ? "ar" : "en")}</div>
                 <div className="mono" style={{ fontSize: 12, marginTop: 8, color: "var(--harbor)", fontWeight: 600 }}>{l.asking_rent_sqm != null ? `${Number(l.asking_rent_sqm).toLocaleString("en-US")} ${b.rentUnit}` : b.onRequest}</div>
               </Link>
             ))}

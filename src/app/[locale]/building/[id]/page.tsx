@@ -15,6 +15,7 @@ import { getBuildingById } from "@/lib/queries/listings";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { districtMobilityPanel } from "@/lib/location/panel";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { entityName } from "@/lib/displayName";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const dict = getDictionary(loc);
   const b: any = await getBuildingById(params.id);
   if (!b) return { title: dict.building.metaNotFound };
-  const name = (ar ? (b.name_ar || b.name_en) : b.name_en) || (dict.building.fallbackName);
+  const name = entityName(b, loc) || dict.building.fallbackName;
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
   // An ungraded building has no grade phrase at all, rather than an N/A sitting
   // inside the sentence in both languages.
@@ -81,7 +82,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
   const rights = await getAllSourceRights();
   const mobility = districtMobilityPanel(b.district_id, "public", { rights });
 
-  const name = ar ? (b.name_ar || b.name_en) : b.name_en;
+  const name = entityName(b, ar ? "ar" : "en");
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? "، " + cityLabel(b.city, locale) : ""}`;
   const grade = gradeLabel(b.grade, locale);
 

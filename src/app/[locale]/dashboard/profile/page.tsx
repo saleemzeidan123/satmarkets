@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
 import ProfileForm from "@/components/ProfileForm";
+import { entityName } from "@/lib/displayName";
 
 // The owner's profile editor. Their public identity and verification are shown
 // read-only (SAT owns those); the about text, website, public contact and logo are
@@ -43,7 +44,7 @@ export default async function ProfilePage({ params }: { params: { locale: string
     typeLabels: { sat: "SAT Real Estate (licensed broker)", broker: "Licensed broker", owner: "Owner", investor: "Investor" } as Record<string, string>,
   };
 
-  const name = (ar ? a.name_ar : a.name_en) || a.name_en || "";
+  const name = entityName(a, ar ? "ar" : "en");
   const verified = a.verification_status === "verified";
 
   return (

@@ -7,6 +7,7 @@ import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
 import { localeMeta } from "@/lib/meta";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { entityName } from "@/lib/displayName";
 
 const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
 
@@ -46,7 +47,7 @@ export default async function MapPage({ params }: { params: { locale: string } }
     buildings = (bs ?? []).filter((b: any) => b.lat != null && b.lng != null).map((b: any) => {
       const band = bandMap.get(`${b.district_id ?? b.district_label}|${b.asset_type}`);
       return {
-        id: b.id, name: (ar ? b.name_ar : b.name_en) || b.name_en,
+        id: b.id, name: entityName(b, ar ? "ar" : "en"),
         place: (ar ? b.district_label_ar : b.district_label) || "",
         asset: b.asset_type, assetLabel: assetLabel(b.asset_type, locale),
         grade: b.grade || "n_a", size: b.size_sqm,

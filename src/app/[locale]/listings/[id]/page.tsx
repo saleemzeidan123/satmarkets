@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
-import { listingTitle } from "@/lib/listingTitle";
+import { listingTitle, listingPlace } from "@/lib/listingTitle";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel, availabilityTone } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const ar = loc === "ar";
   const l: any = await getListingById(params.id);
   if (!l) return { title: dict.ld.notFoundTitle };
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
+  const dn = listingPlace(l, loc) || dict.ld.riyadh;
   const type = assetLabel(l.asset_type, loc);
   // An absent grade is absent. gradeLabel would print N/A into the sentence.
   const grade = gradePhrase(l.building_grade, loc);
@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   // code, so the Arabic share title read SATM-BB3FCB59 where the English one read
   // a sentence. A code identifies a listing; it does not describe one. The
   // fallback is now the same description the English side would give.
-  const t0 = String((ar ? l.title_ar : l.title_en) || fillProse(dict.ld.metaTitleFallback, { type, place: dn }));
+  const t0 = listingTitle(l, loc) || fillProse(dict.ld.metaTitleFallback, { type, place: dn });
   const lease = l.deal_type === "lease";
   const price = lease ? l.asking_rent_sqm : l.sale_price;
   const priceStr = price != null
@@ -94,7 +94,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
   const l: any = await getListingById(params.id);
   const lister = await getLister(l?.account_id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (dict.ld.riyadh);
+  const dn = listingPlace(l, lp) || dict.ld.riyadh;
   const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (dict.ld.riyadh);
   const cityEn = l.districts && l.districts.city ? cityLabel(l.districts.city, "en") : "Riyadh";
   const type = assetLabel(l.asset_type, locale);

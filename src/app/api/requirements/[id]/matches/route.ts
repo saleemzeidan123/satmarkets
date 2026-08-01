@@ -11,6 +11,8 @@ import {
   type MatchListing,
   type MatchRequirement,
 } from "@/lib/matching";
+import { listingTitle } from "@/lib/listingTitle";
+import { placeName } from "@/lib/displayName";
 
 // Which of MY listings answer this requirement, and why.
 //
@@ -93,8 +95,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
   const drows = (districts || []) as any[];
   const dcity = new Map(drows.map((x) => [x.id, x.city]));
-  const dnameEn = new Map(drows.map((x) => [x.id, x.name_en]));
-  const dnameAr = new Map(drows.map((x) => [x.id, x.name_ar || x.name_en]));
+  const drow = new Map(drows.map((x) => [x.id, x]));
+  // PKG-NM1. A district with no name in one language falls back to its own
+  // city, never to the other language's name.
+  const dnameEn = new Map(drows.map((x) => [x.id, placeName(x, "en") || null]));
+  const dnameAr = new Map(drows.map((x) => [x.id, placeName(x, "ar") || null]));
 
   const requirement: MatchRequirement = {
     asset_type: String(brief.asset_type ?? ""),
@@ -145,6 +150,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       listing_id: String(row.id),
       title_en: row.title_en ?? null,
       title_ar: row.title_ar ?? null,
+      // PKG-NM1. The name in each language, resolved here through the one
+      // function that owns the ladder, so the client cannot borrow the other
+      // language's title when its own is blank. Each is laddered independently:
+      // neither is derived from the other.
+      name_en: listingTitle({ ...(row as any), districts: drow.get((row as any).district_id) ?? null }, "en"),
+      name_ar: listingTitle({ ...(row as any), districts: drow.get((row as any).district_id) ?? null }, "ar"),
       verdict: result.verdict,
       verdict_en: verdictLabel(result.verdict, false),
       verdict_ar: verdictLabel(result.verdict, true),

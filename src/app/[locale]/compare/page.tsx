@@ -14,6 +14,7 @@ import { listingDimensionState } from "@/lib/listingVerification";
 import DecisionPackPanel from "@/components/DecisionPackPanel";
 import type { PackListing } from "@/lib/decisionPack";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { listingPlace } from "@/lib/listingTitle";
 
 type SP = { ids?: string };
 
@@ -52,8 +53,8 @@ export default async function ComparePage({ params, searchParams }: { params: { 
       quotable.rows.forEach(({ row }) => { const r = row as any; const a = idxByDistrict.get(r.district_id) ?? []; a.push(r as IndexRow); idxByDistrict.set(r.district_id, a); });
     }
     items.forEach((l) => {
-      const dnEn = l.districts ? l.districts.name_en : null;
-      const dnAr = l.districts ? (l.districts.name_ar || l.districts.name_en) : null;
+      const dnEn = listingPlace(l as any, "en") || null;
+      const dnAr = listingPlace(l as any, "ar") || null;
       l.__verdict = l.deal_type === "lease"
         ? marketVerdict(l.asking_rent_sqm ?? null, pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, l.building_grade), dnEn, dnAr)
         : null;

@@ -10,6 +10,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { evidenceStateLabel } from "@/lib/evidenceView";
+import { placeName } from "@/lib/displayName";
 
 export const revalidate = 3600;
 
@@ -66,7 +67,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
         { "@type": "ListItem", position: 1, name: d.crumbHome, item: `${SITE}/${locale}` },
         { "@type": "ListItem", position: 2, name: d.crumbLocations, item: `${SITE}/${locale}/locations` },
       ] }} />
-      <JsonLd data={{ "@type": "ItemList", name: d.itemListName, numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${(ar ? l.name_ar : l.name_en) || l.name_en}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
+      <JsonLd data={{ "@type": "ItemList", name: d.itemListName, numberOfItems: locs.length, itemListElement: locs.map((l, i) => ({ "@type": "ListItem", position: i + 1, name: `${placeName(l, ar ? "ar" : "en")}, ${cityLabel(l.city, locale)}`, url: `${SITE}/${locale}/listings?district=${l.id}` })) }} />
       <div className="eyebrow">{d.directory}</div>
       <h1 className="serif" style={{ fontSize: 32, fontWeight: 500, margin: "10px 0 0" }}>{d.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: 14.5, maxWidth: 640 }}>{d.intro}</p>
@@ -90,7 +91,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 14, marginTop: 14 }}>
               {group.map((l) => (
                 <Link key={l.id} href={`/${locale}/listings?district=${l.id}`} className="card lift" style={{ textDecoration: "none", color: "inherit", padding: "16px 18px", display: "block" }}>
-                  <div style={{ fontSize: 15.5, fontWeight: 700 }}>{(ar ? l.name_ar : l.name_en) || l.name_en}</div>
+                  <div style={{ fontSize: 15.5, fontWeight: 700 }}>{placeName(l, ar ? "ar" : "en")}</div>
                   <div className="muted" style={{ fontSize: 12.5, marginTop: 3 }}>{cityLabel(l.city, locale as "en" | "ar")}{k === "development" ? d.projectSuffix : ""}</div>
                   <div className="mono" style={{ fontSize: 12.5, marginTop: 10, color: "var(--harbor)", fontWeight: 600 }}>{`${l.count} ${l.count === 1 ? d.listedSpace : d.listedSpaces}`}</div>
                   {l.officeMedian != null && (

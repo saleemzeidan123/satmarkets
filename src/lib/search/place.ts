@@ -30,6 +30,7 @@
 // word list is the silent upgrade of an unrecognised term into a constraint.
 
 import { cityKey, cityLabel } from "@/lib/labels";
+import { placeName } from "@/lib/displayName";
 
 export type DistrictRow = { id: string | number; name_en?: string | null; name_ar?: string | null; city?: string | null };
 
@@ -117,7 +118,7 @@ export function resolvePlace(
     !district && canonicalCity ? rows.filter((d) => cityKey(d.city) === canonicalCity).map((d) => String(d.id)) : null;
 
   const applied: ResolvedPlace["applied"] = district
-    ? { kind: "district", en: district.name_en || "", ar: district.name_ar || district.name_en || "" }
+    ? { kind: "district", en: placeName(district, "en"), ar: placeName(district, "ar") }
     : cityDistrictIds
       ? { kind: "city", en: cityLabel(canonicalCity, "en"), ar: cityLabel(canonicalCity, "ar") }
       : null;

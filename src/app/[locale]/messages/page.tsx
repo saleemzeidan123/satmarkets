@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { listingTitle } from "@/lib/listingTitle";
 import MessagesClient, { type ConvRow } from "@/components/MessagesClient";
+import { entityName } from "@/lib/displayName";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,7 @@ export default async function MessagesPage({
     const title = listingTitle(c.listings, ar ? "ar" : "en");
     const counterpart = iAmOwner
       ? (c.users?.full_name || c.users?.email || (ar ? "مستفسر" : "Enquirer"))
-      : ((ar ? c.accounts?.name_ar : c.accounts?.name_en) || c.accounts?.name_en || (ar ? "المُعلن" : "The lister"));
+      : (entityName(c.accounts, ar ? "ar" : "en") || (ar ? "المُعلن" : "The lister"));
     return {
       id: c.id,
       listing_id: c.listing_id,

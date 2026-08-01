@@ -25,11 +25,12 @@
 // was easy to hold. So this is a shared function with a source-tree guard, not
 // another local repair, per Codex item 6: do not patch individual sentences.
 
-import { assetLabel, cityLabel } from "@/lib/labels";
+import { assetLabel } from "@/lib/labels";
+import { placeName, trimmedName as trimmed, type Loc, type PlaceRow } from "@/lib/displayName";
 import { fillProse } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 
-export type Loc = "en" | "ar";
+export type { Loc, PlaceRow };
 
 /**
  * The part of a listing this file reads.
@@ -50,17 +51,9 @@ export type TitledListing = {
     | null;
 };
 
-const trimmed = (v: unknown): string => (typeof v === "string" ? v.trim() : "");
-
 /** The place a listing is in, in the reader's language, or "" when unknown. */
 export function listingPlace(l: TitledListing, locale: Loc): string {
-  const d = Array.isArray(l.districts) ? l.districts[0] : l.districts;
-  if (!d) return "";
-  const name = trimmed(locale === "ar" ? d.name_ar : d.name_en);
-  if (name) return name;
-  // A district row with no name in this language still knows its city. Naming
-  // the city is wider than the truth about the district, never other than true.
-  return trimmed(d.city) ? cityLabel(d.city, locale) : "";
+  return placeName(Array.isArray(l.districts) ? l.districts[0] : l.districts, locale);
 }
 
 /**
@@ -94,4 +87,24 @@ export function listingTitle(l: TitledListing | null | undefined, locale: Loc): 
     return type;
   }
   return trimmed(l.reference_code);
+}
+
+/**
+ * Whether the lister has written no title for this listing in this language.
+ *
+ * PKG-NM1. The ladder above means a reader is never shown a code and never
+ * shown the wrong language, but it cannot invent the sentence the lister would
+ * have written. The one person who can is the lister, and until now nothing
+ * told them the gap existed: they wrote an English title, saw their listing
+ * named correctly on their own screen, and never learned that an Arabic reader
+ * was being handed a generic description of it.
+ *
+ * This is the same rule as PKG-AV2's availability line. Show the lister what
+ * the other side reads, and leave the decision with them. SAT does not
+ * translate the title for them, because a machine translation of a name is a
+ * name SAT invented.
+ */
+export function titleMissingIn(l: TitledListing | null | undefined, locale: Loc): boolean {
+  if (!l) return false;
+  return !trimmed(locale === "ar" ? l.title_ar : l.title_en);
 }

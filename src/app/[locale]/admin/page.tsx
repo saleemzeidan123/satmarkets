@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import AdminShell, { requireSat, stamp } from "@/components/AdminShell";
 import { Icon } from "@/components/satkit";
+import { listingTitle } from "@/lib/listingTitle";
 
 // Every figure here is a live count from the database, or it is not shown.
 export const dynamic = "force-dynamic";
@@ -60,9 +61,9 @@ export default async function AdminPage({ params }: { params: { locale: string }
   const leads = recent.data || [];
   const ids = Array.from(new Set(leads.map((l: any) => l.listing_id).filter(Boolean)));
   const { data: ls } = ids.length
-    ? await sb.from("listings").select("id,title_en,title_ar").in("id", ids)
+    ? await sb.from("listings").select("id,title_en,title_ar,asset_type,reference_code,districts(name_en,name_ar,city)").in("id", ids)
     : { data: [] as any[] };
-  const titleOf = new Map((ls || []).map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
+  const titleOf = new Map((ls || []).map((x: any) => [x.id, listingTitle(x, ar ? "ar" : "en")]));
 
   return (
     <AdminShell locale={lp} active="overview" title={t.title} sub={t.sub} session={session} counts={{ signups: sq.count ?? 0 }}>

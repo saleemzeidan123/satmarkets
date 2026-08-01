@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import { listingTitle, listingPlace, type TitledListing } from "@/lib/listingTitle";
+import { listingTitle, listingPlace, titleMissingIn, type TitledListing } from "@/lib/listingTitle";
 
 // ADV-3A.1, finding 66. See the header of `listingTitle.ts` for the defect.
 //
@@ -90,6 +90,18 @@ test("the reference code is reached only by a row with neither a title nor a typ
   assert.equal(listingTitle(undefined, "ar"), "");
 });
 
+test("the lister is told which language is missing, and a blank one is not a title", () => {
+  const l = row({ title_en: "Grade A floor, Al Olaya" });
+  assert.equal(titleMissingIn(l, "ar"), true);
+  assert.equal(titleMissingIn(l, "en"), false);
+  assert.equal(titleMissingIn(row({ title_en: "   ", title_ar: "\t" }), "en"), true);
+  assert.equal(titleMissingIn(row({ title_en: "   ", title_ar: "\t" }), "ar"), true);
+  // A row nobody passed is not a row with a missing title, so no page shows a
+  // notice about a listing it does not have.
+  assert.equal(titleMissingIn(null, "ar"), false);
+  assert.equal(titleMissingIn(undefined, "en"), false);
+});
+
 // ------------------------------------------------------------- source guard
 //
 // The needles are assembled from fragments so this file does not match its own
@@ -100,11 +112,52 @@ const SRC = join(__dirname, "..");
 const TITLE = "title_" + "ar";
 const TITLE2 = "title_" + "en";
 const CODE = "reference" + "_code";
+const NAME = "name_" + "ar";
+const NAME2 = "name_" + "en";
 /** A title expression whose fallback, within a short reach, is the code. */
 const IDIOM = new RegExp(`(?:${TITLE}|${TITLE2})[\\s\\S]{0,140}?\\|\\|[\\s\\S]{0,60}?${CODE}`);
 
-/** Files that may legitimately name the code beside a title. */
-const EXEMPT = new Set(["lib/listingTitle.ts", "lib/listingTitle.test.ts"]);
+// PKG-NM1. The second idiom, and the one that outlived the first fix in
+// twenty-two files including the public brokers page:
+//
+//   (ar ? l.title_ar : l.title_en) || l.title_en
+//
+// `listingTitle`'s own header says the other language's title is deliberately
+// not a rung on the ladder, and until now nothing enforced that. Showing an
+// Arabic reader an English sentence is worse than a short honest description,
+// because it looks like a title somebody chose. The district form of the same
+// borrow is caught too: a district with no Arabic name widens to its city,
+// never to "Al Olaya".
+//
+// The pattern must join fields of DIFFERENT languages, on ONE line, and the
+// field name must end where it is written: `title_ar_src_hash` is a hash of a
+// source, not a title, and `title_en: title_en || null` in an insert is a
+// default, not a fallback. Without those three constraints the scan reports
+// twenty files it has no business reporting, and a guard that cries wolf is
+// switched off by the next person who reads it.
+//
+// The AUTHORIZED borrow is `entityName` in `lib/displayName.ts`, and it is the
+// only one: an account, lister or building name is an identifier with no wider
+// true form, so the choice there is the one spelling we hold or nothing. That
+// file is exempt because it is where the decision is written down.
+//
+// NOT COVERED: `district_label` and `district_label_ar` on the rent index rows,
+// which carry the same shape in about twenty-five places. That label names the
+// geography a published third-party statistic describes, so widening it would
+// restate someone else's district figure as a city figure. Its own finding.
+const BOUND = "(?![\\w])";
+const AR_FIELD = `(?:${TITLE}|${NAME})${BOUND}`;
+const EN_FIELD = `(?:${TITLE2}|${NAME2})${BOUND}`;
+const REACH = "[^\\n]{0,120}?\\|\\|[^\\n]{0,40}?";
+const BORROW = new RegExp(`(?:${AR_FIELD}${REACH}${EN_FIELD})|(?:${EN_FIELD}${REACH}${AR_FIELD})`);
+
+/** Where a name may legitimately sit beside the other language's, or beside a code. */
+const EXEMPT = new Set([
+  "lib/listingTitle.ts",
+  "lib/listingTitle.test.ts",
+  "lib/displayName.ts",
+  "lib/displayName.test.ts",
+]);
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir)) {
@@ -115,16 +168,63 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-test("no file falls back from a title to a reference code", () => {
+function scan(re: RegExp): string[] {
   const offenders: string[] = [];
   for (const f of walk(SRC)) {
     const rel = relative(SRC, f).split("\\").join("/");
     if (EXEMPT.has(rel)) continue;
-    if (IDIOM.test(readFileSync(f, "utf8"))) offenders.push(rel);
+    if (re.test(readFileSync(f, "utf8"))) offenders.push(rel);
   }
+  return offenders;
+}
+
+test("no file falls back from a title to a reference code", () => {
+  const offenders = scan(IDIOM);
   assert.deepEqual(
     offenders,
     [],
     `these files name a listing by its reference code when the title is missing in the reader's language. Use listingTitle() from @/lib/listingTitle:\n  ${offenders.join("\n  ")}`,
+  );
+});
+
+// A guard nobody has watched fail is a guard nobody knows works. These are the
+// eight shapes actually deleted in PKG-NM1 and seven shapes that must stay
+// legal, because the first version of this regex reported twenty files, twelve
+// of them innocent, and a scan with that hit rate gets an allow list instead of
+// a fix.
+test("the borrow guard catches what it was written for and leaves legitimate code alone", () => {
+  const caught = [
+    "const nm = (ar ? a.name_ar : a.name_en) || a.name_en;",
+    "const title = (ar ? l.title_ar : l.title_en) || l.title_en;",
+    "{ar ? r.title_ar || r.title_en : r.title_en}",
+    "label: (lang === 'ar' ? (d.name_ar || d.name_en) : d.name_en) as string,",
+    "if (d?.name_ar || d?.name_en) districtAr = d.name_ar || d.name_en;",
+    "const name = ar ? (b.name_ar || b.name_en) : b.name_en;",
+    "ar: district.name_ar || district.name_en || ''",
+    "name: ((ar ? g.name_ar : g.name_en) || g.name_en) + suffix",
+  ];
+  const legal = [
+    // A hash of the English title, compared against a column whose name merely
+    // begins with the Arabic one.
+    "if (l.title_en && (force || hashSource(l.title_en) !== l.title_ar_src_hash)) {",
+    // An insert with a default per column, one column per line.
+    "  title_en: title_en || null,\n  title_ar: title_ar || null,",
+    "const ne = (d.name_en || '').toLowerCase();",
+    // The shipped shape: one language chosen, then a non-name last resort.
+    "const mt = (ar ? m.name_ar : m.name_en) || m.listing_id;",
+    "const dnEn = l.districts ? l.districts.name_en : null;",
+    "const t = (ar ? l.title_ar : l.title_en) || fallback;",
+    'sb.from("districts").select("name_en,name_ar,city")',
+  ];
+  for (const s of caught) assert.ok(BORROW.test(s), `missed a borrow: ${s}`);
+  for (const s of legal) assert.equal(BORROW.test(s), false, `false positive: ${s}`);
+});
+
+test("no file falls back from one language's title to the other language's", () => {
+  const offenders = scan(BORROW);
+  assert.deepEqual(
+    offenders,
+    [],
+    `these files show a reader the other language's name when their own is blank. Use listingTitle(), placeName() or entityName():\n  ${offenders.join("\n  ")}`,
   );
 });

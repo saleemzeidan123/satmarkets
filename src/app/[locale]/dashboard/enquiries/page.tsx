@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
+import { listingTitle } from "@/lib/listingTitle";
 
 // Every enquiry on the owner's own listings. The dashboard showed the five most
 // recent and then had nowhere to send you.
@@ -68,9 +69,9 @@ export default async function EnquiriesPage({ params }: { params: { locale: stri
   // to see every lead, got a blank Listing column on every row.
   const ids = Array.from(new Set(rows.map((l: any) => l.listing_id).filter(Boolean)));
   const { data: refd } = ids.length
-    ? await sb.from("listings").select("id,title_en,title_ar").in("id", ids)
+    ? await sb.from("listings").select("id,title_en,title_ar,asset_type,reference_code,districts(name_en,name_ar,city)").in("id", ids)
     : { data: [] as any[] };
-  const titleOf = new Map((refd || []).map((x: any) => [x.id, (ar ? x.title_ar : x.title_en) || x.title_en]));
+  const titleOf = new Map((refd || []).map((x: any) => [x.id, listingTitle(x, ar ? "ar" : "en")]));
 
   const stamp = (d: string) =>
     new Date(d).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-GB", {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import type { Lister } from "@/lib/queries/listings";
 import { filingAccountOf, listerIdentityVerified } from "@/lib/listingVerification";
+import { entityName } from "@/lib/displayName";
 
 // WHO IS LISTING THIS, AND ARE THEY US.
 //
@@ -22,7 +23,7 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
   if (!lister) return null;
   const lp = locale || (ar ? "ar" : "en");
 
-  const name = (ar ? lister.name_ar : lister.name_en) || lister.name_en || lister.name_ar;
+  const name = entityName(lister, ar ? "ar" : "en");
   if (!name) return null;
 
   const role =

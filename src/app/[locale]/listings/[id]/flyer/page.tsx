@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
-import { listingTitle } from "@/lib/listingTitle";
+import { listingTitle, listingPlace, titleMissingIn } from "@/lib/listingTitle";
 import { photoFor } from "@/lib/photos";
 import { fill } from "@/lib/format";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -38,8 +38,8 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   const l: any = await getListingById(params.id);
   if (!l) return {};
   const ar = loc === "ar";
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : t.riyadh;
-  const name = String((ar ? l.title_ar : l.title_en) || "").trim();
+  const dn = listingPlace(l, loc) || t.riyadh;
+  const name = titleMissingIn(l, loc) ? "" : listingTitle(l, loc);
   const title = name
     ? fill(t.metaTitle, { title: name })
     : fill(t.metaTitleFallback, { type: assetLabel(l.asset_type, loc), place: dn });
@@ -73,7 +73,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
     }
   }
   if (!l) notFound();
-  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : (t.riyadh);
+  const dn = listingPlace(l, ar ? "ar" : "en") || t.riyadh;
   const title = listingTitle(l, ar ? "ar" : "en");
   const type = assetLabel(l.asset_type, locale);
   const lease = l.deal_type === "lease";

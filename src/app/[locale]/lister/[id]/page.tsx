@@ -13,6 +13,7 @@ import { fill, formatArea, formatCounted, formatMoney, formatWithUnit } from "@/
 // holds zero rows, so no account on the platform has a document behind it. The badge,
 // the sentence under it and the page description all used to run off that status.
 import { filingAccountOf, listerIdentityVerified, verifiedBadgeText } from "@/lib/listingVerification";
+import { entityName } from "@/lib/displayName";
 
 // A lister's PUBLIC profile: who they are, and every space they have live. Reads the
 // listers_public view (the safe projection, only for accounts with a published
@@ -33,7 +34,7 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   if (sb) {
     const { data } = await sb.from("listers_public").select("name_en,name_ar,lister_type,is_operator,is_verified,is_demo").eq("id", params.id).maybeSingle();
     if (data) {
-      name = ((loc === "ar" ? (data as any).name_ar : (data as any).name_en) || (data as any).name_en) || null;
+      name = entityName(data as any, loc) || null;
       verified = listerIdentityVerified(filingAccountOf(data as any));
     }
   }
@@ -87,7 +88,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
     ? new Date(p.member_since).getFullYear()
     : null;
 
-  const name = (ar ? p.name_ar : p.name_en) || p.name_en || "";
+  const name = entityName(p, ar ? "ar" : "en");
   const about = (ar ? p.about_ar : p.about_en) || p.about_en || p.about_ar || "";
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   // This page used to carry its own private EN and AR object, so its copy sat

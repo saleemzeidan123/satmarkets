@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { nearestDistrict, type DistrictPoint } from "@/lib/nearestDistrict";
 import { parseLatLng, isMapShareUrl } from "@/lib/parseLatLng";
+import { placeName } from "@/lib/displayName";
 
 // Lets a lister place the exact building: search, click the map, drag the pin, or
 // type coordinates. The district is derived from the pin (nearest centroid), so
@@ -128,7 +129,7 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
       </div>
       <div className="text-[12px] text-charcoal/60">
         {district
-          ? <>{t("District", "الحي")}: <span className="font-medium">{ar ? (district.name_ar || district.name_en) : district.name_en}</span>{district.city ? <span className="text-charcoal/45">, {district.city}</span> : null} <span className="text-charcoal/40">({t("from your pin", "من موقع العلامة")})</span></>
+          ? <>{t("District", "الحي")}: <span className="font-medium">{placeName(district, ar ? "ar" : "en")}</span>{district.city ? <span className="text-charcoal/45">, {district.city}</span> : null} <span className="text-charcoal/40">({t("from your pin", "من موقع العلامة")})</span></>
           : <span className="text-charcoal/45">{t("Place a pin to set the location.", "ضع علامة لتحديد الموقع.")}</span>}
       </div>
     </div>

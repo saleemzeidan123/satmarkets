@@ -9,6 +9,7 @@ import { formatArea, formatMoney } from "@/lib/format";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
 import type { DistrictPoint } from "@/lib/nearestDistrict";
+import { placeName } from "@/lib/displayName";
 import {
   PHOTO_SET_MIN,
   PLATFORM_OWNED_FIELD_KEYS,
@@ -349,7 +350,7 @@ export default function ListingStudio({
   const districtName = useMemo(() => {
     const d = districts.find((x) => x.id === place.districtId);
     if (!d) return null;
-    return (ar ? d.name_ar || d.name_en : d.name_en) || null;
+    return placeName(d, ar ? "ar" : "en") || null;
   }, [districts, place.districtId, ar]);
 
   const go = (id: string) => { setCurrent(id); setError(null); if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "auto" }); };
@@ -701,7 +702,7 @@ export default function ListingStudio({
     const area = Number(f.area_sqm);
     const price = Number(f.price);
     const d = districts.find((x) => x.id === place.districtId);
-    const dName = d ? (isAr ? d.name_ar || d.name_en : d.name_en) : null;
+    const dName = placeName(d, isAr ? "ar" : "en") || null;
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="rounded border border-line p-3" lang={l}>
         <div className="text-[11px] uppercase tracking-wide text-charcoal/45 mb-1">{isAr ? "العربية" : "English"}</div>

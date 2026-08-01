@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
+import { listingTitle } from "@/lib/listingTitle";
+import { placeName } from "@/lib/displayName";
 import {
   matchListing,
   compareMatches,
@@ -107,9 +109,13 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
   ]);
 
   const drows = (districts || []) as any[];
-  const dname = new Map(drows.map((x) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
-  const dnameEn = new Map(drows.map((x) => [x.id, x.name_en]));
-  const dnameAr = new Map(drows.map((x) => [x.id, x.name_ar || x.name_en]));
+  // PKG-NM1. A district with no name in the reader's language falls back to its
+  // own city, never to the other language's name: an Arabic reader is not shown
+  // "Al Olaya" because nobody typed "العليا" yet.
+  const drow = new Map(drows.map((x) => [x.id, x]));
+  const dname = new Map(drows.map((x) => [x.id, placeName(x, ar ? "ar" : "en")]));
+  const dnameEn = new Map(drows.map((x) => [x.id, placeName(x, "en") || null]));
+  const dnameAr = new Map(drows.map((x) => [x.id, placeName(x, "ar") || null]));
   // The listing's city is the city its own district record states. This is a
   // lookup of a stated fact, not a guess about where a listing probably is.
   const dcity = new Map(drows.map((x) => [x.id, x.city]));
@@ -128,7 +134,7 @@ export default async function DashboardRequirementsPage({ params }: { params: { 
     ad_permit_expires_at: l.ad_permit_expires_at,
     is_demo: l.is_demo === true,
   }));
-  const titleOf = new Map(((mine || []) as any[]).map((l) => [String(l.id), (ar ? l.title_ar : l.title_en) || l.title_en || ""]));
+  const titleOf = new Map(((mine || []) as any[]).map((l) => [String(l.id), listingTitle({ ...l, districts: drow.get(l.district_id) ?? null }, ar ? "ar" : "en")]));
   const publishedCount = myListings.filter((l) => l.status === "published").length;
 
   const now = Date.now();

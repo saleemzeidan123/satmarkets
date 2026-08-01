@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
-import { listingTitle } from "@/lib/listingTitle";
+import { listingTitle, listingPlace } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listedSince, listedLabel } from "@/lib/listedSince";
@@ -65,7 +65,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     // messaged AND enquired on directly shows once, as the thread: the live channel wins.
     const { data: convos } = await sb
       .from("conversations")
-      .select("id,listing_id,created_at,last_message_at,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar))")
+      .select("id,listing_id,created_at,last_message_at,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar,city))")
       .order("last_message_at", { ascending: false })
       .limit(20);
     const threadItems = (convos ?? [])
@@ -76,7 +76,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     // (a listing enquired on twice shows once, newest first, since the list is ordered desc).
     const { data: directLeads } = await sb
       .from("leads")
-      .select("id,listing_id,created_at,path,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar))")
+      .select("id,listing_id,created_at,path,listings(id,title_en,title_ar,asset_type,deal_type,area_sqm,districts(name_en,name_ar,city))")
       .eq("path", "direct_contact")
       .order("created_at", { ascending: false })
       .limit(20);
@@ -106,7 +106,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
     // email address, because a matching email address is not proof of anything.
     const { data: vs } = await sb
       .from("viewings")
-      .select("id,scheduled_at,status,created_at,listings(id,title_en,title_ar,asset_type,area_sqm,districts(name_en,name_ar))")
+      .select("id,scheduled_at,status,created_at,listings(id,title_en,title_ar,asset_type,area_sqm,districts(name_en,name_ar,city))")
       .order("scheduled_at", { ascending: true })
       .limit(50);
     // Soonest first among the ones still ahead, then the most recent of the ones behind.
@@ -209,12 +209,12 @@ export default async function OccupierHome({ params }: { params: { locale: strin
           <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
             {viewings.map((v: any) => {
               const l = v.listings;
-              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
+              const dn = listingPlace(l, ar ? "ar" : "en") || dict.ld.riyadh;
               const passed = Date.parse(v.scheduled_at) < Date.now();
               return (
                 <div key={v.id} className="card pad row between wrap" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
-                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{(ar ? l.title_ar : l.title_en) || assetLabel(l.asset_type, lp)}</Link>
+                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
                     <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi></div>
                     <div className="mono" style={{ fontSize: 12.5, marginTop: 4 }}><bdi dir="ltr">{vWhen(v.scheduled_at)}</bdi>{passed && v.status === "requested" ? <span className="muted" style={{ marginInlineStart: 8 }}>{t.vPast}</span> : null}</div>
                   </div>
@@ -237,12 +237,12 @@ export default async function OccupierHome({ params }: { params: { locale: strin
             {enquiries.map((it: any) => {
               const l = it.listing;
               const direct = it.kind === "direct";
-              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
+              const dn = listingPlace(l, ar ? "ar" : "en") || dict.ld.riyadh;
               const when = listedSince(it.when);
               return (
                 <div key={it.key} className="card pad row between" style={{ alignItems: "center", gap: 12, boxShadow: "none", border: "1px solid var(--silver)" }}>
                   <div style={{ minWidth: 0 }}>
-                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{(ar ? l.title_ar : l.title_en) || assetLabel(l.asset_type, lp)}</Link>
+                    <Link href={`/${lp}/listings/${l.id}`} style={{ fontSize: 14, fontWeight: 600, color: "var(--ink)", textDecoration: "none" }}>{listingTitle(l, ar ? "ar" : "en")}</Link>
                     <div className="muted" style={{ fontSize: 12, marginTop: 3 }}>{dn} · <bdi dir="ltr">{l.area_sqm} m²</bdi>{when ? <> · {listedLabel(when.days, ar)} {direct ? t.sentDirect : t.enquiredOn}</> : null}</div>
                   </div>
                   {direct
@@ -281,7 +281,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
               )}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16 }}>
                 {g.items.map((l: any) => {
-                  const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
+                  const dn = listingPlace(l, ar ? "ar" : "en") || dict.ld.riyadh;
                   const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
                   return (
                     <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>

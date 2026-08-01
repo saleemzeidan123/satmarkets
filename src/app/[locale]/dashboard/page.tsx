@@ -6,6 +6,8 @@ import { Icon, Photo } from "@/components/satkit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { gateFailures, gateReasonText, type GateReason } from "@/lib/gate";
+import { listingTitle } from "@/lib/listingTitle";
+import { placeName } from "@/lib/displayName";
 
 // The owner Overview answers ONE question they sign in with: "did anything happen,
 // and what needs me?" So it leads with a needs-attention queue (Fable 5 consult):
@@ -47,7 +49,7 @@ export default async function DashboardPage({ params }: { params: { locale: stri
  if (sb) {
   const [a, d, f] = await Promise.all([
    sb.from("listings").select("id,title_en,title_ar,asset_type,asking_rent_sqm,sale_price,deal_type,district_id,area_sqm,status,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_no,ad_permit_number,ad_permit_expires_at").eq("account_id", accountId).limit(100),
-   sb.from("districts").select("id,name_en,name_ar"),
+   sb.from("districts").select("id,name_en,name_ar,city"),
    sb.from("accounts").select("name_en,name_ar,type,verification_status").eq("id", accountId).maybeSingle(),
   ]);
   mine = a.data || []; districts = d.data || []; acct = f.data;
@@ -70,8 +72,16 @@ export default async function DashboardPage({ params }: { params: { locale: stri
 
  const isSat = acct?.type === "sat";
  const verified = acct?.verification_status === "verified" || isSat;
- const dmap = new Map(districts.map((x: any) => [x.id, (ar ? x.name_ar : x.name_en) || x.name_en]));
- const titleOf = (l: any) => (ar ? l.title_ar : l.title_en) || l.title_en || (ar ? "عرض" : "listing");
+ // PKG-NM1. Both of these used to borrow the other language when this one was
+ // blank, so an Arabic owner read their own inventory in English. The district
+ // falls back to its city and the listing to a description of itself, and both
+ // fallbacks are in the reader's language.
+ const drow = new Map(districts.map((x: any) => [x.id, x]));
+ const dmap = new Map(districts.map((x: any) => [x.id, placeName(x, ar ? "ar" : "en")]));
+ // The trailing floor is kept for one caller below that may pass `{}` when a
+ // viewing references a listing outside `mine`. A row with nothing on it is the
+ // only case that reaches it.
+ const titleOf = (l: any) => listingTitle({ ...l, districts: drow.get(l.district_id) ?? null }, ar ? "ar" : "en") || (ar ? "عرض" : "listing");
 
  // Per-listing derivation: paused vs blocked vs live.
  const withGate = mine.map((l: any) => ({ l, fails: gateFailures(l) }));

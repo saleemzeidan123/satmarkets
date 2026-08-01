@@ -4,6 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import { Icon, Logo } from "@/components/satkit";
+import { entityName } from "@/lib/displayName";
 
 // The SAT operator console shell.
 //
@@ -23,7 +24,7 @@ export async function requireSat(locale: string): Promise<SatSession> {
   const sb = getSupabaseServer();
   if (!sb || !su.accountId || !su.isSat) notFound();
   const { data } = await sb.from("accounts").select("name_en,name_ar").eq("id", su.accountId).maybeSingle();
-  const nm = (locale === "ar" ? (data as any)?.name_ar : (data as any)?.name_en) || (data as any)?.name_en || su.email || "SAT";
+  const nm = entityName(data as any, locale === "ar" ? "ar" : "en") || su.email || "SAT";
   return { accountId: su.accountId, name: nm, email: su.email };
 }
 
