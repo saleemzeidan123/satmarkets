@@ -1811,6 +1811,44 @@ unauthenticated, so neither is live verifiable end to end from this environment.
 third package in a row owing the same evidence, and a session capable channel is the thing that would
 retire the debt.
 
+## What the next highest-value action is, after PKG-LS3 (Elite standard, required record)
+
+The reconciled Elite section requires that after each foundation package the next highest-value
+action be named explicitly as implementation, design, user research, data acquisition, legal work or
+operational preparation. After PKG-LS3 it is **user research and design-partner recruitment, not
+implementation.**
+
+The evidence for that, measured live on `dpl_EaFKqyyh9ht7gPVMJ4fALuvmfU5v`. The supply side holds 50
+published listings, and PKG-LS3 established that every one of them is incomplete and that nobody had
+ever been told. The demand side holds six requirements, of which five share a single seed timestamp,
+and `interest` is zero on all six. So no lister has ever registered interest in any brief on this
+platform, once.
+
+The reflex reading is that the loop is unbuilt. It is not. `POST /api/requirements/[id]/interest`
+exists with the SM-P0-002 trust bar, anonymous 401 and unverified 403.
+`GET /api/requirements/[id]/matches` answers which of the caller's own listings answer a brief, scoped
+to one account by session, returning named dimensions with a state and a bilingual sentence each and
+a remedy for every unknown. `dashboard/requirements` renders that model with reasons rather than a
+score, derives city from the district record rather than guessing it, and links each unknown to the
+listing field that would resolve it. The one piece deliberately absent is notification, held by O12
+until consent is designed and recorded, which is an owner item and not an engineering one.
+
+A complete, careful, well reasoned loop with zero traffic through it is not a loop that needs more
+engineering. Building another surface on top of it would be building against no observed behaviour,
+which is the failure mode the six-field discipline exists to prevent. The product is at E0 and the
+gate to E1 is design-partner alpha, so the constraint is participants.
+
+What is therefore preparable now without participants, in order: the ELITE-1 instrument, meaning a
+written task protocol per critical journey with a severity scheme and a research repository, which is
+buildable today and is the thing that makes the first partner session worth having; the ELITE-4
+manual accessibility pass over the journeys that already exist; and the ELITE-8 event dictionary with
+its lawful basis and retention position, which must be written before any instrumentation and which
+also unblocks measuring whether PKG-LS3 moved anything. Recruiting the partners themselves, and the
+O12 consent position that would let SAT tell a lister a brief matches their space, are owner items.
+
+The 1 September 2026 re-measure stands regardless, and it is cheap: the same public endpoint, the
+same three counts.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).
