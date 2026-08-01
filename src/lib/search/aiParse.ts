@@ -58,7 +58,9 @@ const hasWord = (folded: string, word: string) => matchLen(folded, word) > 0;
 const hasAny = (folded: string, words: readonly string[]) => words.some((w) => hasWord(folded, w));
 
 // Folded, so the Arabic forms below are written the way `foldText` leaves them.
-const AREA_UNIT = "(?:sqm|sq m|m2|m²|meter|metre|متر مربع|متر|م2)";
+// An input grammar, not copy. Both spellings of the unit have to be
+// accepted from one query, whatever keyboard it was typed on.
+const AREA_UNIT = "(?:sqm|sq m|m2|m²|meter|metre|متر مربع|متر|م2)"; // unit-law
 const NUMBER = "[0-9]+(?:[ ,.][0-9]{3})*";
 const toNumber = (v: string) => Number(v.replace(/[ ,.]/g, ""));
 const MAX_LEAD = "(?:under|below|max|maximum|up to|less than|no more than|اقل من|تحت|بحد اقصي|لا يزيد عن|لا يزيد|حتي|في حدود)";

@@ -2,8 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { formatInteger, formatRange, formatUnit } from "./format";
+import { UNITS, fill, formatInteger, formatRange, formatUnit, unitText } from "./format";
 import { askingPrice, netArea } from "./listingFigures";
+import { normalizeStatisticKind, statisticLabel } from "./evidence";
+import { agreedStatistic, agreedUnit, appendUnit, figureCellOf, statUnitHeading, withUnit } from "./market/columnHeading";
 
 /**
  * PKG-FIG1. The grammar of a figure, guarded at the two levels it can break at.
@@ -428,4 +430,266 @@ test("finding 129: the ar-lint unit rule is aimed at the table, not at a copy of
   const fmt = readFileSync("src/lib/format.ts", "utf8");
   assert.match(fmt, /export const UNITS = \{/, "the gate slices on this exact string");
   assert.match(fmt, /\} as const;/, "the gate slices on this exact string");
+});
+
+// ---------------------------------------------------------------------------
+// Finding 130. The statistic, resolved beside the row rather than frozen in copy
+// ---------------------------------------------------------------------------
+
+test("finding 130: a band cannot reach the client without the statistic it is", () => {
+  const home = readFileSync("src/components/MarketingHome.tsx", "utf8");
+  // `stat?: string` would let a band travel with no statistic and let the
+  // caption fall back to whatever word the dictionary happened to hold, which is
+  // the defect itself. The field is required, so the compiler is the real guard
+  // and this only asserts the compiler is still pointed at it.
+  assert.match(home, /export type HeroBand = \{[^}]*\bstat: string/, "HeroBand stopped requiring the statistic");
+  assert.equal(/\bstat\?:/.test(home), false, "the statistic became optional on HeroBand");
+
+  const front = read("src/app/[locale]/page.tsx");
+  assert.match(front, /statisticLabel\(normalizeStatisticKind\(r\.stat_kind\), ar\)/, "the front door stopped resolving the statistic from the row it describes");
+  assert.match(front, /\.select\("[^"]*stat_kind/, "the front door select dropped stat_kind, so the label would have nothing to resolve from");
+});
+
+test("finding 130: an unlabelled row does not become an average on the way to the screen", () => {
+  // Behavioural, and this is the whole of Law 6 in three lines: `unknown` has no
+  // path into a named statistic, and the two named ones have no path into each
+  // other.
+  const avg = statisticLabel(normalizeStatisticKind("average"), false);
+  const med = statisticLabel(normalizeStatisticKind("median"), false);
+  const unk = statisticLabel(normalizeStatisticKind(null), false);
+  assert.notEqual(avg, med);
+  assert.notEqual(unk, avg);
+  assert.notEqual(unk, med);
+  assert.equal(statisticLabel(normalizeStatisticKind("Average"), false), unk, "a near miss resolved into the real thing");
+
+  // The dictionary holds the sentence and the row supplies the word, in both
+  // languages, so the caption can no longer assert a statistic of its own.
+  for (const loc of ["en", "ar"] as const) {
+    const d = JSON.parse(readFileSync(`src/i18n/dictionaries/${loc}.json`, "utf8"));
+    // PKG-FIG2 closure, finding 132. The pattern moved from `home` to `common`
+    // when the Rent Index, the listings index cut and the front door turned out
+    // to need the same one sentence shape. A second copy under `home` would be
+    // the second table this package exists to remove.
+    assert.equal(d.home.statUnit, undefined, `${loc}: the front door kept a private copy of the shared pattern`);
+    assert.match(d.common.statUnit, /\{stat\}/, `${loc}: the caption pattern lost its statistic slot`);
+    assert.match(d.common.statUnit, /\{unit\}/, `${loc}: the caption pattern lost its unit slot`);
+    assert.equal(d.home.medianUnit, undefined, `${loc}: the key that hardcoded one statistic came back`);
+  }
+
+  // Sensitivity: the shipped strings this replaced. Both named a statistic in
+  // the copy, so both read the same whatever the row underneath said.
+  for (const shipped of ["Average {unit}", "المتوسط {unit}"]) {
+    assert.equal(/\{stat\}/.test(shipped), false);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Finding 131. Not how a unit is spelled, but who spelled it and in what language
+// ---------------------------------------------------------------------------
+
+test("finding 131: unitText and formatUnit differ by word joiners and by nothing else", () => {
+  const strip = (s: string) => s.replace(/⁠/g, "");
+  for (const key of Object.keys(UNITS)) {
+    for (const loc of ["en", "ar"] as const) {
+      for (const len of ["long", "short"] as const) {
+        const joined = formatUnit(key, loc, len);
+        const plain = unitText(key, loc, len);
+        assert.equal(strip(joined), plain, `${key}/${loc}/${len}: the two spellings of one unit diverged`);
+        assert.equal(/⁠/.test(plain), false, `${key}/${loc}/${len}: unitText leaked a word joiner`);
+      }
+    }
+  }
+  // The reason the second function exists, stated as a difference rather than as
+  // a comment: a CSV header has no line to break, and an invisible U+2060 that
+  // leaves the platform is a control character in someone else's spreadsheet.
+  assert.equal(unitText("sar_sqm_year", "en", "short"), "SAR/m²/yr");
+  assert.notEqual(formatUnit("sar_sqm_year", "en", "short"), "SAR/m²/yr");
+});
+
+test("finding 131: no Arabic dictionary value spells a unit in English", () => {
+  // The authorship rule, aimed at the data half of the finding and expressed
+  // against the table rather than against a copy of it. `SAR/yr` is a canonical
+  // spelling, which is why the PKG-FIG2 spelling gate passed it while it sat
+  // inside an Arabic sentence: a gate that checks how a unit is spelled cannot
+  // see who spelled it.
+  const arSpellings = new Set<string>(Object.values(UNITS).flatMap((u) => [u.ar.long, u.ar.short]));
+  const enOnly = [...new Set(Object.values(UNITS).flatMap((u) => [u.en.long, u.en.short]))]
+    // The English metre is `m`. A one-letter match inside Arabic prose is noise,
+    // so the limit is stated here rather than discovered later.
+    .filter((s) => s.length >= 2 && !arSpellings.has(s));
+  assert.ok(enOnly.length >= 8, `only ${enOnly.length} English-only unit spellings; the table shape changed under this test`);
+
+  const offenders: string[] = [];
+  const walkVals = (v: unknown, at: string) => {
+    if (typeof v === "string") {
+      if (!/[؀-ۿ]/.test(v)) return;
+      for (const u of enOnly) {
+        const esc = u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        // `_` is a word character, so a plain word boundary matched `SAR` inside
+        // the identifier `SAR_SQM_YR_AR` and accused a clean file three times.
+        if (new RegExp(`(?<![A-Za-z0-9_])${esc}(?![A-Za-z0-9_])`).test(v)) offenders.push(`${at} carries ${JSON.stringify(u)}: ${v}`);
+      }
+    } else if (Array.isArray(v)) v.forEach((x, i) => walkVals(x, `${at}[${i}]`));
+    else if (v && typeof v === "object") for (const [k, x] of Object.entries(v as Record<string, unknown>)) walkVals(x, `${at}.${k}`);
+  };
+  walkVals(JSON.parse(readFileSync("src/i18n/dictionaries/ar.json", "utf8")), "ar");
+  assert.deepEqual(offenders, [], `Arabic copy spelling a unit in English:\n${offenders.join("\n")}`);
+});
+
+test("finding 131: the labels that spelled their own unit now hold a slot for it", () => {
+  const keys: [string, string][] = [
+    ["invest", "csvAcqPrice"],
+    ["invest", "csvIndValue"],
+    ["invest", "csvNoi"],
+    ["invest", "csvPotentialNoi"],
+    ["invest", "potentialNoi"],
+    ["invest", "kNoi"],
+    ["hbu", "kNoi"],
+  ];
+  for (const loc of ["en", "ar"] as const) {
+    const d = JSON.parse(readFileSync(`src/i18n/dictionaries/${loc}.json`, "utf8"));
+    for (const [section, key] of keys) {
+      const v = d[section][key] as string;
+      assert.match(v, /\{unit\}/, `${loc}.${section}.${key} stopped taking its unit from the table`);
+      assert.equal(/SAR|ريال/.test(v), false, `${loc}.${section}.${key} spells a currency unit in its own copy`);
+      // `fill` leaves an unmatched placeholder visible, so a caller that forgets
+      // the slot is a defect nobody can miss rather than a silent one.
+      assert.equal(fill(v, { unit: unitText("sar_year", loc, "short") }).includes("{unit}"), false);
+    }
+  }
+});
+
+test("finding 131: the unit-law exemption is usable in the files that need it", () => {
+  const gate = readFileSync("scripts/ar-lint.mjs", "utf8");
+  // The marker is a comment and the text being scanned has had its comments
+  // removed, so the marker has to be read from the original line. Blanking a
+  // comment in place rather than deleting it is what keeps the two line arrays
+  // in step: the old stripper collapsed a block comment's newlines, so every
+  // line index after it moved and the documented exemption could not be used in
+  // a TypeScript file at all. It was reachable only from a `.json` file, which
+  // is the one kind of file that cannot hold a comment.
+  assert.match(gate, /const exempt = \(rawLines, i\) =>/, "the gate stopped reading the marker from the raw line");
+  assert.match(gate, /m\.replace\(\/\[\^\\n\]\/g, " "\)/, "the comment stripper stopped preserving line count");
+
+  // The property the exemption rests on, asserted rather than described.
+  const stripComments = (s: string) =>
+    s
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+      .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + " ".repeat(m.length - p1.length));
+  const sample = "a\n/* one\n   two */ b\nc // three\n";
+  const before = sample.split("\n");
+  const after = stripComments(sample).split("\n");
+  assert.equal(after.length, before.length, "the stripper changed the number of lines");
+  for (let i = 0; i < before.length; i++) assert.equal(after[i].length, before[i].length, `line ${i} changed width`);
+
+  // Each marker sits on the same line as the literal it exempts. A marker on the
+  // line above exempts the line above, which is a different line.
+  for (const p of ["src/lib/search/aiParse.ts", "src/lib/search/queryParse.ts", "src/lib/market/numericIntent.ts"]) {
+    const hits = readFileSync(p, "utf8").split(/\r?\n/).filter((l) => /unit-law/.test(l));
+    assert.equal(hits.length, 1, `${p}: expected exactly one unit-law marker, found ${hits.length}`);
+    assert.match(hits[0], /[؀-ۿ]/, `${p}: the unit-law marker is not on the line carrying the Arabic literal`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Finding 132. A heading is a claim about the column under it
+// ---------------------------------------------------------------------------
+
+test("finding 132: a column names a statistic only when every cell agrees", () => {
+  const avg = { stat_kind: "average", unit: "SAR/m2/yr" };
+  const med = { stat_kind: "median", unit: "SAR/m2/yr" };
+
+  assert.equal(agreedStatistic([avg, avg, avg].map(figureCellOf)), "average");
+  assert.equal(agreedStatistic([avg, med, avg].map(figureCellOf)), null, "one median among the averages did not deny the heading");
+  assert.equal(agreedStatistic([]), null, "an empty column named a statistic");
+
+  // The defect exactly: the shipped code read `rows[0].stat_kind`, so the first
+  // row's word became the whole set's word. Order must not decide.
+  assert.equal(agreedStatistic([avg, med].map(figureCellOf)), agreedStatistic([med, avg].map(figureCellOf)));
+
+  // The shipped rule, written out, so this test can fail against it rather than
+  // merely describe it. `columnHeading.ts` is new, so reverting the callers does
+  // not exercise the module; the rule it replaced has to be stated here.
+  const shipped = (rows: { stat_kind: string }[]) => normalizeStatisticKind(rows[0].stat_kind);
+  assert.equal(shipped([avg, med]), "average");
+  assert.notEqual(agreedStatistic([avg, med].map(figureCellOf)), shipped([avg, med]), "agreement collapsed back into the first row's word");
+  assert.notEqual(shipped([avg, med]), shipped([med, avg]), "the rule under test was not actually order dependent");
+
+  // `unknown` is a name for having no name, so it never earns a heading.
+  assert.equal(agreedStatistic([{ stat_kind: null, unit: "SAR/m2/yr" }].map(figureCellOf)), null);
+  assert.equal(agreedStatistic([{ stat_kind: "Average", unit: "SAR/m2/yr" }].map(figureCellOf)), null, "a near miss resolved into a real statistic");
+});
+
+test("finding 132: a column names a unit only when every cell agrees, and a missing unit denies it", () => {
+  const yr = figureCellOf({ stat_kind: "average", unit: "SAR/m2/yr" });
+  const mo = figureCellOf({ stat_kind: "average", unit: "SAR/m2/mo" });
+  const bare = figureCellOf({ stat_kind: "average" });
+
+  assert.equal(agreedUnit([yr, yr]), "sar_sqm_year");
+  // The half of the defect a reader cannot detect. The header said SAR/m² over
+  // rows storing SAR/m2/yr, and per year against per month is a factor of twelve.
+  assert.notEqual(agreedUnit([yr, yr]), "sar_sqm");
+  assert.equal(agreedUnit([yr, mo]), null, "a mixed period still produced one unit");
+  // The narrow select carries no `unit`. It must cost the heading its unit.
+  assert.equal(agreedUnit([yr, bare]), null, "a row that arrived without a unit did not deny the column");
+  assert.equal(agreedUnit([]), null);
+
+  for (const loc of ["en", "ar"] as const) {
+    const pattern = JSON.parse(readFileSync(`src/i18n/dictionaries/${loc}.json`, "utf8")).common.statUnit;
+    assert.equal(appendUnit("Rent", null, loc, pattern), "Rent", `${loc}: a column with no agreed unit printed one anyway`);
+    assert.match(withUnit("Rent", [yr, yr], loc, pattern), new RegExp(unitText("sar_sqm_year", loc, "short").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${loc}: the agreed unit did not reach the heading`);
+    assert.equal(withUnit("Rent", [yr, mo], loc, pattern), "Rent", `${loc}: a mixed column printed a unit`);
+
+    // The heading itself: the statistic when the cells agree, the neutral
+    // quantity word when they do not, and never the other way round.
+    const words = { neutral: "Rent", pattern };
+    assert.match(statUnitHeading([yr, yr], loc, words), new RegExp(statisticLabel("average", loc === "ar").replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `${loc}: an agreed column lost its statistic`);
+    // `mo` differs from `yr` only in its unit, so a heading over the two still
+    // agrees about the statistic. Disagreement about the statistic is a separate
+    // pair, and the neutral word is what it must fall back to.
+    const medYr = figureCellOf({ stat_kind: "median", unit: "SAR/m2/yr" });
+    assert.equal(statUnitHeading([yr, medYr], loc, words).includes(statisticLabel("average", loc === "ar")), false, `${loc}: a mixed column still claimed a statistic`);
+    assert.equal(statUnitHeading([yr, medYr], loc, words).includes(statisticLabel("median", loc === "ar")), false, `${loc}: a mixed column claimed the other statistic instead`);
+    assert.match(statUnitHeading([yr, medYr], loc, words), /^Rent/, `${loc}: a mixed column lost the neutral quantity word`);
+  }
+});
+
+test("finding 132: no surface spells a statistic or a unit over figures it did not read", () => {
+  // The five shipped strings. Each named a statistic in copy, and three of them
+  // spelled a unit that dropped the period the stored unit carried.
+  for (const loc of ["en", "ar"] as const) {
+    const d = JSON.parse(readFileSync(`src/i18n/dictionaries/${loc}.json`, "utf8"));
+    for (const [section, key] of [["listings", "colMedian"], ["rentIndex", "thMedian"]] as const) {
+      assert.equal(d[section][key], undefined, `${loc}: ${section}.${key}, the heading that asserted its own statistic, came back`);
+    }
+    const spelled = /SAR\s*\/\s*m|ريال\s*\//;
+    for (const [section, key] of [["listings", "colStat"], ["listings", "colBand"], ["rentIndex", "thStat"], ["rentIndex", "thBand"], ["rentIndex", "heatSubReal"], ["rentIndex", "kpiOffice"], ["rentIndex", "kpiRetail"], ["marketPage", "kpiMedianOffice"], ["flyer", "officeAvg"]] as const) {
+      const v = d[section][key];
+      assert.equal(typeof v, "string", `${loc}: ${section}.${key} is missing`);
+      assert.equal(spelled.test(v), false, `${loc}: ${section}.${key} spells a unit the unit table owns: ${v}`);
+    }
+    // The clause the heat-map sentence gave up so it could end where the unit
+    // does. Without it the thin-sample explanation would have been lost.
+    assert.equal(typeof d.rentIndex.heatSubRealThin, "string", `${loc}: the thin-sample clause went missing`);
+    // The two rent tiles said different things in the two languages: English
+    // named no statistic, Arabic named "average". Parity is the point.
+    assert.equal(/\{unit\}/.test(d.rentIndex.kpiOffice), false, `${loc}: the office tile still interpolates a unit the page chose`);
+  }
+
+  // The callers, scanned. A dictionary can be right and the page can still spell
+  // its own heading, which is how this shipped in the first place.
+  const ri = read("src/app/[locale]/rent-index/page.tsx");
+  assert.match(ri, /statUnitHeading\(cells, loc/, "the Rent Index heading stopped resolving from its rows");
+  assert.match(ri, /withUnit\(ri\.thBand, cells, loc/, "the band heading stopped resolving its unit");
+  assert.equal(/formatUnit\("sar_sqm_year"/.test(ri), false, "the Rent Index went back to naming the unit of a figure it had not looked at");
+
+  const dl = read("src/app/[locale]/listings/page.tsx");
+  assert.match(dl, /statUnitHeading\(idxCells, locale/, "the listings index cut stopped resolving its heading");
+  assert.equal(/Number\(r\.median\)\.toLocaleString/.test(dl), false, "the index cut went back to spelling its own numerals");
+
+  // One layer down, the same shape: the first row's word presented as the set's.
+  const pubSrc = read("src/lib/market/published.ts");
+  assert.equal(/rows\[0\]\.stat_kind/.test(pubSrc), false, "the published KPIs went back to reading the first row's statistic");
+  assert.match(pubSrc, /stat: agreedStatistic\(cells\)/, "the published statistic stopped requiring agreement");
+  assert.match(pubSrc, /unit: agreedUnit\(cells\)/, "the published unit stopped requiring agreement");
 });

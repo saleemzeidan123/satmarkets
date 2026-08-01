@@ -8,6 +8,7 @@ import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
 import { localeMeta } from "@/lib/meta";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { entityName } from "@/lib/displayName";
+import { unitText } from "@/lib/format";
 
 const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
 
@@ -81,7 +82,9 @@ export default async function MapPage({ params }: { params: { locale: string } }
             viewListings: dict.map.viewListings,
             rentBand: dict.map.rentBand,
             size: dict.ui.area, grade: dict.ui.grade,
-            sqm: dict.common.sqm, noData: dict.ui.notEnough,
+            // PKG-FIG2 closure, finding 131. This was `dict.common.sqm`, a square
+            // metre spelled in the dictionary rather than read from the unit table.
+            sqm: unitText("sqm", locale, "short"), noData: dict.ui.notEnough,
             results: dict.map.results, close: dict.map.close,
             clusterUnit: dict.map.clusterUnit,
           }}

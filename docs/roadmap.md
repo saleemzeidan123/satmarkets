@@ -1564,6 +1564,60 @@ it as a unit separator, so `3,700 SAR/m²·yr · 1,200 m² · KAFD` is genuinely
 reader, while in Arabic the middle dot is the right typographic choice and carries no such clash.
 `format.ts` was not changed.
 
+### PKG-FIG2 closure, a heading is a claim about the column under it (findings 130, 131, 132)
+
+Finding 129 built one unit table and a gate that reads the canonical spellings out of it. The gate
+checks spelling. It cannot see authorship, and it cannot see a heading, and both of those turned out
+to be live defects on public pages.
+
+Finding 130, the front door. The hero band panel captioned the published Rent Index band with
+`home.medianUnit`, valued `Average {unit}` and `المتوسط {unit}`. The word was typed once and rendered
+over whatever row the query returned, so a median cell and an average cell were captioned
+identically; the key said `median` and the value said `Average`; and the select did not fetch
+`stat_kind` at all. `stat` is now a required field on `HeroBand`, so the compiler is what stops a band
+travelling without one, and the word comes from `statisticLabel(normalizeStatisticKind(r.stat_kind))`,
+which routes an unrecognised value to `Unlabelled` rather than to a named statistic. `normalizeStatisticKind`
+is case sensitive on purpose: `Average` with a capital letter is a near miss, and a near miss must
+cost the caption its name.
+
+Finding 131, authorship. Forty six unit shaped strings per dictionary, seven of which put Latin script
+inside Arabic copy, on `/invest` and `/hbu`. The spelling gate could not see them because they were
+spelled correctly. `ar-lint` gained a fifth pass, an authorship rule that fires when an English unit
+spelling appears inside a literal that also carries Arabic script, proved to fail against HEAD with
+seven hits before it was believed. `unitText` was added beside `formatUnit`, deliberately not a second
+table: `formatUnit` is now defined in terms of it, and the difference is the word joiner. A `U+2060`
+belongs on a page, where it stops a unit breaking across two lines, and does not belong in a CSV
+header, where it is an invisible control character in someone else's spreadsheet that survives a copy
+and defeats an exact match. The remaining surface is recorded rather than implied, in the findings
+register: `/invest`'s three private formatters, the Latin `M` suffix on Arabic pages, the Latin year
+heads in the investment CSV.
+
+Finding 132, the heading. Two public tables printed `Average SAR/m²` over rows whose stored unit is
+`SAR/m2/yr`. Both halves were wrong. The statistic was a word someone typed once, so the column said
+the same thing whatever the rows said, and the unit dropped the period, and a reader who assumes a
+month is out by a factor of twelve with nothing on the page to warn them. `src/lib/market/columnHeading.ts`
+resolves a heading from the cells beneath it on the rule the passports already follow: name a thing
+only if every record agrees, and say nothing rather than guess. Mixed statistics get the neutral
+quantity word. Mixed or unresolvable units get no unit at all, and one row arriving without a unit
+denies the whole column, which is what makes the Rent Index page's narrow fallback select safe, since
+it does not fetch `unit`. `PublishedKpis` gained a resolved `unit` beside a now honest `stat`, which
+had been `rows[0].stat_kind`, the first row's word standing for the whole set.
+
+A unit and a statistic name are not market figures. Resolving a heading over rows whose figures the
+licence withheld publishes nothing Codex item 2 fences: the heading describes the column, and each
+cell still decides on its own whether it has anything to put in it.
+
+The blind spot is stated rather than closed. When units do not agree the heading names none, and the
+cells render bare numbers, so a mixed unit column would show figures with no unit anywhere. That case
+does not exist today, since all seven published segments store `SAR/m2/yr`. It is the first thing to
+close when a second unit enters the index.
+
+One thing was left asserting a statistic in copy on purpose. `rentIndex.kpiContracts` describes the
+source's methodology, REGA publishing averages of registered contracts, not our rows. Building it from
+`statisticLabel` would also produce ungrammatical Arabic, because the label carries the definite
+article.
+
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

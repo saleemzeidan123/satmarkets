@@ -19,7 +19,7 @@
 //
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/satkit";
-import { formatCounted } from "@/lib/format";
+import { fill, formatCounted, unitText } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
 
 const fmtM = (v: number) => (v / 1e6).toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "M";
@@ -72,13 +72,27 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
 
  const maxBar = Math.max(...m.openS, ...m.cappedS);
  const na = iv.na;
+ // PKG-FIG2 closure, finding 131. Six labels on this page spelled their own unit
+ // in both dictionaries. Four of them spelled it in LATIN inside the Arabic
+ // string, "(SAR/yr)" and "(SAR)", which is the same Latin-on-an-Arabic-page
+ // defect finding 129 closed in code, surviving in data. Their on-screen
+ // siblings used Arabic, so it read as an oversight rather than a decision, and
+ // no record said otherwise either way.
+ //
+ // The dictionaries now hold the sentence with a {unit} slot and the unit comes
+ // from the table, so the two can no longer disagree. `unitText` rather than
+ // `formatUnit` because four of these six end up in a CSV, where the word joiner
+ // has no line to protect and would travel off the platform as an invisible
+ // control character in someone else's spreadsheet.
+ const sar = unitText("sar", ar ? "ar" : "en", "short");
+ const yr = unitText("sar_year", ar ? "ar" : "en", "short");
  const kpis: [string, string, string, string | null][] = [
   [fmtM(m.value), iv.kValue, iv.nComps, null],
   // Compared against the reader's own pricing cap, which is what the arithmetic
   // actually does. It previously read as a comparison against a district benchmark
   // that no query produced.
   [fmtPct(m.goingInYield), iv.netInitYield, m.goingInYield >= pricingCap ? iv.nAtAbove : iv.nBelow, m.goingInYield >= pricingCap ? "up" : null],
-  [fmtM(m.noi), iv.kNoi, "", null],
+  [fmtM(m.noi), fill(iv.kNoi, { unit: yr }), "", null],
   [ran ? fmtPct(m.irr) : na, iv.irr5, ran ? iv.nModeled : iv.nRun, ran ? "up" : null],
   [ran ? m.em.toFixed(1) + "\u00d7" : na, iv.equityMult, ran ? iv.nOverHold : iv.nRun, null],
   [fmtPct(exitCap), iv.exitCapRate, iv.nAssumption, null],
@@ -90,8 +104,8 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   rows.push([iv.csvSub]);
   rows.push([]);
   rows.push([iv.csvInputs]);
-  rows.push([iv.csvAcqPrice, price]);
-  rows.push([iv.csvPotentialNoi, potentialNoi]);
+  rows.push([fill(iv.csvAcqPrice, { unit: sar }), price]);
+  rows.push([fill(iv.csvPotentialNoi, { unit: yr }), potentialNoi]);
   rows.push([iv.csvPricingCap, fmtPct(pricingCap)]);
   rows.push([iv.csvTerm, term]);
   rows.push([iv.csvEscalation, esc]);
@@ -100,14 +114,16 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
   rows.push([iv.csvLtv, fmtPct(ltv)]);
   rows.push([]);
   rows.push([iv.csvOutputs]);
-  rows.push([iv.csvIndValue, Math.round(m.value)]);
+  rows.push([fill(iv.csvIndValue, { unit: sar }), Math.round(m.value)]);
   rows.push([iv.netInitYield, fmtPct(m.goingInYield)]);
-  rows.push([iv.csvNoi, Math.round(m.noi)]);
+  rows.push([fill(iv.csvNoi, { unit: yr }), Math.round(m.noi)]);
   rows.push([iv.irr5, fmtPct(m.irr)]);
   rows.push([iv.equityMult, m.em.toFixed(2) + "x"]);
   rows.push([]);
   rows.push([iv.csvNoiByYear, ...m.series.map((_, i) => "Y" + (i + 1))]);
-  rows.push(["SAR", ...m.series.map((v) => Math.round(v))]);
+  // The magnitude row of the projection table. It was the Latin literal "SAR"
+  // in both languages, one line below a header row this package rewired.
+  rows.push([sar, ...m.series.map((v) => Math.round(v))]);
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
   const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -164,7 +180,7 @@ export default function InvestPage({ params }: { params: { locale: string } }) {
         </div>
        </div>
        <div className="field">
-        <label>{iv.potentialNoi}</label>
+        <label>{fill(iv.potentialNoi, { unit: yr })}</label>
         <div className="input between" style={{ padding: 0 }}>
          <input value={fmtN(potentialNoi)} onChange={(e) => { const n = Number(e.target.value.replace(/[^0-9]/g, "")); if (!isNaN(n)) setPotentialNoi(n || 0); }} style={{ border: "none", outline: "none", background: "transparent", fontSize: "var(--fs-base)", color: "var(--ink)", padding: "10px 12px", width: "100%", textAlign: ar ? "right" : "left" }} />
          <span className="mono muted2" style={{ paddingRight: 12 }}>{iv.sarUnit}</span>

@@ -2,6 +2,9 @@ import { cache } from "react";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { type Loc } from "@/lib/format";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { agreedStatistic, agreedUnit, figureCellOf } from "@/lib/market/columnHeading";
+import { type StatisticKind } from "@/lib/evidence";
+import { type UnitKey } from "@/lib/format";
 
 // Rent Index headline figures.
 //
@@ -35,7 +38,19 @@ import { quotableRentIndexRows } from "@/lib/market/quotable";
 export type PublishedKpis = {
   period: string | null;
   source: string | null;      // the source's own attribution label, from source_registry
-  stat: "average" | "median" | null;  // REGA/Ejar publishes AVERAGES. Say which.
+  /**
+   * PKG-FIG2 closure, finding 132. The statistic every quoted cell agrees on,
+   * or null.
+   *
+   * This was `rows[0].stat_kind`: the first row's word, presented as the word
+   * for the whole set. One median arriving among the averages would not have
+   * changed it, and the three surfaces that print these figures would have gone
+   * on saying "average" over a set that was no longer one. A set of mixed
+   * statistics has no statistic, and null is how that is said.
+   */
+  stat: StatisticKind | null;
+  /** The unit every quoted cell agrees on, or null. Never assumed from the asset. */
+  unit: UnitKey | null;
   officeRent: number | null;  // across sufficient office cells
   retailRent: number | null;
   cells: number;              // how many cells stand behind these numbers
@@ -48,6 +63,7 @@ const EMPTY: PublishedKpis = {
   period: null,
   source: null,
   stat: null,
+  unit: null,
   officeRent: null,
   retailRent: null,
   cells: 0,
@@ -83,9 +99,16 @@ export const getPublishedKpis = cache(async (locale: Loc = "en"): Promise<Publis
       district_id: string | null;
       period: string | null;
       source: string | null;
-      stat_kind: "average" | "median" | null;
+      stat_kind: string | null;
+      unit: string | null;
     }[];
     if (!rows.length) return { ...EMPTY, statements: quotable.statements };
+
+    // Read once, off the same rows the figures come from. `figureCellOf` is
+    // tolerant of a row that arrived without a unit: it resolves to null, and a
+    // single null denies the whole set, so a schema surprise costs us the unit
+    // rather than buying us a guess about it.
+    const cells = rows.map(figureCellOf);
 
     const val = (asset: string) =>
       mean(
@@ -97,7 +120,8 @@ export const getPublishedKpis = cache(async (locale: Loc = "en"): Promise<Publis
     return {
       period: rows[0].period ?? null,
       source: rows[0].source ?? null,
-      stat: rows[0].stat_kind ?? null,
+      stat: agreedStatistic(cells),
+      unit: agreedUnit(cells),
       officeRent: val("office"),
       retailRent: val("retail"),
       cells: rows.length,

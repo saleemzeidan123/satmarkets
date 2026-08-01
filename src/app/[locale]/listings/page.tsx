@@ -39,7 +39,10 @@ import { CHECK_METHODS } from "@/lib/listingVerification";
 import { verifiedBadges } from "@/components/VerificationState";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, formatArea, formatCounted, formatNumber, formatRange, formatUnit } from "@/lib/format";
+import { fill, formatArea, formatCounted, formatInteger, formatNumber, formatRange, formatUnit } from "@/lib/format";
+// PKG-FIG2 closure, finding 132. The index cut's two figure headings, read
+// off the rows under them.
+import { figureCellOf, statUnitHeading, withUnit } from "@/lib/market/columnHeading";
 import { getDictionary } from "@/i18n/getDictionary";
 import { placeName } from "@/lib/displayName";
 
@@ -312,6 +315,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     idx = decided.rows as any;
     idxStatements = decided.statements;
   }
+  // PKG-FIG2 closure, finding 132. The heading said "Average SAR/m²" over rows
+  // storing `SAR/m2/yr`, so it was wrong about the statistic it never read and
+  // wrong about the period it dropped. Both halves now come from the rows.
+  const idxCells = idx.map((q) => figureCellOf(q.row));
   const rcity = dl.riyadh;
   const kindFor = (a: string) => a;
 
@@ -454,7 +461,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table className="dt" style={{ minWidth: 520 }}>
-                <thead><tr><th>{dl.colLocation}</th><th>{dl.colAsset}</th><th style={{ textAlign: "right" }}>{dl.colMedian}</th><th style={{ textAlign: "right" }}>{dl.colBand}</th><th style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
+                <thead><tr><th>{dl.colLocation}</th><th>{dl.colAsset}</th><th style={{ textAlign: "right" }}>{statUnitHeading(idxCells, locale, { neutral: dl.colStat, pattern: dict.common.statUnit })}</th><th style={{ textAlign: "right" }}>{withUnit(dl.colBand, idxCells, locale, dict.common.statUnit)}</th><th style={{ textAlign: "right" }}>{dl.colData}</th></tr></thead>
                 <tbody>
                   {idx.map((q, i: number) => {
                     const r: any = q.row;
@@ -463,7 +470,11 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
                       <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + segmentLabel(r.segment, locale) : ""}</td>
-                      <td className="num mono">{show && r.median != null ? <bdi dir="ltr">{Number(r.median).toLocaleString("en-US")}</bdi> : (dl.na)}</td>
+                      {/* PKG-FIG2 closure, finding 131. This cell called `toLocaleString("en-US")`
+                          directly, which is the one numeral policy stated in a page rather than
+                          read from the one function that owns it. `formatInteger` pins the same
+                          Latin numerals for both languages, and it does so in one place. */}
+                      <td className="num mono">{show && r.median != null ? <bdi dir="ltr">{formatInteger(Number(r.median), locale)}</bdi> : (dl.na)}</td>
                       {/* PKG-FIG1, finding 127. The cell spelled the separator as a spaced
                           en dash and forced the whole range left to right, which is right
                           for a bare figure and wrong for a range whose Arabic separator is

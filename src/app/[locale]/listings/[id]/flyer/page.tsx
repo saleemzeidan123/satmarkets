@@ -6,7 +6,7 @@ import { getPublishedKpis } from "@/lib/market/published";
 import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
 import { listingTitle, listingPlace, titleMissingIn } from "@/lib/listingTitle";
 import { photoFor } from "@/lib/photos";
-import { fill } from "@/lib/format";
+import { fill, formatInteger, formatWithUnit } from "@/lib/format";
 import { netArea, askingPrice } from "@/lib/listingFigures";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { Logo } from "@/components/satkit";
@@ -150,7 +150,13 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
             </div>
           )}
           <div className="muted" style={{ fontSize: 11.5, lineHeight: 1.6, marginTop: 16 }}>
-            {`${pub.officeRent != null ? fill(t.officeAvg, { rate: pub.officeRent.toLocaleString("en-US") }) : ""}${t.indexSource}`}
+            {/* PKG-FIG2 closure, findings 131 and 132. This line read "Office average
+                {rate} SAR/m²/yr", which named a statistic the flyer never read and
+                spelled a unit the unit table already owns, beside a number formatted
+                by a raw `toLocaleString`. The figure is an average across the quoted
+                cells, which the label now says; the unit comes from those same cells
+                through `pub.unit`, and is simply absent when they do not agree. */}
+            {`${pub.officeRent != null ? fill(t.officeAvg, { rate: pub.unit ? formatWithUnit(pub.officeRent, pub.unit, locale, "short", 0) : formatInteger(pub.officeRent, locale) }) + ". " : ""}${t.indexSource}`}
             {pub.officeRent != null && pub.statements.map((s) => (
               <div key={s} style={{ marginTop: 4 }}>{s}</div>
             ))}

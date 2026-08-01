@@ -196,7 +196,10 @@ const ABOUT_BEFORE = /(?:around|about|approx(?:imately)?|circa|roughly|near(?:ly
 // The unit that makes a figure an area rather than money. Terminated on "not an
 // alphanumeric" rather than \b, because \b never fires after "²".
 const UNIT_END = "(?![0-9A-Za-z])";
-const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|م²|م2)${UNIT_END}`, "i");
+// An input grammar, not copy. It must accept the Latin and the Arabic
+// spelling of the same unit from the same query, which is the one case the
+// authorship rule below cannot tell apart from the defect it exists to catch.
+const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|م²|م2)${UNIT_END}`, "i"); // unit-law
 // "of" is deliberately absent from the size words: it would claim "a rent of 1,600"
 // as a floor area, which is the same misclassification the advisor was corrected for.
 const AREA_BEFORE = /(?:size|area|floorplate|مساحه|بمساحه)\s*(?:of\s*)?\D{0,4}$/i;

@@ -12,6 +12,7 @@ import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 import { getPublishedKpis } from "@/lib/market/published";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+import { normalizeStatisticKind, statisticLabel } from "@/lib/evidence";
 import { CHECK_METHODS, listingVerifiedDimensions, verifiedBadgeText } from "@/lib/listingVerification";
 
 export const revalidate = 600;
@@ -86,7 +87,16 @@ export default async function HomePage({ params }: { params: { locale: string } 
     }
     for (const r of quotedRows) {
       if (r.asset_type !== "office" || r.segment !== "all" || r.median == null) continue;
-      heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period });
+      // PKG-FIG2 closure, finding 130. The band caption used to read "average"
+      // from a frozen dictionary string while the figure beside it came from a
+      // column named `median`. This select has always carried `stat_kind` and
+      // this loop used to drop it. The label is resolved here, on the server,
+      // beside the row it describes, so a band cannot travel to the client
+      // without the statistic it is. A row whose `stat_kind` is missing
+      // resolves to "unknown" and renders as unlabelled rather than as an
+      // average; in practice the quote gate has already denied such a row,
+      // because `publishability` treats an unlabelled figure as not a figure.
+      heroBands.push({ en: r.district_label, ar: r.district_label_ar || r.district_label, low: Number(r.band_low), high: Number(r.band_high), median: Number(r.median), period: r.period, stat: statisticLabel(normalizeStatisticKind(r.stat_kind), ar) });
     }
     // Matches the English district_label stored in rent_index_published, not a
     // label shown to anyone, so it stays a literal.

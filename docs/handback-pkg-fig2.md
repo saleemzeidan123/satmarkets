@@ -151,8 +151,8 @@ narrow column can break is.
 
 ## 10. Tests and gates
 
-`npx tsc --noEmit` clean. `npm test`: 1489 tests, 1489 pass, 0 fail, up from 1483. `npm run ar-lint`
-clean with the new unit rule active. `node scripts/prose-scan.mjs` clean, 0 hardcoded prose strings
+`npx tsc --noEmit` clean. `npm test`: 1498 tests, 1498 pass, 0 fail, up from 1483. `npm run ar-lint`
+clean with the new unit rule and the new authorship rule both active. `node scripts/prose-scan.mjs` clean, 0 hardcoded prose strings
 in public page source. Production build evidence is the Vercel deployment reaching READY, since
 `npm run build` cannot complete in this environment: `next/font` reaches Google Fonts and egress is
 proxied.
@@ -163,6 +163,16 @@ Five new tests in `figureGrammar.test.ts` and one in `attributeDisplay.test.ts`.
 AR map and did call `toLocaleString` with `ar-SA`, `valueEvidence.ts` did spell an Arabic unit, and
 `format.ts` did not carry the `m` alias. A guard that cannot fail against the code it replaced is a
 claim, not a guard.
+
+The closure added six more, three for finding 131 and three for finding 132, and one behavioural
+assertion inside the finding 130 block. The falsification for the closure was run as a tree: the
+repository copied without `node_modules`, `.next` and `.git`, then the seven callers and both
+dictionaries overwritten from `git show HEAD`, leaving the new modules and the new tests in place.
+Five tests fail there, including all three finding 131 and 132 caller scans. One does not, and the
+reason is stated rather than hidden: `columnHeading.ts` is new, so reverting the callers does not
+exercise it. The rule it replaced, `rows[0].stat_kind`, is therefore written out inside the
+behavioural test and asserted to disagree with the new one, which is the only honest way to falsify a
+guard on code that did not previously exist.
 
 The class-closing guard is the one that walks `assetFields.ts` and asserts every unit the registry
 stores renders in Arabic script in Arabic. It is on the entry point rather than on the exits, so a
@@ -183,9 +193,27 @@ here, so the live evidence in section 12 covers the front door rather than the a
 `EditListingForm.tsx` and the Listing Studio sit behind a session, which the GET-only live channel
 cannot open. Their evidence is the source, the typecheck and the suite.
 
+The central claim of this package needs qualifying, and it is qualified here rather than left to be
+discovered. "One table for a unit" is true of the CODE: every surface that renders a unit now resolves
+it through `format.ts`, and a gate reads the canonical spellings out of that file rather than
+restating them. It is NOT yet true of the DICTIONARIES. Forty six unit shaped strings remain per
+locale. Most are legitimate sentences that name a unit as part of a label and would read worse as a
+template, but they are still forty six places where a unit is spelled outside the table, and the new
+authorship rule catches only the subset that puts Latin script into Arabic copy. The honest statement
+of where this package leaves the platform is: one table, one gate on spelling, one gate on authorship
+inside Arabic, and forty six remaining strings that no gate would notice if the canon changed.
+
+Neither the Rent Index nor the listings index cut can demonstrate the heading resolver's INTERESTING
+branch live, because live data has no disagreement in it: all seven published segments store one unit
+and one statistic. What the live payloads establish is that the agreeing case renders the resolved
+statistic and the full `SAR/m²/yr`, in both languages, where the shipped code rendered a typed
+`Average SAR/m²`. The disagreeing branches are covered by the behavioural tests and by nothing else,
+and nothing more is claimed for them.
+
 ## 12. Live evidence
 
-Recorded in section 13 after the deployment reached READY.
+Pending the deployment reaching READY. Filled below in this same section, not in section 13, which is
+blockers.
 
 ## 13. Blockers, unchanged
 

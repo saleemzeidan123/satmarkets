@@ -188,9 +188,25 @@ export const resolveUnitKey = (raw: string | null | undefined): UnitKey | null =
  * blank; the word joiners are still applied so it cannot break mid-token.
  */
 export function formatUnit(unit: string | null | undefined, locale: Loc = "en", length: "long" | "short" = "long"): string {
+  return joinUnit(unitText(unit, locale, length));
+}
+
+/**
+ * The same canonical unit, without the word joiners.
+ *
+ * PKG-FIG2 closure, finding 131. The joiner exists so a unit cannot break across
+ * two lines. A CSV that leaves the platform has no lines to break, and an
+ * invisible U+2060 inside a header cell is a control character in someone else's
+ * spreadsheet rather than a typographic decision: it survives a copy, it defeats
+ * an exact-match comparison, and nobody can see why.
+ *
+ * This is deliberately NOT a second table. It is the same lookup `formatUnit`
+ * does, and `formatUnit` is now defined in terms of it, so a unit cannot be
+ * spelled one way here and another way there.
+ */
+export function unitText(unit: string | null | undefined, locale: Loc = "en", length: "long" | "short" = "long"): string {
   const key = resolveUnitKey(unit);
-  const text = key ? UNITS[key][locale][length] : String(unit ?? "").trim();
-  return joinUnit(text);
+  return key ? UNITS[key][locale][length] : String(unit ?? "").trim();
 }
 
 /** A measured area: 2,000 m² / 2,000 م², isolated so the digits and unit stay adjacent in RTL. */

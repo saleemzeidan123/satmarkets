@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
+import { fill, unitText } from "@/lib/format";
 
 import SampleBanner from "@/components/SampleBanner";
 import { localeMeta } from "@/lib/meta";
@@ -21,7 +22,12 @@ export default function HbuPage({ params }: { params: { locale: string } }) {
  const kpis: [string, string, string, string | null][] = [
   ["64.8M", hb.kValue, "", null],
   ["6.8%", hb.netInitYield, hb.nVsDistrict, "up"],
-  ["4.40M", hb.kNoi, "", null],
+  // PKG-FIG2 closure, finding 131. This label carried its own spelling of the
+  // annual rent unit, in both dictionaries. The Arabic one happened to match the
+  // canon, which is why no gate saw it and why it is worth saying plainly: a
+  // gate that checks spelling cannot see authorship. The unit now comes from the
+  // table, in the reader's language, and the dictionary holds the sentence.
+  ["4.40M", fill(hb.kNoi, { unit: unitText("sar_year", ar ? "ar" : "en", "short") }), "", null],
   ["11.2%", hb.irr5, hb.nBaseCase, "up"],
   ["1.6×", hb.equityMult, hb.nOverHold, null],
   ["6.5%", hb.exitCapRate, hb.nAssumed, null],

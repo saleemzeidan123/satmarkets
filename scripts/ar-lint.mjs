@@ -174,15 +174,33 @@ if (CANON_UNITS.size < 10) {
 // A currency, a separator, then an area, a desk or a period. The second
 // separator is optional so "SAR/m²" is checked too.
 const UNIT_TOKEN = /(?:SAR|ريال)\s*[/·]\s*(?:m²|m2|sqm|م²|desk|مكتب|yr|year|mo|month|سنة|شهر|سنوياً|سنويا)(?:\s*[/·]\s*(?:m²|m2|sqm|م²|desk|مكتب|yr|year|mo|month|سنة|شهر|سنوياً|سنويا))?/g;
-const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+// PKG-FIG2 closure. Blanking a comment rather than deleting it, and blanking it
+// in place rather than collapsing it, is not tidiness. The `unit-law` exemption
+// this gate documents COULD NOT BE USED in a TypeScript file: the marker lives
+// in a comment, comments were removed before the marker was looked for, and a
+// block comment removed its own newlines on the way out, so every line number
+// after it moved. The exemption was reachable only from a `.json` file, which is
+// the one kind of file that cannot hold a comment at all. Nothing had used it
+// yet, so nothing was wrongly failed; the first line that needed it would have
+// been unable to pass. Line for line and column for column, the stripped text
+// now lines up with the file it came from.
+const stripComments = (s) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
+   .replace(/(^|[^:])\/\/[^\n]*/g, (m, p1) => p1 + " ".repeat(m.length - p1.length));
+// The marker is read from the ORIGINAL line, because the marker is a comment and
+// the text being scanned no longer has any.
+const exempt = (rawLines, i) => /unit-law/.test(rawLines[i] ?? "");
 for (const f of all) {
   if (f === path.normalize("src/lib/format.ts")) continue;
   if (/\.test\.tsx?$/.test(f)) continue;
   const raw = fs.readFileSync(f, "utf8");
   const body = /\.json$/.test(f) ? raw : stripComments(raw);
+  const rawLines = raw.split(/\r?\n/);
   const offenders = [];
-  for (const line of body.split(/\r?\n/)) {
-    if (/unit-law/.test(line)) continue;
+  const bodyLines = body.split(/\r?\n/);
+  for (let i = 0; i < bodyLines.length; i++) {
+    const line = bodyLines[i];
+    if (exempt(rawLines, i)) continue;
     for (const m of line.matchAll(UNIT_TOKEN)) {
       const s = m[0].trim();
       if (!CANON_UNITS.has(s)) offenders.push(s);
@@ -191,6 +209,71 @@ for (const f of all) {
   if (offenders.length) {
     const shown = [...new Set(offenders)].map((s) => JSON.stringify(s)).join(", ");
     console.error(`${f}: ${offenders.length}x non-canonical unit ${shown} -> render it with formatUnit() from src/lib/format.ts`);
+    bad++;
+  }
+}
+
+// PKG-FIG2 closure, finding 131. The rule above checks SPELLING. This one checks
+// AUTHORSHIP, and it exists because the rule above shipped with a hole its own
+// package walked straight through.
+//
+// The band caption on the front door read "average SAR/m²/yr" out of a frozen
+// dictionary string. `SAR/m²/yr` is the canon, so the spelling rule passed it,
+// in the same commit that rule was written to end this class. It was found by a
+// live sweep instead: five of the six unit occurrences on the deployed page
+// carried the word joiner `formatUnit` applies and one did not, because that one
+// never went through `formatUnit` at all. A gate that checks how a unit is
+// spelled cannot see who spelled it.
+//
+// The narrow half of that hole is checkable without ambiguity, so it is checked
+// here: a literal that carries ARABIC script may not also carry the ENGLISH
+// spelling of a unit. `ar.json` held four, "(SAR)" and "(SAR/yr)" inside Arabic
+// sentences, while their own on-screen siblings used ريال and ريال/سنة. The
+// prototype card held a fifth, "850 m²" on the Arabic listing card, two lines
+// below a unit this package had already rewired.
+//
+// The canonical sets are read from `format.ts` per locale, and a spelling that
+// is IDENTICAL in both languages is excluded: `%` is not evidence of anything.
+// Tokens shorter than two characters are excluded too, because the English
+// metre is `m` and a one-letter match inside Arabic prose would be noise rather
+// than a finding; that limit is the reason this rule is narrow and it is stated
+// rather than implied.
+//
+// A literal that must legitimately hold both is a user-input PARSER: the search
+// query grammar has to accept `m²` typed on an Arabic keyboard. Those lines
+// carry the same `unit-law` marker the spelling rule uses, so the exemption is a
+// visible decision in the diff.
+const localeUnits = (loc) =>
+  new Set([...unitsBlock.matchAll(new RegExp(`${loc}: \\{ long: "([^"]+)", short: "([^"]+)" \\}`, "g"))].flatMap((m) => [m[1], m[2]]));
+const EN_UNITS = localeUnits("en");
+const AR_UNITS = localeUnits("ar");
+const EN_ONLY = [...EN_UNITS].filter((u) => !AR_UNITS.has(u) && u.length >= 2).sort((a, b) => b.length - a.length);
+if (EN_ONLY.length < 8) {
+  console.error("ar-lint: could not read the per-locale UNITS out of src/lib/format.ts; the authorship rule is aimed at nothing");
+  bad++;
+}
+// A unit is a whole token. The right guard is not a word boundary: `_` is a word
+// character, so `SAR` matched inside the identifier `SAR_SQM_YR_AR` and accused
+// `decisionPack.ts` three times over of a defect it does not have.
+const enUnitIn = (s) => EN_ONLY.filter((u) => new RegExp(`(?<![A-Za-z0-9_])${u.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![A-Za-z0-9_])`).test(s));
+for (const f of all) {
+  if (f === path.normalize("src/lib/format.ts")) continue;
+  if (/\.test\.tsx?$/.test(f)) continue;
+  const raw = fs.readFileSync(f, "utf8");
+  const body = /\.json$/.test(f) ? raw : stripComments(raw);
+  const rawLines = raw.split(/\r?\n/);
+  const bodyLines = body.split(/\r?\n/);
+  const offenders = [];
+  for (let i = 0; i < bodyLines.length; i++) {
+    if (exempt(rawLines, i)) continue;
+    for (const s of bodyLines[i].match(LITERAL) || []) {
+      if (!ARABIC_SCRIPT.test(s)) continue;
+      offenders.push(...enUnitIn(s));
+    }
+  }
+  if (offenders.length) {
+    const shown = [...new Set(offenders)].map((s) => JSON.stringify(s)).join(", ");
+    console.error(`${f}: ${offenders.length}x English unit ${shown} inside Arabic copy -> the Arabic reader gets the Arabic spelling; take it from format.ts with a {unit} slot`);
     bad++;
   }
 }

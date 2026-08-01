@@ -10,7 +10,11 @@ import WatchBanner from "@/components/WatchBanner";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 import { assetLabel, segmentLabel } from "@/lib/labels";
-import { fill, formatInteger, formatUnit } from "@/lib/format";
+import { formatInteger } from "@/lib/format";
+// PKG-FIG2 closure, finding 132. The heading over a column of figures, and
+// the unit beside a derived one, read off the records rather than typed above
+// them.
+import { appendUnit, figureCellOf, statUnitHeading, withUnit, type FigureCell } from "@/lib/market/columnHeading";
 import EvidencePassport from "@/components/EvidencePassport";
 import { type PublicEvidenceView, evidenceStateLabel, publicSourceText } from "@/lib/evidenceView";
 import { type PublicQuoteKind, quoteStatement } from "@/lib/publicQuote";
@@ -76,6 +80,16 @@ type DRow = {
   /** The one decision, for the row's headline figure. Drives what Source says. */
   quote: PublicQuoteKind;
   evidence: Map<string, PublicEvidenceView>;
+  /**
+   * PKG-FIG2 closure, finding 132. What this row's figure actually is: its
+   * statistic and its unit, as stored, not as described in the header above it.
+   *
+   * It is carried on the row rather than recomputed at the table because the
+   * narrow select does not fetch `unit`, and a heading built from a second read
+   * could name a unit the row it sits over never had. One read, on the same
+   * object the figure came from.
+   */
+  figureCell: FigureCell;
 };
 
 export function generateMetadata({ params }: { params: { locale: string } }) {
@@ -88,6 +102,10 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;
+ // The one sentence shape that puts a quantity word and a unit together. Shared
+ // with the front door and the listings index cut, so a heading cannot be
+ // punctuated one way here and another way there.
+ const C = getDictionary(params.locale === "ar" ? "ar" : "en").common;
  const pub = await getPublishedKpis(ar ? "ar" : "en");
 
  // This page used to carry its own asset table and its own segment table, a
@@ -161,6 +179,10 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      simulated: rentIndexRecordClassOf(cell) === "flagged_simulated",
      quote: avg?.quote ?? bandView?.quote ?? "unavailable",
      evidence,
+     // Fails closed by construction: the narrow select carries no `unit`, so a
+     // fallback query costs the heading its unit rather than letting it assume
+     // one.
+     figureCell: figureCellOf(r),
     };
    });
   }
@@ -204,12 +226,18 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
  // language, which is how "SAR/m\u00b2\u00b7yr" came to be spelled here and in the unit
  // table separately. The period tile printed the raw "2026-06" from the database
  // while the eyebrow eight lines below printed the same period formatted.
- const rentUnit = formatUnit("sar_sqm_year", loc, "short");
+ // PKG-FIG2 closure, finding 132. `formatUnit("sar_sqm_year", ...)` used to
+ // stand here: the page naming the unit of a figure it had not looked at. The
+ // unit now comes from `pub`, which resolved it from the same quoted cells the
+ // two rent figures were averaged over, and is null the moment those cells stop
+ // agreeing. Two tiles then read "Office rent, average across cells" with no
+ // unit, which is the honest reading of a set that has none.
+ const cells = districts.map((d) => d.figureCell);
  const kpis: [string, string, string, string | null][] = [
   [pub.officeRent != null ? formatInteger(pub.officeRent, loc) : ri.na,
-   fill(ri.kpiOffice, { unit: rentUnit }), ri.kpiContracts, null],
+   appendUnit(ri.kpiOffice, pub.unit, loc, C.statUnit), ri.kpiContracts, null],
   [pub.retailRent != null ? formatInteger(pub.retailRent, loc) : ri.na,
-   fill(ri.kpiRetail, { unit: rentUnit }), ri.kpiContracts, null],
+   appendUnit(ri.kpiRetail, pub.unit, loc, C.statUnit), ri.kpiContracts, null],
   [formatInteger(pub.cells, loc), ri.kpiCells, ri.kpiCellsSub, null],
   [formatInteger(pub.districts, loc), ri.kpiDistricts, pub.period ? formatPeriod(pub.period, ar) : ri.na, null],
  ];
@@ -309,7 +337,11 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
      {/* heat map */}
      <div className="card pad" style={{ boxShadow: "var(--sh-1)" }}>
       <div style={{ fontSize: 15, fontWeight: 700 }}>{ri.heatT}</div>
-      <div className="muted" style={{ fontSize: 12.5 }}>{ri.heatSubReal}</div>
+      {/* The unit was spelled in this sentence, in both dictionaries, over cells
+          whose unit nothing here read. It is now the unit the cells agree on, or
+          absent. The thin-sample clause is a second string so the first can end
+          where the unit does. */}
+      <div className="muted" style={{ fontSize: 12.5 }}>{withUnit(ri.heatSubReal, cells, loc, C.statUnit) + ". " + ri.heatSubRealThin}</div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
        {(() => {
         const vals = districts.map((d) => Number(String(d.figure).replace(/[^0-9.]/g, "")) || 0);
@@ -345,7 +377,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
       </div>
       <div style={{ overflowX: "auto" }}>
        <table className="dt" style={{ minWidth: 640 }}>
-        <thead><tr><th>{ri.thLocation}</th><th>{ri.thAsset}</th><th style={{ textAlign: "right" }}>{ri.thMedian}</th><th style={{ textAlign: "right" }}>{ri.thBand}</th><th style={{ textAlign: "right" }}>{ri.thData}</th><th style={{ textAlign: "right" }}>{ri.thSource}</th></tr></thead>
+        <thead><tr><th>{ri.thLocation}</th><th>{ri.thAsset}</th><th style={{ textAlign: "right" }}>{statUnitHeading(cells, loc, { neutral: ri.thStat, pattern: C.statUnit })}</th><th style={{ textAlign: "right" }}>{withUnit(ri.thBand, cells, loc, C.statUnit)}</th><th style={{ textAlign: "right" }}>{ri.thData}</th><th style={{ textAlign: "right" }}>{ri.thSource}</th></tr></thead>
         <tbody>
          {districts.map((d, i) => (
           <tr key={i}>

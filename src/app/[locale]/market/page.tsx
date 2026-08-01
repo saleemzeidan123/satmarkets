@@ -11,6 +11,9 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
+// PKG-FIG2 closure, finding 132. The KPI label named a statistic and spelled a
+// unit; both now come from the rows the KPI was computed over.
+import { figureCellOf, withUnit } from "@/lib/market/columnHeading";
 
 export const revalidate = 1800;
 
@@ -24,6 +27,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
   const locale = params.locale;
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").marketPage;
+  const C = getDictionary(ar ? "ar" : "en").common;
   const brand = getDictionary(ar ? "ar" : "en").appMeta.appName;
   const sb = getSupabaseServer();
   const nf = (n: number) => n.toLocaleString("en-US");
@@ -91,7 +95,13 @@ export default async function MarketPage({ params }: { params: { locale: string 
     [nf(listings.length), t.kpiSpaces],
     [nf(locCount), t.kpiLocations],
     [nf(idxRows.length), t.kpiSegments],
-    [medOffice != null ? nf(medOffice) : (t.kpiNa), t.kpiMedianOffice],
+    // The label read "average office rent SAR/m²/yr" over a figure that is the
+    // middle of the sorted office cells, not their mean. It is a median, the key
+    // name always said so, and only the value disagreed. `officeRows` is already
+    // filtered to `isSqmYear`, so the unit here will agree today; it is resolved
+    // rather than assumed so that it stops agreeing out loud when a second unit
+    // enters the index.
+    [medOffice != null ? nf(medOffice) : (t.kpiNa), withUnit(t.kpiMedianOffice, officeRows.map(figureCellOf), ar ? "ar" : "en", C.statUnit)],
   ];
 
   const disc = [

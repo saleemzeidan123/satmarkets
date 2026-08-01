@@ -1,7 +1,7 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
-import { formatUnit } from "@/lib/format";
+import { formatArea, formatUnit } from "@/lib/format";
 
 // Design-system reference (Verified Ground). Route-flagged prototype for the
 // approved redesign: renders the token roles and the core shared components so
@@ -79,7 +79,12 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
             <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Ownership verified", "الملكية موثّقة")}</span>
             <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t(formatUnit("sar_sqm_year", "en", "short"), formatUnit("sar_sqm_year", "ar", "short"))}</span></div>
             <div style={{ fontWeight: 600 }}>{t("Grade A Office, Al Olaya", "مكتب الفئة A، العليا")}</div>
-            <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · 850 m²", "العليا · 850 m²")}</div>
+            {/* PKG-FIG2 closure, finding 131. The line above this one was rewired to
+                the unit table in this very package and this one was not, two lines
+                apart in the same file, because the sweep looked for wrong spellings
+                and this spelling was right. It was right in the wrong language: the
+                Arabic card read "850 m²" in Latin script. */}
+            <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · " + formatArea(850, "en"), "العليا · " + formatArea(850, "ar"))}</div>
             <div style={{ fontSize: 12.5, color: "var(--amber)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>
           </div>
         </div>

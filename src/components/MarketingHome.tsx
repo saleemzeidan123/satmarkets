@@ -6,10 +6,21 @@ import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satki
 import Reveal from "@/components/Reveal";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
-import { formatInteger, formatRange, formatUnit } from "@/lib/format";
+// PKG-FIG2 closure, finding 132. Type only, so nothing server-side is pulled
+// into the client bundle. The prop used to restate this shape by hand, which
+// is how it came to say `stat: "average" | "median" | null` over a producer
+// that can also answer "single", "count", "range", "rate" or "index". A second
+// copy of a type is the same defect as a second copy of a unit table.
+import type { PublishedKpis } from "@/lib/market/published";
+import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; badges: string[]; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
-export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
+// PKG-FIG2 closure, finding 130. `stat` is the statistic the row itself records,
+// already resolved into the reader's language by the server, for the same reason
+// `bandNotes` is a prop: the decision is a server one and a client that could
+// re-derive it could also re-derive it wrongly. It is not optional and it has no
+// default, so a caller cannot obtain a band without saying what the figure is.
+export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string; stat: string };
 type Stats = { listings: string | null; buildings: string | null; districts: string | null; verifiedPct: string | null };
 
 const ASSETS = [
@@ -35,7 +46,7 @@ const ASSETS = [
 // component is a client component and the decision is a server one: a client
 // that could re-derive the sentence could also re-derive it wrongly, and the
 // figure and its sentence must come from the same place.
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: { period: string | null; source: string | null; stat: "average" | "median" | null; officeRent: number | null; retailRent: number | null; cells: number; districts: number } }) {
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: PublishedKpis }) {
  const router = useRouter();
  const ar = locale === "ar";
  // PKG-FIG1, finding 125. These three figures are the published Rent Index band,
@@ -46,6 +57,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  // defect as finding 123, on the one page every visitor sees first.
  const fig = (n: number) => formatInteger(Math.round(n), ar ? "ar" : "en");
  const H = getDictionary(ar ? "ar" : "en").home;
+ // PKG-FIG2 closure, finding 132. The pattern that puts a quantity word beside
+ // a unit is one sentence shape used by the front door, the Rent Index and the
+ // listings index cut. A second copy under `home` would be the second table this
+ // package exists to remove.
+ const C = getDictionary(ar ? "ar" : "en").common;
  // PKG-FIG2, finding 129. The lease unit was spelled twice in this file's own
  // copy objects, once per language. The Arabic spelling happened to match the
  // table; the English one, " SAR/m²·yr", did not, and it was live on the front
@@ -433,7 +449,23 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
         <span className="mono" style={{ fontSize: 44, fontWeight: 500, lineHeight: 1 }}>{fig(band.median)}</span>
-        <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{H.medianUnit}</span>
+        {/* PKG-FIG2 closure, findings 129 and 130. This caption used to be one
+            frozen dictionary string, "average SAR/m²/yr", and it was wrong in
+            two independent ways at once.
+            It spelled the unit, so it was a fifth place the platform's
+            most-used unit was written down, and the live payload showed it: it
+            was the one occurrence of six on this page carrying no word joiner,
+            because the joiner is applied by `formatUnit` and this string never
+            went through it. The ar-lint rule shipped in this package could not
+            see it, because that rule fires on a spelling that differs from the
+            canon and this spelling matched.
+            And it asserted the statistic. The word "average" was fixed in the
+            dictionary above a figure read from a column named `median`, which
+            is the exact confusion Law 6 and ADV-1D exist to prevent, on the
+            first screen of the site. `rentIndexEvidence.ts` states the rule
+            plainly: the statistic comes from the row's own `stat_kind` and from
+            nothing else. It now does here too. */}
+        <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{fill(C.statUnit, { stat: band.stat, unit: unitShort })}</span>
        </div>
        <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{/* PKG-FIG1, finding 127. The connective was spelled here too, in both
            languages, on the site's front door. `formatRange` is the one place
