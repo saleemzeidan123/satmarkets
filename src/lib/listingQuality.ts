@@ -34,6 +34,7 @@
 
 import { formatCounted } from "./format";
 import { fieldsFor, hasRegistry, type AssetField, type DisplaySection } from "./assetFields";
+import { isLocationContradicted, type LocationConsistency } from "./locationConsistency";
 
 export type QualityScope =
   | "identity" | "space" | "commercial" | "media" | "location" | "compliance" | "contact";
@@ -68,7 +69,8 @@ export type ContradictionKind =
   | "expiry_before_publication"
   | "permit_expired_while_published"
   | "mezzanine_over_area"
-  | "value_outside_declared_range";
+  | "value_outside_declared_range"
+  | "pin_disagrees_with_recorded_location";
 
 export interface Contradiction {
   kind: ContradictionKind;
@@ -130,6 +132,18 @@ export interface ListingFacts {
   // caller that knows the media count passes it here; one that does not leaves it
   // undefined and the check falls back to the column alone.
   floorplan_count?: number | null;
+  // Finding 137. The verdict from `locationConsistency.ts`, computed by the
+  // caller and passed in whole rather than derived here. This module owns no
+  // geometry and must not learn any: it holds no location table, no centroid and
+  // no distance model, and a quality module that started fetching one would be
+  // the second place in the codebase able to decide what a district is. The
+  // verdict arrives carrying its own bilingual statement, so the contradiction
+  // below is a relay rather than a second opinion. Absent means nobody checked,
+  // which is silence, and silence raises nothing here. `launchGate.ts` is where
+  // an unchecked row is a blocker, because that is the file that decides what
+  // may count as production inventory. D24 still holds: nothing here produces a
+  // colour or a public badge.
+  location_consistency?: LocationConsistency | null;
   [key: string]: unknown;    // registry fields that map to a typed column
 }
 
@@ -508,6 +522,23 @@ export function contradictionsOf(facts: ListingFacts, now: number = Date.now()):
           : `${field.label_ar} يساوي ${fmt(value)}، وهو فوق الحد الأعلى المعلن ${fmt(bound)}.`,
       });
     }
+  }
+
+  // Finding 137. A map pin that cannot describe the same building as the location
+  // on file is a contradiction of exactly the kind this list already carries: two
+  // recorded facts that cannot both be true. It is relayed, not recomputed. The
+  // statement comes from `locationConsistency.ts` in the lister's own language and
+  // names no column, no table and no distance model, and any verdict other than
+  // `contradicted` raises nothing, including the ones that mean the comparison
+  // could not be made.
+  const lc = facts.location_consistency;
+  if (isLocationContradicted(lc) && lc?.statement_en && lc?.statement_ar) {
+    out.push({
+      kind: "pin_disagrees_with_recorded_location",
+      fields: ["lat", "lng", "district_id"],
+      statement_en: lc.statement_en,
+      statement_ar: lc.statement_ar,
+    });
   }
 
   return out;

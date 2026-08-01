@@ -6,6 +6,7 @@ import { coerceAndValidateAttributes, editedAttributesJson } from "@/lib/intakeV
 import { intakeFields } from "@/lib/assetFields";
 import { mayEdit, mayFillAbsent, stageOf } from "@/lib/listingEdit";
 import { hashSource } from "@/lib/translate/translateToArabic";
+import { assessLocationConsistency } from "@/lib/locationConsistency";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const { data: listing } = await sb
     .from("listings")
-    .select("id, account_id, deal_type, asset_type, attributes, status, title_en, description_en, lat, lng")
+    .select("id, account_id, deal_type, asset_type, attributes, status, title_en, description_en, lat, lng, district_id")
     .eq("id", params.id)
     .single();
   if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
@@ -149,6 +150,43 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     patch.lat = lat;
     patch.lng = lng;
+  }
+  // Finding 137. The first pin on a published listing is the one location write
+  // that lands without SAT reading it first, so it is the one that must not
+  // silently contradict the location already on file. SAT holds no boundaries, so
+  // this is not a containment test: it is the only thing a set of centroids can
+  // honestly say, which is that two points are too far apart to describe the same
+  // building. Under the floor nothing is asserted either way, because a coarse
+  // centroid inside one city proves nothing. The refusal carries both languages
+  // and names no column, no table and no distance model.
+  if (typeof patch.lat === "number" && typeof patch.lng === "number") {
+    const recordedId = (listing as { district_id?: string | null }).district_id ?? null;
+    if (recordedId) {
+      const { data: recorded } = await sb
+        .from("districts_geo")
+        .select("id,name_en,name_ar,lat,lng,kind")
+        .eq("id", recordedId)
+        .maybeSingle();
+      const row = recorded as Record<string, unknown> | null;
+      const verdict = assessLocationConsistency({
+        lat: patch.lat,
+        lng: patch.lng,
+        recorded: row
+          ? {
+              id: String(row.id), name_en: String(row.name_en ?? ""),
+              name_ar: (row.name_ar as string | null) ?? null,
+              kind: (row.kind as string | null) ?? null,
+              lat: Number(row.lat), lng: Number(row.lng),
+            }
+          : null,
+      });
+      if (verdict.verdict === "contradicted") {
+        return NextResponse.json(
+          { error: verdict.statement_en, error_ar: verdict.statement_ar, code: "location_contradiction" },
+          { status: 409 },
+        );
+      }
+    }
   }
   if (typeof body.district_id === "string" && can("district_id")) {
     patch.district_id = body.district_id || null;

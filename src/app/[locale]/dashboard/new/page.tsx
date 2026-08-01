@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { intakeFields } from "@/lib/assetFields";
 import { PLATFORM_OWNED_FIELD_KEYS } from "@/lib/listingQuality";
+import type { LocationPoint } from "@/lib/nearestLocation";
 import ListingStudio, { type StudioInitial } from "@/components/ListingStudio";
 
 // Creating a listing and resuming one are the same surface.
@@ -44,9 +45,27 @@ export default async function NewListingPage({
   if (!su.accountId) redirect(`/${locale}/signup`);
   // The Studio never carries the account id. The write path derives it from the
   // session, so a value in the browser could only ever be decoration or a lie.
-  // District centroids (with coordinates) power the map location picker: the lister
-  // pins the building and the nearest centroid derives the district.
-  const { data: districts } = await sb.from("districts_geo").select("id, name_en, name_ar, city, lat, lng").order("city");
+  // Location centroids power the map location picker: the lister pins the building
+  // and the closest location is offered when none is on file.
+  // PKG-ELITE-E1 slice C. `districts_geo` is read for the point and the kind only,
+  // and the city comes from `districts`, which is the pairing the public listings
+  // map already uses (PKG-NM1). The previous select asked `districts_geo` for a
+  // city column and ordered by it, and if that view does not carry one PostgREST
+  // returns an error and the picker silently receives an empty list. `kind`
+  // travels with each row so the picker can keep Law 7 and never label a
+  // development a district.
+  const [{ data: geoRows }, { data: cityRows }] = await Promise.all([
+    sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind"),
+    sb.from("districts").select("id,city"),
+  ]);
+  const cityById = new Map<string, string | null>((cityRows ?? []).map((d: any) => [d.id, d.city ?? null]));
+  const districts: LocationPoint[] = (geoRows ?? [])
+    .map((g: any) => ({
+      id: String(g.id), name_en: g.name_en, name_ar: g.name_ar,
+      city: cityById.get(String(g.id)) ?? null, kind: g.kind ?? null,
+      lat: Number(g.lat), lng: Number(g.lng),
+    }))
+    .sort((a, b) => (a.city ?? "").localeCompare(b.city ?? ""));
 
   const draftId = String(searchParams?.draft ?? "").trim();
   let initial: StudioInitial | null = null;
@@ -128,7 +147,7 @@ export default async function NewListingPage({
           : locale === "ar" ? "عرض جديد" : "New listing"}
       </h1>
       <div className="mt-6">
-        <ListingStudio locale={locale} districts={(districts as any) ?? []} initial={initial} />
+        <ListingStudio locale={locale} districts={districts} initial={initial} />
       </div>
     </section>
   );

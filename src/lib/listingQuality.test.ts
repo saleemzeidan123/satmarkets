@@ -18,8 +18,21 @@ import {
   type QualityScope,
 } from "./listingQuality";
 import { ASSET_FIELDS } from "./assetFields";
+import { assessLocationConsistency } from "./locationConsistency";
 
 const NOW = Date.parse("2026-07-28T00:00:00Z");
+
+// Finding 137. A real verdict rather than a hand-built object, so the relay is
+// tested end to end: a pin on the Jeddah corniche against a listing that records
+// Al Olaya in Riyadh, which are roughly 850 km apart and cannot both describe one
+// building. Built through the real module so that if its wording, its threshold
+// or its verdict names change, this test moves with it instead of passing on a
+// shape that no longer exists.
+const PIN_CONTRADICTS_RECORD = assessLocationConsistency({
+  lat: 21.5433,
+  lng: 39.1728,
+  recorded: { id: "olaya", name_en: "Al Olaya", name_ar: "العليا", city: "riyadh", kind: "district", lat: 24.6926, lng: 46.6857 },
+});
 
 // A listing with every essential supplied and no contradiction, used as the base
 // that each negative case perturbs by exactly one field.
@@ -320,6 +333,7 @@ test("each contradiction kind fires on its own case and on nothing else", () => 
     ["permit_expired_while_published", { ...complete(), ad_permit_expires_at: "2026-01-01T00:00:00Z" }],
     ["mezzanine_over_area", { ...complete(), asset_type: "warehouse", attributes: { mezzanine_gla_sqm: 900 } }],
     ["value_outside_declared_range", { ...complete(), attributes: { floor_efficiency_pct: 140 } }],
+    ["pin_disagrees_with_recorded_location", { ...complete(), location_consistency: PIN_CONTRADICTS_RECORD }],
   ];
   for (const [kind, facts] of cases) {
     const kinds = contradictionsOf(facts, NOW).map((c) => c.kind);
@@ -505,4 +519,40 @@ test("neither a link nor an uploaded plan still reads missing", () => {
   assert.equal(state({ ...base, floorplan_count: undefined }), "missing");
   // The column on its own is unchanged by any of this.
   assert.equal(state({ ...complete(), floorplan_count: 0 }), "present");
+});
+
+test("finding 137: only a contradicted pin is relayed, and it is relayed rather than restated", () => {
+  // The statement is the one `locationConsistency.ts` wrote. This module holds no
+  // location table, no centroid and no distance model, so it has nothing of its
+  // own to say about geography and must not appear to.
+  const found = contradictionsOf({ ...complete(), location_consistency: PIN_CONTRADICTS_RECORD }, NOW);
+  const c = found.find((x) => x.kind === "pin_disagrees_with_recorded_location");
+  assert.ok(c, "the contradicted verdict did not reach the lister");
+  assert.equal(c?.statement_en, PIN_CONTRADICTS_RECORD.statement_en);
+  assert.equal(c?.statement_ar, PIN_CONTRADICTS_RECORD.statement_ar);
+  assert.deepEqual(c?.fields, ["lat", "lng", "district_id"]);
+
+  // Law 7 travels with the statement: the recorded row is a district here and is
+  // named as one, and nothing in the relay can turn a development into a district
+  // because the relay writes no words at all.
+  assert.match(c?.statement_en ?? "", /Al Olaya \(District\)/);
+
+  // Every other verdict is silence. Two of these mean the comparison could not be
+  // made, and a comparison that did not happen is not a finding. `launchGate.ts`
+  // is where an unchecked row is a blocker, because that is the file deciding
+  // what may count as production inventory; a completeness list that shouted
+  // about it would be reporting its own ignorance as the lister's error.
+  const quiet = ["no_pin", "no_location_recorded", "unverifiable", "consistent_unverified"] as const;
+  for (const verdict of quiet) {
+    const facts: ListingFacts = {
+      ...complete(),
+      location_consistency: { ...PIN_CONTRADICTS_RECORD, verdict },
+    };
+    const kinds = contradictionsOf(facts, NOW).map((x) => x.kind);
+    assert.ok(!kinds.includes("pin_disagrees_with_recorded_location"), `${verdict} was reported`);
+  }
+
+  // Absent means nobody checked, and nobody checked is not an accusation either.
+  assert.deepEqual(contradictionsOf({ ...complete(), location_consistency: null }, NOW), []);
+  assert.deepEqual(contradictionsOf(complete(), NOW), []);
 });

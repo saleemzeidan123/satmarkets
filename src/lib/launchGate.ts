@@ -1,6 +1,7 @@
 import { simulatedRowsAreLabelled } from "./inventory";
+import type { LocationConsistencyVerdict } from "./locationConsistency";
 
-// SAT Markets. The five facts that stand between a stored row and a production
+// SAT Markets. The facts that stand between a stored row and a production
 // inventory claim, kept apart from each other on purpose.
 //
 // ADV-1C.1 correction 1. Codex: "`is_demo = false` does not establish that a
@@ -24,12 +25,19 @@ import { simulatedRowsAreLabelled } from "./inventory";
 //   2. preview environment status  is this deployment labelling what it shows
 //   3. publication authorization   has anyone authorized production display
 //   4. availability freshness      is the row still known to be available
-//   5. production count eligibility the conclusion, never an input
+//   5. location consistency        does the pin contradict the location on file
+//   6. production count eligibility the conclusion, never an input
 //
 // The third has no column behind it today. It is therefore `not_recorded` for
 // every row in the corpus, and the gate fails closed on it. That is not a
 // placeholder waiting to be softened: an authorization nobody recorded must read
 // as absent, because the alternative is the exchange authorizing itself.
+//
+// The fifth arrived with finding 137. A row whose map pin and recorded location
+// cannot both describe the same building is not fit to be counted as production
+// inventory, whatever else is true of it, and a row nobody checked is not fit
+// either. Both read as blockers for the same reason the third does: this file
+// treats a missing answer as a missing answer, never as a yes.
 
 /** Did anything flag this row as simulated. A null is not a no. */
 export type RecordDemoStatus = "flagged_simulated" | "not_flagged" | "unknown";
@@ -52,6 +60,15 @@ export type PublicationAuthorization =
 /** Is the row still known to be available, or has nobody confirmed it lately. */
 export type AvailabilityFreshness = "fresh" | "stale" | "unknown";
 
+/**
+ * Does the map pin contradict the location on file.
+ *
+ * Three values and no fourth. There is deliberately no `confirmed` state, because
+ * SAT holds one point per location and no boundaries, so nothing here can ever
+ * confirm that a pin lies inside anything. See `locationConsistency.ts`.
+ */
+export type LocationConsistencyFact = "contradicted" | "not_contradicted" | "not_checked";
+
 /** Why a row may not be counted. Named per cause, never collapsed into one. */
 export type ProductionCountBlocker =
   | "record_is_flagged_simulated"
@@ -60,13 +77,16 @@ export type ProductionCountBlocker =
   | "production_display_not_authorized"
   | "production_display_refused"
   | "availability_stale"
-  | "availability_freshness_unknown";
+  | "availability_freshness_unknown"
+  | "location_contradicts_pin"
+  | "location_consistency_not_checked";
 
 export type InventoryRecordFacts = {
   readonly recordDemoStatus: RecordDemoStatus;
   readonly previewEnvironment: PreviewEnvironment;
   readonly publicationAuthorization: PublicationAuthorization;
   readonly availabilityFreshness: AvailabilityFreshness;
+  readonly locationConsistency: LocationConsistencyFact;
 };
 
 /** The conclusion. `blockers` is empty if and only if `eligible` is true. */
@@ -79,6 +99,13 @@ export type ProductionCountEligibility = {
 export type InventoryRowShape = {
   readonly is_demo?: boolean | null;
   readonly availability_confirmed_at?: string | null;
+  /**
+   * The verdict from `locationConsistency.ts`, computed by the caller and carried
+   * on the row shape rather than recomputed here. This module reads facts; it does
+   * not fetch a location table, and it must stay free of geometry. Absent means
+   * nobody checked, which is a blocker.
+   */
+  readonly location_consistency?: LocationConsistencyVerdict | null;
 };
 
 /**
@@ -130,18 +157,33 @@ export function availabilityFreshnessOf(row: InventoryRowShape, now = new Date()
 /** How recently availability must have been confirmed to count as fresh. */
 export const AVAILABILITY_FRESH_DAYS = 30;
 
-/** All four facts for one row, in this deployment, now. */
+/**
+ * Fact 5. Finding 137, read rather than computed.
+ *
+ * `unverifiable` maps to `not_checked` on purpose. It is the state where SAT holds
+ * no point for the recorded location, so the comparison did not happen; calling
+ * that "not contradicted" would let an unanswered question count as an answer.
+ */
+export function locationConsistencyOf(row: InventoryRowShape): LocationConsistencyFact {
+  const v = row.location_consistency;
+  if (v === "contradicted") return "contradicted";
+  if (v === "consistent_unverified" || v === "no_pin" || v === "no_location_recorded") return "not_contradicted";
+  return "not_checked";
+}
+
+/** Every input fact for one row, in this deployment, now. */
 export function inventoryRecordFacts(row: InventoryRowShape, now = new Date()): InventoryRecordFacts {
   return {
     recordDemoStatus: recordDemoStatusOf(row),
     previewEnvironment: previewEnvironmentNow(),
     publicationAuthorization: publicationAuthorizationOf(row),
     availabilityFreshness: availabilityFreshnessOf(row, now),
+    locationConsistency: locationConsistencyOf(row),
   };
 }
 
 /**
- * Fact 5, and the only one that is a conclusion.
+ * The last fact, and the only one that is a conclusion.
  *
  * Every blocker is listed rather than the first one returned, because a caller
  * writing an owner report needs to know everything standing in the way, and
@@ -157,6 +199,8 @@ export function productionCountEligibility(f: InventoryRecordFacts): ProductionC
   if (f.publicationAuthorization === "refused") blockers.push("production_display_refused");
   if (f.availabilityFreshness === "stale") blockers.push("availability_stale");
   if (f.availabilityFreshness === "unknown") blockers.push("availability_freshness_unknown");
+  if (f.locationConsistency === "contradicted") blockers.push("location_contradicts_pin");
+  if (f.locationConsistency === "not_checked") blockers.push("location_consistency_not_checked");
   return { eligible: blockers.length === 0, blockers };
 }
 

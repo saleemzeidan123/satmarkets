@@ -18,6 +18,8 @@ import { intakeFields } from "@/lib/assetFields";
 import { listingTitle, titleMissingIn } from "@/lib/listingTitle";
 import { arabicIsBehind } from "@/lib/listingArabic";
 import { hashSource } from "@/lib/translate/hash";
+import type { LocationPoint } from "@/lib/nearestLocation";
+import { assessLocationConsistency, type LocationConsistency } from "@/lib/locationConsistency";
 
 const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 
@@ -118,11 +120,42 @@ export default async function ManageListingPage({ params }: { params: { locale: 
     .select("id", { count: "exact", head: true })
     .eq("listing_id", params.id)
     .is("deleted_at", null);
+  // Finding 137. Whether the pin and the location on file can describe the same
+  // building is read here, on the one row the lister is looking at, and one row
+  // of the location table is all it costs: the recorded id resolved directly. It
+  // is deliberately NOT inside the `mayPin` branch below. Whether a lister is
+  // allowed to move the pin and whether the pin already contradicts the record
+  // are different questions, and a listing that cannot be repinned from here is
+  // exactly the one whose contradiction has to reach a human some other way. SAT
+  // holds no boundaries, so this can only ever say the two are too far apart to
+  // both be true, never that they match.
+  let locationConsistency: LocationConsistency | null = null;
+  if (L.lat != null && L.lng != null && L.district_id) {
+    const { data: recordedRow } = await sb
+      .from("districts_geo")
+      .select("id,name_en,name_ar,lat,lng,kind")
+      .eq("id", L.district_id)
+      .maybeSingle();
+    const r = recordedRow as Record<string, unknown> | null;
+    locationConsistency = assessLocationConsistency({
+      lat: Number(L.lat),
+      lng: Number(L.lng),
+      recorded: r
+        ? {
+            id: String(r.id), name_en: String(r.name_en ?? ""),
+            name_ar: (r.name_ar as string | null) ?? null,
+            kind: (r.kind as string | null) ?? null,
+            lat: Number(r.lat), lng: Number(r.lng),
+          }
+        : null,
+    });
+  }
   const facts: ListingFacts = {
     ...(L as Record<string, unknown>),
     photo_count: photos.length,
     floorplan_count: floorplans.length,
     document_count: brochures.length + (legalDocCount ?? 0),
+    location_consistency: locationConsistency,
   };
   const quality = assessListing(facts);
 
@@ -134,9 +167,28 @@ export default async function ManageListingPage({ params }: { params: { locale: 
   const stage = stageOf(L.status);
   const pinned = L.lat != null && L.lng != null;
   const mayPin = mayFillAbsent("lat", stage, pinned);
-  const districts = mayPin
-    ? (await sb.from("districts_geo").select("id, name_en, name_ar, city, lat, lng").order("city")).data ?? []
-    : [];
+  // PKG-ELITE-E1 slice C. `districts_geo` is read for the point and the kind only,
+  // and the city comes from `districts`, which is the pairing the public listings
+  // map already uses (PKG-NM1). The previous select asked `districts_geo` for a
+  // city column and ordered by it, and if that view does not carry one PostgREST
+  // returns an error and the picker silently receives an empty list. `kind`
+  // travels with each row so the picker can keep Law 7 and never label a
+  // development a district.
+  let districts: LocationPoint[] = [];
+  if (mayPin) {
+    const [{ data: geoRows }, { data: cityRows }] = await Promise.all([
+      sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind"),
+      sb.from("districts").select("id,city"),
+    ]);
+    const cityById = new Map<string, string | null>((cityRows ?? []).map((d: any) => [d.id, d.city ?? null]));
+    districts = (geoRows ?? [])
+      .map((g: any) => ({
+        id: String(g.id), name_en: g.name_en, name_ar: g.name_ar,
+        city: cityById.get(String(g.id)) ?? null, kind: g.kind ?? null,
+        lat: Number(g.lat), lng: Number(g.lng),
+      }))
+      .sort((a, b) => (a.city ?? "").localeCompare(b.city ?? ""));
+  }
 
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
@@ -232,7 +284,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
           mayPin={mayPin}
           pinned={pinned}
           draft={stage === "draft"}
-          districts={districts as any}
+          districts={districts}
           init={{
             title_en: L.title_en || "",
             title_ar: L.title_ar || "",

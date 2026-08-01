@@ -7,6 +7,7 @@ import {
   indexingPermitted,
   indexingSwitchOn,
   inventoryRecordFacts,
+  locationConsistencyOf,
   mayCountAsProductionInventory,
   previewEnvironmentNow,
   productionCountEligibility,
@@ -59,6 +60,7 @@ const CLEAN: InventoryRecordFacts = {
   previewEnvironment: "production_unlabelled",
   publicationAuthorization: "authorized_for_production_display",
   availabilityFreshness: "fresh",
+  locationConsistency: "not_contradicted",
 };
 
 test("ADV-1C.1: the five facts are five values, and none is read off another", () => {
@@ -98,6 +100,8 @@ test("Codex gate: a preview or sample record cannot silently become production i
     [{ publicationAuthorization: "refused" }, "production_display_refused"],
     [{ availabilityFreshness: "stale" }, "availability_stale"],
     [{ availabilityFreshness: "unknown" }, "availability_freshness_unknown"],
+    [{ locationConsistency: "contradicted" }, "location_contradicts_pin"],
+    [{ locationConsistency: "not_checked" }, "location_consistency_not_checked"],
   ];
   for (const [spoil, blocker] of cases) {
     const v = productionCountEligibility({ ...CLEAN, ...spoil });
@@ -118,7 +122,17 @@ test("Codex gate: one bad record spoils the set, and an empty set is not a clean
     // This is the live state of the corpus and it is asserted rather than
     // assumed, so the day a column exists this test says so.
     assert.equal(mayCountAsProductionInventory([ok]).eligible, false);
-    assert.deepEqual(mayCountAsProductionInventory([ok]).blockers, ["production_display_not_authorized"]);
+    // Two blockers now, and the second is finding 137: no caller has yet computed
+    // whether this row's pin agrees with the location on file, and an unanswered
+    // question is not a pass.
+    assert.deepEqual(mayCountAsProductionInventory([ok]).blockers, [
+      "production_display_not_authorized",
+      "location_consistency_not_checked",
+    ]);
+    assert.deepEqual(
+      mayCountAsProductionInventory([{ ...ok, location_consistency: "consistent_unverified" }]).blockers,
+      ["production_display_not_authorized"],
+    );
 
     const withSample = mayCountAsProductionInventory([ok, { is_demo: true }]);
     assert.ok(withSample.blockers.includes("record_is_flagged_simulated"), "one sample row did not spoil the set");
@@ -208,4 +222,29 @@ test("Codex gate: the sitemap emits no detail URL until the records clear too", 
     false,
     "the module-level build-time constant is back, so a running deployment answers with the environment it was built in",
   );
+});
+
+test("finding 137: a pin that contradicts the location on file cannot count as production inventory", () => {
+  // The three verdicts that mean nothing is being contradicted.
+  assert.equal(locationConsistencyOf({ location_consistency: "consistent_unverified" }), "not_contradicted");
+  assert.equal(locationConsistencyOf({ location_consistency: "no_pin" }), "not_contradicted");
+  assert.equal(locationConsistencyOf({ location_consistency: "no_location_recorded" }), "not_contradicted");
+
+  // The one that does.
+  assert.equal(locationConsistencyOf({ location_consistency: "contradicted" }), "contradicted");
+
+  // And the two that are silence rather than an answer. `unverifiable` is the
+  // state where SAT holds no point for the recorded location, so the comparison
+  // never happened; it must not read as a pass.
+  assert.equal(locationConsistencyOf({}), "not_checked");
+  assert.equal(locationConsistencyOf({ location_consistency: null }), "not_checked");
+  assert.equal(locationConsistencyOf({ location_consistency: "unverifiable" }), "not_checked");
+
+  const bad = productionCountEligibility({ ...CLEAN, locationConsistency: "contradicted" });
+  assert.equal(bad.eligible, false);
+  assert.deepEqual(bad.blockers, ["location_contradicts_pin"]);
+
+  // There is no verified state to reach, so the clean row is "not_contradicted"
+  // and that is the best any row can ever be here.
+  assert.deepEqual(productionCountEligibility(CLEAN), { eligible: true, blockers: [] });
 });

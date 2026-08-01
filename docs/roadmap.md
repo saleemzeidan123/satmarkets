@@ -1854,6 +1854,72 @@ O12 consent position that would let SAT tell a lister a brief matches their spac
 The 1 September 2026 re-measure stands regardless, and it is cheap: the same public endpoint, the
 same three counts.
 
+## PKG-ELITE-E1, slice C: a first map pin stops silently contradicting the record (finding 137, closed)
+
+**The six required fields, before the slice.**
+
+*User journey improved.* Supply side: a lister places the first pin on a listing that already
+records a location, in Listing Studio or on the dashboard listing screen. Demand side, indirectly:
+a searcher relies on where a space says it is.
+
+*Observed problem or unavoidable foundation.* Observed, and named as finding 137 in PKG-LS3 rather
+than invented here. `LocationPicker` derived a location from the pin on every move and overwrote
+whatever was on file, and it labelled the result District whatever it actually was. Every published
+listing already carries a `district_id`, which is the field that places it in search today, so a
+later pin could silently replace a fact a lister or SAT had recorded. Two live defects sat inside
+that one behaviour: a silent rewrite, and a Law 7 violation, because the nearest row to a pin is
+frequently a development and KAFD, ITCC, Laysen Valley and Roshn Front all carry listings today.
+
+*Measurable outcome expected.* Zero silent rewrites of a recorded location: a later pin may offer a
+replacement and may never take one. Zero rows countable as production inventory while their pin and
+their record disagree. Every lister-facing statement about a disagreement present in both languages
+and naming no column, table or distance model. Measured by test rather than by traffic, because
+this is a correctness property and not a behavioural one.
+
+*Simplest acceptable implementation.* One pure module with no I/O, `src/lib/locationConsistency.ts`,
+read by four surfaces that each already existed: the picker, the PATCH route, the launch gate and
+the completeness model. No new table, no new query pattern beyond one row lookup, no new dependency,
+no migration, and no dataset.
+
+*What will not be built.* No containment test, because SAT holds no polygon to contain anything. No
+`verified` verdict, now or later, while the data is one point per row. No boundary dataset purchased,
+licensed or scraped: Codex forbade it in this package and owner ruling 7 forbids representing that
+data rights exist. No reverse geocoding of a pin into a district name. No automatic correction of
+either side of a disagreement, because deciding which of two recorded facts is wrong is not a
+reading. No new marketplace surface, per Codex item 7.
+
+*The date or evidence that decides whether to continue.* Nothing here continues. The slice closes
+finding 137 and the module is complete under its own constraint. What would reopen it is a single
+event and not a date: SAT obtaining authorized canonical district geometry. On that day the
+containment test Codex asked for becomes possible, `unverifiable` stops being the honest answer for
+rows with no point, and a `verified` verdict can exist for the first time. Until then this module is
+finished, and the 1 September 2026 corpus re-measure will report how many published rows carry a
+pin at all, which today is zero of fifty.
+
+**The evidence source for the boundary decision, as Codex required it be documented.** SAT holds no
+district boundary geometry. The deployed production preview is the evidence and it is conclusive:
+the listings page ships the whole location set to the browser, and every row carries an id, an
+English name, an Arabic name, a latitude, a longitude and a kind. No polygon, no radius, no bounding
+box, no area. That is why the module can only ever say two points are too far apart to describe one
+building, and can never say they match.
+
+**What shipped.** `nearestDistrict.ts` renamed to `nearestLocation.ts`, because the old name
+asserted something the function cannot know, with `kind` now travelling on every row so the label
+comes from `locationKind.ts`. `locationConsistency.ts` with five verdicts and no sixth.
+`LocationPicker` no longer rewrites a recorded location at all: only an empty one is answered from
+the pin, and a closer alternative becomes an offer with a button. `PATCH /api/listings/[id]` refuses
+a contradicting pin with 409 and `code: location_contradiction` in both languages. `launchGate.ts`
+gained a fifth fact and two blockers, with `unverifiable` mapping to not checked on purpose.
+`listingQuality.ts` relays the contradiction to the lister and relays rather than restates, so no
+second place in the codebase can decide what a district is. Both dashboard location selects repaired
+to the PKG-NM1 pattern, which raised finding 138.
+
+**After this slice, the next highest-value action is unchanged from the PKG-LS3 record below: user
+research and design-partner recruitment, not implementation.** Slice C was a correctness repair on a
+journey that already exists, not a new capability, so it moves nothing about that judgment. Slices D,
+E and F of this package are the research instrument, the accessibility pass and the event dictionary,
+which is the same answer expressed as work.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

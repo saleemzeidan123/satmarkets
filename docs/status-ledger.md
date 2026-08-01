@@ -22,18 +22,18 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `22a4a5a`, "Record the required next-highest-value-action judgment after PKG-LS3" |
+| GitHub HEAD | `cf3504a`, "PKG-ELITE-E1 slice C1: a pin may offer a location, never overwrite one, and never call a development a district", plus the slice C2 commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_HCXXb1SuHgg8XX4nJzcA3nkEERAV`, READY, target production |
-| Deployment URL | `satmarkets-2c4cheg45-sat-markets.vercel.app` |
+| Production deployment | `dpl_oZSCqFV4GvEbKvdaYf9THe9xhJtr`, READY, target production |
+| Deployment URL | `satmarkets-pfoal49w9-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `22a4a5a0b72de5b871b724e83f3bafadd0f1affa` |
-| Build ready at | epoch ms 1785588590263 |
-| Deployment lag | None. HEAD and production are the same commit |
+| Commit deployed | `cf3504ac9517590384dc36ae618b877ec87c368b` |
+| Build ready at | epoch ms 1785591423747 |
+| Deployment lag | One commit. Production carries `cf3504a`, slice C1. The slice C2 commit this file ships in is newer and its build is unconfirmed until polled |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1513 tests, 0 failing |
+| Test suite | 1526 tests, 0 failing |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then a Vercel READY build |
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
@@ -111,14 +111,14 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-137 findings recorded. 80 carry a status beginning "Closed". 57 do not. Counts read from
+138 findings recorded. 81 carry a status beginning "Closed". 57 do not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated.
 
 | Severity | Not closed | Ranks |
 | --- | --- | --- |
 | P0 | 6 | 4, 9, 10, 11, 12, 114 |
 | P1 | 21 | 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 29, 30, 31, 32, 45, 50, 62, 117 |
-| P2 | 30 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 115, 116, 118, 137 |
+| P2 | 30 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 115, 116, 118, 138 |
 
 Rank 113 is "Closed in PKG-DEM1 for the reading, open for the data" and is not counted
 above; its data half needs a write channel to the database that this environment does not
@@ -142,11 +142,28 @@ Dead code that a test keeps alive is worse than dead code, because the test read
 coverage. Resolution is either to delete them with their test or to wire them to the
 surface they were written for, and that decision needs a reading of what each was for.
 
-**Finding 137, P2, open.** A first pin whose nearest district disagrees with the
-listing's recorded `district_id` is a real disagreement that nothing currently reads.
-This is slice C of PKG-ELITE-E1 and is being worked now. `district_id` was deliberately
-excluded from `FILLABLE_WHEN_ABSENT` in PKG-LS3 rather than silently derived, because
-deriving a district from a pin is a substitution wearing an addition's clothes.
+**Finding 137, P2, CLOSED in PKG-ELITE-E1 slice C.** A first pin whose nearest district
+disagreed with the listing's recorded `district_id` was a real disagreement nothing read.
+`district_id` had been deliberately excluded from `FILLABLE_WHEN_ABSENT` in PKG-LS3 rather
+than silently derived, because deriving a district from a pin is a substitution wearing an
+addition's clothes; that was the safe half, and reading the disagreement was the missing
+half. Closed by `src/lib/locationConsistency.ts`, a pure module read by four surfaces that
+already existed. The evidence source, which Codex required be documented: SAT holds no
+district boundary geometry, the deployed preview is the proof, and every location row
+carries a point and a kind and no polygon, radius, bounding box or area. So the module has
+five verdicts and no `verified` among them, and cannot grow one while the data is one point
+per row. A later pin now offers a location and never takes one, `PATCH /api/listings/[id]`
+refuses a contradicting pin with 409, and `launchGate.ts` blocks a contradicted or an
+unchecked row from counting as production inventory. No dataset was purchased, licensed or
+scraped, per Codex and owner ruling 7. Full record in `docs/findings-register.md` and in
+the roadmap's slice C section.
+
+**Finding 138, P2, open, raised by this slice.** Two dashboard selects asked `districts_geo`
+for a `city` column while the public listings page has read the city from `districts` and
+joined it since PKG-NM1. Both cannot be right, and which one is right is UNPROVEN from this
+environment: every Supabase read here is permission denied and both routes are session
+gated while `web_fetch_vercel_url` is GET only. Both selects were repaired to the pattern
+that is correct under either answer. Recorded so the repair is not mistaken for a proof.
 
 ---
 
