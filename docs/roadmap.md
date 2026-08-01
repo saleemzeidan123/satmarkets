@@ -1682,14 +1682,43 @@ belongs: neither spelling was one `format.ts` knows. The assertion is now that t
 `priceFieldLabel`, which is the same function every rendering surface reads, so the evidence is
 stronger than the literal it replaces and cannot drift from them.
 
-Live verification, stated as a limit rather than glossed. `web_fetch_vercel_url` is GET only, and
-`/dashboard/new` and the edit form are both session gated, so neither intake screen can be fetched
-from this environment at all. The one public call site, the numeric facet placeholder, is dark: it is
-gated by `coveredFacetFields(assetType, listings, minCount = 3, minCoverage = 0.4)`, and a live fetch
-of `/ar/listings?asset=office` on the current production deployment returned 200 with zero `f_*`
-inputs, because real inventory does not carry enough registry attribute values for any office facet
-to clear the gate. This package therefore ships on tests and source guards, and the rendered evidence
-for its public surface is owed once inventory density clears the facet threshold.
+Live verification, and the correction that came out of insisting on it. `web_fetch_vercel_url` is
+GET only, and `/dashboard/new` and the edit form are both session gated, so neither intake screen can
+be fetched from this environment at all. Those two remain implemented and not live verified, and are
+recorded that way rather than described as shipped.
+
+The third call site, the numeric facet placeholder on public `/listings`, was written up as dark
+before the package shipped, on the strength of one fetch of `/ar/listings?asset=office` that returned
+200 with zero `f_*` inputs. That was a true observation and a false conclusion. The gate is
+`coveredFacetFields(assetType, listings, minCount = 3, minCoverage = 0.4)`, which is a per asset type
+threshold, so office being under it says nothing about warehouse. Fetching the other asset types
+rather than generalising from the first found the surface live, and it carries the defect and the fix
+in the same three placeholders.
+
+Deployment `3f13eb6` (`satmarkets-5won7hz03`), `/ar/listings?asset=warehouse`, 200:
+
+    الارتفاع الصافي (م) الأدنى
+    أبواب التحميل الأدنى
+    الطاقة (ك.ف.أ) الأدنى
+
+The same path on `95f162b` (`satmarkets-qrbf3fcft`), the deployment immediately before this one, 200:
+
+    الارتفاع الصافي (m) الأدنى
+    أبواب التحميل الأدنى
+    الطاقة (kVA) الأدنى
+
+That is the finding rendered to an Arabic reader in production, and the same page after the fix. The
+middle field is the control in both: `loading_docks` declares no unit, so it takes no parentheses
+before or after, which is what separates a unit that is now translated from a label that is merely
+different. English is unchanged and correct on the new deployment, `Clear height (m) min`,
+`Dock doors min`, `Power (kVA) min`, so the two languages expose the same three fields and each shows
+its own canonical spelling. Zero Arabic-Indic digits on either page.
+
+Two things worth keeping from this. The first is that a coverage gate reading zero is not evidence
+of absence until every input to the gate has been tried, which is the same shape as the
+`?view=insights` vacuous check caught in PKG-FIG2. The second is that office really is dark, so the
+inventory density that would light the office facets is still owed, and the two intake screens are
+still owed a session-capable channel.
 
 
 ## Parked (deliberate)
