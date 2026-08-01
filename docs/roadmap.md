@@ -958,7 +958,7 @@ data and rights question, not a rendering one. Finding 93 is the lister `about` 
 is free prose and therefore neither a description we own nor an identifier, so it has no honest
 generic substitute; three candidate answers are named and none chosen.
 
-## PKG-LS1, the Arabic half of the lister's own workspace (next)
+## PKG-LS1, the Arabic half of the lister's own workspace (closed)
 
 **User journey improved.** The lister who has just been told, on two screens, that an Arabic
 reader sees a generic description of their listing instead of the name they wrote.
@@ -992,6 +992,122 @@ words, which is the same rule PKG-NM1 closed on.
 **Stop condition.** Both fields exist, round-trip a real value through the existing API, are
 correct in RTL and LTR at 320, 360, 390 and 430 pixels plus tablet and desktop, all gates green,
 and lister-written Arabic survives a subsequent English edit.
+
+Closed in `aed2c1c` and `da0780d`, deployed on `dpl_5pvwfPNL2PkKKWBj9L7kFtcWqAFG`, state READY. Handback in
+`docs/handback-pkg-ls1.md`.
+
+**The stop condition, clause by clause.**
+
+*Both fields exist.* Met. `src/components/EditListingForm.tsx` now declares `title_ar` and
+`description_ar` in `Init`, holds them in state, renders them as an input and a textarea, and
+`src/app/[locale]/dashboard/listings/[id]/page.tsx` passes both column values in. The labels no
+longer name a field in the reader's interface language while writing the English column: they
+name their own language, in `ListingStudio`'s exact wording, and each control carries the `dir`
+and `lang` of the text it holds rather than of the interface around it.
+
+*Round-trip a real value through the existing API.* Met by construction and by unit test, NOT by
+an authenticated live submit, and the difference is stated rather than blurred. The edit
+workspace is session-protected; the only live channel available to this environment is an
+unauthenticated GET, and it lands on the sign-in page, which is the correct behaviour and is
+also the reason the round trip cannot be photographed here. What is verified: `ALWAYS_EDITABLE`
+already listed both fields, the route already accepted, trimmed and length-capped both behind
+the same `mayEdit` check, and the payload now carries them. This is the standing live-evidence
+limitation recorded for authenticated surfaces, not a new one.
+
+*Correct in RTL and LTR at 320, 360, 390 and 430 pixels plus tablet and desktop.* Met on the
+same basis PKG-NM1 recorded: no `.css` or `.scss` file changed in this package. The two new
+controls reuse the `inp` and `lbl` styles of the four fields already in the form and sit in the
+same single-column flex stack, so their behaviour at every width is the behaviour those fields
+already have. What is genuinely new is direction, and that is per-control rather than
+per-layout: an Arabic input inside an English page and an English input inside an Arabic page
+are both now marked, so neither renders its own text against the page direction.
+
+*All gates green.* Met. `tsc` clean, 1394 tests passing with 0 failures, `ar-lint: clean`,
+prose-scan clean, Vercel READY as the production build evidence. The local `next build` fails in
+this sandbox on four `next/font` fetches to Google Fonts, which is the egress block and not a
+code result; the deployed build is the one that counts.
+
+*Lister-written Arabic survives a subsequent English edit.* Met, and this is the clause that
+changed the package. The route re-stamps `title_ar_src_hash` whenever the request body carries
+the Arabic, so a form posting every field on every save would have declared the Arabic current
+on English the lister had just rewritten, made `stale` unreachable from the screen that was
+built to show it, and permanently exempted the row from any later translate run. `changedArabic`
+sends an Arabic field only when its trimmed value actually differs from what was loaded, so an
+English-only edit leaves the stamp alone and the row becomes honestly stale, while an edit that
+touches the Arabic re-stamps it against the English of the same save, which is true. Clearing a
+field is treated as a change so a lister can delete their own Arabic. Recorded as finding 97,
+left open, because the discipline currently lives in the client and the durable fix belongs in
+the route.
+
+**What the package found and did not fix.** Three findings, measured against the fifty published
+rows the deployed `/api/listings` returns rather than assumed. Finding 96: `description_ar` is
+empty on all fifty, so every Arabic reader in the exchange gets a name and then nothing. The
+field has existed in the Studio throughout and now exists on the edit form, so this is a corpus
+fact and no further form work closes it. Finding 94: `ar_translation_status` is row-level and
+cannot separate a lister-written title from a machine-written description, and the corpus
+already shows it, with seventeen of the fifty carrying a source hash while the status still
+reads `pending` and no model is recorded. Finding 97 above. Also observed and stated plainly:
+zero rows are currently stale, so the note this package added is correct and, on today's corpus,
+silent. Nine rows read `unknown` because no hash was ever stamped, and `unknown` says nothing at
+all, which is the intended behaviour and not a gap.
+
+## PKG-SUP1, the public listing entry stops simulating a form (open)
+
+**User journey improved.** The owner or broker who has a space to market, arrives on `/list`
+from the header or the home page, and needs to know what SAT will ask them for before they
+decide to start.
+
+**Observed problem.** `/list` is the public entry point for supply and it is a mock of a form
+rather than a description of one. Live, on `dpl_5pvwfPNL2PkKKWBj9L7kFtcWqAFG`: `/en/list`
+returns 200 with 8 `<label>` elements, 0 `<input>`, 0 `<textarea>`, 0 `<select>` and 0 `<form>`,
+and `/ar/list` returns the same counts on the same markup. Every field is a `<div class="input">`
+holding somebody else's answer, and those answers are in the served HTML: "Grade A office floor"
+7 times, "Al Olaya" 23 times, "320" 11 times, and the Arabic equivalents on the Arabic route. A
+four-step progress bar shows step 1 checked and step 2 active. A "Drag photos here" zone is not a
+drop target. A "Live preview" card previews nothing. The only real controls on the page are two
+links, one back to the home page and one to `/dashboard/new`.
+
+This is two defects in the same markup. It is a deception: a lister reasonably believes they are
+two steps into a submission that does not exist, and a photograph dropped on that zone is lost
+without a message. And it is an accessibility defect: a screen-reader user is told there is a
+"Listing title" field, and there is nothing to focus, because a `<label>` with no control is an
+orphan in the accessibility tree. Separately, the four steps it names, Asset, Details and media,
+Pricing, Verify and publish, are not the intake. The real intake, from `studioSteps()`, is ten
+steps.
+
+**Measurable outcome expected.** A lister reading `/list` in either language can state, before
+signing in, what the ten steps of the intake are, what each one is for, and which seven facts a
+draft cannot be saved without. Zero labels on the route have no associated control. Zero
+fabricated listing values are served. The described step list is generated from
+`studioSteps()`, so it cannot drift from the intake it describes.
+
+**Simplest acceptable implementation.** Keep the left rail unchanged: it is already
+claim-audited and its `avgTime` card already says "Checked at launch" rather than quoting a
+turnaround nobody measured. Replace the right column with three honest blocks, composed in a thin
+`src/lib/listIntake.ts` so the page stays declarative and the logic is unit-testable. First, the
+real intake spine rendered from `studioSteps()`, which returns the same ten kinds for all fifteen
+asset types, each with its bilingual title and purpose, plus one honest line that the facts
+inside each step differ by asset type. Second, what is needed before a draft can be saved: the
+seven `DRAFT_REQUIRED_CHECK_KEYS`, with the `label_en`, `label_ar`, `why_en` and `why_ar` that
+`assessListing()` already returns for each. Third, one call to action to `/dashboard/new` with an
+honest note that it requires signing in. Delete the mock grid, the fake wizard, the fake live
+preview, the inert drop zone and every fabricated value, and delete the dictionary keys that
+existed only to hold them.
+
+**What is deliberately not built.** No real form on the public route. Listing intake is
+permissioned, it writes to a lister's own draft, and moving it to an anonymous page would
+either invent an anonymous draft owner or collect a space's details with nowhere lawful to put
+them. No file upload outside the authenticated Studio. No claim about how long a listing takes
+to publish or to verify, because that is owner ruling 3 territory and no measurement supports
+one. No new Arabic marketing copy: the step titles and the check labels are the ones the
+platform already uses, which is what makes the page unable to drift.
+
+**Stop condition.** A render test over both locales proves every `<label>` on the route has an
+associated control or is not a `<label>`, that none of the fabricated strings appears, and that
+the rendered step list equals `studioSteps()` for a representative asset type in both languages.
+The dictionary keys that held mock values are gone and `ar-lint` is clean on the block that
+replaces them. Live evidence on the deployment in English and Arabic shows 0 orphan labels and 0
+occurrences of each fabricated value. All gates green.
 
 ## Parked (deliberate)
 
