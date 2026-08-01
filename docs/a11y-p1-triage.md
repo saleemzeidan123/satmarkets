@@ -965,9 +965,17 @@ captions track is a missing element.
 
 ## Bucket 5: not accessibility findings, present in the same P1 set
 
-Nine of the 55 are P1 rows that arrived in the same severity band and are not
-accessibility defects. They are named here so the handback's arithmetic is
+Sixteen of the 55 are P1 rows that arrived in the same severity band and are
+not accessibility defects. They are named here so the handback's arithmetic is
 honest and nobody later reads "55 P1 accessibility findings".
+
+*Corrected in RC15.* This paragraph and the arithmetic below originally said
+nine, while the list that follows names sixteen and the subtraction that follows
+that used a third number again. Nothing was mis-triaged: every finding is in the
+bucket its own reasoning puts it in, and no work was ordered or skipped on the
+strength of the wrong total. What was wrong was the count a reader would quote,
+which is the number a handback carries forward, so it is corrected here rather
+than restated correctly somewhere else and left wrong in its source.
 
 Metadata and syndication: **13**, **14**, **15**, **32**. Language and content
 quality: **16**, **17**, **19**, **29**, **30**, **31**, **25**. Claims and
@@ -982,12 +990,20 @@ The rest stay recorded and are not displaced by the accessibility package.
 
 ## Resulting arithmetic
 
-55 open P1 findings. 9 of them are not accessibility findings, leaving 46. Those
-46 reduce to 12 shared root causes plus 2 journey-specific defects. 19 of the 46
-can be fully verified in this environment; the remaining 27 need a physical
-device, an actual screen reader or independent human judgement, and this package
-will fix them and classify their evidence accordingly rather than claim
-conformance from automation.
+55 open P1 findings, read from the register at `7621724` and listed in full in
+bucket 5 and the buckets above it. 16 of them are not accessibility findings,
+leaving 39. Those 39 reduce to 12 shared root causes plus 2 journey-specific
+defects. 17 of the 39 can be fully verified in this environment, being the
+verifiable list in bucket 4 minus 18 and 22, which need an Arabic reader's
+judgement on translated control names; the remaining 22 need a physical device,
+an actual screen reader or independent human judgement, and this package will fix
+them and classify their evidence accordingly rather than claim conformance from
+automation.
+
+*Corrected in RC15.* The original read "9 ... leaving 46 ... 19 of the 46 ...
+remaining 27". Three of those four numbers were wrong and the fourth, 46, was the
+only one carried into any later document, so the correction is made at the source
+and the handback quotes 39.
 
 ## Order of work
 

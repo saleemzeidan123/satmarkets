@@ -22,19 +22,19 @@ them.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `1b9bc0a`, "PKG-ELITE-E1 slice F: the ELITE-8 event dictionary and product scorecard as typed, fail-closed data", plus the slice F record commit this file ships in |
+| GitHub HEAD | `7aaab03`, "PKG-A11Y-1 slice R (RC14): a requirement is not filed in a city nobody stated", plus the RC15 record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_ApumXf7HKSm6Vxsf9LEHjLPETvmJ`, READY, target production |
-| Deployment URL | `satmarkets-caou5llry-sat-markets.vercel.app` |
+| Production deployment | `dpl_8wfQorDuSgikb34od8JG8ao7L7MM`, READY, target production |
+| Deployment URL | `satmarkets-5msvw3v3f-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `1b9bc0a`, slice F code |
-| Build ready at | epoch ms 1785599906050 |
-| Deployment lag | One commit. The slice F code is shipped and its build was confirmed READY at package close. The slice F record commit this file ships in is newer and carries documentation only, no source change. Slice F adds no rendered surface, so there is no page whose behaviour the lag could affect |
+| Commit deployed | `7aaab03`, slice R code |
+| Build ready at | epoch ms 1785625695362, 69 seconds after build start |
+| Deployment lag | One commit. Every source change in PKG-A11Y-1 is deployed and its build was confirmed READY at the matching `meta.githubCommitSha`. The RC15 record commit this file ships in is newer and carries documentation only, no source change: the register corrections, the triage arithmetic correction, this ledger and the handback. No rendered surface changes in it, so there is no page whose behaviour the lag could affect |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1557 tests, 0 failing |
-| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then a Vercel READY build |
+| Test suite | 1668 tests, 0 failing |
+| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, `node scripts/reflow-probe.mjs --chromium /opt/pw-browsers/chromium`, `node scripts/radio-probe.mjs --chromium /opt/pw-browsers/chromium`, then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState` |
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
 because no GitHub webhook fired for it; it reached production carried by `44a143f`'s
@@ -76,6 +76,9 @@ regression is recorded in section 6 first.
 | PKG-ELITE-E1 slice E | The ELITE-4 manual accessibility pass over four journeys. 126 defects found, all 7 critical and all 41 high fixed, 54 of the remainder recorded | shipped `ae7b198`, `docs/accessibility-elite-4.md`, findings 139 to 192 |
 | PKG-ELITE-E1 slice F | The ELITE-8 event dictionary and product scorecard. 46 events across the ten named families, 48 catalogued properties, 30 forbidden by name, 12 measures with no invented target, nothing collected | shipped `1b9bc0a`, `docs/elite-8-event-dictionary.md`, O17 below |
 | PKG-ELITE-E1, whole package | Codex items 1 to 6 delivered, item 7 observed. Consolidated handback with scope, commits, gates, live EN and AR evidence, responsive limits, blockers and the next action | `docs/handback-pkg-elite-e1.md` |
+| PKG-A11Y-1 slice A | The O17 and O12 rulings recorded against the surfaces they hold shut, the data-collection readiness record and the owner-ready recruitment sheet | shipped `7621724`, `docs/data-collection-readiness.md`, `docs/research/elite-1-recruitment-sheet.md` |
+| PKG-A11Y-1 slices B to R | The accessibility remediation itself. 55 open P1 findings triaged to 12 root causes plus 2 journey-specific defects, 38 of the 39 accessibility findings closed, 8 further findings raised and closed inside the package, 1 data-quality migration authored for the owner | shipped `beef75a`, `7dfca13`, `7dfa5e7`, `1853e92`, `8beeaf6`, `abc3495`, `69fc447`, `72d04fa`, `d8de177`, `ededded`, `a38c06e`, `fcb4388`, `9fde67c`, `3cf25b4`, `8e80dbe`, `c6cad0e`, `7aaab03`; `docs/a11y-p1-triage.md` |
+| PKG-A11Y-1, whole package | Consolidated handback with the Finding 138 disposition stated first, the triage, the root-cause fixes by journey, EN and AR live evidence, viewport and assistive-technology evidence classified by kind, and the independent-audit items that automation cannot settle | `docs/handback-pkg-a11y-1.md` |
 
 ---
 
@@ -119,27 +122,49 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-192 findings recorded. 81 carry a status beginning "Closed". 111 do not. Counts read from
+205 findings recorded. 126 carry a status beginning "Closed". 79 do not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated.
 
-The jump from 57 open to 111 is slice E and nothing else. 54 recorded accessibility
-defects were added at once, findings 139 to 192, every one of them medium, low or
-cosmetic. No previously open finding changed status in this slice, and the open count
-rising is the pass working rather than the product getting worse: these defects existed
-before anybody looked, and 48 more severe ones were fixed in the same slice.
+The movement since PKG-ELITE-E1 is PKG-A11Y-1 and nothing else. P1 falls from 55 to 19,
+which is 36 net, and the gross figure is larger: 47 rows carry "PKG-A11Y-1" in their
+status. Thirteen findings were raised during the package, 193 to 205, and eight of those
+were closed inside it. Thirteen new rows appearing while the open count falls by 32 is the
+same pattern slice E showed and means the same thing: looking properly finds things, and
+the count that matters is the one after both halves are recorded.
 
 | Severity | Not closed | Ranks |
 | --- | --- | --- |
 | P0 | 6 | 4, 9, 10, 11, 12, 114 |
-| P1 | 55 | 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 29, 30, 31, 32, 45, 50, 62, 117, 139, 140, 141, 143, 145, 147, 148, 149, 150, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 164, 165, 166, 167, 168, 170, 171, 174, 179, 180, 181, 182, 184, 187, 192 |
-| P2 | 50 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191 |
+| P1 | 19 | 13, 14, 15, 16, 17, 19, 20, 21, 25, 29, 30, 31, 32, 45, 62, 117, 170, 193, 203 |
+| P2 | 54 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 113, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191, 194, 195, 202 |
 
-Rank 113 is "Closed in PKG-DEM1 for the reading, open for the data" and is not counted
-above; its data half needs a write channel to the database that this environment does not
-have.
+**What the 19 open P1 rows are, because "19 open P1" reads worse than it is.** Sixteen of
+them were open before PKG-A11Y-1 began and are not accessibility findings: 13, 14, 15 and
+32 are metadata and syndication; 16, 17, 19, 25, 29, 30, 31 and 45 are language and content
+quality; 20, 21 and 62 are claims and figure precision, two of them already blocked by an
+owner decision; and 117 is the requirement-city data-quality defect, whose migration is
+authored and awaiting the owner. Of the three that are accessibility rows, 170 is the
+listing video's missing captions, which is a content and ingest commitment rather than a
+markup change; 193 is a requirement poster's consent withdrawal, which needs a database
+migration this environment cannot apply; and 203 is sixteen client sites rendering a
+server-composed English error sentence in both languages.
+
+Rank 113 now reads "Closed in PKG-DEM1 for the reading, open for the data" and IS counted
+above, under P2, unlike in the PKG-ELITE-E1 edition of this file where it was excluded by a
+parse that treated its leading "Closed" as closure. Its data half still needs a write
+channel to the database that this environment does not have. The count moved because the
+rule was corrected, not because the finding changed.
 
 Ranks 11, 114 and 115 appear above because their status is "fixed" rather than "closed";
 see section 3.
+
+**A correction made in RC15, recorded because a ledger that quietly restates a number is
+worse than one that was wrong.** Six P1 rows, 50, 140, 150, 154, 166 and 179, read "Open"
+or "Confirmed open, 3 of 155 fixed" in this file and in the register for eight slices after
+`beef75a` closed them. The fixes were real and shipped; the register was not updated in the
+same commit, which is the practice this file's own header requires. The rows now carry the
+correction, the arithmetic that closes them and the evidence class, and the counts above
+are computed from the corrected register.
 
 ### The three Codex named explicitly
 
@@ -172,12 +197,21 @@ unchecked row from counting as production inventory. No dataset was purchased, l
 scraped, per Codex and owner ruling 7. Full record in `docs/findings-register.md` and in
 the roadmap's slice C section.
 
-**Finding 138, P2, open, raised by this slice.** Two dashboard selects asked `districts_geo`
-for a `city` column while the public listings page has read the city from `districts` and
-joined it since PKG-NM1. Both cannot be right, and which one is right is UNPROVEN from this
-environment: every Supabase read here is permission denied and both routes are session
-gated while `web_fetch_vercel_url` is GET only. Both selects were repaired to the pattern
-that is correct under either answer. Recorded so the repair is not mistaken for a proof.
+**Finding 138, P2, open, raised in PKG-ELITE-E1 slice C.** Two dashboard selects asked
+`districts_geo` for a `city` column while the public listings page has read the city from
+`districts` and joined it since PKG-NM1. Both cannot be right, and which one is right is
+UNPROVEN from this environment: every Supabase read here is permission denied and both
+routes are session gated while `web_fetch_vercel_url` is GET only. Both selects were
+repaired to the pattern that is correct under either answer. Recorded so the repair is not
+mistaken for a proof.
+
+**Its PKG-A11Y-1 disposition, which Codex required be stated at the head of the handback.**
+It stays recorded and does not become a corrective prelude. It is P2; it concerns none of
+the categories Codex named for escalation, being neither security, authorization, privacy,
+an unsupported figure, misleading publication nor irreversible data corruption; and the
+repair already applied is correct whichever answer the schema gives, so there is no
+outcome that waiting changes. The full statement is at the head of
+`docs/handback-pkg-a11y-1.md`.
 
 ---
 
@@ -196,6 +230,8 @@ work, per the governing directive and owner ruling 6.
 | Dependency | State | What it costs while open |
 | --- | --- | --- |
 | **Arabic font workflow** | Delivered to the owner as a file, documented in `docs/owner-actions-adv-1c1.md`. Not installed. The deploy token has no `workflow` scope, so `.github/workflows/arabic-font.yml` cannot be pushed from here | Arabic font correctness is evidenced manually and by live check rather than by a gate on every push. Owner ruling 6 explicitly says this does not stop other work |
+| **Migration `20260801_requirement_city_is_never_assumed.sql`** | Authored, checked in, NOT applied. `apply_migration` and `execute_sql` are permission denied from this environment. Instructions in `supabase/migrations/README.md` | Finding 117 stays open. The deployed `create_requirement` still writes `coalesce(nullif(payload->>'city',''), 'Riyadh')`, so any caller that is not the API route can still file a requirement in a city nobody stated. The HTTP path has been safe since PKG-DEM1, so nothing a visitor can do reaches the default; what is open is the direct-call path, because the function is SECURITY DEFINER and executable by `anon` |
+| **Finding 193, consent withdrawal** | Not an owner-applied migration and no migration is authored for it. It is engineering work that cannot start until an owner question is answered: how a person who posted a requirement with no account and no session proves they are that person. The register row states the three dependencies | A requirement poster has no route to withdraw the consent that shares their contact details. `beef75a` corrected the label so it no longer promises a withdrawal that does not exist, which is why 192 is closed and 193 is the remaining and larger half. The obligation exists whether or not the product offers a control |
 | **RLS advisory, `public.map_anchors`** | 104 rows of public reference geography. RLS off. SQL written for the owner in `docs/owner-actions-adv-1c1.md`, deliberately not auto-applied | The exposure is public-by-design data, so the risk today is future columns rather than current rows. Enabling RLS without the SELECT policy in the same transaction would take location facts off every listing page, which is why this is owner-run |
 | **RLS advisory, `public.spatial_ref_sys`** | 8500 rows. RLS off. Not to be modified blindly because the table may be PostGIS extension owned | Nothing user-facing. It is an advisory artefact of an extension, and acting on it without knowing the ownership risks breaking PostGIS |
 | Advisory re-check | `Supabase.get_advisors` now answers permission denied, as do `execute_sql`, `apply_migration` and `list_tables` | The two advisories above cannot be re-read from here. They are carried forward from the last successful read rather than re-confirmed, and this file says so rather than presenting them as current |
@@ -244,6 +280,9 @@ consecutive packages have now owed the same thing.
 | No screen reader and no accessibility specialist | Neither exists in this environment | A human. Every one of the 126 slice E findings is source-read only and none is independently verified |
 | Interactive browser Advisor verification | Codex item 7. Needs a browser session against the deployment | Owner-side browser run, or a session channel |
 | `LocationPicker` visual fit at 320 to 430 pixels | Tailwind-classed component inside an inline-styled form, on a session-gated screen | The same session channel |
+| **Every name, role, value and announcement fixed in PKG-A11Y-1** | 16 of the 39 accessibility findings are defects in what a screen reader says. A DOM assertion proves an attribute is present; only a screen reader proves what is spoken, and in Arabic only an Arabic screen reader proves it is spoken in Arabic | One session with NVDA or JAWS in English and one with a screen reader in Arabic, against the deployed preview. Until then the package's own record classifies these as fixed and awaiting independent verification, and claims no WCAG 2.2 AA conformance |
+| **Touch target size, reading size and phone-width table semantics** | Findings 26, 27, 139 and 148. A CSS `min-height` is evidence that a rule exists, and a Chromium viewport with `hasTouch` is evidence that a media query matches. Neither is evidence that a thumb reaches a control on a real handset | A human with a phone. `scripts/touch-probe.mjs` and `scripts/radio-probe.mjs` measure the rendered box and say in their own output that they are browser emulated and not a device |
+| **Two judgement calls that are not measurements** | Finding 165, whether the non-colour distinction between district bubbles and building pins is actually distinguishable, and finding 145, whether the non-colour step indicator reads as progress. Both are now non-colour distinctions in code; whether they communicate is a human question | An independent reviewer, or the ELITE-1 design-partner sessions once recruitment is authorised |
 
 **The rule that follows from this table.** Where a thing cannot be verified live, the
 package record says so in those words and does not substitute a local result for a live
@@ -297,6 +336,8 @@ it. The practice below exists so that it can happen again without costing anythi
    only duplicates. The refresh happens at the first package close where the bridge is
    present.
 
-**Intended deployment commit for the remainder of PKG-ELITE-E1:** each slice ships on its
-own commit to `main` and deploys to production on its own Vercel build. There is no
-long-lived branch and no accumulated package commit.
+**Intended deployment commit for the next package:** unchanged practice. Each slice ships on
+its own commit to `main` and deploys to production on its own Vercel build. There is no
+long-lived branch and no accumulated package commit. PKG-A11Y-1 ran eighteen slices this
+way, A through R, and the container was not reclaimed during it; the practice is what made
+that unremarkable rather than lucky.
