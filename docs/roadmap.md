@@ -740,6 +740,105 @@ audit model existing to attach permissions to.
 
 Gate: legal, confidentiality, competition, quality and minimum-sample controls pass.
 
+## Elite product operating standard (Codex item 9, reconciled 2026-08-01)
+
+Full classification in `docs/elite-standard-reconciliation.md`. The strategy document was
+read in full at `b2fc4b8`. This section is the roadmap half.
+
+**Launch stage gates of record.** E0 engineering foundation, E1 design-partner alpha, E2
+closed beta, E3 launch candidate, E4 broad launch, E5 scale. **The product is at E0.**
+Shipping a package no longer counts, by itself, as movement toward launch.
+
+**Adopted immediately, no infrastructure.** Every future package record and handback must
+name six things before the package starts: the user journey it improves, the observed problem
+or unavoidable foundation it addresses, the measurable outcome expected, the simplest
+acceptable implementation, what will not be built, and the date or evidence that decides
+whether to continue. After each foundation package, record explicitly whether the next
+highest-value action is implementation, design, user research, data acquisition, legal work
+or operational preparation.
+
+**Already substantially covered.** E0. Parts of ELITE-2 (design tokens, Harbor discipline,
+responsive probe at 320/360/390/430, reduced motion, empty and error states), ELITE-3
+(`ar-lint`, glossary, Western numerals, dictionary parity) and ELITE-6 (RLS, admin auth, rate
+limiting, AI boundary, source-rights ledger, deny-by-default publication).
+
+**Genuinely missing, buildable without a licence.**
+
+- ELITE-1 instrument: written task protocol per critical journey, severity scheme, research
+  repository. Preparable now. Participants are an owner item.
+- ELITE-4 manual pass: keyboard completion, focus visibility, reading order, 200 and 400
+  percent reflow, non-visual form of evidence panels, comparison and map. Begin now on
+  existing journeys. Independent audit is procurement.
+- ELITE-8 event dictionary, lawful basis, retention and access. Writable now. Instrumentation
+  only after the dictionary, and measuring only once a cohort exists.
+
+**Waiting on a cohort, because they measure something that does not exist yet.** ELITE-5
+Core Web Vitals field data, ELITE-7 production operations and support, ELITE-8
+instrumentation, ELITE-9 the Riyadh design-partner beta itself.
+
+**Owner and procurement items.** The eight named independent accountabilities. Senior
+independent design review, professional Arabic review, independent accessibility audit,
+independent penetration test, privacy and FAL counsel, production operations ownership. None
+represented as arranged, per owner ruling 7.
+
+**Technology adoption gates, all queued, none started.** DEV-1 specification discipline (pilot
+only for a major net-new domain), OPS-1 durable background execution (before production
+notification fan-out), DATA-1 safe preview environments (after the GitHub workflow permission
+resolves), SEARCH-1 evidence-aware bilingual retrieval (inside the existing Supabase stack
+first), OBS-1 AI observability (after the enterprise AI agreement), ADV-3B agent framework
+evaluation, API-1 partner API and MCP distribution (after publication-rights approval),
+GROWTH-1 bilingual public tools (after FAL scope). No mid-package migration is permitted for
+any of them.
+
+**Rejected for this project, continuing.** Agent swarms and headless fleets, a flat-rate AI
+subscription as production workforce, a Bun migration, a framework rewrite, arbitrary plugin
+packs or memory injectors in the build environment, and any vector store before the Supabase
+retrieval baseline is measured.
+
+**Reconciled conflicts.** ELITE-5 wants Core Web Vitals field data; owner ruling 1 keeps the
+preview protected and unindexed, so there is no field traffic. Resolved by the standard's own
+alternative, a bounded beta sample at ELITE-9. Until then the recorded state is "not
+measured", never a laboratory number presented as a field result. ELITE-8 wants adoption
+measured; adoption is zero by construction on a private preview, and a zero recorded as a
+product failure would be false.
+
+## PKG-AV1, availability truth on the browse card (findings 46 and 11, 2026-08-01)
+
+The first package recorded in the six anti-overengineering fields the section above makes
+mandatory. It is deliberately small, and it is user-facing rather than infrastructural, which
+is what Codex item 10 asked the next package to be.
+
+**User journey improved.** A tenant scanning `/listings` deciding which spaces are worth
+opening.
+
+**Observed problem.** Finding 46 (P1) and the display half of finding 11 (P0). The card said
+"Available" for a space confirmed three days ago and for one confirmed two months ago, with no
+date on either, so the only difference between them was a colour. That colour was the reserved
+verification green, which the same card also used for the verification tick, so one card
+carried the reserved colour twice for two unrelated claims. A reader who cannot separate those
+two colours, or who is hearing the card read out, received no freshness signal at all.
+
+**Measurable outcome expected.** On every browse card carrying `availability_confirmed_at`,
+the freshness state is readable in words with an age in Western numerals, in both locales,
+with no reliance on colour; and the reserved green appears at most once per card, only for
+evidence-backed verification.
+
+**Simplest acceptable implementation.** Three distinct sentences from
+`availabilityShortLabel`, an `availabilityAge` helper for the counted-noun forms, one
+`availabilityTone` writer for the colour, and the two surfaces calling it instead of composing
+a colour inline.
+
+**What was deliberately not built.** No new component, no card redesign, no re-confirmation
+workflow, no notification, no lister prompt, no dictionary migration of the four strings.
+
+**Stop condition.** All gates green plus deployed evidence of the states rendering distinctly
+in English and Arabic. Reached.
+
+The one judgement worth recording: finding 46 asked for a D24 follow-up ruling from the owner,
+and it turned out not to need one. The standing quality rule already says verified green is
+only for evidence-backed verification, and a date the lister typed is not a check anybody ran.
+The exception was deleted from the green gate rather than narrowed.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

@@ -10,6 +10,8 @@
 // NOT fall back to updated_at (bumped by any edit) or verified_at (owner check,
 // a different fact). If the column is null we show nothing.
 
+import { formatCounted } from "./format";
+
 export type AvailabilityState = "fresh" | "aging" | "stale";
 
 export interface Availability {
@@ -36,22 +38,66 @@ export function availabilityOf(
   return { days, state };
 }
 
-// Bilingual label. Western numerals in both locales (Law 7). Fresh and aging read
-// as a plain affirmation with a date; stale turns into a nudge to re-check with
-// the lister, because an old affirmation should not masquerade as a live one.
+// Finding 46. Every one of the three states now reads differently in words, and
+// every one of them carries the age of the affirmation. Before this, fresh and
+// aging both said "Available" with no date, so the only thing separating a space
+// confirmed this week from one last confirmed two months ago was a colour. A
+// reader who cannot distinguish those two colours, or who is hearing the card
+// read aloud, received no signal at all.
+//
+// The wording change is not cosmetic. An aging affirmation no longer says
+// "Available", because SAT does not know that. It says when the lister last said
+// so and lets the reader judge, which is finding 11's "static trust statement"
+// defect at its source.
+
+// Bilingual age phrase for a day count. Western numerals in both locales (Law 7),
+// and the Arabic count goes through the counted-noun formatter because `قبل`
+// governs what follows: "قبل يومين", never "قبل 2 يوماً".
+export function availabilityAge(days: number, ar: boolean): string {
+  if (days === 0) return ar ? "اليوم" : "today";
+  return ar
+    ? `قبل ${formatCounted(days, "day", "ar", { oblique: true })}`
+    : `${formatCounted(days, "day", "en")} ago`;
+}
+
+// Full label, for surfaces that can afford the exact date (the listing page).
 export function availabilityLabel(a: Availability, dateText: string, ar: boolean): string {
   if (a.state === "stale") {
     return ar
       ? `تأكّد من التوفر مع المُدرِج · آخر تأكيد ${dateText}`
       : `Confirm availability with the lister · last confirmed ${dateText}`;
   }
+  if (a.state === "aging") {
+    return ar ? `آخر تأكيد ${dateText}` : `Last confirmed ${dateText}`;
+  }
   return ar ? `متاح · تأكد التوفر ${dateText}` : `Available · confirmed ${dateText}`;
 }
 
-// Compact form for browse/search cards: a status word whose colour (set by the
-// caller from `state`) carries the freshness gradient, so shortlisting tenants can
-// spot a stale listing at a glance without a second date line cluttering the card.
+// Compact form for browse/search cards, where the exact date does not fit but the
+// age does. Three distinct sentences, each with a number, so the freshness
+// gradient survives greyscale, colour blindness and a screen reader.
 export function availabilityShortLabel(a: Availability, ar: boolean): string {
-  if (a.state === "stale") return ar ? "تأكّد من التوفر" : "Confirm availability";
-  return ar ? "متاح" : "Available";
+  const age = availabilityAge(a.days, ar);
+  if (a.state === "stale") {
+    return ar ? `تأكّد من التوفر · آخر تأكيد ${age}` : `Confirm availability · last confirmed ${age}`;
+  }
+  if (a.state === "aging") {
+    return ar ? `آخر تأكيد ${age}` : `Last confirmed ${age}`;
+  }
+  return ar ? `متاح · تأكد التوفر ${age}` : `Available · confirmed ${age}`;
+}
+
+// The single writer of the availability colour.
+//
+// Both surfaces used to compose this inline, and both reached for the reserved
+// confirmed green on the fresh state. On the browse card that put the reserved
+// colour on one card twice for two unrelated claims: the verification tick, which
+// is an evidence-backed check somebody ran, and a date the lister typed. The
+// standing rule is that verified green appears only for evidence-backed
+// verification, so availability gives it up. Freshness reads in the words above;
+// the colour is now a quiet second-order cue, not the signal itself.
+export function availabilityTone(state: AvailabilityState): string {
+  if (state === "stale") return "var(--status-stale)";
+  if (state === "aging") return "var(--slate)";
+  return "var(--harbor-d)";
 }

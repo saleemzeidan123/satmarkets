@@ -4,10 +4,10 @@ import { readdirSync, statSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 // Green-exclusivity regression gate (PKG-1B.1 correction 1, widened in PKG-1B.2 for
-// Codex item 7). Confirmed green (#1B7A50 / var(--green) / var(--verified) / the
-// Tailwind `green` alias) is reserved for evidence-backed verification, with three
-// enumerated exceptions: a timestamp-backed CONFIRMED AVAILABILITY state, the held
-// FAL licence credential, and the WhatsApp third-party brand fill. The pale accents
+// Codex item 7, narrowed again by finding 46). Confirmed green (#1B7A50 /
+// var(--green) / var(--verified) / the Tailwind `green` alias) is reserved for
+// evidence-backed verification, with two enumerated exceptions: the held FAL licence
+// credential, and the WhatsApp third-party brand fill. The pale accents
 // (--green-wash, --green-line, --verified-wash) and the semantic token layer
 // (var(--status-verified)) are not the reserved saturated green and are not scanned.
 //
@@ -34,8 +34,15 @@ type Allow = {
 /** How far above/below a green line the meaning evidence may sit. */
 const CONTEXT_LINES = 3;
 
+// Finding 46 removed the third exception. D24 had permitted availability to keep the
+// reserved green while it was timestamp-backed, and read in isolation that is
+// defensible: the date is real. On a browse card it was not read in isolation. The
+// verification tick sits on the same card, so one reader saw the reserved colour
+// twice for two unrelated claims, one of which is a check SAT ran and the other of
+// which is a sentence the lister typed. Availability now states its freshness in
+// words and takes a neutral tone, and the exception is gone rather than narrowed,
+// because an exception that has to be explained on every card is not an exception.
 const VERIFICATION = /verif|موثّق/i;
-const AVAILABILITY = /verif|availab|av\.state|"fresh"|"aging"|"stale"/i;
 
 const ALLOW: Record<string, Allow> = {
   "src/lib/releaseState.ts": { reason: "token definition: the verified release-state tone", context: VERIFICATION },
@@ -51,9 +58,10 @@ const ALLOW: Record<string, Allow> = {
   "src/app/[locale]/compare/page.tsx": { reason: "verification: owner-verified row", context: VERIFICATION },
   "src/app/[locale]/verify/signups/page.tsx": { reason: "verification: verified signup status", context: VERIFICATION },
   "src/app/[locale]/verify/page.tsx": { reason: "verification: verified-dimension Yes", context: VERIFICATION },
-  "src/app/[locale]/listings/[id]/page.tsx": { reason: "verification (verified owner) + availability-confirmed (availability_confirmed_at)", context: AVAILABILITY },
+  // Both listing surfaces left this list in finding 46: neither holds confirmed green
+  // any more. Their availability colour now comes from availabilityTone(), which
+  // cannot return it.
   "src/app/[locale]/listings/[id]/flyer/page.tsx": { reason: "verification: verified-owner tag", context: VERIFICATION },
-  "src/app/[locale]/listings/page.tsx": { reason: "availability-confirmed (availability_confirmed_at)", context: AVAILABILITY },
   // ADV-1 (C). This read "passesGate() verified-listing tick" until the card stopped
   // asking the publish gate whether a record was verified. The gate answers a different
   // question, and two of its four legs answer PASS when nobody has looked.
@@ -101,7 +109,7 @@ function greenLines(body: string): number[] {
   return out;
 }
 
-test("confirmed green appears only in enumerated verification/availability/brand files", () => {
+test("confirmed green appears only in enumerated verification and brand files", () => {
   const offenders: string[] = [];
   for (const f of scanned()) {
     const rel = f.replace(/\\/g, "/");

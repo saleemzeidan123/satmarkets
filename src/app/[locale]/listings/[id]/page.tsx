@@ -6,7 +6,7 @@ import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { listedSince, listedLabel } from "@/lib/listedSince";
-import { availabilityOf, availabilityLabel } from "@/lib/availability";
+import { availabilityOf, availabilityLabel, availabilityTone } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, fillProse, formatArea, formatCounted, formatMoney, formatNumber, formatUnit, formatWithUnit } from "@/lib/format";
@@ -266,16 +266,18 @@ export default async function ListingDetail({ params }: { params: { locale: stri
 
           {/* Honest availability freshness (Fable 5: own freshness, not just
               provenance). Reads availability_confirmed_at, the real date the lister
-              affirmed the space is available, and lets it decay: green when current,
-              muted as it ages, an amber re-check nudge once it is old. Shown only when
-              the column is set; never inferred from updated_at or verified_at. */}
+              affirmed the space is available, and lets it decay. Finding 46: the
+              three states are told apart by their WORDS, not by their colour, and
+              the reserved verification green is not one of the colours, because a
+              date the lister typed is not a check anybody ran. Shown only when the
+              column is set; never inferred from updated_at or verified_at. */}
           {(() => {
             const av = availabilityOf((l as any).availability_confirmed_at);
             if (!av) return null;
             const dt = new Date((l as any).availability_confirmed_at);
             if (!isFinite(dt.getTime())) return null;
             const dtxt = dt.toLocaleDateString(ar ? "ar-SA-u-nu-latn" : "en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Riyadh" });
-            const color = av.state === "stale" ? "var(--status-stale)" : av.state === "fresh" ? "#1B7A50" : "var(--slate)";
+            const color = availabilityTone(av.state);
             return (
               <div className="row gap6" style={{ marginTop: 6, alignItems: "center", color, fontSize: 12.5 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>

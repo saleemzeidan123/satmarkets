@@ -29,7 +29,7 @@ import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { decidedRentIndexRows, quotableRentIndexRows } from "@/lib/market/quotable";
 import { listedSince, listedLabel } from "@/lib/listedSince";
-import { availabilityOf, availabilityShortLabel } from "@/lib/availability";
+import { availabilityOf, availabilityShortLabel, availabilityTone } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
 // trust mark it had not earned, on the platform that publishes /neutrality.
@@ -508,14 +508,19 @@ export default async function ListingsPage({ params, searchParams }: { params: {
                       <div className="ttl">{listingTitle(l, ar ? "ar" : "en")}</div>
                       <div className="meta"><span>{dn || rcity}</span><i /><span>{formatArea(l.area_sqm, locale)}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
                       {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: 10.5, letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
+                      {/* Finding 46. The label states the freshness in words and
+                          carries the age, so the dot is decoration and stays
+                          aria-hidden. The reserved verification green is gone from
+                          here: the tick in the photo badges is the only claim on
+                          this card that an evidence-backed check was run. */}
                       {(() => {
                         const av = availabilityOf((l as any).availability_confirmed_at);
                         if (!av) return null;
-                        const c = av.state === "stale" ? "var(--status-stale)" : av.state === "aging" ? "var(--slate)" : "#1B7A50";
+                        const c = availabilityTone(av.state);
                         return (
-                          <div className="row gap6" style={{ marginTop: 5, alignItems: "center" }}>
-                            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto" }} />
-                            <span className="mono" style={{ fontSize: 10.5, letterSpacing: ".02em", color: c }}>{availabilityShortLabel(av, ar)}</span>
+                          <div className="row gap6" style={{ marginTop: 5, alignItems: "flex-start" }}>
+                            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto", marginTop: 4 }} />
+                            <span className="mono" style={{ fontSize: 10.5, letterSpacing: ".02em", lineHeight: 1.35, color: c }}>{availabilityShortLabel(av, ar)}</span>
                           </div>
                         );
                       })()}
