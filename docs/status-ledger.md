@@ -228,3 +228,33 @@ the deployed product does.
 | Consequence | No completed multi-file slice may exist only in the container clone. See PKG-ELITE-E1 slice B |
 | Deployment mechanism | `python3 tools/ship.py --auto -m "message"`. The em-dash guard rejects an em dash in a commit message |
 | Known local build limitation | `npm run build` fails locally on four `next/font` errors because Google Fonts is unreachable. A Vercel READY build is the production build evidence |
+
+### The working practice, adopted in PKG-ELITE-E1 slice B
+
+The container has been reclaimed mid-package before, and it took uncommitted work with
+it. The practice below exists so that it can happen again without costing anything.
+
+1. **Commit each coherent slice as it finishes.** A slice is coherent when its tests pass
+   and its record is written. Not per file, not per edit.
+2. **Push each of those commits.** A commit that exists only in the container clone is
+   protected from an editor mistake, not from a reclamation.
+3. **Keep the tree clean between slices.** `git status` at the start of a slice should
+   show nothing. If it does not, the previous slice is not finished.
+4. **No large multi-file uncommitted package.** If more than a handful of files are
+   uncommitted at once, the slice was drawn too wide and should be split.
+5. **No meaningless microcommits.** Reviewability is the reason commits exist. A commit
+   whose message cannot state what changed and why is the wrong size in the other
+   direction.
+6. **Record the intended deployment commit before beginning the next package.** Written
+   into section 1 of this file, so that a reclamation between packages loses nothing but
+   time.
+7. **Mirror a recovery bundle to the persistent workspace at each package close.** A
+   `git bundle` of `main` plus this ledger goes to
+   `C:\Users\salee\Desktop\SAT Knowledge Base\sat-markets\work\recovery\` on the owner's
+   device, with a `RECOVERY.md` stating how to restore from it. GitHub stays the
+   authoritative remote; the bundle is a second copy held somewhere a container cannot
+   reclaim.
+
+**Intended deployment commit for the remainder of PKG-ELITE-E1:** each slice ships on its
+own commit to `main` and deploys to production on its own Vercel build. There is no
+long-lived branch and no accumulated package commit.
