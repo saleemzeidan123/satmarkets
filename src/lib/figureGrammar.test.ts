@@ -315,3 +315,117 @@ test("finding 128: one budget column is rendered in one unit", () => {
   assert.ok(String(ar.postReq.budgetCeiling).includes(formatUnit("sar_sqm_year", "ar", "short").replace(/⁠/g, "")),
     `the Arabic budget label no longer states the unit format.ts renders: ${ar.postReq.budgetCeiling}`);
 });
+
+// ---------------------------------------------------------------------------
+// Finding 129. One table for a unit
+// ---------------------------------------------------------------------------
+
+/**
+ * Findings 120, 124, 128 and 129 were the same defect arriving four times: a
+ * surface spelling a unit itself. Each was fixed by rewiring the call sites,
+ * and each time a new spelling appeared where the previous sweep had not
+ * looked. The reason was structural rather than careless. There were FOUR unit
+ * tables, not one, and only the first was typed:
+ *
+ *   src/lib/format.ts          UNITS, the canon
+ *   src/lib/labels.ts          a two-entry map exported as `unitLabel`, dead
+ *   src/lib/attributeDisplay.ts  a six-entry EN to AR map
+ *   src/lib/market/valueEvidence.ts  two regexes and a private joinUnit
+ *
+ * These guards are on the structure. The spellings themselves are held by the
+ * ar-lint rule, which reads the canonical set out of format.ts so it cannot
+ * become a fifth table.
+ */
+
+test("finding 129: format.ts is the only unit table left", () => {
+  // The dead one, deleted outright: two entries, spaced spellings nothing
+  // rendered, and zero callers anywhere in the tree.
+  const labels = read("src/lib/labels.ts");
+  assert.equal(/export const unitLabel/.test(labels), false, "labels.ts exports a unit table again");
+  assert.equal(/SAR ?\/ ?m²/.test(labels), false, "labels.ts is spelling a unit again");
+
+  // The two live ones, now callers of format.ts rather than copies of it.
+  for (const p of ["src/lib/attributeDisplay.ts", "src/lib/market/valueEvidence.ts"]) {
+    const src = read(p);
+    assert.match(src, /formatUnit\(/, `${p} stopped rendering its units through format.ts`);
+    assert.equal(/["'`]ريال/.test(src), false, `${p} is spelling an Arabic unit itself again`);
+    assert.equal(/Record<string, ?string>\s*=\s*\{[^}]*م²/.test(src), false, `${p} grew a private EN to AR unit map again`);
+  }
+
+  // And no shipped source pins half a number format: the numbering system fixed
+  // and the rest left to whichever CLDR data the runtime carries. On a client
+  // component that runtime is the visitor's browser.
+  for (const p of sources()) {
+    const src = read(p);
+    if (/toLocaleDateString|new Date\(|\.created_at|inLanguage/.test(src)) continue;
+    assert.equal(/toLocaleString\([^)]*ar-SA/.test(src), false, `${p} formats a number from the runtime's Arabic CLDR data instead of format.ts`);
+  }
+});
+
+test("finding 129: every unit the asset field registry stores resolves to the table", () => {
+  // This is the guard that closes the class rather than one instance of it. The
+  // registry is where a unit enters the platform; if a string here does not
+  // resolve, `formatUnit` passes it through verbatim, which is deliberate and
+  // is also why nobody sees it. Sixteen fields stored "m" and there was no
+  // alias for it, so sixteen fields printed a Latin "m" on an Arabic page.
+  //
+  // `months` and `years` are excluded because they are counted nouns, not
+  // units: they go through `formatCounted`, which is asserted separately in
+  // attributeDisplay.test.ts (finding 52).
+  const registry = readFileSync("src/lib/assetFields.ts", "utf8");
+  const stored = [...registry.matchAll(/unit: "([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(stored.length > 30, `only ${stored.length} units found; the registry shape changed`);
+  for (const unit of new Set(stored)) {
+    if (unit === "months" || unit === "years") continue;
+    const ar = formatUnit(unit, "ar", "short").replace(/⁠/g, "");
+    assert.equal(/[A-Za-z]/.test(ar), false, `the registry stores ${JSON.stringify(unit)} and it renders as Latin script in Arabic: ${ar}`);
+  }
+});
+
+test("finding 129: the front door does not spell the platform's most-used unit itself", () => {
+  // The live instance. `MarketingHome.tsx` held the lease unit twice in its own
+  // copy objects, once per language, and the English one, " SAR/m²·yr", did not
+  // match the table. It was on the first screen of the site six times: the band
+  // panel, the band caption and three featured price cards.
+  const home = read("src/components/MarketingHome.tsx");
+  assert.equal(/^\s*unit:/m.test(home), false, "the front door is carrying its own unit spelling again");
+  assert.match(home, /formatUnit\("sar_sqm_year"/, "the front door stopped taking its unit from format.ts");
+
+  // Sensitivity: the shipped literal beside the canon, so this fails against
+  // the code it replaced rather than restating the new code.
+  const shipped = " SAR/m²·yr";
+  assert.notEqual(shipped.trim(), formatUnit("sar_sqm_year", "en", "short").replace(/⁠/g, ""));
+  assert.equal(formatUnit("sar_sqm_year", "en", "short").replace(/⁠/g, ""), "SAR/m²/yr");
+});
+
+test("finding 129: a legacy spelling resolves to the canon instead of passing through", () => {
+  // Stored rows and seed data still hold the old spellings, and an alias is the
+  // only thing standing between a stored string and the screen. Each pair below
+  // is a spelling that exists somewhere in data or in an older file, and the
+  // canon it must land on.
+  const cases: [string, string, string][] = [
+    ["SAR/m²·yr", "SAR/m²/yr", "ريال/م²·سنة"],
+    ["sar_sqm_yr", "SAR/m²/yr", "ريال/م²·سنة"],
+    ["SAR / m² / yr", "SAR/m²/yr", "ريال/م²·سنة"],
+    ["m", "m", "م"],
+    ["kN/m²", "kN/m²", "ك.ن/م²"],
+    ["L", "L", "لتر"],
+    ["t/m²", "t/m²", "طن/م²"],
+  ];
+  for (const [stored, en, ar] of cases) {
+    assert.equal(formatUnit(stored, "en", "short").replace(/⁠/g, ""), en, `EN: ${stored}`);
+    assert.equal(formatUnit(stored, "ar", "short").replace(/⁠/g, ""), ar, `AR: ${stored}`);
+  }
+});
+
+test("finding 129: the ar-lint unit rule is aimed at the table, not at a copy of it", () => {
+  // A hardcoded canonical list inside the gate would be a fifth table, and it
+  // would be wrong the first time UNITS changed. The gate reads format.ts, so
+  // this asserts the two shapes it depends on are still there.
+  const gate = readFileSync("scripts/ar-lint.mjs", "utf8");
+  assert.match(gate, /readFileSync\("src\/lib\/format\.ts"/, "the unit gate stopped reading the canon from format.ts");
+  assert.match(gate, /unit-law/, "the unit gate lost its explicit exemption marker");
+  const fmt = readFileSync("src/lib/format.ts", "utf8");
+  assert.match(fmt, /export const UNITS = \{/, "the gate slices on this exact string");
+  assert.match(fmt, /\} as const;/, "the gate slices on this exact string");
+});

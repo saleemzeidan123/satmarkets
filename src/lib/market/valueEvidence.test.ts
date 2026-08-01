@@ -232,8 +232,21 @@ test("Codex closure: the Arabic unit cannot break after the slash", () => {
   assert.ok(ar.includes("ريال⁠/⁠م²⁠·⁠سنة"), JSON.stringify(ar));
   // The joiner is invisible: strip it and the unit reads exactly as written.
   assert.ok(ar.replace(/⁠/g, "").includes("ريال/م²·سنة"));
-  // English is untouched.
-  assert.ok(!/⁠/.test(renderValue(ev, "en")));
+
+  // PKG-FIG2, finding 129. This line used to assert that English carried no
+  // joiner at all, and that was the local rule of one file rather than the
+  // platform's. `formatUnit` in src/lib/format.ts has always joined both
+  // languages, and every other surface that renders a unit goes through it, so
+  // "English is untouched" held only here, inside the private copy of joinUnit
+  // this file used to keep. English breaks after its slash at 320px for exactly
+  // the reason Arabic did.
+  //
+  // The property that matters is the one asserted below: the joiner is
+  // invisible, so what a reader sees is unchanged and what a narrow column can
+  // break is.
+  const en = renderValue(ev, "en");
+  assert.ok(en.includes("SAR⁠/⁠m²⁠/⁠year"), JSON.stringify(en));
+  assert.ok(en.replace(/⁠/g, "").includes("SAR/m²/year"));
 });
 
 test("Codex closure: an Arabic period phrase never leaks the raw storage form", () => {

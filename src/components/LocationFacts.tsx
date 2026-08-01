@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { FactKey } from "@/lib/locationFacts";
 import type { TravelTime } from "@/lib/location/results";
+import { formatDecimal } from "@/lib/format";
 
 // Honest, computed location section for a listing detail page. Every value here is
 // either a verified coordinate or a computation over verified coordinates (CLAUDE.md
@@ -100,7 +101,12 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const num = (n: number) => Number(n.toFixed(n < 10 ? 1 : 0)).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
+  // PKG-FIG2, finding 129. The last half-pinned numeral formatter in the tree,
+  // and the twin of the one `attributeDisplay.ts` carried: the numbering system
+  // was fixed to Latin and the rest of the format was left to the runtime's
+  // CLDR data. It is a client component, so "the runtime" is the visitor's
+  // browser and its ICU version, not this deployment's.
+  const num = (n: number) => formatDecimal(Number(n.toFixed(n < 10 ? 1 : 0)), ar ? "ar" : "en", 1);
   const lineLabel = (line: string | null) => (line ? (ar ? (LINE_AR[line] || line) : line) : "");
 
   const metroRow = (key: string) => metro ? (

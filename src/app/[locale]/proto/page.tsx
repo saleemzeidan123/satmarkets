@@ -1,6 +1,7 @@
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
+import { formatUnit } from "@/lib/format";
 
 // Design-system reference (Verified Ground). Route-flagged prototype for the
 // approved redesign: renders the token roles and the core shared components so
@@ -76,7 +77,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
           <div style={{ height: 150, background: "linear-gradient(135deg,var(--harbor-d),var(--harbor))" }} />
           <div style={{ padding: "var(--space-4)", display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ alignSelf: "start", display: "inline-flex", alignItems: "center", gap: 6, background: "var(--verified-wash)", color: "var(--verified)", borderRadius: 999, paddingBlock: 3, paddingInline: 8, fontSize: 11, fontWeight: 700 }}>{t("Ownership verified", "الملكية موثّقة")}</span>
-            <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t("SAR/m²·yr", "ريال/م²·سنة")}</span></div>
+            <div style={{ fontSize: 18, fontWeight: 700 }}>1,650 <span style={{ fontSize: 12, color: "var(--slate)" }}>{t(formatUnit("sar_sqm_year", "en", "short"), formatUnit("sar_sqm_year", "ar", "short"))}</span></div>
             <div style={{ fontWeight: 600 }}>{t("Grade A Office, Al Olaya", "مكتب الفئة A، العليا")}</div>
             <div style={{ fontSize: 12.5, color: "var(--slate)" }}>{t("Al Olaya · 850 m²", "العليا · 850 m²")}</div>
             <div style={{ fontSize: 12.5, color: "var(--amber)", fontWeight: 600 }}>{t("~16% above index average", "أعلى من متوسط المؤشر بنحو 16%")}</div>

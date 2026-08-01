@@ -6,7 +6,7 @@ import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satki
 import Reveal from "@/components/Reveal";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
-import { formatInteger, formatRange } from "@/lib/format";
+import { formatInteger, formatRange, formatUnit } from "@/lib/format";
 
 export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; badges: string[]; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string };
@@ -46,6 +46,17 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  // defect as finding 123, on the one page every visitor sees first.
  const fig = (n: number) => formatInteger(Math.round(n), ar ? "ar" : "en");
  const H = getDictionary(ar ? "ar" : "en").home;
+ // PKG-FIG2, finding 129. The lease unit was spelled twice in this file's own
+ // copy objects, once per language. The Arabic spelling happened to match the
+ // table; the English one, " SAR/m²·yr", did not, and it was live on the front
+ // door six times: on the band panel, on the band caption and on three featured
+ // price cards. It is the first screen of the site, so it was the most-read
+ // wrong spelling of the platform's most-used unit.
+ //
+ // The leading space each literal carried was structural rather than
+ // typographic, which is why the band caption had to strip it back off with
+ // `.replace(/^[\s/]+/, "")`. The space belongs to the JSX that needs it.
+ const unitShort = formatUnit("sar_sqm_year", ar ? "ar" : "en", "short");
  const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
  const [bi, setBi] = useState(0);
  const band = bands[bi] || bands[0] || null;
@@ -129,7 +140,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ftEye: "مختارة، الرياض",
   ftH: "مساحات معروضة، مقارنة بالنطاق المنشور",
   ftBrowse: "تصفّح كل العروض",
-  unit: " ريال/م²·سنة",
   bandEye: "مؤشر الإيجارات",
   bandH: "طبقة التسعير خلف كل قرار",
   bandP1: "المعايير المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو قارن عقداً بالنطاق. كل رقم يحمل فترته ومصدره.",
@@ -184,7 +194,6 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ftEye: "Featured, Riyadh",
   ftH: "Listed spaces, priced against the published band",
   ftBrowse: "Browse all listings",
-  unit: " SAR/m²·yr",
   bandEye: "Rent Index",
   bandH: "The pricing layer behind every decision",
   bandP1: "Published benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent or check a lease against the band. Every figure carries its period and its source.",
@@ -339,7 +348,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
        <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]} />
        <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
-        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{T.unit}</small></div>
+        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: 28, color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}{unitShort}</small></div>
         <div style={{ fontSize: 21, fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
         <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: "var(--fs-xs)", color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
         {idxBar(f0)}
@@ -351,7 +360,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
          <Ph src={f.img} label={f.ph} h={150} badges={[...f.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>]} />
          <div className="body">
-          <div className="row between"><div className="price">{f.price}<small>{T.unit}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
+          <div className="row between"><div className="price">{f.price}<small>{" "}{unitShort}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
           <div className="ttl">{f.title}</div>
           <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
           {idxBar(f)}
@@ -419,7 +428,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
       {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{T.unit.replace(/^[\s/]+/, "")}</div></div>
+        <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{unitShort}</div></div>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{formatPeriod(band.period, ar)}</span>
        </div>
        <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>

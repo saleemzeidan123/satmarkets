@@ -133,5 +133,67 @@ for (const f of all) {
   }
 }
 
+// PKG-FIG2, finding 129. One spelling per unit per language, taken from the
+// table rather than restated here.
+//
+// Findings 120, 124, 128 and 129 were all the same defect arriving again: a
+// surface spelling a unit itself. Each was fixed by rewiring the call sites, and
+// each time a new spelling appeared somewhere the previous sweep had not looked,
+// because nothing stopped one. At the point this rule was written the tree held
+// nineteen distinct spellings of units `format.ts` already owns, across four
+// parallel unit tables, and one of them was live on the English front door.
+//
+// So the canonical set is READ FROM `src/lib/format.ts` rather than written out
+// below. A hardcoded list here would be a fifth table, and it would be wrong the
+// first time UNITS changed.
+//
+// Scope, stated rather than implied:
+//
+//   Only separator-joined tokens are checked, a currency followed by `/` or `·`.
+//   Prose that names a period in words is not a unit token: "1,200,000 SAR per
+//   year as a total" in `decisionPack.ts` is a sentence, and forcing "SAR/yr"
+//   into it would make the English worse, not more consistent.
+//
+//   Comments are stripped first. Half the remaining matches in the tree are
+//   comments naming a legacy spelling to explain the defect that removed it,
+//   which is exactly the record this project keeps and must not be made
+//   unwritable by its own gate.
+//
+//   `format.ts` itself is exempt: it holds the table and the lowercase alias
+//   keys the table resolves. Test files are exempt because a test proving that
+//   a legacy spelling still resolves has to be able to spell it, and a test is
+//   not shipped copy. Anything else needs an explicit `unit-law` marker on the
+//   line, the same visible-in-the-diff friction the em dash rule uses.
+const fmtSrc = fs.readFileSync("src/lib/format.ts", "utf8");
+const unitsBlock = fmtSrc.slice(fmtSrc.indexOf("export const UNITS = {"), fmtSrc.indexOf("} as const;"));
+const CANON_UNITS = new Set([...unitsBlock.matchAll(/(?:long|short): "([^"]+)"/g)].map((m) => m[1]));
+if (CANON_UNITS.size < 10) {
+  console.error("ar-lint: could not read UNITS out of src/lib/format.ts; the unit rule is aimed at nothing");
+  bad++;
+}
+// A currency, a separator, then an area, a desk or a period. The second
+// separator is optional so "SAR/m²" is checked too.
+const UNIT_TOKEN = /(?:SAR|ريال)\s*[/·]\s*(?:m²|m2|sqm|م²|desk|مكتب|yr|year|mo|month|سنة|شهر|سنوياً|سنويا)(?:\s*[/·]\s*(?:m²|m2|sqm|م²|desk|مكتب|yr|year|mo|month|سنة|شهر|سنوياً|سنويا))?/g;
+const stripComments = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+for (const f of all) {
+  if (f === path.normalize("src/lib/format.ts")) continue;
+  if (/\.test\.tsx?$/.test(f)) continue;
+  const raw = fs.readFileSync(f, "utf8");
+  const body = /\.json$/.test(f) ? raw : stripComments(raw);
+  const offenders = [];
+  for (const line of body.split(/\r?\n/)) {
+    if (/unit-law/.test(line)) continue;
+    for (const m of line.matchAll(UNIT_TOKEN)) {
+      const s = m[0].trim();
+      if (!CANON_UNITS.has(s)) offenders.push(s);
+    }
+  }
+  if (offenders.length) {
+    const shown = [...new Set(offenders)].map((s) => JSON.stringify(s)).join(", ");
+    console.error(`${f}: ${offenders.length}x non-canonical unit ${shown} -> render it with formatUnit() from src/lib/format.ts`);
+    bad++;
+  }
+}
+
 if (bad) { console.error(`ar-lint: ${bad} violation groups`); process.exit(1); }
 else console.log("ar-lint: clean");

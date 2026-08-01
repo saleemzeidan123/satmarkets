@@ -10,7 +10,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
 import { getDictionary } from "@/i18n/getDictionary";
 import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
-import { formatInteger, formatRange } from "@/lib/format";
+import { formatInteger, formatRange, formatUnit, type Loc } from "@/lib/format";
 
 export interface MapBuilding {
  id: string; name: string; place: string; asset: string; assetLabel: string;
@@ -31,8 +31,18 @@ export interface MapBuilding {
  bandNote?: string | null;
 }
 const gradeFmt = (g: string) => (({ a_plus: "A+", a: "A", b: "B", c: "C" } as any)[g] || "");
-const unitFmt = (u: string | null, l: string) =>
- u === "sar_desk_month" ? (l === "ar" ? "ريال/مكتب/شهر" : "SAR/desk/mo") : (l === "ar" ? "ريال/م²/سنة" : "SAR/m²·yr");
+// PKG-FIG2, finding 129. This branched on one unit key and spelled four
+// literals, three of which disagreed with the table: the English lease unit used
+// a middle dot against the canonical slash, and BOTH Arabic spellings used a
+// slash where every other Arabic surface on the platform uses the middle dot, so
+// the map read "ريال/م²/سنة" while the listing beneath it read "ريال/م²·سنة" for
+// the same figure. A map that shows a band and a card that shows the same band
+// were disagreeing about what the band is measured in.
+//
+// A null unit still falls back to the annual per-square-metre rate, which is
+// what the branch did and what the index rows carry; the fallback is now stated
+// once rather than implied by the shape of a ternary.
+const unitFmt = (u: string | null, l: string) => formatUnit(u ?? "sar_sqm_year", (l === "ar" ? "ar" : "en") as Loc, "short");
 
 type Mode = "pins" | "heat" | "zone";
 

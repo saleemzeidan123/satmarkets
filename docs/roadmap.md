@@ -1506,6 +1506,64 @@ the Listing Studio's ungated inline Arabic literals, which overlap the deferred 
 and the single-character placeholders standing for an absent value on `compare`, `listings`,
 `rent-index` and `ops`.
 
+## PKG-FIG2, one table for a unit
+
+Finding 129, P1, closed. The direct continuation of PKG-FIG1's live sweep, which had found the wrong
+spelling of the lease unit on the English front door and treated it as one defect. It was not one
+defect. A scan of every `.ts`, `.tsx` and `.json` file under `src` found nineteen distinct spellings
+of units `format.ts` already owns, across eighty-nine occurrences, and it found the reason: there
+were FOUR unit tables, not one, and only the first was typed.
+
+`format.ts` `UNITS` is the canon. `labels.ts` held a two-entry map exported as `unitLabel`, in
+spellings nothing renders, with zero callers anywhere in the tree. `attributeDisplay.ts` held a
+six-entry EN to AR map keyed on the exact strings in `assetFields.ts`. `market/valueEvidence.ts` held
+two regexes and a private duplicate of `joinUnit`, and neither regex matched `sar_sqm_yr`, which is
+the string the ingest pipeline actually writes.
+
+Findings 120, 124, 128 and 129 were therefore the same defect arriving four times. Each was fixed by
+rewiring call sites, and each time a new spelling appeared where the previous sweep had not looked,
+because nothing stopped one. This package fixed the structure rather than the instances: three units
+the registry has always stored and the table never carried (`t/m²`, `kN/m²`, litres) were added,
+fourteen aliases were added, the dead table was deleted outright, and the two live ones became
+callers of `format.ts` rather than copies of it.
+
+The largest instance was invisible to every previous sweep because it produced no wrong spelling at
+all. `resolveUnitKey` had no alias for `m`, which is what the asset field registry stores in sixteen
+fields, more than any other unit. An unresolved unit is passed through verbatim, which is deliberate,
+correct, and the reason nobody saw that sixteen fields were printing a Latin `m` on Arabic pages. The
+same passthrough is how `kN/m²` and `L` reached Arabic attribute rows still in Latin script. Nothing
+raises an error when a lookup that finds nothing is supposed to find nothing.
+
+The gate is the part meant to end the class. `ar-lint` gained a rule that READS the canonical set out
+of `src/lib/format.ts` rather than restating it, because a hardcoded list inside the gate would have
+been a fifth table and would have been wrong the first time `UNITS` changed. Its scope is stated in
+the script: only separator-joined tokens are checked, so prose naming a period in words is out of
+scope by design; comments are stripped first, because half the remaining matches in the tree are the
+project's own record of the spellings it removed and a gate that made that record unwritable would be
+the same mistake PKG-FIG1's first over-broad guard was; `format.ts` and test files are exempt;
+anything else needs an explicit `unit-law` marker, the same visible-in-the-diff friction the em dash
+rule uses.
+
+Two sub-defects were closed beside the main one. `attributeDisplay.ts` and `LocationFacts.tsx` each
+pinned half a number format, fixing the numbering system to Latin and leaving everything else to
+whichever CLDR data the runtime happens to carry, which on a client component is the visitor's
+browser rather than this deployment. This was first written up as a grouping defect and the claim was
+checked before it was believed: on the runtime this ships on, `ar-SA` with Latin numerals groups with
+the same comma `en-US` does, so no grouping difference exists and none is claimed. The difference
+that does exist is a `U+200E` LEFT-TO-RIGHT MARK emitted before the minus sign of a negative value,
+an invisible control inside a figure a reader can copy out of the page.
+
+One existing assertion was rewritten rather than deleted. `valueEvidence.test.ts` asserted that the
+English unit carried no word joiner, and that was the local rule of one file rather than the
+platform's: `formatUnit` has always joined both languages, and English breaks after its slash at 320
+pixels for exactly the reason Arabic did.
+
+Deliberately out of scope: the English `/` against the Arabic `·` separator. It reads as an
+inconsistency and it is a decision. `·` doubles as the LIST separator in the very strings that used
+it as a unit separator, so `3,700 SAR/m²·yr · 1,200 m² · KAFD` is genuinely ambiguous to an English
+reader, while in Arabic the middle dot is the right typographic choice and carries no such clash.
+`format.ts` was not changed.
+
 ## Parked (deliberate)
 
 - **`/compare`** — stub until post-launch (facts-only, no winner-highlighting).

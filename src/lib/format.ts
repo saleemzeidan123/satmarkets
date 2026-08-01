@@ -134,6 +134,17 @@ export const UNITS = {
   // still living outside this table.
   sar_month: { en: { long: "SAR/month", short: "SAR/mo" }, ar: { long: "ريال/شهر", short: "ريال/شهر" } },
   kva: { en: { long: "kVA", short: "kVA" }, ar: { long: "ك.ف.أ", short: "ك.ف.أ" } },
+  // PKG-FIG2, finding 129. Three units the asset field registry has always
+  // carried and this table never did: a floor loading in tonnes and in
+  // kilonewtons per square metre, and a tank or generator capacity in litres.
+  // `attributeDisplay.ts` held a private six-entry EN to AR map for them, which
+  // is how `طن/م²` came to exist in one file and nowhere else, and how `kN/m²`
+  // and `L` reached an Arabic page still in Latin script. They are here now
+  // because a unit the platform renders belongs in the table that renders units,
+  // whether or not a public page happens to show it today.
+  t_sqm: { en: { long: "t/m²", short: "t/m²" }, ar: { long: "طن/م²", short: "طن/م²" } },
+  kn_sqm: { en: { long: "kN/m²", short: "kN/m²" }, ar: { long: "كيلونيوتن/م²", short: "ك.ن/م²" } },
+  litre: { en: { long: "litres", short: "L" }, ar: { long: "لتر", short: "لتر" } },
   pct: { en: { long: "%", short: "%" }, ar: { long: "%", short: "%" } },
 } as const;
 
@@ -154,6 +165,17 @@ const UNIT_ALIASES: Record<string, UnitKey> = {
   "sar/mo": "sar_month", "sar/month": "sar_month", "sar_month": "sar_month",
   "sar/yr": "sar_year", "sar/year": "sar_year", "sar_year": "sar_year", "sar·yr": "sar_year",
   "m2": "sqm", "m²": "sqm", "sqm": "sqm",
+  // PKG-FIG2, finding 129. `metre` was in the table from the beginning and
+  // reachable only by callers spelling the key itself, which none do. The
+  // spelling the asset field registry actually stores is "m", and it had no
+  // alias. Sixteen registry fields carry it, more than any other unit,
+  // and every one of them rendered the Latin "m" on an Arabic page because a
+  // unit that resolves to nothing is passed through verbatim rather than
+  // dropped. That passthrough is deliberate and correct, and it is also why
+  // this was invisible: no error is raised by a unit nobody could resolve.
+  "m": "metre", "metre": "metre", "metres": "metre", "meter": "metre", "meters": "metre",
+  "t/m2": "t_sqm", "t/m²": "t_sqm", "kn/m2": "kn_sqm", "kn/m²": "kn_sqm",
+  "l": "litre", "litre": "litre", "litres": "litre", "liter": "litre", "liters": "litre",
   "sar": "sar", "kva": "kva", "%": "pct",
 };
 

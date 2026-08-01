@@ -157,9 +157,12 @@ const SEGMENT: Record<string,[string,string]> = {
  * segment can print a raw key.
  */
 const SEGMENT_GRADE: Record<string, string> = { grade_a: "a", grade_b: "b", grade_c: "c" };
-const UNIT: Record<string,[string,string]> = {
-  sar_sqm_year:["SAR / m² / yr","ريال / م² / سنة"], sar_desk_month:["SAR / desk / mo","ريال / مكتب / شهر"]
-};
+// PKG-FIG2, finding 129. A two-entry unit table lived here, spelling
+// "SAR / m² / yr" and "ريال / م² / سنة" with spaces around the separators,
+// which is a spelling no other surface on the platform uses. It was exported as
+// `unitLabel` and it had no callers: nothing imported it, so it was a third
+// spelling of the lease unit kept alive by nothing but its own export. Deleted
+// rather than corrected, because `formatUnit` in src/lib/format.ts is the
+// function it was a copy of.
 export const segmentLabel = (t: string | null | undefined, l: L) =>
   !t ? "" : SEGMENT_GRADE[t] ? gradePhrase(SEGMENT_GRADE[t], l) : (SEGMENT[t]?.[idx(l)] ?? t);
-export const unitLabel = (t: string, l: L) => (UNIT[t]?.[idx(l)]) ?? t;

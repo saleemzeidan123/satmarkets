@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { formatUnit } from "@/lib/format";
 
 // Dropdown filter bar for the exchange. Pills toggle a single in-flow panel
 // rendered below the row, so it never overflows on mobile or in the app shell.
@@ -171,7 +172,11 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
       </div>
     ) : (
       <div>
-        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("SAR / m² / yr. Lease listings.", "ريال / م² / سنة. عروض الإيجار.")}</div>
+        <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{/* PKG-FIG2, finding 129. Both halves of this caption spelled the lease
+                unit with spaces around the separators, which is a spelling no figure
+                on the site is rendered in, so the heading over the rent bands did not
+                match the rents underneath it. */}
+          {t(`${formatUnit("sar_sqm_year", "en", "short")}. Lease listings.`, `${formatUnit("sar_sqm_year", "ar", "short")}. عروض الإيجار.`)}</div>
         {RENTS.map((s) => row(s[0], (params.pmin || "") === s[1] && (params.pmax || "") === s[2] && !params.rt, () => nav({ pmin: s[1], pmax: s[2], rt: "" })))}
         <div style={{ borderTop: "1px solid var(--silver)", margin: "8px 0", paddingTop: 8 }}>
           <div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Or enter an exact rent, we show the nearest", "أو أدخل إيجاراً محدداً، ونعرض الأقرب")}</div>

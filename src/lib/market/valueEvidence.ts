@@ -17,6 +17,7 @@
 
 import { assetLabel } from "@/lib/labels";
 import { formatPeriod, parsePeriod } from "@/lib/market/period";
+import { formatNumber, formatUnit } from "@/lib/format";
 
 /** Whether the answer is built from the period the user actually asked for. */
 export type PeriodStatus = "match" | "unavailable" | "none";
@@ -148,8 +149,9 @@ export function buildValueEvidence(
   };
 }
 
-// Western numerals always, even in Arabic (global law).
-const fmt = (n: number) => n.toLocaleString("en-US");
+// Western numerals always, even in Arabic (global law), from the one formatter
+// that pins the numbering system and the grouping separator together.
+const fmt = (n: number) => formatNumber(n, "en", { maximumFractionDigits: 3 });
 
 // Every visible period goes through the shared bilingual helper. A year-only
 // request ("2025") has no quarter to render and is shown as the plain year.
@@ -159,22 +161,25 @@ export function displayPeriod(period: string | null | undefined, ar: boolean): s
   return formatPeriod(p, ar);
 }
 
-// The Arabic unit is one token to a reader, but a browser will happily break a
-// line after the slash and after the middle dot, which at 320px split
-// "ريال/م²·سنة" across two lines mid-unit. U+2060 WORD JOINER removes those
-// break opportunities without adding a visible character or a space. It cannot
-// cause horizontal overflow: the advisor bubble already carries
-// overflow-wrap:anywhere, which still breaks the token if a line genuinely
-// cannot hold it. Only the deterministic advisor answer is treated here; the
-// listing and analyser surfaces render the unit in their own layouts.
-const WJ = "⁠";
-const arUnit = (s: string) => s.replace(/([/·])/g, `${WJ}$1${WJ}`);
-
-function unitLabel(unit: string, ar: boolean): string {
-  if (/m2\/yr|m²\/yr|sqm\/yr/i.test(unit)) return ar ? arUnit("ريال/م²·سنة") : "SAR/m²/year";
-  if (/m2\/mo|m²\/mo/i.test(unit)) return ar ? arUnit("ريال/م²·شهر") : "SAR/m²/month";
-  return unit;
-}
+// PKG-FIG2, finding 129. What stood here was a fourth unit table: two regexes
+// over the raw unit string, returning hand-spelled English and Arabic, beside a
+// private `arUnit` helper that inserted U+2060 WORD JOINER around the slash and
+// the middle dot so a 320px line could not break "ريال/م²·سنة" mid-unit.
+//
+// Both halves already existed in `src/lib/format.ts`. `UNIT_ALIASES` resolves
+// every spelling those regexes were written to catch, including the
+// `sar_sqm_yr` the ingest pipeline actually writes, which neither regex here
+// matched; and `joinUnit` is the same word joiner pass, character for
+// character, applied to BOTH languages rather than to Arabic alone. The English
+// long form breaks after its slash at 320px for exactly the reason the Arabic
+// one did, and nothing here had noticed.
+//
+// The third thing this fixes is silent: a unit neither regex recognised fell
+// through to `return unit`, so an unrecognised stored unit was printed raw into
+// a deterministic advisor answer. `formatUnit` passes an unknown unit through
+// in the same way, deliberately, so it stays visible and reportable rather than
+// blank, but the recognised set is now the platform's whole set.
+const unitLabel = (unit: string, ar: boolean): string => formatUnit(unit, ar ? "ar" : "en", "long");
 
 // ===== Arabic surface grammar for the deterministic answer =====
 //

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { intakeFields, hasRegistry, type AssetField, type DisplaySection } from "@/lib/assetFields";
 import { changedArabic } from "@/lib/listingArabic";
+import { formatUnit } from "@/lib/format";
 
 // The owner's self-serve editor for a listing. It covers the fields an owner may
 // safely change: the headline, description, size, price, contact routing, AND the
@@ -82,7 +83,7 @@ export default function EditListingForm({
     arTitleHint: "إذا تركته فارغاً، يرى القارئ بالعربية وصفاً موجزاً للمساحة بدل عنوان كتبته أنت.",
     behind: "كُتب هذا النص استناداً إلى نسخة إنجليزية سابقة، وقد لا يطابق ما هو منشور الآن.",
     area: "المساحة (م²)",
-    price: init.deal_type === "lease" ? "الإيجار المطلوب (ريال/م²·سنة)" : "سعر البيع (ريال)",
+    price: init.deal_type === "lease" ? `الإيجار المطلوب (${formatUnit("sar_sqm_year", "ar", "short")})` : `سعر البيع (${formatUnit("sar", "ar")})`,
     phone: "هاتف التواصل", email: "البريد الإلكتروني", channels: "كيف يصل إليك المهتمّون", video: "رابط جولة الفيديو (اختياري)",
     save: "حفظ التعديلات", saving: "جارٍ الحفظ...", saved: "تم حفظ التعديلات", err: "تعذّر الحفظ",
     details: "تفاصيل العقار", notSpec: "غير محدّد", yes: "نعم", no: "لا", choose: "اختر", more: "المزيد من التفاصيل",
@@ -95,7 +96,7 @@ export default function EditListingForm({
     arTitleHint: "Left empty, an Arabic reader is shown a short description of the space instead of a title you wrote.",
     behind: "This was written against an earlier English version, so it may no longer match what is published.",
     area: "Size (m²)",
-    price: init.deal_type === "lease" ? "Asking rent (SAR/m²·yr)" : "Sale price (SAR)",
+    price: init.deal_type === "lease" ? `Asking rent (${formatUnit("sar_sqm_year", "en", "short")})` : `Sale price (${formatUnit("sar", "en")})`,
     phone: "Contact phone", email: "Contact email", channels: "How people reach you", video: "Video tour URL (optional)",
     save: "Save changes", saving: "Saving...", saved: "Changes saved", err: "Could not save",
     details: "Property details", notSpec: "Not specified", yes: "Yes", no: "No", choose: "Select", more: "Add more detail",

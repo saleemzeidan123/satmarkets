@@ -17,7 +17,7 @@ import { districtMobilityPanel } from "@/lib/location/panel";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { entityName } from "@/lib/displayName";
 import { netArea } from "@/lib/listingFigures";
-import { formatInteger, formatRange } from "@/lib/format";
+import { formatInteger, formatRange, formatUnit } from "@/lib/format";
 
 const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 
@@ -128,7 +128,7 @@ export default async function BuildingPage({ params }: { params: { locale: strin
                     printed "1,800-0"; and the separator was spelled here rather than read
                     from `formatRange`, which is the only place that knows Arabic takes
                     إلى between two figures. Both ends are required before either is shown. */}
-                {band.band_low != null && band.band_high != null ? `${formatRange(Number(band.band_low), Number(band.band_high), locale, 0)} · ` : ""}{T.perYear}</span>
+                {band.band_low != null && band.band_high != null ? `${formatRange(Number(band.band_low), Number(band.band_high), locale, 0)} · ` : ""}{formatUnit("sar_sqm_year", locale, "short")}</span>
               </div>
               {/* ADV-1. A chip here read "Verified" beside a band drawn from
                   rent_index_published, whose own data_class is synthetic. It now names

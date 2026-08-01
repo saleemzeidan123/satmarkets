@@ -14,11 +14,45 @@ test("empty, null, and false values do not render", () => {
   assert.equal(formatFieldValue(field({ type: "boolean" }), false, false), null);
 });
 
+/** U+2060 WORD JOINER, which format.ts puts either side of a unit separator. */
+const visible = (s: string | null): string => (s ?? "").replace(/⁠/g, "");
+
 test("numbers render with their unit, localised", () => {
-  assert.equal(formatFieldValue(field({ type: "number", unit: "m" }), 4.5, false), "4.5 m");
-  assert.equal(formatFieldValue(field({ type: "number", unit: "m" }), 4.5, true), "4.5 م");
-  assert.equal(formatFieldValue(field({ type: "money", unit: "SAR/m²·yr" }), 1500, false), "1,500 SAR/m²·yr");
-  assert.equal(formatFieldValue(field({ type: "money", unit: "SAR/m²·yr" }), 1500, true), "1,500 ريال/م²·سنة");
+  // PKG-FIG2, finding 129. The two money lines below used to expect
+  // "SAR/m²·yr" in English, because this file rendered units from its own
+  // six-entry map rather than from format.ts. The canonical English spelling is
+  // "SAR/m²/yr"; the middle dot is Arabic's separator and, in English, doubles
+  // as the LIST separator in the same strings ("3,700 SAR/m²·yr · 1,200 m²"),
+  // which is why the canon does not use it there.
+  //
+  // The legacy spelling is still asserted, one line down, because it is still
+  // what some stored rows hold: it must resolve to the canon rather than pass
+  // through. Spelling it here is allowed; ar-lint's unit rule exempts test
+  // files for exactly this reason.
+  assert.equal(visible(formatFieldValue(field({ type: "number", unit: "m" }), 4.5, false)), "4.5 m");
+  assert.equal(visible(formatFieldValue(field({ type: "number", unit: "m" }), 4.5, true)), "4.5 م");
+  assert.equal(visible(formatFieldValue(field({ type: "money", unit: "SAR/m²/yr" }), 1500, false)), "1,500 SAR/m²/yr");
+  assert.equal(visible(formatFieldValue(field({ type: "money", unit: "SAR/m²/yr" }), 1500, true)), "1,500 ريال/م²·سنة");
+  assert.equal(visible(formatFieldValue(field({ type: "money", unit: "SAR/m²·yr" }), 1500, false)), "1,500 SAR/m²/yr");
+});
+
+// PKG-FIG2, finding 129. The registry stores sixteen fields in metres, more than
+// it stores in any other unit, and this file's private map did not list "m". A
+// unit the map did not list fell through to the English spelling, so every one
+// of those sixteen fields printed a Latin "m" on an Arabic page. Nothing raised
+// an error, because a passthrough is not a failure.
+test("every unit the asset field registry stores renders in Arabic script in Arabic", () => {
+  const stored = ["m", "m²", "SAR/m²/yr", "SAR/m²", "SAR", "kVA", "t/m²", "kN/m²", "L"];
+  for (const unit of stored) {
+    const ar = visible(formatFieldValue(field({ type: "number", unit }), 12, true));
+    assert.ok(ar !== null, unit);
+    assert.ok(!/[A-Za-z]/.test(ar), `${unit} left Latin script in the Arabic rendering: ${ar}`);
+  }
+  // The shipped map, quoted, so this guard fails against the code it replaced.
+  const shipped: Record<string, string> = { "m²": "م²", "SAR": "ريال", "SAR/m²": "ريال/م²", "SAR/m²/yr": "ريال/م²·سنة", "kVA": "ك.ف.أ", "t/m²": "طن/م²" };
+  assert.equal(shipped["m"] ?? "m", "m");
+  assert.equal(shipped["kN/m²"] ?? "kN/m²", "kN/m²");
+  assert.equal(shipped["L"] ?? "L", "L");
 });
 
 // ADV-3A.1, finding 52. A month and a year are counted nouns. Nineteen registry

@@ -8,26 +8,39 @@
 // duplication). No em dashes (Law 2). Western numerals in both locales.
 
 import { fieldsFor, type AssetField } from "./assetFields";
-import { formatCounted } from "./format";
+import { formatCounted, formatNumber, formatUnit } from "./format";
 
-function num(n: unknown, ar: boolean): string {
-  return Number(n).toLocaleString(ar ? "ar-SA-u-nu-latn" : "en-US");
-}
+// PKG-FIG2, finding 129. Both helpers this replaced were private copies of work
+// `format.ts` already does.
+//
+// `num` called `toLocaleString("ar-SA-u-nu-latn")` for Arabic. It was written up
+// first as a grouping defect and that was checked before it was believed, which
+// is the only reason it is stated correctly here: on the runtime this ships on,
+// ar-SA with the Latin numbering system groups with the same comma en-US does,
+// so no visible grouping difference exists and none is claimed.
+//
+// What the call did do was pin HALF the format. The numbering system was fixed
+// and everything else was left to whichever CLDR data the runtime happens to
+// carry, so the output was a property of the deployment rather than a decision
+// this project had made. The one difference visible today is on a negative
+// value, where ar-SA emits a U+200E LEFT-TO-RIGHT MARK before the minus sign
+// and en-US does not, which puts an invisible control into a figure that can be
+// copied out of the page. `formatNumber` pins the whole format for both
+// locales. The third fraction digit below is what `toLocaleString()` with no
+// options was already doing, so the digits themselves are unchanged.
+const num = (n: unknown, ar: boolean): string =>
+  formatNumber(Number(n), ar ? "ar" : "en", { maximumFractionDigits: 3 });
 
-// Bilingual unit rendering. Unknown units are shown as-is.
-function unitLabel(unit: string | undefined, ar: boolean): string {
-  if (!unit) return "";
-  if (!ar) return unit;
-  const map: Record<string, string> = {
-    "m": "م",
-    "m²": "م²",
-    "t/m²": "طن/م²",
-    "SAR": "ريال",
-    "SAR/m²": "ريال/م²",
-    "SAR/m²·yr": "ريال/م²·سنة",
-  };
-  return map[unit] ?? unit;
-}
+// And `unitLabel` was a six-entry EN to AR map keyed on the exact strings in
+// `assetFields.ts`. It was a fourth unit table, and it was the reason `kN/m²`
+// and `L` reached an Arabic attribute row still in Latin script: a unit the map
+// did not list fell through to the English spelling and nobody saw it, because
+// no error is raised by a passthrough. `formatUnit` resolves the same strings
+// through `UNIT_ALIASES`, renders both locales from `UNITS`, and passes an
+// unknown unit through in the same way, so the fallback behaviour is unchanged
+// while the known set is now the platform's whole set rather than this file's.
+const unitLabel = (unit: string | undefined, ar: boolean): string =>
+  unit ? formatUnit(unit, ar ? "ar" : "en", "short") : "";
 
 // A single field's value formatted for display, or null when it should not show
 // (empty, or a false boolean, which reads as absence not a fact).

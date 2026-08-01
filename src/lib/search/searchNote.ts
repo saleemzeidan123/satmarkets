@@ -24,7 +24,7 @@
 // them, which is what happens when public prose lives somewhere no gate looks.
 // This file is in the Arabic lint's file list.
 
-import { formatCounted, formatInteger } from "@/lib/format";
+import { formatCounted, formatInteger, formatWithUnit } from "@/lib/format";
 
 export type Loc = "en" | "ar";
 
@@ -51,9 +51,14 @@ export function relaxReason(a: SearchAnswer, locale: Loc): string {
   const ar = locale === "ar";
   const cap = a.parsed?.maxRent;
   if (a.relaxedBy === "budget" && typeof cap === "number" && isFinite(cap)) {
+    // PKG-FIG2, finding 129. Two more spellings of the lease unit, one per
+    // language, and the Arabic one was unique on the platform: "ريال/م² سنوياً"
+    // puts an adverb where every other Arabic surface puts the noun after a
+    // middle dot. `formatWithUnit` also isolates the Arabic figure, which a
+    // hand-built interpolation into an Arabic sentence did not.
     return ar
-      ? `أعلى من سقف ${formatInteger(cap, "ar")} ريال/م² سنوياً`
-      : `above your ${formatInteger(cap, "en")} SAR/m²·yr cap`;
+      ? `أعلى من سقف ${formatWithUnit(cap, "sar_sqm_year", "ar", "short", 0)}`
+      : `above your ${formatWithUnit(cap, "sar_sqm_year", "en", "short", 0)} cap`;
   }
   if (a.relaxedBy === "size") return ar ? "أصغر من المساحة المطلوبة" : "smaller than the size you asked for";
   // The place is printed only from what the route applied. There is deliberately
