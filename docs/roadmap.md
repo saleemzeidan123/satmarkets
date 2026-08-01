@@ -885,7 +885,7 @@ environment is GET-only and unauthenticated, so that surface could not be fetche
 lister-side composition is evidenced by test and by running the shipped function against the
 real deployed ages.
 
-## PKG-NM1, one name per listing in the reader's language (finding 66's other half, next)
+## PKG-NM1, one name per listing in the reader's language (finding 66's other half, closed)
 
 **User journey improved.** An Arabic reader anywhere a listing is named, and the lister who does
 not know their listing is unreadable to half the market.
@@ -915,6 +915,83 @@ invent a name it cannot source.
 **Stop condition.** The guard catches the pattern, no call site carries it, the blank-Arabic row
 is named correctly on the public surface in both locales on the deployment, and the lister is
 told.
+
+Closed in `0e490d8`, deployed on `dpl_Av7coZHQkTJ1tJXvVw3vqaWuRaty`, state READY. Handback in
+`docs/handback-pkg-nm1.md`.
+
+**Correction to the scope written above.** Nine call sites was an undercount taken before the
+guard existed. Once the pattern was expressed as a regex with its three constraints, the real
+figure was twenty-three call sites in twenty-two files. The package shipped all of them rather
+than the nine, which is why the commit is thirty-seven files rather than a dozen.
+
+**Stop condition, clause by clause.**
+
+The guard catches the pattern. `listingTitle.test.ts` now carries a second scan for the
+other-language borrow, and beside it a sensitivity test that runs the regex against the eight
+shapes actually deleted in this package and seven shapes that must stay legal. The first form of
+that regex reported twenty files with twelve of them innocent, and a scan with that hit rate
+earns an allow list from the next reader rather than a fix, so the three constraints (different
+languages, one line, field name ends where it is written) are themselves tested.
+
+No call site carries it. Both scans return empty over the whole of `src`, with four exemptions,
+all of them files where the decision is written down rather than files where it is broken:
+`listingTitle.ts`, `displayName.ts` and their two tests.
+
+The blank-Arabic row is named correctly on the public surface in both locales on the deployment.
+`SATM-BB3FCB59` is the one published row of fifty whose `title_ar` is blank. On
+`dpl_Av7coZHQkTJ1tJXvVw3vqaWuRaty` its Arabic detail page reads `مكاتب مخدومة في العقيق` in the
+tab title, the H1 and `og:title`, the English string does not appear in the Arabic document at
+all, and on `/ar/listings` the reference code appears zero times where it used to be the card
+heading.
+
+The lister is told. Two surfaces carry it, and both are behind a session. The only live channel
+in this environment is GET-only and unauthenticated, the same limitation PKG-AV2's closure
+records, so this clause is evidenced by test and by source rather than by fetch.
+
+**What the package found and did not fix.** Two further borrows of the same shape were separated
+by substance rather than swept into the new module, and both are recorded with their reasons.
+Finding 92 is `district_label` and `district_label_ar`, twenty-seven sites in eighteen files:
+that label names the geography a published third-party statistic describes, so widening it to a
+city would restate a band measured in one district as a band measured across a city, which is a
+false statement about someone else's figure. Its correct fix is upstream at ingestion and is a
+data and rights question, not a rendering one. Finding 93 is the lister `about` paragraph, which
+is free prose and therefore neither a description we own nor an identifier, so it has no honest
+generic substitute; three candidate answers are named and none chosen.
+
+## PKG-LS1, the Arabic half of the lister's own workspace (next)
+
+**User journey improved.** The lister who has just been told, on two screens, that an Arabic
+reader sees a generic description of their listing instead of the name they wrote.
+
+**Observed problem.** PKG-NM1 states the gap and gives the lister nowhere to answer it. Source
+evidence, record-level: `src/components/EditListingForm.tsx` declares `title_en: string` and
+`description_en: string` and nothing else, submits those two fields, and renders exactly one
+title input and one description textarea. `src/app/[locale]/dashboard/listings/[id]/page.tsx`
+passes only `title_en` and `description_en` into it. There is no Arabic title or description
+field anywhere in the edit workspace. Meanwhile the write path already exists and is already
+permission-checked: `PATCH /api/listings/[id]` accepts `title_ar` and `description_ar` behind
+`can()`, trims and length-caps both, and maintains `title_ar_src_hash` so that the translate
+route can tell Arabic SAT generated from Arabic a lister wrote. `ListingStudio.tsx`, the create
+path, already carries both languages. So a listing created in the Studio can hold an Arabic
+title that the edit form will never show its owner and never let them change.
+
+**Measurable outcome expected.** A lister can write, read and edit the Arabic title and
+description of their own listing from the edit workspace, in both interface languages; the
+notice PKG-NM1 added disappears for a row once they do; and a lister who writes their own Arabic
+does not have it silently overwritten.
+
+**Simplest acceptable implementation.** Add the two fields to the form's type, its state, its
+payload and its markup, mirroring the existing English pair with correct `dir` and `lang` on the
+Arabic inputs; pass the two existing column values in from the page; keep the hash behaviour the
+API already implements. No new column, no new route, no new permission.
+
+**What is deliberately not built.** No machine translation button in this package, no
+publish-time block on a missing Arabic title, no quality score. The lister writes their own
+words, which is the same rule PKG-NM1 closed on.
+
+**Stop condition.** Both fields exist, round-trip a real value through the existing API, are
+correct in RTL and LTR at 320, 360, 390 and 430 pixels plus tablet and desktop, all gates green,
+and lister-written Arabic survives a subsequent English edit.
 
 ## Parked (deliberate)
 
