@@ -121,7 +121,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
       {photos.length === 0 ? (
         <p className="muted" style={{ fontSize: "0.8125rem" }}>{t.none}</p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 160px), 1fr))", gap: 12 }}>
           {photos.map((p, i) => (
             <div key={p.id} style={{ border: "1px solid var(--silver)", borderRadius: 10, overflow: "hidden", background: "var(--paper)" }}>
               <div style={{ position: "relative", aspectRatio: "4 / 3", background: "var(--cool)" }}>

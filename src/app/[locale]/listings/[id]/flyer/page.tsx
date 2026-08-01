@@ -126,7 +126,7 @@ export default async function ListingFlyer({ params }: { params: { locale: strin
           </div>
           <h1 className="serif" style={{ fontSize: "1.625rem", fontWeight: 500, margin: "12px 0 4px" }}>{title}</h1>
           <div className="muted" style={{ fontSize: "0.84375rem" }}>{dn}{l.districts?.city ? `, ${l.districts.city}` : ""}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))", gap: 12, marginTop: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 128px), 1fr))", gap: 12, marginTop: 18 }}>
             {([[t.area, areaFig], [t.grade, gradeLabel(l.building_grade, locale)], [t.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? t.askingRent : t.askingPrice, priceFig ?? t.onRequest]] as [string, string | null][]).filter((s) => s[1]).map((s, i) => (
               <div key={i} style={{ border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px" }}>
                 <div className="muted" style={{ fontSize: "0.65625rem" }}>{s[0]}</div>

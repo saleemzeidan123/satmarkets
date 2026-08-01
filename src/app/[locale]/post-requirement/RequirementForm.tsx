@@ -197,7 +197,14 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
             <div className="eyebrow" style={{ marginTop: 16 }}>{ar ? `الطلب ${done.ref} مباشر` : `Requirement ${done.ref} is live`}</div>
             <h1 style={{ fontSize: "1.5rem", fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 6px" }}>{pr.successTitle}</h1>
             <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.6, maxWidth: 460, margin: "0 auto" }}>{pr.successBody}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, margin: "22px 0" }}>
+            {/* Finding 158, journey 4. This success panel sits inside `.card pad` inside a
+                720px column with 24px of page padding, so its grid box is 226px at the 400
+                percent reference and 266 at 360. That is why this row uses 7rem where the
+                dashboard form pairs use 8rem: 8rem would have collapsed a layout that
+                renders correctly on a 360px phone. Measured as `req-stats` in
+                scripts/reflow-probe.mjs, one column at 320 and two from 360 upward at
+                exactly the widths `1fr 1fr` gave. */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 7rem), 1fr))", gap: 12, margin: "22px 0" }}>
               <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
                 <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div>
                 <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.matchToday}</div>

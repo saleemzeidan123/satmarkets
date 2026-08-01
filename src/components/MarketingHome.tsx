@@ -331,7 +331,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro2}</span>
       <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro3}</span>
      </div>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
       {([
         [H.personaNeed, L("/listings")],
         [H.personaHave, L("/list")],
@@ -500,7 +500,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          <span className="eyebrow">{gt}</span>
          <span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(232px,1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 232px), 1fr))", gap: 16 }}>
          {idxs.map((fi) => { const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
           <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>

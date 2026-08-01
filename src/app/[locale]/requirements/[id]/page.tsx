@@ -121,7 +121,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
      </div>
      <h1 style={{ fontSize: "1.4375rem", fontWeight: 700, margin: "12px 0 4px" }}>{(ar && req.titleAr) || req.title}</h1>
      <div className="muted" style={{ fontSize: "0.84375rem" }}>{(ar && req.districtAr) || req.district}{req.city && req.district !== req.city ? (ar ? "، " : ", ") + cityLabel(req.city, locale) : ""}</div>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(120px,1fr))", gap: 12, marginTop: 18 }}>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 120px), 1fr))", gap: 12, marginTop: 18 }}>
       {([
         // PKG-DEM2, finding 114. `${req.sizeMin}` printed the word `null` for a
         // size the occupier did not state, and `Number(null).toLocaleString()`

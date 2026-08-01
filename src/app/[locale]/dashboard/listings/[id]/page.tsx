@@ -314,7 +314,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
           <span className="muted" style={{ display: "inline-flex" }}><Icon.info size={15} /></span>
           <span style={{ fontSize: "0.90625rem", fontWeight: 700 }}>{t.locked}</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14, marginTop: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 160px), 1fr))", gap: 14, marginTop: 10 }}>
           <div>
             <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.permit}</div>
             <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 500, marginTop: 5 }}>{permitOf(L) || (ar ? "غير مسجّل" : "Not on file")}</div>

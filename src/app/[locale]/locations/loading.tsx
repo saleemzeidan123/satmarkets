@@ -8,7 +8,7 @@ export default function Loading() {
       {Array.from({ length: 3 }).map((_, g) => (
         <div key={g} style={{ marginTop: 30 }}>
           <div className="sk" style={{ width: 180, height: 16 }} />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 12, marginTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 180px), 1fr))", gap: 12, marginTop: 14 }}>
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="card pad">
                 <div className="sk" style={{ width: "65%", height: 14 }} />

@@ -278,7 +278,7 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 .snap-row::-webkit-scrollbar{display:none;}
 .snap-row>*{scroll-snap-align:start;flex:0 0 80%;min-width:0;}
 @media(min-width:640px){.snap-row>*{flex-basis:46%;}}
-@media(min-width:1024px){.snap-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;overflow:visible;padding:0;}}
+@media(min-width:1024px){.snap-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%, 220px), 1fr));gap:18px;overflow:visible;padding:0;}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}html{scroll-behavior:auto;}}
 
 /* ---- Chip rail: one-line swipeable filter rows on mobile (design uplift slice 2) ---- */

@@ -58,7 +58,7 @@ export default async function ProfilePage({ params }: { params: { locale: string
       </div>
 
       <div className="dpanel" style={{ padding: 20 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 160px), 1fr))", gap: 14 }}>
           <div>
             <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.name}</div>
             <div style={{ fontSize: "0.90625rem", fontWeight: 600, marginTop: 5 }}>{name}</div>

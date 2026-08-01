@@ -87,6 +87,20 @@ the edit form that never collapse; and a 320px minimum grid track that overflows
 400 percent viewport. Same cause in three places: a fixed dimension where a
 content-driven one belongs.
 
+Closed in slice F. Three corrections came out of measuring it, all carried into the
+register. Finding 141's blast radius was one route and not two: `auth-split` has a
+single consumer, `signup/page.tsx:17`, and login uses a different shell entirely.
+Finding 158 is not an overflow failure: `1fr 1fr` squeezes rather than pushes here,
+because the inputs are `width:100%`, so the fields become unusably narrow and
+nothing is lost. Finding 184 does not produce horizontal scrolling: `overflow-x:clip`
+on `html` and `body` means the excess is clipped and unreachable instead, which is
+why `scrollWidth - clientWidth` reports zero on every page of this site and why
+`scripts/reflow-probe.mjs` measures per-item overhang instead. 184 was also a pattern
+rather than a line, so all 31 fixed `minmax` floors across 22 files were converted.
+One candidate fix was dropped after measurement rather than shipped: rewriting the
+comparison loading skeleton's `160px repeat(3, 1fr)` resolves identically at all seven
+viewports in both directions, so it is recorded as finding 195 instead.
+
 **RC8. Form group semantics, findings 159, 157, 180, 181 and 153.** A bare
 `<label>` where a `<fieldset>` and `<legend>` belong; identical accessible names
 across per-row selects; a radio group that cannot be cleared and has no accessible

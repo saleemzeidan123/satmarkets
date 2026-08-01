@@ -39,7 +39,7 @@ export default async function BrokersPage({ params }: { params: { locale: string
       <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "10px 0 0" }}>{b.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: "0.90625rem", maxWidth: 640, lineHeight: 1.6 }}>{b.intro}</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: 14, marginTop: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 240px), 1fr))", gap: 14, marginTop: 24 }}>
         {steps.map((s, i) => (
           <div key={i} className="card" style={{ padding: "18px 20px" }}>
             <div className="row gap8" style={{ alignItems: "center", marginBottom: 8 }}><span style={{ color: "var(--harbor)" }}><Icon.shield size={16} /></span><span style={{ fontSize: "0.875rem", fontWeight: 700 }}>{s[0]}</span></div>
@@ -62,7 +62,7 @@ export default async function BrokersPage({ params }: { params: { locale: string
           <span className="chip">{b.officeRetail}</span>
         </div>
         {sample.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))", gap: 12, marginTop: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 220px), 1fr))", gap: 12, marginTop: 16 }}>
             {sample.map((l) => (
               <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="card lift" style={{ padding: "14px 16px", textDecoration: "none", color: "inherit" }}>
                 <div style={{ fontSize: "0.84375rem", fontWeight: 700, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>

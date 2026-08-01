@@ -521,7 +521,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
           />
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(230px,1fr))", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 230px), 1fr))", gap: 18 }}>
           {shown.map((l) => {
             const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
             const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;

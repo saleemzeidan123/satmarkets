@@ -69,7 +69,11 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
         <label htmlFor="pf-about-ar" style={lbl}>{t.aboutAr}</label>
         <textarea id="pf-about-ar" dir="rtl" style={{ ...inp, minHeight: 88, resize: "vertical" }} value={f.about_ar} onChange={(e) => set("about_ar", e.target.value)} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      {/* Finding 158. The same fixed pair on the public profile form: at 400 percent
+          zoom the website and logo URL fields were 117px wide and could not become one
+          column. Collapses below 360 only, and is identical to the old track from 360
+          upward. Measured as `profile-links` in scripts/reflow-probe.mjs. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8rem), 1fr))", gap: 12 }}>
         <div>
           <label htmlFor="pf-website" style={lbl}>{t.website}</label>
           <input id="pf-website" style={inp} value={f.website} onChange={(e) => set("website", e.target.value)} placeholder="https://" />
@@ -79,7 +83,8 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
           <input id="pf-logo" style={inp} value={f.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://" />
         </div>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      {/* Finding 158, same pair, same reason as the website and logo row above. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8rem), 1fr))", gap: 12 }}>
         <div>
           <label htmlFor="pf-public-email" style={lbl}>{t.email}</label>
           <input id="pf-public-email" style={inp} type="email" value={f.public_email} onChange={(e) => set("public_email", e.target.value)} />

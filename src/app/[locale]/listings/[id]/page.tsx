@@ -350,7 +350,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
               two-tile strip. Every tile is a present, typed-column fact: n_a and null
               are skipped, so a tile never shows a non-answer. These specs are drawn up
               from the detail section below, not duplicated. */}
-          <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 16, marginTop: 22 }}>
+          <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 16, marginTop: 22 }}>
             {(() => {
               const T = (dict as any).ld;
               // Every tile below used to carry its own unit string, which is how the
@@ -400,7 +400,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
                 <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.spaceTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => (
                     <div key={i}>
                       <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
@@ -450,7 +450,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
                 <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.termsTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => {
                     const ev = r[2] ? evidence.get(r[2]) : undefined;
                     return (
@@ -474,7 +474,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
                 <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{(dict as any).ld.complianceTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
                   {rows.map((r, i) => (
                     <div key={i}>
                       <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
@@ -509,7 +509,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 <div className="muted" style={{ fontSize: "0.75rem", padding: "6px 8px" }}>{fp.label ?? planLabel(fp.planType, ar)}</div>
               </a>
             );
-            const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12, marginTop: 12 } as const;
+            const gridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 150px), 1fr))", gap: 12, marginTop: 12 } as const;
             return (
               <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
                 <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{heading}</div>
@@ -576,7 +576,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
               <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(160px,1fr))", gap: 14, marginTop: 14 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 160px), 1fr))", gap: 14, marginTop: 14 }}>
                 {similar.map((s: any) => {
                   const sdn = s.districts ? (ar ? s.districts.name_ar : s.districts.name_en) : dn;
                   // PKG-SUP2, finding 123. `toLocaleString()` with no argument

@@ -36,7 +36,7 @@ export default function ProtoPage({ params }: { params: { locale: string } }) {
       <p style={{ color: "var(--slate)", maxWidth: 620, marginBlockStart: 8 }}>{t("Reference for the SAT Markets redesign: token roles and the trust-critical shared components. Sample content only.", "مرجع لإعادة تصميم سات ماركتس: أدوار الألوان والمكوّنات المشتركة الحرجة للثقة. محتوى تجريبي فقط.")}</p>
 
       <Section title={t("Color roles", "أدوار الألوان")}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(140px,1fr))", gap: "var(--space-4)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 140px), 1fr))", gap: "var(--space-4)" }}>
           {swatch(t("Harbor (interaction)", "هاربر (تفاعل)"), "#3A6EA5")}
           {swatch(t("Ink (authority)", "الحبر"), "#14181B")}
           {swatch(t("Slate (secondary)", "الأردوازي"), "#5B6470")}

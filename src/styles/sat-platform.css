@@ -488,9 +488,22 @@ table.dt .rowact{position:relative;z-index:1;}
 @media(max-width:1080px){.tier-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.tier-grid{grid-template-columns:1fr}}
 /* auth split layout */
-.auth-split{display:flex;min-height:100vh;}
+/* Finding 141. This pane was `min-height:100vh` with `overflow-y:auto` on the form
+   half, which made the form a second scroll container inside a document that also
+   scrolled. At 400 percent zoom the viewport is roughly 320 by 256 CSS pixels, so a
+   signup form several times that tall lived inside a scroller a quarter of a screen
+   tall while the page behind it did not move; the visitor scrolls the wrong thing and
+   the content below the fold is reachable only from inside a region with no visible
+   boundary. The floor is now `100svh`, the small-viewport unit, so a mobile browser's
+   collapsing URL bar cannot make it taller than the screen either, and the inner
+   scroller is gone: the pane is a minimum, content taller than it grows the document
+   and the document scrolls. `align-items:center` is safe against a minimum rather
+   than a fixed height, so the tall case grows downward instead of centring content
+   off the top edge. Nothing changes at any height where the form already fitted,
+   which is every width and zoom level the surface is tested at. */
+.auth-split{display:flex;min-height:100vh;min-height:100svh;}
 .auth-brand{width:520px;flex:none;background:var(--ink);color:#fff;padding:48px 52px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
-.auth-form{flex:1;background:var(--paper);overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+.auth-form{flex:1;min-width:0;background:var(--paper);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
 @media(max-width:820px){.auth-brand{display:none}}
 /* AI advisor chat */
 /* max-inline-size caps the bubble at the column width even when it is NOT stretched:

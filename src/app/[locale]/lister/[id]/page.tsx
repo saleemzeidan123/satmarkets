@@ -143,7 +143,7 @@ export default async function ListerProfilePage({ params }: { params: { locale: 
         {rows.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>{t.none}</p>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16, marginTop: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 210px), 1fr))", gap: 16, marginTop: 14 }}>
             {rows.map((l) => {
               const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
               const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;

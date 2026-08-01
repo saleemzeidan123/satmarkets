@@ -170,7 +170,7 @@ export default function AreaPage({ params }: { params: { locale: string } }) {
       <h2 style={{ fontSize: "1.3125rem", fontWeight: 700, margin: "10px 0 6px" }}>{ap.howH}</h2>
       <p className="muted" style={{ fontSize: "0.84375rem", lineHeight: 1.6, maxWidth: 720 }}>{ap.howBody}</p>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 12, marginTop: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 210px), 1fr))", gap: 12, marginTop: 18 }}>
        {([[ap.srcMobileT, ap.srcMobileB], [ap.srcMojT, ap.srcMojB], [ap.srcSpendT, ap.srcSpendB], [ap.srcPublicT, ap.srcPublicB]] as [string, string][]).map((d,i)=>(
         <div key={i} className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
          <div style={{ fontSize: "0.84375rem", fontWeight: 700 }}>{d[0]}</div>

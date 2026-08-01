@@ -135,7 +135,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
 
       <div style={{ marginTop: 22 }}><WatchBanner locale={params.locale as "en" | "ar"} /></div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 14, marginTop: 26 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 200px), 1fr))", gap: 14, marginTop: 26 }}>
         {tiles.map((t, i) => (
           <div key={i} className="card" style={{ padding: "18px 20px" }}>
             <div className="mono" style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--harbor)", letterSpacing: "-.02em" }}>{t[0]}</div>
@@ -180,7 +180,7 @@ export default async function MarketPage({ params }: { params: { locale: string 
         </section>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 18, marginTop: 18 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 300px), 1fr))", gap: 18, marginTop: 18 }}>
         <section className="card" style={{ padding: "22px 24px" }}>
           <h2 className="serif" style={{ fontSize: "1.3125rem", fontWeight: 500, margin: 0 }}>{t.supplyTitle}</h2>
           <div style={{ marginTop: 16 }}>

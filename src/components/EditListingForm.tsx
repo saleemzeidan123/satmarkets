@@ -284,7 +284,22 @@ export default function EditListingForm({
         <textarea id="description_ar" dir="rtl" lang="ar" style={{ ...inp, minHeight: 92, resize: "vertical" }} value={f.description_ar} onChange={(e) => set("description_ar", e.target.value)} />
         {descArBehind && <p style={hint}>{t.behind}</p>}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      {/* Finding 158. This pair was `1fr 1fr`, a fixed two-column track that cannot
+          become one column however narrow the viewport gets. At the SC 1.4.10 reference
+          of 400 percent zoom on a 1280 wide screen the viewport is 320 CSS pixels and the
+          dashboard content box is 246, so each field was measured into a 117px column
+          holding a label and a number input.
+          Two corrections to the finding as filed, both measured with
+          scripts/reflow-probe.mjs and both recorded in docs/findings-register.md: the row
+          does not overflow, because the inputs are width:100% and the grid squeezes rather
+          than pushes; and the labels do not wrap at that width either. The failure is that
+          the fields are unusably narrow, not that content is lost.
+          `minmax(min(100%, 8rem), 1fr)` is identical to `1fr 1fr` at every width where two
+          8rem tracks fit, which is 360 upward, so no working layout moves. It collapses to
+          a single column only below that, which is the case that was broken. 8rem and not
+          more: 8rem already collapses the requirement stat row at 360, whose container is
+          40px narrower, so that surface uses 7rem instead. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8rem), 1fr))", gap: 12 }}>
         {/* ELITE-4 J2-3: these labels named nothing. Every control below now carries
             an id and every label the matching htmlFor, as the Studio already did. */}
         <div>
@@ -343,7 +358,8 @@ export default function EditListingForm({
         <label style={lbl} htmlFor="video_url">{t.video}</label>
         <input id="video_url" style={inp} value={f.video_url} onChange={(e) => set("video_url", e.target.value)} placeholder="https://youtube.com/watch?v=..." />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      {/* Finding 158, same pair, same reason as the area and price row above. */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 8rem), 1fr))", gap: 12 }}>
         <div>
           <label style={lbl} htmlFor="contact_phone">{t.phone}</label>
           <input id="contact_phone" style={inp} value={f.contact_phone} onChange={(e) => set("contact_phone", e.target.value)} />

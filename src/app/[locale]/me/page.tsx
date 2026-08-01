@@ -280,7 +280,7 @@ export default async function OccupierHome({ params }: { params: { locale: strin
                   <span className="muted" style={{ fontSize: "0.75rem" }}>{g.items.length}</span>
                 </div>
               )}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 210px), 1fr))", gap: 16 }}>
                 {g.items.map((l: any) => {
                   const dn = listingPlace(l, ar ? "ar" : "en") || dict.ld.riyadh;
                   // PKG-SUP2, finding 123. The unit was spelled here by hand in

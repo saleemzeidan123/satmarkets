@@ -5,7 +5,7 @@ export default function Loading() {
       <div className="sk" style={{ width: 110, height: 11 }} />
       <div className="sk" style={{ width: 300, height: 30, marginTop: 12, maxWidth: "80%" }} />
       <div className="sk" style={{ width: "60%", height: 14, marginTop: 10 }} />
-      <div className="row gap12" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 14, marginTop: 22 }}>
+      <div className="row gap12" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 22 }}>
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="card pad">
             <div className="sk" style={{ width: "55%", height: 12 }} />

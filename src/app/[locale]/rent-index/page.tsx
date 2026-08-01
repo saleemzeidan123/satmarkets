@@ -342,7 +342,7 @@ export default async function RentIndexPage({ params }: { params: { locale: stri
           absent. The thin-sample clause is a second string so the first can end
           where the unit does. */}
       <div className="muted" style={{ fontSize: "0.78125rem" }}>{withUnit(ri.heatSubReal, cells, loc, C.statUnit) + ". " + ri.heatSubRealThin}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(94px, 1fr))", gap: 8, marginTop: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 94px), 1fr))", gap: 8, marginTop: 16 }}>
        {(() => {
         const vals = districts.map((d) => Number(String(d.figure).replace(/[^0-9.]/g, "")) || 0);
         const pos = vals.filter((v) => v > 0);

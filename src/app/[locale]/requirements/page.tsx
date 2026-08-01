@@ -56,7 +56,7 @@ export default function RequirementsBoard({ params }: { params: { locale: string
       <div style={{ marginTop: 14 }}><Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link></div>
      </div>
     ) : (
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 16, marginTop: 28 }}>
+     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 320px), 1fr))", gap: 16, marginTop: 28 }}>
       {reqs.map((r) => {
        // PKG-DEM2, finding 114. Both are optional on the form and nullable in
        // the column, so both may be absent, and an absent figure is stated by

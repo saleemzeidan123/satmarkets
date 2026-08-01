@@ -88,7 +88,7 @@ export default async function LocationsPage({ params }: { params: { locale: stri
               <h2 className="serif" style={{ fontSize: "1.375rem", fontWeight: 500, margin: 0 }}>{t[0]}</h2>
               <span className="muted" style={{ fontSize: "0.78125rem" }}>{t[1]}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 14, marginTop: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 230px), 1fr))", gap: 14, marginTop: 14 }}>
               {group.map((l) => (
                 <Link key={l.id} href={`/${locale}/listings?district=${l.id}`} className="card lift" style={{ textDecoration: "none", color: "inherit", padding: "16px 18px", display: "block" }}>
                   <div style={{ fontSize: "0.96875rem", fontWeight: 700 }}>{placeName(l, ar ? "ar" : "en")}</div>

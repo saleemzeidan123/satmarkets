@@ -136,7 +136,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
           </label>
         </div>
         {floorplans.length === 0 ? <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.noPlans}</p> : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{floorplans.map((d, i) => tile(d, i, t.planItem))}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 150px), 1fr))", gap: 12 }}>{floorplans.map((d, i) => tile(d, i, t.planItem))}</div>
         )}
         <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 8, marginBottom: 0 }}>{t.planHint}{plan.err ? <span style={{ color: "var(--red)" }}> · {plan.err}</span> : null}</p>
       </div>
@@ -166,7 +166,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
           </label>
         </div>
         {brochures.length === 0 ? <p className="muted" style={{ fontSize: "0.78125rem", margin: 0 }}>{t.noBroch}</p> : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>{brochures.map((d, i) => tile(d, i, t.brochItem))}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 150px), 1fr))", gap: 12 }}>{brochures.map((d, i) => tile(d, i, t.brochItem))}</div>
         )}
         <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 8, marginBottom: 0 }}>{t.brochHint}{broch.err ? <span style={{ color: "var(--red)" }}> · {broch.err}</span> : null}</p>
       </div>
