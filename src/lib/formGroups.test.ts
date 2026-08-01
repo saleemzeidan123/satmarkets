@@ -74,7 +74,34 @@ const JOURNEYS = [
   // two controls is a navigation and which opens a dialog, so a scan that saw
   // only one side of the split could not check either one.
   "src/components/ListingsMap.tsx",
+  // Added in slice M. Journey 3 ends at a listing detail page whose photographs
+  // and whose location panel are both drawn by shared components, and finding
+  // 162 lived in one of them while finding 160's twin lived in the other. The
+  // route file mounts them and holds none of their names.
+  "src/components/Gallery.tsx",
+  "src/components/LocationFacts.tsx",
 ];
+
+/**
+ * Every place in the tree that constructs a MapLibre map.
+ *
+ * This is a literal list rather than a search because the point of the tests
+ * below is that the list is complete: a fifth map built somewhere else with no
+ * `locale` is exactly the regression they exist to catch, and a scan that
+ * derived its own targets from the same files it was checking could not fail on
+ * one. MapExplorer draws /map, which is outside the four journeys, so it is read
+ * directly here rather than through the journey scan.
+ */
+const MAP_SITES = [
+  "src/components/ListingsMap.tsx",
+  "src/components/MapExplorer.tsx",
+  "src/components/LocationFacts.tsx",
+  "src/components/LocationPicker.tsx",
+];
+
+function mapSite(path: string): string {
+  return code(readFileSync(join(ROOT, ...path.split("/")), "utf8"));
+}
 
 function rel(p: string): string {
   return relative(ROOT, p).split(sep).join("/");
@@ -162,12 +189,50 @@ test("no caption in a critical journey names a control that does not exist", () 
   );
 });
 
+/**
+ * Every `aria-label` value in a file, as written.
+ *
+ * Corrected in slice M. This read `/aria-label=(\{[^}]*\}|"[^"]*")/`, and
+ * `[^}]*` stops at the first `}` it meets, which in a template literal is the
+ * end of the first interpolation and not the end of the value. Gallery.tsx
+ * names its thumbnails `` `${title}, ${k + 2} / ${images.length}` `` and its
+ * dialog `` `${title}, ${images.length} ${photosLabel}` ``; both truncated to
+ * the same seven characters and the duplicate-name test reported two controls
+ * sharing a name that neither of them has. The guard was accusing correct code,
+ * which is worse than missing a defect, because the next person to meet it
+ * learns to work around the test.
+ *
+ * So the braces are balanced by counting rather than matched by a pattern.
+ * Nothing here parses TypeScript; a brace inside a string inside a label would
+ * still fool it. It is enough for an attribute value, and the alternative is a
+ * parser this file has no reason to own.
+ */
+function ariaLabels(src: string): string[] {
+  const out: string[] = [];
+  const KEY = "aria-label=";
+  for (let i = src.indexOf(KEY); i >= 0; i = src.indexOf(KEY, i + 1)) {
+    const start = i + KEY.length;
+    if (src[start] === '"') {
+      const end = src.indexOf('"', start + 1);
+      if (end > 0) out.push(src.slice(start, end + 1));
+      continue;
+    }
+    if (src[start] !== "{") continue;
+    let depth = 0;
+    for (let j = start; j < src.length; j++) {
+      if (src[j] === "{") depth++;
+      else if (src[j] === "}" && --depth === 0) { out.push(src.slice(start, j + 1)); break; }
+    }
+  }
+  return out;
+}
+
 test("no two controls in one file answer to the same name", () => {
   const bad: string[] = [];
   for (const f of FILES) {
     const seen = new Map<string, number>();
-    for (const m of f.src.matchAll(/aria-label=(\{[^}]*\}|"[^"]*")/g)) {
-      seen.set(m[1], (seen.get(m[1]) ?? 0) + 1);
+    for (const v of ariaLabels(f.src)) {
+      seen.set(v, (seen.get(v) ?? 0) + 1);
     }
     for (const [v, n] of seen) if (n > 1) bad.push(`${f.path}: ${n} controls named ${v.slice(0, 70)}`);
   }
@@ -950,5 +1015,125 @@ test("closing the response panel hands focus back to the control that opened it"
     src,
     /<button ref=\{panelBtn\} className="btn primary sm" onClick=\{openPanel\}/,
     "finding 201. The focus target has to be the disclosure itself, not a query for it.",
+  );
+});
+
+
+// ---------------------------------------------------------------------------
+// RC10, findings 18, 160 and 162. Names this codebase does not write.
+//
+// The three preceding slices were about markup this repository authors. These
+// are about names it delegates: MapLibre writes the accessible names of the
+// canvas, the zoom buttons, the attribution toggle, the marker, the logo and
+// the popup close button, and it writes them in English unless it is handed a
+// `locale`. No site handed it one, so four components each shipped an Arabic
+// page with English map controls, and the register carried that as four
+// findings across two work streams.
+//
+// What these tests can prove is that every construction site passes the shared
+// object and that the object is built from the dictionary. What they cannot
+// prove is what a screen reader says. The strings MapLibre resolves were read
+// out of the installed bundle at node_modules/maplibre-gl/dist, version 4.7.1,
+// which is source-level verification of a dependency, not browser verification.
+// That distinction is recorded in docs/findings-register.md and is not claimed
+// away here.
+// ---------------------------------------------------------------------------
+
+test("every MapLibre map is constructed with the platform locale", () => {
+  for (const path of MAP_SITES) {
+    const src = mapSite(path);
+    const constructions = src.match(/new maplibregl\.Map\(\{[^}]*\}/g) ?? [];
+    assert.equal(
+      constructions.length,
+      1,
+      `${path} was expected to build exactly one map; the guard indexes by file, so a second ` +
+        "one here would be unchecked.",
+    );
+    assert.match(
+      constructions[0],
+      /locale: mapLocale\(/,
+      `${path}, findings 18 and 160. A map built with no locale option falls back to MapLibre's ` +
+        "own English strings for every control it constructs, on an Arabic page, and nothing in " +
+        "this repository renders those strings so nothing else would show the defect.",
+    );
+    assert.match(
+      src,
+      /import \{ mapLocale \} from "@\/lib\/mapLocale";/,
+      `${path} has to take the names from the shared table. A local object here is how the four ` +
+        "maps drifted apart in the first place.",
+    );
+  }
+});
+
+test("no map turns on a control whose name the platform does not supply", () => {
+  for (const path of MAP_SITES) {
+    const src = mapSite(path);
+    for (const control of src.match(/new maplibregl\.NavigationControl\(\{[^}]*\}/g) ?? []) {
+      assert.match(
+        control,
+        /showCompass: false/,
+        `${path}. mapLocale carries NavigationControl.ResetBearing, so the compass would be ` +
+          "named correctly if it were drawn. This asserts the current state rather than the " +
+          "worst case: no site draws it, and a site that starts to should be a deliberate change " +
+          "that reads this test.",
+      );
+    }
+    assert.doesNotMatch(
+      src,
+      /new maplibregl\.(ScaleControl|FullscreenControl|GeolocateControl|TerrainControl)\(/,
+      `${path}. mapLocale deliberately omits these four, because none was constructed anywhere ` +
+        "in src when it was written. Adding one without adding its keys reintroduces an English " +
+        "control into the Arabic build, which is the whole of finding 18.",
+    );
+    assert.doesNotMatch(
+      src,
+      /cooperativeGestures/,
+      `${path}. Same reason: the cooperative-gestures overlay carries untranslated instruction ` +
+        "text of its own.",
+    );
+  }
+});
+
+test("the location picker names the map and points at the keyboard path to it", () => {
+  const src = file("src/components/LocationPicker.tsx");
+  assert.match(
+    src,
+    /<div ref=\{mapEl\} role="group" aria-label=\{t\("Location map", "خريطة الموقع"\)\} aria-describedby=\{mapHintId\}/,
+    "finding 160. The host was an unnamed div containing a canvas announced only as a map. " +
+      "role=\"group\" and not role=\"img\": this map is an input, and calling an editable " +
+      "control a picture describes it worse than not describing it.",
+  );
+  assert.match(
+    src,
+    /<p id=\{mapHintId\} className="text-\[0\.6875rem\] text-charcoal\/65">/,
+    "finding 160. The description is the instruction that was already there, referenced rather " +
+      "than merely sitting next to it.",
+  );
+  assert.match(
+    src,
+    /latitude and longitude boxes below/,
+    "finding 160. Naming a map that only a mouse can operate is a false affordance. The " +
+      "coordinate inputs are the keyboard path and the description has to say so.",
+  );
+});
+
+test("the lightbox reads its control names from the dictionary", () => {
+  const src = file("src/components/Gallery.tsx");
+  assert.doesNotMatch(
+    src,
+    /aria-label="(Close|Previous|Next)"/,
+    "finding 162. These were the only names in the modal and they were English in both locales.",
+  );
+  assert.match(
+    src,
+    /const g = getDictionary\(locale\)\.gallery;/,
+    "finding 162. The component never learned its locale, which is why three attributes went " +
+      "untranslated and would have gone untranslated again.",
+  );
+  assert.doesNotMatch(
+    src,
+    /photosLabel: string/,
+    "finding 162. One pre-translated string threaded in as a prop is what made this file look " +
+      "bilingual while the rest of it was English. The locale replaces it.",
   );
 });

@@ -238,7 +238,7 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                 {verifiedBadges(l as any, filingAccountOf(lister), ar)}
                 <span className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>
               </div>
-              <Gallery images={mediaPhotos} title={`${type}, ${dn}`} photosLabel={ar ? "صور" : "photos"} />
+              <Gallery images={mediaPhotos} title={`${type}, ${dn}`} locale={ar ? "ar" : "en"} />
             </div>
           ) : (
             <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...verifiedBadges(l as any, filingAccountOf(lister), ar), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />

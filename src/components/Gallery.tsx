@@ -1,7 +1,25 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { getDictionary } from "@/i18n/getDictionary";
 
-export default function Gallery({ images, title, photosLabel }: { images: string[]; title: string; photosLabel: string }) {
+/* RC10, finding 162. The three controls inside the lightbox carried
+   aria-label="Close", aria-label="Previous" and aria-label="Next" as bare
+   English literals. They were the only names in the dialog, so an Arabic
+   reader who opened a listing's photographs was handed a modal whose entire
+   operable surface announced in English.
+
+   The cause was structural rather than an oversight at three attributes: this
+   component never learned which locale it was rendering under. Its whole props
+   surface was `images`, `title` and `photosLabel`, and `photosLabel` is the
+   shape that hid the gap: one already-translated string threaded down from the
+   page, which made the component look bilingual while every other string in it
+   was English. So the locale is passed instead of the one word, and the file
+   reads its own names from the dictionary the way the rest of the platform
+   does. Adding three more label props would have left the next string added
+   here English again. */
+export default function Gallery({ images, title, locale }: { images: string[]; title: string; locale: "en" | "ar" }) {
+  const g = getDictionary(locale).gallery;
+  const photosLabel = g.photos;
   const [open, setOpen] = useState(false);
   const [i, setI] = useState(0);
   const [tx, setTx] = useState(0);
@@ -73,15 +91,15 @@ export default function Gallery({ images, title, photosLabel }: { images: string
           onClick={() => setOpen(false)}
           onTouchStart={(e) => setTx(e.touches[0].clientX)}
           onTouchEnd={(e) => { const dx = e.changedTouches[0].clientX - tx; if (dx > 45) prev(); else if (dx < -45) next(); }}>
-          <button type="button" ref={closeRef} aria-label="Close" className="absolute end-4 top-4 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20" onClick={() => setOpen(false)}>
+          <button type="button" ref={closeRef} aria-label={g.close} className="absolute end-4 top-4 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/20" onClick={() => setOpen(false)}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
           </button>
-          <button type="button" aria-label="Previous" className="absolute start-3 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20" onClick={(e) => { e.stopPropagation(); prev(); }}>
+          <button type="button" aria-label={g.prev} className="absolute start-3 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20" onClick={(e) => { e.stopPropagation(); prev(); }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m15 18-6-6 6-6"/></svg>
           </button>
           {/* ELITE-4 J3-2: the only image in the dialog cannot be decorative. */}
           <img src={images[i]} alt={`${title}, ${i + 1} / ${images.length}`} className="max-h-[86vh] max-w-[92vw] rounded-lg object-contain shadow-2xl" onClick={(e) => e.stopPropagation()} />
-          <button type="button" aria-label="Next" className="absolute end-3 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20" onClick={(e) => { e.stopPropagation(); next(); }}>
+          <button type="button" aria-label={g.next} className="absolute end-3 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20" onClick={(e) => { e.stopPropagation(); next(); }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg>
           </button>
           {/* ELITE-4 J3-2: the position indicator is the only feedback that the arrows worked. */}

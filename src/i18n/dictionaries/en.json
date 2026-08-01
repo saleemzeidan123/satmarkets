@@ -1146,6 +1146,23 @@
     "whatNext": "What happens next",
     "disclaimer": "The Ejar contract, deposit and registration are handled directly between you and the owner or their licensed broker. SAT does not sign or hold funds. Our role is the workspace: the documents, the timeline and the record of what was agreed."
   },
+  "mapControls": {
+    "mapTitle": "Map",
+    "marker": "Map marker",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetBearing": "Reset bearing to north",
+    "toggleAttribution": "Show map credits",
+    "mapFeedback": "Map feedback",
+    "logo": "MapLibre logo",
+    "closePopup": "Close"
+  },
+  "gallery": {
+    "close": "Close",
+    "prev": "Previous photo",
+    "next": "Next photo",
+    "photos": "photos"
+  },
   "map": {
     "back": "← Back to listings",
     "eyebrow": "Commercial intelligence map",

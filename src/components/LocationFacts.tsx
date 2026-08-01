@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
+import { mapLocale } from "@/lib/mapLocale";
 import type { FactKey } from "@/lib/locationFacts";
 import type { TravelTime } from "@/lib/location/results";
 import { formatDecimal } from "@/lib/format";
@@ -84,7 +85,7 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
       // Gated to ar only, English maps rendered Arabic street names as disconnected,
       // right-to-left-broken glyphs. This is a global, registered once.
       try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
-      map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [lng, lat], zoom: 13, minZoom: 8, maxZoom: 16, attributionControl: false });
+      map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [lng, lat], zoom: 13, minZoom: 8, maxZoom: 16, attributionControl: false, locale: mapLocale(ar ? "ar" : "en") });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       map.addControl(new maplibregl.AttributionControl({ compact: true }));
       ro = new ResizeObserver(() => { try { map.resize(); } catch {} });

@@ -539,6 +539,91 @@ and a description paragraph declaring neither `lang` nor `dir`. The cause is tha
 a control built in JavaScript does not pass through the dictionary, so every such
 control has to be found rather than caught.
 
+**RC10 slice M, done. Findings 18, 160 and 162.** Three findings, two work
+streams, four components, one cause: nothing in this repository had ever passed
+MapLibre a `locale`, and one component had never been told which language it was
+rendering in.
+
+The map half was deferred in the register on an evidence question. Finding 160
+said the correct remedy could not be chosen because no browser was reachable in
+this container, so which strings MapLibre actually renders into the DOM could not
+be observed. That was the wrong place to look for the answer. The strings are in
+the dependency, and the dependency is on disk. Read directly at
+`node_modules/maplibre-gl/dist/maplibre-gl-dev.js`, version 4.7.1: a
+`defaultLocale` table of twenty-one keys, a resolver
+`_getUIString(key) { const str = this._locale[key]; if (str == null) throw ... }`,
+and a `setAttribute('aria-label', ...)` at each site that consumes one, which was
+read at the canvas, the marker, the logo link, the navigation buttons and the
+attribution toggle. The merge is
+`this._locale = Object.assign(Object.assign({}, defaultLocale), options.locale)`,
+which is the fact that makes a shared partial table safe: a key left out keeps
+MapLibre's English rather than throwing.
+
+That is source-level verification of a dependency. It is not browser
+verification and it is not screen-reader verification, and the register records
+it under that name. It is enough to decide the remedy, which is what the
+deferral was waiting on.
+
+So `src/lib/mapLocale.ts` holds one table, built from a new `mapControls`
+dictionary section, and all four construction sites pass it. Nine keys are
+translated. Five available controls are deliberately not, because no site in
+`src` constructs a scale, fullscreen, geolocate or terrain control or turns on
+cooperative gestures, and translating markup that does not exist is dictionary
+weight that will rot. The omission fails open to English rather than to a crash,
+so a guard test asserts that none of the five appears, and a second asserts that
+every `NavigationControl` still passes `showCompass: false`. That last one is the
+interesting guard: `ResetBearing` is translated even though the compass is not
+drawn anywhere, so turning the compass on is a one-line change that cannot
+reintroduce an English control, and the test is what tells whoever makes that
+change that the question was already considered.
+
+Finding 160's second half was a design objection rather than an evidence one:
+naming the container without a non-canvas path to the same information would
+create a false affordance, an invitation to operate something a keyboard cannot
+reach. The path exists here and was verified in the file. The combobox above the
+map resolves a place name, a pasted map link or a bare `lat, lng` pair; the two
+number inputs below set the same coordinates; all three end in the same `place()`
+call a map click ends in. So the host is named, as `role="group"` with an
+`aria-label`, and described by the instruction paragraph that was already under
+it, extended to say where that keyboard path is. `role="group"` and not the
+`role="img"` `LocationFacts.tsx` uses, because that map is a picture of a
+location already decided and this one is an input. Describing an editable
+control as a picture is a worse description than none.
+
+Finding 162 is the same shape one level down. The register proposed threading
+three label props into `Gallery.tsx` from the page that mounts it. That would
+have fixed the three attributes and left the file in the state that produced
+them. The component's props were `images`, `title` and `photosLabel`, and
+`photosLabel` is what hid the gap: one already-translated word arriving as a prop
+made the file look bilingual while every other string in it was English, so the
+close, previous and next buttons were English in both locales and the next name
+added here would have been too. The locale replaces the word, the component reads
+its own names from a new `gallery` dictionary section, and the listing detail
+page stops carrying an inline `ar ? "صور" : "photos"` ternary.
+
+Two files joined the journey scan with it, `Gallery.tsx` and
+`LocationFacts.tsx`. Journey 3 ends at a listing detail page that mounts both and
+holds neither of their names, which is the third time in this package that a
+scan named after a journey has been looking at the route file while the journey's
+actual work sat in a shared component: finding 153 behind `LocationPicker.tsx` in
+slice H, findings 167 and 200 behind `ListingsMap.tsx` in slice K, and now these.
+
+Adding `Gallery.tsx` to the scan immediately failed the duplicate-name test, and
+the failure was the guard's and not the file's. The test matched
+`aria-label=(\{[^}]*\}|"[^"]*")`, and `[^}]*` stops at the first `}`, which
+inside a template literal is the end of the first interpolation rather than the
+end of the value. Gallery names its thumbnails `` `${title}, ${k + 2} / ${images.length}` ``
+and its dialog `` `${title}, ${images.length} ${photosLabel}` ``; both truncated
+to the same seven characters, and the guard reported two controls sharing a name
+that neither of them has. It is now a brace counter rather than a pattern. A
+guard that accuses correct code is worse than one that misses a defect, because
+the next person to meet it learns to work around the test rather than to read it.
+
+Left in RC10: finding 171, the listing description paragraph declaring neither
+`lang` nor `dir`, and finding 22, English leakage in the Arabic new-listing flow,
+whose register row carries no detail and has to be re-established against the
+current tree before it can be closed or restated.
+
 **RC11. Table semantics, findings 148, 149 and 168.** `display:block` dropping
 table semantics at phone widths; a horizontal scroll wrapper unreachable by
 keyboard; and the Insights table with no caption and no `scope`.

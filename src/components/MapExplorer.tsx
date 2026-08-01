@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
 import { getDictionary } from "@/i18n/getDictionary";
+import { mapLocale } from "@/lib/mapLocale";
 import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
 import { formatInteger, formatRange, formatUnit, type Loc } from "@/lib/format";
 
@@ -165,7 +166,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
    try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
    if (cancelled || !ref.current) return;
    map = new maplibregl.Map({ container: ref.current, style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
-    center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17 });
+    center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17, locale: mapLocale(locale) });
    mapRef.current = map;
    ro = new ResizeObserver(() => { try { map.resize(); } catch {} }); if (ref.current) ro.observe(ref.current);
    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");

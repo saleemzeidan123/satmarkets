@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
+import { mapLocale } from "@/lib/mapLocale";
 // MapLibre paint cannot read CSS custom properties; these values come from the
 // central palette module (mirrors the CSS tokens) rather than inline hex (PKG-1B).
 import { BRAND, MAP } from "@/theme/palette";
@@ -206,7 +207,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       // it only downloads when the map actually meets RTL text, so English maps with
       // no Arabic labels pay nothing. Registered once, globally.
       try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
-      map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [46.68, 24.71], zoom: 9.2, minZoom: 4.8, maxZoom: 16 });
+      map = new maplibregl.Map({ container: ref.current, style: PRIMARY_STYLE, center: [46.68, 24.71], zoom: 9.2, minZoom: 4.8, maxZoom: 16, locale: mapLocale(ar ? "ar" : "en") });
       map.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       mapRef.current = map; map.on("dragend", () => setMoved(true)); map.on("zoomend", () => setMoved(true));
       ro = new ResizeObserver(() => { try { map.resize(); } catch {} });

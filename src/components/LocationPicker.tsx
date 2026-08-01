@@ -7,6 +7,7 @@ import { placeName } from "@/lib/displayName";
 import { cityLabel } from "@/lib/labels";
 import { kindLabel } from "@/lib/locationKind";
 import { assessLocationConsistency } from "@/lib/locationConsistency";
+import { mapLocale } from "@/lib/mapLocale";
 
 // Lets a lister place the exact building: search, click the map, drag the pin, or
 // type coordinates. Coordinates are the source of truth.
@@ -54,6 +55,7 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
   const uid = useId();
   const listId = `${uid}-loc-list`;
   const optId = (i: number) => `${uid}-loc-opt-${i}`;
+  const mapHintId = `${uid}-loc-map-hint`;
   const [active, setActive] = useState(-1);
   const listRef = useRef<HTMLUListElement>(null);
   // Finding 196. Choosing a suggestion writes its label back into the box, which
@@ -97,7 +99,7 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
       // registered once globally.
       try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
       const start: [number, number] = value.lng != null && value.lat != null ? [value.lng, value.lat] : RIYADH;
-      const m = new maplibregl.Map({ container: mapEl.current, style: STYLE, center: start, zoom: value.lat != null ? 14 : 10, attributionControl: false });
+      const m = new maplibregl.Map({ container: mapEl.current, style: STYLE, center: start, zoom: value.lat != null ? 14 : 10, attributionControl: false, locale: mapLocale(locale) });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");
       m.addControl(new maplibregl.AttributionControl({ compact: true }));
       mapRef.current = m;
@@ -264,8 +266,29 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
           </ul>
         )}
       </div>
-      <div ref={mapEl} style={{ height: 260, borderRadius: 8, overflow: "hidden", border: "1px solid #dfe3e8" }} />
-      <p className="text-[0.6875rem] text-charcoal/65">{t("Click the map or drag the pin to your building. If no location is on file yet, the closest one is offered from your pin. It is a best match, not a confirmed boundary.", "انقر على الخريطة أو اسحب العلامة إلى المبنى. إذا لم يكن هناك موقع مسجّل بعد، يُقترح أقرب موقع من علامتك، وهو أقرب تطابق وليس حدوداً مؤكدة.")}</p>
+      {/* RC10, finding 160. The map host was an unnamed <div>. MapLibre mounts a
+          canvas inside it and gives that canvas a name of its own, so what a
+          screen reader met here was an unlabelled box containing a control
+          announced only as "Map": nothing said what this particular map is for
+          or that the lister is expected to act on it.
+
+          It is named as a group rather than given role="img", which is what
+          LocationFacts uses. That map is a picture of a location already
+          decided. This one is an input: it is clicked, its pin is dragged, and
+          doing either writes the coordinates. Calling an editable control a
+          picture would be a worse description than none.
+
+          The description is the paragraph that was already below it, now
+          referenced rather than merely adjacent, and extended to say where the
+          keyboard path is. That path exists and was verified in this file: the
+          combobox above resolves a place name, a pasted map link or a bare
+          "lat, lng" pair, and the two number inputs below set the same
+          coordinates directly, both calling the same place() as a map click.
+          Naming the map without that would have been the false affordance this
+          finding was deferred over: an invitation to operate something a
+          keyboard cannot reach. */}
+      <div ref={mapEl} role="group" aria-label={t("Location map", "خريطة الموقع")} aria-describedby={mapHintId} style={{ height: 260, borderRadius: 8, overflow: "hidden", border: "1px solid #dfe3e8" }} />
+      <p id={mapHintId} className="text-[0.6875rem] text-charcoal/65">{t("Click the map or drag the pin to your building, or type the coordinates in the latitude and longitude boxes below. If no location is on file yet, the closest one is offered from your pin. It is a best match, not a confirmed boundary.", "انقر على الخريطة أو اسحب العلامة إلى المبنى، أو اكتب الإحداثيات في حقلي خط العرض وخط الطول أدناه. إذا لم يكن هناك موقع مسجّل بعد، يُقترح أقرب موقع من علامتك، وهو أقرب تطابق وليس حدوداً مؤكدة.")}</p>
       <div className="flex gap-3">
         {/* ELITE-4 J2-4: both coordinate boxes were named by placeholder only. */}
         <input className={inp + " flex-1"} type="number" step="any" aria-label={t("Latitude", "خط العرض")} placeholder={t("Latitude", "خط العرض")} value={lat ?? ""}
