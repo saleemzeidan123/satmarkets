@@ -17,7 +17,7 @@ import { getSessionUser } from "@/lib/auth/session";
 // And we never report success for something we did not store: if storage is unavailable
 // this fails loudly (503), it does not return ok.
 export async function POST(req: NextRequest) {
-  if (!allow("leads", req, 8)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+  if (!allow("leads", req, 8)) return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
 
   const body = (await req.json().catch(() => ({}))) as {
     listing_id?: string;
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   // PostgREST cannot create one either. Nothing is enforced in one place only.
   if (body.path !== "direct_contact") {
     return NextResponse.json(
-      { error: "SAT Markets does not act for buyers or tenants. Contact the lister directly." },
+      { error: "SAT Markets does not act for buyers or tenants. Contact the lister directly.", code: "representation_not_offered" },
       { status: 400 }
     );
   }
@@ -50,12 +50,12 @@ export async function POST(req: NextRequest) {
   const name = String(body.contact_name ?? "").trim();
   const email = String(body.contact_email ?? "").trim();
   if (name.length < 2 || name.length > 120 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 200) {
-    return NextResponse.json({ error: "A name and a valid work email are required." }, { status: 400 });
+    return NextResponse.json({ error: "A name and a valid work email are required.", code: "contact_details_required" }, { status: 400 });
   }
 
   const supabase = getSupabaseServer();
   if (!supabase) {
-    return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+    return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
   }
 
   // NO .select() AFTER THE INSERT. Not a style preference. It is the fix.
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error("leads insert failed:", error.message);
-    return NextResponse.json({ error: "Could not save the enquiry. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: "Could not save the enquiry. Please try again.", code: "enquiry_not_sent" }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }

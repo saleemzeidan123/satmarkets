@@ -17,7 +17,7 @@ import { API_ERROR_CODES, apiErrorMessage, isApiErrorCode } from "./apiErrors";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-// The routes whose refusals this table names. Slices A to E of finding 203.
+// The routes whose refusals this table names. Slices A to F of finding 203.
 //
 // One route is deliberately absent: /api/requirements/[id]/matches. Its eight
 // refusals are never rendered, because the page that calls it treats a 401 or a
@@ -40,6 +40,8 @@ const ROUTES_IN_SCOPE = [
   "src/app/api/admin/accounts/[id]/verification/route.ts",
   "src/app/api/requirements/route.ts",
   "src/app/api/requirements/[id]/interest/route.ts",
+  "src/app/api/viewings/route.ts",
+  "src/app/api/leads/route.ts",
 ];
 
 // The clients that render those refusals.
@@ -57,6 +59,7 @@ const CLIENTS_IN_SCOPE = [
   "src/components/VerifyAccount.tsx",
   "src/app/[locale]/post-requirement/RequirementForm.tsx",
   "src/app/[locale]/requirements/[id]/page.tsx",
+  "src/components/ListingEnquiry.tsx",
 ];
 
 /** Every `NextResponse.json({ ... }, { status: NNN })` in a route file. */

@@ -134,7 +134,16 @@ export type ApiErrorCode =
   | "sign_in_to_register_interest"
   | "interest_requires_owner_or_broker"
   | "account_not_verified"
-  | "interest_not_registered";
+  | "interest_not_registered"
+  // Slice F. Asking to see a space and asking to speak to the lister, the two
+  // writes a visitor can make from a listing page without an account.
+  | "listing_not_identified"
+  | "contact_name_invalid"
+  | "viewing_slot_invalid"
+  | "viewing_not_requested"
+  | "representation_not_offered"
+  | "contact_details_required"
+  | "enquiry_not_sent";
 
 /**
  * [en, ar]. The English half is not always the sentence the route puts in
@@ -451,6 +460,60 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
   interest_not_registered: [
     "Your interest could not be registered. Try again.",
     "تعذّر تسجيل اهتمامك. أعد المحاولة.",
+  ],
+
+  /**
+   * Slice F, the listing page. Two writes, both open to a visitor who has never
+   * signed in: asking to see a space and asking to speak to the lister.
+   *
+   * These two had a defect the earlier slices did not. The client did not render
+   * the route's English sentence, so nothing English reached an Arabic reader.
+   * It collapsed all twelve refusals into one sentence instead, the same one it
+   * showed for a dropped connection. A person given "That did not send" cannot
+   * tell that the time they picked has passed, that their email address has a
+   * typo in it, or that the platform is asking them to wait a moment. The
+   * language was right and the information was gone, which is the same failure
+   * arriving from the other direction.
+   */
+  listing_not_identified: [
+    "That space could not be identified. Reload the page and try again.",
+    "تعذّر تحديد هذه المساحة. أعد تحميل الصفحة ثم حاول مرة أخرى.",
+  ],
+  contact_name_invalid: ["Enter your name.", "أدخل اسمك."],
+  /**
+   * The route refuses a time in the past and a time more than three weeks out,
+   * and the rail in front of the person only ever offers times inside that
+   * window. So this is reached by a page left open long enough for the earliest
+   * slot it drew to pass, which is exactly the case where naming the reason is
+   * worth more than a generic failure: the times are still on screen, they still
+   * look selectable, and the only useful instruction is to pick again.
+   */
+  viewing_slot_invalid: [
+    "That time is no longer available. Choose another.",
+    "لم يعد هذا الوقت متاحاً. اختر وقتاً آخر.",
+  ],
+  viewing_not_requested: [
+    "Your viewing request could not be sent. Try again.",
+    "تعذّر إرسال طلب المعاينة. أعد المحاولة.",
+  ],
+  /**
+   * Not a mistake the form can make, because the only button on it sends the one
+   * path this platform offers. It is coded because it is a refusal a caller can
+   * receive, and because the sentence is a statement about what SAT Markets is
+   * rather than about what went wrong, which makes it the last sentence on the
+   * platform that should be readable in only one of its two languages.
+   */
+  representation_not_offered: [
+    "SAT Markets does not act for buyers or tenants. Contact the lister directly.",
+    "لا تمثّل سات ماركتس المشترين أو المستأجرين. تواصل مع المُعلن مباشرة.",
+  ],
+  contact_details_required: [
+    "Enter your name and a valid work email address.",
+    "أدخل اسمك وبريداً إلكترونياً مهنياً صحيحاً.",
+  ],
+  enquiry_not_sent: [
+    "Your enquiry could not be sent. Try again.",
+    "تعذّر إرسال طلبك. أعد المحاولة.",
   ],
 };
 

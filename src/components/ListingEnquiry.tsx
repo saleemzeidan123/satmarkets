@@ -5,6 +5,7 @@ import { Icon } from "@/components/satkit";
 import { ContactChannels } from "@/components/ContactBar";
 import { getDictionary } from "@/i18n/getDictionary";
 import { netArea, priceParts } from "@/lib/listingFigures";
+import { apiErrorMessage } from "@/lib/apiErrors";
 import type { Loc } from "@/lib/format";
 
 // SAT Markets does not act for anyone. There is one path off a listing and it goes to
@@ -171,7 +172,17 @@ export default function ListingEnquiry({
     }),
    });
    const j = await res.json().catch(() => ({}));
-   if (res.ok && !j.error) { setVDone(true); } else { setVErr(t.errSend); }
+   // Finding 203. This panel is the opposite half of the same finding. It never
+   // put the route's English on an Arabic page, so nothing here read wrong; it
+   // showed one sentence for every refusal instead, the same one it shows for a
+   // dropped connection. An enquirer whose chosen time had passed while the page
+   // sat open, and an enquirer who mistyped their email, were told the identical
+   // thing, and neither could act on it. The route names each reason now.
+   //
+   // The condition tests the status rather than the payload, which is also a
+   // correction. The only response this endpoint sends without a status is the
+   // one it sends when there is no database, and that one reports success.
+   if (!res.ok) { setVErr(apiErrorMessage(j.code, ar, t.errSend)); } else { setVDone(true); }
   } catch {
    setVErr(t.errSend);
   } finally { setVBusy(false); }
@@ -192,8 +203,11 @@ export default function ListingEnquiry({
     }),
    });
    const j = await res.json().catch(() => ({}));
-   if (res.ok && !j.error) { setDone(path); setOpen(null); }
-   else { setErr(t.errSend); }
+   // Same correction on the enquiry itself. Every refusal here is a status, and
+   // the route's only success carries no reason, so testing the payload for one
+   // was testing for a shape this endpoint does not produce.
+   if (!res.ok) { setErr(apiErrorMessage(j.code, ar, t.errSend)); }
+   else { setDone(path); setOpen(null); }
   } catch {
    setErr(t.errSend);
   } finally { setBusy(false); }
