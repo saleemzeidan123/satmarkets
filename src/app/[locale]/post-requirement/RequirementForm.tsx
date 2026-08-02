@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, dealLabel } from "@/lib/labels";
+import { apiErrorMessage } from "@/lib/apiErrors";
 import {
   REQUIREMENT_ASSET_TYPES,
   REQUIREMENT_DEAL_TYPES,
@@ -174,9 +175,20 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
           contact_phone: cPhone.trim() || null,
         }),
       });
-      const j = await r.json();
-      if (j.error) {
-        setErr(j.error);
+      const j = await r.json().catch(() => ({}));
+      // Finding 203. This put the route's own English sentence on screen. Of every
+      // site in this finding it is the one that mattered most, because this is the
+      // most public write path the platform has: an occupier who has never signed
+      // in states what they need and presses one button. Fourteen distinct English
+      // refusals could land under an Arabic heading, on an Arabic form, and one of
+      // them had the route's own English field name spliced into it.
+      //
+      // The condition changed with it. It tested the payload rather than the
+      // status, which meant a refusal that carried no sentence at all read as a
+      // success and moved the form to its confirmation screen. The route states
+      // the reason as a stable code now and every refusal it can make is a status.
+      if (!r.ok) {
+        setErr(apiErrorMessage(j.code, ar, pr.submitError));
         setBusy(false);
         return;
       }

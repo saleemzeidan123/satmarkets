@@ -115,7 +115,26 @@ export type ApiErrorCode =
   | "basis_required"
   | "account_not_found"
   | "verification_not_recorded"
-  | "verification_status_unchanged";
+  | "verification_status_unchanged"
+  // Slice E. Posting a requirement, /api/requirements GET and POST.
+  | "invalid_request_body"
+  | "asset_and_deal_type_required"
+  | "title_too_long"
+  | "size_and_budget_must_be_numbers"
+  | "size_out_of_range"
+  | "budget_out_of_range"
+  | "size_min_exceeds_max"
+  | "timeline_invalid"
+  | "notes_too_long"
+  | "work_email_invalid"
+  | "district_unknown"
+  | "location_required"
+  | "requirement_not_saved"
+  // Slice E. Answering a requirement, /api/requirements/[id]/interest POST.
+  | "sign_in_to_register_interest"
+  | "interest_requires_owner_or_broker"
+  | "account_not_verified"
+  | "interest_not_registered";
 
 /**
  * [en, ar]. The English half is not always the sentence the route puts in
@@ -329,6 +348,109 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
   verification_status_unchanged: [
     "The decision was recorded but the status did not change. Try again.",
     "سُجّل القرار لكن الحالة لم تتغيّر. أعد المحاولة.",
+  ],
+
+  /**
+   * Slice E, the requirement form. This is the most public write path on the
+   * platform: an occupier who has never signed in states what they need and
+   * presses one button. Every refusal below was an English sentence composed in
+   * the route, on a form whose every label, option and heading is already in the
+   * reader's language, which made the refusal the one thing on the page that
+   * stopped speaking to them at the moment they most needed it to.
+   */
+  invalid_request_body: [
+    "That request could not be read. Reload the page and try again.",
+    "تعذّر قراءة الطلب. أعد تحميل الصفحة ثم حاول مرة أخرى.",
+  ],
+  asset_and_deal_type_required: [
+    "Choose an asset type and whether you want to lease or buy.",
+    "اختر نوع العقار وما إذا كنت تريد الاستئجار أو الشراء.",
+  ],
+  title_too_long: [
+    "That title is too long. Keep it under 160 characters.",
+    "العنوان طويل. اجعله أقل من 160 حرفاً.",
+  ],
+  size_and_budget_must_be_numbers: [
+    "Size and budget must be numbers.",
+    "يجب أن يكون المقاس والميزانية أرقاماً.",
+  ],
+  /**
+   * Two codes rather than one code and a field name, for the reason written at
+   * the head of this file: the route composed the word "size" or "budget" into
+   * an English sentence, and a field name spliced into a translated sentence is
+   * an English word inside an Arabic one. Two entries cost two lines each and
+   * read correctly in both languages.
+   */
+  size_out_of_range: [
+    "That size is outside the range this form accepts.",
+    "المقاس خارج النطاق الذي يقبله هذا النموذج.",
+  ],
+  budget_out_of_range: [
+    "That budget is outside the range this form accepts.",
+    "الميزانية خارج النطاق الذي يقبله هذا النموذج.",
+  ],
+  size_min_exceeds_max: [
+    "The smallest size you will take is larger than the largest.",
+    "أصغر مقاس تقبله أكبر من أكبر مقاس.",
+  ],
+  timeline_invalid: [
+    "Choose one of the timelines offered.",
+    "اختر أحد الجداول الزمنية المتاحة.",
+  ],
+  notes_too_long: [
+    "Those notes are too long. Keep them under 2000 characters.",
+    "الملاحظات طويلة. اجعلها أقل من 2000 حرف.",
+  ],
+  work_email_invalid: [
+    "Enter a valid work email address.",
+    "أدخل بريداً إلكترونياً مهنياً صحيحاً.",
+  ],
+  /**
+   * Emitted twice by the same route and deliberately worded for the second one.
+   * The first check is a shape check on the identifier; the second is a lookup
+   * that failed to find the district. A person cannot act differently on those
+   * two, because in both cases the place they picked is not one this platform
+   * holds, so one sentence is the honest answer to both.
+   */
+  district_unknown: [
+    "That district is not one this platform holds. Choose another.",
+    "هذا الحي ليس من الأحياء المتاحة في المنصة. اختر حياً آخر.",
+  ],
+  /**
+   * Finding 102 is the reason this refusal exists at all. The route used to file
+   * a requirement under the literal "Riyadh" whenever the caller named no city,
+   * which stored a fact nobody stated. Refusing is the correct behaviour and it
+   * needs a sentence a person can act on, so this asks for the missing thing
+   * rather than reporting that something was rejected.
+   */
+  location_required: ["Choose where you need the space.", "اختر المكان الذي تحتاج فيه المساحة."],
+  requirement_not_saved: [
+    "Your requirement could not be saved. Try again.",
+    "تعذّر حفظ طلبك. أعد المحاولة.",
+  ],
+
+  sign_in_to_register_interest: [
+    "Sign in to register interest in this requirement.",
+    "سجّل الدخول لتسجيل اهتمامك بهذا الطلب.",
+  ],
+  /**
+   * Emitted for the occupier who has no owner or broker account at all and for
+   * the session whose account record has gone. Both are the same answer to the
+   * person: this is not a thing your account can do. The account that is verified
+   * but of the wrong kind and the account that no longer exists are a distinction
+   * for the log, not for the reader, and the route keeps it there.
+   */
+  interest_requires_owner_or_broker: [
+    "Only verified owners and brokers can register interest.",
+    "تسجيل الاهتمام متاح للملّاك والوسطاء الموثّقين فقط.",
+  ],
+  account_not_verified: [
+    "Your account is not verified yet.",
+    "لم يتم توثيق حسابك بعد.",
+  ],
+  interest_not_registered: [
+    "Your interest could not be registered. Try again.",
+    "تعذّر تسجيل اهتمامك. أعد المحاولة.",
   ],
 };
 

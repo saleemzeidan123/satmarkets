@@ -1262,12 +1262,30 @@ test("the intake codes and the sentences that name them are the same set", () =>
   );
 });
 
-test("neither listing form renders the sentence the route composed", () => {
+test("no caller of the intake routes renders the sentence the route composed", () => {
+  // The third entry arrived with finding 203 slice E, and it is a correction to
+  // this finding rather than a new one. AvailabilityReaffirm writes to PATCH
+  // /api/listings/[id], which has stated its refusals as codes since RC10, but
+  // the component was written afterwards and read the wire sentence, so it was
+  // the one caller of a finding 22 route still putting English on an Arabic
+  // page. It is listed here rather than in the finding 203 table's guards
+  // because it must keep speaking to the table its route already speaks to. Two
+  // tables naming one route's codes is how they start disagreeing.
+  //
+  // It is also the one of the three that does not sit inside a journey path this
+  // file already walks, so it is read directly rather than through `file()`.
+  // Widening JOURNEYS to reach it would quietly change the scope of every other
+  // guard in this file, which is a large change to make in passing.
+  const outside = ["src/components/AvailabilityReaffirm.tsx"];
+  const srcOf = (path: string) =>
+    outside.includes(path) ? code(readFileSync(join(ROOT, ...path.split("/")), "utf8")) : file(path);
+
   for (const [path, expr] of [
     ["src/components/ListingStudio.tsx", /\bjson\.error\b/],
     ["src/components/EditListingForm.tsx", /\bj\.error\b/],
+    ["src/components/AvailabilityReaffirm.tsx", /\bj\.error\b/],
   ] as const) {
-    const src = file(path);
+    const src = srcOf(path);
     assert.doesNotMatch(
       src,
       expr,

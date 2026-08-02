@@ -11,22 +11,22 @@ import { getSessionUser } from "@/lib/auth/session";
 // unverified is 403, and every row records the acting user and account.
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!allow("interest", req, 8)) {
-    return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+    return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
   }
 
   const su = await getSessionUser();
   if (!su) {
-    return NextResponse.json({ error: "Sign in to register interest." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to register interest.", code: "sign_in_to_register_interest" }, { status: 401 });
   }
   if (!su.accountId) {
     // Occupiers have no owner/broker account. They post requirements, not answer them.
-    return NextResponse.json({ error: "Only verified owners and brokers can register interest." }, { status: 403 });
+    return NextResponse.json({ error: "Only verified owners and brokers can register interest.", code: "interest_requires_owner_or_broker" }, { status: 403 });
   }
 
   const sb = getSupabaseServer();
   if (!sb) {
     // Never report success when nothing can be stored.
-    return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+    return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
   }
 
   const { data: acct } = await sb
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .eq("id", su.accountId)
     .maybeSingle();
   if (!acct) {
-    return NextResponse.json({ error: "Only verified owners and brokers can register interest." }, { status: 403 });
+    return NextResponse.json({ error: "Only verified owners and brokers can register interest.", code: "interest_requires_owner_or_broker" }, { status: 403 });
   }
   if (acct.verification_status !== "verified") {
-    return NextResponse.json({ error: "Your account is not verified yet." }, { status: 403 });
+    return NextResponse.json({ error: "Your account is not verified yet.", code: "account_not_verified" }, { status: 403 });
   }
 
   // Party type comes from the account type, never the request. An owner account
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) {
     console.error("requirement_interest insert failed:", error.message);
-    return NextResponse.json({ error: "Could not register interest. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: "Could not register interest. Please try again.", code: "interest_not_registered" }, { status: 500 });
   }
   return NextResponse.json({ ok: true, id: data?.id ?? null, party_type });
 }

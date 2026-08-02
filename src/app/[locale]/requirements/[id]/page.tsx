@@ -8,6 +8,7 @@ import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
 import { textLangAttrs } from "@/lib/textScript";
 import { stateLabel } from "@/lib/matching";
+import { apiErrorMessage } from "@/lib/apiErrors";
 import type { MatchReason, MatchVerdict } from "@/lib/matching";
 
 // PKG-DEM1, finding 100's read side. The stored timeline and must-have tokens are
@@ -115,8 +116,19 @@ export default function RequirementDetail({ params }: { params: { locale: string
    // that id; nothing here can attach a listing the account does not own.
    const res = await fetch(`/api/requirements/${params.id}/interest`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ message: msg, listing_id: attached }) });
    const j = await res.json().catch(() => ({}));
-   if (res.status === 401) { setNeedAuth(true); setErr(j.error || t.errSignIn); setBusy(false); return; }
-   if (!res.ok || j.error) { setErr(j.error || t.errRegister); setBusy(false); return; }
+   /* Finding 203. Both lines rendered the route's own English sentence, and the
+      bilingual sentence beside each was the branch that almost never ran. Three
+      of the four refusals this endpoint makes are about who the responder is,
+      which is exactly the case where a person needs to be told, in their own
+      language, whether to sign in, to finish verification, or that this is not
+      something their kind of account does at all. The route names each reason as
+      a stable code now.
+
+      The second condition also stopped testing the payload. A 200 carrying a
+      reason is not a shape this endpoint produces, and testing for one meant a
+      response that stated no reason at all was treated as a refusal. */
+   if (res.status === 401) { setNeedAuth(true); setErr(apiErrorMessage(j.code, ar, t.errSignIn)); setBusy(false); return; }
+   if (!res.ok) { setErr(apiErrorMessage(j.code, ar, t.errRegister)); setBusy(false); return; }
    setMsg(""); setShow(false); setBusy(false); setAttached(null);
    /* Finding 201. `setShow(false)` unmounts the panel, and the submit button
       inside it is the element that holds focus at this moment, so focus fell to

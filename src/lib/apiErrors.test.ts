@@ -17,7 +17,14 @@ import { API_ERROR_CODES, apiErrorMessage, isApiErrorCode } from "./apiErrors";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-// The routes whose refusals this table names. Slices A to D of finding 203.
+// The routes whose refusals this table names. Slices A to E of finding 203.
+//
+// One route is deliberately absent: /api/requirements/[id]/matches. Its eight
+// refusals are never rendered, because the page that calls it treats a 401 or a
+// 403 as a permission the visitor has not got yet rather than as a failure, and
+// says so through the register button instead. Coding refusals nobody displays
+// would put eight sentence pairs in this table that no reader will ever meet,
+// which is the dead weight guard 3 exists to prevent.
 const ROUTES_IN_SCOPE = [
   "src/app/api/listings/[id]/media/route.ts",
   "src/app/api/listings/[id]/media/[mediaId]/route.ts",
@@ -31,6 +38,8 @@ const ROUTES_IN_SCOPE = [
   "src/app/api/viewings/review/route.ts",
   "src/app/api/signups/review/route.ts",
   "src/app/api/admin/accounts/[id]/verification/route.ts",
+  "src/app/api/requirements/route.ts",
+  "src/app/api/requirements/[id]/interest/route.ts",
 ];
 
 // The clients that render those refusals.
@@ -46,6 +55,8 @@ const CLIENTS_IN_SCOPE = [
   "src/components/ViewingActions.tsx",
   "src/components/SignupActions.tsx",
   "src/components/VerifyAccount.tsx",
+  "src/app/[locale]/post-requirement/RequirementForm.tsx",
+  "src/app/[locale]/requirements/[id]/page.tsx",
 ];
 
 /** Every `NextResponse.json({ ... }, { status: NNN })` in a route file. */

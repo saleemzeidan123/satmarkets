@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { intakeErrorMessage } from "@/lib/listingIntakeErrors";
 
 // The lister's answer to the sentence PKG-AV1 put on their card. One button, one
 // listing, one affirmation.
@@ -21,13 +22,25 @@ import { useRouter } from "next/navigation";
 // The write goes to PATCH /api/listings/[id], which owns the permission rule
 // (availability is the lister's at any stage) and rejects a future date. This
 // component sends `now` and nothing else, so no other field can move with it.
+//
+// Finding 203, and this one is a correction rather than a new conversion. This
+// component writes to PATCH /api/listings/[id], which is a finding 22 route: it
+// has stated its refusals as stable codes since RC10, and `listingIntakeErrors`
+// already names every one of them in both languages. This component arrived
+// later, with PKG-AV1, and read the wire sentence instead, so it was the one
+// caller of that route still rendering English on an Arabic page. It uses the
+// table that route already speaks to rather than a second one. Two tables naming
+// the same route's codes is how they start disagreeing.
 export default function AvailabilityReaffirm({
   id,
+  locale,
   t,
 }: {
   id: string;
+  locale: string;
   t: { action: string; working: string; done: string; failed: string };
 }) {
+  const ar = locale === "ar";
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
@@ -48,7 +61,7 @@ export default function AvailabilityReaffirm({
       });
       const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setErr(typeof j.error === "string" ? j.error : t.failed);
+        setErr(intakeErrorMessage(j.code, ar));
         setBusy(false);
         return;
       }

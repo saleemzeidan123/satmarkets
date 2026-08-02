@@ -219,6 +219,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                                   <span className="rowact" style={{ display: "inline-flex" }}>
                                     <AvailabilityReaffirm
                                       id={l.id}
+                                      locale={lp}
                                       t={{ action: t.reaffirm, working: t.reaffirmWorking, done: t.reaffirmDone, failed: t.reaffirmFailed }}
                                     />
                                   </span>

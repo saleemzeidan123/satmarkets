@@ -12,13 +12,13 @@ const DEALS = REQUIREMENT_DEAL_TYPES;
 
 // GET: the public requirements board (no contact info)
 export async function GET(req: NextRequest) {
-  if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
  const sb = getSupabaseServer();
  // Sample requirements exist only to exercise the board in the preview build.
  // In production they are never served: an empty board is the honest answer,
  // and a missing database is a 503, not a silent fixture list (SM-P0-006).
  if (!sb) {
-  if (!PREVIEW) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+  if (!PREVIEW) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
   return NextResponse.json({ requirements: MOCK, sample: true });
  }
  const { data: reqs } = await sb.from("requirements_public").select("*").order("created_at", { ascending: false }).limit(50);
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 //     when nothing had been stored and nothing had been counted.
 //   - The ref code was "R-" + Math.random() in this file: not unique, and
 //     chosen by the caller's process rather than the system of record.
-//   - Raw Postgres error.message was returned to the browser.
+//   - The raw Postgres failure text was returned to the browser.
 //   - Validation was two enum checks. Sizes, budget, title, contact and notes
 //     were passed through untouched.
 //   - The brief and its notification rows were separate inserts, so a brief
@@ -68,54 +68,62 @@ const num = (v: unknown): number | null => {
 };
 
 export async function POST(req: NextRequest) {
- if (!allow("requirements", req, 8)) return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+ if (!allow("requirements", req, 8)) return NextResponse.json({ error: "Too many requests. Please try again shortly.", code: "rate_limited" }, { status: 429 });
 
  let b: any;
- try { b = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body." }, { status: 400 }); }
+ try { b = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body.", code: "invalid_request_body" }, { status: 400 }); }
 
  if (!ASSETS.includes(b?.asset_type) || !DEALS.includes(b?.deal_type)) {
-  return NextResponse.json({ error: "Choose a valid asset type and deal type." }, { status: 400 });
+  return NextResponse.json({ error: "Choose a valid asset type and deal type.", code: "asset_and_deal_type_required" }, { status: 400 });
  }
 
  const title = String(b.title ?? "").trim();
- if (title.length > 160) return NextResponse.json({ error: "Title is too long." }, { status: 400 });
+ if (title.length > 160) return NextResponse.json({ error: "Title is too long.", code: "title_too_long" }, { status: 400 });
 
  const sizeMin = num(b.size_min), sizeMax = num(b.size_max), budget = num(b.budget);
  if ([sizeMin, sizeMax, budget].some((n) => Number.isNaN(n))) {
-  return NextResponse.json({ error: "Size and budget must be numbers." }, { status: 400 });
+  return NextResponse.json({ error: "Size and budget must be numbers.", code: "size_and_budget_must_be_numbers" }, { status: 400 });
  }
+ // Finding 203. This spliced its own field name into an English sentence, so an
+ // Arabic reader was refused in English with an English field name inside it.
+ // The name stays in `error` for the log; the code carries which field it was.
  for (const [v, label] of [[sizeMin, "size"], [sizeMax, "size"], [budget, "budget"]] as [number | null, string][]) {
-  if (v !== null && (v < 0 || v > 10_000_000)) return NextResponse.json({ error: `That ${label} is out of range.` }, { status: 400 });
+  if (v !== null && (v < 0 || v > 10_000_000)) {
+   return NextResponse.json(
+    { error: `That ${label} is out of range.`, code: label === "budget" ? "budget_out_of_range" : "size_out_of_range" },
+    { status: 400 }
+   );
+  }
  }
  if (sizeMin !== null && sizeMax !== null && sizeMin > sizeMax) {
-  return NextResponse.json({ error: "Minimum size cannot exceed maximum size." }, { status: 400 });
+  return NextResponse.json({ error: "Minimum size cannot exceed maximum size.", code: "size_min_exceeds_max" }, { status: 400 });
  }
 
  const timeline = b.timeline ? String(b.timeline).trim() : "";
- if (timeline && !isTimelineToken(timeline)) return NextResponse.json({ error: "Choose a valid timeline." }, { status: 400 });
+ if (timeline && !isTimelineToken(timeline)) return NextResponse.json({ error: "Choose a valid timeline.", code: "timeline_invalid" }, { status: 400 });
 
  const mustHaves = Array.isArray(b.must_haves)
   ? b.must_haves.filter((m: unknown) => typeof m === "string" && m.length <= 60).slice(0, 12)
   : [];
 
  const notes = String(b.notes ?? "").trim();
- if (notes.length > 2000) return NextResponse.json({ error: "Notes are too long." }, { status: 400 });
+ if (notes.length > 2000) return NextResponse.json({ error: "Notes are too long.", code: "notes_too_long" }, { status: 400 });
 
  const email = String(b.contact_email ?? "").trim();
  if (email && (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 200)) {
-  return NextResponse.json({ error: "Enter a valid work email." }, { status: 400 });
+  return NextResponse.json({ error: "Enter a valid work email.", code: "work_email_invalid" }, { status: 400 });
  }
  const contactName = String(b.contact_name ?? "").trim().slice(0, 120);
  const contactPhone = String(b.contact_phone ?? "").trim().slice(0, 40);
 
  const districtId = b.district_id ? String(b.district_id) : "";
  if (districtId && !/^[0-9a-f-]{36}$/i.test(districtId)) {
-  return NextResponse.json({ error: "Unknown district." }, { status: 400 });
+  return NextResponse.json({ error: "Unknown district.", code: "district_unknown" }, { status: 400 });
  }
 
  const sb = getSupabaseServer();
  // No storage means no requirement and no match count. Say so.
- if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
+ if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
 
  // PKG-DEM1, finding 105. The check above is a shape check: any well formed UUID
  // passed it, so a requirement could be stored against a district that does not
@@ -132,16 +140,16 @@ export async function POST(req: NextRequest) {
   const { data: drow, error: derr } = await sb.from("districts").select("id,city").eq("id", districtId).maybeSingle();
   if (derr) {
    console.error("district lookup failed", derr);
-   return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
+   return NextResponse.json({ error: "Could not save your requirement. Please try again.", code: "requirement_not_saved" }, { status: 500 });
   }
-  if (!drow) return NextResponse.json({ error: "Unknown district." }, { status: 400 });
+  if (!drow) return NextResponse.json({ error: "Unknown district.", code: "district_unknown" }, { status: 400 });
   city = String((drow as any).city ?? "").trim();
  }
  if (!city) {
   const raw = String(b.city ?? "").trim();
   city = (cityKey(raw) ?? "").slice(0, 80);
  }
- if (!city) return NextResponse.json({ error: "Choose a location." }, { status: 400 });
+ if (!city) return NextResponse.json({ error: "Choose a location.", code: "location_required" }, { status: 400 });
 
  // create_requirement() inserts the brief AND its notification rows in one
  // transaction, and the ref code comes from a database sequence.
@@ -166,13 +174,13 @@ export async function POST(req: NextRequest) {
 
  if (error) {
   console.error("create_requirement failed", error);
-  return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
+  return NextResponse.json({ error: "Could not save your requirement. Please try again.", code: "requirement_not_saved" }, { status: 500 });
  }
 
  const row = Array.isArray(data) ? data[0] : data;
  const id: string | undefined = row?.id;
  const ref: string | undefined = row?.ref_code;
- if (!id || !ref) return NextResponse.json({ error: "Could not save your requirement. Please try again." }, { status: 500 });
+ if (!id || !ref) return NextResponse.json({ error: "Could not save your requirement. Please try again.", code: "requirement_not_saved" }, { status: 500 });
 
  // A real count of published listings that match. Never a placeholder.
  let match = 0;
