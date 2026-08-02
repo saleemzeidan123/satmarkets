@@ -5,9 +5,52 @@ full instrument is `docs/research/elite-1-instrument-en.md` and
 `docs/research/elite-1-instrument-ar.md`; this sheet does not repeat it, and the
 facilitator reads the instrument rather than this file.
 
-No participant is contacted until the owner authorises recruitment. Codex has
-authorised preparation and recruitment; the round itself is measured from
-consented research notes and manual observation, and no product telemetry runs.
+## Authorisation, and a correction
+
+**Nobody is contacted yet.** Preparation is authorised. External outreach is not.
+Those are two different permissions and this sheet previously ran them together:
+it read "Codex has authorised preparation and recruitment", which was wrong, and
+wrong in the direction that gets somebody messaged. Codex's condition is stated
+plainly: prepare the criteria, the screener, the consent language, the outreach
+copy, the scheduling process and the research script, and contact nobody until
+the owner separately approves outreach.
+
+So everything in this file and in both instruments is ready to use and none of it
+has been used. No message has been sent, no candidate list exists in this
+repository, no calendar has been opened and no test account has been created on
+the preview.
+
+**What releases it.** One sentence from the owner authorising outreach for
+ELITE-1. Nothing else is waiting: no engineering task, no gate, no purchase and no
+counsel item stands between that sentence and the first screener call. The
+decision date carried in the ledger is 1 October 2026, and bringing it forward
+costs nothing but the owner's own calendar.
+
+The round is measured from consented research notes and manual observation. No
+product telemetry runs, O17 collection stays disabled, and no analytics vendor is
+installed or sent anything. That does not change when outreach is authorised; a
+research round is not a collection authorisation.
+
+## The kit, and where each part of it lives
+
+Codex named six things this kit must contain. All six exist. They are in three
+files rather than one, on purpose, and this table is so nobody has to search
+1,341 lines to find out which.
+
+| What Codex asked for | Where it is | Whose job |
+| --- | --- | --- |
+| Final participant criteria | This sheet, "The 10 seats" and "Exclusion criteria" | Owner, recruiting |
+| Screening questions | Instrument section 1, "Screener script" in English and "نص الفرز" in Arabic | Owner, screening |
+| Consent language | Instrument section 3, read aloud and not paraphrased | Facilitator, in session |
+| Outreach copy | This sheet, "Invitation message", short form in both languages. The longer email form is instrument section 2 | Owner, recruiting |
+| Scheduling process | This sheet, "Scheduling" | Owner |
+| Research script | Instrument sections 4, 6 and 10, the facilitator guide, the 15 task scripts and the interview questions | Facilitator, in session |
+
+**The screener is referenced here and deliberately not copied here.** It is six
+questions and it would fit. Two copies of a screener is how the two copies start
+disagreeing, and the copy an owner happens to open is then the one that decides
+who is disqualified. One text, in the instrument, in both languages, at full
+parity. The same rule applies to the consent language and the task scripts.
 
 ## The 10 seats
 
@@ -92,6 +135,12 @@ Do not describe the product as launched, verified at scale, or as having users.
 It has 50 preview listings, 6 requirements and 0 registered interests, and an
 invitation that overstates that is the first unsupported claim of the round.
 
+Those three figures were read from the deployed preview at commit `48352e3`:
+`GET /api/listings` returned 50 published rows, and `GET /api/requirements`
+returned 6 rows with `sample: false` and `interest: 0` on every one. Re-read them
+before the round rather than quoting this line, because the point of the line is
+that the number is true on the day it is said.
+
 ## What each participant needs
 
 Every participant, all 10: a laptop or desktop with a current browser, a working
@@ -167,3 +216,54 @@ phone number or email. The recruitment list with real contact details stays with
 the owner and never enters this repository. If the owner later wants written
 consent forms, that is an O5 counsel item and does not block the round from
 running on the spoken script.
+
+## The order of operations, once outreach is authorised
+
+Not a plan for the round. The round is the instrument's job. This is only the
+sequence for the first week, because the ordering is where a round of ten quietly
+becomes a round of six.
+
+1. Run the six data checks in instrument section 5 first, before any invitation.
+   A check that fails is a fix, and a fix is cheaper before ten people have a slot
+   in their calendar than after.
+2. Create the ten test accounts and the fictional organisation. Decide and write
+   down which two of S1 to S5 register live during their session, because a
+   participant who registers live and one who starts signed in are not running the
+   same task.
+3. Invite in one batch, not in order of seat. Over-invite: expect two or three
+   no-shows across ten seats.
+4. Screen every reply with the six questions before offering a slot. Stop at the
+   first disqualifying answer. A seat filled by somebody who could not describe a
+   specific case in question 2 is worse than an empty seat, because the round then
+   carries an answer nobody can trace to a real frame of reference.
+5. Book S1 and S2 first. They exercise registration and Arabic direction together,
+   which is where the round is most likely to find something worth fixing before
+   the other eight see it.
+6. Write up between sessions, not at the end of the day.
+
+## Seat tracker
+
+Fill this in as the round runs. It is here rather than in a spreadsheet so the mix
+check is visible at the moment a seat is offered, which is the moment it matters.
+No real name, employer, phone number or email is ever written into this table; the
+contact list stays with the owner and outside this repository.
+
+| Seat | Screened | Language confirmed | Slot booked | Session run | Notes |
+| --- | --- | --- | --- | --- | --- |
+| S1 | | | | | Arabic seat, register live |
+| S2 | | | | | Arabic seat, no prior portal use |
+| S3 | | | | | More than 3 assets |
+| S4 | | | | | Prepares listing material |
+| S5 | | | | | Acts for owners |
+| D1 | | | | | Arabic seat, open search now |
+| D2 | | | | | Arabic seat, open search now |
+| D3 | | | | | Acts for an occupier |
+| D4 | | | | | More than one city |
+| D5 | | | | | Used a Saudi portal in 12 months |
+
+Before the first session, check the four minimums against the filled rows: 4 or
+more working primarily in Arabic, 2 or more supply-side deciding terms themselves,
+2 or more supply-side preparing the material themselves, 2 or more demand-side in
+an open search now. If a seat cannot be filled, run 9 and record the gap. Do not
+substitute a weaker profile into a seat, because the seat is the question and a
+substitute answers a different one.
