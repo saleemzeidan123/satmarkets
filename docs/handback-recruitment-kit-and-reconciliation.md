@@ -8,6 +8,20 @@ the consolidated no-skip reconciliation in one handback."*
 **No implementation package was started.** No source file was touched. The test suite
 is unchanged at 1679 because nothing under `src/` moved.
 
+> **Superseded in part, 2026-08-02.** Codex reviewed `d34ebfa` and accepted the O18
+> record and the substantive recruitment corrections, but rejected the roadmap
+> reconciliation gate this handback returned as item 5. The gate has been rebuilt from
+> the original enhancement plan, which was recoverable the whole time and is now
+> preserved at `docs/baseline-enhancement-plan-2026-07-22.md`. **Sections 4 and 5 of
+> this document are wrong and are superseded by
+> `docs/handback-reconciliation-corrected.md` and by the rebuilt
+> `docs/roadmap-reconciliation-gate.md`.** They are left standing rather than edited,
+> because a narrative is a record of what was believed at a time and correcting it in
+> place would hide the error rather than answer for it. Every figure in sections 4 and
+> 5, including the line count, the ten "unrecoverable" titles, the substitute journeys
+> and the conclusion about engineering time, should be read only as evidence of what
+> the rejected version claimed.
+
 ---
 
 ## 1. What this handback answers, item by item

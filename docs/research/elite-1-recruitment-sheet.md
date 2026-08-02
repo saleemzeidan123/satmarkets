@@ -5,7 +5,28 @@ full instrument is `docs/research/elite-1-instrument-en.md` and
 `docs/research/elite-1-instrument-ar.md`; this sheet does not repeat it, and the
 facilitator reads the instrument rather than this file.
 
-## Authorisation, and a correction
+## Authorisation, and three corrections
+
+**Two further corrections were applied on 2026-08-02**, both required by Codex when
+it reviewed `d34ebfa`, and both recorded here so a reader of an earlier copy can
+see what changed.
+
+1. **The assistive-technology scope was overstated by implication.** The section
+   "The assistive-technology round is separate, and it is required" justified A1's
+   public-path-only scope by saying that 22 accessibility findings in the private
+   flows are recorded and that sending a participant into known defects tests the
+   participant rather than the product. Those 22 findings are fixed and awaiting
+   independent verification. They are not known-broken surfaces. That section now
+   states exactly what A1 validates and what it does not, and schedules a separate
+   authenticated assistive-technology session, ELITE-1-AT-B, for the 22.
+2. **Raw-notes retention was unbounded.** The section "What is retained, and by
+   whom" said notes are kept for as long as the findings they support are open,
+   which has no end date. It now sets a bounded period: raw notes are destroyed no
+   later than 90 days after the final session, after which only synthesized
+   findings without participant identifiers remain. Any different duration is an
+   owner or counsel decision recorded in `docs/decision-register.md`.
+
+The same two corrections are applied at parity in both instruments.
 
 **Nobody is contacted yet.** Preparation is authorised. External outreach is not.
 Those are two different permissions and this sheet previously ran them together:
@@ -255,11 +276,37 @@ mixing the two lets the second get averaged into the first.
 
 Public path only means: the home page, the listings index with one filter
 applied, one listing detail page including its Evidence Passport, and the
-requirement form up to but not through submission. Registration, the listing
-studio and the dashboard are out of scope for A1, because 22 accessibility
-findings in those surfaces are already recorded and not yet independently
-verified, and sending a participant into known defects tests the participant
-rather than the product.
+requirement form up to but not through submission.
+
+**What A1 validates, stated exactly.** A1 validates that a daily screen-reader
+user, on their own configuration and their own speech rate, can operate those four
+public surfaces: reach and understand the home page, apply one filter on the
+listings index and know what changed, read a listing detail page including its
+Evidence Passport and tell a verified fact from an unverified one, and fill the
+requirement form up to the point of submission. In journey terms that is journey
+1, Find and enquire, up to the enquiry, and the first screen of journey 2, Post a
+space requirement.
+
+**What A1 does not validate.** Registration, the Listing Studio, the dashboard,
+the deal workspace and every research surface are outside A1's scope, so A1 says
+nothing about journeys 3, 4, 5 or 6. In particular, **A1 does not verify the 22
+accessibility findings recorded in the private flows.** Those findings are fixed
+and awaiting independent verification. They are not known-broken surfaces and must
+not be described as such, here or anywhere else. A1 is scoped to the public path
+because the public path is what an unauthenticated participant can reach without
+test-account credentials and an observed session inside their own account, not
+because the private flows are expected to fail.
+
+**The authenticated round is separate, and it is also required.** Verifying the 22
+requires a second assistive-technology session, called ELITE-1-AT-B, run against
+authenticated surfaces with a prepared test account, seeded inventory and explicit
+consent to operate an account under observation. It covers registration, the
+Listing Studio and the dashboard, which are the surfaces the 22 findings sit in.
+It is not an extension of A1's slot and is not booked in the same week. It is
+scheduled after the ELITE-1 round's write-up, because a defect the round surfaces
+in those same flows should be fixed before an assistive-technology participant
+meets it. Until ELITE-1-AT-B has run and its results are recorded, no document may
+state that the 22 findings are closed. They remain fixed and unverified.
 
 The exclusion criteria in this sheet apply to A1 with one change: A1 does not
 need commercial real-estate experience and is not screened on a specific property
@@ -374,12 +421,38 @@ commit in this repository may carry a participant's name, employer, phone number
 or email, and the seat tracker above is built so that following it makes that
 impossible rather than merely discouraged.
 
-The notes are kept for as long as the findings they support are open, and a
-participant may ask for their row to be struck at any point up to the round's
-write-up, in which case it is struck rather than marked as withdrawn. Written
-consent forms, and any longer retention than that, are an O5 counsel item. Their
-absence does not block the round from running on the spoken script; their
-presence would be required before any round that records.
+**Raw notes are kept for a bounded period, and the bound is a date rather than a
+condition.** The previous wording here said the notes are kept for as long as the
+findings they support are open. That is not a retention period. A finding can stay
+open indefinitely, so a retention rule tied to it is a rule with no end, and a
+pseudonymous record of ten identifiable people in a small market must not be held
+on an open-ended basis.
+
+The rule is this. Raw session notes, meaning the per-participant record including
+their side, role group, city, portfolio or search scope, language, prior platform
+use, device and their own words, are retained for a **maximum of 90 days after the
+final session of the round**. On or before day 90 the raw notes are destroyed and
+only the synthesized findings are kept. The synthesized findings carry no
+participant identifier of any kind, including seat labels such as S1 or D3, no
+per-participant attribution and no verbatim quotation that could be traced to one
+person. They are retained without limit, because at that point they are statements
+about the product rather than about anybody.
+
+A finding that is still open on day 91 is carried by its synthesized form. If a
+synthesized finding is not specific enough to act on without the raw note behind
+it, that is a signal to write the synthesis better before day 90, not a reason to
+keep the raw note longer.
+
+A participant may ask for their row to be struck at any point up to the round's
+write-up, in which case it is struck rather than marked as withdrawn.
+
+**Any duration other than 90 days is an owner or counsel decision and is recorded
+as one** in `docs/decision-register.md` before the round runs, not after. This
+sheet does not presume the owner will choose 90 days; it states 90 days as the
+recommended maximum so that the round has a lawful default if no other decision is
+made. Written consent forms, and any retention beyond what is set out here, are an
+O5 counsel item. Their absence does not block the round from running on the spoken
+script; their presence would be required before any round that records.
 
 ## The order of operations, once outreach is authorised
 

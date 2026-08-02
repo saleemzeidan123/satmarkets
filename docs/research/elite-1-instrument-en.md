@@ -79,6 +79,14 @@ Evidence Passport, and the requirement form up to but not through submission. A1
 screened on daily assistive-technology use rather than on commercial real-estate
 experience, and the task scripts below are applied only within that scope.
 
+A1 validates whether those four public surfaces can be operated with a screen
+reader. A1 does not verify the 22 accessibility findings recorded in the private
+flows. Those findings are fixed and awaiting independent verification, and must not
+be described as known-broken surfaces. Verifying them is a separate authenticated
+assistive-technology session, ELITE-1-AT-B, run with a prepared test account
+against registration, the Listing Studio and the dashboard, scheduled after this
+round's write-up. Until it has run, no document may state that the 22 are closed.
+
 Recruitment itself is an owner item. This instrument is ready to run; naming and
 approaching 10 real participants is not something the builder does, and no
 participant is contacted until the owner says so.
@@ -703,6 +711,14 @@ made sense at the time and does not a week later is simply lost. Write up betwee
 sessions, not at the end of the round. Findings enter `docs/findings-register.md` under
 their own numbers, so a research finding and an engineering finding are ranked
 against each other rather than kept in separate lists.
+
+Raw notes are destroyed no later than 90 days after the final session of the round.
+After that date only the synthesized findings remain, carrying no participant
+identifier, no seat label and no traceable quotation. A finding still open on day 91
+is carried by its synthesized form. Any duration other than 90 days is an owner or
+counsel decision and is recorded in `docs/decision-register.md` before the round
+runs. The full rule is in the recruitment sheet under "What is retained, and by
+whom".
 
 ### Round header
 
