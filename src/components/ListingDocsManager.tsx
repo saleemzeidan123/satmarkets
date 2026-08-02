@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/satkit";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 // Floor plans and the marketing brochure, managed after a listing is created. Floor
 // plans may be images or PDFs; the brochure is a PDF. Images go to the media route
@@ -13,7 +14,11 @@ type Doc = { id: string; url: string | null; isPdf: boolean; label: string | nul
 // ELITE-4 J2-20: `errUp` is passed in because this hook sits outside the
 // component and so outside the `t` object; it used to say "Upload failed." in
 // English to an Arabic reader.
-function useUploader(id: string, onDone: () => void, errUp: string) {
+//
+// Finding 203: `ar` is passed for the same reason. The hook renders a refusal
+// the route composed, so it has to know which language to render it in, and it
+// cannot read the locale off a prop it does not have.
+function useUploader(id: string, ar: boolean, onDone: () => void, errUp: string) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   async function upload(file: File, kind: "floorplan" | "brochure") {
@@ -28,7 +33,7 @@ function useUploader(id: string, onDone: () => void, errUp: string) {
     fd.append("kind", kind);
     try {
       const res = await fetch(`/api/listings/${id}/${route}`, { method: "POST", body: fd });
-      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || errUp); setBusy(false); return; }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.code, ar, errUp)); setBusy(false); return; }
       setBusy(false); onDone();
     } catch { setErr(errUp); setBusy(false); }
   }
@@ -60,14 +65,14 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
     plans: "Floor plans", brochure: "Marketing brochure", add: "Add", remove: "Remove",
     noPlans: "No floor plans yet.", noBroch: "No brochure yet.", pdf: "PDF file",
     planHint: "Image or PDF, up to 20MB.", brochHint: "PDF, up to 20MB.",
-    uploading: "Uploading...", errRm: "Could not remove.", errUp: "Upload failed.",
+    uploading: "Uploading...", errRm: "Could not remove.", errUp: "Could not upload the file.",
     addPlan: "Add a floor plan", addBroch: "Add a brochure",
     // ELITE-4 J2-9: one accessible name per tile, not N identical ones.
     planItem: "Floor plan", brochItem: "Brochure",
   };
 
-  const plan = useUploader(id, () => { if (planRef.current) planRef.current.value = ""; router.refresh(); }, t.errUp);
-  const broch = useUploader(id, () => { if (brochRef.current) brochRef.current.value = ""; router.refresh(); }, t.errUp);
+  const plan = useUploader(id, ar, () => { if (planRef.current) planRef.current.value = ""; router.refresh(); }, t.errUp);
+  const broch = useUploader(id, ar, () => { if (brochRef.current) brochRef.current.value = ""; router.refresh(); }, t.errUp);
 
   async function remove(mediaId: string) {
     // ELITE-4 J2-6: no `disabled` attribute on the tile buttons, so pressing one
@@ -76,7 +81,7 @@ export default function ListingDocsManager({ id, locale, floorplans, brochures }
     setRemoving(mediaId); setRmErr(null);
     try {
       const res = await fetch(`/api/listings/${id}/media/${mediaId}`, { method: "DELETE" });
-      if (!res.ok) { const j = await res.json().catch(() => ({})); setRmErr(j.error || t.errRm); setRemoving(null); return; }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setRmErr(apiErrorMessage(j.code, ar, t.errRm)); setRemoving(null); return; }
       setRemoving(null); router.refresh();
     } catch { setRmErr(t.errRm); setRemoving(null); }
   }

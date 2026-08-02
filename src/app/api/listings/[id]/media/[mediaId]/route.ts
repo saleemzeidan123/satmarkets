@@ -11,18 +11,18 @@ export const runtime = "nodejs";
 // object is removed best-effort; if the bucket's delete-protection refuses it, the
 // row is still gone so the photo stops showing, which is what the owner asked for.
 export async function DELETE(req: NextRequest, { params }: { params: { id: string; mediaId: string } }) {
-  if (!allow("listing-media-delete", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listing-media-delete", req, 40)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
-  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
+  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit_media" }, { status: 401 });
 
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", params.id).single();
-  if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  if (!listing) return NextResponse.json({ error: "Listing not found.", code: "listing_not_found" }, { status: 404 });
   if ((listing as { account_id: string }).account_id !== su.accountId) {
-    return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
+    return NextResponse.json({ error: "This is not your listing.", code: "not_your_listing" }, { status: 403 });
   }
 
   // The row must belong to THIS listing, not just exist. Selecting it also confirms
@@ -33,10 +33,10 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     .eq("id", params.mediaId)
     .eq("listing_id", params.id)
     .maybeSingle();
-  if (!media) return NextResponse.json({ error: "Media not found." }, { status: 404 });
+  if (!media) return NextResponse.json({ error: "Media not found.", code: "media_not_found" }, { status: 404 });
 
   const { error } = await sb.from("listing_media").delete().eq("id", params.mediaId).eq("listing_id", params.id);
-  if (error) return NextResponse.json({ error: "Could not remove the photo." }, { status: 400 });
+  if (error) return NextResponse.json({ error: "Could not remove the photo.", code: "remove_failed" }, { status: 400 });
 
   // Best-effort storage cleanup; a failure here never fails the request because the
   // row (the source of truth for what shows) is already gone.

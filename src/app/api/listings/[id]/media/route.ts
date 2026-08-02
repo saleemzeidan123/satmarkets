@@ -26,25 +26,25 @@ function sniff(buf: Buffer): boolean {
 }
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!allow("listing-media-upload", req, 30)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listing-media-upload", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
-  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to upload." }, { status: 401 });
+  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to upload.", code: "sign_in_to_upload" }, { status: 401 });
 
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const listingId = params.id;
   const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", listingId).single();
-  if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  if (!listing) return NextResponse.json({ error: "Listing not found.", code: "listing_not_found" }, { status: 404 });
   if ((listing as { account_id: string }).account_id !== su.accountId) {
-    return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
+    return NextResponse.json({ error: "This is not your listing.", code: "not_your_listing" }, { status: 403 });
   }
 
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
-  if (!(file instanceof File)) return NextResponse.json({ error: "No file provided." }, { status: 400 });
-  if (file.size > MAX_BYTES) return NextResponse.json({ error: "Image is too large (max 4MB)." }, { status: 400 });
+  if (!(file instanceof File)) return NextResponse.json({ error: "No file provided.", code: "no_file" }, { status: 400 });
+  if (file.size > MAX_BYTES) return NextResponse.json({ error: "Image is too large (max 4MB).", code: "image_too_large" }, { status: 400 });
   const kind = form?.get("kind") === "floorplan" ? "floorplan" : "photo";
   const label = String(form?.get("label") ?? "").trim().slice(0, 80);
   const ptRaw = form?.get("plan_type");
@@ -56,11 +56,17 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .eq("listing_id", listingId)
     .eq("kind", kind);
   if ((count ?? 0) >= CAPS[kind]) {
-    return NextResponse.json({ error: `Limit reached for ${kind} images.` }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: `Limit reached for ${kind} images.`,
+        code: kind === "floorplan" ? "floorplan_limit_reached" : "photo_limit_reached",
+      },
+      { status: 400 },
+    );
   }
 
   const input = Buffer.from(await file.arrayBuffer());
-  if (!sniff(input)) return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are accepted." }, { status: 400 });
+  if (!sniff(input)) return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are accepted.", code: "image_type_rejected" }, { status: 400 });
 
   // Re-encode: rotate() applies EXIF orientation then all metadata (including GPS)
   // is dropped, polyglots are neutralized, and the image is normalized to web-sized webp.
@@ -73,14 +79,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .webp({ quality: kind === "floorplan" ? 88 : 80 })
       .toBuffer();
   } catch {
-    return NextResponse.json({ error: "Could not process that image." }, { status: 400 });
+    return NextResponse.json({ error: "Could not process that image.", code: "image_unprocessable" }, { status: 400 });
   }
 
   const objectKey = `${su.accountId}/${listingId}/${randomUUID()}.webp`;
   const { error: upErr } = await sb.storage
     .from("listing-media")
     .upload(objectKey, out, { contentType: "image/webp", upsert: false });
-  if (upErr) return NextResponse.json({ error: "Upload failed." }, { status: 400 });
+  if (upErr) return NextResponse.json({ error: "Upload failed.", code: "upload_failed" }, { status: 400 });
 
   const { data: row, error: insErr } = await sb
     .from("listing_media")
@@ -97,7 +103,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     })
     .select("id")
     .single();
-  if (insErr) return NextResponse.json({ error: "Saved the file but could not attach it." }, { status: 400 });
+  if (insErr) return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
 
   const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(objectKey, 3600);
   return NextResponse.json({ id: (row as { id: string })?.id, url: signed?.signedUrl ?? null });
@@ -109,23 +115,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // ignored, so a stray id cannot reorder another listing. Owner-scoped in code and by
 // the listing_media RLS update policy.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  if (!allow("listing-media-reorder", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("listing-media-reorder", req, 40)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
-  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit." }, { status: 401 });
+  if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit_media" }, { status: 401 });
 
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", params.id).single();
-  if (!listing) return NextResponse.json({ error: "Listing not found." }, { status: 404 });
+  if (!listing) return NextResponse.json({ error: "Listing not found.", code: "listing_not_found" }, { status: 404 });
   if ((listing as { account_id: string }).account_id !== su.accountId) {
-    return NextResponse.json({ error: "This is not your listing." }, { status: 403 });
+    return NextResponse.json({ error: "This is not your listing.", code: "not_your_listing" }, { status: 403 });
   }
 
   const body = (await req.json().catch(() => ({}))) as { order?: unknown };
   const order = Array.isArray(body.order) ? body.order.map(String) : null;
-  if (!order || order.length === 0) return NextResponse.json({ error: "No order provided." }, { status: 400 });
+  if (!order || order.length === 0) return NextResponse.json({ error: "No order provided.", code: "no_order" }, { status: 400 });
 
   // Only reorder ids that really are this listing's photos.
   const { data: photos } = await sb
@@ -135,11 +141,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     .eq("kind", "photo");
   const valid = new Set(((photos ?? []) as { id: string }[]).map((p) => p.id));
   const seq = order.filter((id) => valid.has(id));
-  if (seq.length === 0) return NextResponse.json({ error: "No matching photos." }, { status: 400 });
+  if (seq.length === 0) return NextResponse.json({ error: "No matching photos.", code: "no_matching_photos" }, { status: 400 });
 
   for (let i = 0; i < seq.length; i++) {
     const { error } = await sb.from("listing_media").update({ sort_order: i }).eq("id", seq[i]).eq("listing_id", params.id);
-    if (error) return NextResponse.json({ error: "Could not reorder." }, { status: 400 });
+    if (error) return NextResponse.json({ error: "Could not reorder.", code: "reorder_failed" }, { status: 400 });
   }
   return NextResponse.json({ ok: true });
 }

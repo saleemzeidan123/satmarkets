@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/satkit";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 // The owner's photo manager for a listing. Add photos (uploaded, sniffed and
 // re-encoded server-side), remove them, and choose the cover (the first photo, the
@@ -25,7 +26,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
     title: "الصور", cover: "الغلاف", makeCover: "اجعلها الغلاف", remove: "حذف", add: "إضافة صور",
     uploading: "جارٍ الرفع...", none: "لا توجد صور بعد. أضف صوراً ليراها المهتمّون.",
     hint: "JPEG أو PNG أو WebP، حتى 4 ميغابايت. أول صورة هي الغلاف.",
-    errUp: "تعذّر رفع الصورة.", errRm: "تعذّر الحذف.", added: "تمت الإضافة", removed: "تم الحذف", coverSet: "تم تعيين الغلاف",
+    errUp: "تعذّر رفع الصورة.", errRm: "تعذّر الحذف.", errReorder: "تعذّر تعيين الغلاف.", added: "تمت الإضافة", removed: "تم الحذف", coverSet: "تم تعيين الغلاف",
     // ELITE-4 J2-9: one accessible name per tile, not N identical ones.
     photoAt: (n: number) => `صورة ${n}`,
     makeCoverAt: (n: number) => `اجعل الصورة ${n} صورة الغلاف`,
@@ -34,7 +35,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
     title: "Photos", cover: "Cover", makeCover: "Make cover", remove: "Remove", add: "Add photos",
     uploading: "Uploading...", none: "No photos yet. Add some so viewers can see the space.",
     hint: "JPEG, PNG, or WebP, up to 4MB each. The first photo is the cover.",
-    errUp: "Could not upload the photo.", errRm: "Could not remove.", added: "Added", removed: "Removed", coverSet: "Cover set",
+    errUp: "Could not upload the photo.", errRm: "Could not remove.", errReorder: "Could not set the cover.", added: "Added", removed: "Removed", coverSet: "Cover set",
     // ELITE-4 J2-9: one accessible name per tile, not N identical ones.
     photoAt: (n: number) => `Photo ${n}`,
     makeCoverAt: (n: number) => `Make photo ${n} the cover`,
@@ -55,7 +56,10 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
       try {
         const res = await fetch(`/api/listings/${id}/media`, { method: "POST", body: fd });
         if (res.ok) ok++;
-        else { const j = await res.json().catch(() => ({})); setErr(j.error || t.errUp); }
+        // Finding 203: the route names the reason as a code and this names the
+        // code in the reader's language. The English sentence the route composed
+        // stays on the wire for the log and is not rendered.
+        else { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.code, ar, t.errUp)); }
       } catch { setErr(t.errUp); }
     }
     if (fileRef.current) fileRef.current.value = "";
@@ -68,7 +72,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
     setBusy(true); setErr(null); setNote(null);
     try {
       const res = await fetch(`/api/listings/${id}/media/${mediaId}`, { method: "DELETE" });
-      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || t.errRm); setBusy(false); return; }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.code, ar, t.errRm)); setBusy(false); return; }
       setNote(t.removed); setBusy(false); router.refresh();
     } catch { setErr(t.errRm); setBusy(false); }
   }
@@ -83,7 +87,7 @@ export default function ListingMediaManager({ id, locale, photos }: { id: string
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ order }),
       });
-      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(j.error || t.errRm); setBusy(false); return; }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); setErr(apiErrorMessage(j.code, ar, t.errReorder)); setBusy(false); return; }
       setNote(t.coverSet); setBusy(false); router.refresh();
     } catch { setErr(t.errRm); setBusy(false); }
   }
