@@ -29,7 +29,7 @@ hard to reach.
 
 ## Standing constraints on this round
 
-These are not preferences. They bound what may be run and what may be recorded.
+These are not preferences. They bound what may be run and what may be written down.
 
 Confidential commercial requirements are not collected unless the participant has
 explicitly agreed in the consent step and the storage method has been approved by
@@ -44,9 +44,14 @@ No figure a participant states about their own portfolio is carried into the pro
 as a fact, into any document, or into any later claim about the Saudi market. This
 round produces findings about the product, not market data.
 
-Recording requires explicit spoken or written consent, per session, before the
-recording starts. Consent to observe is not consent to record, and consent to record
-is not consent to quote by name.
+Round one is notes only. No audio, no video and no screen capture is taken in any
+session, including the ELITE-1-AT session. A voice or screen recording is personal
+data, and this round has no approved storage location, retention date, access list
+or lawful processor for one. The call platform's automatic transcription, meeting
+summary and AI notetaker are switched off before every session, not after it
+starts. The facilitator's typed notes are not uploaded to any transcription or
+summarisation service the owner has not recorded. Whether a later round may record,
+and on what terms, is decision O19 in `docs/decision-register.md`.
 
 No participant is asked to sign, pay, publish or agree to anything on behalf of
 their organisation. Nothing in a session is an offer, and no session creates a
@@ -55,6 +60,24 @@ commercial relationship.
 Sessions run on the preview deployment, which is noindexed and carries the preview
 banner. Nothing a participant types becomes public. Test listings created during a
 session are sample data under the existing controls and are removed after the round.
+
+Three of the ten sessions run on a physical handset, not on a desktop browser
+narrowed to a phone width. The allocation is M1 on seat D1, iPhone Safari in
+Arabic and not substitutable; M2 on seat D5, Android Chrome; M3 on seat S3, either
+handset. A mobile seat runs the same task scripts as far as each task is possible,
+and a task that cannot be attempted on a handset is recorded as not attempted with
+the reason, which is a finding rather than a gap. The round does not close with
+fewer than 3 mobile sessions and does not close without M1. The full reasoning is
+in `docs/research/elite-1-recruitment-sheet.md` under "Device coverage, which is
+not left to chance".
+
+Assistive-technology validation is a separate required round, ELITE-1-AT, and not
+an eleventh seat in this one. It is a minimum of one session, seat A1, a daily
+screen-reader user on their own configuration, scoped to the public path only: the
+home page, the listings index with one filter applied, one listing detail with its
+Evidence Passport, and the requirement form up to but not through submission. A1 is
+screened on daily assistive-technology use rather than on commercial real-estate
+experience, and the task scripts below are applied only within that scope.
 
 Recruitment itself is an owner item. This instrument is ready to run; naming and
 approaching 10 real participants is not something the builder does, and no
@@ -150,20 +173,19 @@ now or later.
 You do not need to share anything confidential. If a task needs property details I
 will give you a fictional example to use.
 
-I would like to record the screen and audio so I do not have to take notes while you
-work. I will ask for your permission at the start, and you can say no and we will
-continue without it. Recordings are not published and are not shared outside the
-project.
+The call is not recorded. There is no audio, video or screen recording, and no
+automatic transcript. I take written notes as we go, which means I will be typing
+while you work, and the notes carry no name, employer or contact detail.
 
 If you are willing, reply with two or three times that suit you in the next two
 weeks and I will send an invitation.
 
 Thank you either way.
 
-## 3. Consent and recording script
+## 3. Consent script
 
-Read aloud at the start of every session, before any recording begins. Do not
-paraphrase the third and fourth paragraphs.
+Read aloud at the start of every session, before the first task. Do not paraphrase
+the third and fourth paragraphs.
 
 Thank you for the time. Before we start, four things.
 
@@ -175,19 +197,20 @@ can.
 Second, this is an early version on a private preview. Nothing you do today becomes
 public, and anything you create will be removed after this round.
 
-Third, I would like to record the screen and the audio, so I can pay attention now
-instead of writing. The recording is used by me to write up what I saw. It is not
-published, not shared outside the project, and not used in any marketing. If you
-would rather I did not record, say so and I will take notes instead. May I record?
-(Wait for a clear yes or no. If no, do not start the recording and note the refusal.)
+Third, this call is not being recorded. There is no audio, no video, no screen
+capture and no automatic transcript, and I have turned off the meeting summary. I
+will be typing notes while you work, so if I go quiet and you hear a keyboard, that
+is me writing down what you did and not me reacting to it. The notes have no name,
+no employer and no contact detail in them, and they are used by me to write up what
+I saw and nothing else.
 
 Fourth, please do not tell me anything confidential about your business. I do not
 want your actual rents, your tenants, your expansion plans or anyone's name. If a
 task needs details I will give you a fictional example to use. If something
 confidential comes out anyway, I will not write it down.
 
-You can stop at any point, skip anything, or ask me to delete the recording
-afterwards, and you do not have to give a reason.
+You can stop at any point, skip anything, or ask me afterwards to strike what you
+said from my notes, and you do not have to give a reason.
 
 Two more things about how I will behave. I will mostly stay quiet, even when it
 looks like I could help, because the moment I help I stop learning. And at some
@@ -198,9 +221,11 @@ Any questions before we start?
 
 Closing script, read at the end:
 
-That is everything. Thank you. To confirm, the recording stays with me and is not
-published. If you change your mind about it in the next week, tell me and I will
-delete it. Is there anything you would rather I did not use?
+That is everything. Thank you. To confirm, nothing was recorded. What I have is
+written notes about what happened on the screen, with no name and no contact detail
+in them, and they stay with me. If you change your mind in the next week, tell me
+and I will strike your session from them. Is there anything you would rather I did
+not use?
 
 ## 4. Facilitator guide
 
@@ -501,11 +526,15 @@ response time to be.
 ## 7. Observation sheet
 
 One sheet per session. The facilitator fills the header before the session and the
-task rows during it. Times come from the recording, not from a stopwatch held during
-the session.
+task rows during it. Because the round is notes only, times come from a timer the
+facilitator starts as each task is read out and stops when the participant says they
+are done or gives up. That is less precise than a timestamped replay would be, by a
+few seconds at each end, and it is stated here rather than hidden: task times in this
+round are compared against each other and are not reported to the second.
 
-Header: session identifier, side, role group, session language, device and viewport,
-deployment commit, date, facilitator, recording consent yes or no, brief version.
+Header: session identifier, side, role group, session language, device class and
+viewport, whether the device was a physical handset or a desktop browser, deployment
+commit, date, facilitator, consent script read yes or no, brief version.
 
 One row per task, with these columns.
 
@@ -668,7 +697,10 @@ an observation or reveals that it never happened.
 ## 11. Findings and retest template
 
 One findings file per round, written within 48 hours of the last session, while the
-recordings are still worth watching. Findings enter `docs/findings-register.md` under
+notes are still legible to the person who typed them. Under a notes-only round that
+window is the whole record: there is nothing to go back to afterwards, so a note that
+made sense at the time and does not a week later is simply lost. Write up between
+sessions, not at the end of the round. Findings enter `docs/findings-register.md` under
 their own numbers, so a research finding and an engineering finding are ranked
 against each other rather than kept in separate lists.
 
@@ -677,8 +709,10 @@ against each other rather than kept in separate lists.
 Round identifier. Dates of the first and last session. Deployment commit under test,
 which must be one commit for the whole round; if the product ships mid-round, the
 round is split and the two halves are reported separately. Participants by side and
-role group, with no names. Sessions recorded against sessions run. Language split.
-Device split. Facilitator.
+role group, with no names. Sessions run against seats offered. Language split. Device
+split, stated as desktop sessions against physical-handset sessions, with the three
+mobile seats named and any shortfall against them stated rather than absorbed.
+Whether the ELITE-1-AT session has run. Facilitator.
 
 ### Per-finding record
 
