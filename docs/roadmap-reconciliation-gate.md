@@ -470,21 +470,38 @@ recorded here as removed rather than deleted silently.
 | 1. The ten unrecorded workstream titles | **Removed.** Never an owner input. All 37 titles are in the baseline and are now in part C |
 | 2. The authoritative six-journey list | **Removed.** Never an owner input. All six are in the baseline and are now in part D |
 
-What remains genuinely open:
+What remains genuinely open. **Four of these five were ruled on 2026-08-02 and are
+struck through in place rather than deleted, because a list of open questions is
+also a record of which ones were asked.**
 
 1. **Decision O19**, whether an ELITE round may be recorded and on what terms.
-   Round one is notes only and needs nothing. This is unchanged.
-2. **Whether any row in this document should be labelled Dropped.** None is, and
-   none will be without Saleem's explicit approval. This is unchanged.
-3. **The WS14 scope variance**, for Codex rather than the owner. The baseline names
-   a "safe service worker" and the product deliberately has none, relying on
-   `Cache-Control: private, no-store` on every private prefix instead. Part C flags
-   this so it is accepted or rejected explicitly rather than standing by omission.
-4. **The raw-notes retention period**, if it is to be anything other than the 90
-   days after the final session that the recruitment sheet now states. Any different
-   duration is an owner or counsel decision and is recorded as one.
-5. **The product sequence itself**, which Codex has reserved. G.2 is the inventory
-   the sequence would be chosen from. It is not the sequence.
+   Round one is notes only and needs nothing. **Still open**, and it is the only
+   item on this list that is. The 90-day raw-notes bound in item 4 was accepted on
+   the same day without this question being answered, and the two must not be
+   confused: a retention period for notes is not permission to record.
+2. ~~Whether any row in this document should be labelled Dropped.~~ **Answered
+   2026-08-02, decision D36. No workstream is Dropped.** The part C.7 distribution
+   stands unchanged at Complete 9, Partial 22, Blocked 5, Deferred 0, Not started 1,
+   Dropped 0.
+3. ~~The WS14 scope variance.~~ **Answered 2026-08-02, decision D34. Accepted as an
+   E0 safety variance only.** WS14 stays Partial and is not made Complete by the
+   acceptance. A strictly public-shell service worker is reconsidered after physical
+   mobile research, not before it, and private and authenticated responses must never
+   enter an offline cache whatever shape a later worker takes. The acceptance does not
+   carry past E0 without being re-ruled.
+4. ~~The raw-notes retention period.~~ **Answered 2026-08-02, recorded against O19.
+   Ninety days after the final session is accepted as the ceiling**, not assumed as a
+   default. Shorter stays available to the owner; longer is recorded before a round
+   runs.
+5. ~~The product sequence itself.~~ **Answered 2026-08-02, decision D37.**
+   PKG-E1-READINESS first, covering WS13, WS09, WS16, WS25, WS33 and WS34, with
+   ELITE-1 recruitment and scheduling running alongside it. After it, no further
+   foundation package: the next major product package is the visible public-discovery
+   experience across Home, Listings Search, Listing Detail and Brokers/Listers,
+   informed by the first ELITE-1 observations. G.2 was the inventory the sequence
+   would be chosen from and remains exactly that. The sequence came from the advisor
+   and the owner, which is what this document declined to do for itself and was right
+   to decline.
 
 ---
 
