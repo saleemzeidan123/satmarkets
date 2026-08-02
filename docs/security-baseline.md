@@ -382,3 +382,33 @@ Whether to authorize an Upstash Redis store so `allowShared` becomes durable,
 accepting a new sub-processor that holds client IP addresses in short lived
 counter keys, and accepting that the 31 remaining routes would then be migrated
 onto it in one measured change.
+
+## Verification of this baseline
+
+Shipped at ac05525, production deployment dpl_GzRbErecMZ17EKS44DNxQJsGdiDY,
+READY, serving from https://satmarkets-4mi28jetc-sat-markets.vercel.app.
+
+Gates before shipping: `tsc --noEmit` clean, 1739 tests passing with 0 failures,
+`ar-lint: clean`, prose scan GATE 0 in 0 files and BASE 372 in 16 files, and all
+four Playwright probes passing (reflow 14 viewport renders, radio 5 groups,
+shell 36 measurements, responsive 234 measurements). The production build is the
+Vercel READY state, because `npm run build` cannot complete in this sandbox with
+Google Fonts unreachable.
+
+Live checks after shipping, taken one request at a time:
+
+| Surface | Result |
+| --- | --- |
+| `GET /en` | 200. All five new headers present, `x-powered-by` absent, `x-robots-tag: noindex, nofollow`, `<html lang="en" dir="ltr">`, 14 script sources, 1 preload, 3 stylesheets. |
+| `GET /ar` | 200. Identical policy string to `/en`, byte for byte. `<html lang="ar" dir="rtl">`, 48050 Arabic characters, 0 Arabic-Indic digits. |
+| `GET /ar/listings` | 200. Identical policy string. All five headers present, 0 Arabic-Indic digits. |
+| `GET /api/listings?limit=1` | 200 `application/json`. All five headers present and `x-powered-by` absent on a route handler response, which is the case that would have been missed if the policy had been attached to middleware. |
+| `GET /api/health` | 404 as expected, and the headers are still applied, confirming they reach the whole path space rather than only rendered routes. |
+
+One thing the server response cannot show. The map components load their style
+JSON, tiles, sprites and the right to left text plugin from the browser after
+hydration, so none of the third party origins appear in the served HTML of
+`/ar/listings`. Their presence in the policy is derived from the source, and
+confirming that the policy does not block them requires the interactive pass
+described above under enforcement. That pass has not been done, which is
+precisely why the header is report-only.
