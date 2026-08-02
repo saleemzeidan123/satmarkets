@@ -124,6 +124,11 @@ const STOP = new Set([
   // returns nothing and looks like broken inventory rather than a broken parser.
   "باقل", "باكثر", "بنحو", "بحوالي", "بحدود", "قرابه", "لا", "يزيد", "يقل", "فوق",
   "بمساحه", "بمساحات", "بميزانيه", "بسعر", "ابتداء",
+  // The distance words that suppress the area reading of a bare "متر". Same rule
+  // as the line above: a word a numeric regex can consume has to be a stopword,
+  // or the parser reads the constraint and then searches for the word that
+  // expressed it.
+  "بعد", "يبعد", "تبعد", "مسافه",
 ]);
 
 // ------------------------------------------------------------------ synonyms
@@ -199,7 +204,20 @@ const UNIT_END = "(?![0-9A-Za-z])";
 // An input grammar, not copy. It must accept the Latin and the Arabic
 // spelling of the same unit from the same query, which is the one case the
 // authorship rule below cannot tell apart from the defect it exists to catch.
-const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|م²|م2)${UNIT_END}`, "i"); // unit-law
+const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|متر|م²|م2)${UNIT_END}`, "i"); // unit-law
+// PKG-E1-READINESS slice C, WS16. The bare Arabic "متر" is an area unit here and
+// the bare English "meters" is not, and that asymmetry is the correct reading
+// rather than a parity failure. Saudi property is written "مكتب 350 متر", where
+// the square is understood; "350 meters" in English is a distance far more often
+// than a floorplate. `src/lib/search/aiParse.ts:63` has read the bare Arabic
+// spelling as an area since it was written, so until this slice the same string
+// meant two different things depending on which box the person typed it into.
+//
+// The one Arabic sentence where "متر" really is a distance says so first: "على
+// بعد 500 متر من المترو". That figure is not read as an area, and it is not
+// guessed at as anything else either. It goes to `ignored` and is shown back to
+// the person, which is the same disclosure a bare unitless figure gets.
+const DISTANCE_BEFORE = /(?:بعد|يبعد|تبعد|مسافه)\s*\D{0,4}$/;
 // "of" is deliberately absent from the size words: it would claim "a rent of 1,600"
 // as a floor area, which is the same misclassification the advisor was corrected for.
 const AREA_BEFORE = /(?:size|area|floorplate|مساحه|بمساحه)\s*(?:of\s*)?\D{0,4}$/i;
@@ -282,7 +300,7 @@ function readNumerics(base: string): Numerics {
       // The left-hand identifier rule is deliberately not applied to the second
       // figure: the letter before it is the joiner itself, as in the Arabic "و400".
       if (RANGE_JOIN.test(join) && value < next.value && !IDENT_AFTER.test(nAfter)) {
-        const pairIsArea = AREA_AFTER.test(nAfter) || AREA_BEFORE.test(before);
+        const pairIsArea = (AREA_AFTER.test(nAfter) && !DISTANCE_BEFORE.test(before)) || AREA_BEFORE.test(before);
         const pairIsMoney = !pairIsArea && (MONEY_AFTER.test(nAfter) || MONEY_BEFORE.test(before));
         if (pairIsArea || pairIsMoney) {
           if (pairIsArea) {
@@ -299,7 +317,7 @@ function readNumerics(base: string): Numerics {
       }
     }
 
-    const isArea = AREA_AFTER.test(after) || AREA_BEFORE.test(before);
+    const isArea = (AREA_AFTER.test(after) && !DISTANCE_BEFORE.test(before)) || AREA_BEFORE.test(before);
     const dir = MAX_BEFORE.test(before) ? "max" : MIN_BEFORE.test(before) ? "min" : ABOUT_BEFORE.test(before) ? "about" : null;
 
     if (isArea) {

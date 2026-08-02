@@ -8,6 +8,13 @@ import { listingTitle } from "@/lib/listingTitle";
 // Discovery search. Deterministic, no model: the box has promised to understand a
 // stated requirement since the day it shipped, and until now it did nothing at all.
 import { parseQuery, dropKeys, matchesQuery, type QueryVocab } from "@/lib/search/queryParse";
+// PKG-E1-READINESS slice C, WS16. Every rule about what this page's URL means
+// lives in one module now, and this page is its first caller. The four defects
+// it exists to kill are recorded in its header.
+import {
+  bboxParam, canonicalCity, canonicalListingsPath, canonicalListingsQuery, dealParam,
+  knownValue, locationLabel, measureParam, safePlace, sortParam,
+} from "@/lib/search/canonical";
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ScrollRegion from "@/components/ScrollRegion";
@@ -71,14 +78,33 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const dl = getDictionary(loc).listings;
   const ar = loc === "ar";
+  // Slice C, WS16. Everything below is read from the URL, and the head of a public
+  // page is the one place where a value read from the URL is also a claim. Until
+  // this slice `?deal=banana` put "banana" in the title, the description and the
+  // Open Graph card, because `dealLabel` ends `?? t`; `?place=<anything>` did the
+  // same and also became the third BreadcrumbList entry. Nothing was injected,
+  // React and Next escape all of it. The page was simply asserting something about
+  // a thing it had never heard of, which is the same fault as an unattributed
+  // figure. Every parameter now has to be recognised before it can be printed.
   let locLabel = "";
   if (searchParams.district) {
     const sb = getSupabaseServer();
-    if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar,city").eq("id", searchParams.district).single(); if (data) locLabel = placeName(data, loc); }
-  } else if (searchParams.place) locLabel = searchParams.place;
-  else if (searchParams.city) locLabel = cityLabel(searchParams.city, loc);
-  const asset = searchParams.asset && !searchParams.asset.includes(",") ? assetLabel(searchParams.asset, loc) : "";
-  const deal = searchParams.deal ? dealLabel(searchParams.deal, loc) : "";
+    // `kind` joins the read because a development is not a district and the title
+    // is one of the four surfaces that used to name one as if it were.
+    if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar,city,kind").eq("id", searchParams.district).single(); if (data) locLabel = locationLabel(placeName(data, loc), (data as { kind?: string }).kind, dl.project); }
+  } else {
+    // An unrecognised city is not a city, so it falls through to the place axis
+    // exactly as the canonical URL does. The two must agree or the head declares
+    // a canonical URL for a page whose title names something else.
+    const place = safePlace(searchParams.place);
+    const city = canonicalCity(searchParams.city);
+    if (place) locLabel = place;
+    else if (city) locLabel = cityLabel(city, loc);
+  }
+  const assetValue = searchParams.asset && !searchParams.asset.includes(",") ? knownValue(searchParams.asset, ASSETS) : null;
+  const dealValue = dealParam(searchParams.deal);
+  const asset = assetValue ? assetLabel(assetValue, loc) : "";
+  const deal = dealValue ? dealLabel(dealValue, loc) : "";
   const what = [asset, deal].filter(Boolean).join(" ").trim();
   const title = locLabel
     ? fill(dl.metaTitleIn, { what: what || dl.metaWhatFallback, place: locLabel })
@@ -86,8 +112,7 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   const description = locLabel
     ? fill(dl.metaDescIn, { place: locLabel })
     : dl.metaDesc;
-  const qs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
-  return localeMeta(params.locale, `/listings${qs}`, title, description);
+  return localeMeta(params.locale, canonicalListingsPath(searchParams), title, description);
 }
 
 export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
@@ -108,19 +133,32 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   let locations: LocOpt[] = [];
   const idxByDistrict = new Map<string, IndexRow[]>();
   const assetCounts: Record<string, number> = {}, gradeCounts: Record<string, number> = {}, fitCounts: Record<string, number> = {};
+  // Slice C, WS16. Read once, here, and used by both the result query and the facet
+  // count below. `Number("abc")` is NaN, `NaN != null` is true, and the two queries
+  // were sending `gte("area_sqm", NaN)` to PostgREST while the page went on to sort
+  // by a comparator that returned NaN for every pair. A parameter that is not a
+  // number is now not a bound, which leaves the reader with the results they would
+  // have had if they had not typed it, rather than a page that failed silently.
+  const nSmin = measureParam(searchParams.smin), nSmax = measureParam(searchParams.smax);
+  const nPmin = measureParam(searchParams.pmin), nPmax = measureParam(searchParams.pmax);
+  const nSpmin = measureParam(searchParams.spmin), nSpmax = measureParam(searchParams.spmax);
   if (sb) {
     let query = releaseVisibleInventory(sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("status", "published")).limit(300);
     const assetArr = list(searchParams.asset);
     if (assetArr.length) query = query.in("asset_type", assetArr);
+    // The deal value is deliberately NOT narrowed to the two the platform knows.
+    // `eq("deal_type", "banana")` returning nothing is the true answer; dropping
+    // the constraint would return every listing, which is the widening half of the
+    // fault src/lib/search/place.ts records. Only the LABEL is gated, in the head.
     if (searchParams.deal) query = query.eq("deal_type", searchParams.deal);
-    if (searchParams.smin) query = query.gte("area_sqm", Number(searchParams.smin));
-    if (searchParams.smax) query = query.lte("area_sqm", Number(searchParams.smax));
+    if (nSmin != null) query = query.gte("area_sqm", nSmin);
+    if (nSmax != null) query = query.lte("area_sqm", nSmax);
     if (searchParams.deal !== "sale") {
-      if (searchParams.pmin) query = query.gte("asking_rent_sqm", Number(searchParams.pmin));
-      if (searchParams.pmax) query = query.lte("asking_rent_sqm", Number(searchParams.pmax));
+      if (nPmin != null) query = query.gte("asking_rent_sqm", nPmin);
+      if (nPmax != null) query = query.lte("asking_rent_sqm", nPmax);
     } else {
-      if (searchParams.spmin) query = query.gte("sale_price", Number(searchParams.spmin));
-      if (searchParams.spmax) query = query.lte("sale_price", Number(searchParams.spmax));
+      if (nSpmin != null) query = query.gte("sale_price", nSpmin);
+      if (nSpmax != null) query = query.lte("sale_price", nSpmax);
     }
     const gradeArr = list(searchParams.grade);
     if (gradeArr.length) query = query.in("building_grade", gradeArr);
@@ -137,10 +175,10 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
     let fq = releaseVisibleInventory(sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published")).limit(400);
     if (searchParams.deal) fq = fq.eq("deal_type", searchParams.deal);
-    if (searchParams.smin) fq = fq.gte("area_sqm", Number(searchParams.smin));
-    if (searchParams.smax) fq = fq.lte("area_sqm", Number(searchParams.smax));
-    if (searchParams.deal !== "sale") { if (searchParams.pmin) fq = fq.gte("asking_rent_sqm", Number(searchParams.pmin)); if (searchParams.pmax) fq = fq.lte("asking_rent_sqm", Number(searchParams.pmax)); }
-    else { if (searchParams.spmin) fq = fq.gte("sale_price", Number(searchParams.spmin)); if (searchParams.spmax) fq = fq.lte("sale_price", Number(searchParams.spmax)); }
+    if (nSmin != null) fq = fq.gte("area_sqm", nSmin);
+    if (nSmax != null) fq = fq.lte("area_sqm", nSmax);
+    if (searchParams.deal !== "sale") { if (nPmin != null) fq = fq.gte("asking_rent_sqm", nPmin); if (nPmax != null) fq = fq.lte("asking_rent_sqm", nPmax); }
+    else { if (nSpmin != null) fq = fq.gte("sale_price", nSpmin); if (nSpmax != null) fq = fq.lte("sale_price", nSpmax); }
     // Same predicate as the result query above, for the same reason: a facet count
     // that disagrees with the list it describes is its own small false claim.
     if (searchParams.verified) fq = verifiedOnly(fq);
@@ -181,14 +219,17 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   // The city parameter is a slug in every link a person is likely to type or share,
   // and the column stores "Riyadh". Comparing them raw returned an empty page for
   // ?city=riyadh while the heading printed the slug back (owner ruling 5).
-  const cityParam = searchParams.city ? (cityKey(searchParams.city) ?? searchParams.city) : null;
+  const cityParam = searchParams.city ? (canonicalCity(searchParams.city) ?? searchParams.city) : null;
   const cityIds = new Set(cityParam ? locations.filter((l) => l.city === cityParam).map((l) => l.id) : []);
   const placeIds = searchParams.place ? new Set(locations.filter((l) => l.en.toLowerCase() === searchParams.place!.toLowerCase() || (l.ar || "") === searchParams.place).map((l) => l.id)) : null;
   let shown = listings.slice();
   if (searchParams.district) shown = shown.filter((l: any) => l.district_id === searchParams.district);
   else if (placeIds) shown = placeIds.size ? shown.filter((l: any) => l.district_id && placeIds.has(l.district_id)) : [];
   else if (searchParams.city) shown = shown.filter((l: any) => l.district_id && cityIds.has(l.district_id));
-  const bbox = (() => { if (!searchParams.bbox) return null; const p = searchParams.bbox.split(",").map(Number); return p.length === 4 && p.every((n) => Number.isFinite(n)) ? p : null; })();
+  // The bbox was the one parameter this page already validated, and its guard is the
+  // pattern every other numeric parameter now follows. It moved into the module so
+  // that the rule is stated once rather than restated wherever a viewport is read.
+  const bbox = bboxParam(searchParams.bbox);
   if (bbox) { const [w, so, e, no] = bbox; shown = shown.filter((l: any) => { const c = coordByListing.get(l.id); return !!c && c.lng >= w && c.lng <= e && c.lat >= so && c.lat <= no; }); }
 
   // ------------------------------------------------------------- the search
@@ -232,16 +273,29 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   // "around 300 m²" is a preference, not a bound. It orders the results by closeness
   // rather than narrowing them, because inventing a tolerance the person never stated
   // would either hide reasonable spaces or empty the page. An explicit sort still wins.
-  const qSizeT = !searchParams.sz && !searchParams.sort && q?.areaTarget != null ? q.areaTarget : null;
-  const szT = searchParams.sz ? Number(searchParams.sz) : qSizeT;
-  const rtT = searchParams.rt ? Number(searchParams.rt) : null;
-  const spT = searchParams.sp ? Number(searchParams.sp) : null;
-  const sort = searchParams.sort || (szT || rtT || spT ? "best" : "new");
+  //
+  // Slice C, WS16. "An explicit sort still wins" was the intention and was not the
+  // behaviour. The three proximity sorts below ran BEFORE every `sort === ...`
+  // branch, so `?sz=350&sort=rent` ordered by closeness to 350 while the filter bar
+  // pill read "Price, low to high", and with no sort parameter at all the pill read
+  // "Newest" over a proximity-ordered list. The control was describing an ordering
+  // the page was not running, which is a small false statement made on every load.
+  //
+  // Two changes end it. `explicitSort` is the recognised sort or nothing, and it
+  // guards the proximity branches. And the sort that RAN is handed to the filter
+  // bar, so the pill names it: `best` reads "Best match", which is an honest name
+  // for "nearest to the size you asked for".
+  const explicitSort = sortParam(searchParams.sort);
+  const qSizeT = !searchParams.sz && !explicitSort && q?.areaTarget != null ? q.areaTarget : null;
+  const szT = searchParams.sz ? measureParam(searchParams.sz) : qSizeT;
+  const rtT = measureParam(searchParams.rt);
+  const spT = measureParam(searchParams.sp);
+  const sort = explicitSort || (szT != null || rtT != null || spT != null ? "best" : "new");
   const vScore = (l: any) => { if (l.deal_type !== "lease" || l.asking_rent_sqm == null) return Infinity; const row = pickIndexRow(idxByDistrict.get(l.district_id) ?? [], l.asset_type, (l as any).building_grade); const med = row?.median; return med == null ? Infinity : Number(l.asking_rent_sqm) / Number(med); };
   const priceOf = (l: any) => Number(l.deal_type === "sale" ? (l.sale_price ?? 1e15) : (l.asking_rent_sqm ?? 1e15));
-  if (szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
-  else if (rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
-  else if (spT != null) shown.sort((a: any, b: any) => Math.abs((a.sale_price || 0) - spT) - Math.abs((b.sale_price || 0) - spT));
+  if (!explicitSort && szT != null) shown.sort((a: any, b: any) => Math.abs((a.area_sqm || 0) - szT) - Math.abs((b.area_sqm || 0) - szT));
+  else if (!explicitSort && rtT != null) shown.sort((a: any, b: any) => Math.abs((a.asking_rent_sqm || 0) - rtT) - Math.abs((b.asking_rent_sqm || 0) - rtT));
+  else if (!explicitSort && spT != null) shown.sort((a: any, b: any) => Math.abs((a.sale_price || 0) - spT) - Math.abs((b.sale_price || 0) - spT));
   else if (sort === "rent") shown.sort((a: any, b: any) => priceOf(a) - priceOf(b));
   else if (sort === "rent_desc") shown.sort((a: any, b: any) => priceOf(b) - priceOf(a));
   else if (sort === "size") shown.sort((a: any, b: any) => (a.area_sqm || 0) - (b.area_sqm || 0));
@@ -271,6 +325,8 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   // Every reading the parser made is shown back, and every one of them can be taken
   // away again by name, through `qx`.
   const qChips: { key: string; label: string }[] = [];
+  const qPlaceRows = q?.placeIds?.length ? locations.filter((l) => q.placeIds.includes(l.id)) : [];
+  const qPlaceKind = qPlaceRows.length && qPlaceRows.every((l) => l.kind === "development") ? "development" : null;
   if (q) {
     const money = (v: number) =>
       `${formatNumber(v, locale)}${q.deal === "sale" ? ` ${formatUnit("sar", locale, "short")}` : q.deal === "lease" ? ` ${formatUnit("sar_sqm_year", locale, "short")}` : ""}`;
@@ -278,7 +334,14 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     if (q.deal) qChips.push({ key: "deal", label: dealLabel(q.deal, locale) });
     if (q.grade) qChips.push({ key: "grade", label: gradePhrase(q.grade, locale) });
     if (q.fitout) qChips.push({ key: "fitout", label: fitoutLabel(q.fitout, locale) });
-    if (q.place) qChips.push({ key: "place", label: ar ? q.place.ar : q.place.en });
+    // Slice C, WS16. The parser resolves a typed place name to the district rows
+    // that carry it, and those rows know their kind. A chip is the page telling the
+    // reader what it understood, so "KAFD" read out of a sentence has to be marked
+    // the same way "KAFD" chosen from the panel is. Marked only when every row the
+    // name resolved to is a development: a name shared by a development and a
+    // district is not a development, and guessing which one was meant is the class
+    // of invention the transparency row exists to prevent.
+    if (q.place) qChips.push({ key: "place", label: locationLabel(ar ? q.place.ar : q.place.en, qPlaceKind, dl.project) });
     if (q.city) qChips.push({ key: "city", label: cityLabel(q.city, locale) });
     if (q.priceMin != null) qChips.push({ key: "priceMin", label: fill(dl.qFrom, { v: money(q.priceMin) }) });
     if (q.priceMax != null) qChips.push({ key: "priceMax", label: fill(dl.qUpTo, { v: money(q.priceMax) }) });
@@ -339,8 +402,23 @@ export default async function ListingsPage({ params, searchParams }: { params: {
   const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (dl.allSpaces);
 
   const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
-  const crumbLoc = distLoc ? (ar ? (distLoc.ar || distLoc.en) : distLoc.en) : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""));
-  const crumbQs = searchParams.district ? `?district=${searchParams.district}` : searchParams.city ? `?city=${encodeURIComponent(searchParams.city)}` : searchParams.place ? `?place=${encodeURIComponent(searchParams.place)}` : "";
+  // Slice C, WS16, three corrections on one line.
+  //
+  // The kind. Selecting KAFD in the filter panel navigates to `?district=<id>`,
+  // and the panel that offered it had it under "Developments". The breadcrumb then
+  // called it a district by saying nothing, on the platform whose own law is that
+  // developments are not districts. It now carries the same marker the map bubble
+  // and the panel row carry.
+  //
+  // The name. `distLoc.ar || distLoc.en` handed an Arabic reader the English name
+  // and called it a translation, which is the exact idiom src/lib/displayName.ts
+  // exists to end. A district widens to its city instead; it never borrows.
+  //
+  // The URL. The city query string was assembled here from the parameter as typed, so
+  // this breadcrumb entry pointed at a different URL from the one the head declared
+  // canonical for the same page. Both now come from the one module.
+  const crumbLoc = distLoc ? locationLabel(placeName({ name_en: distLoc.en, name_ar: distLoc.ar, city: distLoc.city }, ar ? "ar" : "en"), distLoc.kind, dl.project) : (safePlace(searchParams.place) || (cityParam && canonicalCity(searchParams.city) ? cityLabel(cityParam, locale) : ""));
+  const crumbQs = canonicalListingsQuery(searchParams);
   return (
     <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
@@ -398,7 +476,7 @@ export default async function ListingsPage({ params, searchParams }: { params: {
         <p className="muted" style={{ marginTop: 4, fontSize: "0.75rem", lineHeight: 1.6 }}>{fill(dl.qOrderedBySize, { v: formatArea(qSizeT, locale) })}</p>
       )}
       <div className="lst-filterwrap" style={{ marginTop: 16 }}>
-        <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} />
+        <FilterBar locale={locale as "en" | "ar"} params={fparams} cities={cities} locations={locations} assets={assets} grades={grades} fits={fits} sorts={sorts} assetCounts={assetCounts} gradeCounts={gradeCounts} fitCounts={fitCounts} basePath={`/${locale}/listings`} activeSort={sort} />
       </div>
       {facetAsset && facets.length > 0 && (
         <form method="get" className="row gap8 wrap" style={{ marginTop: 12, alignItems: "center" }}>

@@ -175,6 +175,38 @@ test("the Arabic range reads the same way", () => {
   assert.deepEqual(p.ignored, []);
 });
 
+// PKG-E1-READINESS slice C, WS16.
+test("the bare Arabic metre is an area, because that is how the size is written here", () => {
+  for (const q of ["مكتب حوالي 350 متر", "مكتب 350 متر", "مكتب بمساحه 350 متر"]) {
+    const p = parseQuery(q, VOCAB);
+    assert.equal(p.asset, "office", q);
+    assert.equal(p.areaTarget, 350, q);
+    assert.deepEqual(p.ignored, [], q);
+  }
+});
+
+test("the bare Arabic metre stays a distance when the sentence says it is one", () => {
+  const p = parseQuery("مكتب علي بعد 500 متر من المترو", VOCAB);
+  assert.equal(p.asset, "office");
+  assert.equal(p.areaTarget, null, "a walking distance is not a floorplate");
+  assert.equal(p.areaMin, null);
+  assert.equal(p.areaMax, null);
+  assert.deepEqual(p.ignored, ["500"], "and it is disclosed rather than guessed at");
+});
+
+test("the bare English metre is not an area, because there it reads as a distance", () => {
+  const p = parseQuery("office 350 meters", VOCAB);
+  assert.equal(p.areaTarget, null);
+  assert.deepEqual(p.ignored, ["350"]);
+});
+
+test("an Arabic range in bare metres reads as a range", () => {
+  const p = parseQuery("مستودع بين 200 و 400 متر", VOCAB);
+  assert.equal(p.areaMin, 200);
+  assert.equal(p.areaMax, 400);
+  assert.deepEqual(p.ignored, []);
+});
+
 test("a currency puts the pair on the money axis rather than the area axis", () => {
   const p = parseQuery("office between 1,200 and 1,600 SAR", VOCAB);
   assert.equal(p.priceMin, 1200);

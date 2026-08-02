@@ -20,10 +20,28 @@ const KIND_T: Record<string, [string, string]> = {
 };
 const KIND_ORDER = ["development", "district", "area"];
 
-export default function FilterBar({ locale, params, cities, locations, assets, grades, fits, sorts, basePath, assetCounts, gradeCounts, fitCounts }: {
+export default function FilterBar({ locale, params, cities, locations, assets, grades, fits, sorts, basePath, assetCounts, gradeCounts, fitCounts, activeSort }: {
   locale: "en" | "ar"; params: Params; cities: { key: string; label: string }[];
   locations: LocOpt[]; assets: Opt[]; grades: Opt[]; fits: Opt[]; sorts: Opt[]; basePath: string;
   assetCounts?: Record<string, number>; gradeCounts?: Record<string, number>; fitCounts?: Record<string, number>;
+  /**
+   * PKG-E1-READINESS slice C, WS16. The ordering the page actually ran.
+   *
+   * This control used to read the raw sort parameter, falling back to the first
+   * entry in the list, which is the sort the reader asked for or a default the
+   * page may not have used. Neither is the sort it ran. `?sz=350` orders by
+   * closeness to
+   * 350 and sets no `sort` parameter at all, so the pill read "Newest" over a
+   * proximity-ordered list; `?sz=350&sort=rent` used to order by closeness while
+   * the pill read "Price, low to high". A control that names an ordering the page
+   * is not running is a false statement made on every load, and the reader has no
+   * way to catch it.
+   *
+   * The page computes the ordering and hands it here. Optional, because the
+   * fallback is the previous reading and a caller that has not been updated is
+   * no worse off than it was.
+   */
+  activeSort?: string;
 }) {
   const ar = locale === "ar";
   const router = useRouter();
@@ -37,6 +55,10 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevOpen = useRef<string | null>(null);
   const t = (en: string, arr: string) => (ar ? arr : en);
+  /* Slice C, WS16. The ordering that ran, when the page told us, and otherwise the
+     reader's own parameter. A value the list does not carry names nothing, so the
+     pill falls back to the first entry rather than rendering an empty label. */
+  const sortNow = activeSort || params.sort || (sorts[0] ? sorts[0].value : "");
   /* ELITE-4 J3-17: one id for the single panel, so a pill can point at what it opens. */
   const PANEL_ID = "fb-panel";
 
@@ -169,7 +191,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     if (open === "asset") return (<div><div className="muted" style={{ fontSize: "var(--fs-xs)", margin: "0 2px 6px" }}>{t("Pick one or more.", "اختر واحداً أو أكثر.")}</div>{assets.map((a) => check(a.label, assetSel.includes(a.value), () => toggleCsv("asset", a.value), assetCounts?.[a.value]))}</div>);
     if (open === "grade") return (<div>{grades.map((g) => check(g.label, gradeSel.includes(g.value), () => toggleCsv("grade", g.value), gradeCounts?.[g.value]))}</div>);
     if (open === "fit") return (<div>{fits.map((f) => check(f.label, fitSel.includes(f.value), () => toggleCsv("fit", f.value), fitCounts?.[f.value]))}</div>);
-    if (open === "sort") return (<div>{sorts.map((s) => row(s.label, (params.sort || sorts[0].value) === s.value, () => nav({ sort: s.value })))}</div>);
+    if (open === "sort") return (<div>{sorts.map((s) => row(s.label, sortNow === s.value, () => nav({ sort: s.value })))}</div>);
     if (open === "size") return (
       <div>
         {SIZES.map((s) => row(s[0], (params.smin || "") === s[1] && (params.smax || "") === s[2] && !params.sz, () => nav({ smin: s[1], smax: s[2], sz: "" })))}
@@ -250,7 +272,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
           style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "var(--verified)" : "var(--ink)", fontSize: "var(--fs-base)" }}>
           {params.verified ? <span aria-hidden="true">✓ </span> : null}{t("Ownership verified", "الملكية موثّقة")}
         </button>
-        {pill("sort", `${t("Sort", "ترتيب")}: ${sorts.find((s) => s.value === (params.sort || sorts[0].value))?.label}`, false, true)}
+        {pill("sort", `${t("Sort", "ترتيب")}: ${sortNow ? sorts.find((s) => s.value === sortNow)?.label ?? sorts[0].label : sorts[0].label}`, false, true)}
       </div>
       {activeChips.length > 0 ? (
         <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 9 }}>
