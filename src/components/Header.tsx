@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { Logo } from "@/components/satkit";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
@@ -14,13 +13,38 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   // The account menu used to offer "Sign in" to people who were already signed in.
   // Resolve the real session and show them where their account actually is.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  // PKG-E1-READINESS slice E, WS33. The client is imported here rather than at
+  // the top of the file, and the reason is that this header is on every public
+  // page on the platform.
+  //
+  // A static import put the Supabase browser client into the first script set of
+  // every marketing route: 244.7 kB raw, 64.8 kB over the wire, which measured
+  // as roughly a quarter of all the JavaScript on the home page. None of it is
+  // needed to paint a header. It is needed to answer one question, whether the
+  // person reading is signed in, and that question is asked in an effect after
+  // the paint has already happened.
+  //
+  // Deferring it does not remove a byte from a signed-in reader's session, and
+  // it is not meant to: the same chunk is fetched a moment later by this same
+  // effect. What it removes is the chunk's place in the render-blocking script
+  // set, so first paint no longer waits on an authentication library. Measured
+  // before and after in docs/performance-baseline.md.
   useEffect(() => {
-    const sb = getSupabaseBrowser();
-    if (!sb) { setSignedIn(false); return; }
     let alive = true;
-    sb.auth.getUser().then(({ data }) => { if (alive) setSignedIn(!!data.user); }).catch(() => { if (alive) setSignedIn(false); });
-    const { data: sub } = sb.auth.onAuthStateChange((_e, sess) => setSignedIn(!!sess?.user));
-    return () => { alive = false; sub?.subscription?.unsubscribe(); };
+    let unsubscribe: (() => void) | undefined;
+    (async () => {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      if (!alive) return;
+      const sb = getSupabaseBrowser();
+      if (!sb) { setSignedIn(false); return; }
+      sb.auth.getUser().then(({ data }) => { if (alive) setSignedIn(!!data.user); }).catch(() => { if (alive) setSignedIn(false); });
+      const { data: sub } = sb.auth.onAuthStateChange((_e, sess) => { if (alive) setSignedIn(!!sess?.user); });
+      unsubscribe = () => sub?.subscription?.unsubscribe();
+      // The component can unmount while the import is still in flight, so the
+      // subscription has to be checked against the flag it was made after.
+      if (!alive) unsubscribe();
+    })();
+    return () => { alive = false; unsubscribe?.(); };
   }, []);
   const [saved, setSaved] = useState(0);
   const [open, setOpen] = useState(false);

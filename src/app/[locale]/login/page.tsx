@@ -1,9 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { getDictionary } from "@/i18n/getDictionary";
 import { authMessage } from "@/lib/authErrors";
+
+// PKG-E1-READINESS slice E, WS33. Loaded on use, not on paint. Every path below
+// reaches for the client inside a handler that only runs when somebody presses
+// something, so nothing on this page needs the authentication library to be
+// present in order to render a form. The same reasoning, at more length, is
+// written where it applies to every page: src/components/Header.tsx.
+async function supabase() {
+ const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+ return getSupabaseBrowser();
+}
 
 // Occupier social sign-up. Order reflects the Saudi B2B audience: Google and
 // Microsoft (Office 365 work accounts) first, then LinkedIn (professional identity),
@@ -48,7 +57,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
  async function passwordSignIn(e: React.FormEvent) {
   e.preventDefault();
   setError(null);
-  const sb = getSupabaseBrowser();
+  const sb = await supabase();
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
   const { error } = await sb.auth.signInWithPassword({ email, password });
@@ -65,7 +74,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
  async function emailLink() {
   setError(null);
   if (!email) { setError(t.errEnterEmail); return; }
-  const sb = getSupabaseBrowser();
+  const sb = await supabase();
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
   // `shouldCreateUser` is stated rather than left to the library default, and
@@ -86,7 +95,7 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
  // id, so an OAuth user needs no separate provisioning.
  async function oauth(provider: "google" | "azure" | "linkedin_oidc" | "apple") {
   setError(null);
-  const sb = getSupabaseBrowser();
+  const sb = await supabase();
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
   const { error } = await sb.auth.signInWithOAuth({
