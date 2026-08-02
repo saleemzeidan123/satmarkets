@@ -17,13 +17,16 @@ import { API_ERROR_CODES, apiErrorMessage, isApiErrorCode } from "./apiErrors";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-// The routes whose refusals this table names. Slices A and B of finding 203.
+// The routes whose refusals this table names. Slices A, B and C of finding 203.
 const ROUTES_IN_SCOPE = [
   "src/app/api/listings/[id]/media/route.ts",
   "src/app/api/listings/[id]/media/[mediaId]/route.ts",
   "src/app/api/listings/[id]/docs/route.ts",
   "src/app/api/listings/[id]/status/route.ts",
   "src/app/api/listings/[id]/review/route.ts",
+  "src/app/api/account/route.ts",
+  "src/app/api/signup/route.ts",
+  "src/app/api/advisor/shortlist/route.ts",
 ];
 
 // The clients that render those refusals.
@@ -32,6 +35,9 @@ const CLIENTS_IN_SCOPE = [
   "src/components/ListingDocsManager.tsx",
   "src/components/ListingStatusToggle.tsx",
   "src/components/ReviewActions.tsx",
+  "src/components/ProfileForm.tsx",
+  "src/components/SignupFlow.tsx",
+  "src/app/[locale]/find/page.tsx",
 ];
 
 /** Every `NextResponse.json({ ... }, { status: NNN })` in a route file. */
@@ -186,6 +192,28 @@ test("finding 203: no route in scope guesses the reader's language from the requ
         `${rel} reads ${tell}, which is a guess at the reader's language and not a fact about it`,
       );
     }
+  }
+});
+
+test("finding 203: no route in scope puts the database's own sentence on the wire", () => {
+  // Slice C. Three of these routes returned PostgREST's `message` straight to the
+  // browser: one of them before any account exists and one of them without
+  // authentication at all. That is an information disclosure and not merely a
+  // translation gap, so it is guarded separately from the language guards above
+  // and would still be a defect in a monolingual product.
+  //
+  // The pattern is deliberately literal-minded. It does not attempt to work out
+  // whether a given `.message` reaches a response body, because a guard that
+  // reasons about reachability is a guard that can be argued with. A route that
+  // needs the real sentence writes it to the log.
+  for (const rel of ROUTES_IN_SCOPE) {
+    const src = read(rel);
+    const stripped = src.replace(/console\.error\([^\n]*\)/g, "");
+    assert.doesNotMatch(
+      stripped,
+      /\berror\??\.message\b/,
+      `${rel} reads the database's own sentence outside a log line, which is how it reached the browser`,
+    );
   }
 });
 

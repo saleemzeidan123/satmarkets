@@ -85,7 +85,23 @@ export type ApiErrorCode =
   | "status_update_failed"
   // Slice B. Reviewer decisions, /api/listings/[id]/review POST.
   | "review_update_failed"
-  | "unknown_action";
+  | "unknown_action"
+  // Slice C. Public profile, /api/account PATCH.
+  | "sign_in_to_edit_profile"
+  | "website_scheme_required"
+  | "logo_url_scheme_required"
+  | "invalid_public_email"
+  | "profile_save_failed"
+  // Slice C. Account requests, /api/signup POST.
+  | "invalid_role"
+  | "invalid_name"
+  | "invalid_email"
+  | "details_too_large"
+  | "signup_store_failed"
+  // Slice C. Advisor shortlist, /api/advisor/shortlist POST.
+  | "brief_required"
+  | "asset_type_required"
+  | "shortlist_failed";
 
 /**
  * [en, ar]. The English half is not always the sentence the route puts in
@@ -192,6 +208,54 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
     "تعذّر حفظ قرار المراجعة.",
   ],
   unknown_action: ["That action is not recognised.", "هذا الإجراء غير معروف."],
+
+  sign_in_to_edit_profile: ["Sign in to edit your profile.", "سجّل الدخول لتعديل ملفك."],
+  website_scheme_required: [
+    "The website address must begin with http:// or https://",
+    "يجب أن يبدأ عنوان الموقع بـ http:// أو https://",
+  ],
+  logo_url_scheme_required: [
+    "The logo address must begin with http:// or https://",
+    "يجب أن يبدأ عنوان الشعار بـ http:// أو https://",
+  ],
+  invalid_public_email: [
+    "That is not a valid email address.",
+    "هذا ليس بريداً إلكترونياً صحيحاً.",
+  ],
+  /**
+   * These four replace a leak, not a sentence. The routes below used to return
+   * PostgREST's own `error.message` to the browser, which is an internal database
+   * sentence shown to a member of the public: it names columns, constraints and
+   * sometimes the shape of a table. Finding 22 found the same thing in the intake
+   * routes. The real message is now written to the server log, where the person
+   * who can act on it reads it, and the person who cannot is told what happened.
+   */
+  profile_save_failed: ["Your profile could not be saved.", "تعذّر حفظ ملفك."],
+
+  invalid_role: ["Choose one of the listed roles.", "اختر أحد الأدوار المتاحة."],
+  invalid_name: [
+    "Enter your full name, between 2 and 120 characters.",
+    "اكتب اسمك الكامل، بين حرفين و120 حرفاً.",
+  ],
+  invalid_email: ["Enter a valid email address.", "اكتب بريداً إلكترونياً صحيحاً."],
+  details_too_large: [
+    "There is too much detail to store. Shorten your answers.",
+    "التفاصيل أطول مما يمكن حفظه. اختصر إجاباتك.",
+  ],
+  signup_store_failed: [
+    "Your request could not be stored. Try again shortly.",
+    "تعذّر حفظ طلبك. أعد المحاولة بعد قليل.",
+  ],
+
+  brief_required: [
+    "No requirement was received. Fill the form and try again.",
+    "لم يصل أي طلب. أكمل النموذج ثم أعد المحاولة.",
+  ],
+  asset_type_required: ["Choose an asset type first.", "اختر نوع الأصل أولاً."],
+  shortlist_failed: [
+    "The shortlist could not be built. Try again shortly.",
+    "تعذّر إعداد القائمة المختصرة. أعد المحاولة بعد قليل.",
+  ],
 };
 
 export const API_ERROR_CODES = Object.keys(MESSAGES) as ApiErrorCode[];

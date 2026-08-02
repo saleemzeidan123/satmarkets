@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { getDictionary } from "@/i18n/getDictionary";
 import { netArea, askingPrice } from "@/lib/listingFigures";
+import { apiErrorMessage } from "@/lib/apiErrors";
 import type { Loc } from "@/lib/format";
 
 type Verdict = {
@@ -148,6 +149,8 @@ export default function FindPage() {
         fit: "ملاءمة",
         relaxedBudget: "تم توسيع البحث بتجاوز الميزانية.",
         relaxedBoth: "تم توسيع البحث بتجاوز الميزانية والحي.",
+        errFailed: "تعذّر إعداد القائمة المختصرة.",
+        errNetwork: "تعذّر الوصول إلى الخادم. تحقق من اتصالك ثم أعد المحاولة.",
       }
     : {
         h1: "Find your space",
@@ -166,6 +169,8 @@ export default function FindPage() {
         fit: "fit",
         relaxedBudget: "Widened past your budget to find options.",
         relaxedBoth: "Widened past budget and district to find options.",
+        errFailed: "The shortlist could not be built.",
+        errNetwork: "Could not reach the server. Check your connection and try again.",
       };
 
   const [relaxed, setRelaxed] = useState("none");
@@ -193,13 +198,28 @@ export default function FindPage() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Request failed");
+      const data = await res.json().catch(() => ({}));
+      // Finding 203. This screen took the route's own English sentence, threw it
+      // as an Error, and printed the message. Two defects in one line. The
+      // sentence was English on an Arabic page, and one of the sentences it could
+      // print was PostgREST's, so a member of the public asking for a shortlist
+      // could be shown the shape of the listings table.
+      //
+      // The route states the reason as a stable code now. The code is named here
+      // in the language this page is already rendering, and the sentence the
+      // route composed stays on the wire for the log.
+      if (!res.ok) {
+        setErr(apiErrorMessage(data.code, ar, T.errFailed));
+        return;
+      }
       setRows(data.results || []);
       setRelaxed(data.relaxed || "none");
       setIdxNotes(Array.isArray(data.statements) ? data.statements : []);
-    } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : "Something went wrong");
+    } catch {
+      // Reached only when the request itself failed, so it no longer borrows a
+      // sentence meant for a refusal the server actually stated. It was English
+      // in both languages before this.
+      setErr(T.errNetwork);
     } finally {
       setLoading(false);
     }

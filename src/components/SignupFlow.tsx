@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 type Role = "occupier" | "owner" | "broker" | "investor";
 type Props = { locale: string };
@@ -130,11 +131,25 @@ export default function SignupFlow({ locale }: Props) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role, full_name: name.trim(), company: company.trim() || undefined, email: email.trim(), phone: phone.trim() || undefined, locale, details: { ...d, interests: chips } }),
       });
-      const j = await res.json();
-      if (!res.ok || j.error) throw new Error(j.error || "failed");
+      const j = await res.json().catch(() => ({}));
+      // Finding 203. The register recorded this site as rendering the route's
+      // English sentence. It did not: it threw that sentence away and showed one
+      // generic line for every refusal. The defect here is therefore the collapse
+      // rather than the language. A person who typed an address the route would
+      // not accept, or who was rate limited after six attempts, was told only
+      // that something went wrong, which is the one thing they already knew.
+      //
+      // The route names each refusal as a stable code now, and the generic line
+      // survives as what an unrecognised code falls to.
+      if (!res.ok) {
+        setErr(apiErrorMessage(j.code, ar, t("Something went wrong. Please try again.", "حدث خطأ. حاول مرة أخرى.")));
+        return;
+      }
       setDone(true);
-    } catch (e) {
-      setErr(t("Something went wrong. Please try again.", "حدث خطأ. حاول مرة أخرى."));
+    } catch {
+      // Only a genuine network or parse failure reaches here now, so it says so
+      // rather than borrowing the sentence for a refusal the server did state.
+      setErr(t("Could not reach the server. Check your connection and try again.", "تعذّر الوصول إلى الخادم. تحقق من اتصالك ثم أعد المحاولة."));
     } finally { setBusy(false); }
   }
 

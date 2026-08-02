@@ -63,15 +63,15 @@ function fitScore(l: any, b: Brief, verdictStatus: string): number {
 }
 
 export async function POST(req: NextRequest) {
-  if (!allow("advisor-shortlist", req, 5)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!allow("advisor-shortlist", req, 5)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   let b: Brief;
   try {
     b = await req.json();
   } catch {
-    return NextResponse.json({ error: "Send a JSON brief." }, { status: 400 });
+    return NextResponse.json({ error: "Send a JSON brief.", code: "brief_required" }, { status: 400 });
   }
   if (!b.assetType) {
-    return NextResponse.json({ error: "assetType is required." }, { status: 400 });
+    return NextResponse.json({ error: "assetType is required.", code: "asset_type_required" }, { status: 400 });
   }
   const client = sb();
   const limit = Math.min(b.limit || 6, 20);
@@ -96,7 +96,12 @@ export async function POST(req: NextRequest) {
     if (st.district && b.districtId) q = q.eq("district_id", b.districtId);
     if (st.budget && b.budgetSqmMax != null) q = q.lte("asking_rent_sqm", b.budgetSqmMax);
     const { data, error } = await q.limit(40);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Finding 203. This route is unauthenticated, so PostgREST's own message
+    // about the listings table was reaching anyone who could reach the endpoint.
+    if (error) {
+      console.error("[advisor-shortlist]", error);
+      return NextResponse.json({ error: "Could not build the shortlist.", code: "shortlist_failed" }, { status: 500 });
+    }
     rows = data || [];
     if (rows.length >= 3) {
       relaxed = st.budget && st.district ? "none" : !st.budget && st.district ? "budget" : "budget+district";

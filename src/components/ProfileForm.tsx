@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 type Init = {
   about_en: string;
@@ -47,7 +48,13 @@ export default function ProfileForm({ locale, init }: { locale: string; init: In
         body: JSON.stringify(f),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setMsg({ ok: false, text: j.error || t.err }); setBusy(false); return; }
+      // Finding 203. This rendered whatever English sentence the route put on the
+      // wire, and the bilingual sentence beside it was the branch that almost
+      // never ran. Worse than a translation gap: one of those sentences was
+      // PostgREST's own, so an owner saving a profile could be shown a database
+      // constraint. The route names the reason as a stable code now and this
+      // names the code in the language the page is already rendering.
+      if (!res.ok) { setMsg({ ok: false, text: apiErrorMessage(j.code, ar, t.err) }); setBusy(false); return; }
       setMsg({ ok: true, text: t.saved });
       setBusy(false);
       router.refresh();
