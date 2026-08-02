@@ -30,6 +30,7 @@ Usage
   python3 tools/ship.py -m "ship: fix X" src/app/page.tsx src/lib/foo.ts
   python3 tools/ship.py -m "ship: batch" --auto          # all changes vs HEAD
   python3 tools/ship.py -m "..." --auto --dry-run         # preview only
+  python3 tools/ship.py --push-only                       # push commits already made
 
 Behaviour
 ---------
@@ -95,19 +96,71 @@ def git(args, repo, env=None, check=True):
 
 def main():
     ap = argparse.ArgumentParser(description="Ship SAT Markets via git push.")
-    ap.add_argument("-m", "--message", required=True, help="commit message")
+    ap.add_argument("-m", "--message", help="commit message")
     ap.add_argument("paths", nargs="*", help="files to ship (relative to repo root)")
     ap.add_argument("--auto", action="store_true", help="stage all changes vs HEAD")
     ap.add_argument("--repo", default=".", help="path to the repo clone")
     ap.add_argument("--branch", default="main", help="target branch")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument(
+        "--push-only",
+        action="store_true",
+        help=(
+            "push existing local commits and make none. Use when commits were "
+            "authored somewhere else, for example carried in by git bundle from "
+            "a session whose container had no token."
+        ),
+    )
     args = ap.parse_args()
 
-    if "—" in args.message:
+    if args.message and "—" in args.message:
         sys.exit("Commit message contains an em dash. Law 2: none, ever.")
+    if not args.push_only and not args.message:
+        sys.exit("Give -m, or use --push-only to push commits that already exist.")
 
     repo = os.path.abspath(args.repo)
     base_env = dict(os.environ)
+
+    if args.push_only:
+        dirty = git(["status", "--porcelain"], repo).stdout.strip()
+        if dirty:
+            sys.exit(
+                "--push-only refuses to run with a dirty tree, because it would "
+                "push a commit that does not match what is on disk:\n" + dirty
+            )
+        ahead = git(
+            ["rev-list", "--count", f"origin/{args.branch}..HEAD"], repo, check=False
+        ).stdout.strip()
+        if ahead in ("", "0"):
+            print(f"Nothing to push. HEAD is not ahead of origin/{args.branch}.")
+            return
+        print(f"Target: {REPO_SLUG}@{args.branch}\nPushing {ahead} local commit(s):")
+        print(git(["log", "--oneline", f"origin/{args.branch}..HEAD"], repo).stdout.rstrip())
+        if args.dry_run:
+            print("dry-run: not pushing.")
+            return
+        token_file = find_token_file()
+        askpass = write_askpass(token_file)
+        env = dict(base_env)
+        env["GIT_ASKPASS"] = askpass
+        env["GIT_TERMINAL_PROMPT"] = "0"
+        push = git(["push", "origin", f"HEAD:{args.branch}"], repo, env=env, check=False)
+        try:
+            os.remove(askpass)
+        except OSError:
+            pass
+        if push.returncode != 0:
+            sys.exit(
+                "Push rejected (nothing was changed locally):\n"
+                + (push.stderr or push.stdout)
+                + f"\nIf this is a non-fast-forward, run `git -C {repo} pull --rebase "
+                f"origin {args.branch}` and re-run."
+            )
+        sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
+        print(f"\nShipped {sha[:7]} to {args.branch}.")
+        print(f"  https://github.com/{REPO_SLUG}/commit/{sha}")
+        print("Vercel will build this push to production. Confirm READY, then verify live.")
+        return
 
     # Stage.
     if args.auto:

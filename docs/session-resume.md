@@ -102,27 +102,43 @@ commit message containing one. It reads a fine-grained PAT from `SM_GH_TOKEN` or
 session unless it is supplied again**. If `ship.py` reports no token, do not stall and do
 not ask for one in chat. Use path 2.
 
-**Path 2, the `GitHub_Pat` MCP server.** This connector is authorized against the owner's
-GitHub account, not against the container, so it survives every container reset and needs
-no token in the session. Load it with the ToolSearch query
-`select:mcp__GitHub_Pat__push_files,mcp__GitHub_Pat__list_commits,mcp__GitHub_Pat__get_file_contents`
-and push with `push_files` (`owner` `saleemzeidan123`, `repo` `satmarkets`, `branch`
-`main`), passing the full new content of every changed file. A push to `main` triggers the
-Vercel production build exactly as `git push` does, so the deployment evidence chain is
-unchanged.
+**Path 2, the bundle relay.** Use this when the container has no token. It moves commits,
+not secrets, and it needs nothing from the owner but one file upload.
 
-Path 2's limits, worth knowing before choosing it. It commits file contents, so it cannot
-express a deletion or a rename, and it flattens whatever local commits exist into the one
-commit it makes. When local history matters, commit locally as usual, then push the
-resulting tree through `push_files` and say in the message which local commits it carries.
-After any `push_files`, the local clone is behind by that commit: `git fetch origin main`
-then reconcile before committing again.
+```bash
+cd /tmp/sm2 && git fetch origin main -q
+cd /tmp/sm2 && git bundle create /tmp/satmarkets-outgoing.bundle origin/main..HEAD --branches
+```
 
-The header comment inside `tools/ship.py` says an API-based commit does not work from this
-sandbox. That is true of the GitHub REST API called directly through the sandbox proxy. It
-is not true of the `GitHub_Pat` MCP connector, which is not subject to that proxy. This
-file's section 5 was wrong about that connector on the day it was written and is corrected
-here.
+Deliver that bundle with `SendUserFile` and ask the owner to attach it to a session that
+does have a token. There, with the clone at `/tmp/sm2`:
+
+```bash
+cd /tmp/sm2 && git bundle verify /path/to/satmarkets-outgoing.bundle
+cd /tmp/sm2 && git fetch /path/to/satmarkets-outgoing.bundle main:incoming
+cd /tmp/sm2 && git merge --ff-only incoming
+cd /tmp/sm2 && python3 tools/ship.py --push-only
+```
+
+`--push-only` pushes commits that already exist and makes none. It refuses a dirty tree,
+refuses when HEAD is not ahead of `origin/main`, and surfaces a non fast forward rather
+than forcing it. The same bundle also refreshes the recovery copy described in
+`RECOVERY.md`, so this path pays for itself twice.
+
+**What does not work, tested rather than assumed.** The `GitHub_Pat` MCP connector reads
+this repository fine (`get_me`, `list_commits` and `get_file_contents` all return), but
+every write is refused: `push_files` fails with
+`failed to create tree: 403 Resource not accessible by integration`. The connector is read
+only. It is useful for checking what is actually on `main` from a container that has no
+clone, and it is not a push path. An earlier revision of this file claimed it was, and that
+claim was wrong. The header comment inside `tools/ship.py` is right: an API-based commit
+does not work from here, by either route.
+
+**What to do when there is no token.** Do not stall, and do not ask for a token in the
+conversation. Commit locally, keep working, and use path 2. If the owner chooses to supply
+a token anyway, that is their call to make in their own words, and the safe form is a fine
+grained PAT scoped to Contents read and write on this repository alone, with a short
+expiry, revoked afterwards. A secret pasted into a chat is a secret in a transcript.
 
 Then confirm the deployment. Load the Vercel tools with the ToolSearch query
 `select:mcp__Vercel__get_deployment,mcp__Vercel__web_fetch_vercel_url`, wait about 100
@@ -149,10 +165,10 @@ These are measured, not assumed. Rediscovering them costs an hour each time.
 * ESLint is not configured. Do not run `npx next lint`.
 * The deploy token has no `workflow` scope, so `.github/workflows/` files cannot be
   pushed. The owner installs those manually. Do not request a workflow scoped token.
-* The `GitHub_Pat` MCP server was unavailable on the day this file was written and is
-  now authorized and working. It is the tokenless push path, described in section 4.
-  Never ask the user to paste a token, an authorization code or a callback URL into the
-  conversation. A secret pasted into a chat is a secret in a transcript.
+* The `GitHub_Pat` MCP server needs interactive authorization. When it is authorized it
+  reads this repository but cannot write to it: `push_files` returns
+  `403 Resource not accessible by integration`. It is a read path, not a push path.
+  Never ask the user for tokens, authorization codes or callback URLs.
 * Inspecting git credential storage is blocked by the safety classifier, as is
   `git checkout -- <path>`. Use `git show HEAD:<path> > <path>` to restore a file.
 
