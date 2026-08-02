@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 // Confirm or decline. No optimistic update: if the decision did not save, the screen
 // must not show it as saved. The lister is about to tell a human being to drive across
@@ -14,8 +15,18 @@ export default function ViewingDecision({
   const [err, setErr] = useState<string | null>(null);
 
   const t = ar
-    ? { confirm: "تأكيد", decline: "اعتذار", failed: "تعذر الحفظ. حاول مرة أخرى." }
-    : { confirm: "Confirm", decline: "Decline", failed: "That did not save. Try again." };
+    ? {
+        confirm: "تأكيد",
+        decline: "اعتذار",
+        failed: "تعذر الحفظ. حاول مرة أخرى.",
+        network: "تعذّر الوصول إلى الخادم. تحقق من اتصالك ثم أعد المحاولة.",
+      }
+    : {
+        confirm: "Confirm",
+        decline: "Decline",
+        failed: "That did not save. Try again.",
+        network: "Could not reach the server. Check your connection and try again.",
+      };
 
   async function decide(status: "confirmed" | "cancelled") {
     setBusy(status);
@@ -28,13 +39,22 @@ export default function ViewingDecision({
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        setErr(j?.error || t.failed);
+        // Finding 203. This rendered whatever English sentence the route put on
+        // the wire, and the Arabic line beside it was the branch that almost
+        // never ran. One of those sentences spliced the database's own status
+        // vocabulary into a list, so a lister who pressed Decline on an Arabic
+        // page could be shown four English words none of which are on the two
+        // buttons in front of them. The route names the reason as a stable code
+        // now and this names the code in the language the page is rendering.
+        setErr(apiErrorMessage(j?.code, ar, t.failed));
         setBusy(null);
         return;
       }
       router.refresh();
     } catch {
-      setErr(t.failed);
+      // Only a genuine network or parse failure reaches here, so it says so
+      // rather than borrowing the sentence for a refusal the server did state.
+      setErr(t.network);
     }
     setBusy(null);
   }

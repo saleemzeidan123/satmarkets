@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 // The control behind the "verified owner" badge. Deliberately not a one-click
 // approve: a decision requires a stated basis, because a verification with no
@@ -15,6 +16,11 @@ export default function VerifyAccount({
   locale: string;
   t: { verify: string; reject: string; revoke: string; basis: string; basisPh: string; cancel: string; save: string; saving: string; minBasis: string };
 }) {
+  // Finding 203. The locale arrived here and was never read, so every refusal
+  // on this screen was English on a page rendering Arabic. The bilingual labels
+  // beside them came down from the page as `t`, which made the error line the
+  // one string on the screen that did not follow the reader.
+  const ar = locale === "ar";
   const router = useRouter();
   const [open, setOpen] = useState<string | null>(null);
   const [basis, setBasis] = useState("");
@@ -31,11 +37,20 @@ export default function VerifyAccount({
         body: JSON.stringify({ status: open, basis: basis.trim() }),
       });
       const j = await res.json().catch(() => ({}));
-      if (!res.ok) { setErr(j.error || "Could not save."); setBusy(false); return; }
+      if (!res.ok) {
+        setErr(apiErrorMessage(j.code, ar, ar ? "تعذّر الحفظ." : "Could not save."));
+        setBusy(false);
+        return;
+      }
       setOpen(null); setBasis(""); setBusy(false);
       router.refresh();
     } catch {
-      setErr("Could not save."); setBusy(false);
+      // A network or parse failure, which is not the same event as a decision
+      // the server refused and no longer borrows its sentence.
+      setErr(ar
+        ? "تعذّر الوصول إلى الخادم. تحقق من اتصالك ثم أعد المحاولة."
+        : "Could not reach the server. Check your connection and try again.");
+      setBusy(false);
     }
   }
 

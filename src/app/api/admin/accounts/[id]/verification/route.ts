@@ -24,22 +24,22 @@ const ALLOWED = new Set(["unverified", "pending", "verified", "rejected"]);
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const su = await getSessionUser();
   if (!su || !su.isSat || !su.userId) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ error: "Not found.", code: "record_not_found" }, { status: 404 });
   }
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Not configured." }, { status: 500 });
+  if (!sb) return NextResponse.json({ error: "Not configured.", code: "not_configured" }, { status: 500 });
 
   const body = await req.json().catch(() => ({} as any));
   const to = String(body?.status ?? "");
   const basis = String(body?.basis ?? "").trim();
 
   if (!ALLOWED.has(to)) {
-    return NextResponse.json({ error: "Unknown verification status." }, { status: 400 });
+    return NextResponse.json({ error: "Unknown verification status.", code: "unknown_verification_status" }, { status: 400 });
   }
   // Mirrors the DB check constraint. A decision without a reason is not a decision.
   if (basis.length < 8) {
     return NextResponse.json(
-      { error: "State the basis for this decision (at least a sentence): what did you check, and against what?" },
+      { error: "State the basis for this decision (at least a sentence): what did you check, and against what?", code: "basis_required" },
       { status: 400 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     .select("id,verification_status")
     .eq("id", params.id)
     .maybeSingle();
-  if (readErr || !acct) return NextResponse.json({ error: "Account not found." }, { status: 404 });
+  if (readErr || !acct) return NextResponse.json({ error: "Account not found.", code: "account_not_found" }, { status: 404 });
 
   const from = (acct as any).verification_status as string;
 
@@ -64,7 +64,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     basis,
   });
   if (logErr) {
-    return NextResponse.json({ error: "Could not record the decision, so nothing was changed." }, { status: 500 });
+    return NextResponse.json({ error: "Could not record the decision, so nothing was changed.", code: "verification_not_recorded" }, { status: 500 });
   }
 
   const { error: updErr } = await sb
@@ -72,7 +72,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     .update({ verification_status: to, updated_at: new Date().toISOString() })
     .eq("id", params.id);
   if (updErr) {
-    return NextResponse.json({ error: "Decision recorded but the status did not change. Try again." }, { status: 500 });
+    return NextResponse.json({ error: "Decision recorded but the status did not change. Try again.", code: "verification_status_unchanged" }, { status: 500 });
   }
 
   // Without this the console kept showing the old status until a hard reload:

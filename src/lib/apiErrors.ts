@@ -101,7 +101,21 @@ export type ApiErrorCode =
   // Slice C. Advisor shortlist, /api/advisor/shortlist POST.
   | "brief_required"
   | "asset_type_required"
-  | "shortlist_failed";
+  | "shortlist_failed"
+  // Slice D. Viewing decisions, /api/viewings/[id]/decision POST.
+  | "sign_in_to_manage_viewings"
+  | "viewing_status_invalid"
+  | "not_your_viewing"
+  | "viewing_update_failed"
+  // Slice D. The two reviewer queues, /api/viewings/review and /api/signups/review POST.
+  | "record_not_found"
+  | "id_and_status_required"
+  // Slice D. Account verification, /api/admin/accounts/[id]/verification POST.
+  | "unknown_verification_status"
+  | "basis_required"
+  | "account_not_found"
+  | "verification_not_recorded"
+  | "verification_status_unchanged";
 
 /**
  * [en, ar]. The English half is not always the sentence the route puts in
@@ -255,6 +269,66 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
   shortlist_failed: [
     "The shortlist could not be built. Try again shortly.",
     "تعذّر إعداد القائمة المختصرة. أعد المحاولة بعد قليل.",
+  ],
+
+  sign_in_to_manage_viewings: ["Sign in to manage viewings.", "سجّل الدخول لإدارة المعاينات."],
+  /**
+   * The route used to compose this one by splicing its own allowed list into
+   * the words "status must be one of", joined with commas. That is the same
+   * shape as the count limit above and it fails for the same reason. It also
+   * said nothing a person could act on, because the list it printed was the
+   * database's vocabulary and not the two words on the buttons in front of them.
+   *
+   * The example is described rather than quoted here on purpose: the guard that
+   * forbids an interpolated sentence in this table reads the table as text, and
+   * a comment quoting the defect would trip the guard that catches it.
+   */
+  viewing_status_invalid: [
+    "That is not a viewing status this platform recognises.",
+    "هذه ليست حالة معاينة معروفة في المنصة.",
+  ],
+  not_your_viewing: [
+    "That viewing is not on one of your listings.",
+    "هذه المعاينة ليست على أحد عروضك.",
+  ],
+  viewing_update_failed: ["The viewing could not be updated.", "تعذّر تحديث المعاينة."],
+
+  /**
+   * Deliberately unrevealing, and the reason is written into both reviewer
+   * routes: a caller who is not SAT is answered 404 rather than 403 so the
+   * endpoint does not advertise its own existence. A sentence that distinguished
+   * "you may not" from "it is not there" would give back exactly what the status
+   * code was chosen to withhold.
+   */
+  record_not_found: ["That record is not available.", "هذا السجل غير متاح."],
+  id_and_status_required: [
+    "A record and a valid status are both required.",
+    "يلزم تحديد السجل وحالة صحيحة معاً.",
+  ],
+
+  unknown_verification_status: [
+    "That is not a verification status this platform recognises.",
+    "هذه ليست حالة توثيق معروفة في المنصة.",
+  ],
+  basis_required: [
+    "State the basis for this decision: what did you check, and against what?",
+    "اذكر أساس هذا القرار: ماذا راجعت، ومقابل ماذا؟",
+  ],
+  account_not_found: ["That account no longer exists.", "لم يعد هذا الحساب موجوداً."],
+  /**
+   * These two are not interchangeable and must not be collapsed. The ledger is
+   * written before the status moves, on purpose: a badge with no traceable
+   * decision behind it is the thing the ledger exists to prevent. So the first
+   * says nothing changed, and the second says the decision is on the record but
+   * the account did not follow it, which is a different thing to go and check.
+   */
+  verification_not_recorded: [
+    "The decision could not be recorded, so nothing was changed.",
+    "تعذّر تسجيل القرار، ولم يتغيّر شيء.",
+  ],
+  verification_status_unchanged: [
+    "The decision was recorded but the status did not change. Try again.",
+    "سُجّل القرار لكن الحالة لم تتغيّر. أعد المحاولة.",
   ],
 };
 

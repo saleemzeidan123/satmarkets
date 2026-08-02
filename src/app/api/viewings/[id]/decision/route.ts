@@ -30,26 +30,30 @@ const ALLOWED = ["confirmed", "cancelled", "completed", "no_show"] as const;
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   if (!allow("viewing-decision", req, 20)) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+    return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   }
 
   const su = await getSessionUser();
   if (!su?.accountId) {
-    return NextResponse.json({ error: "Sign in to manage viewings." }, { status: 401 });
+    return NextResponse.json({ error: "Sign in to manage viewings.", code: "sign_in_to_manage_viewings" }, { status: 401 });
   }
 
   let body: { status?: string } = {};
   try { body = await req.json(); } catch {}
   const status = String(body.status ?? "");
   if (!(ALLOWED as readonly string[]).includes(status)) {
+    // Finding 203. This spliced the database's own vocabulary into a sentence,
+    // which does not translate and named none of the two words on the buttons the
+    // lister actually pressed. `error` keeps the list because a log and an API
+    // consumer are the readers who want it.
     return NextResponse.json(
-      { error: `status must be one of: ${ALLOWED.join(", ")}` },
+      { error: `status must be one of: ${ALLOWED.join(", ")}`, code: "viewing_status_invalid" },
       { status: 400 }
     );
   }
 
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "not_configured" }, { status: 503 });
+  if (!sb) return NextResponse.json({ error: "not_configured", code: "not_configured" }, { status: 503 });
 
   // Count the rows. An UPDATE that matches nothing is not an error in Postgres, so
   // without this a lister trying to decide someone else's viewing would be told it
@@ -62,10 +66,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (error) {
     console.error("[viewing-decision]", error);
-    return NextResponse.json({ error: "Could not update the viewing." }, { status: 500 });
+    return NextResponse.json({ error: "Could not update the viewing.", code: "viewing_update_failed" }, { status: 500 });
   }
   if (!data || data.length === 0) {
-    return NextResponse.json({ error: "That viewing is not on one of your listings." }, { status: 403 });
+    return NextResponse.json({ error: "That viewing is not on one of your listings.", code: "not_your_viewing" }, { status: 403 });
   }
 
   return NextResponse.json({ ok: true, id: data[0].id, status: data[0].status });

@@ -26,21 +26,21 @@ export async function POST(req: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
-    return NextResponse.json({ ok: false, error: "Review not configured" }, { status: 503 });
+    return NextResponse.json({ ok: false, error: "Review not configured", code: "not_configured" }, { status: 503 });
   }
-  if (!allow("signups-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  if (!allow("signups-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const su = await getSessionUser();
-  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found", code: "record_not_found" }, { status: 404 });
   let body: { id?: string; status?: string; notes?: string } = {};
   try { body = await req.json(); } catch {}
   if (!body.id || !(STATUSES as readonly string[]).includes(String(body.status))) {
-    return NextResponse.json({ ok: false, error: "id and a valid status are required" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "id and a valid status are required", code: "id_and_status_required" }, { status: 400 });
   }
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { error } = await sb.from("signup_requests").update({
     status: body.status,
     notes: body.notes ? String(body.notes).slice(0, 500) : null,
   }).eq("id", body.id);
-  if (error) { console.error("[signups-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
+  if (error) { console.error("[signups-review]", error); return NextResponse.json({ ok: false, error: "update_failed", code: "review_update_failed" }, { status: 400 }); }
   return NextResponse.json({ ok: true });
 }
