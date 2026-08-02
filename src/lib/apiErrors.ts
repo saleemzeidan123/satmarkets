@@ -77,7 +77,15 @@ export type ApiErrorCode =
   | "reorder_failed"
   // Removal, /api/listings/[id]/media/[mediaId] DELETE.
   | "media_not_found"
-  | "remove_failed";
+  | "remove_failed"
+  // Slice B. Pause and republish, /api/listings/[id]/status POST.
+  | "not_configured"
+  | "status_transition_not_allowed"
+  | "publish_gate_failed"
+  | "status_update_failed"
+  // Slice B. Reviewer decisions, /api/listings/[id]/review POST.
+  | "review_update_failed"
+  | "unknown_action";
 
 /**
  * [en, ar]. The English half is not always the sentence the route puts in
@@ -153,6 +161,37 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
 
   media_not_found: ["That file is no longer on this listing.", "لم يعد هذا الملف على هذا العرض."],
   remove_failed: ["The file could not be removed.", "تعذّر حذف الملف."],
+
+  not_configured: [
+    "This is temporarily unavailable. Try again shortly.",
+    "هذه الخدمة غير متاحة مؤقتاً. أعد المحاولة بعد قليل.",
+  ],
+  status_transition_not_allowed: [
+    "Only a published listing can be paused, and only a paused one resumed.",
+    "يمكن إيقاف العرض المنشور فقط، ولا يمكن استئناف إلا العرض الموقوف.",
+  ],
+  /**
+   * The one sentence this table has for the whole publish gate. It is the last
+   * resort and not the normal path: the route also returns `reasons`, the gate's
+   * own stable vocabulary, and a client that has those renders them through
+   * `gateReasonsText` because they name the specific thing the owner has to go
+   * and fix. A gate refusal that says only this is a gate refusal that lost its
+   * reasons in transit.
+   */
+  publish_gate_failed: [
+    "This listing cannot go back on the market yet.",
+    "لا يمكن إعادة نشر هذا العرض بعد.",
+  ],
+  status_update_failed: [
+    "The listing status could not be changed.",
+    "تعذّر تغيير حالة العرض.",
+  ],
+
+  review_update_failed: [
+    "The review decision could not be saved.",
+    "تعذّر حفظ قرار المراجعة.",
+  ],
+  unknown_action: ["That action is not recognised.", "هذا الإجراء غير معروف."],
 };
 
 export const API_ERROR_CODES = Object.keys(MESSAGES) as ApiErrorCode[];

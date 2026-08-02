@@ -12,11 +12,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
-    return NextResponse.json({ ok: false, error: "Review not configured" }, { status: 503 });
+    return NextResponse.json({ ok: false, error: "Review not configured", code: "not_configured" }, { status: 503 });
   }
-  if (!allow("listings-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  if (!allow("listings-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const su = await getSessionUser();
-  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+  if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found", code: "listing_not_found" }, { status: 404 });
   let body: { action?: string; reason?: string } = {};
   try { body = await req.json(); } catch {}
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       verified_at: new Date().toISOString(),
       verified_by: su.accountId, // FK references accounts, so record the reviewing SAT account
     }).eq("id", params.id);
-    if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
+    if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed", code: "review_update_failed" }, { status: 400 }); }
     return NextResponse.json({ ok: true });
   }
   if (body.action === "reject") {
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       status: "rejected",
       rejection_reason: (body.reason || "Rejected in verification review").slice(0, 500),
     }).eq("id", params.id);
-    if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed" }, { status: 400 }); }
+    if (error) { console.error("[listings-review]", error); return NextResponse.json({ ok: false, error: "update_failed", code: "review_update_failed" }, { status: 400 }); }
     return NextResponse.json({ ok: true });
   }
-  return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
+  return NextResponse.json({ ok: false, error: "Unknown action", code: "unknown_action" }, { status: 400 });
 }

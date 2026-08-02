@@ -233,7 +233,7 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                       <td className="num">
                         <span className="rowact" style={{ display: "inline-flex" }}>
                           {/* ELITE-4 J2-20: the failure sentence is supplied in the reader's language. */}
-                          <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot, failed: t.updateFailed }} />
+                          <ListingStatusToggle id={l.id} status={l.status} blocked={blocked} ar={ar} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot, failed: t.updateFailed }} />
                         </span>
                       </td>
                     </tr>

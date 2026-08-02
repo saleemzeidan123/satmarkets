@@ -21,9 +21,9 @@ const ALLOWED: Record<string, string> = { published: "archived", archived: "publ
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
   const su = await getSessionUser();
-  if (!su || !su.accountId) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if (!su || !su.accountId) return NextResponse.json({ error: "Not found.", code: "listing_not_found" }, { status: 404 });
   const sb = getSupabaseServer();
-  if (!sb) return NextResponse.json({ error: "Not configured." }, { status: 500 });
+  if (!sb) return NextResponse.json({ error: "Not configured.", code: "not_configured" }, { status: 500 });
 
   const { data: listing } = await sb
     .from("listings")
@@ -33,14 +33,14 @@ export async function POST(req: Request, { params }: { params: { id: string } })
 
   // Not yours, or not there: same answer either way.
   if (!listing || (!su.isSat && (listing as any).account_id !== su.accountId)) {
-    return NextResponse.json({ error: "Not found." }, { status: 404 });
+    return NextResponse.json({ error: "Not found.", code: "listing_not_found" }, { status: 404 });
   }
 
   const from = (listing as any).status as string;
   const to = ALLOWED[from];
   if (!to) {
     return NextResponse.json(
-      { error: "Only a published listing can be paused, and only a paused one resumed." },
+      { error: "Only a published listing can be paused, and only a paused one resumed.", code: "status_transition_not_allowed" },
       { status: 400 }
     );
   }
@@ -53,9 +53,17 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   if (to === "published") {
     const fails = gateFailures(listing as any);
     if (fails.length > 0) {
-      const ar = (req.headers.get("referer") || "").includes("/ar/");
+      // Finding 203. This used to read the language out of the header naming the
+      // page the request came from, and compose the gate reasons in it. That
+      // header is not where a reader's language lives: it is absent on a direct
+      // fetch, wrong after a cross locale redirect, and removed outright by a
+      // privacy policy on the sending page. When it guessed wrong, an Arabic
+      // owner was told in English why the listing could not go back up.
+      // `error` is now always English because a log and an API consumer read it,
+      // and `reasons` carries the gate's own stable vocabulary so the client can
+      // name each one in the language its page is already rendering.
       return NextResponse.json(
-        { error: gateReasonsText(fails, ar), reasons: fails, blocked: true },
+        { error: gateReasonsText(fails, false), reasons: fails, blocked: true, code: "publish_gate_failed" },
         { status: 422 }
       );
     }
@@ -65,7 +73,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     .from("listings")
     .update({ status: to, updated_at: new Date().toISOString() })
     .eq("id", params.id);
-  if (error) return NextResponse.json({ error: "Could not update the listing." }, { status: 500 });
+  if (error) return NextResponse.json({ error: "Could not update the listing.", code: "status_update_failed" }, { status: 500 });
 
   revalidatePath("/en/dashboard/listings");
   revalidatePath("/ar/dashboard/listings");

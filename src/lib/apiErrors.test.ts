@@ -17,17 +17,21 @@ import { API_ERROR_CODES, apiErrorMessage, isApiErrorCode } from "./apiErrors";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-// The routes whose refusals this table names, as of slice A of finding 203.
+// The routes whose refusals this table names. Slices A and B of finding 203.
 const ROUTES_IN_SCOPE = [
   "src/app/api/listings/[id]/media/route.ts",
   "src/app/api/listings/[id]/media/[mediaId]/route.ts",
   "src/app/api/listings/[id]/docs/route.ts",
+  "src/app/api/listings/[id]/status/route.ts",
+  "src/app/api/listings/[id]/review/route.ts",
 ];
 
 // The clients that render those refusals.
 const CLIENTS_IN_SCOPE = [
   "src/components/ListingMediaManager.tsx",
   "src/components/ListingDocsManager.tsx",
+  "src/components/ListingStatusToggle.tsx",
+  "src/components/ReviewActions.tsx",
 ];
 
 /** Every `NextResponse.json({ ... }, { status: NNN })` in a route file. */
@@ -124,7 +128,10 @@ test("finding 203: no client in scope renders the route's English sentence", () 
   for (const rel of CLIENTS_IN_SCOPE) {
     const src = read(rel);
     assert.ok(
-      !/\bj\.error\b|\bdata\.error\b|\bjson\.error\b/.test(src),
+      // Optional chaining counts. `j?.error` is the same defect with one more
+      // character in it, and a pattern that missed it would pass a client that
+      // never stopped rendering the wire sentence.
+      !/\bj\??\.error\b|\bdata\??\.error\b|\bjson\??\.error\b/.test(src),
       `${rel} still reads the route's English sentence`,
     );
     assert.ok(
@@ -168,4 +175,29 @@ test("finding 203: no em dash reached the table or the routes it serves", () => 
   for (const rel of ["src/lib/apiErrors.ts", ...ROUTES_IN_SCOPE, ...CLIENTS_IN_SCOPE]) {
     assert.ok(!read(rel).includes(emDash), `${rel} contains an em dash. Law 2`);
   }
+});
+
+test("finding 203: no route in scope guesses the reader's language from the request", () => {
+  for (const rel of ROUTES_IN_SCOPE) {
+    const src = read(rel).toLowerCase();
+    for (const tell of ["referer", "referrer", "accept-language"]) {
+      assert.ok(
+        !src.includes(tell),
+        `${rel} reads ${tell}, which is a guess at the reader's language and not a fact about it`,
+      );
+    }
+  }
+});
+
+test("finding 203: the publish gate's own reasons survive to the client", () => {
+  // The gate refusal is the one case where the shared table is the fallback and
+  // not the answer. The route has to keep sending `reasons`, and the toggle has
+  // to keep preferring them, or an owner is told only that the listing cannot go
+  // up and never which document is missing.
+  const route = read("src/app/api/listings/[id]/status/route.ts");
+  assert.match(route, /reasons:\s*fails/, "the status route stopped sending the gate's reasons");
+
+  const client = read("src/components/ListingStatusToggle.tsx");
+  assert.match(client, /isGateReason/, "the toggle no longer validates the reasons it renders");
+  assert.match(client, /gateReasonsText\(/, "the toggle no longer renders the gate's own reasons");
 });

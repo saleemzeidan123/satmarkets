@@ -84,6 +84,17 @@ const TEXT: Record<GateReason, [string, string]> = {
   permit_expired: ["The advertising permit has expired", "انتهى تصريح الإعلان"],
 };
 
+/**
+ * Finding 203. A gate reason arriving in a response body is untyped until this
+ * says otherwise, exactly as an API error code is untyped until `isApiErrorCode`
+ * says otherwise. `gateReasonText` indexes `TEXT` directly, so an unrecognised
+ * member of a `reasons` array would read a sentence off `undefined` and throw
+ * inside the very handler that exists to explain a failure.
+ */
+export function isGateReason(v: unknown): v is GateReason {
+  return typeof v === "string" && Object.prototype.hasOwnProperty.call(TEXT, v);
+}
+
 export function gateReasonText(r: GateReason, ar: boolean): string {
   return TEXT[r][ar ? 1 : 0];
 }

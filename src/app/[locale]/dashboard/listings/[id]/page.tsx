@@ -264,7 +264,7 @@ export default async function ManageListingPage({ params }: { params: { locale: 
         </div>
         <div className="row gap10" style={{ alignItems: "center" }}>
           <Link href={`/${lp}/listings/${L.id}`} className="chip" style={{ textDecoration: "none" }}><Icon.arrow size={15} /> {t.viewPublic}</Link>
-          <ListingStatusToggle id={L.id} status={L.status} blocked={blocked} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
+          <ListingStatusToggle id={L.id} status={L.status} blocked={blocked} ar={ar} t={{ pause: t.pause, resume: t.resume, working: t.working, cannot: t.cannot }} />
         </div>
       </div>
 
