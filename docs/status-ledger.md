@@ -51,11 +51,18 @@ every current figure.
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
 | Commit deployed | `d34ebfa`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. It is the PKG-KIT-REC documentation commit, whose reconciliation gate was subsequently rejected and rebuilt; see the PKG-REC-COR row in section 2. The last commit carrying a source change is still `994f02e`; everything after it is documentation |
 | Build ready at | epoch ms 1785682704960, 62.4 seconds after build start |
-| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every one of the seven finding 203 commits was confirmed READY at its own matching `meta.githubCommitSha`: `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`, `48352e3`. So were `7aaab03`, `0a21ae5`, `17cefd2`, `77f26a5` and `d34ebfa` |
+| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every one of the seven finding 203 commits was confirmed READY at its own matching `meta.githubCommitSha`: `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`, `48352e3`. So were `7aaab03`, `0a21ae5`, `17cefd2`, `77f26a5` and `d34ebfa`. **`4dcfb93` did not receive a build**, for the same reason `d2d2fb5` did not: no GitHub webhook fired. `list_deployments` returned zero for the window from the push to ten minutes after it, checked three times. It is documentation only, ten files all under `docs/`, which Next.js reads neither at build time nor at request time, so the rendered output is unchanged and the commit is carried by the next build rather than by one of its own |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1679 tests, 0 failing. The rise from 1668 is finding 203's eleven guards in `src/lib/apiErrors.test.ts`, counted as tests rather than as files, because the six slices added assertions inside existing files and added no new file to the `npm test` list |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, `node scripts/reflow-probe.mjs --chromium /opt/pw-browsers/chromium`, `node scripts/radio-probe.mjs --chromium /opt/pw-browsers/chromium`, then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState` |
+
+**This has now happened twice, so it is a pattern rather than an incident.** A push can
+land on `main` without Vercel creating a deployment for it. The check that catches it is
+`list_deployments` with a `since` timestamp, not `get_deployment` on the branch alias:
+the alias keeps answering READY for the previous commit and looks healthy. Any future
+ship that reads READY must confirm `meta.githubCommitSha` matches the commit just
+pushed, which is the rule this file already states and which is what caught this one.
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
 because no GitHub webhook fired for it; it reached production carried by `44a143f`'s

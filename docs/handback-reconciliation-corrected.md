@@ -284,7 +284,13 @@ is applied here rather than suspended for a case where it is inconvenient.
 | `node scripts/prose-scan.mjs` | `GATE` 0 hardcoded prose strings in 0 files. `BASE` 372 in 16 files, deferred to the page-redesign packages. `NOTE` 1781 library strings |
 | Em dash and en dash | Zero in all ten touched documents, verified by character scan rather than by eye |
 | `npm run build` locally | Not run as evidence. It fails in this environment on four `next/font` errors because Google Fonts is unreachable from the sandbox. The production build evidence is the Vercel READY state below |
-| Vercel | READY at the commit this handback ships in, confirmed by reading `meta.githubCommitSha` and not `readyState` alone |
+| Vercel | **No build was created for `4dcfb93`.** `list_deployments` returns zero for the window from the push to ten minutes after it, and the production alias still resolves to `dpl_9FuZYiaZAdymW2DWpMv2sd4pH1SW` at `d34ebfa`. No GitHub webhook fired, which is the same characterised gap `d2d2fb5` hit and which `docs/status-ledger.md` already records. This is stated rather than smoothed: the READY gate for `4dcfb93` is not satisfied by a build of its own, and it is carried by the next commit that does build |
+
+**On the missing build, and why it changes nothing rendered.** `4dcfb93` touches ten
+files, all under `docs/`. Next.js does not read `docs/` at build or at request time, so
+the pages the production alias serves at `d34ebfa` are byte-identical to the pages a
+build of `4dcfb93` would serve. The absent build is a gap in the evidence trail, not a
+gap in what is deployed, and it is recorded as the former.
 
 **Live EN and AR evidence, and why this section is short.** The directive requires live
 bilingual and responsive evidence after each package. This package changed no rendered
