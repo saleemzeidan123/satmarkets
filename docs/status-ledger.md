@@ -28,15 +28,15 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `e46ea91`, "PKG-A11Y-1 RC15: the consolidated handback, and two corrections to the record it reports on", plus the one-row record commit this file ships in |
+| GitHub HEAD | `17cefd2`, "docs: session-resume, the continuity record a fresh conversation reads first", plus the one-row record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_EHeMFSx1njFCwAXGigWagowoBbzU`, READY, target production |
-| Deployment URL | `satmarkets-ba2ozu1df-sat-markets.vercel.app` |
+| Production deployment | `dpl_AUcrFrithqjoL841jmTpmbkXxpRd`, READY, target production |
+| Deployment URL | `satmarkets-fpr4ifto9-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `e46ea91`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. The last commit carrying a source change is `7aaab03`, slice R |
-| Build ready at | epoch ms 1785626906193, 65 seconds after build start |
-| Deployment lag | One commit, and it terminates here. Every source change in PKG-A11Y-1 is deployed and each build was confirmed READY at the matching `meta.githubCommitSha`. The RC15 handback commit is itself deployed. The commit this row ships in is newer than the deployment it names, carries documentation only and changes no rendered surface, which is the smallest honest form of this row: a ledger cannot record its own deployment before that deployment exists, so it records the one before and says which |
+| Commit deployed | `17cefd2`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. The last commit carrying a source change is still `7aaab03`, slice R of PKG-A11Y-1; everything since is documentation |
+| Build ready at | epoch ms 1785652618446, 63 seconds after build start |
+| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every commit carrying a source change through `7aaab03` was confirmed READY at its own matching `meta.githubCommitSha`, and `0a21ae5` and `17cefd2` were each confirmed the same way |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1668 tests, 0 failing |
