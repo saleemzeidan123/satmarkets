@@ -43,19 +43,19 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `d34ebfa`, "docs: O18 recorded, ELITE-1 kit corrected on all four counts, and the no-code roadmap reconciliation gate", plus the commit this file ships in |
+| GitHub HEAD | `08470dd`, "docs: the consolidated PKG-E1-READINESS handback, the slice F owner decisions in section 7, and the security baseline verification record", plus the commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_9FuZYiaZAdymW2DWpMv2sd4pH1SW`, READY, target production |
-| Deployment URL | `satmarkets-nv8azrhm8-sat-markets.vercel.app` |
+| Production deployment | `dpl_7ShsR8PTz4yu75Rm11vfVVEgXtH4`, READY, target production |
+| Deployment URL | `satmarkets-kjwjzldox-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `d34ebfa`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. It is the PKG-KIT-REC documentation commit, whose reconciliation gate was subsequently rejected and rebuilt; see the PKG-REC-COR row in section 2. The last commit carrying a source change is still `994f02e`; everything after it is documentation |
-| Build ready at | epoch ms 1785682704960, 62.4 seconds after build start |
-| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every one of the seven finding 203 commits was confirmed READY at its own matching `meta.githubCommitSha`: `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`, `48352e3`. So were `7aaab03`, `0a21ae5`, `17cefd2`, `77f26a5` and `d34ebfa`. **`4dcfb93` did not receive a build**, for the same reason `d2d2fb5` did not: no GitHub webhook fired. `list_deployments` returned zero for the window from the push to ten minutes after it, checked three times. It is documentation only, ten files all under `docs/`, which Next.js reads neither at build time nor at request time, so the rendered output is unchanged and the commit is carried by the next build rather than by one of its own |
+| Commit deployed | `08470dd`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. It is the PKG-E1-READINESS handback commit and carries documentation only. The last commit carrying a source change is `ac05525`, slice F, which is itself READY at `dpl_GzRbErecMZ17EKS44DNxQJsGdiDY` |
+| Build ready at | Created at epoch ms 1785703092652 and read as READY 88 seconds later. Each of the eight PKG-E1-READINESS commits was confirmed READY at its own matching SHA; the table is in section 9 of `docs/handback-pkg-e1-readiness.md` |
+| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. Owner ruling 4 governs that case directly, so no further commit is made to force a build for it, and a missing deployment for a documentation-only commit is not a blocker. **A push can still land on `main` without Vercel creating a deployment for it.** It happened to `d2d2fb5` and to `4dcfb93`, both documentation only, both carried by the next build. The check that catches it is `list_deployments` with a `since` timestamp, not `get_deployment` on the branch alias: the alias keeps answering READY for the previous commit and looks healthy |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1679 tests, 0 failing. The rise from 1668 is finding 203's eleven guards in `src/lib/apiErrors.test.ts`, counted as tests rather than as files, because the six slices added assertions inside existing files and added no new file to the `npm test` list |
-| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, `node scripts/reflow-probe.mjs --chromium /opt/pw-browsers/chromium`, `node scripts/radio-probe.mjs --chromium /opt/pw-browsers/chromium`, then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState` |
+| Test suite | 1739 tests, 0 failing. The rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
+| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then the four probes, each of which needs an explicit browser path: `node scripts/reflow-probe.mjs`, `radio-probe.mjs`, `shell-probe.mjs` and `responsive-probe.mjs`, all with `--chromium /opt/pw-browsers/chromium`. `shell-probe` and `responsive-probe` also need `/tmp/globals.built.css`, built by `npx tailwindcss -i src/styles/globals.css -o /tmp/globals.built.css --minify`. Then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState`. `npm run build` cannot complete in this sandbox, because `next/font/google` cannot reach Google Fonts through the egress proxy, so the Vercel build is the production build evidence |
 
 **This has now happened twice, so it is a pattern rather than an incident.** A push can
 land on `main` without Vercel creating a deployment for it. The check that catches it is
@@ -74,69 +74,20 @@ window fourteen minutes after the commit.
 
 ## 1a. In flight
 
-One package is open at the time of writing. It is recorded here rather than in section 2,
-because section 2 is a list of things that are finished and putting an unfinished package
-in it is how a ledger starts lying.
+Nothing. PKG-E1-READINESS closed on 2026-08-02 and has moved to section 2, which is where a
+package goes once it is finished. This section stays in the file with nothing in it rather
+than being deleted, because the next package will need it and because an empty in-flight
+section is a statement, not an omission.
 
-**PKG-E1-READINESS**, commissioned 2026-08-02, sequenced by decision D37. Six slices, run
-through without pausing for intermediate approval and returned as one consolidated handback:
-A, functional truth in WS13, removing the falsely positive success behaviour from
-`/api/viewings` and `/api/signup` so that a request which was not stored can never return or
-render success. B, the responsive shell in WS09, extending automated evidence through 1920 px
-in both languages and resolving the dead 62 px `main.has-tabbar` padding if it is genuinely
-unused, without disturbing safe-area handling or real bottom-navigation spacing. C, search
-correctness in WS16, the known-query test set and canonicalization matrix the baseline
-requires, in English and Arabic, including that developments never become districts.
-D, authentication safety in WS25, recorded account-enumeration coverage across signup, login
-and recovery that keeps responses generic without making recovery unintelligible. E, the
-first reproducible synthetic performance baseline in WS33, by route family, locale and
-device profile, with budgets derived from the measured application rather than from invented
-industry targets. F, security essentials in WS34, the recorded dependency vulnerabilities
-where upgrades are compatible, and Content Security Policy introduced in report-only mode
-first.
-
-What this package explicitly is not: no broad visual redesign, no migration of the 372 BASE
-prose strings, no Listing Studio expansion, no external notification activation, no analytics
-collection, no indexing or domain work, no licensed-data assumption, no O18 implementation
-and no new governance package. Finding 117 stays an owner-side Supabase action and does not
-block it. Finding 203 stays fixed pending its interactive Arabic POST verification.
-
-Slices A through D are done. C shipped in `345f7a3` and `dca8b16` and raised no finding, which
-is recorded in section 5 rather than passed over. D is recorded at findings 210 to 213 and
-shipped in the commit that carries this line. Its brief asked for account-enumeration coverage
-across signup, login and recovery; signup was already correct after slice A, there is no
-password-recovery surface on this platform because recovery is the magic link, and the login
-form turned out to be answering four different sentences for four different account states.
-The fix is a third bilingual refusal table, `src/lib/authErrors.ts`, and its defining property
-is the opposite of the two that came before it: `listingIntakeErrors.ts` and `apiErrors.ts`
-exist to tell a reader precisely what went wrong, and this one exists to tell a reader as
-little as the platform can get away with while still leaving them a way in. That is why it is
-a third table and not a section of either of the others, and why its resolver is an allowlist
-whose default is silence rather than a blocklist whose default is disclosure.
-
-A is recorded at finding 206 and shipped in `031bfb3`. B is
-recorded at findings 208 and 209 and closes both items the reconciliation gate listed under
-WS09. Its size estimate there, "one array and one rule", was wrong in a way worth keeping:
-the array was the array, and the rule was three defects. The class that reserved the space
-was written in a server component, which cannot call `usePathname()`, so it could not have
-been conditional and was set on every route; the reservation sat on `main`, which is not the
-last element in the document, so on the routes that do render a bar the footer's copyright
-strip painted underneath it, 10px at phone widths and 24.5px at 768, in both locales; and the
-probe written to measure all of this reported clean pages on its first run because
-`globals.css:7` is `html{scroll-behavior:smooth}` and a synchronous read after `scrollTo`
-returns the pre-scroll position, so it had measured the top of every document. Nothing in
-slice B was found by reading. The arithmetic was right throughout and the elements were
-wrong, which is the class of defect a browser finds and a review does not.
-
-One visible consequence, recorded here as well as in the register so it is not discovered as
-a surprise: on marketing routes below 1024px the 62px that used to sit between page content
-and the footer now sits below the copyright strip instead. Content-to-footer spacing on a
-phone tightens by that much, and the space now does the job it was declared for. This is
-inside slice B's brief, which asks for the dead padding to be resolved and for real
-bottom-navigation spacing to be preserved where the tab bar exists, and it is not a visual
-redesign, which the package excludes.
-
----
+The work order that commissioned PKG-E1-READINESS also named what follows it, and the
+instruction is a stop as much as a direction: **do not begin another foundation package.**
+The next major package is the visible public-discovery experience across Home, Listings
+Search, Listing Detail and Brokers and Listers, and it is to be informed by the first
+ELITE-1 observations. Those observations do not exist yet. Recruitment was authorised in the
+same work order, Saleem holds the contact list outside this repository and controls every
+external message, so the gate on the next package is a human one and no amount of
+engineering time opens it. Findings 202 and 207 and the dictionary chunk split are held in
+that package's inbox rather than picked up early.
 
 ## 2. Completed packages
 
@@ -178,6 +129,13 @@ regression is recorded in section 6 first.
 | Finding 203, slices A to G | The bilingual refusal architecture. A route states a stable `code` and keeps its English sentence on the wire for the log and the API consumer; a client-side `[en, ar]` table names that code in the reader's language. 127 refusals across 16 route files all state a code, 76 codes are named in `src/lib/apiErrors.ts`, 15 client files render the named sentence, and 11 guards read the source so neither half can drift back. Four PostgREST leaks closed on the way, three of them on routes that take no session at all | shipped `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`, `48352e3`; `src/lib/apiErrors.ts`, `src/lib/apiErrors.test.ts`, findings register row 203. Status is "Fixed and awaiting deployment verification", not closed, for the reason in section 9 |
 | Codex bounded batch, items 2 to 4 | The three owner-facing items of the batch that opened with finding 203. Item 2 is the finding 117 action card: preflight reads that establish a baseline and are explicitly not a count of affected rows, the application steps, four post-application checks including a refusal proved inside a transaction that is rolled back, a rollback that restores the defect exactly and therefore reopens the finding, and the four artefacts that close it. The Arabic-font workflow stays item 3 of the same file and is referenced rather than restated, per Codex condition 3. Item 3 of the batch is the ELITE-1 recruitment kit, finalised and unsent, with the authorisation error corrected: the sheet had read that recruitment was authorised when only preparation is. Item 4 is decision O18, the identity mechanism for an anonymous poster's withdrawal, written as a decision the owner rules on rather than a design already chosen | shipped `0391130`; `docs/owner-actions-adv-1c1.md` section 4, `docs/research/elite-1-recruitment-sheet.md`, `docs/decision-register.md` row O18, findings register row 193. Nothing in it is implemented and nobody has been contacted |
 | Finding 203 and the owner batch, handback | One consolidated handback covering commits, gates, live EN and AR evidence read from the deployed build, what is genuinely closed, what requires human verification because no automation in this environment can settle it, what remains owner-blocked, and what was deliberately not started | `docs/handback-203-and-owner-batch.md` |
+| PKG-E1-READINESS slice A, WS13 | Functional truth. A request that was not stored no longer returns or renders success. `/api/signup` returned `{ok:true}` with a note when no database client was configured, and `/api/viewings` did the same; both now refuse with a stable code, a bilingual sentence and a 503. The body parse is guarded, and the PostgREST detail is redacted out of the log rather than into it | shipped `031bfb3`; `src/lib/functionalTruth.test.ts`, findings 206 and 207 |
+| PKG-E1-READINESS slice B, WS09 | The responsive shell. The tab-bar reservation follows the tab bar instead of sitting on every route, the 62px it reserved is no longer dead, and the automated matrix reaches 1920px in both languages. Three defects, none of them findable by reading: a server component that could not have been conditional, a reservation on an element that is not last in the document, and a probe that had been measuring the top of every page because `scroll-behavior:smooth` makes a synchronous read after `scrollTo` return the pre-scroll position | shipped `d700636`; `src/lib/chrome.ts`, `src/lib/chromeGate.test.ts`, findings 208 and 209 |
+| PKG-E1-READINESS slice C, WS16 | Search correctness. One canonical URL module, a known-query test set of 38 cases across both languages covering type, city, district, price, area, sort and empty results, URL persistence, back-button behaviour and the rule that a development never becomes a district. It also closed the canonical half of owner ruling 5 | shipped `345f7a3` and `dca8b16`; `src/lib/search/canonical.ts`, `src/lib/search/knownQueries.test.ts`. Raised no finding, which section 5 records rather than passes over |
+| PKG-E1-READINESS slice D, WS25 | Authentication safety. The login form was answering four different sentences for four different account states, which is an enumeration oracle. A third bilingual refusal table, whose defining property is the opposite of the two before it: it says as little as the platform can get away with while still leaving a reader a way in, and its resolver is an allowlist whose default is silence rather than a blocklist whose default is disclosure | shipped `d1b27c7`; `src/lib/authErrors.ts`, `src/lib/authErrors.test.ts`, findings 210 to 213 |
+| PKG-E1-READINESS slice E, WS33 | The first reproducible performance baseline. Forty cells, ten route families by two locales by two device profiles, median of three cold loads, budgets derived from the measured application rather than from invented industry targets. Three changes it justified: `preload:false` paired with `display:"optional"` on all four faces, and the Supabase browser client deferred out of the header's first script set. Font transfer 322 kB flat to a 140 kB median, total transfer down 23.6 per cent, mobile FCP 1368 to 804 ms. Total blocking time did not improve, 303 to 317.5 ms, and that is recorded as the honest cost of deferring the auth chunk rather than omitted | shipped `dcf4cdc`; `docs/performance-baseline.md` |
+| PKG-E1-READINESS slice F, WS34 | Security essentials. A Content Security Policy in report-only mode with every directive derived from what the application actually loads and written out so the reasoning can be checked, five further security headers, `poweredByHeader` off, and the compatible dependency upgrade taken. No reporting endpoint, because a collector would be collection and O17 holds that shut. The rate limiting is described as what it is rather than called protection: three owner decisions were produced instead, and they are in section 7 | shipped `ac05525`; `next.config.mjs`, `docs/security-baseline.md` |
+| PKG-E1-READINESS, whole package | One consolidated handback: scope, eight commits separated by scope with file and line counts, every commit mapped to its own READY deployment by `meta.githubCommitSha`, the gate results, live EN and AR evidence, responsive evidence from 320 through 1920, the exact before-and-after of the two false-success routes as literal code, and the security and performance limitations stated in place rather than appended | `docs/handback-pkg-e1-readiness.md`, shipped `08470dd` |
 
 ---
 
