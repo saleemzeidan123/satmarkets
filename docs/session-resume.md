@@ -97,10 +97,20 @@ cd /tmp/sm2 && python3 tools/ship.py --auto -m "message"
 ```
 
 It prints `Shipped <sha> to main.` and the commit URL. Its em dash guard rejects any
-commit message containing one. It reads a fine-grained PAT from `SM_GH_TOKEN` or
-`~/.sm_ship_token`, and **the container is ephemeral, so that token is gone in a new
-session unless it is supplied again**. If `ship.py` reports no token, do not stall and do
-not ask for one in chat. Use path 2.
+commit message containing one.
+
+It looks for a fine-grained PAT in three places, in order: the `SM_GH_TOKEN` environment
+variable, the file `~/.sm_ship_token`, and **an attached file named `sm_ship_token.txt`**
+in the session upload or working directory. The third route exists so the owner can give a
+container push rights by attaching a file rather than typing a secret into a chat, where it
+would sit in a transcript that outlives it. When one is found there, `ship.py` copies the
+value to `~/.sm_ship_token` at mode 600, overwrites the attached file and deletes it, and
+prints only the file name. The value is never printed, logged or echoed.
+
+**The container is ephemeral, so that is gone in every new session** and one of the three
+routes has to happen again. When none of them holds anything, `ship.py` prints the three
+routes and exits without pushing. Do not stall on it, and do not ask for a secret in the
+conversation. Either the owner attaches the file, or you use path 2 below.
 
 **Path 2, the bundle relay.** Use this when the container has no token. It moves commits,
 not secrets, and it needs nothing from the owner but one file upload.
@@ -134,11 +144,12 @@ clone, and it is not a push path. An earlier revision of this file claimed it wa
 claim was wrong. The header comment inside `tools/ship.py` is right: an API-based commit
 does not work from here, by either route.
 
-**What to do when there is no token.** Do not stall, and do not ask for a token in the
-conversation. Commit locally, keep working, and use path 2. If the owner chooses to supply
-a token anyway, that is their call to make in their own words, and the safe form is a fine
-grained PAT scoped to Contents read and write on this repository alone, with a short
-expiry, revoked afterwards. A secret pasted into a chat is a secret in a transcript.
+**What to do when path 1 finds nothing.** Do not stall, and do not ask for a secret in the
+conversation. Commit locally, keep working, and either wait for the owner to attach
+`sm_ship_token.txt` or use path 2. The safe form of that credential is a fine grained PAT
+scoped to Contents read and write on this repository alone, with a short expiry, revoked
+when the work is done. Never ask for it to be typed into the chat: what is pasted into a
+chat stays in a transcript, and the attached-file route exists precisely to avoid that.
 
 Then confirm the deployment. Load the Vercel tools with the ToolSearch query
 `select:mcp__Vercel__get_deployment,mcp__Vercel__web_fetch_vercel_url`, wait about 100

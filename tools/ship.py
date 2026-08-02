@@ -21,9 +21,17 @@ Needs a fine-grained PAT (Contents: read+write on saleemzeidan123/satmarkets),
 read from, in order:
   1. env  SM_GH_TOKEN
   2. file ~/.sm_ship_token   (chmod 600, kept OUTSIDE the repo)
+  3. an uploaded file named sm_ship_token(.txt) in the session upload or working
+     directory, which is adopted into ~/.sm_ship_token (chmod 600) and then
+     shredded from the upload directory
 The sandbox is ephemeral, so the token must be present each new session. It is
 supplied to git via a GIT_ASKPASS helper this script writes to a temp file; it
 is never placed in a URL, a command argument, or the git config.
+
+Route 3 exists so the owner can hand a session push rights by attaching a small
+file instead of typing a secret into a chat, which would put it in a transcript
+that outlives the token. Nothing in this script prints, logs or echoes the token
+value, and the adopted upload is removed so it is not re-read later.
 
 Usage
 -----
@@ -52,6 +60,68 @@ AUTHOR_NAME = "Saleem Zeidan"
 AUTHOR_EMAIL = "saleem.zeidan@gmail.com"
 TOKEN_FILE = os.path.expanduser("~/.sm_ship_token")
 
+# Where an attached token file may land. Checked in order, first hit wins.
+UPLOAD_DIRS = (
+    "/mnt/user-data/uploads",
+    "/mnt/user-data/working",
+    os.path.expanduser("~/uploads"),
+)
+UPLOAD_NAMES = (
+    "sm_ship_token",
+    "sm_ship_token.txt",
+    ".sm_ship_token",
+    "sm_ship_token.text",
+)
+
+NO_TOKEN_HELP = """No token found, so nothing was pushed.
+
+This container is ephemeral and the token does not survive it. Three ways to
+give this session push rights, best first:
+
+  1. Attach a plain text file named sm_ship_token.txt containing only the PAT.
+     Re-run this command and it will be adopted into ~/.sm_ship_token and
+     removed from the upload directory. The secret never enters the chat.
+  2. Do not supply a token at all. Commit locally, then:
+       git bundle create /tmp/satmarkets-outgoing.bundle origin/main..HEAD --branches
+     Deliver that bundle and push it from a session that has a token with
+       python3 tools/ship.py --push-only
+  3. Write the PAT to ~/.sm_ship_token yourself (chmod 600).
+
+The token must be a fine-grained PAT with Contents: read and write on {slug}
+and nothing else. Give it a short expiry and revoke it when the work is done.
+""".format(slug=REPO_SLUG)
+
+
+def adopt_uploaded_token():
+    """Move an attached token file into ~/.sm_ship_token. Returns True if adopted.
+
+    The value is never printed. The source file is overwritten before unlink so a
+    later read of the upload directory cannot recover it.
+    """
+    for d in UPLOAD_DIRS:
+        if not os.path.isdir(d):
+            continue
+        for name in UPLOAD_NAMES:
+            src = os.path.join(d, name)
+            if not os.path.isfile(src):
+                continue
+            with open(src, "r") as f:
+                value = f.read().strip()
+            if not value:
+                continue
+            fd = os.open(TOKEN_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as f:
+                f.write(value)
+            try:
+                with open(src, "w") as f:
+                    f.write("0" * max(len(value), 64))
+                os.remove(src)
+            except OSError:
+                print(f"Adopted the token but could not remove {src}. Delete it.")
+            print(f"Adopted a token from {os.path.basename(src)} into ~/.sm_ship_token.")
+            return True
+    return False
+
 
 def find_token_file():
     if os.environ.get("SM_GH_TOKEN"):
@@ -63,11 +133,9 @@ def find_token_file():
         return p
     if os.path.exists(TOKEN_FILE):
         return TOKEN_FILE
-    sys.exit(
-        "No token found. Paste your fine-grained PAT into ~/.sm_ship_token "
-        "(chmod 600) or set SM_GH_TOKEN. The token needs Contents: read+write "
-        "on " + REPO_SLUG + "."
-    )
+    if adopt_uploaded_token() and os.path.exists(TOKEN_FILE):
+        return TOKEN_FILE
+    sys.exit(NO_TOKEN_HELP)
 
 
 def write_askpass(token_file):
