@@ -281,7 +281,7 @@ ${c.pills.map((label) => `    <button type="button" class="chip" data-item="1" s
   // nothing because tailwind.config.ts overwrites the red scale with a single hex.
   "studio-steps": {
     source: "src/components/ListingStudio.tsx (progress, resume and step rail)",
-    rowRail: { maxWidth: 1280, why: "ListingStudio.tsx, nav.overflow-x-auto over an ol.min-w-max, no media query, so at every width" },
+    rowRail: { maxWidth: Infinity, why: "ListingStudio.tsx, nav.overflow-x-auto over an ol.min-w-max, no media query, so at every width. Written as 1280 when 1280 was the widest measured width, which made a matrix boundary look like a component property" },
     copy: {
       en: {
         step: "Step 3 of 10",
@@ -879,7 +879,30 @@ const EVI_SIBLINGS = [1, 2, 3]
   .map(() => `    <div class="card pad" style="box-shadow:none;padding:16px;min-width:0"><div class="muted" style="font-size:11.5px">&nbsp;</div><div class="fig" style="font-size:20px;font-weight:700;margin-top:2px">&nbsp;</div></div>`)
   .join("\n");
 
-const WIDTHS = [320, 360, 390, 430, 768, 1280];
+// PKG-E1-READINESS slice B, WS09. The matrix stopped at 1280 while the baseline's
+// acceptance condition for the responsive shell is stated from 320 to 1920, so the
+// top third of the range had never been measured and the row above said "Partial"
+// for that reason. Three widths are added and each is here for a reason rather than
+// for roundness:
+//
+//   1024  the tab bar breakpoint. `.tabbar{display:none}` and the release of
+//         `main.has-tabbar` padding both fire here, so it is the one width in the
+//         set where a rule changes rather than a box merely growing.
+//   1440  the common laptop. Between 1280 and 1920 nothing in this repository
+//         declares a breakpoint, so this measures the interpolation rather than a
+//         rule: every clamp() and every max-width container resolves differently
+//         here from either neighbour.
+//   1920  the stated ceiling. Wide viewports are the easy end for overflow and the
+//         hard end for centring: a row that fits trivially can still leave a
+//         container stranded at its max-width beside acres of gutter, and only a
+//         measurement says which.
+//
+// Adding them cost one real correction, recorded rather than quietly patched: the
+// studio step rail declared a maxWidth of 1280 while its own stated reason was "no
+// media query, so at every width". 1280 was the top of the matrix, not a property
+// of the component, so the declaration was a coincidence that this extension would
+// have turned into a false failure at 1440.
+const WIDTHS = [320, 360, 390, 430, 768, 1024, 1280, 1440, 1920];
 const DIR = { en: "ltr", ar: "rtl" };
 
 const page = (frag, loc) => `<!doctype html><html dir="${DIR[loc]}" lang="${loc}"><head><meta charset="utf-8">
@@ -909,13 +932,28 @@ for (const [name, frag] of Object.entries(FRAGMENTS)) {
         const inner = document.querySelector("[data-inner]");
         const boxes = [...document.querySelectorAll("[data-item]")].map((el) => {
           const r = el.getBoundingClientRect();
-          return { top: Math.round(r.top), w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10 };
+          return { top: Math.round(r.top), w: Math.round(r.width * 10) / 10, h: Math.round(r.height * 10) / 10, raw: r.width };
         });
         const de = document.documentElement;
         return {
           docOverflow: de.scrollWidth - de.clientWidth,
           rowOverflow: row.scrollWidth - row.clientWidth,
           innerW: Math.round(inner.getBoundingClientRect().width),
+          // PKG-E1-READINESS slice B, WS09. The two numbers the overflow test
+          // compares are captured here at full precision, and they are separate
+          // from the two rounded numbers printed in the table above. Extending
+          // the matrix to 1024 produced two failures whose cause was the
+          // rounding and not the layout: a `dt` that exactly fills its box
+          // measured 139.109375 on both sides, which `Math.round` reported as
+          // 139 for the box and `Math.round(w * 10) / 10` reported as 139.1 for
+          // the item, so an item the same width as its container was read as
+          // wider than it. Rounding the two halves of one comparison to
+          // different precisions is a defect in the instrument. The columns keep
+          // their rounding because they are for a human to read; the assertion
+          // reads the geometry. This is not a tolerance: the test is still
+          // `wider than`, and an item over its box by any amount at all fails.
+          innerRaw: inner.getBoundingClientRect().width,
+          widestRaw: Math.max(...boxes.map((b) => b.raw)),
           fs: getComputedStyle(row).fontSize,
           face: getComputedStyle(row).fontFamily.split(",")[0].replace(/["']/g, ""),
           // Distinct top offsets, so this counts visual lines after wrapping
@@ -970,11 +1008,12 @@ for (const r of rows) {
 //
 // A leaking scroll rail is therefore caught by `widest > innerW`, not by the
 // document clause, because the rail's own items are measured.
-const bad = rows.filter((r) => r.docOverflow > 0 || (r.rowOverflow > 0 && !r.rail) || r.widest > r.innerW);
+const bad = rows.filter((r) => r.docOverflow > 0 || (r.rowOverflow > 0 && !r.rail) || r.widestRaw > r.innerRaw);
 const rails = rows.filter((r) => r.rail && r.rowOverflow > 0).length;
 console.log(bad.length === 0
   ? `\nPASS  ${rows.length} measurements, no row past its box, no item wider than its content box`
     + ` (document overflow is not measurable under overflow-x:clip and is not claimed)`
     + (rails ? `, ${rails} inside a declared scroll rail (row wider than its box by design)` : "")
-  : `\nFAIL  ${bad.length} of ${rows.length}: ` + bad.map((b) => `${b.name} ${b.loc}@${b.width}`).join(", "));
+  : `\nFAIL  ${bad.length} of ${rows.length}: `
+    + bad.map((b) => `${b.name} ${b.loc}@${b.width} (item ${b.widestRaw} in a ${b.innerRaw} box)`).join(", "));
 process.exit(bad.length === 0 ? 0 : 1);

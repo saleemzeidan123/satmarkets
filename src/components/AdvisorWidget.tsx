@@ -12,6 +12,7 @@ import { netArea, askingPrice } from "@/lib/listingFigures";
 // reduced-motion block, so the transcript scroll asks for the reader's
 // preference instead of stating a behaviour on their behalf.
 import { scrollBehavior } from "@/lib/motion";
+import { rendersFooterSlot } from "@/lib/chrome";
 
 /** Floating SAT Advisor: a Harbor quadrant-mark button on every page,
  *  bottom sheet on mobile, corner panel on desktop. Same /api/advisor
@@ -34,6 +35,28 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
  const { msgs, busy, send, reset } = useAdvisorChat(loc, "satm_adv_chat", 3);
 
  const hidden = /\/(advisor|flyer|termsheet|verify|admin|dashboard|signup)(\/|$)/.test(path);
+ // PKG-E1-READINESS slice B, WS09. The button sits at `bottom: calc(82px + safe
+ // area)`, which is the mobile tab bar's 62px plus a 20px gap. That is the right
+ // offset on a route that has a tab bar and a bar's worth of empty page on a
+ // route that does not, and the widget renders on plenty that do not: /deal,
+ // /saved, /compare, /list, /invest, /find, /post-requirement and /messages and
+ // /docs are all outside the marketing tier. The question is asked of the same
+ // predicate ChromeGate uses to decide whether the bar renders at all, so the
+ // offset cannot survive a route changing tier. Above 1024px the bar is hidden
+ // by a media query and the .no-tabbar rule is scoped below it, so the desktop
+ // corner position is unaffected either way.
+ //
+ // The `hidden` list above is NOT the same question and is deliberately not
+ // merged with this one. It says where the Advisor button is unwanted, which is
+ // mostly where the Advisor already is; this says where the floor is.
+ //
+ // The class is composed rather than written out as two complete literals so the
+ // token list stays a token list. scripts/prose-scan.mjs allowlists a className
+ // attribute and it allowlists a single token, and "advfab no-tabbar" held in a
+ // variable is neither, so the ternary form counted as a new hardcoded prose
+ // string in a package that is explicitly not migrating any. Both halves are
+ // single tokens here, which is what they are.
+ const fabClass = `advfab${rendersFooterSlot(path) ? "" : " no-tabbar"}`;
 
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: scrollBehavior() }); }, [msgs, busy, open]);
 
@@ -82,7 +105,7 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
  return (
   <>
    {!open && (
-    <button ref={fabRef} type="button" className="advfab" aria-label={av.openAdvisor} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+    <button ref={fabRef} type="button" className={fabClass} aria-label={av.openAdvisor} aria-haspopup="dialog" onClick={() => setOpen(true)}>
      {mark}
     </button>
    )}

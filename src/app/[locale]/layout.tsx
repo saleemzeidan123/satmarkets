@@ -98,7 +98,14 @@ export default function LocaleLayout({ children, params }: { children: ReactNode
       {marketingNotice}
       <Header locale={locale} dict={dict} />
       </>} footer={<><SatFooter locale={locale} /><TabBar locale={locale} /></>}>
-      <main id="main" tabIndex={-1} className="min-h-[70vh] has-tabbar">{children}</main>
+      {/* PKG-E1-READINESS slice B, WS09. `<main>` used to be written here, with
+          `has-tabbar` on it unconditionally, because this file is a server
+          component and cannot read the pathname. That reserved 62px of bottom
+          padding for a tab bar the APP and PRODUCT tiers never render. The
+          element is now emitted by ChromeGate, which knows the tier, so the
+          reservation and the bar are one decision. The skip link above still
+          points at `#main`; the id moved with the element. */}
+      {children}
       </ChromeGate>
       <AdvisorWidget locale={locale} />
     </>

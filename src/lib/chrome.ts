@@ -115,3 +115,47 @@ export function chromeTier(path: string): ChromeTier {
   if (PRODUCT_RE.test(path)) return "product";
   return "marketing";
 }
+
+/**
+ * Whether a route renders the footer slot, and therefore the mobile tab bar.
+ *
+ * PKG-E1-READINESS slice B, WS09. This predicate is exported rather than written
+ * inline in `ChromeGate` because two other places in the product reserve SPACE
+ * for the tab bar, and until this slice neither of them asked whether the bar
+ * was there:
+ *
+ *   `main.has-tabbar` marks a document that renders the bar, and the rule keyed
+ *   on it reserves 62px (globals.css). The class was set unconditionally in
+ *   `src/app/[locale]/layout.tsx`, while the bar itself travels inside the
+ *   `footer` node that ChromeGate hands only to the marketing tier. So every APP
+ *   and PRODUCT route below 1024px ended its document with a reservation beneath
+ *   which nothing was ever drawn.
+ *
+ *   The reservation was also in the wrong place on the routes that do get a bar.
+ *   It was `padding-bottom` on `main`, and `main` is not the last element in the
+ *   document: `<footer class="foot">` renders after it, so the space protected
+ *   the seam between the two and the footer's copyright strip ran on under the
+ *   fixed bar. scripts/shell-probe.mjs measured 10px of it beneath the bar at
+ *   320, 360, 390 and 430 and 24.5px at 768, in both locales. The reservation is
+ *   now handed to the footer through the `--tabbar-reserve` custom property, so
+ *   it lands on the element the bar actually covers.
+ *
+ *   `.advfab` sits at `bottom: calc(82px + safe-area)`, which is the bar's 62px
+ *   plus a 20px gap. On the same routes the floating Advisor button therefore
+ *   hovered 82px above the bottom edge with empty page behind it.
+ *
+ * Both numbers were correct arithmetic about a bar that was not on the page.
+ * The fix is not to change either number: it is to make all three sites take
+ * the decision from one test, so a future route added to `PRODUCT_ROUTES`
+ * cannot acquire a reservation for navigation it does not get.
+ *
+ * The width half of the question stays in CSS, where it belongs. The bar is
+ * hidden by `@media(min-width:1024px)` and the padding is zeroed by the same
+ * query, so this predicate answers "does this ROUTE get a bar" and the cascade
+ * answers "at this WIDTH". `src/lib/chromeGate.test.ts` holds the two breakpoints
+ * equal, because a bar hidden at one width and a reservation released at another
+ * is either content under a bar or a gap under nothing.
+ */
+export function rendersFooterSlot(path: string): boolean {
+  return chromeTier(path) === "marketing";
+}

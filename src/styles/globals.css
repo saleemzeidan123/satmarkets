@@ -280,8 +280,33 @@ fieldset { min-inline-size: 0; }
 .tabbar .tb-ic{position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:28px;border-radius:14px;transition:background .16s ease;}
 .tabbar .tb-badge{position:absolute;top:-4px;inset-inline-end:-2px;min-width:15px;height:15px;border-radius:8px;background:#3A6EA5;color:#fff;font-size:0.5625rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff;}
 @media(min-width:1024px){.tabbar{display:none;}}
-main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
-@media(min-width:1024px){main.has-tabbar{padding-bottom:0;}}
+/* PKG-E1-READINESS slice B, WS09. 62px is the measured bar (5 + a 50px minimum row
+   + 5 + a 1px top border, finding 142) and the safe-area inset clears the home
+   indicator underneath it. Two things changed about the rule.
+
+   WHO WEARS THE CLASS. It used to be every page, because the class was written in a
+   server component that cannot read the pathname. It is now only a page that renders
+   the bar, which ChromeGate decides with rendersFooterSlot().
+
+   WHERE THE SPACE GOES. The reservation used to be padding on `main`, and `main` is
+   not the last thing in the document: `<footer class="foot">` renders after it. So
+   the 62px protected the boundary between the two, and the footer's copyright strip
+   ran on past it and under the fixed bar. scripts/shell-probe.mjs measured 10px of
+   that strip beneath the bar at 320, 360, 390 and 430, and 24.5px at 768, in both
+   locales. The reservation is therefore handed to the footer, through the
+   `--tabbar-reserve` custom property that footer.css adds to its own bottom padding.
+   The footer keeps ownership of its 36px and 26px; this file keeps ownership of the
+   bar's 62px; neither repeats the other's number. `main` keeps the class as the
+   marker of a document that has a bar, and reserves nothing itself, because
+   everything it could reserve would sit above a footer rather than above the bar.
+
+   The 1024px release must stay identical to the .tabbar{display:none} query above
+   it: a bar hidden at one width and a reservation released at another is either
+   content under a bar or a gap under nothing. src/lib/chromeGate.test.ts holds the
+   two equal, and the shell probe measures the result at nine widths in both
+   locales. */
+main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom));}
+@media(min-width:1024px){main.has-tabbar ~ .foot{--tabbar-reserve:0px;}}
 @media(max-width:640px){.topnotice:not(.preview-notice){display:none!important;}}
 @media(hover:none){
   .card:active,.listing:active,.feat-card:active,.home-lead:active,.home-job:active{transform:scale(.984);transition:transform .12s ease;}
@@ -405,6 +430,14 @@ main.has-tabbar{padding-bottom:calc(62px + env(safe-area-inset-bottom));}
 /* ---- Floating SAT Advisor widget ---- */
 .advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(82px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
 @media(min-width:1024px){.advfab{bottom:22px;inset-inline-end:22px;}}
+/* PKG-E1-READINESS slice B, WS09. 82px above is the tab bar's 62px plus a 20px gap,
+   which is right on the routes that get a tab bar and wrong on the ones that do not:
+   the APP and PRODUCT tiers render no bar, so the button hovered a bar's height above
+   empty page. AdvisorWidget now asks rendersFooterSlot() and adds .no-tabbar when the
+   answer is no, leaving the same 20px gap measured from the viewport edge. Scoped below
+   1024px so the desktop corner position above is untouched, and the safe-area inset is
+   kept because a home indicator is there whether or not a tab bar is. */
+@media(max-width:1023px){.advfab.no-tabbar{bottom:calc(20px + env(safe-area-inset-bottom));}}
 .advfab:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(20,24,28,.36);}
 .advfab:active{transform:scale(.93);}
 .advpanel-back{position:fixed;inset:0;z-index:61;background:rgba(10,14,20,.42);}

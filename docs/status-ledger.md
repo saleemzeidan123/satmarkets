@@ -101,6 +101,28 @@ collection, no indexing or domain work, no licensed-data assumption, no O18 impl
 and no new governance package. Finding 117 stays an owner-side Supabase action and does not
 block it. Finding 203 stays fixed pending its interactive Arabic POST verification.
 
+Slices A and B are done. A is recorded at finding 206 and shipped in `031bfb3`. B is
+recorded at findings 208 and 209 and closes both items the reconciliation gate listed under
+WS09. Its size estimate there, "one array and one rule", was wrong in a way worth keeping:
+the array was the array, and the rule was three defects. The class that reserved the space
+was written in a server component, which cannot call `usePathname()`, so it could not have
+been conditional and was set on every route; the reservation sat on `main`, which is not the
+last element in the document, so on the routes that do render a bar the footer's copyright
+strip painted underneath it, 10px at phone widths and 24.5px at 768, in both locales; and the
+probe written to measure all of this reported clean pages on its first run because
+`globals.css:7` is `html{scroll-behavior:smooth}` and a synchronous read after `scrollTo`
+returns the pre-scroll position, so it had measured the top of every document. Nothing in
+slice B was found by reading. The arithmetic was right throughout and the elements were
+wrong, which is the class of defect a browser finds and a review does not.
+
+One visible consequence, recorded here as well as in the register so it is not discovered as
+a surprise: on marketing routes below 1024px the 62px that used to sit between page content
+and the footer now sits below the copyright strip instead. Content-to-footer spacing on a
+phone tightens by that much, and the space now does the job it was declared for. This is
+inside slice B's brief, which asks for the dead padding to be resolved and for real
+bottom-navigation spacing to be preserved where the tab bar exists, and it is not a visual
+redesign, which the package excludes.
+
 ---
 
 ## 2. Completed packages
@@ -187,8 +209,16 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-207 findings recorded. 127 carry a status beginning "Closed". 80 do not. Counts read from
-`docs/findings-register.md` at this commit by parsing the status column, not estimated.
+209 findings recorded. 129 are closed. 80 are not. Counts read from
+`docs/findings-register.md` at this commit by parsing the status column, not estimated, with
+one deliberate correction to the parse: rank 113 begins "Closed in PKG-DEM1 for the reading,
+open for the data" and is counted here as open, because half of it is. A naive read of the
+first word returns 130 and 79 and is wrong by exactly that row.
+
+PKG-E1-READINESS slice B added two, findings 208 and 209, both raised and closed inside the
+slice. The open count is therefore unchanged by slice B and the P2 total below is unchanged
+with it. That is the honest shape of a slice that fixed what it was sent to fix and found one
+more thing while it was there.
 
 PKG-E1-READINESS slice A moved three of those. Finding 206, the two write routes that
 reported success for a request they had not stored, is recorded and closed in the same

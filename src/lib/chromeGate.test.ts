@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { APP_ROUTES, PRODUCT_ROUTES, chromeTier } from "./chrome";
+import { APP_ROUTES, PRODUCT_ROUTES, chromeTier, rendersFooterSlot } from "./chrome";
 
 // RC13, finding 147. Three separate things are held here.
 //
@@ -192,7 +192,17 @@ test("the release-state notice is not a navigation decision", () => {
     "the notice is rendered behind a tier test again, so an APP route can lose the disclosure",
   );
   assert.match(gate, /tier\s*!==\s*"app"\s*&&\s*header/, "the header is no longer withheld from the APP tier");
-  assert.match(gate, /tier\s*===\s*"marketing"\s*&&\s*footer/, "the footer is no longer limited to the marketing tier");
+  // The footer test used to be spelled `tier === "marketing"` inline here. Slice
+  // B replaced it with the exported predicate so that the tab bar and the space
+  // reserved for the tab bar are one decision rather than two that agree by
+  // habit. The assertion follows the spelling; what it holds is unchanged, and
+  // the next test holds the predicate's ANSWER rather than its name.
+  assert.match(gate, /footerSlot\s*&&\s*footer/, "the footer is no longer limited to the tier that renders it");
+  assert.match(
+    gate,
+    /const\s+footerSlot\s*=\s*rendersFooterSlot\(path\)/,
+    "ChromeGate no longer takes the footer decision from the shared predicate",
+  );
 
   // And the tiers come from the table, not from a second copy of it.
   assert.match(gate, /from\s+"@\/lib\/chrome"/, "ChromeGate no longer reads the chrome tier table");
@@ -220,4 +230,193 @@ test("the layout hands the disclosure to the notice slot, not to the header", ()
   // The marketing strip is a rent-index promotion with a link. That one IS
   // marketing chrome and belongs where the header goes.
   assert.ok(headerNode.includes("{marketingNotice}"), "the marketing strip left the header node");
+});
+
+/*
+ * PKG-E1-READINESS slice B, WS09. Below here the subject changes from which
+ * chrome a route gets to how much SPACE the chrome is given, which turned out to
+ * be the same question asked in three places and answered in only one of them.
+ *
+ * `main.has-tabbar` reserves 62px of bottom padding for the fixed tab bar and
+ * `.advfab` sits 82px up, which is that 62 plus a 20px gap. Both numbers were
+ * arithmetic about a bar that only the marketing tier renders, and both were
+ * applied to every route, so an owner on /dashboard at 390px scrolled to the end
+ * of the page and found 62px of nothing, with the Advisor button floating above
+ * it clearing a bar that was not there.
+ *
+ * These tests hold the three sites to one predicate, and hold the CSS breakpoint
+ * that RELEASES the reservation equal to the one that HIDES the bar. A bar hidden
+ * at one width and a reservation released at another is either content under a
+ * bar or a gap under nothing, and neither is visible in a diff.
+ *
+ * There was a second half to the defect, and only a browser found it.
+ * scripts/shell-probe.mjs scrolls a marketing shell and a product shell to the
+ * end of the document at nine widths in both locales and measures the last
+ * painted pixel against the top edge of the bar. It reported 10px of the
+ * footer's copyright strip underneath the bar at 320, 360, 390 and 430, and
+ * 24.5px at 768. The reservation was real, it was the right size, and it was in
+ * the wrong element: `main` is not the last thing in the document, the footer
+ * renders after it, so padding on `main` protected the seam between the two
+ * while the bar covered the end. The 62px now travels to the footer through the
+ * `--tabbar-reserve` custom property, which footer.css adds to its own bottom
+ * padding. globals.css keeps the bar's number, footer.css keeps the footer's,
+ * and the tests below hold the seam between them.
+ */
+
+const GLOBALS = readFileSync(join("src", "styles", "globals.css"), "utf8");
+const FOOTER_CSS = readFileSync(join("src", "styles", "footer.css"), "utf8");
+
+test("only a route that renders the tab bar reserves space for it", () => {
+  for (const locale of ["en", "ar"]) {
+    for (const route of [...Object.keys(APP_ROUTES), ...Object.keys(PRODUCT_ROUTES)]) {
+      assert.equal(
+        rendersFooterSlot(`/${locale}/${route}`),
+        false,
+        `/${locale}/${route} renders no tab bar, so it must not reserve the 62px the bar would occupy`,
+      );
+    }
+    // And the marketing tier, which does render it, still does.
+    for (const route of ["", "listings", "listings/abc-123", "map", "rent-index", "signup", "login", "something-new"]) {
+      assert.equal(
+        rendersFooterSlot(`/${locale}/${route}`),
+        true,
+        `/${locale}/${route} renders the tab bar and must keep the space beneath it`,
+      );
+    }
+  }
+});
+
+test("the tab bar class is set in one place, by the tab bar's own test", () => {
+  // A source guard, because the defect was not a wrong value anywhere. Every
+  // number involved was right. The defect was an unconditional class in a file
+  // that had no way to ask the question, so the guard is about WHERE the class
+  // is written, which no rendering test can see.
+  const withClass: string[] = [];
+  const walk = (dir: string) => {
+    for (const e of readdirSync(dir)) {
+      const f = join(dir, e);
+      if (statSync(f).isDirectory()) { walk(f); continue; }
+      if (!/\.tsx?$/.test(f) || /\.test\.tsx?$/.test(f)) continue;
+      // Comments are stripped first. Three files now EXPLAIN this reservation
+      // and the guard is about which file APPLIES it; a rule that punished
+      // writing the reason down would be the wrong rule.
+      if (codeOnly(readFileSync(f, "utf8")).includes("has-tabbar")) withClass.push(f);
+    }
+  };
+  walk("src");
+  assert.deepEqual(
+    withClass,
+    [join("src", "components", "ChromeGate.tsx")],
+    "`has-tabbar` is written outside ChromeGate, where the tab bar decision is not available",
+  );
+
+  const gate = readFileSync(join("src", "components", "ChromeGate.tsx"), "utf8");
+  const line = gate.split("\n").find((l) => l.includes("has-tabbar") && l.includes("<main"))!;
+  assert.ok(line, "ChromeGate no longer renders the main element that carries the reservation");
+  assert.ok(
+    line.includes("footerSlot"),
+    "the 62px reservation is applied without asking whether the tab bar renders, which is the defect itself",
+  );
+  // The skip link is the only way a keyboard user reaches the content, and it
+  // targets an id that just moved between two files.
+  const layout = readFileSync(join(APP_DIR, "layout.tsx"), "utf8");
+  assert.ok(layout.includes('href="#main"'), "the skip link is gone");
+  assert.ok(line.includes('id="main"'), "the skip link target left with the element it points at");
+});
+
+test("the floating Advisor button clears the bar, and only where the bar is", () => {
+  const widget = readFileSync(join("src", "components", "AdvisorWidget.tsx"), "utf8");
+  // The class is composed from a base token and a suffix, not written out as two
+  // complete literals. That is deliberate: scripts/prose-scan.mjs allowlists a
+  // single token and a className attribute, and "advfab no-tabbar" sitting in a
+  // plain const is neither, so the two-literal form raised the shared-component
+  // baseline in a package that migrates no strings. The assertion below is on
+  // the composed form for that reason, and it still holds the only thing worth
+  // holding: the suffix that changes the offset is chosen by the predicate that
+  // decides whether the bar is on the page.
+  assert.match(
+    widget,
+    /const fabClass = `advfab\$\{rendersFooterSlot\(path\) \? "" : " no-tabbar"\}`;/,
+    "the Advisor button offset no longer follows the tab bar it is offset for",
+  );
+  assert.ok(
+    widget.includes('className={fabClass}'),
+    "the computed class is not the one the button renders",
+  );
+
+  // The two offsets are read out of the stylesheet rather than restated here,
+  // so the relationship is checked against the shipped values.
+  const reserved = Number(/main\.has-tabbar ~ \.foot\{--tabbar-reserve:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
+  const fab = Number(/\.advfab\{[^}]*bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
+  const fabClear = Number(/\.advfab\.no-tabbar\{bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
+  assert.equal(reserved, 62);
+  assert.ok(fab > reserved, `the Advisor button at ${fab}px sits inside the ${reserved}px tab bar`);
+  assert.equal(fab - reserved, fabClear, "the gap above the bar and the gap above the floor are different numbers");
+
+  // The safe-area inset is the home indicator, which is present whether or not a
+  // tab bar is, so it survives in both variants.
+  assert.match(GLOBALS, /\.advfab\.no-tabbar\{bottom:calc\(\d+px \+ env\(safe-area-inset-bottom\)\);\}/);
+  assert.match(GLOBALS, /\.tabbar\{[^}]*padding:5px 6px calc\(5px \+ env\(safe-area-inset-bottom\)\)/);
+});
+
+test("the width that hides the bar is the width that releases the reservation", () => {
+  const hides = /@media\(min-width:(\d+)px\)\{\.tabbar\{display:none;\}\}/.exec(GLOBALS);
+  const releases = /@media\(min-width:(\d+)px\)\{main\.has-tabbar ~ \.foot\{--tabbar-reserve:0px;\}\}/.exec(GLOBALS);
+  const fabDesktop = /@media\(min-width:(\d+)px\)\{\.advfab\{bottom:22px/.exec(GLOBALS);
+  const fabClear = /@media\(max-width:(\d+)px\)\{\.advfab\.no-tabbar\{/.exec(GLOBALS);
+  assert.ok(hides && releases && fabDesktop && fabClear, "one of the four tab bar width rules is missing");
+  assert.equal(releases![1], hides![1], "the reservation is released at a different width from the one that hides the bar");
+  assert.equal(fabDesktop![1], hides![1], "the Advisor button changes corner at a width the bar does not change at");
+  // The no-tabbar override must stop one pixel below the desktop rule, or it
+  // would win on specificity above it and move the desktop button.
+  assert.equal(Number(fabClear![1]) + 1, Number(hides![1]), "the .no-tabbar override leaks past the desktop breakpoint");
+});
+
+test("the reservation is on the last element in the flow, and the two files keep their own numbers", () => {
+  // The browser half of this is scripts/shell-probe.mjs, which measures the
+  // outcome. This half holds the arrangement that produces it, because the
+  // probe needs a browser and two out-of-tree inputs and so cannot run in the
+  // suite.
+
+  // `main` reserves nothing. It carries the class as the marker of a document
+  // that has a bar; anything it reserved would sit above a footer rather than
+  // above the bar, which is exactly the defect the probe found.
+  assert.equal(
+    /main\.has-tabbar\s*\{[^}]*padding-bottom/.test(GLOBALS),
+    false,
+    "the reservation is back on <main>, which is not the last element in the document",
+  );
+
+  // One rule sets the reservation, and it is scoped to a footer that FOLLOWS a
+  // main with the class. The sibling combinator is the whole point: it is the
+  // one arrangement in which a bar fixed to the bottom of the viewport is
+  // painted over the end of that footer.
+  const sets = GLOBALS.match(/--tabbar-reserve:/g) ?? [];
+  assert.equal(sets.length, 2, "the reservation is set somewhere other than the one rule and its 1024px release");
+  assert.match(GLOBALS, /main\.has-tabbar ~ \.foot\{--tabbar-reserve:/);
+
+  // The footer consumes it in both of its padding declarations, the wide one and
+  // the 760px one, and both keep the footer's own number outside the seam. A
+  // reservation added to only one of them would be correct above 760px and
+  // absent on precisely the widths where the bar exists.
+  const consumes = FOOTER_CSS.match(/var\(--tabbar-reserve, 0px\)/g) ?? [];
+  assert.equal(consumes.length, 2, "the footer does not consume the reservation in both of its padding declarations");
+  assert.match(FOOTER_CSS, /\.foot\{[^}]*padding:32px 20px calc\(26px \+ var\(--tabbar-reserve, 0px\)\);/);
+  assert.match(FOOTER_CSS, /padding:48px 64px calc\(36px \+ var\(--tabbar-reserve, 0px\)\);/);
+
+  // The selector only matches because the footer and the bar arrive together, in
+  // one slot, decided by one boolean. If a future edit renders the bar without
+  // the footer the rule silently stops matching, so the pairing is asserted here
+  // rather than assumed.
+  const layout = readFileSync(join(APP_DIR, "layout.tsx"), "utf8");
+  assert.match(
+    layout,
+    /footer=\{<><SatFooter locale=\{locale\} \/><TabBar locale=\{locale\} \/><\/>\}/,
+    "the footer and the tab bar are no longer handed to ChromeGate as one slot, so the reservation selector may not match",
+  );
+  const gate = readFileSync(join("src", "components", "ChromeGate.tsx"), "utf8");
+  assert.ok(
+    gate.includes("{footerSlot && footer}"),
+    "the footer slot is rendered on a condition other than the one that sets the reservation class",
+  );
 });

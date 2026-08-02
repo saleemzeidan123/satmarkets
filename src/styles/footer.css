@@ -7,7 +7,15 @@
   --slate:#5B6470; --slate-2:#6B7480;
   position:relative; overflow:hidden;
   background:var(--ink); color:var(--slate-2);
-  padding:48px 64px 36px;
+  /* PKG-E1-READINESS slice B, WS09. The third number is the footer's own bottom
+     padding and it is still 36px. `--tabbar-reserve` is the seam through which the
+     app shell adds room for the fixed mobile tab bar, and it is 0 unless something
+     sets it. Only one rule ever does, in globals.css, and it is scoped to a footer
+     that follows a `main.has-tabbar`, which is the one arrangement in which a bar
+     is painted over the end of this element. The reservation is expressed here,
+     rather than as a margin or a body padding, so that the space belongs to the
+     footer's own dark background instead of opening a strip of page behind it. */
+  padding:48px 64px calc(36px + var(--tabbar-reserve, 0px));
   font-family:var(--font-sans),system-ui,sans-serif;
 }
 .foot a{cursor:pointer;text-decoration:none;}
@@ -43,7 +51,7 @@
 .foot .bottom{position:relative;border-top:1px solid #2B3138;margin-top:34px;padding-top:22px;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono),monospace;font-size:0.6875rem;letter-spacing:.06em;color:var(--slate);}
 @media(min-width:761px) and (max-width:1024px){.foot .foot-cols{grid-template-columns:1fr 1fr 1fr;}}
 @media (max-width:760px){
-  .foot{padding:32px 20px 26px;}
+  .foot{padding:32px 20px calc(26px + var(--tabbar-reserve, 0px));}
   .foot .foot-mark{display:none;}
   .foot .cta{flex-direction:column;align-items:flex-start;gap:16px;padding:24px 22px;}
   .foot .cta-actions{width:100%;}
