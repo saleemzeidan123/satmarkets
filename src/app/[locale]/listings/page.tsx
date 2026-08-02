@@ -399,7 +399,16 @@ export default async function ListingsPage({ params, searchParams }: { params: {
     { value: "best", label: dl.sortBest },
   ];
 
-  const saveLabel = [searchParams.deal ? dealLabel(searchParams.deal, locale) : "", activeDistrict ? activeDistrict.name : (searchParams.place || (searchParams.city ? cityLabel(searchParams.city, locale) : ""))].filter(Boolean).join(" · ") || (dl.allSpaces);
+  // Slice C, WS16. The name proposed for a saved search is a label like any
+  // other, so it passes the same three gates the head does. Before this it read
+  // the three parameters exactly as typed, which meant a saved search could be
+  // stored under the name of a deal type the platform does not offer or a city
+  // it does not cover, and the reader would meet that name again months later
+  // with no way to tell it had never meant anything. `activeDistrict.name`
+  // already carries the development marker from the bubble it comes from.
+  const saveDeal = dealParam(searchParams.deal);
+  const savePlace = activeDistrict ? activeDistrict.name : (safePlace(searchParams.place) || (canonicalCity(searchParams.city) ? cityLabel(searchParams.city, locale) : ""));
+  const saveLabel = [saveDeal ? dealLabel(saveDeal, locale) : "", savePlace].filter(Boolean).join(" · ") || (dl.allSpaces);
 
   const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
   // Slice C, WS16, three corrections on one line.

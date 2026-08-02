@@ -457,6 +457,19 @@ test("no figure or label reaches the head of the page straight from the URL", ()
   assert.ok(!/locLabel = searchParams\.place/.test(meta), "the raw place is still the title label");
 });
 
+test("the name proposed for a saved search passes the same gates the head does", () => {
+  // Measured on the deployment at 345f7a3: the head correctly refused to name an
+  // unknown deal type, and the saved-search label three hundred lines below
+  // still offered to store one under that name.
+  assert.match(PAGE, /const saveDeal = dealParam\(searchParams\.deal\)/);
+  assert.ok(PAGE.includes("safePlace(searchParams.place) ||"), "the saved-search place is not guarded");
+  assert.ok(PAGE.includes("canonicalCity(searchParams.city) ?"), "the saved-search city is not canonicalised");
+  assert.ok(
+    !/searchParams\.deal \? dealLabel\(searchParams\.deal/.test(PAGE),
+    "the saved-search name still reads the deal parameter as typed"
+  );
+});
+
 test("every numeric parameter the page sends to the database is validated first", () => {
   // The defect was `Number(searchParams.smin)` reaching PostgREST as NaN.
   for (const p of ["smin", "smax", "pmin", "pmax", "spmin", "spmax", "sz", "rt", "sp"]) {
