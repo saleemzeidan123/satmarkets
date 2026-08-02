@@ -160,9 +160,18 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
     "Too many attempts. Wait a moment and try again.",
     "محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.",
   ],
+  // The sentence used to say "File storage is unavailable", which was true of
+  // the five media and document surfaces this code was written for and wrong on
+  // the four that adopted it afterwards: a requirement, a lead and a listing are
+  // rows, not files, and nobody filing one was uploading anything. Slice A of
+  // PKG-E1-READINESS adds two more row surfaces, a viewing request and an
+  // account request, so the sentence is made neutral about what was being saved
+  // rather than a tenth and eleventh surface being told about files they never
+  // sent. It still says the two things a reader needs: it was not saved, and
+  // trying again is worth doing.
   storage_unavailable: [
-    "File storage is unavailable. Try again in a moment.",
-    "خدمة تخزين الملفات غير متاحة. أعد المحاولة بعد قليل.",
+    "This could not be saved right now. Try again in a moment.",
+    "تعذّر الحفظ الآن. أعد المحاولة بعد قليل.",
   ],
   listing_not_found: ["This listing no longer exists.", "لم يعد هذا العرض موجوداً."],
   not_your_listing: ["This listing belongs to another account.", "هذا العرض يخص حساباً آخر."],

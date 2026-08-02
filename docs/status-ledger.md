@@ -187,8 +187,17 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-205 findings recorded. 126 carry a status beginning "Closed". 79 do not. Counts read from
+207 findings recorded. 127 carry a status beginning "Closed". 80 do not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated.
+
+PKG-E1-READINESS slice A moved three of those. Finding 206, the two write routes that
+reported success for a request they had not stored, is recorded and closed in the same
+commit, which is the wrong order and is stated as such in the register: the defect was
+known and written into the source as a comment for weeks without ever reaching this
+count. Finding 207, the listings read that answers an empty list when it cannot reach the
+store, was found while writing slice A's class guard and is left open on purpose, because
+the surface that owns its fix is the public-discovery package that follows. Two rows
+raised and one net closed is the same pattern as before and means the same thing.
 
 The movement since PKG-ELITE-E1 is PKG-A11Y-1 and nothing else. P1 falls from 55 to 19,
 which is 36 net, and the gross figure is larger: 47 rows carry "PKG-A11Y-1" in their
@@ -201,7 +210,7 @@ the count that matters is the one after both halves are recorded.
 | --- | --- | --- |
 | P0 | 6 | 4, 9, 10, 11, 12, 114 |
 | P1 | 19 | 13, 14, 15, 16, 17, 19, 20, 21, 25, 29, 30, 31, 32, 45, 62, 117, 170, 193, 203 |
-| P2 | 54 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 113, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191, 194, 195, 202 |
+| P2 | 55 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 113, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191, 194, 195, 202, 207 |
 
 **What the 19 open P1 rows are, because "19 open P1" reads worse than it is.** Sixteen of
 them were open before PKG-A11Y-1 began and are not accessibility findings: 13, 14, 15 and

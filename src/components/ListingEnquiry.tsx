@@ -180,8 +180,15 @@ export default function ListingEnquiry({
    // thing, and neither could act on it. The route names each reason now.
    //
    // The condition tests the status rather than the payload, which is also a
-   // correction. The only response this endpoint sends without a status is the
-   // one it sends when there is no database, and that one reports success.
+   // correction, and slice A of PKG-E1-READINESS is the reason that correction
+   // now earns its keep. Until then the route answered a 200 with `ok: true`
+   // when there was no database, so this panel confirmed a viewing that had not
+   // been stored; the status test was right and the route was lying to it. The
+   // route sends a 503 with `storage_unavailable` for that case now, so this
+   // branch catches it and names it in the reader's language with no change
+   // here. The lesson is kept rather than the sentence: read the status, and do
+   // not let a route tell a client it succeeded on a claim the client cannot
+   // check.
    if (!res.ok) { setVErr(apiErrorMessage(j.code, ar, t.errSend)); } else { setVDone(true); }
   } catch {
    setVErr(t.errSend);

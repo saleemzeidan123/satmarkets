@@ -43,12 +43,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid slot", code: "viewing_slot_invalid" }, { status: 400 });
   }
   const supabase = getSupabaseServer();
-  // This answers ok for a request it did not store, which is a defect and is
-  // deliberately not repaired here. It belongs to the class SM-P0-005 closed on
-  // the requirements route, the signup route still carries the identical line,
-  // and repairing one of a matched pair inside a translation package leaves the
-  // other looking correct by comparison. It is recorded rather than half fixed.
-  if (!supabase) return NextResponse.json({ ok: true, note: "supabase not configured (request not stored)" });
+  // Slice A of PKG-E1-READINESS, WS13, functional truth. This line used to
+  // answer `{ ok: true }` for a request it had not stored, and because the
+  // client tests the response and not the payload, `ok` on a 200 rendered the
+  // confirmation panel. A person who asked to see a space was told the lister
+  // had their request when no row existed and no one would ever read it. The
+  // note that admitted it went into a field nothing displays.
+  //
+  // The condition is exactly the one nine other routes in this repository
+  // already refuse, so this refuses identically rather than inventing a code of
+  // its own: `storage_unavailable` with a 503, which is the honest status for a
+  // dependency that is absent rather than for a request that was wrong.
+  //
+  // The log line carries no contact name, no email and no listing id. The
+  // condition is a property of the deployment, not of the person asking, and a
+  // log written for a misconfiguration should not accumulate the details of
+  // everyone who met it.
+  if (!supabase) {
+    console.error("[viewings] not stored: no database client is configured");
+    return NextResponse.json(
+      { ok: false, error: "Storage unavailable. Please try again.", code: "storage_unavailable" },
+      { status: 503 },
+    );
+  }
 
   // Null for an anonymous booker, which is the ordinary case and stays ordinary.
   const su = await getSessionUser();
