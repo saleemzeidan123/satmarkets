@@ -28,18 +28,18 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `17cefd2`, "docs: session-resume, the continuity record a fresh conversation reads first", plus the one-row record commit this file ships in |
+| GitHub HEAD | `994f02e`, "fix(203): slice F, the listing page's two public writes", plus the record commit this file ships in |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_AUcrFrithqjoL841jmTpmbkXxpRd`, READY, target production |
-| Deployment URL | `satmarkets-fpr4ifto9-sat-markets.vercel.app` |
+| Production deployment | `dpl_3RJdBDjJmpP85faWFC3cYJ8djn5B`, READY, target production |
+| Deployment URL | `satmarkets-3p2deyf0k-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `17cefd2`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. The last commit carrying a source change is still `7aaab03`, slice R of PKG-A11Y-1; everything since is documentation |
-| Build ready at | epoch ms 1785652618446, 63 seconds after build start |
-| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every commit carrying a source change through `7aaab03` was confirmed READY at its own matching `meta.githubCommitSha`, and `0a21ae5` and `17cefd2` were each confirmed the same way |
+| Commit deployed | `994f02e`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. It is slice F of finding 203 and the last commit of that finding carrying a source change; everything after it is documentation |
+| Build ready at | epoch ms 1785662739429, 67 seconds after build start |
+| Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. A documentation-only commit does not require a further ledger commit to close it. Every one of the six finding 203 commits was confirmed READY at its own matching `meta.githubCommitSha`: `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`. So were `7aaab03`, `0a21ae5` and `17cefd2` before them |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1668 tests, 0 failing |
+| Test suite | 1679 tests, 0 failing. The rise from 1668 is finding 203's eleven guards in `src/lib/apiErrors.test.ts`, counted as tests rather than as files, because the six slices added assertions inside existing files and added no new file to the `npm test` list |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, `node scripts/reflow-probe.mjs --chromium /opt/pw-browsers/chromium`, `node scripts/radio-probe.mjs --chromium /opt/pw-browsers/chromium`, then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState` |
 
 **Deployment lineage worth keeping.** `d2d2fb5` never received its own Vercel build
@@ -85,6 +85,7 @@ regression is recorded in section 6 first.
 | PKG-A11Y-1 slice A | The O17 and O12 rulings recorded against the surfaces they hold shut, the data-collection readiness record and the owner-ready recruitment sheet | shipped `7621724`, `docs/data-collection-readiness.md`, `docs/research/elite-1-recruitment-sheet.md` |
 | PKG-A11Y-1 slices B to R | The accessibility remediation itself. 55 open P1 findings triaged to 12 root causes plus 2 journey-specific defects, 38 of the 39 accessibility findings closed, 8 further findings raised and closed inside the package, 1 data-quality migration authored for the owner | shipped `beef75a`, `7dfca13`, `7dfa5e7`, `1853e92`, `8beeaf6`, `abc3495`, `69fc447`, `72d04fa`, `d8de177`, `ededded`, `a38c06e`, `fcb4388`, `9fde67c`, `3cf25b4`, `8e80dbe`, `c6cad0e`, `7aaab03`; `docs/a11y-p1-triage.md` |
 | PKG-A11Y-1, whole package | Consolidated handback with the Finding 138 disposition stated first, the triage, the root-cause fixes by journey, EN and AR live evidence, viewport and assistive-technology evidence classified by kind, and the independent-audit items that automation cannot settle | `docs/handback-pkg-a11y-1.md` |
+| Finding 203, slices A to G | The bilingual refusal architecture. A route states a stable `code` and keeps its English sentence on the wire for the log and the API consumer; a client-side `[en, ar]` table names that code in the reader's language. 127 refusals across 16 route files all state a code, 76 codes are named in `src/lib/apiErrors.ts`, 15 client files render the named sentence, and 11 guards read the source so neither half can drift back. Four PostgREST leaks closed on the way, three of them on routes that take no session at all | shipped `bbdc22b`, `b731f7f`, `81844ed`, `085a4bc`, `0d62cb5`, `994f02e`, plus the documentation commit this row ships in; `src/lib/apiErrors.ts`, `src/lib/apiErrors.test.ts`, findings register row 203. Status is "Fixed and awaiting deployment verification", not closed, for the reason in section 9 |
 
 ---
 
@@ -98,6 +99,7 @@ Work that is shipped and gated but whose acceptance carries a stated condition.
 | PKG-LS3 | Accepted by Codex on the reported gates and live evidence. Neither changed screen is verifiable end to end, because both are session gated and the only live channel is unauthenticated GET |
 | Finding 11, availability re-affirmation | Register status is "Fixed and awaiting deployment verification". The fix is deployed; the verification that would close it needs an authenticated session |
 | Findings 114 and 115 | Register status is "Fixed, verified on the deployment", 114 with the qualifier "to the limit the corpus allows". Neither is "Closed with live evidence" and neither should be reported as closed |
+| Finding 203, the bilingual refusal architecture | Register status is "Fixed and awaiting deployment verification". All six slices are deployed and each was confirmed READY at its own `meta.githubCommitSha`. What is missing is not code and not a gate: every refusal in the finding is reached by a POST, and the only live channel here is GET only and unauthenticated, so no refusal sentence can be made to appear on the deployed build from this container. The evidence that closes it is one interactive session submitting an invalid enquiry, viewing request and requirement on the Arabic build and reading the rendered sentence |
 
 ---
 
@@ -152,8 +154,19 @@ owner decision; and 117 is the requirement-city data-quality defect, whose migra
 authored and awaiting the owner. Of the three that are accessibility rows, 170 is the
 listing video's missing captions, which is a content and ingest commitment rather than a
 markup change; 193 is a requirement poster's consent withdrawal, which needs a database
-migration this environment cannot apply; and 203 is sixteen client sites rendering a
-server-composed English error sentence in both languages.
+migration this environment cannot apply; and 203 is the server-composed English refusal
+sentence, which is fixed in six shipped slices and is still counted open here because the
+refusals it repairs are all reached by a POST and nothing in this environment can send one
+to the deployment. See section 3.
+
+**The 203 arithmetic, corrected rather than restated.** The line above used to read
+"sixteen client sites rendering a server-composed English error sentence in both
+languages". Sixteen was the route count, not the client count, and it had been carried
+forward without measurement. Measured at `994f02e`: 127 refusals across 16 route files, 76
+codes named, 15 client files rendering them. The slice D, E and F commit messages state 56,
+73 and 80 codes; those were running additions and are wrong. Commit messages are immutable
+and are left as written. This is the corrected figure, and it also stands in the register
+row.
 
 Rank 113 now reads "Closed in PKG-DEM1 for the reading, open for the data" and IS counted
 above, under P2, unlike in the PKG-ELITE-E1 edition of this file where it was excluded by a
@@ -161,8 +174,8 @@ parse that treated its leading "Closed" as closure. Its data half still needs a 
 channel to the database that this environment does not have. The count moved because the
 rule was corrected, not because the finding changed.
 
-Ranks 11, 114 and 115 appear above because their status is "fixed" rather than "closed";
-see section 3.
+Ranks 11, 114, 115 and 203 appear above because their status is "fixed" rather than
+"closed"; see section 3.
 
 **A correction made in RC15, recorded because a ledger that quietly restates a number is
 worse than one that was wrong.** Six P1 rows, 50, 140, 150, 154, 166 and 179, read "Open"
@@ -283,6 +296,7 @@ consecutive packages have now owed the same thing.
 | Real physical device testing | No device in this environment. Zoom, reflow, screen reader and touch behaviour can be reasoned about and tested in code, not observed | A human on a real device. This is a stated limit of slice E, not a claim it will make |
 | No accessibility automation in the repository | There is no axe, pa11y, jest-axe or Lighthouse step anywhere, and no accessibility npm script. `e2e/` holds two specs and neither is an accessibility spec | An automated harness, which slice E deliberately did not add because Codex item 7 forbids new tooling in this package |
 | No reachable development server | `curl http://localhost:3000/en/login` returns status 000 in this container, so no surface can be operated locally either | A running server in the container, or the session channel above |
+| **Every refusal sentence on the platform** | Finding 203. A refusal is what a route returns when it declines a write, and every write is a POST. The live channel is GET only, so the 127 refusals across 16 routes can be proved correct by reading the source and proved present by the test suite, and cannot be made to appear on the deployed build from here. Two of the routes take no session at all, `/api/viewings` and `/api/leads`, and even those cannot be exercised, because the channel will not POST | One interactive session on the deployed preview: submit an enquiry with a mistyped email, a viewing request for a time that has passed, and a requirement with a missing city, on the Arabic build, and read the sentence each one renders. That single session retires this row and closes finding 203 |
 | No screen reader and no accessibility specialist | Neither exists in this environment | A human. Every one of the 126 slice E findings is source-read only and none is independently verified |
 | Interactive browser Advisor verification | Codex item 7. Needs a browser session against the deployment | Owner-side browser run, or a session channel |
 | `LocationPicker` visual fit at 320 to 430 pixels | Tailwind-classed component inside an inline-styled form, on a session-gated screen | The same session channel |
