@@ -16,6 +16,12 @@ that resolves or opens an outcome. It carries no figures that are not read from 
 repository, the findings register, the decision register or a live check named beside
 them.
 
+**Where to start a new session.** `docs/session-resume.md` carries the continuity record:
+how to rebuild the ephemeral build container, the gate and ship commands, what this
+environment cannot do, the standing owner rulings and Codex commission, the evidence
+discipline, and what is owed next. Read it before this file. It defers to this file on
+every current figure.
+
 ---
 
 ## 1. Position
