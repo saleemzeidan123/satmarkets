@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { getDictionary } from "@/i18n/getDictionary";
+import { authMessage } from "@/lib/authErrors";
 
 // Occupier social sign-up. Order reflects the Saudi B2B audience: Google and
 // Microsoft (Office 365 work accounts) first, then LinkedIn (professional identity),
@@ -38,6 +39,12 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
  const sentRef = useRef<HTMLDivElement | null>(null);
  useEffect(() => { if (step === "sent") sentRef.current?.focus(); }, [step]);
 
+ // Slice D of PKG-E1-READINESS, WS25. Every refusal below is resolved through
+ // `authMessage`, which names a refusal only when the refusal is true of the
+ // request rather than of the account behind the address. Anything about the
+ // account itself, and anything this platform has never heard of, arrives as
+ // the one generic sentence passed in here. See src/lib/authErrors.ts for why
+ // the direction of that default is the whole point.
  async function passwordSignIn(e: React.FormEvent) {
   e.preventDefault();
   setError(null);
@@ -46,7 +53,10 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
   setBusy(true);
   const { error } = await sb.auth.signInWithPassword({ email, password });
   setBusy(false);
-  if (error) { setError(error.message); return; }
+  // The generic sentence points at the sign-in link on purpose. It is the one
+  // route back in that works for a confirmed account and an unconfirmed one
+  // alike, so the reader is never told which of the two they are.
+  if (error) { setError(authMessage(error, ar, t.errSignIn)); return; }
   // Hard navigation so the server sees the freshly written session cookies. /go
   // routes owners to the dashboard and occupiers to their own home.
   window.location.replace(`/${params.locale}/go`);
@@ -58,9 +68,15 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
   const sb = getSupabaseBrowser();
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
-  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/go` } });
+  // `shouldCreateUser` is stated rather than left to the library default, and
+  // it is the reason this path is safe. With it true an address that holds no
+  // account is sent a link exactly as one that does, so the two are
+  // indistinguishable from outside. Setting it false would make the unknown
+  // address refuse while the known one succeeds, which is a membership oracle
+  // that no wording on the refusal could close.
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true, emailRedirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/go` } });
   setBusy(false);
-  if (error) setError(error.message); else setStep("sent");
+  if (error) setError(authMessage(error, ar, t.errLinkNotSent)); else setStep("sent");
  }
 
  // Social sign-in / sign-up. One tap, no password, account created on first use.
@@ -78,7 +94,9 @@ export default function LoginPage({ params }: { params: { locale: string } }) {
    options: { redirectTo: `${window.location.origin}/auth/callback?next=/${params.locale}/go` },
   });
   // On success the browser is redirected to the provider, so we only land here on error.
-  if (error) { setError(error.message); setBusy(false); }
+  // A provider that is switched off is nameable, because it is switched off for
+  // everybody and says nothing about whoever is standing at the form.
+  if (error) { setError(authMessage(error, ar, t.errProvider)); setBusy(false); }
  }
 
  return (

@@ -39,7 +39,12 @@ walk("src/lib/translate");
 // lister types an area and a price into. That is shipped Arabic copy on the one
 // surface where getting it wrong changes what the stored number means, so it
 // clears the same gate as the label catalogue.
-for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts", "src/lib/requirementFigures.ts", "src/lib/fieldLabel.ts"]) {
+// PKG-E1-READINESS slice D: the three refusal tables. `authErrors.ts` holds the
+// only Arabic on the platform whose job is to say as little as possible, and
+// the other two hold the sentences every refused write renders. All three are
+// shipped Arabic copy outside the dictionaries, which is exactly the class the
+// list above exists for.
+for (const p of ["src/lib/labels.ts", "src/lib/format.ts", "src/lib/search/searchNote.ts", "src/lib/requirementFigures.ts", "src/lib/fieldLabel.ts", "src/lib/authErrors.ts", "src/lib/apiErrors.ts", "src/lib/listingIntakeErrors.ts"]) {
   if (fs.existsSync(p)) files.push(p);
 }
 

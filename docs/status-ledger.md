@@ -101,7 +101,20 @@ collection, no indexing or domain work, no licensed-data assumption, no O18 impl
 and no new governance package. Finding 117 stays an owner-side Supabase action and does not
 block it. Finding 203 stays fixed pending its interactive Arabic POST verification.
 
-Slices A and B are done. A is recorded at finding 206 and shipped in `031bfb3`. B is
+Slices A through D are done. C shipped in `345f7a3` and `dca8b16` and raised no finding, which
+is recorded in section 5 rather than passed over. D is recorded at findings 210 to 213 and
+shipped in the commit that carries this line. Its brief asked for account-enumeration coverage
+across signup, login and recovery; signup was already correct after slice A, there is no
+password-recovery surface on this platform because recovery is the magic link, and the login
+form turned out to be answering four different sentences for four different account states.
+The fix is a third bilingual refusal table, `src/lib/authErrors.ts`, and its defining property
+is the opposite of the two that came before it: `listingIntakeErrors.ts` and `apiErrors.ts`
+exist to tell a reader precisely what went wrong, and this one exists to tell a reader as
+little as the platform can get away with while still leaving them a way in. That is why it is
+a third table and not a section of either of the others, and why its resolver is an allowlist
+whose default is silence rather than a blocklist whose default is disclosure.
+
+A is recorded at finding 206 and shipped in `031bfb3`. B is
 recorded at findings 208 and 209 and closes both items the reconciliation gate listed under
 WS09. Its size estimate there, "one array and one rule", was wrong in a way worth keeping:
 the array was the array, and the rule was three defects. The class that reserved the space
@@ -209,11 +222,27 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-209 findings recorded. 129 are closed. 80 are not. Counts read from
+213 findings recorded. 133 are closed. 80 are not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated, with
 one deliberate correction to the parse: rank 113 begins "Closed in PKG-DEM1 for the reading,
 open for the data" and is counted here as open, because half of it is. A naive read of the
-first word returns 130 and 79 and is wrong by exactly that row.
+first word returns 134 and 79 and is wrong by exactly that row.
+
+PKG-E1-READINESS slice D added four, findings 210 to 213, every one of them raised and closed
+inside the slice, so the open count and the severity table below are unchanged by it. Two are
+the defect the brief named, the login form's account-state enumeration and the English
+refusal rendered into the Arabic build. The other two were found on the page a sign-in link
+actually lands on, `/auth/callback`, which nobody had read since it was written: it was the
+last monolingual English surface on the authenticated path, and it handed its own `next`
+parameter to the browser as a location, which made a legitimate address on this origin into
+an off-site redirect for anyone who could write a link. The second of those is the more
+serious of the four and was not in the brief. It was found because slice D had to read the
+recovery landing to translate it.
+
+PKG-E1-READINESS slice C raised and closed nothing. Its brief asked for a test set and a
+canonicalization matrix rather than for a defect hunt, and it is recorded in its commits,
+`345f7a3` and `dca8b16`, rather than here. A slice that finds nothing is worth stating,
+because a register that only ever grows starts to look like the only measure of work.
 
 PKG-E1-READINESS slice B added two, findings 208 and 209, both raised and closed inside the
 slice. The open count is therefore unchanged by slice B and the P2 total below is unchanged

@@ -1459,6 +1459,10 @@
     "backToSignIn": "Back to sign in",
     "errNotConfigured": "Sign-in is not configured on this environment yet.",
     "errEnterEmail": "Enter your email first, then request a link.",
+    "errSignIn": "We could not sign you in. Check your email address and password, or ask for a sign-in link below.",
+    "errLinkNotSent": "We could not send a sign-in link just now. Try again in a moment.",
+    "errProvider": "That sign-in could not be completed. Try again, or use your email address.",
+    "errLinkInvalid": "That sign-in link is invalid or has expired. Request a new one.",
     "signOut": "Sign out",
     "metaTitle": "Sign in | SAT Markets",
     "metaDesc": "Sign in to SAT Markets to manage listings, enquiries and viewings."
