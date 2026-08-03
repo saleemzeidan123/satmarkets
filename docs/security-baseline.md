@@ -14,13 +14,229 @@ Read it as a statement of the current position rather than a plan. Where
 something is unfixed, the reason is written down rather than deferred to a
 future document.
 
+**Amended 2026-08-03 by PKG-NEXT16-SECURITY slice B, at commit 2cfbcdc.** The
+dependency half of this document is now two layers. The first section below is
+the current position, measured after the Next.js 16.2.12 upgrade. The section
+after it is the pre-upgrade position, kept unedited as the record of what the
+upgrade closed. Nothing in the Content Security Policy, response header or rate
+limiting sections has been re-measured by slice B; the CSP is slice C's subject
+and is amended there, not here.
+
 ## What was changed in this slice
 
 One dependency was upgraded, five response headers were added, and one header
 was removed. Nothing else. No route logic changed, no middleware changed, and
 no rate limiter was added or altered.
 
-## Dependency vulnerabilities
+## PKG-NEXT16-SECURITY slice B, the post-upgrade audit
+
+Written 2026-08-03 against commit 2cfbcdc. **This section supersedes the three
+that follow it.** Those were measured on 2026-08-02 against next@14.2.35 and are
+kept unedited, because they are the record of what the upgrade closed and of the
+reasoning that said it could not be closed any other way. Read them as history,
+not as the current position.
+
+### Where the count went
+
+| Point | critical | high | moderate | low | distinct advisories |
+| --- | --- | --- | --- | --- | --- |
+| Before, on next@14.2.35 | 0 | 2 | 0 | 0 | 24, across two packages |
+| After the upgrade to 16.2.12, before any remedy | 0 | 3 | 0 | 0 | 4 |
+| After the override floor, current | 0 | 0 | 0 | 0 | 0 |
+
+The entry counts in the middle three columns are npm's own per-package-path
+count. They are not the advisory count and they are not the package count, which
+is the same distinction the superseded section below opens with and the reason
+the last column exists. Twenty one of the twenty four advisories were the
+Next.js rows, and the upgrade closed all twenty one at once. What was left
+afterwards was four advisories against two packages, both of them copies the
+framework nests inside itself.
+
+### The four that survived the upgrade
+
+Next.js 16.2.12 does not resolve postcss and sharp to the versions this
+repository already had. `node_modules/next/package.json` pins them itself:
+
+```
+dependencies:         "postcss": "8.4.31"     (exact pin)
+optionalDependencies: "sharp": "^0.34.5"      (a caret on a 0.x cannot reach 0.35)
+```
+
+So npm installed a second copy of each under `node_modules/next/node_modules/`,
+and it is those two nested copies, not the root ones, that the four advisories
+were reported against. The root tree was already clean: `sharp` at 0.35.3 and
+`postcss` at 8.5.25, both above every fixed range.
+
+| Advisory | Severity | Nested version | Reaches this application |
+| --- | --- | --- | --- |
+| GHSA-f88m-g3jw-g9cj, inherited libvips CVE-2026-33327 / 33328 / 35590 / 35591, `<0.35.0` | high | sharp 0.34.5 | Not established as reachable. Reasoning below, including what could not be proved. |
+| GHSA-qx2v-qp2m-jg93, XSS via unescaped `</style>` in stringify output | moderate | postcss 8.4.31 | No. Requires postcss to process attacker-controlled CSS. |
+| GHSA-6g55-p6wh-862q, arbitrary file read via attacker-controlled `sourceMappingURL` | high | postcss 8.4.31 | No. Same precondition. |
+| GHSA-r28c-9q8g-f849, path traversal in source map auto-loading | high | postcss 8.4.31 | No. Same precondition. |
+
+**postcss.** All three advisories have the same precondition, that postcss
+processes CSS an attacker controls. postcss runs here at build time only, on
+Vercel's build machine, over three stylesheets that are in this repository:
+`src/styles/globals.css`, `src/styles/footer.css` and
+`src/styles/sat-platform.css`. The pipeline is `postcss.config.mjs`, which loads
+tailwindcss and autoprefixer, and which resolves the root 8.5.25 rather than the
+nested copy. There is no runtime import of postcss anywhere in `src`. This
+application accepts listing media and listing text from its users; it does not
+accept stylesheets. The precondition is not met by any path.
+
+**sharp.** This one took more work, and the honest answer is weaker than the
+postcss one. The single `import sharp from "sharp"` in the whole tree is in
+`src/app/api/listings/[id]/media/route.ts`, and Node resolves it to the root
+0.35.3, because `node_modules/next/node_modules/` is only reachable from inside
+`node_modules/next/`. `next/image` is imported by zero files. But "nothing
+imports it" is not sufficient here, because `/_next/image` answers on production
+regardless of whether any rendered surface links to it, and the only file in the
+framework that touches sharp is `next/dist/server/image-optimizer.js`. So the
+question is which sharp actually performs a production transformation.
+
+On Vercel the answer is that the platform does it. Vercel's own documentation
+describes Image Optimization as a service Vercel performs and caches, meters as
+a billable transformation, and reports through the `HIT` / `MISS` / `STALE`
+cache vocabulary; the production probe carries `x-vercel-cache: HIT` and
+`server: Vercel`. The requirement for a sharp bundled in the deployment is
+stated in the self-hosting guide and scoped to `next start`, which is not how
+this application runs.
+
+**What could not be proved.** No single Vercel sentence says "the deployment's
+bundled sharp is not used." The conclusion above is assembled from several
+documents plus one response header, and assembled inference is not the same
+thing as a statement. That is why this advisory was not closed on reachability.
+It was closed by removing the vulnerable copy, and the reachability analysis is
+recorded as the reason the risk was low while it was there, not as the remedy.
+
+### Why `npm audit` could not close any of this
+
+All four entries reported the same `fixAvailable`: **`next@9.3.3`**. Next.js
+9.3.3 is a six-major downgrade, published in 2020, and would undo the entire
+migration that slice A just performed. That number is not advice. It is the
+audit reaching the end of its search and emitting the only thing its resolver
+could find that satisfies the constraint, in the only vocabulary it has.
+
+This is the concrete case for the work order's instruction not to claim security
+completion from `npm audit` alone. A tool whose remedy for four advisories is a
+six-year downgrade of the framework is not, at that moment, in a position to
+tell anyone whether the application is secure. The applicability analysis above
+had to be done by reading the resolver's output, the framework's own manifest,
+and the one framework file that calls the vulnerable API.
+
+### The remedy
+
+`package.json` now carries a flat `overrides` block:
+
+```json
+"overrides": {
+  "postcss": "^8.5.25",
+  "sharp": "^0.35.3"
+},
+```
+
+Flat, not scoped under `next`, because the useful statement is a floor for the
+whole tree rather than a patch aimed at one dependent, and because a flat floor
+also stops a future transitive dependency reintroducing an old copy. Both ranges
+are identical to what the root already declares, so the override removes
+duplicate subtrees rather than introducing any new version.
+
+Two findings from applying it are worth keeping, because both would mislead a
+reader who repeated the work:
+
+**An `npm install` that exits 0 is not evidence the override took.** Four
+consecutive attempts (the nested `$ref` form, the nested explicit form,
+`--package-lock-only`, and deleting the lockfile outright) each printed "up to
+date" and changed nothing. `npm ls postcss sharp` was what exposed it, reporting
+`postcss@8.4.31 invalid: "^8.5.25" from node_modules/next overridden`: npm had
+applied the override to its ideal tree and then declined to reify it over an
+already-installed directory. Deleting
+`node_modules/next/node_modules/{postcss,sharp}` and reinstalling was what made
+it real ("removed 4 packages").
+
+**Regenerating the lockfile is not a neutral act.** Deleting and rebuilding
+`package-lock.json` produced a 3283 insertion / 5583 deletion diff, which is
+unreviewable structural churn riding along inside a security change. The lock
+was restored from backup and the install re-run with the nested directories
+already gone, which produced the diff that is actually committed: **0
+insertions, 529 deletions**, removing exactly 26 entries, being
+`node_modules/next/node_modules/postcss`, `node_modules/next/node_modules/sharp`
+and 24 `@img/sharp-*` platform binaries. Nothing else in the lock moved.
+
+### Evidence
+
+| Check | Result |
+| --- | --- |
+| `npm audit` | 0 critical, 0 high, 0 moderate, 0 low |
+| `npm ls postcss sharp` | next@16.2.12 resolves `postcss@8.5.25 deduped` and `sharp@0.35.3 deduped` |
+| `npm ci --dry-run` | reproduces with zero `node_modules/next/node_modules/*` entries |
+| `tsc --noEmit` | exit 0 |
+| `npm test` | 1739 / 1739 pass, 0 fail, 35.0s |
+| `npm run ar-lint` | clean |
+| `scripts/prose-scan.mjs` | exit 0 |
+| `npm run lint-gate` | ratchet held, 49 pinned errors, warn inventory unchanged |
+| Vercel build | `dpl_DbbHaXgFsu1pqc26Ht3oySsiFZkK`, READY in 71s, turbopack, 22 static pages, no sharp or postcss resolution warning |
+| Production `/_next/image` probe | 200, `image/png`, 571 bytes, 64x64, `x-vercel-cache: HIT` |
+
+The risk in this change is not the postcss floor. It is sharp: the override
+forces 0.35.3 where Next.js declares `^0.34.5`, which is outside the range the
+framework says it supports. That was measured rather than assumed. Every sharp
+call `next/dist/server/image-optimizer.js` makes (`concurrency`, the constructor
+with `limitInputPixels` and `sequentialRead`, `timeout`, `rotate`, `resize` with
+`withoutEnlargement`, `avif`, `webp`, `png`, `jpeg` with `mozjpeg`, `toBuffer`)
+was replayed against 0.35.3 (libvips 8.18.3) on `public/icon-192.png`. All
+succeeded at the correct 64x64 output: png 571 bytes, webp 460, avif 684, jpeg
+752. The production probe returned a PNG of exactly 571 bytes, matching the
+local transform byte for byte.
+
+### The exception, time bound
+
+Nothing on the advisory list survives. What survives is the remedy itself, and
+an undated override is the thing that quietly becomes wrong later. Two ways it
+does: a future Next.js release may raise its own floor above ours, at which
+point the block is dead weight that still reads as protection; or the framework
+may pin a version for a reason (an API change in sharp 0.36, say) and the floor
+would then hold the tree at a version the framework does not support, which is
+the same risk measured above but re-run without anyone measuring it.
+
+**Reviewed at whichever comes first: the next Next.js upgrade of any size, or
+2026-11-03.** The review is two questions. Does `npm ls postcss sharp` still
+show the root versions winning without the override, in which case delete it?
+And does the sharp API replay above still pass against whatever the framework
+then declares? If neither has been answered by 2026-11-03 the block is revisited
+anyway rather than carried a second time undated. Tracked in
+`docs/status-ledger.md`.
+
+### What `npm audit` cannot see, stated so the zero is not misread
+
+The audit now reports zero, and zero is a statement about the npm registry
+dependency tree and nothing else. Three things this application depends on are
+not npm packages and were never in scope for that number:
+
+The **Vercel platform** serves every request, performs the image
+transformations discussed above, and runs the build. Its vulnerabilities are not
+in any lockfile.
+
+**Supabase** holds the data and performs authentication. `@supabase/ssr` and
+`@supabase/supabase-js` are audited as packages; the hosted Postgres, the
+policies on it and the auth service are not. The Supabase advisor checks are a
+separate surface and are not covered by this document.
+
+**`https://unpkg.com`**, which the Content Security Policy below allows as a
+script origin, for the maplibre right-to-left text plugin fetched at runtime.
+That is a third-party origin loading executable code into the page on demand,
+with no integrity attribute and no version in any lockfile. `npm audit` has no
+visibility into it whatever. It is the single largest thing the zero above does
+not cover, and it is a direct input to slice C.
+
+## Dependency vulnerabilities, the pre-upgrade position, superseded 2026-08-03
+
+Everything from here to the end of the Next.js subsection was written against
+next@14.2.35 on 2026-08-02, before the upgrade. It is retained because the
+21-row applicability table is the record of what the upgrade closed, and because
+its conclusion that the postcss node could not be lifted without lifting Next.js
+turned out to be correct. The counts and the remedy statements in it are no
+longer current. The section above is.
 
 `npm audit` at the time of writing reports 2 high, 0 moderate, 0 low and 0
 critical, across two packages. The count is per package and not per advisory,

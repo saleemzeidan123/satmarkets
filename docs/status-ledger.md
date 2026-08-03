@@ -43,14 +43,14 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `08470dd`, "docs: the consolidated PKG-E1-READINESS handback, the slice F owner decisions in section 7, and the security baseline verification record", plus the commit this file ships in |
-| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets` |
+| GitHub HEAD | `2cfbcdc`, "fix(deps): force the framework's nested postcss and sharp to the patched root copies", plus the commit this file ships in |
+| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. **`main` now carries the Next.js 16 migration.** It was not meant to yet, and how that happened is section 1b |
 | Working tree | Clean at the time of writing, except this file |
-| Production deployment | `dpl_7ShsR8PTz4yu75Rm11vfVVEgXtH4`, READY, target production |
-| Deployment URL | `satmarkets-kjwjzldox-sat-markets.vercel.app` |
+| Production deployment | `dpl_DbbHaXgFsu1pqc26Ht3oySsiFZkK`, READY, target production |
+| Deployment URL | `satmarkets-cvccwo57u-sat-markets.vercel.app` |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `08470dd`, confirmed by reading `meta.githubCommitSha`, not `readyState` alone. It is the PKG-E1-READINESS handback commit and carries documentation only. The last commit carrying a source change is `ac05525`, slice F, which is itself READY at `dpl_GzRbErecMZ17EKS44DNxQJsGdiDY` |
-| Build ready at | Created at epoch ms 1785703092652 and read as READY 88 seconds later. Each of the eight PKG-E1-READINESS commits was confirmed READY at its own matching SHA; the table is in section 9 of `docs/handback-pkg-e1-readiness.md` |
+| Commit deployed | `2cfbcdc`, confirmed by reading `meta.githubCommitSha` (`2cfbcdcf3927c46d82f860fe75c553ecaac7eebe`), not `readyState` alone. It is the PKG-NEXT16-SECURITY slice B dependency remedy, and it sits on top of the four slice A commits `72fe6fc`, `4d61024`, `79ab0c3`, `f115c12`. The framework the production alias is serving is therefore Next.js 16.2.12, bundler turbopack, not 14.2.35 |
+| Build ready at | Created at epoch ms 1785740040139 and READY at 1785740112239, 72 seconds later. The previous production position was `08470dd` at `dpl_7ShsR8PTz4yu75Rm11vfVVEgXtH4`, `satmarkets-kjwjzldox-sat-markets.vercel.app`, and it is what a rollback would return to |
 | Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. Owner ruling 4 governs that case directly, so no further commit is made to force a build for it, and a missing deployment for a documentation-only commit is not a blocker. **A push can still land on `main` without Vercel creating a deployment for it.** It happened to `d2d2fb5` and to `4dcfb93`, both documentation only, both carried by the next build. The check that catches it is `list_deployments` with a `since` timestamp, not `get_deployment` on the branch alias: the alias keeps answering READY for the previous commit and looks healthy |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
@@ -112,7 +112,62 @@ async request API migration is done and its four `UnsafeUnwrapped` escape hatche
 rather than carried, `next lint` is replaced by ESLint 9.39.5 behind a ratchet gate, the
 middleware to proxy rename is deliberately and time-boundedly deferred with the reason
 written into the file it governs, and the record with the Turbopack and Webpack assessment
-and its documented fallback is `docs/next16-migration.md`. Slices B through F remain.
+and its documented fallback is `docs/next16-migration.md`.
+
+Slice B is complete, at `2cfbcdc`. `npm audit` reported 3 high entries covering 4
+advisories after the upgrade, all against copies of postcss and sharp that Next.js nests
+inside itself, and all four reporting the same `fixAvailable: next@9.3.3`, a six-major
+downgrade. A flat `overrides` floor at `postcss: ^8.5.25` and `sharp: ^0.35.3` removes
+both nested copies, taking the audit to zero at every severity, on a lockfile diff of 0
+insertions and 529 deletions. The record, with the applicability analysis for each of the
+four, the sharp API compatibility replay that justified forcing 0.35.3 past the
+framework's declared `^0.34.5`, the residual uncertainty that could not be proved, and
+what `npm audit` structurally cannot see, is the new first section of
+`docs/security-baseline.md`. Slices C through F remain.
+
+**Time-bound exception opened by slice B.** The `overrides` block is the thing that
+survives, and an undated override becomes wrong quietly. It is reviewed at whichever
+comes first: the next Next.js upgrade of any size, or **2026-11-03**. The review asks
+whether the root versions now win without it (delete it if so) and whether the sharp API
+replay still passes against whatever the framework then declares.
+
+## 1b. The slice B commit went to `main`, not to the branch
+
+Recorded here because the ledger is corrected in the same commit that finds it wrong, and
+because it changes what the production alias is serving.
+
+`tools/ship.py` declares `ap.add_argument("--branch", default="main", help="target
+branch")`. The slice B ship was run without `--branch`, so it pushed the local
+`next16-security` HEAD to `refs/heads/main`. Because `main` was still at `1a99107`, an
+ancestor, the push was a clean fast-forward rather than a rejected one, and it carried
+all five commits at once: `72fe6fc`, `4d61024`, `79ab0c3`, `f115c12`, `2cfbcdc`. Vercel
+built `main` as production. **The framework migration is therefore live**, at
+`dpl_DbbHaXgFsu1pqc26Ht3oySsiFZkK`, before slices C through F have run. The branch was
+afterwards synced to the same commit with `--push-only --branch next16-security`, so the
+two references now agree.
+
+This contradicts the in-flight statement above that the work is validated on the branch
+before it lands. That statement was the intent and it was not honoured.
+
+**It was not reverted, and the reasoning is written here rather than left implicit.** The
+site is pre-launch: site-wide `noindex, nofollow`, sample data, launch stage E0, no real
+users, and owner ruling 1 parks indexing. All six local gates are green on the commit,
+the Vercel build log is clean apart from the known and deliberately retained `middleware`
+deprecation notice, and the preview at `f115c12` had already been verified before this
+happened. Against that, a `git revert` across five commits of a framework migration,
+including a codemod-derived async request API change, is a larger and less reviewable
+operation than the state it would be undoing, and force-pushing `main` backwards would
+discard the one production build that proves Next.js 16 compiles here. Proceeding was
+judged the lower risk. That is a judgement, not a rule, and it is recorded as one.
+
+**What it costs.** Slices C through F now run against a production `main` rather than
+against an unmerged branch, so each of them must be gated as a production change. The
+rollback target if one is needed is `08470dd` at `dpl_7ShsR8PTz4yu75Rm11vfVVEgXtH4`.
+
+**The fix for the cause.** Pass `--branch` explicitly on every ship for the remainder of
+this package. The default is the hazard, and changing it is itself a change to shipping
+infrastructure in the middle of a migration, so it is recorded as a follow-up rather than
+made here.
 
 ## 2. Completed packages
 
