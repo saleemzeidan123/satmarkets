@@ -1,4 +1,5 @@
 {
   "extends": "./tsconfig.json",
+  "_why": "This file existed only to flip jsx from preserve to react-jsx for the test runner, because tsx has to EMIT the JSX that next never asked tsc to emit. Next.js 16 mandates react-jsx in the base config and rewrites tsconfig.json at build time if it finds anything else, so the base now carries it and this override says the same thing the parent already says. The file is kept because package.json names it and because the moment the two configs need to differ again, this is where that difference belongs.",
   "compilerOptions": { "jsx": "react-jsx" }
 }

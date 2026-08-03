@@ -98,10 +98,21 @@ every API route method, from 320 through 1920 px. E re-runs the same forty-cell 
 reports matched before and after results without automatically replacing the budgets. F
 prepares, and does not apply, one Vercel WAF owner-action card.
 
-The framework must not reach production main partially migrated. If the environment builds
-branch previews, the work is validated on a branch and its preview before it lands. If it
-does not, the complete migration is validated locally and lands as one atomic source
-commit.
+The framework must not reach production main partially migrated. The conditional in the
+work order is resolved: this environment does build branch previews, so the work is
+validated on branch `next16-security` and its preview before it lands, and the atomic
+single commit fallback is not used. Deployment `dpl_HPTLrtfd69E7JHpKgUcWiMDnduWQ` at
+`79ab0c3` is READY and is the first successful Next.js 16 build of this application. It is
+also the only channel that can see a build error at all: this sandbox cannot run
+`npm run build`, because the egress proxy blocks Google Fonts and the four
+`next/font/google` declarations in the root layout fail without it.
+
+Slice A is complete. The framework, React and the types are on 16.2.12 and 19.2.8, the
+async request API migration is done and its four `UnsafeUnwrapped` escape hatches removed
+rather than carried, `next lint` is replaced by ESLint 9.39.5 behind a ratchet gate, the
+middleware to proxy rename is deliberately and time-boundedly deferred with the reason
+written into the file it governs, and the record with the Turbopack and Webpack assessment
+and its documented fallback is `docs/next16-migration.md`. Slices B through F remain.
 
 ## 2. Completed packages
 
@@ -194,11 +205,19 @@ Owner or counsel decisions. None of these is engineering-blocked; each blocks a 
 
 ## 5. Open findings by severity
 
-213 findings recorded. 133 are closed. 80 are not. Counts read from
+214 findings recorded. 133 are closed. 81 are not. Counts read from
 `docs/findings-register.md` at this commit by parsing the status column, not estimated, with
 one deliberate correction to the parse: rank 113 begins "Closed in PKG-DEM1 for the reading,
 open for the data" and is counted here as open, because half of it is. A naive read of the
-first word returns 134 and 79 and is wrong by exactly that row.
+first word returns 134 and 80 and is wrong by exactly that row.
+
+PKG-NEXT16-SECURITY slice A added one, finding 214, and left it open. It is the 49 React
+Compiler errors that the first ESLint run in this repository's history found, none of them
+migration breakage and all of them older than this package. It is open rather than swept
+because sweeping it would have buried a framework semantics diff in several hundred lines
+of unrelated hook refactoring, and it is a finding rather than a silence because a lint
+gate that is green because the rules were softened enforces nothing. It is held at its
+current size by `scripts/eslint-gate.mjs` and assigned to PKG-REACT-1.
 
 PKG-E1-READINESS slice F raised and closed nothing here, and that is the correct outcome
 rather than a gap. Its brief was dependency vulnerabilities, a report-only Content Security
@@ -255,10 +274,10 @@ the count that matters is the one after both halves are recorded.
 | Severity | Not closed | Ranks |
 | --- | --- | --- |
 | P0 | 6 | 4, 9, 10, 11, 12, 114 |
-| P1 | 19 | 13, 14, 15, 16, 17, 19, 20, 21, 25, 29, 30, 31, 32, 45, 62, 117, 170, 193, 203 |
+| P1 | 20 | 13, 14, 15, 16, 17, 19, 20, 21, 25, 29, 30, 31, 32, 45, 62, 117, 170, 193, 203, 214 |
 | P2 | 55 | 37, 38, 39, 40, 41, 42, 43, 44, 47, 48, 49, 53, 63, 64, 74, 75, 80, 81, 92, 93, 94, 96, 97, 99, 102, 103, 113, 115, 116, 118, 138, 142, 144, 146, 151, 152, 163, 169, 172, 173, 175, 176, 177, 178, 183, 185, 186, 188, 189, 190, 191, 194, 195, 202, 207 |
 
-**What the 19 open P1 rows are, because "19 open P1" reads worse than it is.** Sixteen of
+**What the 20 open P1 rows are, because "20 open P1" reads worse than it is.** Sixteen of
 them were open before PKG-A11Y-1 began and are not accessibility findings: 13, 14, 15 and
 32 are metadata and syndication; 16, 17, 19, 25, 29, 30, 31 and 45 are language and content
 quality; 20, 21 and 62 are claims and figure precision, two of them already blocked by an
@@ -269,7 +288,8 @@ markup change; 193 is a requirement poster's consent withdrawal, which needs a d
 migration this environment cannot apply; and 203 is the server-composed English refusal
 sentence, which is fixed in six shipped slices and is still counted open here because the
 refusals it repairs are all reached by a POST and nothing in this environment can send one
-to the deployment. See section 3.
+to the deployment. See section 3. The twentieth, 214, is the lint debt raised above, which
+is bounded, measured and ratcheted rather than merely noted.
 
 **The 203 arithmetic, corrected rather than restated.** The line above used to read
 "sixteen client sites rendering a server-composed English error sentence in both
