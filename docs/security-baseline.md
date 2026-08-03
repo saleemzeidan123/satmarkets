@@ -558,6 +558,27 @@ the live pass, and `docs/vendored-third-party.md` says why it matters: a plugin
 that downloads and fails to parse is silent, because maplibre swallows the error
 and the labels are simply wrong.
 
+### Re-measured by slice D on the next deployment, and what it sizes
+
+The table above was taken against `dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP`. Slice D
+repeated the nonce check against `dpl_9gSpSvRa2w4427bv1Na8jhwr3G4p` at `5464a46`
+across five more surfaces, and found the same shape every time: the nonce in the
+response header equalled the single distinct nonce stamped on every executable
+script in the document, and the document never carried more than one nonce value.
+`/en/login` and `/ar/login` carried 21 nonced scripts each, `/en` 23,
+`/en/requirements` 21 and `/ar/listings` 203. On `/auth/callback`, which the
+matcher excludes, the header carried no nonce and every script in the flight
+payload carried `"nonce":"$undefined"`, which is the excluded case behaving as
+designed rather than failing quietly. There was no mismatch anywhere.
+
+What this sizes is the enforcement pass above. The unnonced population is the
+`application/ld+json` data blocks and nothing else: 2 per page on every page
+measured, 3 on listings. Those are data rather than executable script, and
+whether a browser holds them to `script-src` is the specific thing the Safari and
+Firefox pass has to answer. It is now a question about roughly two elements per
+page, not an open-ended audit, and the slice D record in
+`docs/next16-migration.md` section 11.4 carries the per-page counts.
+
 ## Content Security Policy, the pre-nonce position
 
 **Superseded 2026-08-03 by the slice C section above.** Kept unedited. The

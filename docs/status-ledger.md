@@ -43,9 +43,9 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `main` is `2cfbcdc`, "fix(deps): force the framework's nested postcss and sharp to the patched root copies". `next16-security` is ahead of it at `8bf173c`, the slice C code, plus the commit this file ships in. The two references no longer agree, and that is deliberate: slice B's ship went to `main` by accident and slice C's did not |
+| GitHub HEAD | `main` is `2cfbcdc`, "fix(deps): force the framework's nested postcss and sharp to the patched root copies". `next16-security` is ahead of it at `5464a46`, the slice C record, plus the slice D commit this file ships in. The two references no longer agree, and that is deliberate: slice B's ship went to `main` by accident and slice C's did not |
 | Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. **`main` now carries the Next.js 16 migration.** It was not meant to yet, and how that happened is section 1b. Every ship from slice C onwards passes `--branch next16-security` explicitly |
-| Branch position | `next16-security` at `8bf173c`, preview `dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP`, READY, serving from `satmarkets-iufa00ogr-sat-markets.vercel.app`, `githubCommitSha` confirmed rather than inferred from `readyState`. This is the slice C evidence deployment and it is not production |
+| Branch position | `next16-security` at `5464a46`, preview `dpl_9gSpSvRa2w4427bv1Na8jhwr3G4p`, READY, serving from `satmarkets-p6qbnfiyg-sat-markets.vercel.app`, `githubCommitSha` confirmed rather than inferred from `readyState`. This is the slice D live-evidence deployment and it is not production. The slice C code deployment it supersedes is `dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP` at `8bf173c` |
 | Working tree | Clean at the time of writing, except this file |
 | Production deployment | `dpl_DbbHaXgFsu1pqc26Ht3oySsiFZkK`, READY, target production |
 | Deployment URL | `satmarkets-cvccwo57u-sat-markets.vercel.app` |
@@ -55,7 +55,7 @@ every current figure.
 | Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. Owner ruling 4 governs that case directly, so no further commit is made to force a build for it, and a missing deployment for a documentation-only commit is not a blocker. **A push can still land on `main` without Vercel creating a deployment for it.** It happened to `d2d2fb5` and to `4dcfb93`, both documentation only, both carried by the next build. The check that catches it is `list_deployments` with a `since` timestamp, not `get_deployment` on the branch alias: the alias keeps answering READY for the previous commit and looks healthy |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1752 tests, 0 failing, on `next16-security`. The rise from 1739 is PKG-NEXT16-SECURITY slice C: `src/lib/rtlTextPlugin.test.ts` and `src/lib/csp.test.ts` are new files added to the explicit list in `package.json`. The earlier rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
+| Test suite | 1758 tests, 0 failing, on `next16-security`. The rise from 1752 is PKG-NEXT16-SECURITY slice D: `src/lib/next16Surface.test.ts` is a new file added to the explicit list in `package.json`, holding six assertions over the async request API surface. The earlier rise from 1739 is slice C: `src/lib/rtlTextPlugin.test.ts` and `src/lib/csp.test.ts` are new files added to the explicit list in `package.json`. The earlier rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then the four probes, each of which needs an explicit browser path: `node scripts/reflow-probe.mjs`, `radio-probe.mjs`, `shell-probe.mjs` and `responsive-probe.mjs`, all with `--chromium /opt/pw-browsers/chromium`. `shell-probe` and `responsive-probe` also need `/tmp/globals.built.css`, built by `npx tailwindcss -i src/styles/globals.css -o /tmp/globals.built.css --minify`. Then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState`. `npm run build` cannot complete in this sandbox, because `next/font/google` cannot reach Google Fonts through the egress proxy, so the Vercel build is the production build evidence |
 
 **This has now happened twice, so it is a pattern rather than an incident.** A push can
@@ -166,7 +166,37 @@ one policy per response: middleware's `res.headers.set()` replaces the config va
 middleware runs, and the config value stands alone where it does not. Both comments were
 corrected in this commit, and `set` is now documented as load bearing.
 
-Slices D through F remain.
+Slice D is complete, in this commit, with its evidence taken against
+`dpl_9gSpSvRa2w4427bv1Na8jhwr3G4p` at `5464a46`. It has two halves and they are
+different kinds of claim. The half that lasts is `src/lib/next16Surface.test.ts`,
+six assertions over 121 modules under `src/app` and 246 shipped modules overall:
+every `params` and `searchParams` annotation begins with `Promise<`, all 108
+reads are paired with `await` in a Server Component or `use()` in a Client
+Component (101 and 7, with floors asserted on both so neither half can quietly
+stop matching), all six `cookies()` and `headers()` calls are awaited, no shipped
+module mentions `UnsafeUnwrapped`, all 38 route files match a written-down method
+inventory totalling 14 GET, 26 POST, 5 PATCH and 3 DELETE, and exactly one of
+`middleware.ts` and `proxy.ts` exists. The half that does not last is the live
+sweep, so it is filed with the deployment named beside it: all 38 route files
+requested, 24 returning 405 with a matching `x-matched-path` which proves the
+module is deployed and GET genuinely not exported without firing a write method
+at a live deployment, 11 returning real bodies, and one each of 400, 401 and 404
+in the application's own words. Page surfaces cover authentication in both
+languages, public server component reads, listings canonicalization against the
+four defects `src/lib/search/canonical.ts` names, metadata with `hreflang` and
+Open Graph, Arabic rendering at `lang="ar" dir="rtl"`, and the manifest. The
+viewport range is the four Playwright probes, 320 through 1920, all passing. The
+record is section 11 of `docs/next16-migration.md`, and section 11.6 states what
+it does not prove: no hydration, no console, and no write method exercised.
+
+**A recorded limitation retired by slice D.** `/manifest.webmanifest`,
+`/api/viewings` and `/api/admin/accounts/provision` were recorded in earlier
+sessions as unfetchable through the Vercel fetch tool. They are not.
+`"Unable to create shareable URL"` is transient: seven paths failed that way
+during slice D and every one succeeded on retry. Retry three times before writing
+down a limitation.
+
+Slices E and F remain.
 
 **Time-bound exception opened by slice B.** The `overrides` block is the thing that
 survives, and an undated override becomes wrong quietly. It is reviewed at whichever
@@ -541,6 +571,15 @@ consecutive packages have now owed the same thing.
 package record says so in those words and does not substitute a local result for a live
 one. A local pass is evidence that the code does what it says; it is not evidence that
 the deployed product does.
+
+**What slice D added to the GET-only channel, and what it did not.** An
+unauthenticated GET to a route that exports no GET returns 405 with
+`x-matched-path` set to that route's path, which proves the module is deployed and
+that the method is genuinely not exported, and separates both from a 404. That is
+how all 38 route files were covered without firing a write method at a live
+deployment, and it is the strongest thing this channel can say about a write
+route. It says nothing about what those handlers do when they are called, so the
+refusal-sentence row above is unchanged and finding 203 is still open.
 
 ---
 
