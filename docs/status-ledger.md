@@ -43,8 +43,9 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `2cfbcdc`, "fix(deps): force the framework's nested postcss and sharp to the patched root copies", plus the commit this file ships in |
-| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. **`main` now carries the Next.js 16 migration.** It was not meant to yet, and how that happened is section 1b |
+| GitHub HEAD | `main` is `2cfbcdc`, "fix(deps): force the framework's nested postcss and sharp to the patched root copies". `next16-security` is ahead of it at `8bf173c`, the slice C code, plus the commit this file ships in. The two references no longer agree, and that is deliberate: slice B's ship went to `main` by accident and slice C's did not |
+| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. **`main` now carries the Next.js 16 migration.** It was not meant to yet, and how that happened is section 1b. Every ship from slice C onwards passes `--branch next16-security` explicitly |
+| Branch position | `next16-security` at `8bf173c`, preview `dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP`, READY, serving from `satmarkets-iufa00ogr-sat-markets.vercel.app`, `githubCommitSha` confirmed rather than inferred from `readyState`. This is the slice C evidence deployment and it is not production |
 | Working tree | Clean at the time of writing, except this file |
 | Production deployment | `dpl_DbbHaXgFsu1pqc26Ht3oySsiFZkK`, READY, target production |
 | Deployment URL | `satmarkets-cvccwo57u-sat-markets.vercel.app` |
@@ -54,7 +55,7 @@ every current figure.
 | Deployment lag | The rule, so this row stops chasing itself. A ledger cannot record its own deployment before that deployment exists, so it always names the newest deployment that existed when it was written and states the gap. The gap is currently one commit: the one this row ships in, which carries documentation only and changes no rendered surface. Owner ruling 4 governs that case directly, so no further commit is made to force a build for it, and a missing deployment for a documentation-only commit is not a blocker. **A push can still land on `main` without Vercel creating a deployment for it.** It happened to `d2d2fb5` and to `4dcfb93`, both documentation only, both carried by the next build. The check that catches it is `list_deployments` with a `since` timestamp, not `get_deployment` on the branch alias: the alias keeps answering READY for the previous commit and looks healthy |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
-| Test suite | 1739 tests, 0 failing. The rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
+| Test suite | 1752 tests, 0 failing, on `next16-security`. The rise from 1739 is PKG-NEXT16-SECURITY slice C: `src/lib/rtlTextPlugin.test.ts` and `src/lib/csp.test.ts` are new files added to the explicit list in `package.json`. The earlier rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
 | Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then the four probes, each of which needs an explicit browser path: `node scripts/reflow-probe.mjs`, `radio-probe.mjs`, `shell-probe.mjs` and `responsive-probe.mjs`, all with `--chromium /opt/pw-browsers/chromium`. `shell-probe` and `responsive-probe` also need `/tmp/globals.built.css`, built by `npx tailwindcss -i src/styles/globals.css -o /tmp/globals.built.css --minify`. Then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState`. `npm run build` cannot complete in this sandbox, because `next/font/google` cannot reach Google Fonts through the egress proxy, so the Vercel build is the production build evidence |
 
 **This has now happened twice, so it is a pattern rather than an incident.** A push can
@@ -123,7 +124,49 @@ insertions and 529 deletions. The record, with the applicability analysis for ea
 four, the sharp API compatibility replay that justified forcing 0.35.3 past the
 framework's declared `^0.34.5`, the residual uncertainty that could not be proved, and
 what `npm audit` structurally cannot see, is the new first section of
-`docs/security-baseline.md`. Slices C through F remain.
+`docs/security-baseline.md`.
+
+Slice C is complete, at `8bf173c` on `next16-security`, preview
+`dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP`. The right to left map text plugin is vendored at
+`public/vendor/mapbox-gl-rtl-text-0.2.3/` from the npm registry tarball, with the
+publisher integrity hash checked before extraction and the resulting sha256 pinned in
+`src/lib/rtlTextPlugin.test.ts`; the deployment serves those exact 206,897 bytes and the
+hash matches, so the chain from publisher to edge is closed. The third party CDN origin
+is gone from `script-src` and `connect-src`, and two tests at opposite ends stop it
+returning. The policy also acquired a per request nonce: `script-src` carried
+`'unsafe-inline'` on the grounds that a nonce would trade a known weakness for
+CVE-2026-44581, and that advisory is patched in 16.2.5 while this tree runs 16.2.12, so
+the justification had expired and was retired rather than inherited. Hashes and
+subresource integrity were both closed on structure, not preference: hashes cannot cover
+the App Router's per request inline flight data, and `experimental.sri`, which does exist
+in 16.2.12, covers `<script src>` elements only. The policy moved to `src/lib/csp.mjs`
+with two callers so the directive list cannot drift, and middleware deletes client
+supplied CSP request headers before setting its own, because that header is where the
+renderer looks for the nonce. **Still report only.** The record, including what a live
+browser pass has to show before enforcement and who can run it, is the new first CSP
+section of `docs/security-baseline.md`, and the plugin provenance is
+`docs/vendored-third-party.md`.
+
+**The measurement the slice C work order asked for.** The instruction was not to force
+every public page into dynamic rendering without measuring the cost. The build route
+tables at `2cfbcdc` and at `8bf173c` are identical entry for entry: three routes are
+prerendered as static content, `/[locale]/proto`, `/icon.svg` and `/robots.txt`, and
+everything else was already server rendered on demand beforehand. Nothing was forced
+dynamic, because the nonce reaches the renderer through the request headers and no
+component has to call `headers()`. The measured cost is one page: `/[locale]/proto`
+declares `force-static`, so its prerendered HTML carries no nonce, and it was fetched
+from the preview to confirm that rather than assumed. Under report only that is a console
+listing; under enforcement it would not hydrate. It is an internal noindexed design
+system reference, and it is the one recorded blocker to enforcement.
+
+**Correction found by the slice C live check.** The comments written during the slice
+predicted that both the build time header and the middleware header would arrive on a
+matched route and that the browser would evaluate both. The deployment returns exactly
+one policy per response: middleware's `res.headers.set()` replaces the config value where
+middleware runs, and the config value stands alone where it does not. Both comments were
+corrected in this commit, and `set` is now documented as load bearing.
+
+Slices D through F remain.
 
 **Time-bound exception opened by slice B.** The `overrides` block is the thing that
 survives, and an undated override becomes wrong quietly. It is reviewed at whichever

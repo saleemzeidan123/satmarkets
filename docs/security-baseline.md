@@ -22,6 +22,12 @@ upgrade closed. Nothing in the Content Security Policy, response header or rate
 limiting sections has been re-measured by slice B; the CSP is slice C's subject
 and is amended there, not here.
 
+**Amended again 2026-08-03 by PKG-NEXT16-SECURITY slice C, at commit 8bf173c.**
+The Content Security Policy half of this document is now two layers in the same
+way. The slice C section below is the current position. The section headed
+"Content Security Policy, the pre-nonce position" after it is kept unedited as
+the record of what slice C changed and why the old reasoning no longer holds.
+
 ## What was changed in this slice
 
 One dependency was upgraded, five response headers were added, and one header
@@ -322,7 +328,242 @@ service and cache behaviour on a preview that is noindex, protected and not yet
 carrying real users, rather than remote code execution or data disclosure on a
 live public product. The upgrade should happen before E1 exposure, not after.
 
-## Content Security Policy
+## PKG-NEXT16-SECURITY slice C, the Content Security Policy as it now stands
+
+Written 2026-08-03 against commit 8bf173c, preview deployment
+dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP on branch `next16-security`, serving from
+https://satmarkets-iufa00ogr-sat-markets.vercel.app. **This section supersedes
+"Content Security Policy, the pre-nonce position" below.** That section was
+written on 2026-08-02 against next@14.2.35 and is kept unedited, because the
+argument it makes for `'unsafe-inline'` is the argument this slice retired, and
+retiring an argument is only legible if the argument is still there to read.
+
+Three things changed. The third party script origin left the policy, because the
+file it named is now served from this origin. The policy acquired a per-request
+nonce, because the advisory that forbade one is fixed in the version this
+repository now runs. And the policy stopped living in `next.config.mjs`, because
+it acquired a second emitter and two hand-written copies of a directive list are
+two policies waiting to disagree.
+
+### The third party origin is gone
+
+`https://unpkg.com` was in `script-src` and `connect-src` for one reason: the
+right to left text plugin that makes Arabic labels render correctly on the map
+was loaded from it at runtime. The plugin is now vendored at
+`public/vendor/mapbox-gl-rtl-text-0.2.3/`, taken from the npm registry tarball
+with the publisher integrity hash checked before extraction, and loaded through
+`src/lib/rtlTextPlugin.ts` from a same origin path that `'self'` already covers.
+The provenance, the licence obligation and the upgrade procedure are in
+`docs/vendored-third-party.md`; this document records only the policy effect,
+which is that `script-src` now names no origin other than this one.
+
+That claim is held in two places at once. `src/lib/csp.test.ts` asserts that
+`script-src` contains no `http` source and that `connect-src` is an exact closed
+list, and `src/lib/rtlTextPlugin.test.ts` asserts that no source file outside the
+plugin helper names the removed origin at all. Neither the policy nor the code
+can reintroduce it alone.
+
+### The nonce, and the advisory that used to forbid it
+
+The pre-nonce section below argues that this application cannot use a nonce
+because Next.js 14.2.35 carries GHSA-ffhc-5mcf-pf4q, and that adding one would
+trade a known weakness for a known vulnerability. That was correct when it was
+written and is not correct now. The advisory, CVE-2026-44581, is titled
+cross site scripting in App Router applications using CSP nonces, is rated
+Moderate at CVSS 4.7, affects `>= 13.4.0 < 15.5.16` and `>= 16.0.0 < 16.2.5`,
+and is patched in 15.5.16 and 16.2.5. Slice B moved this repository to 16.2.12.
+The stated reason for `'unsafe-inline'` therefore expired with the upgrade, and
+leaving it in place would have meant keeping a compromise whose justification had
+been deleted underneath it.
+
+What the framework does with a nonce was read from the installed code rather than
+from the documentation. `app-render.js` and `render.js` both take the request's
+own `content-security-policy` header, or `content-security-policy-report-only` if
+the first is absent, and pass it to
+`next/dist/server/app-render/get-script-nonce-from-header.js`. That module finds
+`script-src`, falls back to `default-src`, and returns the first source matching
+`/^'nonce-([A-Za-z0-9+/_-]+={0,2})'$/`, ignoring anything malformed. So the nonce
+has to be on the request for the renderer to stamp it, and on the response for
+the browser to accept it, which is why it is generated in middleware and written
+in both places.
+
+`src/lib/csp.test.ts` holds a copy of that regex and checks two hundred generated
+nonces against it. A nonce the framework silently rejects is worse than no nonce,
+because the header would then claim a protection the document does not carry.
+
+### The part of the advisory that is still this application's problem
+
+The framework bug is fixed. The shape of it is not, because the mechanism it
+exploited is the intended mechanism: the renderer reads the nonce out of a
+request header, and a request header is something a client sends. Without a
+defence, a visitor could put a chosen nonce on the request, have the renderer
+stamp it on the framework's inline scripts, and know in advance a value that the
+policy trusts.
+
+`src/middleware.ts` therefore deletes both `content-security-policy` and
+`content-security-policy-report-only` from the copied request headers before
+setting its own, and `src/lib/csp.test.ts` fails if the delete ever moves after
+the set. This is application side work that the framework upgrade does not do for
+you and that nothing warns about.
+
+### What was measured before deciding, and what it cost
+
+The instruction for this slice was not to force every public page into dynamic
+rendering without measuring the cost. The measurement is a matched pair of build
+route tables, one from commit 2cfbcdc before the change and one from commit
+8bf173c after it, and they are identical entry for entry. Three routes in the
+whole application are prerendered as static content: `/[locale]/proto`,
+`/icon.svg` and `/robots.txt`. Everything else was already server rendered on
+demand before this slice touched anything.
+
+Nothing was forced dynamic, and the reason is structural rather than lucky. A
+nonce reaches the renderer through the request headers and is injected by the
+framework itself, so no component has to call `headers()` and no route acquires a
+dynamic dependency. The cost of the nonce is therefore not a rendering mode
+change at all. It is one page.
+
+`/[locale]/proto` declares `export const dynamic = "force-static"`, so its HTML
+was produced at build time when no nonce existed, while middleware still runs on
+the request and still puts a nonce in the response header. Fetched from the
+deployment, that page returns twenty eight script tags of which none carry a
+nonce. Under report only that is a console listing. Under enforcement the eleven
+`<script src>` chunks would still load, because `'self'` covers them, and the
+fifteen framework inline scripts would be blocked, so the page would not hydrate.
+It is an internal, noindexed design system reference, which is why this is a
+recorded blocker to enforcement rather than a reason to abandon the nonce, but it
+is the one thing that must be resolved before the header changes name.
+
+### Alternatives, and why each was closed on structure rather than preference
+
+Hashes were considered first, because a hash needs no per-request plumbing. They
+cannot work here. The App Router serves its flight data in inline scripts whose
+content varies per request, so there is no stable digest to enumerate at build
+time.
+
+Subresource integrity was considered second. It is impossible for the plugin load
+that motivated this slice, because maplibre passes the URL to `importScripts`
+inside a worker and there is no element to carry an `integrity` attribute.
+Separately, `experimental.sri` does exist in 16.2.12, and Turbopack does handle
+its manifest, but it covers `<script src>` elements only. It cannot cover inline
+flight data, so it is not a substitute for a nonce and was not adopted on the
+strength of being easier.
+
+`'strict-dynamic'` was rejected on what it costs rather than on what it gives.
+`'self'` already covers the chunk files the framework injects during navigation,
+so `'strict-dynamic'` adds nothing this application needs, and it would cause
+`'self'` to be ignored, which makes correctness depend on every dynamically
+inserted script being inserted by an already trusted one. That is a stronger
+claim than this application can currently verify, so it is not made.
+
+`'unsafe-inline'` was kept alongside the nonce, which looks like a contradiction
+and is not. A browser that understands nonces ignores `'unsafe-inline'` for the
+whole directive as soon as a nonce source is present. That is specified
+behaviour, and it was confirmed by measurement rather than assumed: a local page
+served under `script-src 'nonce-x' 'unsafe-inline'` still raised a
+`script-src-elem` violation for an unnonced inline script, and under enforcement
+that script did not run. A browser too old to understand nonces ignores the nonce
+instead and falls back to exactly the position this application already shipped.
+So the pair is better in every browser and worse in none.
+
+`style-src` still carries `'unsafe-inline'` and a nonce cannot help it. Nonces
+apply to elements, and the 565 inline `style` attributes across the components
+have no element of their own to carry one. Removing it is a refactor into
+classes, not a header change, so it is not part of this slice.
+
+### One measurement that reversed an assumption
+
+The working assumption was that every unnonced inline script in the document
+would have to be given a nonce, including the JSON-LD structured data blocks,
+which would have made this a change across many components rather than a change
+to a header. That was tested rather than believed, using Chromium from the
+sandbox against a local server, with isolated cases and a control: a page with
+only a JSON-LD block produced no violation, a page with a JSON-LD block plus an
+unnonced control script produced exactly one violation at the control's line, and
+under enforcement the control did not run while the JSON-LD remained in the
+document. An unnonced `<script type="application/ld+json">` does not violate
+`script-src`, which matches the CSP treatment of data blocks.
+
+The caveat travels with the finding: this was measured in Chromium 141 only. It
+was not checked in Safari or Firefox, and it should be checked there during the
+live pass, because the whole enforcement decision rests on the deployed pages
+having no unnonced executable inline script left.
+
+### Where the policy lives now
+
+`src/lib/csp.mjs` is the only file that writes a directive. It is `.mjs` rather
+than `.ts` because it has two importers that cannot both read TypeScript:
+`next.config.mjs` is loaded by the framework's config loader before any
+TypeScript pipeline exists, and `src/middleware.ts` is bundled for the edge
+runtime. `allowJs` in `tsconfig.json` means the middleware still gets types from
+the JSDoc.
+
+There are two emitters because a nonce is per request and `headers()` in
+`next.config.mjs` is evaluated once at build time. The config emits the nonce
+less policy, which is what keeps `/api`, `/auth`, `/_next/static`, `/_next/image`
+and every dotted path covered, since the middleware matcher excludes all of them.
+Middleware emits the nonce bearing one on the routes it runs on.
+
+It was predicted, in an earlier draft of these comments, that both headers would
+arrive together on a matched route and that the browser would evaluate both. The
+deployment says otherwise, and the deployment is the authority: middleware's
+`res.headers.set()` replaces the value the config emitted, so every response
+carries exactly one policy. That is worth knowing rather than a detail, because
+`set` is load bearing. Changing it to `append` would emit two policies, and a
+script would then have to satisfy both.
+
+`src/lib/csp.test.ts` fails if either emitter writes a directive string of its
+own, if the two forms differ anywhere except `script-src`, if the nonce is placed
+where the framework will not find it, or if the header name changes without a
+decision.
+
+### It is still report only, and here is exactly what would change that
+
+The header is still `Content-Security-Policy-Report-Only`. Nothing about this
+slice makes it safe to enforce, and shipping a nonce is not a licence to switch
+the name in the same breath.
+
+What enforcement needs is a live browser pass that this sandbox cannot perform:
+egress to the deployment is blocked here, and the Playwright probes in this
+repository are configured to run against a live URL from outside it. A person
+with a browser has to load, in both languages and with the console open, the home
+page, the listings search with the map pane open, a listing detail page carrying a
+video, the map explorer, the location picker inside the listing studio, the rent
+index, the advisor and sign in, and report zero violations. The map surfaces
+matter most, because the remaining third party origins only fire after
+hydration. Safari and Firefox should be included, for the JSON-LD reason above.
+And `/[locale]/proto` has to be resolved, by dropping `force-static`, by
+excluding the path, or by accepting that one internal page does not hydrate.
+
+Until that pass exists, the claim that the directive list is complete is a
+derivation from the source, not an observation.
+
+### What the deployment actually returned
+
+Taken one request at a time against dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP.
+
+| Request | Result |
+| --- | --- |
+| `GET /en` | 200. One policy header, nonce bearing. 25 script tags: 12 external and 11 inline all carrying the same nonce, 2 unnonced JSON-LD data blocks. No occurrence of the removed origin in the header or the body. |
+| `GET /ar/listings` | 200, `dir="rtl"`. One policy header carrying a different nonce from the `/en` request, which is what per request means. 206 script tags: 12 external and 191 inline all nonced, 3 unnonced JSON-LD blocks. |
+| `GET /en/proto` | 200. One policy header, nonce bearing. 28 script tags, none nonced, because the HTML was prerendered. The enforcement blocker described above, observed rather than predicted. |
+| `GET /api/listings?limit=1` | 200 `application/json`. One policy header, the nonce less form, plus the four other response headers. This is the coverage the build time header exists for, since middleware does not run here. |
+| `GET /vendor/mapbox-gl-rtl-text-0.2.3/mapbox-gl-rtl-text.min.js` | 200 `application/javascript`, 206,897 bytes, sha256 `142f4fc31b4911887bacfea4df1813df67be28dfcb4c56e3f8f576f2e6fdf5d2`, identical to the hash pinned in `src/lib/rtlTextPlugin.test.ts` and to the file in the repository. The chain from the registry tarball to the served bytes is closed. |
+| `GET /vendor/mapbox-gl-rtl-text-0.2.3/LICENSE.md` | 200 `text/markdown`, carrying both the Mapbox and the ICU notices, which is how the BSD-2-Clause obligation is met. |
+
+One thing these requests cannot show. The plugin is registered lazily by the map
+components after hydration, so the vendor path does not appear in the served HTML
+of any page, and no server response can demonstrate that Arabic labels are
+actually shaped. The bytes are proven; the shaping is not. That check belongs to
+the live pass, and `docs/vendored-third-party.md` says why it matters: a plugin
+that downloads and fails to parse is silent, because maplibre swallows the error
+and the labels are simply wrong.
+
+## Content Security Policy, the pre-nonce position
+
+**Superseded 2026-08-03 by the slice C section above.** Kept unedited. The
+argument below that a nonce cannot be used, and the `unpkg.com` row in the
+origin table, are both retired; read them as the record of a position, not as
+current guidance.
 
 The policy lives in `next.config.mjs` and is served on every path by the
 `headers()` function rather than by middleware. That placement is deliberate:
@@ -568,7 +809,12 @@ Four, stated before anyone relies on the document.
 The CSP has not been observed under enforcement, only reasoned from the source
 and shipped in report-only. Until a person walks the map and video surfaces in
 both languages with a console open, the claim that the directive list is
-complete is a derivation, not an observation.
+complete is a derivation, not an observation. Slice C narrowed what is unobserved
+without closing it: the headers, the nonce and the vendored plugin bytes have now
+been read back off a live deployment, and one enforcement blocker at
+`/[locale]/proto` has been observed rather than predicted, but no browser has
+executed a page under this policy and the Chromium 141 finding about JSON-LD data
+blocks has not been repeated in Safari or Firefox.
 
 The advisory reachability table is a source-level assessment. It establishes
 that the vulnerable code paths are not called from this repository. It does not
@@ -593,6 +839,13 @@ that it is scoped as a package rather than folded into product work.
 
 Whether to create the one Vercel WAF fixed window rate limit rule on `/api/*`.
 This costs nothing on the current plan and needs only dashboard configuration.
+
+Added by slice C, and the only one of these that needs a browser rather than a
+decision: whether to run the live console pass described above so the policy can
+move from report only to enforced. It costs one person perhaps twenty minutes in
+two languages and cannot be done from this sandbox at all. Without it the policy
+blocks nothing, which is the current position and is stated as such rather than
+implied away.
 
 Whether to authorize an Upstash Redis store so `allowShared` becomes durable,
 accepting a new sub-processor that holds client IP addresses in short lived

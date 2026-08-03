@@ -16,8 +16,21 @@
 // `/_next/static`, `/_next/image` and every path containing a dot, and those
 // responses should not lose their policy. So: the config emits the nonce-less
 // policy everywhere, and middleware emits the nonce-bearing one on the routes it
-// runs on. Where both apply the browser enforces both, and a policy carrying a
-// nonce is the stricter of the two, so the strict one governs.
+// runs on.
+//
+// WHAT ACTUALLY REACHES THE BROWSER, measured rather than assumed. It was
+// predicted here that both headers would arrive on a matched route and that the
+// browser would evaluate both. That is not what happens. Middleware's
+// `res.headers.set()` replaces the value the config emitted, so every response
+// carries exactly one policy: the nonce-bearing one where middleware runs, the
+// nonce-less one where it does not. Verified on deployment
+// dpl_4jH9SA8VpnbMh1oh8zcxbs5rtYTP, where `/en` and `/ar/listings` returned a
+// single nonce-bearing policy and `/api/listings` and
+// `/vendor/mapbox-gl-rtl-text-0.2.3/mapbox-gl-rtl-text.min.js` returned a single
+// nonce-less one. The reason this matters is that `set` is load-bearing:
+// changing it to `append` would emit two policies and the browser would then
+// require a script to satisfy both, which is a different and stricter rule than
+// anyone reading this file would expect.
 
 /**
  * Every directive except script-src. These do not vary per request.

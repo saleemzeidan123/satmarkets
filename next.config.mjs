@@ -12,9 +12,11 @@
 // `favicon.ico` and every path containing a dot. Those responses are not HTML
 // and mostly cannot execute anything, but dropping their policy would be a
 // visible regression in any header scan of this site and would have to be
-// explained every time. So this header keeps the coverage it had, and on the
-// routes where both apply the browser evaluates both and the stricter one, which
-// is the nonce-bearing one, governs.
+// explained every time. So this header keeps the coverage it had. On the routes
+// where middleware also runs, its `res.headers.set()` replaces this value rather
+// than adding to it, so exactly one policy is served either way; that was
+// measured on the deployment, not assumed, and the measurement is recorded in
+// docs/security-baseline.md.
 //
 // The reasoning for every individual directive is in docs/security-baseline.md.
 import { buildCsp, CSP_HEADER } from "./src/lib/csp.mjs";
