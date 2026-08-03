@@ -482,6 +482,16 @@ included at no additional charge on the current plan, needs no code, adds no
 sub-processor and requires no data-protection agreement. The caveats recorded with it are
 that the plan allows a single custom rule and that counters are per region.
 
+**Corrected on 2026-08-03. The `/api/*` scope above is withdrawn and is not what to
+apply.** The owner narrowed it, and PKG-NEXT16-SECURITY slice F then measured the request
+bursts an ordinary client generates instead of assuming them. The measurement rules the
+blanket scope out: one route, the browsing typeahead, produces four fifths of ordinary API
+traffic and it varies threefold with how fast the visitor types, so no single threshold
+protects the paid routes without throttling a person entering a district name. The rule
+that replaces it covers six unauthenticated paid or writing paths, excludes the typeahead,
+and is written out as an owner-action card at the end of `docs/security-baseline.md`. This
+paragraph is left standing rather than deleted so the change of position is visible.
+
 An Upstash Redis store is the second step, for per-route limits. The free tier covers
 roughly 250,000 limited requests per month at two commands per check. It is not only a
 cost decision: a store is a new sub-processor holding client IP addresses in short-lived
@@ -677,6 +687,13 @@ is a package and not a bump.
 current plan, no code, no new sub-processor, no agreement. It is dashboard configuration
 and nothing in this repository can or should do it. Until it exists the platform has no
 shared rate limit at all.
+
+Corrected on 2026-08-03: the `/api/*` scope in that item is withdrawn, for the reason
+recorded above. The replacement is one rule over six unauthenticated paid or writing
+paths, with the browsing typeahead deliberately excluded, prepared and not applied as an
+owner-action card at the end of `docs/security-baseline.md`. The rest of the item stands:
+it is still account configuration, nothing here can create it, and until it exists the
+platform still has no shared rate limit.
 
 **Three. Authorise an Upstash Redis store** so `allowShared()` becomes durable and the
 other 31 routes can be migrated. The free tier covers roughly 250,000 limited requests per

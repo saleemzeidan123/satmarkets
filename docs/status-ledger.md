@@ -241,7 +241,71 @@ authorized. Leaving the budgets alone keeps a red gate standing that no code cha
 in this repository can turn green. Either is defensible and an unrecorded choice is
 not, because an unexplained failing gate gets ignored and then deleted.
 
-Slice F remains.
+Slice F is complete, in this commit, and it prepared one Vercel WAF rate limit rule
+and applied nothing. No rule exists on the project, no account setting was touched,
+and the card is written so the owner stays one command from either publishing it or
+throwing it away, because `vercel firewall rules add` stages a draft and drafts do
+not reach production traffic until `vercel firewall publish`. The record is the last
+section of `docs/security-baseline.md`.
+
+**The measurement is what changed the rule, and it is the part worth reading.** The
+withdrawn recommendation was one fixed window keyed on IP across `/api/*`. A new
+instrument, `scripts/burst-probe.mjs`, drove the real production build with a real
+browser through four sessions, an English listing browse using both public search
+boxes, a tour of the six read heavy market surfaces, the same browse in Arabic, and
+an advisor conversation of four questions, and recorded every request with a
+millisecond timestamp. It ran twice over the same script, at 140 ms between
+keystrokes and at 320 ms, because both public typeaheads debounce at 220 ms and that
+threshold is the difference between a word costing one request and a word costing
+eight. The fast arm sent 8 requests to `/api`, the deliberate arm sent 26. Same
+person, same actions, three times the traffic, decided by typing speed. Twenty one of
+the deliberate arm's twenty six were one route, `/api/places`, the browsing
+typeahead. That is why no threshold serves the blanket scope: low enough to protect
+the routes that spend money is low enough to throttle someone typing a district name.
+
+Split by whether the route would be covered, the answer falls out. The covered set
+peaked at 5 requests per 60 s in both arms, identically, `POST /api/advisor` four
+times and `POST /api/search` once, and did not move with typing speed at all,
+because every request typing speed moves is `/api/places`. Excluding that one route
+removes the conflict and leaves a threshold that can be set from evidence.
+
+**The inventory the ledger asked for.** Of 38 route files under `src/app/api`, 28
+call `getSession` before acting and two more sit behind `CRON_SECRET`, leaving ten an
+anonymous request can reach: `/api/advisor`, `/api/advisor/shortlist`, `/api/search`,
+`/api/signup`, `/api/requirements` on both methods, `/api/geocode`,
+`/api/geo/resolve`, `/api/places`, `/api/index/segments` and `/api/saved`. Two facts
+came out of building it. `/api/saved` has no limiter of any kind. And exactly one
+route in the application uses `allowShared`; the other 31 importers of
+`@/lib/ratelimit` call the per instance `allow`, which on serverless hands each cold
+start a fresh quota. Neither is fixed by this rule and both are said again in the
+card rather than left implied.
+
+**The recommendation.** Six condition groups OR combined inside one rule, because
+Hobby allows exactly one: `/api/advisor` by prefix, which also catches the shortlist,
+`/api/search`, `/api/signup`, `/api/requirements` with the method pinned to POST so
+ordinary browsing is not counted, `/api/geocode` and `/api/geo/resolve`. Keyed on IP
+address alone, 60 requests per 60 seconds, fixed window. Sixty is twelve times the
+measured ordinary peak, which reads as twelve colleagues behind one office address
+each simultaneously at personal peak, and that is the shared address case the ledger
+named. JA4 was available as a second key and was rejected: an attacker varies a TLS
+fingerprint far more easily than colleagues vary browsers, so it multiplies an
+attacker's quota by more than it relieves the office.
+
+**The first action is log, not deny.** The measurement was taken in a sandbox against
+a database with no listings, by one scripted reader. It is the best evidence
+obtainable from here and it is not production, so the card publishes in observation
+mode, gives the owner the two commands that read what the rule would have done over a
+week, and only then the one command that promotes it to deny. Rollback is one command
+at each stage: `discard` before publish, `disable` after it, `remove` if the rule is
+to go entirely.
+
+**What the card refuses to assert.** The status code the mitigation returns is not
+stated in the CLI documentation and a second search did not settle it, so the card
+tells the owner to read it off the first observation instead of guessing. The rest of
+the honest limits are recorded with it: this is not authorization, it is not input
+validation, it does not make `allow` durable, its counters are per region, it leaves
+`/api/places` on the per instance limiter, and with one rule allowed the threshold is
+the loosest of the six routes' needs by construction.
 
 **Time-bound exception opened by slice B.** The `overrides` block is the thing that
 survives, and an undated override becomes wrong quietly. It is reviewed at whichever
@@ -561,7 +625,7 @@ work, per the governing directive and owner ruling 6.
 | Advisory re-check | `Supabase.get_advisors` now answers permission denied, as do `execute_sql`, `apply_migration` and `list_tables` | The two advisories above cannot be re-read from here. They are carried forward from the last successful read rather than re-confirmed, and this file says so rather than presenting them as current |
 | Design-partner recruitment | **Authorised 2026-08-02.** Owner side. The instrument is written and ready to run: criteria, screener, invitation, consent script, facilitator guide, accounts, task scripts, observation sheet, severity rubric, success calculation, interview questions and findings template, in English and Arabic. Six corrections required by Codex on 2026-08-02 are now applied across all three files, four from the first review and two from the rejection of `d34ebfa`. Physical mobile coverage is allocated before outreach rather than accepted by chance: three handset seats, M1 on D1 as iPhone Safari in Arabic and not substitutable, M2 on D5 as Android Chrome, M3 on S3, with a gate that the round does not close below 3 mobile sessions or without M1. Assistive-technology validation is stated as a separate required round, ELITE-1-AT, seat A1, public path only, and stage E1 is gated on it having run. What A1 validates is now stated exactly rather than implied: it validates whether four public surfaces can be operated with a screen reader, and it does not verify the 22 accessibility findings recorded in the private flows. Those 22 are fixed and awaiting independent verification, not known-broken, and the round that verifies them is a separate authenticated session, ELITE-1-AT-B, run against registration, the Listing Studio and the dashboard with a prepared test account after the ELITE-1 write-up. Until ELITE-1-AT-B has run and its results are recorded, no document may state that the 22 are closed. Raw notes retention is also now bounded by a date rather than by a condition: raw pseudonymous notes are destroyed no later than 90 days after the final session of the round, after which only synthesized findings are kept, carrying no participant identifier including seat labels; a finding still open on day 91 is carried by its synthesized form, and any duration other than 90 days is an owner or counsel decision recorded in `docs/decision-register.md` before the round runs. The recording policy is corrected: round one is notes only, no audio, video or screen capture, automatic transcription and AI notetakers switched off before every session, and no notes uploaded to any unapproved transcription service, which removes the contradiction of retaining a recording while claiming nothing personal was retained. Whether a later round may record, and on what seven data-protection terms, is now decision O19. **The authorisation to approach 10 people arrived on 2026-08-02 and recruitment is now running with the corrected kit.** Four conditions came with it and bind every session. Saleem holds the real contact list outside the repository, so no name, phone number or email of a prospective participant is committed, staged or written to any file here. Saleem controls the actual external messages; the kit supplies the wording and nothing in this repository sends anything. No automatic outreach of any kind is authorised, which forecloses generating an approach from an inferred interest as much as it forecloses a mail merge. No AI transcription and no recording is authorised, which keeps round one at notes only and leaves O19 the only route to changing that. ELITE-1-AT and ELITE-1-AT-B both remain required under the scopes recorded above; authorising recruitment did not fold them into the main round | The gate from E0 to E1. This is the binding constraint on the whole product, not any missing feature. It is no longer blocked on preparation and no longer blocked on authorisation either: what remains is scheduling and the sessions themselves. The 1 October 2026 re-ranking condition is discharged, because the authorisation arrived before it |
 | **Next.js 14 to 16 upgrade** | Raised by PKG-E1-READINESS slice F. **Authorized by the owner on 2026-08-03 and now in flight as PKG-NEXT16-SECURITY.** The target is fixed and is not a choice between two majors: the Next.js version support policy places 16.x, released 2025-10-21, in Active LTS, 15.x in Maintenance LTS receiving only critical fixes and essential security updates, and 14.x and earlier at End of Life. `next@14.2.35` is the terminal 14.x release, so the 21 recorded advisories against it have no patch inside the major version. The reachability of each of the 21 was checked against this application's source and written out in `docs/security-baseline.md`: 11 provably do not reach it, 10 apply by version through the App Router and middleware request path | The row stays open until the migration is verified, because it also gates two other things. Participants receive the preview link only after the migration is verified, so this row is on the ELITE-1 path. And it holds the Content Security Policy's largest compromise in place: nonces cannot be introduced on 14.2.35 because GHSA-ffhc-5mcf-pf4q is cross-site scripting in App Router applications that use them, which is the recorded reason `script-src` carries `'unsafe-inline'` |
-| **Vercel WAF rate-limit rule, scope not yet fixed** | Raised by PKG-E1-READINESS slice F, **narrowed by the owner on 2026-08-03.** Preparation of one rule is authorized. Applying it is not, and the blanket `/api/*` scope this row originally recommended is explicitly withdrawn: a policy over every API path may not be applied without first measuring the request bursts the real client generates in ordinary use. PKG-NEXT16-SECURITY slice F therefore owes an inventory of unauthenticated state-changing and high-cost routes, a measured normal peak burst, and one cautious fixed-window recommendation that protects those routes without throttling ordinary listing browsing or corporate users behind a shared IP address. The output is one owner-action card with counting key, paths, threshold, window, expected behavior, verification and a one-click rollback, prepared and not applied | Every API route is protected only by the in-process limiter, which resets with each serverless instance. Slice F deliberately did not dress that up as protection. Nothing in this repository can create the rule and nothing here should: it is account configuration, and owner ruling 7 puts it on the owner's side. One caveat is recorded with it: the plan allows a single custom rule, the counters are per region, and WAF rate limiting is not a substitute for authorization, input validation or future per-route durable limits |
+| **Vercel WAF rate-limit rule, scope now fixed, card prepared, not applied** | Raised by PKG-E1-READINESS slice F, **narrowed by the owner on 2026-08-03.** Preparation of one rule was authorized. Applying it was not, and the blanket `/api/*` scope this row originally recommended is explicitly withdrawn: a policy over every API path may not be applied without first measuring the request bursts the real client generates in ordinary use. PKG-NEXT16-SECURITY slice F therefore owed an inventory of unauthenticated state-changing and high-cost routes, a measured normal peak burst, and one cautious fixed-window recommendation that protects those routes without throttling ordinary listing browsing or corporate users behind a shared IP address. **All three were delivered on 2026-08-03 and the card is at the end of `docs/security-baseline.md`.** The inventory is ten anonymous-reachable routes out of 38. The burst was measured with `scripts/burst-probe.mjs` in two typing arms, and the covered set peaked at 5 requests per 60 s in both while `/api/places` alone went from 3 to 21, which is what ruled the blanket scope out. The recommendation is six OR-combined groups over `/api/advisor` by prefix, `/api/search`, `/api/signup`, `POST /api/requirements`, `/api/geocode` and `/api/geo/resolve`, keyed on IP, 60 per 60 s fixed window, published first with the action set to log so the owner reads a week of observation before promoting it to deny. Rollback is one command at each stage. **What remains is the owner's: run it, or decide not to.** Nothing in this repository applied any part of it | Every API route is protected only by the in-process limiter, which resets with each serverless instance. Slice F deliberately did not dress that up as protection. Nothing in this repository can create the rule and nothing here should: it is account configuration, and owner ruling 7 puts it on the owner's side. One caveat is recorded with it: the plan allows a single custom rule, the counters are per region, and WAF rate limiting is not a substitute for authorization, input validation or future per-route durable limits |
 | **Upstash Redis store for `allowShared()`, declined for now** | Raised by PKG-E1-READINESS slice F as a recommendation. **The owner declined to authorize it on 2026-08-03, and this row is corrected rather than deleted so the reversal is visible.** No account, no environment variable, no processor and no route migration may be introduced. The decision is to be revisited after ELITE-1, or before broader public exposure, whichever comes first. The engineering position is unchanged and is recorded only as background: `src/lib/ratelimit.ts` already speaks the REST protocol and falls back cleanly, `limiterIsDurable()` returns false without `KV_REST_API_URL` and `KV_REST_API_TOKEN`, and the one route that calls `allowShared` therefore runs degraded today | Per-route durable limits stay unavailable and the 31 routes that import the limiter without using the shared path cannot be migrated. That is the accepted consequence, not an oversight. The reason the recommendation did not survive is the part worth keeping: a store is a new sub-processor holding client IP addresses in short-lived counter keys, which is a data-protection choice for the owner and not an engineering one, and free tier pricing does not make it a smaller decision |
 | Saudi counsel memorandum | Not commissioned | O5, O13, and the FAL scope question surface by surface |
 | REGA and Ejar permitted use | Not obtained | O10 |

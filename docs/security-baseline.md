@@ -814,6 +814,14 @@ processing agreement, and it stops abusive volume before it reaches a function
 at all. One fixed window rule keyed on IP across `/api/*` would cover the whole
 API surface.
 
+That last sentence is withdrawn. The owner narrowed the scope on 2026-08-03, and
+PKG-NEXT16-SECURITY slice F then measured what an ordinary client actually sends,
+which changed the rule: no single threshold serves both the routes that spend
+money and a typeahead a person drives with a keyboard. The section at the end of
+this file, "the one WAF rate limit rule, prepared and not applied", carries the
+measurement, the narrowed scope and the owner-action card, and it supersedes this
+paragraph.
+
 Upstash then remains worthwhile for the application-level limits, because per
 route limits with different thresholds are something the edge rule cannot
 express on Hobby, and because `allowShared` is written and waiting. It is a new
@@ -902,3 +910,336 @@ hydration, so none of the third party origins appear in the served HTML of
 confirming that the policy does not block them requires the interactive pass
 described above under enforcement. That pass has not been done, which is
 precisely why the header is report-only.
+
+---
+
+## PKG-NEXT16-SECURITY slice F, the one WAF rate limit rule, prepared and not applied
+
+This section replaces the recommendation two sections above under "What is
+actually recommended", and the matching lines in
+`docs/handback-pkg-e1-readiness.md`. Those said one fixed window rule keyed on IP
+across `/api/*` would cover the whole API surface. The owner withdrew that scope
+on 2026-08-03 and the status ledger records the withdrawal: a policy over every
+API path may not be applied without first measuring the request bursts the real
+client generates in ordinary use. This slice does that measurement, and the
+measurement changed the rule.
+
+Nothing here has been applied. No rule exists on the project. The card at the end
+is written so that the owner can paste it, look at it, and still be one command
+away from either publishing it or throwing it away.
+
+### Why the blanket scope was wrong, in one number
+
+An ordinary reader browsing listings sends between 8 and 26 requests to `/api` in
+a two minute tour of the whole public site. Twenty one of the twenty six are one
+route, `/api/places`, and they come from a search box. A limit set low enough to
+be protection for the routes that cost money would have been tripped by a person
+typing a district name. A limit set high enough not to trip on that person would
+have been no protection at all. The blanket scope forced one threshold to serve
+both, and there is no number that does.
+
+Removing one route from the scope removes the conflict entirely, and the rest of
+this section is the evidence for that claim.
+
+### The inventory: what is actually reachable without a session
+
+There are 38 route files under `src/app/api`. Twenty eight of them call
+`getSession` before doing anything, and two more sit behind `CRON_SECRET`. That
+leaves ten routes an anonymous request can reach, and they are not equivalent to
+each other.
+
+| Route | Methods | In-process limit | What it costs | Class |
+| --- | --- | --- | --- | --- |
+| `/api/advisor` | POST | `allowShared` 15 per 60 s | a language model call per request | paid |
+| `/api/advisor/shortlist` | POST | `allow` 5 per 60 s | progressive relaxation query, up to three passes | expensive read |
+| `/api/search` | POST | `allow` 15 per 60 s | `llmParse`, a language model call | paid |
+| `/api/signup` | POST | `allow` 6 per 60 s | writes a signup row | unauthenticated write |
+| `/api/requirements` | POST | `allow` 8 per 60 s | writes a requirement row | unauthenticated write |
+| `/api/requirements` | GET | `allow` 60 per 60 s | ordinary listing read | read |
+| `/api/geocode` | GET | `allow` 30 per 60 s | third party geo gateway quota | paid, third party |
+| `/api/geo/resolve` | GET | `allow` 20 per 60 s | an outbound fetch to a URL the caller supplies | egress |
+| `/api/places` | GET | `allow` 30 per 60 s | third party geo gateway quota | paid, third party, and the typeahead |
+| `/api/index/segments` | GET | `allow` 60 per 60 s | cached read, `revalidate = 1800` | read |
+| `/api/saved` | GET | none | read | read, and unlimited |
+
+Two things in that table are worth saying out loud rather than leaving in a
+column. `/api/saved` has no limiter at all, and neither do
+`/api/listings/[id]/status`, `/api/requirements/[id]`, `/api/cron/expire-permits`
+and the two admin provisioning routes; the last three are behind a session or a
+secret, so the omission only matters on `/api/saved`. And exactly one route in
+the whole application uses the durable limiter. The other 31 importers of
+`@/lib/ratelimit` call `allow`, which is per instance, which on serverless means
+a fan-out of cold starts each hands out the full quota. That is the position this
+rule is meant to improve, and it is not fixed by this rule either. It is stated
+again below.
+
+### The measured normal peak burst
+
+`scripts/burst-probe.mjs` drives the real production build with a real browser
+and records every request the page makes, with a millisecond timestamp and the
+path it went to. Four sessions: an English listing browse that uses both public
+search boxes and walks five filtered views, a tour of the six read heavy market
+surfaces, the same browse in Arabic, and an advisor conversation of four
+questions asked back to back. Nothing about the client is simulated. The
+typeahead debounce, the abort on each keystroke, the router's document requests
+and the advisor's two call fallback are whatever the shipped code does.
+
+The variable that decides the answer is typing speed, and it is the one a
+careless probe gets wrong. Both public typeaheads debounce at 220 ms. A fast
+typist never lets that timer expire, so an eight letter word costs one request. A
+slower or hunt and peck typist lets it expire between every letter, so the same
+eight letter word costs eight. The second person is not attacking anything. So
+the probe runs twice over the same script, once at 140 ms between keystrokes and
+once at 320 ms, and reports both.
+
+| Arm | Total requests | Total to `/api` | Peak `/api` per 60 s | Peak per 10 s |
+| --- | --- | --- | --- | --- |
+| 140 ms between keystrokes | 785 | 8 | 8 | 3 |
+| 320 ms between keystrokes | 815 | 26 | 24 | 16 |
+
+Three times the API traffic, from the same person doing the same thing, because
+of how fast they type. That is the whole argument against the blanket scope in
+one table.
+
+Now split the same two runs by whether the route is one this rule would cover.
+
+| Arm | Peak per 60 s, covered routes | Peak per 60 s, `/api/places` |
+| --- | --- | --- |
+| 140 ms between keystrokes | 5 | 3 |
+| 320 ms between keystrokes | 5 | 21 |
+
+The covered set peaks at five requests per sixty seconds and does not move when
+typing speed changes. Every request that typing speed does move is
+`/api/places`. The two arms recorded exactly the same covered traffic, `POST
+/api/advisor` four times and `POST /api/search` once, which is one person asking
+four advisor questions in about twenty five seconds with one of them falling
+through to search mode.
+
+So the rule excludes `/api/places` and the conflict disappears. What is given up
+by excluding it is real and is recorded at the end: the third party geo quota
+behind the typeahead keeps only its per instance limiter. What is bought is a
+threshold that can be set from evidence instead of from fear.
+
+### What the covered set is, and why each route is in it
+
+Six condition groups, OR combined, inside one rule, because Hobby allows exactly
+one rate limit rule per project and the whole design has to fit in it.
+
+`/api/advisor` by prefix, which also catches `/api/advisor/shortlist`. These are
+the two routes where a request costs money on every call, and the first is the
+only route in the application already carrying the durable limiter, which is a
+statement about how the risk was ranked when that limiter was written.
+
+`/api/search` exactly, for the same reason: it calls a model.
+
+`/api/signup` exactly and `/api/requirements` with the method pinned to POST.
+These are the two places an anonymous request writes a row. The method has to be
+pinned because `GET /api/requirements` is ordinary browsing on the requirements
+page and must not be counted. Measured traffic to both POST paths in ordinary use
+is zero, because a person signs up once.
+
+`/api/geocode` exactly and `/api/geo/resolve` exactly. The first spends a third
+party quota. The second makes an outbound fetch to a URL the caller supplies,
+which is a shape worth a ceiling for reasons beyond cost. Both are reached from
+the lister's location picker, which sits behind a session in the product even
+though the routes themselves do not check one, so measured traffic in an
+anonymous browse is zero for both.
+
+Not `/api/places`, for the reason above. Not `/api/index/segments` or
+`/api/saved`, which are reads that cost a cached query. Not any route behind
+`getSession`, because a WAF rule cannot see the session and would be counting the
+wrong thing.
+
+### The threshold, and the arithmetic behind it
+
+Sixty requests per sixty seconds, keyed on IP address, fixed window.
+
+Measured ordinary peak on the covered set is 5 per 60 s for one person. Sixty is
+twelve times that. Read as the shared address case the ledger asks about, it is
+twelve colleagues behind one office egress address each simultaneously at their
+own personal peak, which for the advisor means each of them asking a question
+every six seconds without pause. Read as the single client case it is one caller
+submitting a model backed request every second for a minute. A brokerage office
+does not do the first and a reader does not do the second.
+
+The counting key is IP alone. JA4 digest is the only other key Hobby offers and
+adding it makes the key a pair, which does help slightly on the shared address
+case because colleagues on different browsers would then count separately. It was
+rejected anyway: an attacker can vary a TLS fingerprint far more easily than
+colleagues can vary their browsers, so adding JA4 multiplies an attacker's quota
+by more than it relieves the office. The honest tradeoff is to key on IP and set
+the threshold high enough that the office is comfortable, which is what the
+number above does.
+
+The window is 60 s. Hobby allows 10 s to 10 minutes and fixed window only. Sixty
+seconds matches the window the application's own limiters already use, so a
+single number describes both layers.
+
+### The card
+
+Prepared. Not applied. Everything below is for the owner to run, and the first
+command changes nothing on its own: `vercel firewall rules add` stages a draft,
+and drafts do not affect production traffic until `vercel firewall publish`.
+
+**Counting key.** IP address, one counter per address.
+
+**Paths covered.** `/api/advisor` and everything under it, `/api/search`,
+`/api/signup`, `POST /api/requirements`, `/api/geocode`, `/api/geo/resolve`.
+
+**Paths deliberately not covered.** `/api/places`, `/api/index/segments`,
+`/api/saved`, `GET /api/requirements`, and every route behind a session.
+
+**Threshold and window.** 60 requests per 60 seconds, fixed window.
+
+**First action: log, not deny.** The measurement above was taken in a sandbox
+against a database with no listings in it, by one scripted reader. It is the best
+evidence available from here and it is not production. So the rule goes on in
+observation mode first and the owner reads what it would have done before it does
+anything.
+
+```bash
+vercel firewall rules add "SAT anonymous paid and write paths" \
+  --description "Fixed window ceiling on the unauthenticated routes that spend money or write rows. Measured ordinary peak is 5 per 60 s per client. Excludes /api/places, which is the browsing typeahead." \
+  --condition '{"type":"path","op":"pre","value":"/api/advisor"}' \
+  --or \
+  --condition '{"type":"path","op":"eq","value":"/api/search"}' \
+  --or \
+  --condition '{"type":"path","op":"eq","value":"/api/signup"}' \
+  --or \
+  --condition '{"type":"path","op":"eq","value":"/api/requirements"}' \
+  --condition '{"type":"method","op":"eq","value":"POST"}' \
+  --or \
+  --condition '{"type":"path","op":"eq","value":"/api/geocode"}' \
+  --or \
+  --condition '{"type":"path","op":"eq","value":"/api/geo/resolve"}' \
+  --action rate_limit \
+  --rate-limit-window 60 \
+  --rate-limit-requests 60 \
+  --rate-limit-keys ip \
+  --rate-limit-action log \
+  --yes
+```
+
+Conditions inside a group are AND combined and `--or` starts a new group, which
+is why the method pin sits immediately after the `/api/requirements` path and
+before the next `--or`.
+
+**Before publishing anything.**
+
+```bash
+vercel firewall diff
+vercel firewall rules list --expand
+vercel firewall rules inspect "SAT anonymous paid and write paths"
+```
+
+`diff` shows the staged change against what is live. If any of it reads wrong,
+stop there: nothing has happened yet.
+
+**Publishing the observation mode rule.**
+
+```bash
+vercel firewall publish --yes
+```
+
+**Expected behaviour while in observation mode.** No request is blocked, delayed
+or altered. Traffic over the threshold is recorded. Ordinary readers see no
+change whatsoever, which is the point of running this arm first.
+
+**Verification, after a week or after whatever period covers a normal working
+pattern.**
+
+```bash
+vercel firewall overview
+vercel logs --since 7d --json
+```
+
+The question to ask of that output is narrow: did the rule ever count past sixty
+for an address that turns out to be a real office, and if it did, what was the
+address doing. If the answer is that only obviously automated traffic reached the
+ceiling, the rule is ready to enforce. If a real office reached it, the threshold
+moves up and the observation period restarts. Either outcome is a better decision
+than the one available today.
+
+**Turning it on, once the observation says it is safe.**
+
+```bash
+vercel firewall rules edit "SAT anonymous paid and write paths" \
+  --rate-limit-action deny --yes
+vercel firewall diff
+vercel firewall publish --yes
+```
+
+Read the status code the mitigation returns off the first observation rather than
+assuming it. The documentation for the CLI does not state it for this action, and
+the client code in `src/lib/useAdvisorChat.ts` treats a non-OK response as a
+failed turn either way.
+
+**Rollback, one command at each stage.**
+
+Before publish, at any point, discard everything staged:
+
+```bash
+vercel firewall discard --yes
+```
+
+After publish, take the rule out of the path without deleting it:
+
+```bash
+vercel firewall rules disable "SAT anonymous paid and write paths"
+vercel firewall publish --yes
+```
+
+Or remove it entirely:
+
+```bash
+vercel firewall rules remove "SAT anonymous paid and write paths" --yes
+vercel firewall publish --yes
+```
+
+Disable is the one to reach for first. It keeps the rule and its history, and the
+matching `rules enable` puts it back.
+
+### What this rule does not do, stated plainly
+
+It is not authorization. Every covered route still has to check who is calling
+and what they may do, and the WAF cannot see a session.
+
+It is not input validation. The rule counts requests and does not look at them.
+
+It does not make `allow` durable. Thirty one route files still call the per
+instance limiter, and a serverless fan-out still hands each new instance a fresh
+bucket. The Upstash decision recorded above is unaffected by this rule and is
+still the only thing that fixes that.
+
+Its counters are tracked per region. Traffic from one address spread across
+several regions can exceed sixty per minute in aggregate. On a project serving
+`iad1` today this is close to theoretical, and it is recorded because it will
+stop being theoretical if the project ever runs in more than one region.
+
+It leaves `/api/places` covered only by a per instance limiter, which is a
+deliberate trade and the reason the whole rule is expressible in one condition
+set. If the third party geo quota ever becomes the thing that hurts, the answer
+is a per route limit, which is the Upstash path and not this one.
+
+And it is one rule. Hobby allows exactly one rate limit rule per project, so
+there is no version of this that gives the advisor a tighter ceiling than signup.
+The threshold is the loosest of the six routes' needs, by construction.
+
+### How to reproduce the measurement
+
+```bash
+npx next build && npx next start -p 4321
+node scripts/burst-probe.mjs
+```
+
+Flags: `BURST_BASE` for the origin, default `http://localhost:4321`,
+`BURST_CHROMIUM` for the browser binary, default `/opt/pw-browsers/chromium`, and
+`BURST_OUT` for the JSON, default `/tmp/burst.json`. The JSON carries every
+`/api` request with its arm, its session, its offset in milliseconds and its
+path, so the peaks in the tables above can be recomputed rather than trusted.
+
+The caveat on all of it: the sandbox has no database, so the listings grid is
+empty and no listing detail page was opened from a card. Those pages render on
+the server and fetch nothing from `/api` for an anonymous reader, so the covered
+set is unaffected, but the figure for total site traffic is a floor rather than a
+measurement.
