@@ -8,6 +8,7 @@ import { cityLabel } from "@/lib/labels";
 import { kindLabel } from "@/lib/locationKind";
 import { assessLocationConsistency } from "@/lib/locationConsistency";
 import { mapLocale } from "@/lib/mapLocale";
+import { registerRTLTextPlugin } from "@/lib/rtlTextPlugin";
 
 // Lets a lister place the exact building: search, click the map, drag the pin, or
 // type coordinates. Coordinates are the source of truth.
@@ -97,7 +98,8 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
       // Arabic street labels on the Saudi basemap need the RTL shaping plugin in
       // every locale, or they render as disconnected, reversed glyphs. Lazy and
       // registered once globally.
-      try { const M: any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
+      // Self-hosted since PKG-NEXT16-SECURITY slice C. See src/lib/rtlTextPlugin.ts.
+      registerRTLTextPlugin(maplibregl);
       const start: [number, number] = value.lng != null && value.lat != null ? [value.lng, value.lat] : RIYADH;
       const m = new maplibregl.Map({ container: mapEl.current, style: STYLE, center: start, zoom: value.lat != null ? 14 : 10, attributionControl: false, locale: mapLocale(locale) });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), ar ? "top-left" : "top-right");

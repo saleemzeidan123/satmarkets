@@ -38,11 +38,36 @@
 // this one. If neither has happened by then, it is revisited anyway rather than
 // carried a third time. Tracked in docs/status-ledger.md.
 
+// PKG-NEXT16-SECURITY SLICE C ALSO PUT THE PER-REQUEST CONTENT SECURITY POLICY
+// HERE, and that needs its own justification, because this file was just argued
+// to be an auth-touching hot path that should not casually acquire new work.
+//
+// It is here because there is nowhere else it can be. A nonce is per request.
+// `next.config.mjs` `headers()` is evaluated once, at build time, so a header
+// emitted there cannot carry one. Middleware is the only place in this
+// application that sees a request before the renderer does and can put a value
+// on both the request and the response, which is what the framework's nonce
+// mechanism requires.
+//
+// The work added is one random draw and three header writes. It performs no
+// I/O, awaits nothing and adds no dependency, and the `supabase.auth.getUser()`
+// call below is orders of magnitude more expensive and was already here. This
+// does not weaken the argument above about deferring the runtime move, but it
+// does add one line to what has to be re-verified when that move happens:
+// confirm the renderer still receives the nonce through the request headers
+// under `proxy`.
+
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { locales, defaultLocale } from "@/i18n/config";
 import { PRIVATE_PREFIXES, HELD_ROUTES } from "@/lib/routePolicy";
 import { indexingPermitted } from "@/lib/launchGate";
+import {
+  buildCsp,
+  newNonce,
+  CSP_HEADER,
+  CLIENT_CSP_REQUEST_HEADERS,
+} from "@/lib/csp.mjs";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -60,6 +85,15 @@ export async function middleware(req: NextRequest) {
   const currentLocale = pathname.split("/")[1] === "ar" ? "ar" : "en";
   const reqHeaders = new Headers(req.headers);
   reqHeaders.set("x-locale", currentLocale);
+  // The nonce, and the one rule that makes it worth anything. The renderer finds
+  // it by reading the request's own CSP header, and a request header is
+  // something a client can send, so every client-supplied copy is deleted before
+  // this one is set. Otherwise a visitor could choose the nonce that the
+  // framework stamps on its inline scripts.
+  const nonce = newNonce();
+  const csp = buildCsp(nonce);
+  for (const h of CLIENT_CSP_REQUEST_HEADERS) reqHeaders.delete(h);
+  reqHeaders.set(CSP_HEADER.toLowerCase(), csp);
   let res = NextResponse.next({ request: { headers: reqHeaders } });
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -119,6 +153,13 @@ export async function middleware(req: NextRequest) {
   if (isPrivate) {
     res.headers.set("Cache-Control", "private, no-store, max-age=0, must-revalidate");
   }
+  // Set last, deliberately. `res` is reassigned inside the Supabase cookie
+  // callback above, and a header written before that point would be dropped on
+  // any request that refreshes a session, which is the request class that most
+  // needs the policy. The nonce here is the same one placed on the request
+  // headers, so the value the browser is told to trust is the value the renderer
+  // stamped.
+  res.headers.set(CSP_HEADER, csp);
   return res;
 }
 

@@ -10,6 +10,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { photoFor } from "@/lib/photos";
 import { getDictionary } from "@/i18n/getDictionary";
 import { mapLocale } from "@/lib/mapLocale";
+import { registerRTLTextPlugin } from "@/lib/rtlTextPlugin";
 import { ASSET_COLORS as COLORS, BRAND, HEAT_RAMP, MAP } from "@/theme/palette";
 import { formatInteger, formatRange, formatUnit, type Loc } from "@/lib/format";
 // RC12, finding 164. Selecting a pin scrolls the card rail to the match. Under
@@ -166,7 +167,8 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   let map: any; let ro: any; let cancelled = false; let hoverId: any = null;
   (async () => {
    const maplibregl = (await import("maplibre-gl")).default;
-   try { const M:any = maplibregl; if (!M.__rtl) { M.__rtl = true; M.setRTLTextPlugin("https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.2.3/mapbox-gl-rtl-text.min.js", () => {}, true); } } catch {}
+   // Self-hosted since PKG-NEXT16-SECURITY slice C. See src/lib/rtlTextPlugin.ts.
+   registerRTLTextPlugin(maplibregl);
    if (cancelled || !ref.current) return;
    map = new maplibregl.Map({ container: ref.current, style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
     center: [45.0, 24.5], zoom: 5.3, minZoom: 5, maxZoom: 17, locale: mapLocale(locale) });
