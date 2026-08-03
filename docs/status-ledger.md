@@ -313,6 +313,18 @@ comes first: the next Next.js upgrade of any size, or **2026-11-03**. The review
 whether the root versions now win without it (delete it if so) and whether the sharp API
 replay still passes against whatever the framework then declares.
 
+**All six slices are complete and the consolidated handback is
+`docs/handback-pkg-next16-security.md`.** It carries what each slice was asked and did, the
+thirteen commits with their file and line counts and each one mapped to its own deployment
+by `meta.githubCommitSha`, the six gates and the four Playwright probes with `perf-probe`
+named as the deliberate exception, the branch and main divergence set out in a table, the
+five decisions now waiting on the owner, what the package was told not to do and did not
+do, and what moved in the findings register, which is one finding raised and none closed.
+The package stays in this section rather than moving to section 2, because the engineering
+being finished is not the same as the work being landed: `origin/main` still serves slice
+B, the other five slices sit on `next16-security`, and the merge is one of the five owner
+decisions. It moves to section 2 when the branch reaches production main, not before.
+
 ## 1b. The slice B commit went to `main`, not to the branch
 
 Recorded here because the ledger is corrected in the same commit that finds it wrong, and
