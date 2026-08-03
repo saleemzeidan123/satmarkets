@@ -219,13 +219,28 @@ and mobile LCP by the same amount, home excepted for the reason given above. Des
 improved from a median of 282 ms to 242 ms. Maximum mobile CLS improved from 0.094 to
 0.020.
 
-One axis did not improve, and recording it matters more than the ones that did. Total
-blocking time went from a median of 303 ms to 317.5 ms on mobile and from 80.5 ms to
-85 ms on desktop. This is the honest cost of deferring the authentication chunk: it is
-still fetched, parsed and executed, only now after paint rather than before it, so its
-cost lands inside the measured window instead of ahead of it. The trade was made
-deliberately. Paint no longer waits on a library that paint does not need, and the work
-that library does was never free.
+One axis did not improve. Total blocking time went from a median of 303 ms to 317.5 ms on
+mobile and from 80.5 ms to 85 ms on desktop.
+
+That is an observed difference and nothing more, and this paragraph has been corrected to
+say so. It was first written here as the honest cost of deferring the authentication
+chunk, which asserts a cause. Three median runs on a shared build machine establish
+neither statistical significance nor causation, and the correction is owed rather than
+optional: the same document, three sections below, records that running the whole sweep
+twice against an unchanged build produced a worst case run to run ratio of 1.426 on
+blocking time. The move recorded here is a ratio of 1.048 on mobile and 1.056 on desktop.
+Both sit far inside the noise this instrument has already been shown to produce, so this
+measurement cannot distinguish a real regression from the machine.
+
+It is therefore recorded as an observed, unconfirmed regression requiring remeasurement.
+The remeasurement belongs to the next matched sweep, where the same forty cells are run
+again on the same harness, and where a proper reading needs more than three runs per cell
+if blocking time is to be separated from noise at all. Until that exists, no conclusion is
+drawn about the authentication deferral from this number, and the transfer reduction is
+not reversed on the strength of it. The byte and paint results were measured on the same
+runs and moved by margins the noise band does not cover: total transfer by 23.6 per cent
+against a 1.088 worst case ratio, mobile first contentful paint from 1368 ms to 804 ms
+against 1.115. Those stand. This one does not yet.
 
 ## What was considered and not done
 

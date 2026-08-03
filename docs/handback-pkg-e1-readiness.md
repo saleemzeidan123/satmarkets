@@ -367,10 +367,16 @@ and mobile LCP by the same amount. Desktop LCP improved from a median of 282 ms 
 242 ms. Maximum mobile CLS improved from 0.094 to 0.020.
 
 Total blocking time did not improve. It went from a median of 303 ms to 317.5 ms on
-mobile and from 80.5 ms to 85 ms on desktop. That is the honest cost of deferring the
-authentication chunk: it is still fetched, parsed and executed, only now after paint
-rather than before it, so its cost lands inside the measured window instead of ahead of
-it. The trade was made deliberately and is recorded as a trade rather than as a win.
+mobile and from 80.5 ms to 85 ms on desktop.
+
+This paragraph originally called that the honest cost of deferring the authentication
+chunk. That was an assertion of cause, and it has been corrected under the Codex review of
+this package. Three median runs on a shared build machine prove neither significance nor
+causation, and the repeatability figure in `docs/performance-baseline.md` shows why: the
+same sweep run twice against an unchanged build moved blocking time by a worst case ratio
+of 1.426, while the movement claimed here is 1.048. It is recorded as an observed,
+unconfirmed regression requiring remeasurement, the remeasurement belongs to the next
+matched sweep, and the transfer reduction is not reversed on this result alone.
 
 ### Budgets
 
