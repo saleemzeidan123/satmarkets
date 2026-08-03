@@ -31,7 +31,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   // the root layout's generic title with no canonical at all.
   let name: string | null = null;
   let verified = false;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (sb) {
     const { data } = await sb.from("listers_public").select("name_en,name_ar,lister_type,is_operator,is_verified,is_demo").eq("id", params.id).maybeSingle();
     if (data) {
@@ -59,7 +59,7 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
   const lp = params.locale;
   const ar = lp === "ar";
   const dict = getDictionary(ar ? "ar" : "en");
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
 
   const { data: lister } = await sb

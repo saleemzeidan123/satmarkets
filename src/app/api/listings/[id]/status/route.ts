@@ -23,7 +23,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   const params = await props.params;
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Not found.", code: "listing_not_found" }, { status: 404 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Not configured.", code: "not_configured" }, { status: 500 });
 
   const { data: listing } = await sb

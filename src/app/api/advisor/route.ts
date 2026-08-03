@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
   const intent = readAdvisorIntent(raw);
   const mode: AdvisorMode = greeting ? "chat" : intent.mode;
 
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   const arq = isAr(raw);
 
   // Per-conversation live context (counts only, honest pre-launch posture).

@@ -35,7 +35,7 @@ export default async function ComparePage(props: { params: Promise<{ locale: str
   const L = (p: string) => `/${locale}${p}`;
   const ids = (searchParams.ids || "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let items: any[] = [];
   let indexStatements: readonly string[] = [];
   if (sb && ids.length) {

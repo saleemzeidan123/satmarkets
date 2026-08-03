@@ -1,3 +1,4 @@
+import type React from "react";
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -10,7 +11,7 @@ import { listingTitle } from "@/lib/listingTitle";
 // Every figure here is a live count from the database, or it is not shown.
 export const dynamic = "force-dynamic";
 
-function KCard({ icon: I, tone, v, l, note }: { icon: (p: { size?: number }) => JSX.Element; tone?: string; v: string; l: string; note?: string }) {
+function KCard({ icon: I, tone, v, l, note }: { icon: (p: { size?: number }) => React.JSX.Element; tone?: string; v: string; l: string; note?: string }) {
   return (
     <div className="kcard">
       <div className="top"><span className={"ic" + (tone ? " " + tone : "")}><I size={18} /></span></div>
@@ -27,7 +28,7 @@ export default async function AdminPage(props: { params: Promise<{ locale: strin
   const lp = params.locale;
   const ar = lp === "ar";
   const session = await requireSat(lp);
-  const sb = getSupabaseServer()!;
+  const sb = (await getSupabaseServer())!;
 
   const t = ar ? {
     title: "لوحة تشغيل المنصّة", sub: "أرقام مباشرة من قاعدة البيانات",

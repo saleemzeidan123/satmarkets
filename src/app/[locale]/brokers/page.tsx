@@ -24,7 +24,7 @@ export default async function BrokersPage(props: { params: Promise<{ locale: str
   const locale = params.locale;
   const ar = locale === "ar";
   const b = getDictionary(locale).brokers;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let sample: any[] = [];
   if (sb) {
     const { data } = await releaseVisibleInventory(sb.from("listings").select("id,title_en,title_ar,asset_type,reference_code,deal_type,asking_rent_sqm,area_sqm,districts(name_en,name_ar,city)").eq("status", "published")).eq("deal_type", "lease").limit(3);

@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     );
   }
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "not_configured", code: "not_configured" }, { status: 503 });
 
   // Count the rows. An UPDATE that matches nothing is not an error in Postgres, so

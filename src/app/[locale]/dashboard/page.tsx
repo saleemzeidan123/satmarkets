@@ -1,3 +1,4 @@
+import type React from "react";
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound, redirect } from "next/navigation";
@@ -34,7 +35,7 @@ function EmptyState({ title, body, cta, href }: { title: string; body: string; c
 function ago(d: string, ar: boolean) { const s = (Date.now() - new Date(d).getTime()) / 1000; if (s < 3600) { const n = Math.max(1, Math.round(s / 60)); return ar ? `منذ ${n} د` : n + "m ago"; } if (s < 86400) { const n = Math.round(s / 3600); return ar ? `منذ ${n} س` : n + "h ago"; } const n = Math.round(s / 86400); return ar ? `منذ ${n} ي` : n + "d ago"; }
 const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
 
-type QueueItem = { key: string; tone: "warn" | "neutral"; icon: (p: { size?: number }) => JSX.Element; text: string; cta: string; href: string };
+type QueueItem = { key: string; tone: "warn" | "neutral"; icon: (p: { size?: number }) => React.JSX.Element; text: string; cta: string; href: string };
 
 export default async function DashboardPage(props: { params: Promise<{ locale: string }> }) {
  const params = await props.params;
@@ -50,7 +51,7 @@ export default async function DashboardPage(props: { params: Promise<{ locale: s
  const rcity = db.riyadh;
  const na = db.na;
 
- const sb = getSupabaseServer();
+ const sb = await getSupabaseServer();
  let mine: any[] = [], districts: any[] = [], acct: any = null;
  if (sb) {
   const [a, d, f] = await Promise.all([

@@ -1,3 +1,4 @@
+import type React from "react";
 import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
@@ -50,7 +51,7 @@ export default async function ListPage(props: { params: Promise<{ locale: string
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const lp = getDictionary(params.locale === "ar" ? "ar" : "en").list;
- const sells: [(p: { size?: number }) => JSX.Element, string][] = [
+ const sells: [(p: { size?: number }) => React.JSX.Element, string][] = [
   [Icon.check, lp.sellVerified],
   [Icon.chart, lp.sellPriced],
   [Icon.user, lp.sellDirect],

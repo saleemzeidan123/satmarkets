@@ -20,7 +20,7 @@ export async function DELETE(
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit_media" }, { status: 401 });
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", params.id).single();

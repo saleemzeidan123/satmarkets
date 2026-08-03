@@ -57,7 +57,7 @@ export default async function BuildingPage(props: { params: Promise<{ locale: st
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;const ar = locale === "ar";
   const dict = getDictionary(locale);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
   const b: any = await getBuildingById(params.id);
   if (!b) notFound();

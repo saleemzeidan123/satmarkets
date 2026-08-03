@@ -133,7 +133,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
  // requires those two to stay apart, so the null is passed through.
  const rights = await getSourceRightsOrNull(REGA_RENT_INDEX_SOURCE_ID);
  try {
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (supabase) {
    // The passport needs five columns this page never read: the district id and
    // the period for the subject and the reporting period, the unit so the

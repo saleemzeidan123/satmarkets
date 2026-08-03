@@ -21,7 +21,7 @@ export default async function ProfilePage(props: { params: Promise<{ locale: str
   const su = await getSessionUser();
   if (!su) redirect(`/${lp}/login`);
   if (!su.accountId) redirect(`/${lp}`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
 
   const { data: acct } = await sb

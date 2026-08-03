@@ -27,7 +27,7 @@ export async function POST(req: Request, props: { params: Promise<{ id: string }
   if (!su || !su.isSat || !su.userId) {
     return NextResponse.json({ error: "Not found.", code: "record_not_found" }, { status: 404 });
   }
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Not configured.", code: "not_configured" }, { status: 500 });
 
   const body = await req.json().catch(() => ({} as any));

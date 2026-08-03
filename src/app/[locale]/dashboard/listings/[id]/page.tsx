@@ -38,7 +38,7 @@ export default async function ManageListingPage(props: { params: Promise<{ local
   const su = await getSessionUser();
   if (!su) redirect(`/${lp}/login`);
   if (!su.accountId) redirect(`/${lp}`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
 
   // The owner's own row: select everything so the per-asset registry can read its

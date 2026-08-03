@@ -13,7 +13,7 @@ const REASONS = new Set(["inaccurate", "unavailable", "duplicate", "suspicious",
 // not an email pipeline. Rate limited to blunt abuse.
 export async function POST(req: NextRequest) {
   if (!allow("report", req, 8)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as { listing_id?: unknown; reason?: unknown; detail?: unknown };

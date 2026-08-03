@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
+import { cookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
 import { allow } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
@@ -20,8 +20,8 @@ import { unsourcedFigure } from "@/lib/market/guard";
 
 export const runtime = "nodejs";
 
-function sbServer() {
-  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies);
+async function sbServer() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const force = body.force === true;
   const tier: Tier = body.tier === "quality" ? "quality" : "fast";
 
-  const sb = sbServer();
+  const sb = await sbServer();
 
   const { data: listing, error } = await sb
     .from("listings")

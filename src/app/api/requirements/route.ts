@@ -13,7 +13,7 @@ const DEALS = REQUIREMENT_DEAL_TYPES;
 // GET: the public requirements board (no contact info)
 export async function GET(req: NextRequest) {
   if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
- const sb = getSupabaseServer();
+ const sb = await getSupabaseServer();
  // Sample requirements exist only to exercise the board in the preview build.
  // In production they are never served: an empty board is the honest answer,
  // and a missing database is a 503, not a silent fixture list (SM-P0-006).
@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ error: "Unknown district.", code: "district_unknown" }, { status: 400 });
  }
 
- const sb = getSupabaseServer();
+ const sb = await getSupabaseServer();
  // No storage means no requirement and no match count. Say so.
  if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
 

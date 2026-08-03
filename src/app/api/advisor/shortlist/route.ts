@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { createServerClient } from "@supabase/ssr";
-import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
+import { cookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { underwrite } from "@/lib/market/underwrite";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
@@ -30,8 +30,8 @@ interface Brief {
   limit?: number;
 }
 
-function sb() {
-  const c = (cookies() as unknown as UnsafeUnwrappedCookies);
+async function sb() {
+  const c = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
   if (!b.assetType) {
     return NextResponse.json({ error: "assetType is required.", code: "asset_type_required" }, { status: 400 });
   }
-  const client = sb();
+  const client = await sb();
   const limit = Math.min(b.limit || 6, 20);
   // Hoisted from the message block below, because the quote decision needs it:
   // the sentence that has to travel with a figure is language-specific, and the

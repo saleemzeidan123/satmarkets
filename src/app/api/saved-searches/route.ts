@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   if (!allow("ss-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ searches: [], signedIn: false });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ searches: [], signedIn: true });
   const { data } = await sb
     .from("saved_searches")
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   if (!allow("ss-post", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to save searches." }, { status: 401 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as {
@@ -87,7 +87,7 @@ export async function DELETE(req: NextRequest) {
   if (!allow("ss-del", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage searches." }, { status: 401 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as { id?: unknown };

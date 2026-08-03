@@ -37,7 +37,7 @@ export default async function LocationsPage(props: { params: Promise<{ locale: s
   const locale = params.locale;
   const ar = locale === "ar";
   const d = getDictionary(locale).locations;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let locs: Loc[] = [];
   let statements: readonly string[] = [];
   if (sb) {

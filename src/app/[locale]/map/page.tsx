@@ -24,7 +24,7 @@ export default async function MapPage(props: { params: Promise<{ locale: string 
   const locale = params.locale;
   const ar = locale === "ar";
   const dict = getDictionary(locale);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let buildings: MapBuilding[] = [];
   if (sb) {
     const { data: bs } = await sb.from("buildings")

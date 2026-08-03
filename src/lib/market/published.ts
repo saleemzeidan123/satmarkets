@@ -76,7 +76,7 @@ const mean = (xs: number[]) =>
 
 export const getPublishedKpis = cache(async (locale: Loc = "en"): Promise<PublishedKpis> => {
   try {
-    const sb = getSupabaseServer();
+    const sb = await getSupabaseServer();
     if (!sb) return EMPTY;
 
     // `sufficient` is the cell's own verdict on whether it had enough

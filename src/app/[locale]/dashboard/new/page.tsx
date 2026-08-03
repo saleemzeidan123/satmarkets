@@ -36,7 +36,7 @@ export default async function NewListingPage(
   const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   /* RC10, finding 22. The one hardcoded English sentence left on this route:
      the misconfiguration branch, which an Arabic lister reaches with no warning
      and cannot act on. It is a rare branch, which is exactly why it survived

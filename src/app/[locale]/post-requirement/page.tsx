@@ -31,7 +31,7 @@ export default async function PostRequirementPage(props: { params: Promise<{ loc
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let locations: IntakeLocation[] = [];
   if (sb) {
     const { data } = await sb.from("districts").select("id,name_en,name_ar,city");

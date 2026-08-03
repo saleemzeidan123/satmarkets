@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   if (!allow("fav-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ ids: [], items: [], shortlists: [], signedIn: false });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ ids: [], items: [], shortlists: [], signedIn: true });
   const { data } = await sb.from("saved_listings").select("listing_id,shortlist").order("created_at", { ascending: false });
   const items = (data ?? []).map((r: any) => ({ listing_id: r.listing_id, shortlist: r.shortlist ?? null }));
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
   if (!allow("fav-post", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to save listings." }, { status: 401 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as { listing_id?: unknown; listing_ids?: unknown; shortlist?: unknown };
@@ -91,7 +91,7 @@ export async function PATCH(req: NextRequest) {
   if (!allow("fav-patch", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage saved listings." }, { status: 401 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as { listing_id?: unknown; shortlist?: unknown };
@@ -117,7 +117,7 @@ export async function DELETE(req: NextRequest) {
   if (!allow("fav-del", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage saved listings." }, { status: 401 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable." }, { status: 503 });
 
   const body = (await req.json().catch(() => ({}))) as { listing_id?: unknown };

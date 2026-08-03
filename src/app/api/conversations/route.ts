@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "not_configured" }, { status: 503 });
 
   let body: { listing_id?: string; message?: string } = {};

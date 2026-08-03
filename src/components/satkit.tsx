@@ -61,7 +61,7 @@ function Ic({ size = 18, sw = 1.6, fill = "none", stroke = "currentColor", child
     </svg>
   );
 }
-export const Icon: Record<string, (p: IcP) => JSX.Element> = {
+export const Icon: Record<string, (p: IcP) => React.JSX.Element> = {
   search: (p) => <Ic {...p}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></Ic>,
   pin: (p) => <Ic {...p}><path d="M12 21s7-6.3 7-11a7 7 0 10-14 0c0 4.7 7 11 7 11z" /><circle cx="12" cy="10" r="2.5" /></Ic>,
   heart: (p) => <Ic {...p}><path d="M12 20s-7-4.3-7-9.5A4 4 0 0112 8a4 4 0 017-2.5C19 10.7 12 20 12 20z" /></Ic>,

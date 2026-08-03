@@ -14,7 +14,7 @@ export type SessionUser = {
 };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return null;
   const {
     data: { user },

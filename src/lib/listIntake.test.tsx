@@ -26,7 +26,14 @@ import { getDictionary } from "@/i18n/getDictionary";
 
 const LOCALES = ["en", "ar"] as const;
 
-const render = (locale: string): string => renderToStaticMarkup(<ListPage params={{ locale }} />);
+// Next.js 16 made route params a promise, so `ListPage` is an async server
+// component and is no longer something `renderToStaticMarkup` can be handed as
+// an element: the synchronous renderer has no way to await it. The component is
+// therefore called as the function it is, its returned tree is awaited once, and
+// that plain tree is rendered synchronously exactly as before. Nothing that this
+// file asserts changes; only the shape of the call does.
+const render = async (locale: string): Promise<string> =>
+  renderToStaticMarkup(await ListPage({ params: Promise.resolve({ locale }) }));
 
 /** Visible text only. Attribute values are not what a reader reads. */
 const text = (html: string): string =>
@@ -78,10 +85,10 @@ const FABRICATED = [
   "سعرك",
 ];
 
-test("the public listing entry has no label that labels nothing", () => {
+test("the public listing entry has no label that labels nothing", async () => {
   for (const locale of LOCALES) {
     assert.deepEqual(
-      orphanLabels(render(locale)),
+      orphanLabels(await render(locale)),
       [],
       `/${locale}/list announces a field a user cannot reach`,
     );
@@ -99,9 +106,9 @@ test("the orphan-label guard catches the shape it was written for", () => {
   assert.equal(orphanLabels(dangling).length, 1, "a for pointing at a non-control is still an orphan");
 });
 
-test("no answer is displayed as though a visitor had entered it", () => {
+test("no answer is displayed as though a visitor had entered it", async () => {
   for (const locale of LOCALES) {
-    const body = text(render(locale));
+    const body = text(await render(locale));
     for (const needle of FABRICATED) {
       assert.equal(body.includes(needle), false, `/${locale}/list still shows the fabricated value ${needle}`);
     }
@@ -119,9 +126,9 @@ test("the dictionary no longer holds the values the mock displayed", () => {
   }
 });
 
-test("the page shows the real stages, in the real order, in both languages", () => {
+test("the page shows the real stages, in the real order, in both languages", async () => {
   for (const locale of LOCALES) {
-    const body = text(render(locale));
+    const body = text(await render(locale));
     const stages = intakeStages(locale === "ar");
     assert.equal(stages.length, 10);
     let at = -1;
@@ -171,7 +178,7 @@ test("every stage has an unsplit occurrence, so no title carries a part number",
   }
 });
 
-test("the step range is computed and only stated when the ends differ", () => {
+test("the step range is computed and only stated when the ends differ", async () => {
   const size = intakeSize();
   assert.equal(size.stages, intakeStages(false).length);
   assert.ok(size.minSteps >= size.stages, "a step count cannot be smaller than the stage count");
@@ -180,7 +187,7 @@ test("the step range is computed and only stated when the ends differ", () => {
   assert.equal(size.minSteps, Math.min(...counts));
   assert.equal(size.maxSteps, Math.max(...counts));
   for (const locale of LOCALES) {
-    const body = text(render(locale));
+    const body = text(await render(locale));
     const note = getDictionary(locale).list.stageCountNote;
     const rendered = note
       .replace("{stages}", String(size.stages))
@@ -194,10 +201,10 @@ test("the step range is computed and only stated when the ends differ", () => {
   }
 });
 
-test("the page lists exactly what the write path refuses to save a draft without", () => {
+test("the page lists exactly what the write path refuses to save a draft without", async () => {
   for (const locale of LOCALES) {
     const ar = locale === "ar";
-    const body = text(render(locale));
+    const body = text(await render(locale));
     const needs = intakeRequirements(ar, getDictionary(locale).list.orWord);
     assert.deepEqual(needs.map((r) => r.key), [...DRAFT_REQUIRED_CHECK_KEYS]);
     for (const r of needs) {

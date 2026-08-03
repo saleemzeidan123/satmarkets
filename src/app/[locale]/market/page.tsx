@@ -31,7 +31,7 @@ export default async function MarketPage(props: { params: Promise<{ locale: stri
   const t = getDictionary(ar ? "ar" : "en").marketPage;
   const C = getDictionary(ar ? "ar" : "en").common;
   const brand = getDictionary(ar ? "ar" : "en").appMeta.appName;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   const nf = (n: number) => n.toLocaleString("en-US");
 
   let listings: any[] = [];

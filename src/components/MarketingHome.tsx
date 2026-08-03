@@ -399,7 +399,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
       <div className="job-grid" style={{ marginTop: 36 }}>
        {T.cards.map((c, i) => {
-        const I = cardIcons[i] as (p: { size?: number }) => JSX.Element;
+        const I = cardIcons[i] as (p: { size?: number }) => React.JSX.Element;
         const st: [string, string] | null =
          i === 0 ? (stats.listings ? [stats.listings, H.statSpacesLive] : null)
          : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), H.statOpenReqs] : null)
@@ -504,7 +504,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          <span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 232px), 1fr))", gap: 16 }}>
-         {idxs.map((fi) => { const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => JSX.Element; const k = featKeys[fi]; return (
+         {idxs.map((fi) => { const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => React.JSX.Element; const k = featKeys[fi]; return (
           <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
            <div className="feat-h">{m[0]}</div>

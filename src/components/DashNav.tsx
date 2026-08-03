@@ -1,9 +1,10 @@
 "use client";
+import type React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "@/components/satkit";
 
-const ICON: Record<string, (p: { size?: number }) => JSX.Element> = {
+const ICON: Record<string, (p: { size?: number }) => React.JSX.Element> = {
   overview: Icon.grid, listings: Icon.building, enquiries: Icon.inbox,
   requirements: Icon.target, billing: Icon.coins, profile: Icon.user,
 };

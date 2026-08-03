@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Only verified owners and brokers can register interest.", code: "interest_requires_owner_or_broker" }, { status: 403 });
   }
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) {
     // Never report success when nothing can be stored.
     return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });

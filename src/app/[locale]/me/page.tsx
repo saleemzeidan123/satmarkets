@@ -29,7 +29,7 @@ export default async function OccupierHome(props: { params: Promise<{ locale: st
   if (!su) redirect(`/${lp}/login`);
   // Supply-side accounts have their own dashboard; this home is for occupiers.
   if (su.accountId) redirect(`/${lp}/dashboard`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
 
   let rows: any[] = [];
   let threadCount = 0;

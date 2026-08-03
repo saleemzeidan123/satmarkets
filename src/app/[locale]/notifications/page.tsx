@@ -1,9 +1,10 @@
+import type React from "react";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
 
-type Note = [(p: { size?: number }) => JSX.Element, string, string, string, string, boolean];
+type Note = [(p: { size?: number }) => React.JSX.Element, string, string, string, string, boolean];
 
 import SampleBanner from "@/components/SampleBanner";
 export default async function NotificationsPage(props: { params: Promise<{ locale: string }> }) {

@@ -90,7 +90,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   // figure. Every parameter now has to be recognised before it can be printed.
   let locLabel = "";
   if (searchParams.district) {
-    const sb = getSupabaseServer();
+    const sb = await getSupabaseServer();
     // `kind` joins the read because a development is not a district and the title
     // is one of the four surfaces that used to name one as if it were.
     if (sb) { const { data } = await sb.from("districts").select("name_en,name_ar,city,kind").eq("id", searchParams.district).single(); if (data) locLabel = locationLabel(placeName(data, loc), (data as { kind?: string }).kind, dl.project); }
@@ -129,7 +129,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
   // with a second grade vocabulary and a second sort vocabulary among them.
   const dl = dict.listings;
   const list = (k?: string) => (k ? k.split(",").filter(Boolean) : []);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let listings: Listing[] = [];
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];

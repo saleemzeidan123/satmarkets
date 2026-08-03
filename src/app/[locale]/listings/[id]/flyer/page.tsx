@@ -55,7 +55,7 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").flyer;
   const pub = await getPublishedKpis(locale);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   let l: any = null;
   let idxRows: IndexRow[] = [];
   let idxStatements: readonly string[] = [];

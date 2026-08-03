@@ -1,4 +1,5 @@
 "use client";
+import type React from "react";
 import { useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import { apiErrorMessage } from "@/lib/apiErrors";
@@ -7,7 +8,7 @@ type Role = "occupier" | "owner" | "broker" | "investor";
 type Props = { locale: string };
 
 const S = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-const RIC: Record<Role, JSX.Element> = {
+const RIC: Record<Role, React.JSX.Element> = {
   occupier: <svg {...S}><path d="M3 21h18" /><path d="M5 21V7l7-4 7 4v14" /><path d="M9 10h2M13 10h2M9 14h2M13 14h2" /></svg>,
   owner: <svg {...S}><path d="M3 11 12 4l9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-5h4v5" /></svg>,
   broker: <svg {...S}><circle cx="9" cy="8" r="3.2" /><path d="M3.5 20c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5" /><path d="M16.5 4.5 21 9l-4.5 4.5" /></svg>,
@@ -67,11 +68,11 @@ export default function SignupFlow({ locale }: Props) {
   );
   /* ELITE-4 J1-2: the label was a plain <div>, so the control was named by its
      placeholder alone. It is a real <label htmlFor> bound to the control id now. */
-  const field = (id: string, label: string, node: JSX.Element) => (
+  const field = (id: string, label: string, node: React.JSX.Element) => (
     <div><label htmlFor={id} style={lbl}>{label}</label>{node}</div>
   );
   /* ELITE-4 J1-2: multi-select chip groups carried no group name at all. */
-  const group = (label: string, node: JSX.Element) => (
+  const group = (label: string, node: React.JSX.Element) => (
     <fieldset style={fs}>
       <legend style={{ ...lbl, padding: 0 }}>{label}</legend>
       {node}

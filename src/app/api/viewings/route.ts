@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   if (isNaN(when.getTime()) || when.getTime() < now || when.getTime() > now + 21 * 24 * 3600 * 1000) {
     return NextResponse.json({ error: "invalid slot", code: "viewing_slot_invalid" }, { status: 400 });
   }
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   // Slice A of PKG-E1-READINESS, WS13, functional truth. This line used to
   // answer `{ ok: true }` for a request it had not stored, and because the
   // client tests the response and not the payload, `ok` on a 200 rendered the

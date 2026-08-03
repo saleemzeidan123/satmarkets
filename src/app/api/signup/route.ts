@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 200) return NextResponse.json({ error: "invalid email", code: "invalid_email" }, { status: 400 });
   const details = body.details && typeof body.details === "object" ? body.details : {};
   if (JSON.stringify(details).length > 4000) return NextResponse.json({ error: "details too large", code: "details_too_large" }, { status: 400 });
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   // Slice A of PKG-E1-READINESS, WS13, functional truth. The matched half of the
   // viewings defect, and the worse of the two to meet: `{ ok: true }` on a 200
   // took the reader to the "Request received" card, which then lists what

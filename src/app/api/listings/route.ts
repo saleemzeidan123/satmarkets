@@ -10,7 +10,7 @@ const CONTACT_CHANNELS = ["whatsapp", "call", "email", "message"];
 
 export async function GET(req: NextRequest) {
   if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (!supabase) return NextResponse.json({ listings: [], note: "supabase not configured" });
   const { searchParams } = new URL(req.url);
   let query = releaseVisibleInventory(supabase.from("listings").select("*").eq("status", "published")).limit(50);
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     availability_confirmed_at = new Date(ms).toISOString();
   }
 
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (!supabase) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
 
   const { data, error } = await supabase

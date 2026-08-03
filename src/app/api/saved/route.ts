@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   const ids = (searchParams.get("ids") || "").split(",").map((s) => s.trim()).filter((s) => /^[0-9a-fA-F-]{36}$/.test(s)).slice(0, 50);
   if (!ids.length) return NextResponse.json({ listings: [] });
   const locale: Loc = searchParams.get("locale") === "ar" ? "ar" : "en";
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ listings: [] });
   // simulated-visible. This hydrates the ids the user themself saved. Dropping a
   // simulated row from their own shortlist would read as data loss, not a correction.

@@ -31,7 +31,7 @@ export default async function DashboardLayout(props: { children: React.ReactNode
   const su = await getSessionUser();
   if (!su) redirect(`/${lp}/login`);
   if (!su.accountId) redirect(`/${lp}`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
 
   let acctName = su.email || db.acctNameFallback;
   let acctRole = db.acctRoleFallback;

@@ -33,7 +33,7 @@ export default async function OwnerListingsPage(props: { params: Promise<{ local
   const su = await getSessionUser();
   if (!su) redirect(`/${lp}/login`);
   if (!su.accountId) redirect(`/${lp}`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
 
   const t = ar ? {

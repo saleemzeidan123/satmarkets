@@ -22,7 +22,7 @@ import { placeName } from "@/lib/displayName";
 // defence in depth, not the fix.
 export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
 
   if (!/^[0-9a-f-]{36}$/i.test(params.id)) {

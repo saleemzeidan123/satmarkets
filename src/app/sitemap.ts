@@ -69,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let newestListing: Date | undefined;
 
   try {
-    const sb = getSupabaseServer();
+    const sb = await getSupabaseServer();
     if (sb) {
       // `availability_confirmed_at` is deliberately not selected: no migration
       // creates it, and PostgREST fails the whole query on an unknown column.

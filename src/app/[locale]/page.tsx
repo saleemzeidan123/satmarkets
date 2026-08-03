@@ -35,7 +35,7 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   const kpis = await getPublishedKpis(locale);
 
   let rows: Listing[] = [];

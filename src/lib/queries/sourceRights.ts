@@ -97,7 +97,7 @@ const EMPTY = (state: SourceRegisterState): SourceRegisterRead => ({
 export const readSourceRegister = cache(
   async (): Promise<SourceRegisterRead> => {
     try {
-      const sb = getSupabaseServer();
+      const sb = await getSupabaseServer();
       if (!sb) return EMPTY("not_configured");
       const { data, error } = await sb
         .from("source_registry")

@@ -28,7 +28,7 @@ export default async function MessagesPage(
   const su = await getSessionUser();
   if (!su) redirect(`/${locale}/login`);
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) notFound();
 
   const { data: rows } = await sb

@@ -47,7 +47,7 @@ const COLUMNS =
 
 export async function GET(req: Request) {
   if (!allow("index-segments", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ segments: [], notes: [], withheld: 0 });
 
   // The statement has to reach the reader in the reader's language, and this

@@ -55,7 +55,7 @@ export async function GET(req: NextRequest, props: { params: Promise<{ id: strin
     return NextResponse.json({ error: "Only verified owners and brokers can answer a requirement." }, { status: 403 });
   }
 
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb) {
     return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
   }

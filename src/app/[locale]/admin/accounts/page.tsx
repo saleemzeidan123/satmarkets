@@ -16,7 +16,7 @@ export default async function AdminAccountsPage(props: { params: Promise<{ local
   const lp = params.locale;
   const ar = lp === "ar";
   const session = await requireSat(lp);
-  const sb = getSupabaseServer()!;
+  const sb = (await getSupabaseServer())!;
 
   const t = ar ? {
     title: "الحسابات", sub: "كل حساب على المنصّة",

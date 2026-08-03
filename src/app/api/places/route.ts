@@ -36,7 +36,7 @@ type Item = GeoPlaceItem;
 
 async function indexedPlaces(q: string, lang: "en" | "ar", withIds: boolean): Promise<Item[]> {
   try {
-    const sb = getSupabaseServer();
+    const sb = await getSupabaseServer();
     if (!sb) return [];
     const s = q.replace(/[(),\\%]/g, " ").trim();
     if (!s) return [];

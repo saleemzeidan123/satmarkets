@@ -30,7 +30,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   const t = getDictionary(loc).reqDetail;
   const path = `/requirements/${params.id}`;
   let title: string | null = null;
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (sb && /^[0-9a-f-]{36}$/i.test(params.id)) {
     const { data } = await sb.from("requirements_public").select("title,title_ar").eq("id", params.id).maybeSingle();
     if (data) title = String((loc === "ar" ? (data as any).title_ar : (data as any).title) || (data as any).title || "").trim() || null;

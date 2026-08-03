@@ -26,7 +26,7 @@ import type { NextRequest } from "next/server";
  *
  * WHAT THESE TESTS ARE. The first two call the real handlers. Nothing is mocked,
  * because the condition under test is the absence of configuration and the test
- * process genuinely has none: `getSupabaseServer()` reads two environment
+ * process genuinely has none: `await getSupabaseServer()` reads two environment
  * variables and returns null before it touches `cookies()`, so the not-stored
  * path is the path a test process takes by default. That makes this the rare
  * case where the failure mode is the easy one to reproduce.

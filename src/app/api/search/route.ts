@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!allow("search", req)) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });
   const { query } = (await req.json()) as { query?: string };
   const raw = (query || "").slice(0, 2000);
-  const supabase = getSupabaseServer();
+  const supabase = await getSupabaseServer();
   if (!supabase) return NextResponse.json({ results: [], parsed: {}, clarify: false });
 
   // WO-8 reference-code fast path: a SATM code query resolves straight to its

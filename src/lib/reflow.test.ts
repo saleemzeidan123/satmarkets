@@ -97,7 +97,12 @@ const FIXED_FLOOR = /minmax\(\s*[0-9.]+(?:px|rem|em)\b/g;
 
 /** path:line -> why that fixed floor is allowed to stay. */
 const FLOOR_EXEMPT: Record<string, string> = {
-  "src/app/[locale]/bilingual/page.tsx:101":
+  /* PKG-NEXT16-SECURITY. The async request API codemod added an `await` line to
+     every page that reads route params, which pushed this site two lines down.
+     Re-pointed, not widened. The guard below is doing exactly the job the line
+     number is there for: a stale key stops excusing the site it was written for,
+     so it has to fail loudly on a move of two lines. */
+  "src/app/[locale]/bilingual/page.tsx:103":
     "minmax(40px,auto) is a 40px label gutter on the internal bilingual comparison page, " +
     "which is a development surface, not a product journey. 40px is below every content " +
     "box measured here, so it cannot be the wider of the two.",
@@ -155,15 +160,16 @@ const JOURNEYS = [
 /** path:line -> why that fixed pair is allowed to stay. */
 const PAIR_EXEMPT: Record<string, string> = {
   /* RC12, finding 164 moved this site three lines down when the advisor page
-     took the scrollBehavior() import. The exemption is re-pointed rather than
+     took the scrollBehavior() import, and the Next.js 16 async request API
+     codemod moved it one further. The exemption is re-pointed rather than
      widened, which is the whole reason it carries a line number. */
-  "src/app/[locale]/advisor/page.tsx:185":
+  "src/app/[locale]/advisor/page.tsx:186":
     ".adv-jobs-grid is overridden to a single column at max-width:820px by " +
     "globals.css:412, which fires well above every width at which the pair would be too " +
     "narrow. The inline value is the wide-screen case only.",
-  "src/app/[locale]/bilingual/page.tsx:138":
+  "src/app/[locale]/bilingual/page.tsx:140":
     "internal bilingual comparison page, a development surface and not a product journey.",
-  "src/app/[locale]/deal/termsheet/page.tsx:65":
+  "src/app/[locale]/deal/termsheet/page.tsx:66":
     "the term sheet preview is outside the four critical journeys of PKG-A11Y-1. Recorded " +
     "as out of scope rather than fixed blind, because it is a print-shaped document surface " +
     "and the right answer there is a layout decision, not this substitution.",

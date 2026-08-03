@@ -94,7 +94,7 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
   // binding here keeps every formatter call on this page honest.
   const lp = locale as "en" | "ar";
   const dict = getDictionary(lp);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   const l: any = await getListingById(params.id);
   const lister = await getLister(l?.account_id);
   if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;

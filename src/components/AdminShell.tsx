@@ -21,7 +21,7 @@ export type SatSession = { accountId: string; name: string; email: string | null
 export async function requireSat(locale: string): Promise<SatSession> {
   const su = await getSessionUser();
   if (!su) redirect(`/${locale}/login`);
-  const sb = getSupabaseServer();
+  const sb = await getSupabaseServer();
   if (!sb || !su.accountId || !su.isSat) notFound();
   const { data } = await sb.from("accounts").select("name_en,name_ar").eq("id", su.accountId).maybeSingle();
   const nm = entityName(data as any, locale === "ar" ? "ar" : "en") || su.email || "SAT";
