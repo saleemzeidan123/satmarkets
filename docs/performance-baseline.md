@@ -372,3 +372,221 @@ after.
 | login | ar | desktop | static | 642 to 517 | 247 to 247 | 322 to 196 | 272 to 232 | 0.000 to 0.000 | 76 to 74 |
 | post-requirement | ar | desktop | static | 650 to 481 | 254 to 255 | 322 to 153 | 336 to 232 | 0.000 to 0.000 | 105 to 84 |
 | signup | ar | desktop | static | 649 to 537 | 252 to 253 | 322 to 211 | 248 to 248 | 0.000 to 0.000 | 60 to 76 |
+
+---
+
+# The Next.js 16 re-measurement, PKG-NEXT16-SECURITY slice E
+
+Recorded 3 August 2026. The before is commit `1a99107`, the last commit before the
+migration, running Next.js 14.2.35 with React 18.3.1. The after is commit `73c630a` on
+branch `next16-security`, running Next.js 16.2.12 with React 19.2.8. Both trees were
+built and served inside the same container in the same session, and every figure below
+came out of the same `scripts/perf-probe.mjs` that produced the baseline above, with no
+change to the probe and no change to the budgets.
+
+## Why the before was measured again instead of read off the table above
+
+`docs/perf-budgets.json` was measured on 2 August on a different machine. The after run
+here exceeds those budgets in ninety nine places, and a hundred overages could as easily
+be a slower container as a slower application. So the pre-migration commit was rebuilt and
+probed in this same sandbox first, and it came back `perf-probe: 1 over budget`: one cell,
+`desktop:ar:market`, at 573 kB against a 572 kB budget, which is one kilobyte. This
+machine therefore reproduces the recorded budgets, and that is what licenses reading the
+after run's overages as the change rather than as the environment.
+
+## Three arms, because the bundler turned out to be separable
+
+`docs/next16-migration.md` recorded that a 14 against 16 comparison would conflate two
+changes, since Next 16 builds with Turbopack by default and 14 built with webpack. That
+caveat is retired rather than repeated. `next build --webpack` still exists in 16.2.12,
+so the sweep was run three times: Next 14 with webpack, Next 16 with webpack, and Next 16
+with Turbopack as production actually builds it. The first pair holds the bundler still
+and moves the framework. The second pair holds the framework still and moves the bundler.
+Every value in the matrix at the end of this section reads as those three arms in that
+order.
+
+## JavaScript over the wire rose on every one of the forty cells
+
+The rise is between 39 and 45 kB, median 43 kB, and no cell fell. Splitting it: the
+framework and React 19 account for 30 to 33 kB, median 31, and Turbopack's chunking
+accounts for a further 8 to 13 kB, median 12. That is roughly three quarters framework and
+one quarter bundler. The largest movers are the three `listings` cells at 45 kB and the
+smallest are the three `post-requirement` cells at 39 kB, which is a narrow enough spread
+to say the cost is in the shared runtime rather than in any one route.
+
+Uncompressed, the scripts served on `/en` total 733,577 bytes across 14 files on Next 14,
+837,490 bytes across 14 files on Next 16 with webpack, and 920,358 bytes across 12 files
+on Next 16 with Turbopack. A chunk of exactly 112,594 bytes, the polyfill bundle, is
+present and byte identical in all three, which is the control that says the delta is not
+polyfills moving around. The wire figures in the matrix are smaller than these because
+they are compressed.
+
+## Total transfer rose on every cell too, and by about the same amount
+
+Between 14 and 58 kB, median 44 kB, which is the JavaScript delta and little else. The
+smallest riser, `desktop:ar:market` at 14 kB, is the cell that was one kilobyte over
+budget on the Next 14 arm as well, so its own run to run spread accounts for most of the
+difference between it and the rest.
+
+## Blocking time is the framework's cost
+
+On the mobile profile the framework arm adds a median of 153 ms of total blocking time,
+across a range of 39 to 280 ms, while the bundler arm adds a median of nothing at all,
+minus 1.5 ms across a range of minus 99 to plus 158. On desktop the same shape holds
+smaller: the framework adds a median 61 ms and the bundler subtracts a median 42 ms. Main
+thread work went up because there is more framework to execute, and which bundler emitted
+it does not matter.
+
+## Mobile paint is the bundler's cost
+
+The picture inverts on largest contentful paint. On mobile the framework arm moves the
+median by 26 ms, across a range of minus 28 to plus 352, and the bundler arm moves it by a
+median of 182 ms across a range of plus 20 to plus 424. Under four times CPU throttling
+and 1.6 Mbps, Turbopack's twelve larger chunks arrive and parse later than webpack's
+fourteen smaller ones, and the paint waits.
+
+## Desktop paint did not move, but it acquired a second mode
+
+The desktop medians say nothing happened: the framework arm moves the median by 8 ms and
+the bundler arm by minus 4 ms. What did change is how often a desktop cell paints slowly.
+On Next 14 exactly two desktop cells sit above 400 ms, and both are `home`, where the
+largest element is the hero photograph. On Next 16 six to eight do, across four
+independent Next 16 sweeps, and each of those cells reads either about 250 ms or about
+550 ms with nothing in between. Which cells land in the slow mode is not stable between
+sweeps: `desktop:en:rent-index` is fast on the webpack arm and slow on the Turbopack arm,
+`desktop:ar:rent-index` is the other way round. So this is recorded as a bimodal paint
+that Next 16 enters more often than Next 14 did, and not as a per cell regression, because
+naming the twelve cells that happen to exceed their paint budget in this particular sweep
+would be naming a coin toss. It is worth a look in a package that is allowed to change
+pages.
+
+## Fonts did not move
+
+`fontKb` is identical to the kilobyte on 38 of the 40 cells across all three arms, and
+differs by one kilobyte on the two `invest` cells. All three builds emit the same
+seventeen `@font-face` rules, thirteen real faces and four size adjusted fallbacks, with
+`font-display: optional` on every one. Whatever the migration cost, it did not cost
+anything in font delivery, and the font swap described in the limitation below did not
+distort the comparison.
+
+## The one new layout shift was the measurement instrument, not the application
+
+The first sweep produced a genuine looking stability regression: `desktop:en:home` read
+0.000 on Next 14 and 0.091 on both Next 16 arms, consistently, which is well past the 0.05
+budget and looked like the one real defect of the whole slice. It is worth writing down
+what it actually was, because the conclusion nearly went into this document the wrong way
+round.
+
+Capturing the layout shift entries with their `sources` arrays showed a single shift of
+0.0912 at about 335 ms in which the hero heading grew from 125 px to 188 px, one rendered
+line to two, pushing the subtitle paragraph down 63 px and the panel below it down 62 px.
+The font size was 58 px before and after, so this was a rewrap and not a resize, and a
+rewrap at a fixed size is a font metric change.
+
+The cause is in the measurement tree. As the limitations above record, this sandbox cannot
+reach Google Fonts, so the four `next/font/google` declarations are swapped to
+`next/font/local` against the same thirteen faces. In Next 14 that swap was harmless:
+`next/font` hashed the emitted family name to `__serif_f10e71`. In Next 16 it is not.
+`next/font/local` now names the emitted family after the JavaScript binding, at
+`next/dist/compiled/@next/font/dist/local/loader.js`, which pushes `['font-family',
+variableName]`, and the binding in the root layout is `serif`. The build therefore emitted
+`@font-face { font-family: "serif" }` and a usage of `"serif", "serif Fallback", Georgia,
+serif`, where `serif` is a CSS generic family keyword. The browser registered sixteen
+faces instead of seventeen, the size adjusted fallback did not hold, and the heading
+rewrapped when the real face finally applied.
+
+The test was to rename the four bindings to `serifFace`, `sansFace`, `monoFace` and
+`arabicFace`, changing nothing else, and rebuild both Next 16 arms. The emitted families
+became `serifFace` and its siblings, seventeen faces registered, the heading held at
+125 px through the whole load, and the shift went to 0.000. Both Next 16 arms in the matrix
+below are the renamed builds, and the whole sweep was re run on them, which is why the
+after column here is not the one the first campaign produced.
+
+The committed application does not have this collision, and that was checked rather than
+assumed: `next/font/google` takes its family name from the CSS that Google returns, which
+carries `'Source Serif 4'`, not from the binding. The trap only exists for
+`next/font/local`. It is written down here because it is a real Next 16 behaviour change
+that would bite silently, and because the next person to swap fonts for measurement in
+this sandbox will otherwise rediscover it as a defect.
+
+With the artifact removed, no cell exceeds its layout shift budget in the after run. Six
+cells read a nonzero shift somewhere in the three arms, and none of them repeats between
+the two measurement campaigns except `desktop:en:listings`, which is the unreserved map
+pane already recorded in the follow ups above and is present on Next 14 as well at 0.182.
+
+## The budgets were not rewritten
+
+`--write-budgets` was not passed, because the work order for this slice says to report
+matched results without automatically replacing the budgets. The standing consequence is
+that `node scripts/perf-probe.mjs` now exits 1 against the committed budgets, reporting 99
+overages across 40 cells: all 40 cells on JavaScript bytes, 32 on total bytes, 15 on
+blocking time, 12 on paint, and none on layout shift. The webpack arm of Next 16 reports
+102 by the same measure, so the failure is the framework and not the bundler choice.
+
+Whether to re baseline is an owner decision and it is not taken here. Re baselining
+accepts about 43 kB of extra JavaScript per page as the new normal in exchange for a
+supported framework, which is a defensible trade and is also the trade that was already
+made when the migration was authorized. Leaving the budgets as they are keeps a red gate
+standing that no code change in this repository can turn green. Recording the choice
+matters more than which way it goes, because an unexplained failing gate gets ignored and
+then deleted.
+
+## How to reproduce this
+
+Build the two trees, serve them on different ports, and run the probe against each with
+`node scripts/perf-probe.mjs --base http://127.0.0.1:<port> --chromium <path> --json
+<out>`. In a sandbox that cannot reach Google Fonts, swap the four root layout
+declarations to `next/font/local` against the same faces at the same weights and subsets,
+and do not name the bindings after CSS generic family keywords. Build the third arm with
+`npx next build --webpack`. Nothing here needs the network beyond the font files, which
+are already on disk.
+
+## The full three-way matrix
+
+Every cell is the median of three cold loads, as above. `Data` records what the page could
+actually render: `static` where the route needs no database, `empty` where the database was
+unreachable and the route rendered its no data state honestly. Values read as Next 14 with
+webpack, then Next 16 with webpack, then Next 16 with Turbopack.
+
+| Route family | Locale | Profile | Data | Total kB | JS kB | Font kB | LCP ms | CLS | Blocking ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| home | en | mobile | static | 837 to 873 to 884 | 268 to 299 to 311 | 119 to 119 to 119 | 4436 to 4704 to 4728 | 0.000 to 0.000 to 0.000 | 580 to 665 to 603 |
+| listings | en | mobile | empty | 699 to 740 to 754 | 473 to 506 to 518 | 134 to 134 to 134 | 856 to 840 to 984 | 0.019 to 0.019 to 0.019 | 739 to 874 to 858 |
+| map | en | mobile | empty | 660 to 692 to 710 | 469 to 500 to 512 | 103 to 103 to 103 | 864 to 844 to 1028 | 0.000 to 0.000 to 0.000 | 700 to 882 to 978 |
+| rent-index | en | mobile | static | 476 to 521 to 528 | 260 to 291 to 303 | 134 to 134 to 134 | 844 to 1196 to 1388 | 0.000 to 0.000 to 0.000 | 272 to 552 to 557 |
+| invest | en | mobile | static | 446 to 477 to 490 | 262 to 292 to 305 | 112 to 111 to 111 | 848 to 848 to 1032 | 0.000 to 0.000 to 0.000 | 440 to 523 to 424 |
+| market | en | mobile | empty | 456 to 498 to 512 | 260 to 291 to 303 | 119 to 119 to 119 | 828 to 836 to 1260 | 0.000 to 0.000 to 0.000 | 342 to 433 to 452 |
+| find | en | mobile | static | 403 to 435 to 446 | 267 to 298 to 308 | 66 to 66 to 66 | 768 to 760 to 948 | 0.000 to 0.000 to 0.000 | 193 to 356 to 327 |
+| login | en | mobile | static | 460 to 498 to 513 | 261 to 292 to 304 | 119 to 119 to 119 | 824 to 856 to 1020 | 0.000 to 0.000 to 0.000 | 292 to 421 to 445 |
+| post-requirement | en | mobile | static | 462 to 496 to 499 | 270 to 301 to 309 | 119 to 119 to 119 | 784 to 832 to 1008 | 0.000 to 0.000 to 0.000 | 210 to 398 to 352 |
+| signup | en | mobile | static | 464 to 507 to 515 | 267 to 298 to 309 | 118 to 118 to 118 | 796 to 828 to 1032 | 0.000 to 0.000 to 0.000 | 231 to 418 to 418 |
+| home | ar | mobile | static | 875 to 922 to 926 | 268 to 299 to 311 | 156 to 156 to 156 | 4668 to 4940 to 4960 | 0.000 to 0.000 to 0.000 | 550 to 748 to 699 |
+| listings | ar | mobile | empty | 770 to 816 to 825 | 473 to 506 to 518 | 201 to 201 to 201 | 884 to 1204 to 1368 | 0.020 to 0.020 to 0.020 | 712 to 868 to 865 |
+| map | ar | mobile | empty | 765 to 799 to 809 | 469 to 500 to 512 | 201 to 201 to 201 | 864 to 864 to 984 | 0.000 to 0.000 to 0.000 | 723 to 787 to 945 |
+| rent-index | ar | mobile | static | 565 to 607 to 623 | 260 to 291 to 303 | 216 to 216 to 216 | 904 to 1140 to 1168 | 0.000 to 0.000 to 0.000 | 344 to 478 to 559 |
+| invest | ar | mobile | static | 572 to 604 to 616 | 262 to 292 to 305 | 232 to 232 to 232 | 880 to 900 to 1080 | 0.000 to 0.000 to 0.000 | 405 to 444 to 454 |
+| market | ar | mobile | empty | 548 to 586 to 605 | 260 to 291 to 303 | 201 to 201 to 201 | 864 to 1204 to 1248 | 0.000 to 0.000 to 0.000 | 283 to 478 to 509 |
+| find | ar | mobile | static | 543 to 576 to 584 | 267 to 298 to 308 | 201 to 201 to 201 | 784 to 788 to 1004 | 0.000 to 0.000 to 0.000 | 209 to 305 to 361 |
+| login | ar | mobile | static | 546 to 591 to 593 | 261 to 292 to 304 | 201 to 201 to 201 | 852 to 884 to 1068 | 0.000 to 0.000 to 0.000 | 263 to 446 to 437 |
+| post-requirement | ar | mobile | static | 504 to 539 to 542 | 270 to 301 to 309 | 156 to 156 to 156 | 864 to 836 to 1052 | 0.000 to 0.000 to 0.000 | 283 to 434 to 430 |
+| signup | ar | mobile | static | 567 to 611 to 618 | 267 to 298 to 309 | 216 to 216 to 216 | 884 to 884 to 1068 | 0.000 to 0.000 to 0.000 | 295 to 466 to 388 |
+| home | en | desktop | static | 825 to 856 to 865 | 268 to 299 to 311 | 119 to 119 to 119 | 496 to 516 to 492 | 0.000 to 0.000 to 0.000 | 109 to 172 to 155 |
+| listings | en | desktop | empty | 696 to 776 to 737 | 473 to 506 to 518 | 134 to 134 to 134 | 240 to 256 to 596 | 0.182 to 0.182 to 0.147 | 194 to 252 to 228 |
+| map | en | desktop | empty | 654 to 693 to 695 | 469 to 500 to 512 | 103 to 103 to 103 | 300 to 292 to 300 | 0.000 to 0.000 to 0.000 | 172 to 266 to 236 |
+| rent-index | en | desktop | static | 469 to 504 to 515 | 260 to 291 to 303 | 134 to 134 to 134 | 260 to 252 to 540 | 0.000 to 0.000 to 0.043 | 56 to 157 to 134 |
+| invest | en | desktop | static | 443 to 479 to 484 | 262 to 292 to 305 | 112 to 111 to 111 | 236 to 220 to 228 | 0.000 to 0.000 to 0.000 | 88 to 121 to 96 |
+| market | en | desktop | empty | 452 to 490 to 501 | 260 to 291 to 303 | 119 to 119 to 119 | 252 to 536 to 492 | 0.000 to 0.022 to 0.022 | 85 to 169 to 114 |
+| find | en | desktop | static | 402 to 432 to 444 | 267 to 298 to 308 | 66 to 66 to 66 | 228 to 212 to 244 | 0.000 to 0.000 to 0.000 | 89 to 127 to 61 |
+| login | en | desktop | static | 451 to 486 to 493 | 261 to 292 to 304 | 119 to 119 to 119 | 248 to 232 to 220 | 0.000 to 0.000 to 0.000 | 117 to 155 to 63 |
+| post-requirement | en | desktop | static | 461 to 493 to 497 | 270 to 301 to 309 | 119 to 119 to 119 | 212 to 228 to 224 | 0.000 to 0.000 to 0.000 | 89 to 127 to 125 |
+| signup | en | desktop | static | 456 to 492 to 501 | 267 to 298 to 309 | 118 to 118 to 118 | 260 to 244 to 212 | 0.000 to 0.000 to 0.000 | 88 to 152 to 53 |
+| home | ar | desktop | static | 868 to 899 to 910 | 268 to 299 to 311 | 156 to 156 to 156 | 504 to 552 to 548 | 0.000 to 0.000 to 0.000 | 106 to 172 to 160 |
+| listings | ar | desktop | empty | 777 to 841 to 820 | 473 to 506 to 518 | 201 to 201 to 201 | 256 to 596 to 596 | 0.056 to 0.292 to 0.151 | 178 to 240 to 262 |
+| map | ar | desktop | empty | 768 to 794 to 805 | 469 to 500 to 512 | 201 to 201 to 201 | 356 to 348 to 328 | 0.000 to 0.000 to 0.000 | 220 to 267 to 208 |
+| rent-index | ar | desktop | static | 558 to 592 to 606 | 260 to 291 to 303 | 216 to 216 to 216 | 260 to 592 to 536 | 0.000 to 0.036 to 0.036 | 99 to 107 to 69 |
+| invest | ar | desktop | static | 569 to 601 to 618 | 262 to 292 to 305 | 232 to 232 to 232 | 248 to 276 to 284 | 0.000 to 0.000 to 0.000 | 100 to 183 to 99 |
+| market | ar | desktop | empty | 573 to 583 to 587 | 260 to 291 to 303 | 201 to 201 to 201 | 240 to 512 to 464 | 0.000 to 0.020 to 0.020 | 89 to 150 to 125 |
+| find | ar | desktop | static | 543 to 575 to 584 | 267 to 298 to 308 | 201 to 201 to 201 | 220 to 220 to 232 | 0.000 to 0.000 to 0.000 | 78 to 140 to 80 |
+| login | ar | desktop | static | 540 to 571 to 580 | 261 to 292 to 304 | 201 to 201 to 201 | 252 to 244 to 240 | 0.000 to 0.000 to 0.000 | 78 to 162 to 116 |
+| post-requirement | ar | desktop | static | 503 to 538 to 545 | 270 to 301 to 309 | 156 to 156 to 156 | 228 to 252 to 240 | 0.000 to 0.000 to 0.000 | 84 to 145 to 76 |
+| signup | ar | desktop | static | 562 to 596 to 606 | 267 to 298 to 309 | 216 to 216 to 216 | 256 to 224 to 232 | 0.000 to 0.000 to 0.000 | 90 to 139 to 90 |

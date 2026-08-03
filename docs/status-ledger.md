@@ -196,7 +196,52 @@ sessions as unfetchable through the Vercel fetch tool. They are not.
 during slice D and every one succeeded on retry. Retry three times before writing
 down a limitation.
 
-Slices E and F remain.
+Slice E is complete, in this commit, and it is a measurement rather than a change:
+no application file moved. The forty cell probe was run three times in one
+container in one session, at `1a99107` with webpack, at `73c630a` with webpack,
+and at `73c630a` with Turbopack, because `next build --webpack` still exists in
+16.2.12. That retires the conflation caveat `docs/next16-migration.md` recorded:
+the bundler and the framework are separable and were separated. The pre migration
+tree rebuilt here came back one kilobyte over one budget, which is what licenses
+reading the after run's overages as the change and not as a slower machine.
+JavaScript over the wire rose on all forty cells, 39 to 45 kB, median 43, of which
+roughly three quarters is framework and one quarter is Turbopack chunking. Total
+transfer rose on all forty by about the same amount. Blocking time is the
+framework's cost, a median 153 ms added on mobile with the bundler adding nothing.
+Mobile paint is the bundler's cost, a median 182 ms with the framework adding 26.
+Desktop paint medians did not move, but desktop cells above 400 ms went from two
+to between six and eight across four independent Next 16 sweeps, each affected
+cell reading either about 250 ms or about 550 ms with nothing between and the
+membership not stable between sweeps, so it is recorded as a bimodal paint that
+Next 16 enters more often and not as a per cell regression. Fonts did not move.
+The record is the last section of `docs/performance-baseline.md`.
+
+**The one apparent stability regression was the instrument, not the application.**
+`desktop:en:home` read 0.091 on both Next 16 arms, consistently, and that nearly
+went into the record as the slice's one real defect. It was the measurement tree.
+In Next 16 `next/font/local` names the emitted family after the JavaScript
+binding, with no hash, so the sandbox font swap's `const serif` emitted
+`@font-face { font-family: "serif" }` and collided with the CSS generic keyword:
+sixteen faces registered instead of seventeen, the size adjusted fallback did not
+hold, and the heading rewrapped at a fixed size about 335 ms in. Renaming the four
+bindings and rebuilding both Next 16 arms took it to 0.000, and the reported matrix
+is those rebuilt arms. The committed application uses `next/font/google`, which
+takes its family from the CSS Google returns, so it does not have the collision,
+and that was checked rather than assumed.
+
+**The budget decision is the owner's and is not taken here.** `--write-budgets`
+was not passed, per the work order. The standing consequence is that
+`node scripts/perf-probe.mjs` exits 1 against the committed budgets with 99
+overages, 40 on JavaScript bytes, 32 on total bytes, 15 on blocking, 12 on paint
+and none on stability. The webpack arm reports 102 by the same measure, so the
+failure is the framework and not the bundler choice. Re baselining accepts about
+43 kB of extra JavaScript per page as the new normal in exchange for a supported
+framework, which is the trade that was already made when the migration was
+authorized. Leaving the budgets alone keeps a red gate standing that no code change
+in this repository can turn green. Either is defensible and an unrecorded choice is
+not, because an unexplained failing gate gets ignored and then deleted.
+
+Slice F remains.
 
 **Time-bound exception opened by slice B.** The `overrides` block is the thing that
 survives, and an undated override becomes wrong quietly. It is reviewed at whichever
