@@ -18,7 +18,8 @@ import SavedSearchRows, { type SavedSearchRow } from "@/components/SavedSearchRo
 // saved list is account-backed now, so it follows them across devices.
 export const dynamic = "force-dynamic";
 
-export default async function OccupierHome({ params }: { params: { locale: string } }) {
+export default async function OccupierHome(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

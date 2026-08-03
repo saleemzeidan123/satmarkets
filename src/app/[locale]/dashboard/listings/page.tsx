@@ -22,7 +22,8 @@ import type { Loc } from "@/lib/format";
 // identified as theirs.
 export const dynamic = "force-dynamic";
 
-export default async function OwnerListingsPage({ params }: { params: { locale: string } }) {
+export default async function OwnerListingsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";
@@ -216,13 +217,13 @@ export default async function OwnerListingsPage({ params }: { params: { locale: 
                                      overlay over this cell, and only `.rowact` is lifted
                                      above it. Without this wrapper, pressing the
                                      affirmation opened the detail page instead. */
-                                  <span className="rowact" style={{ display: "inline-flex" }}>
+                                  (<span className="rowact" style={{ display: "inline-flex" }}>
                                     <AvailabilityReaffirm
                                       id={l.id}
                                       locale={lp}
                                       t={{ action: t.reaffirm, working: t.reaffirmWorking, done: t.reaffirmDone, failed: t.reaffirmFailed }}
                                     />
-                                  </span>
+                                  </span>)
                                 )}
                               </div>
                             )}

@@ -5,7 +5,8 @@ import SignupFlow from "@/components/SignupFlow";
 import { getDictionary } from "@/i18n/getDictionary";
 import Link from "next/link";
 
-export default function SignupPage({ params }: { params: { locale: string } }) {
+export default async function SignupPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const locale = params.locale;
  const ar = locale === "ar";

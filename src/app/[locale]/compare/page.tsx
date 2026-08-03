@@ -20,14 +20,17 @@ import ScrollRegion from "@/components/ScrollRegion";
 
 type SP = { ids?: string };
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const ar = params.locale === "ar";
   return { title: ar ? "قارن المساحات · سات ماركتس" : "Compare spaces · SAT Markets", robots: { index: false } };
 }
 
-export default async function ComparePage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
+export default async function ComparePage(props: { params: Promise<{ locale: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
-  const locale = params.locale; const ar = locale === "ar";
+  const locale = params.locale;const ar = locale === "ar";
   const cp = getDictionary(locale === "ar" ? "ar" : "en").compare;
   const L = (p: string) => `/${locale}${p}`;
   const ids = (searchParams.ids || "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);

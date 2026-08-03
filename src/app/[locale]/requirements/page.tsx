@@ -1,6 +1,6 @@
 "use client";
 import { getDictionary } from "@/i18n/getDictionary";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { assetLabel, cityLabel } from "@/lib/labels";
@@ -21,7 +21,8 @@ import { textLangAttrs } from "@/lib/textScript";
 // when it did.
 interface Req { sample?: boolean; id: string; ref: string; title: string; titleAr?: string | null; asset: string; deal: string; district: string; districtAr?: string | null; city: string; sizeMin: number | null; sizeMax: number | null; budget: number | null; timeline: string; mustHaves: string[]; interest: number; }
 
-export default function RequirementsBoard({ params }: { params: { locale: string } }) {
+export default function RequirementsBoard(props: { params: Promise<{ locale: string }> }) {
+ const params = use(props.params);
  const locale = params.locale === "ar" ? "ar" : "en";
  const ar = locale === "ar";
  const dict = getDictionary(locale);
@@ -104,10 +105,10 @@ export default function RequirementsBoard({ params }: { params: { locale: string
      /* An empty board rendered an empty grid: the header, the loading line gone,
         and then nothing, which reads as a page that failed rather than a market
         with no open demand yet. */
-     <div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
+     (<div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
       <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0 }}>{dict.req.empty}</p>
       <div style={{ marginTop: 14 }}><Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link></div>
-     </div>
+     </div>)
     ) : (
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 320px), 1fr))", gap: 16, marginTop: 28 }}>
       {reqs.map((r) => {

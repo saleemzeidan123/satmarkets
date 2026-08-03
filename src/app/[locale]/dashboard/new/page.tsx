@@ -26,13 +26,14 @@ import ListingStudio, { type StudioInitial } from "@/components/ListingStudio";
 //    quietly opened in an intake flow that would ask to change facts it cannot.
 // 2. A draft id that is not this account's is not confirmed to exist. It falls
 //    through to a blank new listing, the same as no parameter at all.
-export default async function NewListingPage({
-  params,
-  searchParams,
-}: {
-  params: { locale: string };
-  searchParams?: { draft?: string };
-}) {
+export default async function NewListingPage(
+  props: {
+    params: Promise<{ locale: string }>;
+    searchParams?: Promise<{ draft?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const sb = getSupabaseServer();

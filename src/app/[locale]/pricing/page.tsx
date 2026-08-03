@@ -8,12 +8,14 @@ import ScrollRegion from "@/components/ScrollRegion";
 
 type Tier = { nm: string; who: string; price: string; unit: string; feat: boolean; ghost?: boolean; cta: string; pts: string[] };
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  const d = getDictionary(params.locale === "ar" ? "ar" : "en").pricing;
-  return localeMeta(params.locale, "/pricing", d.metaTitle, d.metaDesc);
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
+ const d = getDictionary(params.locale === "ar" ? "ar" : "en").pricing;
+ return localeMeta(params.locale, "/pricing", d.metaTitle, d.metaDesc);
 }
 
-export default function PricingPage({ params }: { params: { locale: string } }) {
+export default async function PricingPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const loc: "en" | "ar" = params.locale === "ar" ? "ar" : "en";
  const dict = getDictionary(loc);

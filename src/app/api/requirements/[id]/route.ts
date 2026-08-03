@@ -20,7 +20,8 @@ import { placeName } from "@/lib/displayName";
 // so the same rows remain readable straight from the Supabase REST endpoint with
 // the public anon key until 20260712_rls_tighten.sql is applied. This route is
 // defence in depth, not the fix.
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const sb = getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Storage unavailable. Please try again." }, { status: 503 });
 

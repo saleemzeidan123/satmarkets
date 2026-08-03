@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import { getDictionary } from "@/i18n/getDictionary";
 import { authMessage } from "@/lib/authErrors";
@@ -34,7 +34,8 @@ const SOCIAL: { provider: "google" | "azure" | "linkedin_oidc" | "apple"; label:
 
 // SM-P1-009: the login screen is fully localized. Every string comes from the
 // dictionary so /ar/login is Arabic, not an Arabic shell around English copy.
-export default function LoginPage({ params }: { params: { locale: string } }) {
+export default function LoginPage(props: { params: Promise<{ locale: string }> }) {
+ const params = use(props.params);
  const ar = params.locale === "ar";
  const t = getDictionary(ar ? "ar" : "en").login;
  const [step, setStep] = useState<"choose" | "sent">("choose");

@@ -74,7 +74,9 @@ const FITS = ["shell_and_core", "warm_shell", "fitted", "furnished"];
 
 type SP = { asset?: string; deal?: string; q?: string; qx?: string; district?: string; city?: string; place?: string; view?: string; smin?: string; smax?: string; sz?: string; pmin?: string; pmax?: string; rt?: string; spmin?: string; spmax?: string; sp?: string; grade?: string; fit?: string; verified?: string; sort?: string; bbox?: string };
 
-export async function generateMetadata({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const dl = getDictionary(loc).listings;
   const ar = loc === "ar";
@@ -115,7 +117,9 @@ export async function generateMetadata({ params, searchParams }: { params: { loc
   return localeMeta(params.locale, canonicalListingsPath(searchParams), title, description);
 }
 
-export default async function ListingsPage({ params, searchParams }: { params: { locale: string }; searchParams: SP }) {
+export default async function ListingsPage(props: { params: Promise<{ locale: string }>; searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

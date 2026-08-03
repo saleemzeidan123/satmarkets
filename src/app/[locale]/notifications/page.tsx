@@ -6,7 +6,8 @@ import { getDictionary } from "@/i18n/getDictionary";
 type Note = [(p: { size?: number }) => JSX.Element, string, string, string, string, boolean];
 
 import SampleBanner from "@/components/SampleBanner";
-export default function NotificationsPage({ params }: { params: { locale: string } }) {
+export default async function NotificationsPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const d = getDictionary(params.locale).notifications;

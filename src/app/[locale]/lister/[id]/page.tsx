@@ -20,7 +20,8 @@ import { entityName } from "@/lib/displayName";
 // listing), so it can never expose an account that is not already in the market.
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const t = getDictionary(loc).listerPage;
@@ -52,7 +53,8 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   return localeMeta(params.locale, path, fill(t.metaTitle, { name }), fill(desc, { name }));
 }
 
-export default async function ListerProfilePage({ params }: { params: { locale: string; id: string } }) {
+export default async function ListerProfilePage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

@@ -14,12 +14,14 @@ export const dynamic = "force-dynamic";
 // enforced at the database rather than by this query. If the RLS were removed
 // tomorrow this page would still only ask for the caller's own threads, but that is
 // belt, not braces: the braces are the policy.
-export default async function MessagesPage({
-  params, searchParams,
-}: {
-  params: { locale: string };
-  searchParams: { c?: string };
-}) {
+export default async function MessagesPage(
+  props: {
+    params: Promise<{ locale: string }>;
+    searchParams: Promise<{ c?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
 

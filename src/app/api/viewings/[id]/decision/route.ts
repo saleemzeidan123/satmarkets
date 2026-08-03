@@ -28,7 +28,8 @@ export const dynamic = "force-dynamic";
 // a status that can lie about what happened.
 const ALLOWED = ["confirmed", "cancelled", "completed", "no_show"] as const;
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("viewing-decision", req, 20)) {
     return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   }

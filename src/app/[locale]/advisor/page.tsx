@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import Link from "next/link";
 import { Icon, Logo } from "@/components/satkit";
 import { assetLabel } from "@/lib/labels";
@@ -33,7 +33,8 @@ const XIcon = ({ size = 16 }: { size?: number }) => (
  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
 );
 
-export default function AdvisorPage({ params }: { params: { locale: string } }) {
+export default function AdvisorPage(props: { params: Promise<{ locale: string }> }) {
+ const params = use(props.params);
  const locale = (params.locale === "ar" ? "ar" : "en") as "en"|"ar";
  const ar = locale === "ar";
  const av = getDictionary(locale).advisor;
@@ -259,19 +260,19 @@ export default function AdvisorPage({ params }: { params: { locale: string } }) 
          // built it from the row the answer was rendered from and dropped any
          // whose value the licence withheld. A message restored from
          // sessionStorage carries whatever it was given and no more.
-         <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+         (<div style={{ marginTop: 12, display: "grid", gap: 10 }}>
           <div className="muted" style={{ fontSize: "0.71875rem", fontWeight: 600 }}>{ri.eviTitle}</div>
           {m.passports.map((v, k) => (
            <EvidencePassport key={k} view={v} label={statisticLabel(v.statistic, ar)} ar={ar} locale={locale} />
           ))}
-         </div>
+         </div>)
         ) : null}
         {m.retry && (
          // A failed or timed-out request offers its own way out: one tap resends
          // the same question, so a provider stall never dead-ends the session.
-         <button className="btn secondary sm" style={{ marginTop: 10 }} disabled={busy} onClick={() => send(m.retry as string)}>
+         (<button className="btn secondary sm" style={{ marginTop: 10 }} disabled={busy} onClick={() => send(m.retry as string)}>
           {av.tryAgain}
-         </button>
+         </button>)
         )}
         {m.handoffDistrict && (
          <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: "0.78125rem", fontWeight: 600, alignItems: "flex-start" }}>

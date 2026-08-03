@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -15,7 +15,8 @@ const KEY = "satm_saved";
 const FKEY = "satm_saved_folders";
 const PKEY = "satm_saved_px";
 
-export default function SavedPage({ params }: { params: { locale: string } }) {
+export default function SavedPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const locale = (isLocale(params.locale) ? params.locale : "en") as "en" | "ar";
   const ar = locale === "ar";
   const dict = getDictionary(locale);

@@ -7,7 +7,7 @@
 // contributing-source rows. Thin is amber, never red. Overrides only make a cell more conservative.
 // All data is SYNTHETIC. Never production. See ops/layout.tsx for noindex.
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useState, use } from "react";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 import { formatRange } from "@/lib/format";
 import ScrollRegion from "@/components/ScrollRegion";
@@ -104,7 +104,8 @@ type Cell = {
   spreadPct: number; note?: string; noteAr?: string;
 };
 
-export default function OpsPage({ params }: { params: { locale: string } }) {
+export default function OpsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = use(props.params);
   const ar = params.locale === "ar";
   const t = (en: string, arr: string) => (ar ? arr : en);
   const [period, setPeriod] = useState("2026-06");

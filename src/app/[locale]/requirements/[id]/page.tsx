@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -47,7 +47,8 @@ interface MatchPayload {
 
 const NOTE: Record<MatchReason["state"], string> = { met: "✓", tolerance: "~", unknown: "?", failed: "×" };
 
-export default function RequirementDetail({ params }: { params: { locale: string; id: string } }) {
+export default function RequirementDetail(props: { params: Promise<{ locale: string; id: string }> }) {
+ const params = use(props.params);
  const locale = params.locale === "ar" ? "ar" : "en";
  const ar = locale === "ar";
  const t = getDictionary(locale).reqDetail;
@@ -238,7 +239,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
            string. The legend restates the styling the caption div carried, and
            `minInlineSize: 0` keeps the fieldset shrinkable, which the UA default
            otherwise prevents. */
-        <fieldset style={{ border: 0, padding: 0, margin: "0 0 14px", minInlineSize: 0 }}>
+        (<fieldset style={{ border: 0, padding: 0, margin: "0 0 14px", minInlineSize: 0 }}>
          <legend style={{ fontSize: "0.84375rem", fontWeight: 700, padding: 0 }}>{t.matchesH}</legend>
          <p className="muted" style={{ fontSize: "0.76875rem", margin: "3px 0 10px", lineHeight: 1.6 }}>{t.matchesP}</p>
          {matches.matches.length === 0 ? (
@@ -322,7 +323,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
           <bdi>{t.matchesMargins.replace("{size}", String(matches.tolerances.size_pct)).replace("{budget}", String(matches.tolerances.budget_pct))}</bdi>
           {matches.excluded_count > 0 ? <> <bdi>{matches.excluded_count}</bdi> {t.matchesExcluded}</> : null}
          </p>
-        </fieldset>
+        </fieldset>)
        ) : matchesErr ? (
         <p style={{ color: "var(--status-error)", fontSize: "0.78125rem", margin: "0 0 12px", lineHeight: 1.6 }}>{t.matchesErr}</p>
        ) : null}
@@ -348,7 +349,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
       <div className="card pad" style={{ boxShadow: "none", border: "1px dashed var(--silver)", textAlign: "center", color: "var(--slate)", fontSize: "0.8125rem" }}>{t.none}</div>
      ) : !identitiesVisible ? (
       // OD-003: the public sees how much interest there is, never who.
-      <div className="col gap10">
+      (<div className="col gap10">
        <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
         <div style={{ fontSize: "0.9375rem", fontWeight: 700 }}>
          <bdi>{summary.total}</bdi> {summary.total === 1 ? t.interestedOne : t.interestedCount}
@@ -367,7 +368,7 @@ export default function RequirementDetail({ params }: { params: { locale: string
          </div>
         </div>
        ))}
-      </div>
+      </div>)
      ) : (
       <div className="col gap10">
        {/* PKG-DEM2, finding 116. Every response used to carry a Reply control

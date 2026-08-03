@@ -29,7 +29,8 @@ const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 // My listings row is what finally lets an owner edit their own listing.
 export const dynamic = "force-dynamic";
 
-export default async function ManageListingPage({ params }: { params: { locale: string; id: string } }) {
+export default async function ManageListingPage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

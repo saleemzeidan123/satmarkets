@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { headers } from "next/headers";
+import { headers, type UnsafeUnwrappedHeaders } from "next/headers";
 import { getDictionary } from "@/i18n/getDictionary";
 
 // The app-root 404 has no [locale] segment to read, so it takes the locale the
@@ -8,7 +8,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 // instead of being frozen in English here, and it lets the way back point at the
 // language the visitor was actually reading.
 export default function NotFound() {
-  const locale = headers().get("x-locale") === "ar" ? "ar" : "en";
+  const locale = (headers() as unknown as UnsafeUnwrappedHeaders).get("x-locale") === "ar" ? "ar" : "en";
   const d = getDictionary(locale).notFound;
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center text-center">

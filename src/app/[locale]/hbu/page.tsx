@@ -8,12 +8,14 @@ import SampleBanner from "@/components/SampleBanner";
 import ScrollRegion from "@/components/ScrollRegion";
 import { localeMeta } from "@/lib/meta";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  const h = getDictionary(params.locale === "ar" ? "ar" : "en").hbu;
  return localeMeta(params.locale, "/hbu", h.metaTitle, h.metaDesc);
 }
 
-export default function HbuPage({ params }: { params: { locale: string } }) {
+export default async function HbuPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const hb = getDictionary(params.locale === "ar" ? "ar" : "en").hbu;

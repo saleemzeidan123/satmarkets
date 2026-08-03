@@ -26,7 +26,8 @@ import RequirementForm from "./RequirementForm";
 
 export const revalidate = 3600;
 
-export default async function PostRequirementPage({ params }: { params: { locale: string } }) {
+export default async function PostRequirementPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
 

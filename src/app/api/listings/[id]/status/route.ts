@@ -19,7 +19,8 @@ import { gateFailures, gateReasonsText } from "@/lib/gate";
 
 const ALLOWED: Record<string, string> = { published: "archived", archived: "published" };
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Not found.", code: "listing_not_found" }, { status: 404 });
   const sb = getSupabaseServer();

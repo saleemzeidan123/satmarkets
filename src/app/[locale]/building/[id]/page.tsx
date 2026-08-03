@@ -33,7 +33,8 @@ const TEAL = "#3A6EA5"; const GOLD = "#3A6EA5";
 // it is `districtMobilityPanel`, which today returns the reason there is nothing
 // to show.
 
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const ar = loc === "ar";
@@ -51,9 +52,10 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   return localeMeta(params.locale, `/building/${params.id}`, title, description);
 }
 
-export default async function BuildingPage({ params }: { params: { locale: string; id: string } }) {
+export default async function BuildingPage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
-  const locale = params.locale; const ar = locale === "ar";
+  const locale = params.locale;const ar = locale === "ar";
   const dict = getDictionary(locale);
   const sb = getSupabaseServer();
   if (!sb) notFound();

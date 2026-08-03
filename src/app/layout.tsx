@@ -61,8 +61,8 @@ const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500"
 // visitor who added the app to a home screen got an English name. It now reads
 // the locale the middleware resolved, the same one <html lang> uses below, and
 // takes its words from the dictionaries like every other public surface.
-export function generateMetadata() {
-  const d = getDictionary(headers().get("x-locale") === "ar" ? "ar" : "en").appMeta;
+export async function generateMetadata() {
+  const d = getDictionary((await headers()).get("x-locale") === "ar" ? "ar" : "en").appMeta;
   return {
     title: d.title,
     description: d.description,
@@ -89,8 +89,8 @@ export const viewport = {
   themeColor: "#3A6EA5"
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
-  const locale = headers().get("x-locale") === "ar" ? "ar" : "en";
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const locale = (await headers()).get("x-locale") === "ar" ? "ar" : "en";
   const dir = locale === "ar" ? "rtl" : "ltr";
   return (
     <html lang={locale} dir={dir} className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}>

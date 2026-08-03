@@ -5,7 +5,8 @@ import PrintButton from "@/components/PrintButton";
 
 import SampleBanner from "@/components/SampleBanner";
 import { getDictionary } from "@/i18n/getDictionary";
-export default function TermSheetPage({ params }: { params: { locale: string } }) {
+export default async function TermSheetPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

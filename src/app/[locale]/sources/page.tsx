@@ -47,12 +47,14 @@ import { O10_CLAUSES, assessO10 } from "@/lib/sources/o10";
 // PostgREST 200 with an empty body cannot tell those apart. The permission
 // outcome is identical in all three non-loaded states: everything is denied.
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").sources;
   return localeMeta(params.locale, "/sources", d.metaTitle, d.metaDesc);
 }
 
-export default async function SourcesPage({ params }: { params: { locale: string } }) {
+export default async function SourcesPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const ar = params.locale === "ar";
   const lp = ar ? "ar" : "en";

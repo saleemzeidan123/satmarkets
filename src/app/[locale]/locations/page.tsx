@@ -25,12 +25,14 @@ type Loc = { id: string; city: string; name_en: string; name_ar: string; kind: s
 
 const KIND_ORDER = ["district", "development", "area"];
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").locations;
   return localeMeta(params.locale, "/locations", d.metaTitle, d.metaDesc);
 }
 
-export default async function LocationsPage({ params }: { params: { locale: string } }) {
+export default async function LocationsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

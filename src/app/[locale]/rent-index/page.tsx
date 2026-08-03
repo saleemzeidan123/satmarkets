@@ -93,13 +93,15 @@ type DRow = {
   figureCell: FigureCell;
 };
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  const loc = params.locale === "ar" ? "ar" : "en";
-  const d = getDictionary(loc).rentIndex;
-  return localeMeta(params.locale, "/rent-index", d.metaTitle, d.metaDesc);
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
+ const loc = params.locale === "ar" ? "ar" : "en";
+ const d = getDictionary(loc).rentIndex;
+ return localeMeta(params.locale, "/rent-index", d.metaTitle, d.metaDesc);
 }
 
-export default async function RentIndexPage({ params }: { params: { locale: string } }) {
+export default async function RentIndexPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const ri = getDictionary(params.locale === "ar" ? "ar" : "en").rentIndex;

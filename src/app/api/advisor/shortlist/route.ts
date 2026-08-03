@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { underwrite } from "@/lib/market/underwrite";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
@@ -31,7 +31,7 @@ interface Brief {
 }
 
 function sb() {
-  const c = cookies();
+  const c = (cookies() as unknown as UnsafeUnwrappedCookies);
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

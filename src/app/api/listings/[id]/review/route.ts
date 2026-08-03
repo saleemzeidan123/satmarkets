@@ -8,7 +8,8 @@ export const runtime = "nodejs";
 // Reviewer decisions are gated on the SESSION (app_is_sat, RLS-safe), never on a
 // shared token in a URL or client bundle. Non-reviewers get 404: the console does
 // not announce itself. The service role performs the write after the gate passes.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {

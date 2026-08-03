@@ -5,12 +5,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").neutrality;
   return localeMeta(params.locale, "/neutrality", d.metaTitle, d.metaDesc);
 }
 
-export default function NeutralityPage({ params }: { params: { locale: string } }) {
+export default async function NeutralityPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const ar = params.locale === "ar";
   const lp = ar ? "ar" : "en";

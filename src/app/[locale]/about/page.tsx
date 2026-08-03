@@ -4,12 +4,14 @@ import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/Reveal";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  const d = getDictionary(params.locale === "ar" ? "ar" : "en").about;
-  return localeMeta(params.locale, "/about", d.metaTitle, d.metaDesc);
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
+ const d = getDictionary(params.locale === "ar" ? "ar" : "en").about;
+ return localeMeta(params.locale, "/about", d.metaTitle, d.metaDesc);
 }
 
-export default function AboutPage({ params }: { params: { locale: string } }) {
+export default async function AboutPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const dict = getDictionary(params.locale === "ar" ? "ar" : "en");
  // Two hand-maintained language branches, and the data-moat card in both of them

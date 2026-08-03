@@ -33,12 +33,14 @@ import { COUNT_BOUNDARIES, SHOWN_NOUNS } from "@/lib/publishedRecords";
 // rather than here. A page module may only export the route contract, so an
 // extra export fails the generated route type at build time.
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").bilingual;
   return localeMeta(params.locale, "/bilingual", d.metaTitle, d.metaDesc);
 }
 
-export default function BilingualPage({ params }: { params: { locale: string } }) {
+export default async function BilingualPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale === "ar" ? "ar" : "en";
   const c = getDictionary(lp).bilingual;

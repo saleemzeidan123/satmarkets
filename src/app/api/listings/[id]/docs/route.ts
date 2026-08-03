@@ -17,7 +17,8 @@ export const runtime = "nodejs";
 const MAX_BYTES = 20 * 1024 * 1024; // 20MB
 const CAPS: Record<string, number> = { floorplan: 12, brochure: 3 };
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("listing-docs-upload", req, 20)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

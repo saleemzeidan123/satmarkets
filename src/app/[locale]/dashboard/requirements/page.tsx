@@ -47,7 +47,8 @@ export const dynamic = "force-dynamic";
 
 const NOTE = { met: "✓", tolerance: "~", unknown: "?", failed: "×" } as const;
 
-export default async function DashboardRequirementsPage({ params }: { params: { locale: string } }) {
+export default async function DashboardRequirementsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

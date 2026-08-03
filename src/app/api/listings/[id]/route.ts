@@ -33,7 +33,8 @@ const BASE_OWNED_COLUMNS = new Set(["asking_rent_sqm", "sale_price"]);
 // the same reason: /api/listings/[id]/translate rewrites title_ar whenever the
 // hash of title_en does not match, and Arabic a lister wrote themselves must not
 // be replaced by a machine rendering of the English.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("listing-edit", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

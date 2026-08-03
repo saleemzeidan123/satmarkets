@@ -37,7 +37,8 @@ import { documentLabel } from "@/lib/documentKinds";
 import { videoEmbed } from "@/lib/videoEmbed";
 import { priceParts } from "@/lib/listingFigures";
 
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const dict = getDictionary(loc);
@@ -84,9 +85,10 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   return localeMeta(params.locale, `/listings/${params.id}`, title, description);
 }
 
-export default async function ListingDetail({ params }: { params: { locale: string; id: string } }) {
+export default async function ListingDetail(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
-  const locale = params.locale; const ar = locale === "ar";
+  const locale = params.locale;const ar = locale === "ar";
   // The label helpers take a loose string, but the number, unit and plural
   // formatters are typed to the two locales the site actually has. One narrowed
   // binding here keeps every formatter call on this page honest.
@@ -595,10 +597,10 @@ export default async function ListingDetail({ params }: { params: { locale: stri
                      in the register row: a caption field on the listing media record,
                      an upload path that accepts a WebVTT file per language, and an
                      authored track per video in English and Arabic. */
-                  <>
+                  (<>
                     <video controls preload="none" src={v.src} title={(dict as any).ld.videoTour} aria-label={(dict as any).ld.videoTour} style={{ width: "100%", borderRadius: 10, maxHeight: 440, background: "#000" }} />
                     <div className="muted" style={{ fontSize: "0.75rem", marginTop: 8 }}>{(dict as any).ld.videoNoCaptions}</div>
-                  </>
+                  </>)
                 ) : (
                   <a href={v.href} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}>{(dict as any).ld.watchVideo}</a>
                 )}

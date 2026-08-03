@@ -36,7 +36,8 @@ const initials = (s: string) => s.split(" ").map((w) => w[0]).join("").slice(0, 
 
 type QueueItem = { key: string; tone: "warn" | "neutral"; icon: (p: { size?: number }) => JSX.Element; text: string; cta: string; href: string };
 
-export default async function DashboardPage({ params }: { params: { locale: string } }) {
+export default async function DashboardPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const lp = params.locale;
  const ar = lp === "ar";

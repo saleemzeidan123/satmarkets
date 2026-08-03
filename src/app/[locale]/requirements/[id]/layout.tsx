@@ -24,7 +24,8 @@ import { fill } from "@/lib/format";
 // was that it did no data fetch. It does one now, against the same public view
 // the detail page reads, and the generic wording survives only as the fallback
 // for a missing or unreadable record.
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   const loc = params.locale === "ar" ? "ar" : "en";
   const t = getDictionary(loc).reqDetail;
   const path = `/requirements/${params.id}`;

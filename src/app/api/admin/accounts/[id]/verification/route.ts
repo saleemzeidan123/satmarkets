@@ -21,7 +21,8 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 
 const ALLOWED = new Set(["unverified", "pending", "verified", "rejected"]);
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
+export async function POST(req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const su = await getSessionUser();
   if (!su || !su.isSat || !su.userId) {
     return NextResponse.json({ error: "Not found.", code: "record_not_found" }, { status: 404 });

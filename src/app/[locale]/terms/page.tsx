@@ -5,7 +5,8 @@ import { LEGAL } from "@/lib/legalContent";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const m = getDictionary(params.locale === "ar" ? "ar" : "en").legalMeta;
   // robots stays explicit here rather than riding the site-wide noindex: this
   // document is a working draft pending licensed counsel, so it must stay out of
@@ -13,7 +14,8 @@ export function generateMetadata({ params }: { params: { locale: string } }) {
   return localeMeta(params.locale, "/terms", m.termsTitle, m.termsDesc, { robots: { index: false } });
 }
 
-export default function TermsPage({ params }: { params: { locale: string } }) {
+export default async function TermsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   return <LegalDoc locale={locale} doc={LEGAL.terms} />;

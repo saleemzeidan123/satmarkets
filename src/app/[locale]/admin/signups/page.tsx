@@ -7,7 +7,8 @@ import ScrollRegion from "@/components/ScrollRegion";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminSignupsPage({ params }: { params: { locale: string } }) {
+export default async function AdminSignupsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

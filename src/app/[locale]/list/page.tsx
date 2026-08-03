@@ -39,12 +39,14 @@ import { intakeStages, intakeSize, intakeRequirements } from "@/lib/listIntake";
 // and the page says plainly that signing in comes first rather than discovering
 // it on arrival.
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
-  const d = getDictionary(params.locale === "ar" ? "ar" : "en").list;
-  return localeMeta(params.locale, "/list", d.metaTitle, d.metaDesc);
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
+ const d = getDictionary(params.locale === "ar" ? "ar" : "en").list;
+ return localeMeta(params.locale, "/list", d.metaTitle, d.metaDesc);
 }
 
-export default function ListPage({ params }: { params: { locale: string } }) {
+export default async function ListPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const lp = getDictionary(params.locale === "ar" ? "ar" : "en").list;

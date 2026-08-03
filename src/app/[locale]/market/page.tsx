@@ -17,12 +17,14 @@ import { figureCellOf, withUnit } from "@/lib/market/columnHeading";
 
 export const revalidate = 1800;
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const t = getDictionary(params.locale === "ar" ? "ar" : "en").marketPage;
   return localeMeta(params.locale, "/market", t.metaTitle, t.metaDesc);
 }
 
-export default async function MarketPage({ params }: { params: { locale: string } }) {
+export default async function MarketPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

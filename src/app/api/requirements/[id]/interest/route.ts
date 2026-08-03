@@ -9,7 +9,8 @@ import { getSessionUser } from "@/lib/auth/session";
 // the account record. Nothing about WHO you are may come from the request body:
 // party_type, party_name and org are ignored if sent. Anonymous is 401,
 // unverified is 403, and every row records the acting user and account.
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("interest", req, 8)) {
     return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
   }

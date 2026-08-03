@@ -32,7 +32,8 @@ import { quotableRentIndexRows } from "@/lib/market/quotable";
 // names it, and falls back to a described sentence rather than to a reference
 // code, because a code identifies a listing and does not describe one: the same
 // rule the detail page already follows.
-export async function generateMetadata({ params }: { params: { locale: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const t = getDictionary(loc).flyer;
@@ -47,7 +48,8 @@ export async function generateMetadata({ params }: { params: { locale: string; i
   return localeMeta(loc, `/listings/${params.id}/flyer`, title, t.metaDesc);
 }
 
-export default async function ListingFlyer({ params }: { params: { locale: string; id: string } }) {
+export default async function ListingFlyer(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

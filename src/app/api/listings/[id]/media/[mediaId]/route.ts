@@ -10,7 +10,11 @@ export const runtime = "nodejs";
 // cannot delete another listing's media even by calling this directly. The storage
 // object is removed best-effort; if the bucket's delete-protection refuses it, the
 // row is still gone so the photo stops showing, which is what the owner asked for.
-export async function DELETE(req: NextRequest, { params }: { params: { id: string; mediaId: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  props: { params: Promise<{ id: string; mediaId: string }> }
+) {
+  const params = await props.params;
   if (!allow("listing-media-delete", req, 40)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

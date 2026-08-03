@@ -18,12 +18,14 @@ function IntelStat({ v, l, delta, dir }: { v: string; l: string; delta?: string;
  );
 }
 
-export async function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  const a = getDictionary(params.locale === "ar" ? "ar" : "en").area;
  return localeMeta(params.locale, "/area", a.metaTitle, a.metaDesc);
 }
 
-export default function AreaPage({ params }: { params: { locale: string } }) {
+export default async function AreaPage(props: { params: Promise<{ locale: string }> }) {
+ const params = await props.params;
  if (!isLocale(params.locale)) notFound();
  const ar = params.locale === "ar";
  const ap = getDictionary(params.locale === "ar" ? "ar" : "en").area;

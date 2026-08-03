@@ -21,7 +21,8 @@ function KCard({ icon: I, tone, v, l, note }: { icon: (p: { size?: number }) => 
   );
 }
 
-export default async function AdminPage({ params }: { params: { locale: string } }) {
+export default async function AdminPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

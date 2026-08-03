@@ -12,7 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { cookies, type UnsafeUnwrappedCookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
 import { allow } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
@@ -21,7 +21,7 @@ import { unsourcedFigure } from "@/lib/market/guard";
 export const runtime = "nodejs";
 
 function sbServer() {
-  const cookieStore = cookies();
+  const cookieStore = (cookies() as unknown as UnsafeUnwrappedCookies);
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -37,7 +37,8 @@ function sbServer() {
   );
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("translate", req, 10)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
 
   // YOU MUST BE SIGNED IN, AND IT IS CHECKED BEFORE WE SPEND ANYTHING.

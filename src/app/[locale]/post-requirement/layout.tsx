@@ -6,7 +6,8 @@ import { pageMeta } from "@/lib/meta";
 // layout. Without it the route inherited the English homepage title even in
 // Arabic (Codex correction 5). /post-requirement is noindex (private prefix),
 // but the title must still be accurate and locale-specific.
-export function generateMetadata({ params }: { params: { locale: string } }): Metadata {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }): Promise<Metadata> {
+  const params = await props.params;
   return pageMeta(
     params.locale,
     "/post-requirement",

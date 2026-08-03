@@ -19,7 +19,8 @@ import ScrollRegion from "@/components/ScrollRegion";
 // leak someone else's viewings.
 export const dynamic = "force-dynamic";
 
-export default async function ViewingsPage({ params }: { params: { locale: string } }) {
+export default async function ViewingsPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

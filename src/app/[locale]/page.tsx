@@ -24,12 +24,14 @@ function idxSegment(asset: string, grade: string | null): string | null {
   return null;
 }
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const d = getDictionary(params.locale === "ar" ? "ar" : "en").home;
   return localeMeta(params.locale, "", d.metaTitle, d.metaDesc);
 }
 
-export default async function HomePage({ params }: { params: { locale: string } }) {
+export default async function HomePage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

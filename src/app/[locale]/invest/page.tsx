@@ -17,7 +17,7 @@
 // holds real comparables and the right to show them, they arrive as records through
 // the evidence path, not as constants in a page.
 //
-import { useMemo, useState } from "react";
+import { useMemo, useState, use } from "react";
 import { Icon } from "@/components/satkit";
 import { fill, formatCounted, unitText } from "@/lib/format";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -31,7 +31,8 @@ function irr(flows: number[]) { let lo = -0.9, hi = 1.5; for (let i = 0; i < 90;
 
 import SampleBanner from "@/components/SampleBanner";
 import ScrollRegion from "@/components/ScrollRegion";
-export default function InvestPage({ params }: { params: { locale: string } }) {
+export default function InvestPage(props: { params: Promise<{ locale: string }> }) {
+ const params = use(props.params);
  const ar = params.locale === "ar";
  const iv = getDictionary(params.locale === "ar" ? "ar" : "en").invest;
  const [price, setPrice] = useState(64800000);

@@ -9,7 +9,8 @@ import { getSessionUser } from "@/lib/auth/session";
 // their own home. No session at all goes to login.
 export const dynamic = "force-dynamic";
 
-export default async function GoPage({ params }: { params: { locale: string } }) {
+export default async function GoPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const su = await getSessionUser();

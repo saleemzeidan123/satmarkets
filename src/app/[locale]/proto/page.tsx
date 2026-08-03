@@ -9,7 +9,8 @@ import { formatArea, formatUnit } from "@/lib/format";
 // route is additive and carries the global noindex until ALLOW_INDEX is set.
 export const dynamic = "force-static";
 
-export default function ProtoPage({ params }: { params: { locale: string } }) {
+export default async function ProtoPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const ar = params.locale === "ar";
   const t = (en: string, a: string) => (ar ? a : en);

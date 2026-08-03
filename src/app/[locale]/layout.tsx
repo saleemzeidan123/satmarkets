@@ -12,7 +12,13 @@ import HtmlLangDir from "@/components/HtmlLangDir";
 import JsonLd, { ORG, website } from "@/components/JsonLd";
 import { simulatedRowsAreLabelled } from "@/lib/inventory";
 
-export default function LocaleLayout({ children, params }: { children: ReactNode; params: { locale: string } }) {
+export default async function LocaleLayout(props: { children: ReactNode; params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   if (!isLocale(params.locale)) notFound();
   // Preview containment (SM-P0-006). Everything on this deployment is sample data
   // until the owner sets SITE_ENV=production, so the notice is persistent and site

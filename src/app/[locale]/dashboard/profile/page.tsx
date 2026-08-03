@@ -12,7 +12,8 @@ import { entityName } from "@/lib/displayName";
 // editable and appear on the public lister page.
 export const dynamic = "force-dynamic";
 
-export default async function ProfilePage({ params }: { params: { locale: string } }) {
+export default async function ProfilePage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";

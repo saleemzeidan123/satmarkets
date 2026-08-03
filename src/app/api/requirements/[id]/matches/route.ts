@@ -41,7 +41,8 @@ export const dynamic = "force-dynamic";
 
 const MAX_RESULTS = 25;
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("req-matches", req, 30)) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }

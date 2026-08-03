@@ -30,7 +30,8 @@ function sniff(buf: Buffer): { mime: string; ext: string } | null {
   return null;
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("listing-documents-upload", req, 20)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

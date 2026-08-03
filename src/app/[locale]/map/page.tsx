@@ -12,12 +12,14 @@ import { unitText } from "@/lib/format";
 
 const ASSET_ORDER = ["office","retail","medical","warehouse","showroom","serviced","education","land","mixed_use","hospitality","gas_station","entertainment","wedding_hall","worker_housing","self_storage"];
 
-export function generateMetadata({ params }: { params: { locale: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   const m = getDictionary(params.locale === "ar" ? "ar" : "en").map;
   return localeMeta(params.locale, "/map", m.metaTitle, m.metaDesc);
 }
 
-export default async function MapPage({ params }: { params: { locale: string } }) {
+export default async function MapPage(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;
   const ar = locale === "ar";

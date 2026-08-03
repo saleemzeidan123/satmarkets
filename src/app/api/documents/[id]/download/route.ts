@@ -15,7 +15,8 @@ export const runtime = "nodejs";
 // object key, so the object path cannot be guessed or supplied by the caller.
 const TTL_SECONDS = 60;
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("document-download", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

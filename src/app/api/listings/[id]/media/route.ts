@@ -25,7 +25,8 @@ function sniff(buf: Buffer): boolean {
   return false;
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("listing-media-upload", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
@@ -114,7 +115,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 // ids that actually belong to this listing's photos are touched; anything else is
 // ignored, so a stray id cannot reorder another listing. Owner-scoped in code and by
 // the listing_media RLS update policy.
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("listing-media-reorder", req, 40)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

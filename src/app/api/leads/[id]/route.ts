@@ -16,7 +16,8 @@ export const runtime = "nodejs";
 // gating here keeps the change to the one field an owner may set.
 const ALLOWED = new Set(["new", "contacted", "qualified", "converted", "closed_lost"]);
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   if (!allow("lead-status", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();

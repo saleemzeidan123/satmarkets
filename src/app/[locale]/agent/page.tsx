@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
-export default function Page({ params }: { params: { locale: string } }) {
+export default async function Page(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
   redirect(`/${params.locale}/advisor`);
 }

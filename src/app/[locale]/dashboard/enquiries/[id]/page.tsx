@@ -16,7 +16,8 @@ import { listingTitle } from "@/lib/listingTitle";
 // lead on someone else's listing is Not found rather than Forbidden.
 export const dynamic = "force-dynamic";
 
-export default async function EnquiryPage({ params }: { params: { locale: string; id: string } }) {
+export default async function EnquiryPage(props: { params: Promise<{ locale: string; id: string }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();
   const lp = params.locale;
   const ar = lp === "ar";
