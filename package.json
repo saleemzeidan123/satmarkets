@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
+    "build:turbopack": "next build",
     "start": "next start",
     "lint": "eslint .",
     "lint-gate": "node scripts/eslint-gate.mjs",
@@ -13,6 +14,7 @@
     "eval": "tsx src/lib/eval/cli.ts",
     "smoke": "node scripts/smoke.mjs",
     "ar-lint": "node scripts/ar-lint.mjs",
+    "ship-test": "python3 tools/ship_test.py",
     "e2e": "playwright test",
     "seed:world": "node scripts/seed-world.mjs",
     "seed:demo": "node scripts/seed-demo.mjs",

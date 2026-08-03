@@ -244,3 +244,26 @@ test("the middleware file convention is whole, whichever one it is", () => {
   const proxy = fs.existsSync(path.join(ROOT, "src/proxy.ts"));
   assert.notEqual(middleware, proxy, "exactly one of src/middleware.ts and src/proxy.ts may exist");
 });
+
+test("the production build script names the bundler explicitly", () => {
+  // PKG-NEXT16-SECURITY release-correction batch. The bundler is a measured
+  // decision, not a default, and `next build` with no flag silently means
+  // Turbopack on 16.x. Slice E measured the difference on this application:
+  // Turbopack shipped roughly 8 to 13 kB more JavaScript per page and cost a
+  // median 182 ms of mobile LCP. Vercel runs the `build` script, so this line
+  // is the whole of the production bundler choice and it is one word away from
+  // reverting by accident.
+  const pkg = JSON.parse(read("package.json")) as { scripts: Record<string, string> };
+  assert.equal(
+    pkg.scripts.build,
+    "next build --webpack",
+    "the production build must name --webpack; see docs/performance-baseline-next16-webpack.md for the measurement that chose it"
+  );
+  // The Turbopack arm stays reachable under its own name, because the
+  // comparison record has to be reproducible and because the decision is
+  // reviewed at the next framework upgrade rather than settled forever.
+  assert.equal(pkg.scripts["build:turbopack"], "next build");
+  // Development is deliberately not pinned. The flag is about what reaches a
+  // user, and `next dev` on Turbopack is the supported development path.
+  assert.equal(pkg.scripts.dev, "next dev");
+});

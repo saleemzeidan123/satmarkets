@@ -35,10 +35,11 @@ value, and the adopted upload is removed so it is not re-read later.
 
 Usage
 -----
-  python3 tools/ship.py -m "ship: fix X" src/app/page.tsx src/lib/foo.ts
-  python3 tools/ship.py -m "ship: batch" --auto          # all changes vs HEAD
-  python3 tools/ship.py -m "..." --auto --dry-run         # preview only
-  python3 tools/ship.py --push-only                       # push commits already made
+  python3 tools/ship.py --branch my-branch -m "ship: fix X" src/app/page.tsx
+  python3 tools/ship.py --branch my-branch -m "ship: batch" --auto
+  python3 tools/ship.py --branch my-branch -m "..." --auto --dry-run
+  python3 tools/ship.py --branch my-branch --push-only
+  python3 tools/ship.py --branch main --allow-main --push-only   # promotion
 
 Behaviour
 ---------
@@ -47,6 +48,33 @@ Behaviour
 - --auto stages every change (adds, mods, deletes, untracked) via `git add -A`.
 - Explicit paths are staged individually (a missing path is staged as a delete).
 - Fast-forward push only; a rejected non-ff push is surfaced, not forced.
+
+Release safety, added after a real incident
+-------------------------------------------
+PKG-NEXT16-SECURITY slice B was shipped without --branch. The flag defaulted to
+main, so a framework migration commit that was supposed to sit on an isolated
+branch went to production instead, and the production alias served a partially
+migrated tree for the rest of the package. The default was the whole defect: the
+command looked correct, ran clean, and reported success.
+
+Four rules now stand between a command and a wrong branch, and each one exists
+because the incident showed that a silent default is not a safe default.
+
+  1. --branch is required. There is no default, so a forgotten flag is an error
+     message rather than a push to production.
+  2. Pushing to main additionally requires --allow-main. Naming the branch is
+     not the same as intending production, and the promotion path should have
+     to say so twice.
+  3. Pushing from a checkout of one branch to a differently named remote branch
+     requires --allow-cross-branch. `HEAD:<branch>` will happily send anything
+     anywhere; the ordinary case is that the two names match, and the ordinary
+     case is now the only silent one.
+  4. Every push prints the source branch, the source HEAD and the target ref
+     before it runs, so what is about to happen is on screen in the same words
+     the guards use. The token is never among them.
+
+tools/ship_test.py reproduces the omitted-branch failure directly, and runs as
+`npm run ship-test`.
 """
 
 import argparse
@@ -152,6 +180,82 @@ def write_askpass(token_file):
     return p
 
 
+def check_target(branch, allow_main, allow_cross_branch, current_branch):
+    """Decide whether this push may proceed. Returns None to allow, else why not.
+
+    Pure: no git, no network, no filesystem. That is deliberate, because the
+    guard that failed in the slice B incident has to be testable without a
+    remote, and a rule that can only be exercised by actually pushing is a rule
+    nobody exercises.
+
+    `current_branch` is the checked-out branch name, or None for a detached
+    HEAD. `branch` is whatever --branch carried, or None if it was omitted.
+    """
+    if not branch:
+        return (
+            "--branch is required and has no default.\n"
+            "This is the guard for the PKG-NEXT16-SECURITY slice B incident: the flag "
+            "used to default to main, so a commit meant for an isolated branch went to "
+            "production and the production alias served a partially migrated tree.\n"
+            "Name the branch you mean, for example --branch next16-security, or "
+            "--branch main --allow-main to promote."
+        )
+    if branch == "main" and not allow_main:
+        return (
+            "Refusing to push to main without --allow-main.\n"
+            "main is the production branch: a push to it deploys. Naming it is not the "
+            "same as intending it, so the promotion path says so twice.\n"
+            "Re-run with --branch main --allow-main if that is what you mean."
+        )
+    if current_branch is None and not allow_cross_branch:
+        return (
+            f"Refusing to push a detached HEAD to {branch} without --allow-cross-branch.\n"
+            "A detached HEAD has no name to compare against the target, so this script "
+            "cannot tell an intended promotion from an accident. Check out a branch, or "
+            "pass --allow-cross-branch if you are pushing a specific commit on purpose."
+        )
+    if current_branch is not None and current_branch != branch and not allow_cross_branch:
+        return (
+            f"Refusing an implicit cross-branch push: the checkout is on {current_branch} "
+            f"and the target is {branch}.\n"
+            "`git push origin HEAD:<branch>` sends the current commit to whatever branch "
+            "is named, which is how work lands somewhere nobody was looking.\n"
+            f"Either check out {branch}, or pass --allow-cross-branch to say the mismatch "
+            "is deliberate."
+        )
+    return None
+
+
+def current_branch_name(repo):
+    """The checked-out branch, or None when HEAD is detached."""
+    r = subprocess.run(
+        ["git", "-C", repo, "symbolic-ref", "--quiet", "--short", "HEAD"],
+        capture_output=True, text=True,
+    )
+    name = r.stdout.strip()
+    return name or None
+
+
+def announce(repo, branch, source_branch):
+    """Say what is about to be pushed, in the words the guards use.
+
+    Nothing here reads the token file or the askpass helper, and no environment
+    is printed, so this cannot leak the credential that makes the push possible.
+    """
+    head = subprocess.run(
+        ["git", "-C", repo, "rev-parse", "HEAD"], capture_output=True, text=True,
+    ).stdout.strip()
+    subject = subprocess.run(
+        ["git", "-C", repo, "log", "-1", "--pretty=%s"], capture_output=True, text=True,
+    ).stdout.strip()
+    print("\nAbout to push:")
+    print(f"  source branch  {source_branch or 'DETACHED HEAD'}")
+    print(f"  source HEAD    {head[:7]}  {subject}")
+    print(f"  target ref     {REPO_SLUG}@{branch}"
+          + ("   (PRODUCTION)" if branch == "main" else ""))
+    print("  mode           fast-forward only")
+
+
 def git(args, repo, env=None, check=True):
     r = subprocess.run(
         ["git", "-C", repo] + args,
@@ -168,7 +272,23 @@ def main():
     ap.add_argument("paths", nargs="*", help="files to ship (relative to repo root)")
     ap.add_argument("--auto", action="store_true", help="stage all changes vs HEAD")
     ap.add_argument("--repo", default=".", help="path to the repo clone")
-    ap.add_argument("--branch", default="main", help="target branch")
+    # No default. See check_target and the release-safety note in the module
+    # docstring: the default was the slice B defect, not a convenience.
+    ap.add_argument(
+        "--branch",
+        default=None,
+        help="target branch. Required: there is no default, deliberately",
+    )
+    ap.add_argument(
+        "--allow-main",
+        action="store_true",
+        help="second authorisation, required to push to main. main deploys to production",
+    )
+    ap.add_argument(
+        "--allow-cross-branch",
+        action="store_true",
+        help="permit pushing a checkout of one branch to a differently named remote branch",
+    )
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument(
         "--push-only",
@@ -188,6 +308,15 @@ def main():
 
     repo = os.path.abspath(args.repo)
     base_env = dict(os.environ)
+
+    # The target guards run before anything is staged, committed or pushed, so a
+    # refusal leaves the tree exactly as it was found.
+    source_branch = current_branch_name(repo)
+    refusal = check_target(
+        args.branch, args.allow_main, args.allow_cross_branch, source_branch
+    )
+    if refusal:
+        sys.exit(refusal)
 
     if args.push_only:
         dirty = git(["status", "--porcelain"], repo).stdout.strip()
@@ -218,6 +347,7 @@ def main():
                 return
             print(f"Target: {REPO_SLUG}@{args.branch}\nPushing {ahead} local commit(s):")
             print(git(["log", "--oneline", f"origin/{args.branch}..HEAD"], repo).stdout.rstrip())
+        announce(repo, args.branch, source_branch)
         if args.dry_run:
             print("dry-run: not pushing.")
             return
@@ -288,6 +418,10 @@ def main():
     ]
     git(commit_args, repo)
     sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
+
+    # Announced after the commit, so the HEAD printed is the commit that is
+    # about to travel rather than the one it was built on.
+    announce(repo, args.branch, source_branch)
 
     # Push (fast-forward only).
     push = git(["push", "origin", f"HEAD:{args.branch}"], repo, env=env, check=False)

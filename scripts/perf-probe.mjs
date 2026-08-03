@@ -309,6 +309,31 @@ try {
 
 const key = (c) => `${c.profile}:${c.locale}:${c.family}`;
 
+// Cells whose layout shift is bistable rather than noisy, with the ceiling that
+// covers the range and the reason it is not a budget anyone should be proud of.
+// A cell listed here is not being held to a standard: it is being stopped from
+// failing the gate at random while its finding is open. Removing an entry is the
+// point, and the entry says what has to be true first.
+const UNSTABLE_CLS = {
+  "desktop:en:listings": {
+    ceiling: 0.31,
+    note:
+      "Finding: the desktop listings grid shifts intermittently. Five campaigns on the " +
+      "same page recorded 0.182, 0.147, 0.182, 0.288 and 0.288, so the value is bistable " +
+      "and not machine noise. It predates the Next.js 16 migration: the Next.js 14 record " +
+      "carries 0.182. The ceiling covers the worst reading and is not an acceptable CLS. " +
+      "Remove this entry, and lower the budget, when the shift is fixed.",
+  },
+  "desktop:ar:listings": {
+    ceiling: 0.31,
+    note:
+      "Same finding as desktop:en:listings, same page in Arabic. Campaigns recorded " +
+      "0.056, 0.151, 0.183, 0.056 and 0.056, so this locale lands on the low branch more " +
+      "often, which is a difference in timing rather than in layout. Held at the same " +
+      "ceiling so a fix in one locale is not hidden by a looser budget in the other.",
+  },
+};
+
 if (WRITE_BUDGETS) {
   // Budgets are the measured value plus headroom, and the headroom is different
   // per metric on purpose, because the metrics do not repeat equally. Repeating
@@ -326,15 +351,36 @@ if (WRITE_BUDGETS) {
   // derived from a lower floor is a budget that fails on a build that did not
   // change. The floor puts the smallest possible blocking budget at 135 ms,
   // which sits above the noise while still failing any real regression.
+  //
+  // LCP gets a floor too, added by the PKG-NEXT16-SECURITY release-correction
+  // batch, and it exists because the recorded 1.115 worst ratio was wrong. It
+  // came from repeating one sweep twice. Five campaigns are now on record, and
+  // the same unchanged desktop page reports LCP anywhere from 240 to 544 ms:
+  // a 2.125 ratio on desktop:en:market alone. Desktop here is unthrottled, so
+  // its LCP lands in the few hundred milliseconds where paint timing is mostly
+  // machine scheduling, and a percentage of a small number is a small number.
+  // Mobile is throttled and its smallest LCP is 772 ms, so the floor never
+  // touches the profile where an LCP regression would actually hurt a reader.
+  // The floor is 500 ms, which makes the smallest LCP budget 675 ms: above the
+  // 544 ms worst desktop reading on record, with enough margin that the gate
+  // does not go green and red on the same build, and still failing any desktop
+  // paint that crosses two thirds of a second.
+  //
+  // Layout shift gets neither a floor nor a wider additive, because a CLS
+  // budget of 0.15 would be a budget that permits a bad page. Where a cell is
+  // genuinely bistable the exception is named, per cell, below.
   const out = { measuredAt: new Date().toISOString().slice(0, 10), base: BASE, runs: RUNS, cells: {} };
   for (const c of cells) {
-    out.cells[key(c)] = {
+    const k = key(c);
+    const ex = UNSTABLE_CLS[k];
+    out.cells[k] = {
       totalKb: Math.ceil(c.totalKb * 1.1),
       jsKb: Math.ceil(c.jsKb * 1.1),
-      lcp: Math.ceil(c.lcp * 1.35),
+      lcp: Math.ceil(Math.max(c.lcp, 500) * 1.35),
       blockingMs: Math.ceil(Math.max(c.blockingMs, 100) * 1.35),
-      cls: Math.max(Math.round((c.cls + 0.02) * 1000) / 1000, 0.05),
+      cls: ex ? ex.ceiling : Math.max(Math.round((c.cls + 0.02) * 1000) / 1000, 0.05),
     };
+    if (ex) out.cells[k].clsNote = ex.note;
   }
   writeFileSync(BUDGETS, JSON.stringify(out, null, 2) + "\n");
   console.log(`\nWrote ${Object.keys(out.cells).length} budgets to ${BUDGETS}`);

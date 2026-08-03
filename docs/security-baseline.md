@@ -1243,3 +1243,78 @@ empty and no listing detail page was opened from a card. Those pages render on
 the server and fetch nothing from `/api` for an anonymous reader, so the covered
 set is unaffected, but the figure for total site traffic is a floor rather than a
 measurement.
+
+## PKG-NEXT16-SECURITY release-correction batch, the rulings of 2026-08-03
+
+An independent review of the package at `c640f42` accepted it conditionally and
+returned five rulings that this section records so they are not carried only in a
+conversation. Two of them are about this document's open questions and are
+answered here. The rest are recorded in `docs/status-ledger.md` and in
+`docs/handback-pkg-next16-security.md`.
+
+The review tested the deployed branch in a real browser across the home page,
+listings, listing detail, the map, the rent index, the advisor, sign in and
+`/proto`, in English and Arabic, at a 390 pixel mobile viewport. Language and
+direction were correct on every route, horizontal scroll width matched the
+rendered viewport, and there were no console errors, hydration failures or
+policy warnings. The `/proto` nonce gap was confirmed as described above.
+Authenticated write journeys were not exercised.
+
+### Content Security Policy: report only stays, through this merge
+
+The policy is not enforced in this batch. That is a decision, not an omission,
+and the reasoning is narrower than the section above anticipated.
+
+The live browser evidence on the public routes is now clean, which closes most
+of the pass that section asked for. What it does not close is the authenticated
+half. Nobody has yet loaded the dashboard, the listing studio or the location
+picker with a session and a console open, and those are the surfaces where the
+third party origins in the policy actually fire hardest. Enforcing a policy whose
+riskiest routes have never been observed would be trading a real risk of breaking
+a signed in lister's page for a theoretical gain on pages that already report
+clean.
+
+`/[locale]/proto` remains the second reason. It is `force-static`, so it renders
+at build time, so it cannot carry a per request nonce. It is an internal page
+carrying `noindex`, and the temptation is to widen the policy or to add a path
+exception so that enforcement can proceed. Both are refused. A public security
+policy is not weakened to accommodate an internal page, and a broad exception is
+worse than the gap it papers over because it outlives the page that motivated it.
+The correct fix is to stop the page being force static, or to accept that one
+internal page does not hydrate under an enforced policy, and neither is this
+batch's work. It is recorded as launch hardening.
+
+So the position after this merge is unchanged in mechanism and better in
+evidence: the header is still `Content-Security-Policy-Report-Only`, the public
+routes have now been observed clean in a real browser in both languages, the
+authenticated surfaces have not, and `/proto` is a known, named, unresolved gap
+rather than a surprise waiting for whoever flips the header.
+
+### The WAF rule: accepted in principle, applied on a schedule, not now
+
+The six route design in the section above is accepted as designed, including the
+exclusion of `/api/places`, which stays excluded. It is not applied during this
+code batch, because a rule whose threshold came from a sandbox measurement should
+meet real traffic before it meets a decision.
+
+The sequence is fixed. The rule goes on in log and observation mode when ELITE-1
+participant traffic begins, not before, so that the first thing it observes is a
+person rather than a probe. It stays in observation through the pilot and through
+the first meaningful week of genuine usage, where meaningful means a week in
+which real listers and real readers used the product rather than a week in which
+the calendar advanced. Only after a false positive review of what the rule would
+have blocked does it move to deny, and if that review finds a real office at the
+ceiling the threshold moves up and the observation period restarts rather than
+the rule being forced through.
+
+This is an owner side action in the Vercel dashboard or CLI. The card above is
+complete and unchanged.
+
+### Upstash: still deferred, and the trigger conditions are named
+
+No store is bought and none is configured. The deferral holds until one of three
+things is true: open beta, evidence that the per instance limiter is actually
+failing across instances, or real abuse observed in production. Any one of them
+reopens it. None of them is true today, and the thirty one route files calling
+the per instance `allow` remain the known weakness that the WAF rule above does
+not fix and does not claim to fix.

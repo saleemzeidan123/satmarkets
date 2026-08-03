@@ -1,0 +1,291 @@
+{
+  "record": "Next.js 14 historical budgets",
+  "framework": "next 14.2.33",
+  "bundler": "webpack",
+  "status": "frozen. This was the active gate until the Next.js 16 migration. It is kept so the historical standard is not lost behind a rebaseline. Nothing checks against it.",
+  "measuredAt": "2026-08-02",
+  "base": "http://127.0.0.1:4311",
+  "runs": 3,
+  "cells": {
+    "mobile:en:home": {
+      "totalKb": 885,
+      "jsKb": 280,
+      "lcp": 5854,
+      "blockingMs": 648,
+      "cls": 0.05
+    },
+    "mobile:en:listings": {
+      "totalKb": 739,
+      "jsKb": 504,
+      "lcp": 1107,
+      "blockingMs": 886,
+      "cls": 0.05
+    },
+    "mobile:en:map": {
+      "totalKb": 698,
+      "jsKb": 501,
+      "lcp": 1075,
+      "blockingMs": 1067,
+      "cls": 0.05
+    },
+    "mobile:en:rent-index": {
+      "totalKb": 493,
+      "jsKb": 272,
+      "lcp": 1118,
+      "blockingMs": 499,
+      "cls": 0.05
+    },
+    "mobile:en:invest": {
+      "totalKb": 464,
+      "jsKb": 273,
+      "lcp": 1070,
+      "blockingMs": 558,
+      "cls": 0.05
+    },
+    "mobile:en:market": {
+      "totalKb": 475,
+      "jsKb": 271,
+      "lcp": 1059,
+      "blockingMs": 381,
+      "cls": 0.05
+    },
+    "mobile:en:find": {
+      "totalKb": 419,
+      "jsKb": 278,
+      "lcp": 935,
+      "blockingMs": 273,
+      "cls": 0.05
+    },
+    "mobile:en:login": {
+      "totalKb": 475,
+      "jsKb": 272,
+      "lcp": 1026,
+      "blockingMs": 311,
+      "cls": 0.05
+    },
+    "mobile:en:post-requirement": {
+      "totalKb": 479,
+      "jsKb": 281,
+      "lcp": 978,
+      "blockingMs": 279,
+      "cls": 0.05
+    },
+    "mobile:en:signup": {
+      "totalKb": 480,
+      "jsKb": 279,
+      "lcp": 1032,
+      "blockingMs": 322,
+      "cls": 0.05
+    },
+    "mobile:ar:home": {
+      "totalKb": 937,
+      "jsKb": 280,
+      "lcp": 6129,
+      "blockingMs": 755,
+      "cls": 0.05
+    },
+    "mobile:ar:listings": {
+      "totalKb": 822,
+      "jsKb": 504,
+      "lcp": 1118,
+      "blockingMs": 874,
+      "cls": 0.05
+    },
+    "mobile:ar:map": {
+      "totalKb": 816,
+      "jsKb": 501,
+      "lcp": 1107,
+      "blockingMs": 1058,
+      "cls": 0.05
+    },
+    "mobile:ar:rent-index": {
+      "totalKb": 593,
+      "jsKb": 272,
+      "lcp": 1199,
+      "blockingMs": 461,
+      "cls": 0.05
+    },
+    "mobile:ar:invest": {
+      "totalKb": 602,
+      "jsKb": 273,
+      "lcp": 1086,
+      "blockingMs": 516,
+      "cls": 0.05
+    },
+    "mobile:ar:market": {
+      "totalKb": 575,
+      "jsKb": 271,
+      "lcp": 1118,
+      "blockingMs": 381,
+      "cls": 0.05
+    },
+    "mobile:ar:find": {
+      "totalKb": 572,
+      "jsKb": 278,
+      "lcp": 1021,
+      "blockingMs": 283,
+      "cls": 0.05
+    },
+    "mobile:ar:login": {
+      "totalKb": 574,
+      "jsKb": 272,
+      "lcp": 1107,
+      "blockingMs": 370,
+      "cls": 0.05
+    },
+    "mobile:ar:post-requirement": {
+      "totalKb": 530,
+      "jsKb": 281,
+      "lcp": 1086,
+      "blockingMs": 397,
+      "cls": 0.05
+    },
+    "mobile:ar:signup": {
+      "totalKb": 594,
+      "jsKb": 279,
+      "lcp": 1086,
+      "blockingMs": 369,
+      "cls": 0.05
+    },
+    "desktop:en:home": {
+      "totalKb": 881,
+      "jsKb": 280,
+      "lcp": 616,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:listings": {
+      "totalKb": 732,
+      "jsKb": 504,
+      "lcp": 335,
+      "blockingMs": 241,
+      "cls": 0.202
+    },
+    "desktop:en:map": {
+      "totalKb": 695,
+      "jsKb": 501,
+      "lcp": 405,
+      "blockingMs": 245,
+      "cls": 0.05
+    },
+    "desktop:en:rent-index": {
+      "totalKb": 489,
+      "jsKb": 272,
+      "lcp": 308,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:invest": {
+      "totalKb": 463,
+      "jsKb": 273,
+      "lcp": 341,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:market": {
+      "totalKb": 475,
+      "jsKb": 271,
+      "lcp": 351,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:find": {
+      "totalKb": 419,
+      "jsKb": 278,
+      "lcp": 292,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:login": {
+      "totalKb": 470,
+      "jsKb": 272,
+      "lcp": 297,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:post-requirement": {
+      "totalKb": 479,
+      "jsKb": 281,
+      "lcp": 281,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:en:signup": {
+      "totalKb": 476,
+      "jsKb": 279,
+      "lcp": 287,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:home": {
+      "totalKb": 933,
+      "jsKb": 280,
+      "lcp": 708,
+      "blockingMs": 144,
+      "cls": 0.05
+    },
+    "desktop:ar:listings": {
+      "totalKb": 852,
+      "jsKb": 504,
+      "lcp": 314,
+      "blockingMs": 222,
+      "cls": 0.203
+    },
+    "desktop:ar:map": {
+      "totalKb": 815,
+      "jsKb": 501,
+      "lcp": 405,
+      "blockingMs": 246,
+      "cls": 0.05
+    },
+    "desktop:ar:rent-index": {
+      "totalKb": 589,
+      "jsKb": 272,
+      "lcp": 335,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:invest": {
+      "totalKb": 602,
+      "jsKb": 273,
+      "lcp": 335,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:market": {
+      "totalKb": 572,
+      "jsKb": 271,
+      "lcp": 308,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:find": {
+      "totalKb": 571,
+      "jsKb": 278,
+      "lcp": 319,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:login": {
+      "totalKb": 569,
+      "jsKb": 272,
+      "lcp": 314,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:post-requirement": {
+      "totalKb": 530,
+      "jsKb": 281,
+      "lcp": 314,
+      "blockingMs": 135,
+      "cls": 0.05
+    },
+    "desktop:ar:signup": {
+      "totalKb": 591,
+      "jsKb": 279,
+      "lcp": 335,
+      "blockingMs": 135,
+      "cls": 0.05
+    }
+  }
+}

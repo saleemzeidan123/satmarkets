@@ -56,7 +56,7 @@ every current figure.
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1758 tests, 0 failing, on `next16-security`. The rise from 1752 is PKG-NEXT16-SECURITY slice D: `src/lib/next16Surface.test.ts` is a new file added to the explicit list in `package.json`, holding six assertions over the async request API surface. The earlier rise from 1739 is slice C: `src/lib/rtlTextPlugin.test.ts` and `src/lib/csp.test.ts` are new files added to the explicit list in `package.json`. The earlier rise from 1679 is PKG-E1-READINESS: `src/lib/functionalTruth.test.ts`, `src/lib/search/knownQueries.test.ts`, `src/lib/authErrors.test.ts` and `src/lib/chromeGate.test.ts` are new files added to the explicit list in `package.json`, and the remainder are assertions added inside existing files |
-| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, then the four probes, each of which needs an explicit browser path: `node scripts/reflow-probe.mjs`, `radio-probe.mjs`, `shell-probe.mjs` and `responsive-probe.mjs`, all with `--chromium /opt/pw-browsers/chromium`. `shell-probe` and `responsive-probe` also need `/tmp/globals.built.css`, built by `npx tailwindcss -i src/styles/globals.css -o /tmp/globals.built.css --minify`. Then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState`. `npm run build` cannot complete in this sandbox, because `next/font/google` cannot reach Google Fonts through the egress proxy, so the Vercel build is the production build evidence |
+| Gate command set | `npx tsc --noEmit`, `npm test`, `npm run ar-lint`, `node scripts/prose-scan.mjs`, `npm run lint-gate`, `npm run ship-test`, then the four probes, each of which needs an explicit browser path: `node scripts/reflow-probe.mjs`, `radio-probe.mjs`, `shell-probe.mjs` and `responsive-probe.mjs`, all with `--chromium /opt/pw-browsers/chromium`. `shell-probe` and `responsive-probe` also need `/tmp/globals.built.css`, built by `npx tailwindcss -i src/styles/globals.css -o /tmp/globals.built.css --minify`. Then a Vercel READY build whose `meta.githubCommitSha` is checked, not only its `readyState`. `npm run build` cannot complete in this sandbox, because `next/font/google` cannot reach Google Fonts through the egress proxy, so the Vercel build is the production build evidence |
 
 **This has now happened twice, so it is a pattern rather than an incident.** A push can
 land on `main` without Vercel creating a deployment for it. The check that catches it is
@@ -324,6 +324,101 @@ The package stays in this section rather than moving to section 2, because the e
 being finished is not the same as the work being landed: `origin/main` still serves slice
 B, the other five slices sit on `next16-security`, and the merge is one of the five owner
 decisions. It moves to section 2 when the branch reaches production main, not before.
+
+### The release-correction batch of 2026-08-03
+
+The independent review tested the branch deployment in a real browser across Home,
+Listings, Listing Detail, Map, Rent Index, Advisor, Login and Proto, in English and
+Arabic at a 390 px mobile viewport, and found language and direction correct, no
+horizontal overflow, and no console, hydration or CSP error. It accepted the branch
+conditionally and ordered one bounded correction batch before any merge. Six parts.
+What each settled, and what each deliberately left open, is below.
+
+**The production bundler is Webpack, and the reason is measured.** `package.json` now
+reads `"build": "next build --webpack"`, `build:turbopack` keeps the default available
+for comparison, and `dev` is untouched because development is not what was measured.
+Vercel runs the `build` script, so that single line is the entire production bundler
+choice, and `src/lib/next16Surface.test.ts` asserts all three so it cannot revert
+silently. Measured on the same commit, the same machine and the same forty cells,
+Turbopack ships a median 12 kB more JavaScript per page, 8 kB to 13 kB across the
+range, and paints a median 186 ms slower on a throttled phone, slower on every one of
+the twenty mobile cells. The aggregate overage count of 99 against 102 was the argument
+for keeping Turbopack and it was rejected: counting cells against budgets written for a
+different framework measures how far the old budgets have drifted, not which bundler is
+better. Blocking time does not favour either arm, 453 ms against 454 ms, which is the
+evidence that the blocking increase is the framework and not the bundler.
+
+**The performance standard is now three named records and exactly one gate.** The old
+standard was preserved rather than overwritten, because a rebaseline that quietly
+replaces the previous file makes the migration unreadable afterwards.
+
+| File | What it is | Checked |
+| --- | --- | --- |
+| `docs/perf-budgets-next14.json` | The budgets that were the gate before the migration | No |
+| `docs/perf-measurements-next14.json` | The measurement they came from, at `1a99107` | No |
+| `docs/perf-measurements-next16-turbopack.json` | Next.js 16 built with Turbopack, at `73c630a`, the arm that was measured and not chosen | No |
+| `docs/perf-measurements-next16-webpack.json` | Campaign A, the measurement the active budgets were generated from | No |
+| `docs/perf-budgets.json` | The active budgets | Yes, by `scripts/perf-probe.mjs` |
+
+The budgets were generated from campaign A and then validated by campaign B, an
+independent build in a second tree on a second port, which passed all forty cells. That
+step is new and it earned its place immediately: no budget file in this repository had
+ever been asked to pass a campaign other than the one that wrote it, and asking found
+two defects in the instrument. The recorded worst paint ratio of 1.115 came from
+repeating one sweep and is wrong for the unthrottled desktop profile, where the same
+page reads anywhere from 240 ms to 544 ms, so paint now carries a 500 ms floor for the
+same reason blocking time has carried a 100 ms floor since the first baseline. And one
+cell is bistable rather than noisy, which is finding 215. The full record is
+`docs/performance-baseline-next16-webpack.md`.
+
+**The migration debt is carried, not closed.** Moving the baseline changes what the gate
+compares against and makes the application no faster. Shared framework JavaScript grew a
+median 31 kB per page, from 267 kB to 298 kB, with the smallest increase on any cell
+30 kB and the largest 33 kB, which is the signature of a floor that moved under
+everything rather than one component that got heavier. Median mobile blocking time grew
+137 ms, from 318 ms to 454 ms; the review's figure of about 153 ms is the same finding
+read off the Turbopack arm, and the smaller number is not an improvement worth claiming.
+Both belong to page and bundle optimisation that has not been scheduled. Neither is
+resolved by the budgets moving, and describing them that way is the exact failure the
+three record structure exists to prevent.
+
+**Shipping safety is corrected in the tool, not in the habit.** `tools/ship.py` gave
+`--branch` a default of `main`, and that default is what sent slice B to production. The
+flag now has no default; `main` additionally requires `--allow-main`; pushing a checkout
+of one branch to a differently named remote branch additionally requires
+`--allow-cross-branch`, and a detached HEAD is treated the same way because it has no
+name to compare. Every refusal happens before anything is staged, so a refused run leaves
+the working tree exactly as it was found, and the push prints its source branch, source
+HEAD and target ref first. The decision is the pure function `check_target`, which
+touches no git, no network and no filesystem, which is what lets `tools/ship_test.py`
+reproduce the slice B invocation in one line. That file is 26 checks and a seventh gate,
+`npm run ship-test`. It also asserts what must not appear: no `--force` anywhere in the
+file, and nothing in the announcement that can reach the token, the askpass helper or the
+environment. This is a release-safety correction to an existing tool following a real
+incident. It is not a new foundation package.
+
+**CSP stays report only through this merge.** The public evidence is now clean in a real
+browser, but the authenticated half of the application has never been observed live, and
+`/[locale]/proto` is still `force-static` and therefore cannot carry a nonce. Enforcing
+now would be enforcing against a policy that half the surface has not been tested under.
+Both available shortcuts were refused explicitly: a broad policy exception, and weakening
+the public policy to accommodate one internal noindexed page. The `/proto` blocker stays
+recorded for launch hardening.
+
+**The WAF rule is accepted in principle and applied to nothing.** The six route design
+from slice F stands, `/api/places` stays excluded, and no rule exists on the project. It
+enters log and observation mode when ELITE-1 participant traffic begins, stays in
+observation through the pilot and the first meaningful week of genuine usage, and moves
+to deny only after a false positive review. The measurement behind it was taken in a
+sandbox against a database with no listings, which is why the first action is observation
+and not enforcement.
+
+**Upstash stays deferred and nothing was bought or configured.** It reopens on any of
+three named triggers: open beta, evidence of multi instance limiter weakness, or real
+abuse. The weakness it would address is unchanged and is not hidden by the deferral: 31
+importers of `@/lib/ratelimit` call the per instance `allow`, which hands each cold start
+a fresh quota, exactly one route uses the durable `allowShared`, and `/api/saved` has no
+limiter at all.
 
 ## 1b. The slice B commit went to `main`, not to the branch
 
@@ -712,7 +807,7 @@ refusal-sentence row above is unchanged and finding 203 is still open.
 | Durability of `/home/claude` | Identical. Same filesystem `/dev/vda`. Relocating inside the container buys nothing |
 | Persistent workspace available | Yes. `C:\Users\salee\Desktop\SAT Knowledge Base` on the owner's device, through the device bridge |
 | Consequence | No completed multi-file slice may exist only in the container clone. See PKG-ELITE-E1 slice B |
-| Deployment mechanism | `python3 tools/ship.py --auto -m "message"`. The em-dash guard rejects an em dash in a commit message |
+| Deployment mechanism | `python3 tools/ship.py --branch <branch> --auto -m "message"`. `--branch` is required and has no default; `main` additionally requires `--allow-main`, and pushing from a differently named checkout additionally requires `--allow-cross-branch`. The em-dash guard rejects an em dash in a commit message. `npm run ship-test` covers the guards |
 | Known local build limitation | `npm run build` fails locally on four `next/font` errors because Google Fonts is unreachable. A Vercel READY build is the production build evidence |
 
 ### The working practice, adopted in PKG-ELITE-E1 slice B

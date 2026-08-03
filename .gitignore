@@ -10,3 +10,8 @@ next-env.d.ts
 # Playwright / test artifacts
 test-results/
 playwright-report/
+
+# Python bytecode. tools/ship.py is imported by tools/ship_test.py, and a
+# compiled copy of it was committed by accident in 1014b48.
+__pycache__/
+*.pyc
