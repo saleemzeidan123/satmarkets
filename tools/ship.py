@@ -196,14 +196,28 @@ def main():
                 "--push-only refuses to run with a dirty tree, because it would "
                 "push a commit that does not match what is on disk:\n" + dirty
             )
-        ahead = git(
-            ["rev-list", "--count", f"origin/{args.branch}..HEAD"], repo, check=False
+        # A branch that does not exist on the remote yet has no origin/<branch>
+        # ref, so `rev-list origin/<branch>..HEAD` fails and returns an empty
+        # string, which read identically to "zero commits ahead". PKG-NEXT16
+        # pushed its first isolated branch and was told there was nothing to
+        # push, with three commits sitting in an ephemeral clone. The two cases
+        # are distinguished rather than collapsed: a missing upstream means
+        # every commit is new, not that none are.
+        known = git(
+            ["rev-parse", "--verify", "--quiet", f"origin/{args.branch}"], repo, check=False
         ).stdout.strip()
-        if ahead in ("", "0"):
-            print(f"Nothing to push. HEAD is not ahead of origin/{args.branch}.")
-            return
-        print(f"Target: {REPO_SLUG}@{args.branch}\nPushing {ahead} local commit(s):")
-        print(git(["log", "--oneline", f"origin/{args.branch}..HEAD"], repo).stdout.rstrip())
+        if not known:
+            print(f"origin/{args.branch} does not exist yet; this push creates it.")
+            print(git(["log", "--oneline", "-10"], repo).stdout.rstrip())
+        else:
+            ahead = git(
+                ["rev-list", "--count", f"origin/{args.branch}..HEAD"], repo, check=False
+            ).stdout.strip()
+            if ahead in ("", "0"):
+                print(f"Nothing to push. HEAD is not ahead of origin/{args.branch}.")
+                return
+            print(f"Target: {REPO_SLUG}@{args.branch}\nPushing {ahead} local commit(s):")
+            print(git(["log", "--oneline", f"origin/{args.branch}..HEAD"], repo).stdout.rstrip())
         if args.dry_run:
             print("dry-run: not pushing.")
             return
@@ -227,7 +241,14 @@ def main():
         sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
         print(f"\nShipped {sha[:7]} to {args.branch}.")
         print(f"  https://github.com/{REPO_SLUG}/commit/{sha}")
-        print("Vercel will build this push to production. Confirm READY, then verify live.")
+        if args.branch == "main":
+            print("Vercel will build this push to production. Confirm READY, then verify live.")
+        else:
+            print(
+                f"This is branch {args.branch}, not main, so nothing reached production.\n"
+                "If the project builds branch deployments, a preview will appear; check\n"
+                "list_deployments for meta.githubCommitRef before treating it as evidence."
+            )
         return
 
     # Stage.
