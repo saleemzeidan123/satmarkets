@@ -35,7 +35,6 @@ for (const route of ROUTES) {
       const bad: { tag: string; cls: string; fam: string; text: string }[] = [];
       const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
       let n: Node | null;
-      // eslint-disable-next-line no-cond-assign
       while ((n = walker.nextNode())) {
         const t = (n.nodeValue || "").trim();
         if (!t || !arabic.test(t)) continue;

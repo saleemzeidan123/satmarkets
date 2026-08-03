@@ -158,7 +158,7 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
     }
   }
   // Real listing photos (source='url' for now; uploaded objects are signed in a later slice).
-  let mediaPhotos: string[] = [];
+  const mediaPhotos: string[] = [];
   const floorPlans: { url: string; isPdf: boolean; label: string | null; planType: string | null }[] = [];
   const brochures: { url: string; label: string | null }[] = [];
   if (sb) {

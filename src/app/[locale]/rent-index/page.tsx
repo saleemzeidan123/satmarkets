@@ -153,8 +153,9 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
     .select(cols)
     .order("sort_order", { ascending: true })
     .limit(40);
-   let { data, error } = await q(WIDE);
-   if (error || !data) ({ data } = await q(NARROW));
+   const wide = await q(WIDE);
+   let data = wide.data;
+   if (wide.error || !data) ({ data } = await q(NARROW));
    districts = ((data ?? []) as any[]).map((r: any): DRow => {
     const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " \u00b7 " + segmentLabel(r.segment, loc) : ""}`;
     const location = ar ? (r.district_label_ar || r.district_label) : r.district_label;

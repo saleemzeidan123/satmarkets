@@ -252,8 +252,9 @@ export async function POST(req: NextRequest) {
       const V_WIDE = "id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source, sufficient, stat_kind, data_class, is_demo";
       const V_NARROW = "id, period, district_label, district_label_ar, district_id, asset_type, segment, unit, band_low, band_high, median, source";
       const firstRow = async (build: (cols: string) => any): Promise<any | null> => {
-        let { data, error } = await build(V_WIDE);
-        if (error || !data) ({ data } = await build(V_NARROW));
+        const wide = await build(V_WIDE);
+        let data = wide.data;
+        if (wide.error || !data) ({ data } = await build(V_NARROW));
         return data && data[0] ? data[0] : null;
       };
       // Ask for the period the user asked for. Only when that period is not
@@ -392,8 +393,9 @@ export async function POST(req: NextRequest) {
         else if (intent?.district) q = q.ilike("district_label", `%${intent.district}%`);
         return q;
       };
-      let { data, error } = await build(W_WIDE);
-      if (error || !data) ({ data } = await build(W_NARROW));
+      const wide = await build(W_WIDE);
+      let data = wide.data;
+      if (wide.error || !data) ({ data } = await build(W_NARROW));
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {

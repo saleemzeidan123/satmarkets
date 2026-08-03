@@ -18,16 +18,13 @@ import {
 import type { Listing } from "@/lib/types";
 import { Photo, Verified, Icon } from "@/components/satkit";
 import ScrollRegion from "@/components/ScrollRegion";
-import dynamic from "next/dynamic";
 import type { DistrictBubble, ExactPin } from "@/components/ListingsMap";
-
 // maplibre-gl is ~800KB and the map is below the fold on mobile. Statically importing
 // it put the whole thing (plus its CSS) in the initial bundle for /listings and blocked
-// hydration. It now loads on the client, after paint, behind a skeleton.
-const ListingsMap = dynamic(() => import("@/components/ListingsMap"), {
-  ssr: false,
-  loading: () => <div className="mapskel" aria-hidden />,
-});
+// hydration. It still loads on the client, after paint, behind the same skeleton;
+// Next.js 16 requires that deferral to live inside a Client Component, so it moved into
+// ListingsMapDeferred, which explains itself there.
+import ListingsMap from "@/components/ListingsMapDeferred";
 
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";

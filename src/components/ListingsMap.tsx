@@ -292,7 +292,6 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       selectedRef.current = selectedDistrict ?? null;
       if (selectedDistrict && ds) { try { m.setFeatureState({ source: "d", id: selectedDistrict }, { selected: true }); } catch {} }
     } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubbles, pins, selectedDistrict]);
 
   /* ELITE-4 J3-3: the keyboard path into a district bubble. Same feature state and

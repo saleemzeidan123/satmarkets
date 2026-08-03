@@ -99,7 +99,8 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const csv = (key: string) => (params[key] ? params[key].split(",").filter(Boolean) : []);
   const toggleCsv = (key: string, val: string) => {
     const set = new Set(csv(key));
-    set.has(val) ? set.delete(val) : set.add(val);
+    if (set.has(val)) set.delete(val);
+    else set.add(val);
     const next: Params = { ...params, [key]: Array.from(set).join(",") };
     const p = new URLSearchParams();
     Object.entries(next).forEach(([k, v]) => { if (v) p.set(k, String(v)); });

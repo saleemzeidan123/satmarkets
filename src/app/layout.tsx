@@ -93,7 +93,31 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const locale = (await headers()).get("x-locale") === "ar" ? "ar" : "en";
   const dir = locale === "ar" ? "rtl" : "ltr";
   return (
-    <html lang={locale} dir={dir} className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}>
+    // PKG-NEXT16-SECURITY slice A. `data-scroll-behavior="smooth"` is not
+    // decoration and it is not a duplicate of the CSS.
+    //
+    // globals.css line 7 sets `html { scroll-behavior: smooth }`. Up to Next.js
+    // 15 the router forced that property to `auto` for the duration of a client
+    // navigation and then released it, so a route change jumped to the top the
+    // way a document load does, while an in-page anchor still glided. Next.js 16
+    // stopped overriding the author's stylesheet, which is the correct default
+    // and also a silent behaviour change: with the CSS rule still in place and
+    // nothing telling the router about it, every client navigation would now
+    // ANIMATE its way to the top of the new page, scrolling past the old one on
+    // the way. On a long listings result that is a visible slide of several
+    // thousand pixels.
+    //
+    // This attribute is how the router is told that the document opted into
+    // smooth scrolling deliberately, so it restores the same suppression it used
+    // to apply on its own. The reduced-motion block at globals.css line 320 is
+    // untouched and still wins, so a reader who asked for less motion is not
+    // handed more of it by this attribute.
+    <html
+      lang={locale}
+      dir={dir}
+      data-scroll-behavior="smooth"
+      className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}
+    >
       <body>{children}</body>
     </html>
   );

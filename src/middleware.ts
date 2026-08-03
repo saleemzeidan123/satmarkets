@@ -1,3 +1,43 @@
+// PKG-NEXT16-SECURITY slice A. THE MIDDLEWARE-TO-PROXY DECISION, RECORDED.
+//
+// Next.js 16 renames this convention. `middleware.ts` exporting `middleware`
+// becomes `proxy.ts` exporting `proxy`, `skipMiddlewareUrlNormalize` becomes
+// `skipProxyUrlNormalize`, and every Next.js 16 build of this repository now
+// prints `The "middleware" file convention is deprecated. Please use "proxy"
+// instead.` The old convention still works. Deprecated is not removed.
+//
+// THIS FILE DELIBERATELY STAYS ON `middleware`, FOR ONE REASON THAT IS NOT
+// INERTIA.
+//
+// The rename is not only a rename. Next.js states that `proxy` runs on the
+// Node.js runtime, that the runtime is not configurable there, and that the edge
+// runtime is not supported in `proxy`: an application that wants edge is told to
+// keep using `middleware`. This file exports no `runtime`, so it runs on edge
+// today. Renaming it therefore does not move a symbol, it moves the execution
+// environment of the code below.
+//
+// Look at what the code below is. It runs on every non-API request. It performs
+// the locale redirect that decides the URL a first-time visitor lands on, and it
+// calls `supabase.auth.getUser()`, which is the session refresh the whole
+// authenticated surface depends on. Changing the runtime under an auth-touching
+// hot path is a change with its own regression surface, its own latency profile
+// and its own evidence requirement. It is not a change that should ride along
+// inside a framework upgrade whose entire purpose is to be reviewable in
+// isolation, and it is specifically not one to make in the package that also
+// rewrote seventy-three Supabase call sites.
+//
+// So the two changes are separated. This package takes the framework upgrade.
+// The runtime move gets its own package, its own before-and-after latency
+// measurement on the locale redirect, and its own authentication regression
+// pass.
+//
+// TIME BOUND, because deprecated does mean eventually removed and an undated
+// decision to defer is a decision to forget. This is revisited at whichever of
+// these comes first: the first Next.js release that announces a removal version
+// for the `middleware` convention, or the next framework upgrade package after
+// this one. If neither has happened by then, it is revisited anyway rather than
+// carried a third time. Tracked in docs/status-ledger.md.
+
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { locales, defaultLocale } from "@/i18n/config";
