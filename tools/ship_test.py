@@ -211,6 +211,60 @@ for later in ('git(["add", "-A"], repo)', '"commit", "-m", args.message'):
         "a refusal must leave the working tree exactly as it was found",
     )
 
+# 10. The closing line tells the truth about production on both push paths.
+# The commit-and-push path used to say "Vercel will build this push to
+# production" after every ship, including branch ships that never went near
+# production. That is the slice B error in words rather than in refs: a message
+# that reads as a production event when nothing reached production. Both paths
+# now close through one function, so there is one sentence to keep true rather
+# than two to drift apart.
+check(
+    "both push paths close through report()",
+    src.count("report(sha, args.branch)") == 2,
+    f"found {src.count('report(sha, args.branch)')} report calls, expected 2",
+)
+check(
+    "the production sentence is written exactly once",
+    src.count("Vercel will build this push to production") == 1,
+    "a second copy is a second place for the claim to become untrue",
+)
+
+import builtins  # noqa: E402
+
+_out = []
+_real_print = builtins.print
+try:
+    builtins.print = lambda *a, **k: _out.append(" ".join(str(x) for x in a))
+    ship.report("0123456789abcdef", "next16-security")
+    branch_text = "\n".join(_out)
+    _out.clear()
+    ship.report("0123456789abcdef", "main")
+    main_text = "\n".join(_out)
+finally:
+    builtins.print = _real_print
+
+check(
+    "a branch ship says nothing reached production",
+    "nothing reached production" in branch_text,
+    branch_text,
+)
+check(
+    "a branch ship does not claim production is building",
+    "Vercel will build this push to production" not in branch_text,
+    branch_text,
+)
+check(
+    "a main ship does say production is building",
+    "Vercel will build this push to production" in main_text,
+    main_text,
+)
+check(
+    "both paths close with the commit that was made",
+    all(f"{ship.REPO_SLUG}/commit/0123456789abcdef" in t
+        for t in (branch_text, main_text)),
+    "the ship must always end with the commit URL",
+)
+
 print(f"ship_test: {PASSES} checks passed, {len(FAILURES)} failed")
 if FAILURES:
     for f in FAILURES:

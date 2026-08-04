@@ -256,6 +256,28 @@ def announce(repo, branch, source_branch):
     print("  mode           fast-forward only")
 
 
+def report(sha, branch):
+    """Say what was pushed, and say truthfully whether production is now building.
+
+    The two push paths used to close differently. The --push-only path already
+    distinguished a branch from main; the commit-and-push path told every ship,
+    on any branch, that Vercel was building it to production. That is the same
+    class of error as the slice B incident it followed: a message that reads as
+    a production event when the push never went near production. One function
+    now closes both paths, so the sentence cannot drift again.
+    """
+    print(f"\nShipped {sha[:7]} to {branch}.")
+    print(f"  https://github.com/{REPO_SLUG}/commit/{sha}")
+    if branch == "main":
+        print("Vercel will build this push to production. Confirm READY, then verify live.")
+    else:
+        print(
+            f"This is branch {branch}, not main, so nothing reached production.\n"
+            "If the project builds branch deployments, a preview will appear; check\n"
+            "list_deployments for meta.githubCommitRef before treating it as evidence."
+        )
+
+
 def git(args, repo, env=None, check=True):
     r = subprocess.run(
         ["git", "-C", repo] + args,
@@ -369,16 +391,7 @@ def main():
                 f"origin {args.branch}` and re-run."
             )
         sha = git(["rev-parse", "HEAD"], repo).stdout.strip()
-        print(f"\nShipped {sha[:7]} to {args.branch}.")
-        print(f"  https://github.com/{REPO_SLUG}/commit/{sha}")
-        if args.branch == "main":
-            print("Vercel will build this push to production. Confirm READY, then verify live.")
-        else:
-            print(
-                f"This is branch {args.branch}, not main, so nothing reached production.\n"
-                "If the project builds branch deployments, a preview will appear; check\n"
-                "list_deployments for meta.githubCommitRef before treating it as evidence."
-            )
+        report(sha, args.branch)
         return
 
     # Stage.
@@ -439,9 +452,7 @@ def main():
     except OSError:
         pass
 
-    print(f"\nShipped {sha[:7]} to {args.branch}.")
-    print(f"  https://github.com/{REPO_SLUG}/commit/{sha}")
-    print("Vercel will build this push to production. Confirm READY, then verify live.")
+    report(sha, args.branch)
 
 
 if __name__ == "__main__":

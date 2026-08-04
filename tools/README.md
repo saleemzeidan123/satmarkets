@@ -52,6 +52,11 @@ python3 tools/ship.py --branch main --allow-main --push-only
   askpass helper or the environment, which is asserted by a test.
 - Refusals happen before anything is staged, committed or pushed, so a refused
   run leaves the working tree exactly as it was found.
+- After pushing, both paths close through one `report` function, so a branch
+  ship says in as many words that nothing reached production and only a `main`
+  ship says production is building. The commit-and-push path used to claim
+  production on every ship regardless of branch, which is the slice B error
+  restated in words rather than in refs.
 - Fast-forward push only; a non-fast-forward is surfaced, never forced. No
   `--force` appears anywhere in the file, and a test asserts that it does not.
 - Commits are unsigned (the sandbox signer would sign as the agent) and authored
