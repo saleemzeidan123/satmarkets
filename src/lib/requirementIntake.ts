@@ -149,9 +149,60 @@ export function isUrgentTimeline(value: string | null | undefined): boolean {
  * `assetLabel`, which is where the platform already names an asset type; the
  * form used to title-case the token itself and so called retail "Retail" where
  * every other surface calls it "Retail & F&B".
+ *
+ * PKG-TRUTH-REQ-1. `assetFields.ts` carries fifteen asset types, not seven, and
+ * this list had silently stopped at seven with no record of a decision about
+ * the other eight. That is the same defect finding 100 was: a shorter local
+ * list standing in for the platform's real taxonomy, discovered only when
+ * someone tries to post a requirement the shorter list refuses.
+ *
+ * Every one of the fifteen is decided here, not just the two that happened to
+ * be found first.
+ *
+ * ADDED. `land` and `mixed_use` carry live inventory, three and two listings
+ * respectively per the PKG-DEM1 data-coverage audit, and both are already
+ * fully supported end to end: `assetFields.ts` has a field set for each,
+ * `labels.ts` carries bilingual labels for each, `matching.ts` compares asset
+ * type as a plain string equality and asks the vocabulary for nothing more
+ * specific, and the `requirements.asset_type` column casts to the same
+ * `public.asset_type` enum `listings.asset_type` already uses, which is the
+ * enum the live land and mixed_use listings are already stored under. There
+ * was no technical reason these two were missing; they were missing because
+ * nobody had compared this list against the platform's.
+ *
+ * DELIBERATELY EXCLUDED, for now, and named rather than silently absent:
+ * `hospitality`, `gas_station`, `entertainment`, `wedding_hall`,
+ * `worker_housing` and `self_storage`. All six have field sets and labels the
+ * same as the two just added, and the DB enum almost certainly already holds
+ * them too. The reason they stay off this list is the one reason that matters
+ * for a requirement form: the same PKG-DEM1 audit found zero live listings in
+ * any of the six. Offering a requirement type no inventory can ever answer
+ * would let an occupier post a brief that reads as live and can never be
+ * matched, which is a worse failure than the asset type not being offered at
+ * all. Add any of the six the day its registry family stops being dormant.
+ * `requirementIntake.test.tsx` holds a structural test that this list and
+ * `REQUIREMENT_ASSET_TYPES_EXCLUDED` together cover every key in
+ * `ASSET_FIELDS`, so the two cannot drift from each other or from the field
+ * registry the way the seven-item list drifted from the fifteen-item one.
+ * What it cannot check from a test process is whether the "zero live
+ * listings" fact above is still true; that is a live-inventory count, not a
+ * structural property, and it can only be re-audited against the database,
+ * not asserted in source.
  */
 export const REQUIREMENT_ASSET_TYPES: readonly string[] = [
   "office", "retail", "warehouse", "medical", "showroom", "serviced", "education",
+  "land", "mixed_use",
+];
+
+/**
+ * The asset types deliberately withheld from `REQUIREMENT_ASSET_TYPES`, and
+ * the one fact that has to stay true for each: zero live listings today. Kept
+ * beside the list it excludes from, rather than only in a comment, so a
+ * structural test can hold the two together instead of one drifting from the
+ * prose describing it.
+ */
+export const REQUIREMENT_ASSET_TYPES_EXCLUDED: readonly string[] = [
+  "hospitality", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage",
 ];
 
 /** The deal types a requirement may be posted for. */

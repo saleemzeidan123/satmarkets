@@ -8,6 +8,7 @@ import {
   TIMELINE_OPTIONS,
   MUST_HAVE_OPTIONS,
   REQUIREMENT_ASSET_TYPES,
+  REQUIREMENT_ASSET_TYPES_EXCLUDED,
   REQUIREMENT_DEAL_TYPES,
   isTimelineToken,
   timelineOptions,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/requirementIntake";
 import { matchListing, type MatchListing } from "@/lib/matching";
 import { assetLabel } from "@/lib/labels";
+import { ASSET_FIELDS } from "@/lib/assetFields";
 import { getDictionary } from "@/i18n/getDictionary";
 
 // PKG-DEM1, finding 100 and finding 101.
@@ -347,12 +349,29 @@ test("the orphan-label guard catches the shape it was written for", () => {
 });
 
 test("no count on the success card is a literal", () => {
-  // The card printed the literal 3 beside "audiences notified" while the real
-  // list was rendered directly beneath it, so the number and the list under it
-  // were two independent claims that happened to agree.
+  // PKG-TRUTH-REQ-1 item 1/2/5: this test originally guarded a card that
+  // printed the literal 3 beside "audiences notified" while a hardcoded
+  // three-entry NOTIFIED list was rendered directly beneath it, so the
+  // number and the list under it were two independent claims that happened
+  // to agree by construction, not because anything was actually notified.
+  // The NOTIFIED constant and the "notified"/"match" fields it depended on
+  // are gone; the card now shows one figure, candidateCount, sourced from
+  // the API's candidate_count field, with no companion literal to fake
+  // agreement with.
   const src = SRC("src/app/[locale]/post-requirement/RequirementForm.tsx");
-  assert.ok(src.includes("{done.notified.length}"), "the notified count must be the length of the list shown");
-  assert.ok(src.includes("{done.match}"), "the match count must be the figure the route returned");
+  assert.ok(src.includes("{done.candidateCount}"), "the candidate count must be the figure the route returned");
+  assert.ok(!src.includes("done.notified"), "the retired notified list must not be referenced");
+  assert.ok(!src.includes("done.match"), "the retired match field must not be referenced");
+  // Check the live type and call sites, not prose comments that describe the
+  // retirement (those legitimately contain the word "notified").
+  const typeDecl = src.match(/type Done = \{[^}]*\}/);
+  assert.ok(typeDecl, "the Done type must still be declared");
+  assert.ok(!/notified/.test(typeDecl[0]), "the Done type must not carry a notified field");
+  const setDoneCalls = [...src.matchAll(/setDone\(\{[^}]*\}\)/g)].map((m) => m[0]);
+  assert.ok(setDoneCalls.length > 0, "setDone must still be called");
+  for (const call of setDoneCalls) {
+    assert.ok(!/notified/.test(call), `a setDone call must not pass a notified field: ${call}`);
+  }
   // A number rendered as an element's own text, which is the shape the defect
   // had: `<div className="tnum" ...>3</div>`. Numbers inside braces are props
   // and layout, not claims about the market.
@@ -471,4 +490,68 @@ test("a condition no form ever offered keeps its own words rather than being fil
   // Sensitivity: a lookup loose enough to swallow anything would have to fail
   // here. A phrase that merely contains a label is not that label.
   assert.equal(mustHaveLabel("Fitted out to shell", false), "Fitted out to shell");
+});
+
+// ---------------------------------------------------------------------------
+// PKG-TRUTH-REQ-1 item 3/5: the requirement asset taxonomy cannot drift from
+// the platform's asset field registry the way it drifted before this package.
+// `REQUIREMENT_ASSET_TYPES` used to be a seven-item literal beside a fifteen-
+// item registry with no record of what happened to the other eight; these
+// tests hold the two lists together so a future addition to one registry
+// (`assetFields.ts`, `labels.ts`) cannot silently leave a requirement type
+// unaccounted for again, on either side of the decision.
+// ---------------------------------------------------------------------------
+
+test("every asset type in the field registry is accounted for, offered or explicitly excluded, exactly once", () => {
+  const registryTypes = Object.keys(ASSET_FIELDS).sort();
+  const accounted = [...REQUIREMENT_ASSET_TYPES, ...REQUIREMENT_ASSET_TYPES_EXCLUDED].sort();
+
+  assert.deepEqual(
+    accounted,
+    registryTypes,
+    "REQUIREMENT_ASSET_TYPES and REQUIREMENT_ASSET_TYPES_EXCLUDED together must equal the full asset field registry, no more and no less",
+  );
+
+  // Neither an omission nor a double booking: a type on both lists would be
+  // simultaneously offered and withheld, which is not a decision, it is a
+  // race between two edits.
+  const overlap = REQUIREMENT_ASSET_TYPES.filter((t) => REQUIREMENT_ASSET_TYPES_EXCLUDED.includes(t));
+  assert.deepEqual(overlap, [], `an asset type is on both the offered and excluded lists: ${overlap.join(", ")}`);
+});
+
+test("land and mixed_use, the two types added in PKG-TRUTH-REQ-1, are fully wired, not just listed", () => {
+  for (const t of ["land", "mixed_use"]) {
+    assert.ok(REQUIREMENT_ASSET_TYPES.includes(t), `${t} must be offered on the requirement form`);
+    assert.ok(Array.isArray(ASSET_FIELDS[t]) && ASSET_FIELDS[t].length > 0, `${t} has no field set in the registry`);
+    for (const locale of LOCALES) {
+      const label = assetLabel(t, locale);
+      assert.notEqual(label, t, `${t} has no ${locale} label and assetLabel is returning the raw token`);
+    }
+  }
+});
+
+test("every excluded asset type is excluded for the stated reason, not for a missing label or field set", () => {
+  // The whole argument in the comment above REQUIREMENT_ASSET_TYPES_EXCLUDED is
+  // "these are withheld for zero live inventory, not for being unsupported".
+  // If any of the six had no label or no field set, the comment would be
+  // wrong about why the type is off the list, so this is checked rather than
+  // assumed.
+  for (const t of REQUIREMENT_ASSET_TYPES_EXCLUDED) {
+    assert.ok(Array.isArray(ASSET_FIELDS[t]) && ASSET_FIELDS[t].length > 0, `${t} has no field set, so it is unsupported rather than merely dormant`);
+    for (const locale of LOCALES) {
+      assert.notEqual(assetLabel(t, locale), t, `${t} has no ${locale} label, so it is unsupported rather than merely dormant`);
+    }
+  }
+});
+
+test("the matcher imposes no asset-type list of its own that the taxonomy could drift from", () => {
+  // matching.ts's asset comparison is `same(req.asset_type, listing.asset_type)`,
+  // plain string equality, so it should hold no enumerated list of asset types
+  // to fall out of step with requirementIntake.ts or assetFields.ts. If this
+  // ever grows a switch or an allow-list, it becomes a fourth place the
+  // taxonomy has to agree with, silently.
+  const src = SRC("src/lib/matching.ts");
+  for (const t of [...REQUIREMENT_ASSET_TYPES, ...REQUIREMENT_ASSET_TYPES_EXCLUDED]) {
+    assert.equal(src.includes(`"${t}"`), false, `matching.ts names the asset type "${t}" literally, which is a second vocabulary`);
+  }
 });
