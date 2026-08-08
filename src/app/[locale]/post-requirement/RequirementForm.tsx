@@ -52,7 +52,14 @@ import {
 // arrives already chosen states a constraint the visitor never gave, on the one
 // field that decides whether availability is scored at all.
 
-type Done = { ref: string; match: number; notified: string[]; id: string };
+// PKG-TRUTH-REQ-1. This used to also carry `notified: string[]`, rendered
+// from a hardcoded constant on the API side regardless of what had actually
+// happened. See the comment above the POST handler in
+// `src/app/api/requirements/route.ts`. `match` is `candidateCount` now for
+// the same reason: the number is real, but it is a count of published
+// listings sharing the location and category, not a match against the full
+// brief, and the old name claimed more than the query checks.
+type Done = { ref: string; candidateCount: number; id: string };
 
 /* ELITE-4 J4-7: consent is a blocking condition, so it is a named field with
    its own error node and its own place in the focus order. */
@@ -176,6 +183,8 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
         }),
       });
       const j = await r.json().catch(() => ({}));
+      // PKG-TRUTH-REQ-1. The route's field is `candidate_count` now, not
+      // `match`, and it no longer sends `notified`. See both comments above.
       // Finding 203. This put the route's own English sentence on screen. Of every
       // site in this finding it is the one that mattered most, because this is the
       // most public write path the platform has: an occupier who has never signed
@@ -192,7 +201,7 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
         setBusy(false);
         return;
       }
-      setDone({ ref: j.ref, match: j.match, notified: j.notified || [], id: j.id || "" });
+      setDone({ ref: j.ref, candidateCount: Number(j.candidate_count) || 0, id: j.id || "" });
     } catch {
       setErr(pr.submitError);
     }
@@ -215,23 +224,25 @@ export default function RequirementForm({ locale, locations }: { locale: "en" | 
                 dashboard form pairs use 8rem: 8rem would have collapsed a layout that
                 renders correctly on a 360px phone. Measured as `req-stats` in
                 scripts/reflow-probe.mjs, one column at 320 and two from 360 upward at
-                exactly the widths `1fr 1fr` gave. */}
+                exactly the widths `1fr 1fr` gave.
+
+                PKG-TRUTH-REQ-1. This used to be two tiles, this candidate count and a
+                second tile counting a hardcoded `notified` array, with the real-looking
+                list of three audience names rendered again underneath. Both were removed
+                together: see the comment above the POST handler in
+                src/app/api/requirements/route.ts for what was actually known to have
+                happened, which is a stored requirement and a notification ledger entry,
+                not a confirmed notification. One tile now, and the sentence beside it
+                says exactly what the number is. The grid still uses `auto-fit` so a
+                second tile could return here without moving this comment if the product
+                ever earns a second honest number to show. */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 7rem), 1fr))", gap: 12, margin: "22px 0" }}>
               <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-                <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600, color: "var(--azure-d)" }}>{done.match}</div>
-                <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.matchToday}</div>
-              </div>
-              {/* This was the literal 3, printed beside the real list. */}
-              <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-                <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600 }}>{done.notified.length}</div>
-                <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.audiencesNotified}</div>
+                <div className="tnum" style={{ fontSize: "1.625rem", fontWeight: 600, color: "var(--azure-d)" }}>{done.candidateCount}</div>
+                <div className="muted" style={{ fontSize: "0.75rem" }}>{pr.candidateCountLabel}</div>
               </div>
             </div>
-            <div className="col gap8" style={{ textAlign: ar ? "right" : "left", maxWidth: 420, margin: "0 auto 22px" }}>
-              {done.notified.map((n, i) => (
-                <div key={i} className="row gap8" style={{ fontSize: "0.8125rem" }}><span style={{ color: "var(--harbor-d)" }}><Icon.check size={15} /></span>{n}</div>
-              ))}
-            </div>
+            <p className="muted" style={{ fontSize: "0.8125rem", lineHeight: 1.6, maxWidth: 460, margin: "0 auto 22px" }}>{pr.candidateCountNote}</p>
             <div className="row gap10" style={{ justifyContent: "center" }}>
               <Link href={`/${locale}/requirements/${done.id}`} className="btn primary lg">{pr.viewReq} <Icon.arrow size={16} /></Link>
               <Link href={`/${locale}/requirements`} className="btn secondary">{pr.allReqs}</Link>
