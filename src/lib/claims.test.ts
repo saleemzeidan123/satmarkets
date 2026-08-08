@@ -929,3 +929,131 @@ const LOCALES: Array<[string, Array<[string, string]>]> = [
 // Written as escapes on purpose. scripts/ar-lint.mjs scans test sources, the
 // ruling 2 guard below scans src/** including this file, and a guard that trips
 // on its own needle teaches nothing.
+const AR_VERIFIED_OWNER = "مالك موثّق";
+const AR_BARE_VERIFIED = "موثّق";
+const AR_BARE_PLURAL = "ملاك";
+
+test("ADV-1 (C): no dictionary value carries the retired bare owner claim", () => {
+  for (const [locale, values] of LOCALES) {
+    for (const [key, v] of values) {
+      assert.ok(
+        !v.includes("Verified owner") && !v.includes("verified owner"),
+        `${locale}.json ${key} states an owner has been verified: ${JSON.stringify(v)}`
+      );
+      assert.ok(
+        !v.includes(AR_VERIFIED_OWNER),
+        `${locale}.json ${key} states an owner has been verified: ${JSON.stringify(v)}`
+      );
+    }
+  }
+});
+
+test("ADV-1 (C): no dictionary value is a bare verification badge", () => {
+  // A badge reading only "Verified" names no gate, no method, no date and no
+  // reviewer, so a reader supplies all four themselves. O3: every badge names the
+  // gate it rests on. Anything that survives here is a label, not a badge.
+  for (const [locale, values] of LOCALES) {
+    for (const [key, v] of values) {
+      const t = v.trim();
+      assert.ok(
+        !/^(an? )?verified( listing| owner| space)?$/i.test(t),
+        `${locale}.json ${key} is a bare verification badge: ${JSON.stringify(v)}`
+      );
+      assert.notEqual(t, AR_BARE_VERIFIED, `${locale}.json ${key} is a bare verification badge`);
+    }
+  }
+});
+
+test("ADV-1 (C): the keys the label layer stopped earning stay gone", () => {
+  // Three of these were already orphaned when they were deleted, which is how the
+  // claim survived a source sweep: nothing referenced them, so nothing pointed at
+  // them, and they kept rendering wherever the fourth and fifth were interpolated.
+  for (const [locale, values] of LOCALES) {
+    const keys = new Set(values.map(([k]) => k));
+    for (const k of [
+      "dash.verified",
+      "listing.verified",
+      "listerPage.verified",
+      "ui.verifiedListing",
+      "building.verified",
+    ]) {
+      assert.ok(!keys.has(k), `${locale}.json ${k} is back`);
+    }
+  }
+});
+
+test("ADV-1 (C), ruling 2: a band names whose index it came from", () => {
+  // The chip beside the rent band on /building/[id] read "Verified", over a row
+  // whose own data_class is synthetic. The line that replaced it is an attribution,
+  // which is both the honest label and the one ruling 2 requires.
+  assert.equal(EN.building.bandSource, "REGA Rental Index (Ejar)");
+  assert.equal(AR.building.bandSource, "المؤشر الإيجاري للهيئة العامة للعقار (إيجار)");
+  const bp = code(readFileSync(join(ROOT, "app/[locale]/building/[id]/page.tsx"), "utf8"));
+  assert.doesNotMatch(bp, /className="verified"|tag-verified/, "the building page draws a verification chip again");
+  assert.match(bp, /T\.bandSource/, "the band must name its source");
+});
+
+test("ADV-1 (C), ruling 2: the index is never described as ours", () => {
+  // "SAT published Rent Index" sat under a rent band on every listing page. We
+  // publish a page about the index. We do not publish the index.
+  for (const [locale, values] of LOCALES) {
+    for (const [key, v] of values) {
+      assert.ok(!/SAT published Rent Index/i.test(v), `${locale}.json ${key} claims the index as ours`);
+      assert.ok(
+        !v.includes("مؤشر إيجارات سات"),
+        `${locale}.json ${key} claims the index as ours`
+      );
+    }
+  }
+  // A source label is the one place where the full attribution is not optional.
+  assert.match(EN.advisor.sourceRentIndex, /^REGA Rental Index \(Ejar\)/);
+  assert.match(EN.ld.bandsDisclaimer, /REGA Rental Index \(Ejar\)/);
+});
+
+test("ADV-1 (C), ruling 3: the platform makes no promise it has not kept", () => {
+  // Two performance claims, both about a platform that has taken no enquiry and
+  // ranked no listing: verification bought "more replies" in the owner dashboard
+  // and "prominent placement" in the listing pitch. Neither is measurable yet.
+  for (const [locale, values] of LOCALES) {
+    for (const [key, v] of values) {
+      assert.ok(!/more replies/i.test(v), `${locale}.json ${key} promises a reply rate`);
+      assert.ok(!/prominent placement/i.test(v), `${locale}.json ${key} promises a ranking`);
+    }
+  }
+});
+
+test("ADV-1 (C): the listing card reads the resolver, not the publish gate", () => {
+  // It read passesGate, whose ownership and authorisation legs default to PASS when
+  // the column is unset. A row nobody had opened cleared half the gate by silence,
+  // and the only thing holding the badge back on all 88 published rows was that
+  // none of them carries an advertising permit. The first permit added would have
+  // lit a verification tick on a record nobody had checked.
+  const c = code(readFileSync(join(ROOT, "components/ListingCard.tsx"), "utf8"));
+  assert.doesNotMatch(c, /passesGate/, "the card decides verification from the publish gate");
+  assert.match(c, /verifiedBadgeTexts\(/, "the card badges must come from the resolver");
+});
+
+test("ADV-1 (C), ruling 2: the plural that means property owners is spelled with the shadda", () => {
+  // Owner ruling 2. The unmarked plural reads as the other word entirely, so this
+  // is a meaning fix rather than a typographic one. The sweep had to spare
+  // properties/assets, which contains the same four letters behind an alif; that
+  // word is checked for explicitly rather than assumed absent.
+  const seen: string[] = [];
+  const walkAll = (dir: string) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) walkAll(full);
+      else if (/\.(ts|tsx|json|css|mjs)$/.test(name) && !/\.test\.tsx?$/.test(name)) {
+        const src = readFileSync(full, "utf8");
+        let i = src.indexOf(AR_BARE_PLURAL);
+        while (i >= 0) {
+          // The alif-prefixed word is a different noun and is allowed to stand.
+          if (src[i - 1] !== "أ") seen.push(`${full.slice(ROOT.length + 1)}: ${JSON.stringify(src.slice(i - 20, i + 20))}`);
+          i = src.indexOf(AR_BARE_PLURAL, i + 1);
+        }
+      }
+    }
+  };
+  walkAll(ROOT);
+  assert.deepEqual(seen, [], "the unmarked plural is back");
+});
