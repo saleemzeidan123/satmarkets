@@ -233,9 +233,14 @@ These are measured, not assumed. Rediscovering them costs an hour each time.
 * ESLint is not configured. Do not run `npx next lint`.
 * The deploy token has no `workflow` scope, so `.github/workflows/` files cannot be
   pushed. The owner installs those manually. Do not request a workflow scoped token.
-* The `GitHub_Pat` MCP server needs interactive authorization. When it is authorized it
-  reads this repository but cannot write to it: `push_files` returns
-  `403 Resource not accessible by integration`. It is a read path, not a push path.
+* The `GitHub_Pat` MCP server needs interactive authorization. **Corrected 2026-08-08,
+  PKG-TRUTH-REQ-1, section 4 above has the full account:** once authorized and once the
+  GitHub App behind it is installed on this repository, it can write here, through a
+  branch and a pull request, not a direct push to `main`. An earlier revision of this
+  bullet said it could only read and never write; that was true only because the App was
+  authorized but not installed, and it is not true now that the App is installed. The
+  session-specific git-proxy path (`tools/ship.py`, plain `git push`) is a separate thing
+  and may still refuse this repository outright; see section 4 for which to try first.
   Never ask the user for tokens, authorization codes or callback URLs.
 * Inspecting git credential storage is blocked by the safety classifier, as is
   `git checkout -- <path>`. Use `git show HEAD:<path> > <path>` to restore a file.
@@ -419,8 +424,15 @@ finds that denial is not present.
    notification-ledger rows it created.
 
 Record the result as a verification addendum to `docs/handback-pkg-truth-req-1.md`,
-appended, not rewritten over section 6 or 7. If both pass, continue directly with D37's
-approved sequence, section 7 below, with no further pause for review.
+appended, not rewritten over section 6 or 7.
+
+**The controlling order, stated once and unambiguously so nothing below this paragraph
+contradicts it.** First, complete the two deferred production-verification tasks above.
+Second, if both pass, continue directly with D37's already-approved sequence (section 7
+below) with no further approval pause; D37 was approved by Codex and Saleem on
+2026-08-02, so continuing it is not opening a new package without asking, it is carrying
+out the asking that already happened. Third, and until the first step is done: do not
+open any package unrelated to those two tasks, engineering or otherwise.
 
 **The guardrail this sits inside, restated because it binds the task above and not just
 the package that is now closed.** O18 (section 7, and `docs/decision-register.md`) is
@@ -437,9 +449,11 @@ legacy sample requirement data, and why. That belongs to finding 113 and to whic
 future Arabic data-cleanup package closes its open data half. Do not touch it while closing
 the verification tasks above, and do not route it through PKG-TRUTH-REQ-1.
 
-No engineering package is open beyond the verification above. Codex's standing instruction
-after PKG-A11Y-1 is that the next inputs are not engineering. Do not open a new package
-without the owner or Codex asking.
+No engineering package is open beyond the two verification tasks above and, once they pass,
+D37's already-approved sequence. Codex's PKG-A11Y-1 instruction that the next inputs are
+not engineering, and D37 itself, are both superseded for sequencing purposes by the
+controlling order stated above: this is the one place to read for what happens next, not
+this sentence read in isolation from it.
 
 Owner actions, all recorded in `docs/handback-pkg-a11y-1.md`:
 
@@ -489,8 +503,13 @@ contents with a pointer to `docs/LAWS.md` and this file.
 
 ## 12. Opening a new conversation
 
-Attach `sm_ship_token.txt` to the new conversation, then paste this. The attachment is the
-only thing that has to be done again; everything else below is a pointer into this file.
+**Corrected 2026-08-08, PKG-TRUTH-REQ-1.** `sm_ship_token.txt` is not required to open a
+session or to ship. It is one of two ways to push, not the only one, and the paragraph
+this replaced described it as mandatory, which is no longer accurate now that section 4's
+branch-and-PR connector path works without any token at all.
+
+Paste this. Attaching `sm_ship_token.txt` is optional, only useful if the owner wants
+`tools/ship.py`'s direct path available from the first ship rather than as a fallback.
 
 > You are the builder on SAT Markets, continuing without interruption. Clone
 > `https://github.com/saleemzeidan123/satmarkets` to `/tmp/sm2` and run
@@ -499,11 +518,15 @@ only thing that has to be done again; everything else below is a pointer into th
 > mandate and it is in force from your first message: full authority over unblocked
 > engineering work, no procedural approvals, record a blocker and move to the next
 > dependency rather than stopping, one consolidated handback per package. Ignore the root
-> `CLAUDE.md`; section 11 explains it. I have attached `sm_ship_token.txt`, so
-> `tools/ship.py` will adopt it on your first ship and you push and deploy yourself; never
-> ask me to type a credential into the chat. Do not re-ask me for context that is in these
-> files. Tell me the current position and what is owed, then continue.
+> `CLAUDE.md`; section 11 explains it. To ship: use the normal branch-and-PR connector
+> path from section 4 whenever it is available, since it needs no credential from me at
+> all. Use `tools/ship.py` only in a session already authorized for it, meaning
+> `SM_GH_TOKEN` is set, `~/.sm_ship_token` exists, or I have attached
+> `sm_ship_token.txt` this session. Never ask me to type a credential into the chat, and
+> never attempt a direct push to protected `main`; ship on a branch and open a pull
+> request. Do not re-ask me for context that is in these files. Tell me the current
+> position and what is owed, then continue.
 
-Everything else is in the repository. A session opened this way has the same authority,
-the same rules and the same push and deploy capability as the one that wrote this file,
-and needs nothing further from a previous conversation.
+Everything else is in the repository. A session opened this way has the same authority
+and the same rules as the one that wrote this file, and needs nothing further from a
+previous conversation, with or without a token attached.
