@@ -16,6 +16,17 @@ import ListingCard, { type IndexPosition } from "@/components/ListingCard";
 import type { Listing } from "@/lib/types";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
+// Slice B, item 8. The one shared, RTL-safe pattern the rest of the platform
+// already uses for a section that has nothing to show, so Home's featured
+// inventory and Rent Index panel fail the same honest way Listings Search
+// does, instead of a bare gap nobody explained.
+import DataState from "@/components/DataState";
+// Slice B, item 6. The one component that already renders a real link to
+// `/lister/[id]`, on Listing Detail. Reused here rather than re-implemented,
+// so Home's one lister-discovery entry point is the platform's existing
+// pattern, not a second one.
+import ListerBadge from "@/components/ListerBadge";
+import type { Lister } from "@/lib/queries/listings";
 // RC12, finding 164. The asset rail pages by animating a scroll, which the CSS
 // reduced-motion block cannot reach while the behaviour is stated explicitly.
 import { scrollBehavior } from "@/lib/motion";
@@ -67,7 +78,7 @@ const ASSETS = [
 // component is a client component and the decision is a server one: a client
 // that could re-derive the sentence could also re-derive it wrongly, and the
 // figure and its sentence must come from the same place.
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: PublishedKpis }) {
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis, dataOk = true, leadLister = null }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: PublishedKpis; /** False only when the server could not reach the database at all, never when it reached it and found nothing. Distinguishes an honest "temporarily unavailable" from an honest "nothing published yet". */ dataOk?: boolean; /** The lead featured listing's public lister, when one loaded. Home's one lister-discovery entry point (item 6): a real link to `/lister/[id]`, never a fabricated directory. */ leadLister?: Lister | null }) {
  const router = useRouter();
  const ar = locale === "ar";
  // PKG-FIG1, finding 125. These three figures are the published Rent Index band,
@@ -366,33 +377,67 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
     </div>
    </div>
 
-   <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
-    {T.stat.filter((x) => x[0]).map((x, i) => (
-     <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
-      <div className="mono tnum" style={{ fontSize: "1.75rem", fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
-      <div className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 4 }}>{x[1]}</div>
-     </div>
-    ))}
-   </div>
+   {(() => {
+     // A stat is either a counted value or it is absent (Law 3): the strip
+     // itself follows the same rule and does not render an empty bordered bar
+     // when every tile it would have carried is null.
+     const shownStats = T.stat.filter((x) => x[0]);
+     return shownStats.length > 0 ? (
+      <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
+       {shownStats.map((x, i) => (
+        <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
+         <div className="mono tnum" style={{ fontSize: "1.75rem", fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
+         <div className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 4 }}>{x[1]}</div>
+        </div>
+       ))}
+      </div>
+     ) : null;
+   })()}
 
    <div style={{ maxWidth: 1360, margin: "0 auto" }}>
 
-    {f0 && (
-     <div style={{ padding: "clamp(44px,7vw,72px) 24px 8px" }}>
-      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
-       <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(1.5rem,5vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
-       <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
-      </div>
-      <div style={{ marginTop: 28 }}>
-       <ListingCard listing={f0.listing} locale={cardLocale} ui={UI} variant="lead" indexPosition={f0.indexPosition} />
-      </div>
-      <div className="snap-row" style={{ marginTop: 18 }}>
-       {rest.map((f) => (
-        <ListingCard key={f.listing.id} listing={f.listing} locale={cardLocale} ui={UI} variant="grid" indexPosition={f.indexPosition} />
-       ))}
-      </div>
+    {/* PKG-DISCOVERY-1 slice B, item 8. This section used to render nothing at
+        all, heading included, whenever `featured` was empty: a visitor with an
+        unreachable database and a visitor on a corpus with genuinely nothing
+        published saw the identical silent gap, on the site's first screen.
+        The heading and the browse path are now unconditional, and the one part
+        that depends on data resolves to one of three honest states: the cards,
+        or a `DataState` that names which of the two things actually happened. */}
+    <div style={{ padding: "clamp(44px,7vw,72px) 24px 8px" }}>
+     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
+      <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(1.5rem,5vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
+      <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
      </div>
-    )}
+     {f0 ? (
+      <>
+       <div style={{ marginTop: 28 }}>
+        <ListingCard listing={f0.listing} locale={cardLocale} ui={UI} variant="lead" indexPosition={f0.indexPosition} />
+        {leadLister && <ListerBadge lister={leadLister} ar={ar} locale={locale} />}
+       </div>
+       <div className="snap-row" style={{ marginTop: 18 }}>
+        {rest.map((f) => (
+         <ListingCard key={f.listing.id} listing={f.listing} locale={cardLocale} ui={UI} variant="grid" indexPosition={f.indexPosition} />
+        ))}
+       </div>
+      </>
+     ) : (
+      <div style={{ marginTop: 28 }}>
+       <DataState
+        kind={dataOk ? "empty" : "error"}
+        title={dataOk ? H.featuredEmptyTitle : H.featuredErrorTitle}
+        body={dataOk ? H.featuredEmptyBody : H.featuredErrorBody}
+        action={
+         <div className="row gap10 wrap" style={{ justifyContent: "center" }}>
+          <Link href={L("/listings")} className="btn" style={{ textDecoration: "none" }}>{T.ftBrowse}</Link>
+          {!dataOk && (
+           <button type="button" className="btn ghost" onClick={() => router.refresh()}>{H.retryLabel}</button>
+          )}
+         </div>
+        }
+       />
+      </div>
+     )}
+    </div>
 
     <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
      <div style={{ maxWidth: 1160, margin: "0 auto" }}>
@@ -449,6 +494,13 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        </div>
        <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
       </div>
+      {!band && (
+       <DataState
+        kind={dataOk ? "empty" : "error"}
+        title={dataOk ? H.bandEmptyTitle : H.bandErrorTitle}
+        body={dataOk ? H.bandEmptyBody : H.bandErrorBody}
+       />
+      )}
       {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
        <div className="row between" style={{ alignItems: "flex-start" }}>
         <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{unitShort}</div></div>
@@ -491,6 +543,20 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
         <div key={n} style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "rgba(255,255,255,.6)", marginTop: 8 }}>{n}</div>
        ))}
       </div>}
+     </div>
+    </div>
+
+    {/* PKG-DISCOVERY-1 slice B, item 7. Honest, grounded in `/verification`
+        itself: this copy names what a check actually is (evidence-backed,
+        per-record, never automatic) and stops short of it, because the page
+        it links to is the one place that engine-generated union is rendered
+        and this section must never restate it in its own, driftable words. */}
+    <div style={{ padding: "clamp(40px,6vw,60px) 24px" }}>
+     <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
+      <div className="eyebrow">{H.verifyEyebrow}</div>
+      <h2 className="serif" style={{ fontSize: "clamp(1.5rem,4vw,2rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{H.verifyHeading}</h2>
+      <p className="muted" style={{ fontSize: "var(--fs-md)", lineHeight: 1.65, marginTop: 14 }}>{H.verifyBody}</p>
+      <Link href={L("/verification")} className="btn secondary" style={{ marginTop: 18, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}>{H.verifyLinkLabel} <Icon.arrow size={16} /></Link>
      </div>
     </div>
 
