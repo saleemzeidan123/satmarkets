@@ -1,14 +1,12 @@
-import Link from "next/link";
 import { isLocale } from "@/i18n/config";
 import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
-import { assetLabel, cityLabel } from "@/lib/labels";
-import { listingTitle } from "@/lib/listingTitle";
-import { Photo, Icon } from "@/components/satkit";
+import { Icon } from "@/components/satkit";
+import ListingCard from "@/components/ListingCard";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
-import { fill, formatArea, formatCounted, formatMoney, formatWithUnit } from "@/lib/format";
+import { fill, formatCounted } from "@/lib/format";
 // ADV-1. accounts.verification_status is a workflow status, and account_verifications
 // holds zero rows, so no account on the platform has a document behind it. The badge,
 // the sentence under it and the page description all used to run off that status.
@@ -74,9 +72,16 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
   // checked the lister either, unless someone did.
   const identityVerified = listerIdentityVerified(filingAccountOf(p));
 
+  // PKG-CARD1. The card grid below now reads through `ListingCard`, which
+  // resolves a listing's verified badges from the same four-part chain every
+  // other card on the platform reads. That chain needs its own columns; the
+  // narrower select this used to carry left them all undefined, which
+  // `listingVerification.ts` resolves as unverified for every row regardless
+  // of what the record actually says, silently understating a lister's own
+  // verified listings on their own public profile.
   const { data: listings } = await releaseVisibleInventory(sb
     .from("listings")
-    .select("id,title_en,title_ar,asset_type,area_sqm,deal_type,asking_rent_sqm,sale_price,reference_code,districts(name_en,name_ar,city)")
+    .select("id,title_en,title_ar,asset_type,area_sqm,building_grade,deal_type,asking_rent_sqm,sale_price,reference_code,created_at,ownership_verified,authorization_verified,right_to_market_confirmed,ad_permit_number,ad_permit_expires_at,is_demo,verified_at,verified_by,verification_method,lister_type,districts(name_en,name_ar,city)")
     .eq("account_id", params.id).eq("status", "published"))
     .order("created_at", { ascending: false }).limit(60);
   const rows = (listings || []) as any[];
@@ -146,23 +151,14 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
           <p className="muted" style={{ marginTop: 12 }}>{t.none}</p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 210px), 1fr))", gap: 16, marginTop: 14 }}>
-            {rows.map((l) => {
-              const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : dict.ld.riyadh;
-              const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
-              return (
-                <Link key={l.id} href={`/${lp}/listings/${l.id}`} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-                  <Photo kind={l.asset_type} alt={`${assetLabel(l.asset_type, lp)}, ${dn}`} h={130} />
-                  <div className="body" style={{ padding: "10px 12px 12px" }}>
-                    {/* The price and its unit were assembled here from four inline
-                        strings, which is how an Arabic card could show a Latin unit.
-                        Both now come from the shared unit formatter. */}
-                    <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>{price == null ? t.onReq : l.deal_type === "lease" ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)}</div>
-                    <div style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.35 }}>{listingTitle(l, ar ? "ar" : "en")}</div>
-                    <div className="muted" style={{ fontSize: "0.71875rem", marginTop: 3 }}>{dn} · {formatArea(l.area_sqm, lp)}</div>
-                  </div>
-                </Link>
-              );
-            })}
+            {/* PKG-CARD1. This grid used to draw its own card with no
+                verification badge, no save affordance and its own price
+                assembly, so the one surface built to show what a lister has
+                live said nothing about which of it SAT has actually checked.
+                `ListingCard` is now the one place a listing becomes a card. */}
+            {rows.map((l) => (
+              <ListingCard key={l.id} listing={l} locale={lp} ui={dict.ui} />
+            ))}
           </div>
         )}
       </div>

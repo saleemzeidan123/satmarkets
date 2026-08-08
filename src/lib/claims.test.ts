@@ -196,7 +196,14 @@ test("ADV-1: the listings filter is the same four part chain as the badge", () =
   for (const part of ['eq("is_demo", false)', 'not("verified_by", "is", null)', 'in("verification_method"']) {
     assert.ok(c.includes(part), `the verified filter is missing ${part}`);
   }
-  assert.match(c, /verifiedBadges\(/, "the card badge must come from the resolver");
+  // PKG-CARD1. The result grid used to draw its own card and call the chip
+  // resolver, `verifiedBadges`, directly. It now renders through the shared
+  // `ListingCard`, so the badge comes from the resolver one hop further in:
+  // the grid renders the shared card, and the shared card is what calls the
+  // resolver, `verifiedBadgeTexts`.
+  assert.match(c, /<ListingCard\b/, "the result grid must render through the shared card");
+  const cardSrc = code(readFileSync(join(ROOT, "components/ListingCard.tsx"), "utf8"));
+  assert.match(cardSrc, /verifiedBadgeTexts\(/, "the shared card's badge must come from the resolver");
 });
 
 test("ADV-1: the home verified count cannot outrun the badge on the card", () => {
@@ -820,7 +827,18 @@ test("C4: the featured card verification flag is exactly ownership_verified", ()
   assert.doesNotMatch(home, /verified:\s*!!/, "the featured card must not compute a verification boolean of its own");
   assert.doesNotMatch(home, /authorization_verified/, "the featured card badge counts more than ownership");
   assert.doesNotMatch(home, /is_sat_listed/, "the featured card badge counts our own stock as verified");
-  assert.match(home, /badges:\s*listingVerifiedDimensions\(/, "the featured card badges must come from the resolver");
+  // PKG-CARD1. The home page used to flatten each row's badges into the
+  // `FeaturedListing` shape it built by hand. It now hands the raw row to
+  // `ListingCard`, so it computes no badges of its own at all (nor any other
+  // figure `ListingCard` already knows how to read), and the resolver call
+  // this test used to find here is the one inside the shared card.
+  assert.doesNotMatch(home, /badges:\s*listingVerifiedDimensions\(/, "the featured card must not compute its own badge list; ListingCard resolves it from the row");
+  // The page itself renders `<MarketingHome>`, not the card directly; the card
+  // is `MarketingHome`'s to render.
+  const marketingHome = code(readFileSync(join(ROOT, "components/MarketingHome.tsx"), "utf8"));
+  assert.match(marketingHome, /<ListingCard\b/, "the featured card must render through the shared card");
+  const cardSrc = code(readFileSync(join(ROOT, "components/ListingCard.tsx"), "utf8"));
+  assert.match(cardSrc, /verifiedBadgeTexts\(/, "the shared card's badges must come from the resolver");
 });
 
 test("ruling 3: the dead year-on-year band caption stays deleted", () => {

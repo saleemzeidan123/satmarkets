@@ -4,16 +4,12 @@ import { notFound } from "next/navigation";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { getDictionary } from "@/i18n/getDictionary";
-import { assetLabel, cityLabel } from "@/lib/labels";
-import { listingTitle } from "@/lib/listingTitle";
-import { formatArea, formatNumber } from "@/lib/format";
 import type { Listing } from "@/lib/types";
-import { photoFor } from "@/lib/photos";
 import MarketingHome, { type FeaturedListing, type HeroBand } from "@/components/MarketingHome";
 import { getPublishedKpis } from "@/lib/market/published";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { normalizeStatisticKind, statisticLabel } from "@/lib/evidence";
-import { CHECK_METHODS, listingVerifiedDimensions, verifiedBadgeText } from "@/lib/listingVerification";
+import { CHECK_METHODS } from "@/lib/listingVerification";
 
 export const revalidate = 600;
 
@@ -113,17 +109,18 @@ export default async function HomePage(props: { params: Promise<{ locale: string
     idxSegs = quotedRows.length;
   }
 
-  const h = getDictionary(locale).home;
-  // The card fell back to the Latin string "Riyadh" in both languages and wrote
-  // the area as "300 m²" in both. The city name is controlled vocabulary and the
-  // area is a unit, so both now come from the shared formatters.
-  const city = cityLabel("Riyadh", locale);
+  // PKG-CARD1. This used to flatten every card figure (price, title, district,
+  // area, badge text) by hand, which was a second place those figures were
+  // computed, beside `ListingCard`'s own. The lease unit under a sale price on
+  // this page's own lead card was that duplication catching up with it:
+  // nothing here read `deal_type` before choosing a unit, because nothing here
+  // dealt in units at all, only in strings someone else had already picked
+  // one for. `ListingCard` now reads the row directly; this loop keeps only
+  // the one decision that is genuinely this page's, not the card's, which is
+  // where a lease listing's rent falls in the published band.
   const featured: FeaturedListing[] = rows.map((l) => {
-    const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
     const dnEn = l.districts ? l.districts.name_en : null;
-    const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
-    const type = assetLabel(l.asset_type, locale);
-    let idx: FeaturedListing["idx"] = null;
+    let indexPosition: FeaturedListing["indexPosition"] = null;
     const seg = idxSegment(l.asset_type, ((l as any).building_grade as string | null) ?? null);
     const rent = (l as any).asking_rent_sqm;
     if (l.deal_type === "lease" && rent != null && dnEn && seg) {
@@ -131,24 +128,10 @@ export default async function HomePage(props: { params: Promise<{ locale: string
       if (band && band.high > band.low) {
         const rv = Number(rent);
         const pos = Math.max(0, Math.min(1, (rv - band.low) / (band.high - band.low)));
-        idx = { v: rv < band.low ? "below" : rv > band.high ? "above" : "within", pos };
+        indexPosition = { v: rv < band.low ? "below" : rv > band.high ? "above" : "within", pos };
       }
     }
-    return {
-      id: l.id,
-      price: price != null ? formatNumber(Number(price), locale) : h.onRequest,
-      title: listingTitle(l, ar ? "ar" : "en"),
-      district: dn || city,
-      area: formatArea(l.area_sqm, locale),
-      type,
-      // ADV-1. A boolean here produced one badge that stood for four separate
-      // checks. The card now carries the badges the record has actually earned,
-      // each naming its own gate, which is an empty list on every published row.
-      badges: listingVerifiedDimensions(l as any, null).map((d) => verifiedBadgeText(d, ar)),
-      ph: `${type}, ${dn || city}`,
-      img: photoFor(l.asset_type, l.id),
-      idx,
-    };
+    return { listing: l, indexPosition };
   });
 
   // Law 3: a stat is either a counted value or it is absent. No invented

@@ -31,6 +31,7 @@ export interface Listing {
   ad_permit_number?: string | null;
   ad_permit_expires_at?: string | null;
   created_at?: string;
+  availability_confirmed_at?: string | null;
   districts?: DistrictRef | null;
 }
 

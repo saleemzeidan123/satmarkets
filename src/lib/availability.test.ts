@@ -134,7 +134,12 @@ test("availability never takes the reserved verification green", () => {
 test("no availability render path composes its own colour", () => {
   // The defect was that both surfaces built the colour inline, and both reached for
   // the same green. There is one writer now, and this is what keeps it that way.
-  for (const f of ["src/app/[locale]/listings/page.tsx", "src/app/[locale]/listings/[id]/page.tsx"]) {
+  //
+  // PKG-CARD1. The search grid's own freshness/availability markup moved into
+  // `ListingCard` (`showFreshness`), so that is where its call to the tone
+  // writer now lives; the listing detail page draws its own availability line
+  // and is unaffected.
+  for (const f of ["src/components/ListingCard.tsx", "src/app/[locale]/listings/[id]/page.tsx"]) {
     const code = readFileSync(f, "utf8").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ");
     assert.equal(/av\.state\s*===/.test(code), false, `${f} still branches on availability state to pick a colour`);
     assert.match(code, /availabilityTone\(/, `${f} does not use the single tone writer`);
