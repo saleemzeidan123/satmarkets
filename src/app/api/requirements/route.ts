@@ -4,6 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { isTimelineToken, REQUIREMENT_ASSET_TYPES, REQUIREMENT_DEAL_TYPES } from "@/lib/requirementIntake";
 import { cityKey } from "@/lib/labels";
+import { buildRequirementSuccessResponse } from "@/lib/requirementApi";
 
 // PKG-DEM1. These were literals here and a shorter literal in the form, so the
 // public form silently refused to offer two asset types this route accepts.
@@ -61,6 +62,34 @@ export async function GET(req: NextRequest) {
 // shipped state: it pre-selected a value this route refused, and every Arabic
 // option it offered was refused. Both sides now read `requirementIntake`, which
 // is the only way two lists stop disagreeing.
+//
+// PKG-TRUTH-REQ-1. Two claims this route made were not evidenced by anything it
+// had actually done, and both are corrected here rather than carried forward.
+//
+// FIRST, the notified-audience claim. This route used to return `notified:
+// NOTIFIED`, a hardcoded constant naming three audiences, on every successful
+// submission regardless of what had actually happened. `create_requirement`
+// does genuinely insert notification ledger rows in the same transaction as
+// the brief, which is real, but nothing anywhere in this codebase reads that
+// ledger back to confirm it, and nothing anywhere dispatches an email, a push
+// notification or any other message from it: there is no email library in
+// `package.json`, no push integration, and the two cron jobs that exist,
+// `expire-permits` and `ingest-rega`, do neither. A ledger row is evidence
+// that the system recorded an intent to notify. It is not evidence that a
+// person, a landlord, a broker, a desk, an email address or a device received
+// anything, and O12 holds all outbound notification pending an owner ruling
+// on consent that has not authorised delivery. The response no longer claims
+// an audience was notified, because the claim was never true.
+//
+// SECOND, the match claim. The query below is real and was never a
+// placeholder, but "match" overstated what it checks. It filters on published
+// status, asset type, deal type and district when one was given. It does not
+// evaluate size, budget, timeline, availability or must-haves, which are five
+// of the ten fields a requirement can carry. Calling that a match count
+// implied the canonical matcher in `matching.ts` had run, and it had not. The
+// field is `candidate_count` now, described to the visitor as what it is, a
+// count of published listings sharing the location and category, not a
+// verified or qualified match.
 const num = (v: unknown): number | null => {
  if (v === null || v === undefined || v === "") return null;
  const n = Number(v);
@@ -182,22 +211,27 @@ export async function POST(req: NextRequest) {
  const ref: string | undefined = row?.ref_code;
  if (!id || !ref) return NextResponse.json({ error: "Could not save your requirement. Please try again.", code: "requirement_not_saved" }, { status: 500 });
 
- // A real count of published listings that match. Never a placeholder.
- let match = 0;
+ // A real count of published listings sharing this location and category.
+ // Never a placeholder, and never called a match: it does not evaluate size,
+ // budget, timeline, availability or must-haves, so it is a candidate count,
+ // not a verified or qualified match. See the note above the POST handler.
+ let candidateCount = 0;
  try {
   let q = releaseVisibleInventory(sb.from("listings").select("id", { count: "exact", head: true })
    .eq("status", "published")).eq("asset_type", b.asset_type).eq("deal_type", b.deal_type);
   if (districtId) q = q.eq("district_id", districtId);
   const { count } = await q;
-  match = count ?? 0;
+  candidateCount = count ?? 0;
  } catch {
-  match = 0;
+  candidateCount = 0;
  }
 
- return NextResponse.json({ ok: true, id, ref, match, notified: NOTIFIED, stored: true });
+ // No `notified` field. See the note above the POST handler: a notification
+ // ledger row was created by `create_requirement`, and that is the whole of
+ // what is known to have happened. Nothing is claimed beyond it.
+ return NextResponse.json(buildRequirementSuccessResponse(id, ref, candidateCount));
 }
 
-const NOTIFIED = ["SAT broker network", "Verified landlords in your locations", "SAT requirements desk"];
 // Preview-only. Set SITE_ENV=production (or NEXT_PUBLIC_SITE_ENV=production) to
 // switch every sample fallback off.
 const PREVIEW = (process.env.SITE_ENV ?? process.env.NEXT_PUBLIC_SITE_ENV) !== "production";
