@@ -265,6 +265,12 @@
     "emptyNoMatch": "No matching spaces. Try widening your filters, or clear them all.",
     "clearMapArea": "Clear the map area",
     "clearAllFilters": "Clear all filters",
+    "listingsErrorTitle": "Listings are temporarily unavailable",
+    "listingsErrorBody": "We could not reach the listing records just now. This is not the same as no matches, try again in a moment.",
+    "retryLabel": "Try again",
+    "countUnavailable": "Count unavailable",
+    "capNote": "Showing the first {n}. Add a filter to narrow the results.",
+    "loadingListings": "Loading listings",
     "onRequest": "On request",
     "vsIndexTitle": "Vs the Rent Index, platform sample. Indicative, not advice.",
     "riyadh": "Riyadh",
@@ -1282,7 +1288,8 @@
     "searchArea": "Search this area",
     "closeMap": "Close map",
     "bubblesHint": "Location-level bubbles, green dots are exact buildings",
-    "showMap": "Show map"
+    "showMap": "Show map",
+    "showMapCount": "Show map ({n})"
   },
   "saved": {
     "title": "Saved",
@@ -1753,6 +1760,6 @@
     "termsAr": "Arabic",
     "termsCount": "Terms in the base",
     "metaTitle": "Bilingual standards | SAT Markets",
-    "metaDesc": "Arabic is not a translation layer here. Enforced key parity, Western numerals, true right to left, counted nouns computed at every boundary, and the published term base."
+    "metaDesc": "Arabic is not a translation layer. Enforced key parity, Western numerals, true right to left, counted nouns computed at every boundary, and the published term base."
   }
 }
