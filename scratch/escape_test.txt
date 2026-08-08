@@ -1,0 +1,5 @@
+single:·
+singleU:·
+double:·
+triple:\\u00B7
+literal_char:·
