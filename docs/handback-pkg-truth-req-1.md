@@ -321,3 +321,15 @@ notification delivery infrastructure, the verification redesign, and every other
 roadmap item remain exactly where D37 and the synthesis left them: not started. The change is on
 `main` as of this handback; the next step is for whoever next has access to the live deployment
 to run the live half of item 7 (section 6), and after that, resume the approved sequence.
+
+## Closure addendum, written after the merge
+
+Squash merged to `main` as `8fed30be1dd6915e53f9dd3cf4f03d199745b7ef` through pull request #1
+on 2026-08-08. Vercel production deployment `dpl_Cp4XRmW93tbk4UetmMFZfzM114JL` built from that
+commit, reached READY, and is aliased to `satmarkets-sat-markets.vercel.app`. Live reads of the
+deployment confirm the notifications page serves the preview disclosure and the retitled
+channels panel with no trace of the removed controls, in English and in Arabic. Section 6's
+paragraph stating the deployment could not be confirmed from this session was written before
+the merge; this addendum supersedes it. What remains open from item 7 is unchanged: the smoke
+script, the Playwright suite, and one marked disposable POST to `/api/requirements` still need
+a run from an environment that can execute them against production.
