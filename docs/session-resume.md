@@ -53,15 +53,15 @@ this file was written:
 | Item | Value |
 | --- | --- |
 | Branch and remote | `main`, `github.com/saleemzeidan123/satmarkets` |
-| GitHub HEAD | `0a21ae5` |
-| Production deployment | `dpl_ABkcAAnsPPRnyXpVefeUALJ5Z186`, READY, `meta.githubCommitSha` `0a21ae5` |
-| Deployment URL | `satmarkets-ebq76w4k2-sat-markets.vercel.app` |
+| GitHub HEAD | `bdc706c` |
+| Production deployment | `dpl_Cp4XRmW93tbk4UetmMFZfzM114JL`, READY, `meta.githubCommitSha` `8fed30b` (one commit behind HEAD; the last commit is documentation only, see the ledger's deployment-lag rule) |
+| Deployment URL | `satmarkets-4djjkdxlq-sat-markets.vercel.app` |
 | Stable alias for polling | `satmarkets-git-main-sat-markets.vercel.app` |
-| Test suite | 1668 tests, 0 failing |
-| Findings register | 205 rows, 126 closed. Open: P0 6, P1 19, P2 54, P3 0 |
+| Test suite | 1774 tests, 0 failing |
+| Findings register | Unchanged by the last package. See `docs/status-ledger.md` section 5 for the current count; do not restate a figure here that the ledger did not just confirm |
 | Launch stage | E0, engineering foundation |
 | Release state | Site-wide `noindex, nofollow`, preview protected |
-| Last package | PKG-A11Y-1, closed, shipped and verified live. `docs/handback-pkg-a11y-1.md` |
+| Last package | PKG-TRUTH-REQ-1, closed, independently accepted by Codex. `docs/handback-pkg-truth-req-1.md`. Two verification tasks are deferred, not skipped: see section 10 |
 
 The status ledger is corrected in the same commit that finds it wrong. Where this file
 and the ledger disagree, the ledger is right and this file is stale.
@@ -164,14 +164,42 @@ refuses when HEAD is not ahead of `origin/main`, and surfaces a non fast forward
 than forcing it. The same bundle also refreshes the recovery copy described in
 `RECOVERY.md`, so this path pays for itself twice.
 
-**What does not work, tested rather than assumed.** The `GitHub_Pat` MCP connector reads
-this repository fine (`get_me`, `list_commits` and `get_file_contents` all return), but
-every write is refused: `push_files` fails with
-`failed to create tree: 403 Resource not accessible by integration`. The connector is read
-only. It is useful for checking what is actually on `main` from a container that has no
-clone, and it is not a push path. An earlier revision of this file claimed it was, and that
-claim was wrong. The header comment inside `tools/ship.py` is right: an API-based commit
-does not work from here, by either route.
+**Corrected 2026-08-08, PKG-TRUTH-REQ-1.** The paragraph below, that the `GitHub_Pat`
+connector is read-only, was true when written and is not true now. The connector
+authenticates through a GitHub App, "Claude Github MCP Connector", owned by `anthropics`.
+It was authorized on the owner's account but **installed on no repository**, which is a
+different failure from a scope problem on a personal access token: `push_files` failed
+with `403 Resource not accessible by integration`, GitHub's own phrasing for an
+under-installed App, not for an under-scoped PAT. The fix was installing the App, scoped to
+`saleemzeidan123/satmarkets` alone with Contents read and write, from
+`https://github.com/settings/installations`, an owner action taken live in that session.
+Confirmed working the same session: `create_branch`, four `push_files` calls each verified
+byte-identical to the source file by comparing git blob SHAs, and `create_pull_request`.
+The install is account-level and does not expire with the container, so this fix should
+already be standing for whatever session reads this next. If `push_files` fails again with
+this exact message, re-check the install at that URL before assuming the connector is
+read-only again; do not conclude that from one failure without checking.
+
+**What is still true.** This session's own git-proxy path (`tools/ship.py`, plain `git
+push`) still refuses this repository outright with "not in this session's authorized
+repository set", which is a session network-authorization boundary, not a credential
+problem and not the same failure as the connector's. That refusal is per-session, so it
+may or may not hold for the session reading this. Try `tools/ship.py` first; fall back to
+the connector, now a genuine push path, only if the proxy refuses.
+
+**Two repository-side controls exist now that did not before.** Auto-merge is enabled, and
+an active ruleset "main requires green build" requires the Vercel status check to pass
+before anything merges into `main`, and blocks force pushes and deletion of `main`. A
+direct push to `main` that has not passed that check on a branch first will be refused by
+GitHub itself, not only by the sandbox. Ship on a branch, open a PR, and either let
+auto-merge land it once Vercel goes green or merge it once that check passes.
+
+**What does not work, tested rather than assumed, before the fix above.** The `GitHub_Pat`
+MCP connector read this repository fine (`get_me`, `list_commits` and `get_file_contents`
+all returned), but every write was refused as described. It was useful for checking what
+was actually on `main` from a container that had no clone, and it was not a push path. An
+earlier revision of this file claimed it was a push path, and that claim was wrong at the
+time. It is a push path again now, for the reason recorded above.
 
 **What to do when path 1 finds nothing.** Do not stall, and do not ask for a secret in the
 conversation. Commit locally, keep working, and either wait for the owner to attach
@@ -373,9 +401,45 @@ unauthorized notifications and deceptive media transformation.
 
 ## 10. What is owed next
 
-No engineering package is open. Codex's standing instruction after PKG-A11Y-1 is that the
-next inputs are not engineering. Do not open a new package without the owner or Codex
-asking.
+**PKG-TRUTH-REQ-1 is closed. Codex reviewed it independently and accepted it as closed on
+2026-08-08. Do not reopen it, do not re-propose it, do not re-run its gate.** Two narrowly
+scoped verification tasks are owed, ordered by Codex to run at the start of the next
+session that has real network egress to `vercel.app`, without pausing for another review.
+This session confirmed again that it is not that session: `curl -v` through the egress
+proxy gets a `403` on the CONNECT tunnel to the production alias, the same class of denial
+as the Google Fonts block section 5 already names. Do the two tasks the moment a session
+finds that denial is not present.
+
+1. Run `npm run smoke` and `npx playwright test` against the live deployment.
+2. Submit one requirement through `/api/requirements` with synthetic contact information
+   only, uniquely marked so it can be found again, and confirm from the actual response
+   body: no `notified` key, no `match` key, and `candidate_count` carries the documented
+   narrow meaning (a filtered listing count, not a verified match). Confirm the bilingual
+   success experience stays truthful. Then delete the exact test record and any
+   notification-ledger rows it created.
+
+Record the result as a verification addendum to `docs/handback-pkg-truth-req-1.md`,
+appended, not rewritten over section 6 or 7. If both pass, continue directly with D37's
+approved sequence, section 7 below, with no further pause for review.
+
+**The guardrail this sits inside, restated because it binds the task above and not just
+the package that is now closed.** O18 (section 7, and `docs/decision-register.md`) is
+ruled and sequenced, not built: no secure token-based self-service withdrawal exists yet.
+Until it does, no ELITE-1 participant and no external user may submit real contact
+information through the requirement journey; the disposable verification requirement above
+is exactly the kind of submission this restricts, which is why it uses synthetic contact
+data and is deleted afterward rather than left standing. O18's implementation is scheduled
+before external requirement collection or public launch, not before this verification.
+
+**One record to leave alone.** Findings register row 113 already states, correctly and in
+full, that the English phrases "Heavy power" and "High footfall" appear inside Arabic
+legacy sample requirement data, and why. That belongs to finding 113 and to whichever
+future Arabic data-cleanup package closes its open data half. Do not touch it while closing
+the verification tasks above, and do not route it through PKG-TRUTH-REQ-1.
+
+No engineering package is open beyond the verification above. Codex's standing instruction
+after PKG-A11Y-1 is that the next inputs are not engineering. Do not open a new package
+without the owner or Codex asking.
 
 Owner actions, all recorded in `docs/handback-pkg-a11y-1.md`:
 
