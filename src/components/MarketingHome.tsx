@@ -2,14 +2,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
+import { Mark, Logo, Icon, HARBOR, COOL } from "@/components/satkit";
 import Reveal from "@/components/Reveal";
-// Finding 173's defect repeated here: this heart used to be `Icon.heart` with
-// no handler, on the first screen of the site. `SaveHeart` is the one working
-// implementation (src/components/SaveHeart.tsx, already load-bearing on
-// ListingCard and the saved-spaces page); the front door now calls it instead
-// of drawing its own decorative copy.
-import SaveHeart from "@/components/SaveHeart";
+// PKG-CARD1. This file used to hand-roll its own lead and grid card markup,
+// which is how its price caption came to run the lease unit ("SAR/m²/yr")
+// under a listing whose deal_type is sale: the four figures shown here never
+// passed through `priceParts`, so nothing here could know the unit disagreed
+// with the deal. Finding 173's decorative-heart defect (no handler on the
+// heart icon) was an earlier symptom of the same private markup. `ListingCard`
+// is now the one place a listing becomes a card; this file only decides which
+// listing goes in the lead slot and which go in the row beside it.
+import ListingCard, { type IndexPosition } from "@/components/ListingCard";
+import type { Listing } from "@/lib/types";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 // RC12, finding 164. The asset rail pages by animating a scroll, which the CSS
@@ -23,7 +27,15 @@ import { scrollBehavior } from "@/lib/motion";
 import type { PublishedKpis } from "@/lib/market/published";
 import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
 
-export type FeaturedListing = { id: string; price: string; title: string; district: string; area: string; type: string; badges: string[]; ph: string; img?: string; idx?: { v: "below" | "within" | "above"; pos: number } | null };
+// PKG-CARD1. This used to flatten and pre-format every figure a card needs
+// (price, title, district, area, badge text) into its own literal shape, which
+// is the second place those figures were ever computed: `page.tsx` built them
+// from the raw row, and this file trusted whatever it was handed rather than
+// reading the row itself. That is exactly how the lease unit ended up under a
+// sale price. The wrapper now carries the row `ListingCard` already knows how
+// to read, plus the one fact that is genuinely this page's own decision and
+// not the card's: where this listing's rent sits in the published band.
+export type FeaturedListing = { listing: Listing; indexPosition: IndexPosition | null };
 // PKG-FIG2 closure, finding 130. `stat` is the statistic the row itself records,
 // already resolved into the reader's language by the server, for the same reason
 // `bandNotes` is a prop: the decision is a server one and a client that could
@@ -37,7 +49,7 @@ const ASSETS = [
  { v: "retail", en: "Retail", ar: "تجزئة", icon: <Icon.store size={22} /> },
  { v: "warehouse", en: "Warehouse", ar: "مستودعات", icon: <Icon.layers size={22} /> },
  { v: "medical", en: "Medical", ar: "طبي", icon: <Icon.activity size={22} /> },
- { v: "land", en: "Land", ar: "أراضٍ", icon: <Icon.ruler size={22} /> },
+ { v: "land", en: "Land", ar: "أراضِ", icon: <Icon.ruler size={22} /> },
  { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
  { v: "serviced", en: "Serviced", ar: "مكاتب مخدومة", icon: <Icon.clock size={22} /> },
  { v: "mixed_use", en: "Mixed use", ar: "متعدد الاستخدامات", icon: <Icon.target size={22} /> },
@@ -152,7 +164,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   popular: "الأكثر طلباً:",
   chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
   micro1: "عند الإطلاق، يُفحص المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "فال 1200025510",
-  stat: [[stats.listings, "عروض منشورة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], [stats.buildings, "مبانٍ"]] as [string | null, string][],
+  stat: [[stats.listings, "عروض منشورة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], [stats.buildings, "مبانِ"]] as [string | null, string][],
   exEye: "المنصّة",
   exH: "أربع وظائف، في مكان محايد واحد",
   exP: "الاكتشاف، والطلبات، والأسعار المنشورة، ومستشار يذكر مصدره، في مكان محايد واحد.",
@@ -186,7 +198,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    ["لوحة المالك", "أداء العروض، والعملاء المحتملون، ومطابقات الطلبات."],
    ["باقات العضوية", "فئات بحدود واضحة للحصص."],
    ["تتبّع الصفقة", "من الاستفسار إلى المعاينة إلى العرض إلى التسليم، مسجّلة في مسار واحد."],
-   ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على الحقائق المسجّلة والإيجار مقابل المؤشر."],
+   ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على الحقائق المسجلة والإيجار مقابل المؤشر."],
    ["الثقة والامتثال", "فال 1200025510، مع إظهار حالة التوثيق على كل عرض."],
    ["نبض السوق", "لوحة السوق الحيّة: نطاقات الإيجار حسب الموقع، والمعروض، وانضباط التسعير مقابل المؤشر."],
   ] as [string,string][],
@@ -255,9 +267,10 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
  const f0 = featured[0];
  const rest = featured.slice(1);
- const idxBar = (f: FeaturedListing) => f.idx ? (
-  <div className="idxbar"><div className="idxbar-track"><span className="idxbar-mark" style={{ left: Math.round(f.idx.pos * 100) + "%" }} /></div><div className="idxbar-cap" data-v={f.idx.v}>{f.idx.v === "within" ? (H.idxWithin) : f.idx.v === "below" ? (H.idxBelow) : (H.idxAbove)}</div></div>
- ) : null;
+ // ListingCard reads `view`, `onRequest` and `verificationIncomplete` off this
+ // slice; `H` and `C` above are Home's own copy, not a second one of these.
+ const UI = getDictionary(ar ? "ar" : "en").ui;
+ const cardLocale = ar ? "ar" : "en";
 
  return (
   <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
@@ -370,31 +383,12 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(1.5rem,5vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
        <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
       </div>
-      <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
-       <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]}>
-        <SaveHeart id={f0.id} label={C.save} />
-       </Ph>
-       <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
-        <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: "1.75rem", color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}{unitShort}</small></div>
-        <div style={{ fontSize: "1.3125rem", fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
-        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: "var(--fs-xs)", color: "var(--slate)" }}><span>{f0.district}</span><span>·</span><span>{f0.area}</span><span>·</span><span>{f0.type}</span></div>
-        {idxBar(f0)}
-        <span style={{ marginTop: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{H.viewListing} <Icon.arrow size={16} /></span>
-       </div>
-      </Link>
+      <div style={{ marginTop: 28 }}>
+       <ListingCard listing={f0.listing} locale={cardLocale} ui={UI} variant="lead" indexPosition={f0.indexPosition} />
+      </div>
       <div className="snap-row" style={{ marginTop: 18 }}>
        {rest.map((f) => (
-        <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-         <Ph src={f.img} label={f.ph} h={150} badges={[...f.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>]}>
-          <SaveHeart id={f.id} label={C.save} />
-         </Ph>
-         <div className="body">
-          <div className="price">{f.price}<small>{" "}{unitShort}</small></div>
-          <div className="ttl">{f.title}</div>
-          <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
-          {idxBar(f)}
-         </div>
-        </Link>
+        <ListingCard key={f.listing.id} listing={f.listing} locale={cardLocale} ui={UI} variant="grid" indexPosition={f.indexPosition} />
        ))}
       </div>
      </div>
