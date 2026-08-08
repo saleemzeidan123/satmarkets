@@ -490,8 +490,8 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
            Year-on-year needs two periods of the same series and we have one, so
            neither is shown. */}
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{kpis.source || (ar ? "المصدر" : "Source")}</span>
-        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "خلية" : "cells"}` : ""}</span>
+        <span>{kpis.source || (ar ? ZZESCPLACEHOLDERSRCZZ : "Source")}</span>
+        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? ZZESCPLACEHOLDERCELLSZZ : "cells"}` : ""}</span>
        </div>
        {bandNotes.map((n) => (
         <div key={n} style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "rgba(255,255,255,.6)", marginTop: 8 }}>{n}</div>
