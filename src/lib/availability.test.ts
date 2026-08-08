@@ -47,7 +47,7 @@ test("label reads as affirmation when current, nudge when stale", () => {
   assert.match(availabilityLabel(fresh, "15 Jul 2026", true), /^متاح/);
   const stale = availabilityOf(daysAgo(120), NOW)!;
   assert.match(availabilityLabel(stale, "20 Mar 2026", false), /^Confirm availability with the lister/);
-  assert.match(availabilityLabel(stale, "20 Mar 2026", true), /^تأكّد من التوفر/);
+  assert.match(availabilityLabel(stale, "20 Mar 2026", true), /^تأكṑد من التوفر/);
 });
 
 // ---------------------------------------------------------------- finding 46
@@ -66,7 +66,7 @@ test("short card label: an affirmation when current, a nudge when stale", () => 
   assert.equal(availabilityShortLabel(sample.fresh(), false), "Available · confirmed 3 days ago");
   assert.equal(availabilityShortLabel(sample.stale(), false), "Confirm availability · last confirmed 65 days ago");
   assert.match(availabilityShortLabel(sample.fresh(), true), /^متاح · تأكد التوفر قبل /);
-  assert.match(availabilityShortLabel(sample.stale(), true), /^تأكّد من التوفر · آخر تأكيد قبل /);
+  assert.match(availabilityShortLabel(sample.stale(), true), /^تأكṑد من التوفر · آخر تأكيد قبل /);
 });
 
 test("the aging state no longer claims the space is available", () => {
@@ -134,7 +134,12 @@ test("availability never takes the reserved verification green", () => {
 test("no availability render path composes its own colour", () => {
   // The defect was that both surfaces built the colour inline, and both reached for
   // the same green. There is one writer now, and this is what keeps it that way.
-  for (const f of ["src/app/[locale]/listings/page.tsx", "src/app/[locale]/listings/[id]/page.tsx"]) {
+  //
+  // PKG-CARD1. The search grid's own freshness/availability markup moved into
+  // `ListingCard` (`showFreshness`), so that is where its call to the tone
+  // writer now lives; the listing detail page draws its own availability line
+  // and is unaffected.
+  for (const f of ["src/components/ListingCard.tsx", "src/app/[locale]/listings/[id]/page.tsx"]) {
     const code = readFileSync(f, "utf8").replace(/\{?\/\*[\s\S]*?\*\/\}?/g, " ");
     assert.equal(/av\.state\s*===/.test(code), false, `${f} still branches on availability state to pick a colour`);
     assert.match(code, /availabilityTone\(/, `${f} does not use the single tone writer`);
