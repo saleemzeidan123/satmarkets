@@ -1,1 +1,1 @@
-PRE {"\00Z7"} POST
+PRE {"\00B7"} POST
