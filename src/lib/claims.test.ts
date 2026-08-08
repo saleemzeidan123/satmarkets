@@ -929,9 +929,9 @@ const LOCALES: Array<[string, Array<[string, string]>]> = [
 // Written as escapes on purpose. scripts/ar-lint.mjs scans test sources, the
 // ruling 2 guard below scans src/** including this file, and a guard that trips
 // on its own needle teaches nothing.
-const AR_VERIFIED_OWNER = "مالك موثّق";
-const AR_BARE_VERIFIED = "موثّق";
-const AR_BARE_PLURAL = "ملاك";
+const AR_VERIFIED_OWNER = "\u0645\u0627\u0644\u0643 \u0645\u0648\u062b\u0651\u0642";
+const AR_BARE_VERIFIED = "\u0645\u0648\u062b\u0651\u0642";
+const AR_BARE_PLURAL = "\u0645\u0644\u0627\u0643";
 
 test("ADV-1 (C): no dictionary value carries the retired bare owner claim", () => {
   for (const [locale, values] of LOCALES) {
