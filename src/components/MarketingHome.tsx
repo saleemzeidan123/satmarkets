@@ -4,6 +4,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mark, Logo, Icon, Ph, Verified, HARBOR, COOL } from "@/components/satkit";
 import Reveal from "@/components/Reveal";
+// Finding 173's defect repeated here: this heart used to be `Icon.heart` with
+// no handler, on the first screen of the site. `SaveHeart` is the one working
+// implementation (src/components/SaveHeart.tsx, already load-bearing on
+// ListingCard and the saved-spaces page); the front door now calls it instead
+// of drawing its own decorative copy.
+import SaveHeart from "@/components/SaveHeart";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 // RC12, finding 164. The asset rail pages by animating a scroll, which the CSS
@@ -365,7 +371,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
        <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
       </div>
       <Link href={L(`/listings/${f0.id}`)} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", marginTop: 28, boxShadow: "var(--sh-1)" }}>
-       <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]} />
+       <Ph src={f0.img} label={f0.ph} h={284} badges={[...f0.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f0.type}</span>]}>
+        <SaveHeart id={f0.id} label={C.save} />
+       </Ph>
        <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
         <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: "1.75rem", color: "var(--ink)" }}>{f0.price}<small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}{unitShort}</small></div>
         <div style={{ fontSize: "1.3125rem", fontWeight: 600, letterSpacing: "-.01em" }}>{f0.title}</div>
@@ -377,9 +385,11 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <div className="snap-row" style={{ marginTop: 18 }}>
        {rest.map((f) => (
         <Link key={f.id} href={L(`/listings/${f.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-         <Ph src={f.img} label={f.ph} h={150} badges={[...f.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>]} />
+         <Ph src={f.img} label={f.ph} h={150} badges={[...f.badges.map((t, i) => <Verified key={`v${i}`} text={t} />), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{f.type}</span>]}>
+          <SaveHeart id={f.id} label={C.save} />
+         </Ph>
          <div className="body">
-          <div className="row between"><div className="price">{f.price}<small>{" "}{unitShort}</small></div><span className="muted2"><Icon.heart size={17} /></span></div>
+          <div className="price">{f.price}<small>{" "}{unitShort}</small></div>
           <div className="ttl">{f.title}</div>
           <div className="meta"><span>{f.district}</span><i /><span>{f.area}</span><i /><span>{f.type}</span></div>
           {idxBar(f)}
@@ -480,8 +490,8 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
            Year-on-year needs two periods of the same series and we have one, so
            neither is shown. */}
        <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{kpis.source || (ar ? "\u0627\u0644\u0645\u0635\u062f\u0631" : "Source")}</span>
-        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "\u062e\u0644\u064a\u0629" : "cells"}` : ""}</span>
+        <span>{kpis.source || (ar ? "المصدر" : "Source")}</span>
+        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "خلية" : "cells"}` : ""}</span>
        </div>
        {bandNotes.map((n) => (
         <div key={n} style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "rgba(255,255,255,.6)", marginTop: 8 }}>{n}</div>
