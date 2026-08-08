@@ -43,16 +43,16 @@ every current figure.
 
 | Item | Value |
 | --- | --- |
-| GitHub HEAD | `main` is `bdc706c`, "docs: PKG-TRUTH-REQ-1 closure addendum, merge SHA and deployment recorded". The squash merge it follows is `8fed30b`, PR #1, "PKG-TRUTH-REQ-1: requirement notification and match honesty repair". `next16-security` is unchanged from section 1c and is now behind `main` by this package; it is kept as a named rollback point, not as a tracking branch |
-| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. PKG-TRUTH-REQ-1 was authored on a short-lived branch, `pkg-truth-req-1`, opened as PR #1 and squash-merged; the branch is deleted. The repository now carries two standing controls it did not have before this package: **auto-merge is enabled**, and an active ruleset, "main requires green build", requires the Vercel status check to pass and blocks force pushes and deletion on `main`. A push straight to `main` therefore has to have passed that check on a branch first; the direct-to-`main` docs commit `bdc706c` predates the ruleset taking a build dependency into account for a documentation-only change and was not blocked, but every future code change goes through a branch and a PR |
-| Branch position | `next16-security` at `2bf652e`, unmoved and now four commits behind `main`. Nothing in this package touched it |
+| GitHub HEAD | `main` is `53c33d7`, PR #4, "PKG-DISCOVERY-1 slice B: Home front door, functional save control". Squash-merged from branch `pkg-discovery-1-home-savecard`. `next16-security` is unchanged from section 1c and is now further behind `main`; it is kept as a named rollback point, not as a tracking branch |
+| Branch | `main`, remote `github.com/saleemzeidan123/satmarkets`. PKG-DISCOVERY-1 slice B's first installment was authored on branch `pkg-discovery-1-home-savecard`, opened as PR #4 and squash-merged; the branch is not yet deleted (left for follow-up slice C/B work to branch from, or for manual deletion). The two standing repository controls from PKG-TRUTH-REQ-1, auto-merge and the "main requires green build" ruleset, held through this merge without incident |
+| Branch position | `next16-security` at `2bf652e`, unmoved and now further behind `main`. Nothing in this package touched it |
 | Working tree | Clean at the time of writing |
-| Production deployment | `dpl_AtmMRa8Zk1cdDYJUvjRe5Si4JVDR`, READY, target production |
-| Deployment URL | `satmarkets-arvo56u05-sat-markets.vercel.app`. Built from `githubCommitSha` `bdc706c7c422a022c25bfcd51610d4f56efa8f7e`, `githubCommitRef` `main`. Documentation only, so nothing rendered changed by this build; it is named here only because it is what `meta.githubCommitSha` actually confirms, not the previous commit's build. **Correction to a claim this row held for a few minutes on the branch that carries it:** it first read that `bdc706c` was documentation-only and would not get its own build, generalising the standing deployment-lag rule without checking this specific case first. `list_deployments` shows it did get one, `created` 1786198546663, shortly after the merge build. The prior production commit, `8fed30b`, has its own deployment, `dpl_Cp4XRmW93tbk4UetmMFZfzM114JL`, and `/en/notifications` and `/ar/notifications` were re-read off the production alias after that merge and confirmed live: both serve the truthful preview disclosure and the retitled "preview, not configurable" channels panel, and neither serves the removed "Mark all read", "Preferences" or switch-shaped toggle markup, in either language |
+| Production deployment | `dpl_FRLBVwFctc1cUiPnz7gSZ3jzG9iV`, READY, target production, confirmed by `get_deployment` after polling past an initial `BUILDING` state |
+| Deployment URL | `satmarkets-gx5nu0o4b-sat-markets.vercel.app`. Built from `githubCommitSha` `53c33d7c24ab5bd8a8ab82b96690848af2258cf1`, `githubCommitRef` `main`, `githubCommitVerification: verified`. This build carries the Home page's `SaveHeart` wiring and the new `common.save` dictionary key; no other public route changed |
 | Aliases | `satmarkets-wheat.vercel.app`, `satmarkets-sat-markets.vercel.app`, `satmarkets-git-main-sat-markets.vercel.app` |
-| Commit deployed | `bdc706c`, confirmed by reading `meta.githubCommitSha` and `meta.githubCommitRef`, not `readyState` alone |
-| Build ready at | Not read from the build log directly by this session; `list_deployments` reports `created` 1786198546663 (epoch ms) and `state: READY` |
-| Deployment lag | None. Both commits since the last ledger update, `8fed30b` and `bdc706c`, each built and reached READY at production on their own `meta.githubCommitSha`, contrary to what an earlier draft of this row assumed from the general rule without checking `list_deployments` for this specific pair |
+| Commit deployed | `53c33d7`, confirmed by reading `meta.githubCommitSha` and `meta.githubCommitRef`, not `readyState` alone |
+| Build ready at | `list_deployments`/`get_deployment` report `createdAt` 1786209959040 (epoch ms), `buildingAt` 1786209960121, `ready` 1786210025516, `state: READY` |
+| Deployment lag | None. The commit built and reached READY at production on its own `meta.githubCommitSha`, confirmed by polling `get_deployment` rather than assuming from the general rule |
 | Release state | Site-wide `noindex, nofollow`. Preview protected. Owner ruling 1 parks indexing |
 | Launch stage | E0, engineering foundation. The gate to E1 is a design-partner alpha |
 | Test suite | 1774 tests, 0 failing, on `main`, confirmed by this package's own gate run against the rebased tree. The rise from 1759 is four upstream suites that landed on `main` between this package's authoring and its merge (`authErrors.test.ts`, `rtlTextPlugin.test.ts`, `csp.test.ts`, `next16Surface.test.ts`, already counted in the 1759 row above and restated here because this package rebased onto them) plus this package's own two new files, `src/lib/truthRepair.test.tsx` and the taxonomy additions inside `requirementIntake.test.tsx`. `npm run ship-test` is unchanged at 32 checks. `npm run lint-gate` held its ratchet at 49 pinned errors with no new rule tripped |
@@ -428,6 +428,61 @@ abuse. The weakness it would address is unchanged and is not hidden by the defer
 importers of `@/lib/ratelimit` call the per instance `allow`, which hands each cold start
 a fresh quota, exactly one route uses the durable `allowShared`, and `/api/saved` has no
 limiter at all.
+
+## 1a-1. In flight, PKG-DISCOVERY-1
+
+Commissioned by Saleem and Codex on 2026-08-08: a redesign of the public discovery and
+conversion experience across Home, Listings Search, Listing Detail and Brokers/Listers
+plus their shared components, in six slices, A (truth map) through F (system-wide design
+system, accessibility, RTL and motion quality). This is the named next package after
+PKG-NEXT16-SECURITY closed, per D37. Genuinely in flight; nothing below should be read as
+a closure.
+
+**Sequencing clarification, recorded here per the instruction that commissioned this
+package rather than as a separate documentation-only PR.** The two verification tasks
+Codex deferred when PKG-TRUTH-REQ-1 closed (the production smoke and Playwright suites,
+and the disposable synthetic-data `POST /api/requirements`, both in section 9) are no
+longer prerequisites for continuing this or any later package in the D37 sequence. They
+remain owed, attempted only on a session with real production egress, and are not to be
+repeatedly re-tested against the confirmed `403` this sandbox already returns for
+`vercel.app`. Nothing about this package's roadmap position pauses on them.
+
+**Slice A, the truth map, is complete.** Read directly: `src/app/[locale]/page.tsx` in
+full. Mapped by a dispatched sub-agent, cross-checked against the findings register:
+`src/app/[locale]/listings/page.tsx` (Listings Search), `src/app/[locale]/listings/[id]/page.tsx`
+(Listing Detail), `src/app/[locale]/brokers/page.tsx` (a broker-recruitment marketing
+page, not a directory) and `src/app/[locale]/lister/[id]/page.tsx` (the real individual
+lister profile). The map's one finding worth restating here: **there is no general public
+directory page for browsing all listers or brokers today**, and `ListingCard.tsx` exists
+but is unused by listings-search or listing-detail, which each hand-roll a near-duplicate
+inline card instead. Findings 13, 32, 48, 80, 93, 94, 96, 97, 170, 173, 177 and 207 all
+sit on these four surfaces and are open. This map is not restated as a separate document;
+it lives in this ledger entry and in the PR bodies that act on it.
+
+**Slice B, Home, first installment shipped.** PR #4, squash-merged `53c33d7`. The Home
+page's four featured-listing cards drew a heart icon with no click handler, repeating
+finding 173's defect on the site's first screen; replaced with `SaveHeart`, the
+platform's one working save implementation, already load-bearing on `ListingCard.tsx`
+and `/saved`. Added the missing `common.save` bilingual label both usages need, which
+also stops `ListingCard.tsx`'s own pre-existing fallback to the hardcoded English word
+"Save" regardless of locale (not fixed at the `ListingCard.tsx` call site itself; noted
+so it is not mistaken for new). Local gate run against the exact shipped diff: `tsc`
+clean, 1774/1774 tests, `ar-lint` clean, `prose-scan` gate passes, `eslint-gate` ratchet
+held at 49 pinned errors with no new rule. No live-DB credentials exist in this session
+(no `.env.local`), so the Home page could not render real featured-listing data here and
+no before/after screenshot of the fix was produced or claimed; verification is classified
+as automated plus manual code-review parity against `ListingCard.tsx`'s proven pattern,
+not browser-emulated. Full account, including a disclosed relay artifact (two pre-existing
+`MarketingHome.tsx` unicode escapes transported as their decoded Arabic characters by the
+push connector, confirmed by byte-hash comparison to be the only difference from intended
+content and semantically identical as JS string values), is in PR #4's body.
+
+**What slice B still owes**, not silently dropped: the 8-breakpoint EN/AR sweep (320,
+360, 390, 430, 768, 1280, 1440, 1920), keyboard, screen-reader and reduced-motion
+verification, and any further visual-distinctiveness pass the package's design objective
+calls for. **Slices C through F have not started.** The remaining SEO/AI-discovery,
+hreflang (findings 13 and 32), and O10/O12/O17/O18 constraints named in the commissioning
+message all still apply and are unchanged by this installment.
 
 ## 1b. The slice B commit went to `main`, not to the branch
 
@@ -830,7 +885,8 @@ consecutive packages have now owed the same thing.
 | Gap | Why it exists | What would retire it |
 | --- | --- | --- |
 | No authenticated live channel | The sandbox egress proxy blocks both the deployment and the database directly. The only working channel is `Vercel.web_fetch_vercel_url`, which is unauthenticated and GET only | A session-capable channel. One thing, and it retires most of this table |
-| **PKG-TRUTH-REQ-1's own live-only checks: `npm run smoke`, `npx playwright test`, and one disposable `POST /api/requirements`** | Both scripts are written to run against the live deployment, not localhost. Confirmed again in this session with `curl -v` through the egress proxy: the gateway answers the CONNECT tunnel to `satmarkets-sat-markets.vercel.app:443` with `403 Forbidden`, the same class of denial as the long-standing `fonts.googleapis.com` block, not a timeout. `WebFetch` reached both language variants of `/notifications` read-only and confirmed the preview disclosure, the retitled channels panel and the absence of the removed controls, in this session; it cannot run a script, submit a POST, or read an exact JSON response body, so it does not retire this row. Codex accepted the package as closed on the read-only evidence obtained this way and ordered these two specifically deferred, not skipped, per `docs/handback-pkg-truth-req-1.md` section 6 and Codex's message of 2026-08-08 | A session with real egress to `vercel.app`, or an owner-side run. On success, confirm the response body carries no `notified` key and no `match` key, that `candidate_count` is the documented narrow count, and that the disposable requirement (synthetic contact data only, per O18 below) and any notification-ledger row it creates are deleted afterward. Record the result as a verification addendum to the same handback rather than reopening the package |
+| **PKG-TRUTH-REQ-1's own live-only checks: `npm run smoke`, `npx playwright test`, and one disposable `POST /api/requirements`** | Both scripts are written to run against the live deployment, not localhost. Confirmed again in this session with `curl -v` through the egress proxy: the gateway answers the CONNECT tunnel to `satmarkets-sat-markets.vercel.app:443` with `403 Forbidden`, the same class of denial as the long-standing `fonts.googleapis.com` block, not a timeout, and was not re-tested this session per the instruction not to repeatedly probe a known denial. `WebFetch` reached both language variants of `/notifications` read-only and confirmed the preview disclosure, the retitled channels panel and the absence of the removed controls, in an earlier session; it cannot run a script, submit a POST, or read an exact JSON response body, so it does not retire this row. Codex accepted the package as closed on the read-only evidence obtained this way and ordered these two specifically deferred, not skipped, per `docs/handback-pkg-truth-req-1.md` section 6 and Codex's message of 2026-08-08. **Sequencing clarification, 2026-08-08:** Saleem and Codex confirmed these are no longer prerequisites for continuing D37 or PKG-DISCOVERY-1; they are attempted opportunistically, only on a session with real production egress, and do not gate the roadmap | A session with real egress to `vercel.app`, or an owner-side run. On success, confirm the response body carries no `notified` key and no `match` key, that `candidate_count` is the documented narrow count, and that the disposable requirement (synthetic contact data only, per O18 below) and any notification-ledger row it creates are deleted afterward. Record the result as a verification addendum to the same handback rather than reopening the package |
+| **PKG-DISCOVERY-1 slice B's EN/AR breakpoint, keyboard, screen-reader and reduced-motion sweep** | The `SaveHeart`-on-Home change shipped with an automated plus code-review-parity verification only; no live-DB credentials exist in this session, so the Home page could not render real featured-listing data and no screenshot at any of the 8 named breakpoints (320, 360, 390, 430, 768, 1280, 1440, 1920) was produced | A session with either seed/demo data (`npm run seed:demo`) or production egress, plus a browser channel, to render the actual cards and sweep both languages at all 8 breakpoints |
 | Every session-gated screen | Listing Studio, the lister dashboard, inventory, requirement creation, matches, messages, admin. None can be exercised end to end from here | The same |
 | Photo and media presence | `GET /api/listings` carries no media count, so photo checks read as missing because the channel cannot decide them, not because they were proved absent | A media count on the public endpoint, or a session channel |
 | Database reads | `execute_sql`, `apply_migration` and `list_tables` are permission denied | Restored permission, or a read-only public route for each fact needed |

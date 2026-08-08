@@ -53,15 +53,15 @@ this file was written:
 | Item | Value |
 | --- | --- |
 | Branch and remote | `main`, `github.com/saleemzeidan123/satmarkets` |
-| GitHub HEAD | `bdc706c` |
-| Production deployment | `dpl_Cp4XRmW93tbk4UetmMFZfzM114JL`, READY, `meta.githubCommitSha` `8fed30b` (one commit behind HEAD; the last commit is documentation only, see the ledger's deployment-lag rule) |
-| Deployment URL | `satmarkets-4djjkdxlq-sat-markets.vercel.app` |
+| GitHub HEAD | `53c33d7`, PR #4 |
+| Production deployment | `dpl_FRLBVwFctc1cUiPnz7gSZ3jzG9iV`, READY, `meta.githubCommitSha` `53c33d7c24ab5bd8a8ab82b96690848af2258cf1` (matches HEAD, confirmed by polling `get_deployment` past an initial `BUILDING` state) |
+| Deployment URL | `satmarkets-gx5nu0o4b-sat-markets.vercel.app` |
 | Stable alias for polling | `satmarkets-git-main-sat-markets.vercel.app` |
 | Test suite | 1774 tests, 0 failing |
 | Findings register | Unchanged by the last package. See `docs/status-ledger.md` section 5 for the current count; do not restate a figure here that the ledger did not just confirm |
 | Launch stage | E0, engineering foundation |
 | Release state | Site-wide `noindex, nofollow`, preview protected |
-| Last package | PKG-TRUTH-REQ-1, closed, independently accepted by Codex. `docs/handback-pkg-truth-req-1.md`. Two verification tasks are deferred, not skipped: see section 10 |
+| Last package | PKG-DISCOVERY-1, in flight (D37's named next package). Slice A (truth map) complete; slice B's first installment shipped, PR #4. See `docs/status-ledger.md` section 1a-1 and section 10 below |
 
 The status ledger is corrected in the same commit that finds it wrong. Where this file
 and the ledger disagree, the ledger is right and this file is stale.
@@ -406,14 +406,34 @@ unauthorized notifications and deceptive media transformation.
 
 ## 10. What is owed next
 
-**PKG-TRUTH-REQ-1 is closed. Codex reviewed it independently and accepted it as closed on
-2026-08-08. Do not reopen it, do not re-propose it, do not re-run its gate.** Two narrowly
-scoped verification tasks are owed, ordered by Codex to run at the start of the next
-session that has real network egress to `vercel.app`, without pausing for another review.
-This session confirmed again that it is not that session: `curl -v` through the egress
-proxy gets a `403` on the CONNECT tunnel to the production alias, the same class of denial
-as the Google Fonts block section 5 already names. Do the two tasks the moment a session
-finds that denial is not present.
+**PKG-TRUTH-REQ-1 is closed and stays closed.** Codex reviewed it independently and
+accepted it as closed on 2026-08-08. Do not reopen it, do not re-propose it, do not
+re-run its gate.
+
+**PKG-DISCOVERY-1 is open and is the current package.** Commissioned 2026-08-08 by
+Saleem and Codex, the named next package after D37's sequence per `docs/status-ledger.md`
+section 1a-1. Slice A (truth map) is complete. Slice B (Home) has a first installment
+shipped, PR #4, `53c33d7`: the decorative heart on the four featured-listing cards
+replaced with a working `SaveHeart` control. Owed next, in dependency order the
+commissioning message set: the remainder of slice B (the 8-breakpoint EN/AR sweep,
+keyboard/screen-reader/reduced-motion verification, any further visual-distinctiveness
+work), then slice C (Listings Search), slice D (Listing Detail), slice E (Brokers/Listers,
+including the missing public directory page the truth map found), and slice F
+(system-wide design-system/accessibility/RTL/motion quality). Do not restart slice A;
+read `docs/status-ledger.md` section 1a-1 for its findings instead of re-mapping.
+
+**Sequencing clarification, binding for PKG-DISCOVERY-1 and anything after it.** Two
+verification tasks Codex deferred when PKG-TRUTH-REQ-1 closed (`npm run smoke` and
+`npx playwright test` against the live deployment; one disposable synthetic-data
+`POST /api/requirements`) are **not prerequisites for this or any later package.** Attempt
+them only opportunistically, on a session that genuinely has production egress to
+`vercel.app`. This session confirmed again, once, that it is not that session (`curl -v`
+still gets `403` on the CONNECT tunnel) and did not re-test it a second time, per the
+explicit instruction not to repeatedly probe a known denial. Do not fabricate their
+result, and do not pause PKG-DISCOVERY-1 or any later package waiting for them. If a
+future session does have real egress and completes them, record the result as a
+verification addendum to `docs/handback-pkg-truth-req-1.md`, appended, not rewritten over
+section 6 or 7; the two tasks are:
 
 1. Run `npm run smoke` and `npx playwright test` against the live deployment.
 2. Submit one requirement through `/api/requirements` with synthetic contact information
@@ -423,37 +443,28 @@ finds that denial is not present.
    success experience stays truthful. Then delete the exact test record and any
    notification-ledger rows it created.
 
-Record the result as a verification addendum to `docs/handback-pkg-truth-req-1.md`,
-appended, not rewritten over section 6 or 7.
-
-**The controlling order, stated once and unambiguously so nothing below this paragraph
-contradicts it.** First, complete the two deferred production-verification tasks above.
-Second, if both pass, continue directly with D37's already-approved sequence (section 7
-below) with no further approval pause; D37 was approved by Codex and Saleem on
-2026-08-02, so continuing it is not opening a new package without asking, it is carrying
-out the asking that already happened. Third, and until the first step is done: do not
-open any package unrelated to those two tasks, engineering or otherwise.
-
-**The guardrail this sits inside, restated because it binds the task above and not just
-the package that is now closed.** O18 (section 7, and `docs/decision-register.md`) is
-ruled and sequenced, not built: no secure token-based self-service withdrawal exists yet.
-Until it does, no ELITE-1 participant and no external user may submit real contact
-information through the requirement journey; the disposable verification requirement above
-is exactly the kind of submission this restricts, which is why it uses synthetic contact
-data and is deleted afterward rather than left standing. O18's implementation is scheduled
-before external requirement collection or public launch, not before this verification.
+**The guardrail this sits inside, restated because it binds task 2 above regardless of
+when it runs.** O18 (section 7, and `docs/decision-register.md`) is ruled and sequenced,
+not built: no secure token-based self-service withdrawal exists yet. Until it does, no
+ELITE-1 participant and no external user may submit real contact information through the
+requirement journey; the disposable verification requirement above is exactly the kind of
+submission this restricts, which is why it uses synthetic contact data and is deleted
+afterward rather than left standing. O18's implementation is scheduled before external
+requirement collection or public launch. This guardrail equally binds any requirement-
+journey testing PKG-DISCOVERY-1 itself needs (for example, exercising the post-requirement
+flow while redesigning Home's entry point to it): synthetic contact data only, always.
 
 **One record to leave alone.** Findings register row 113 already states, correctly and in
 full, that the English phrases "Heavy power" and "High footfall" appear inside Arabic
 legacy sample requirement data, and why. That belongs to finding 113 and to whichever
-future Arabic data-cleanup package closes its open data half. Do not touch it while closing
-the verification tasks above, and do not route it through PKG-TRUTH-REQ-1.
+future Arabic data-cleanup package closes its open data half. Do not touch it while
+working PKG-DISCOVERY-1.
 
-No engineering package is open beyond the two verification tasks above and, once they pass,
-D37's already-approved sequence. Codex's PKG-A11Y-1 instruction that the next inputs are
-not engineering, and D37 itself, are both superseded for sequencing purposes by the
-controlling order stated above: this is the one place to read for what happens next, not
-this sentence read in isolation from it.
+Codex's PKG-A11Y-1 instruction that the next inputs are not engineering, and the old
+"do not open a new package without asking" phrasing this section once carried, are both
+superseded: D37 was approved by Codex and Saleem on 2026-08-02, PKG-DISCOVERY-1 is the
+asking that already happened, and it is open now. Continue it in dependency order without
+a further approval pause, per the commissioning message's own instruction.
 
 Owner actions, all recorded in `docs/handback-pkg-a11y-1.md`:
 
