@@ -16,7 +16,8 @@ import {
   knownValue, locationLabel, measureParam, safePlace, sortParam,
 } from "@/lib/search/canonical";
 import type { Listing } from "@/lib/types";
-import { Photo, Verified, Icon } from "@/components/satkit";
+import { Icon } from "@/components/satkit";
+import ListingCard from "@/components/ListingCard";
 import ScrollRegion from "@/components/ScrollRegion";
 import type { DistrictBubble, ExactPin } from "@/components/ListingsMap";
 // maplibre-gl is ~800KB and the map is below the fold on mobile. Statically importing
@@ -34,15 +35,12 @@ import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { fieldLabel } from "@/lib/fieldLabel";
 import { pickIndexRow, type IndexRow } from "@/lib/market/verdict";
 import { decidedRentIndexRows, quotableRentIndexRows } from "@/lib/market/quotable";
-import { listedSince, listedLabel } from "@/lib/listedSince";
 import { askingPrice } from "@/lib/listingFigures";
-import { availabilityOf, availabilityShortLabel, availabilityTone } from "@/lib/availability";
 // A listing being SAT's own stock is not a verification of anything. It used to
 // light the "Verified owner" badge all by itself, which handed our own inventory a
 // trust mark it had not earned, on the platform that publishes /neutrality.
 // ADV-1: the badge now names its own gate and no longer reads a single boolean.
 import { CHECK_METHODS } from "@/lib/listingVerification";
-import { verifiedBadges } from "@/components/VerificationState";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, formatArea, formatCounted, formatInteger, formatNumber, formatRange, formatUnit } from "@/lib/format";
@@ -385,8 +383,6 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
   // storing `SAR/m2/yr`, so it was wrong about the statistic it never read and
   // wrong about the period it dropped. Both halves now come from the rows.
   const idxCells = idx.map((q) => figureCellOf(q.row));
-  const rcity = dl.riyadh;
-  const kindFor = (a: string) => a;
 
   const assets = ASSETS.map((a) => ({ value: a, label: assetLabel(a, locale) }));
   const grades = GRADES.map((g) => ({ value: g, label: gradeLabel(g, locale) }));
@@ -538,7 +534,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             said "مساحة" where this said "عرض". One counted noun answers both. */}
         {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
             and no announcement, so this count is the only thing that says it worked. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
@@ -625,47 +621,17 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 230px), 1fr))", gap: 18 }}>
-          {shown.map((l) => {
-            const dn = l.districts ? (ar ? l.districts.name_ar : l.districts.name_en) : null;
-            const price = l.deal_type === "lease" ? l.asking_rent_sqm : l.sale_price;
-            const type = assetLabel(l.asset_type, locale);
-            return (
-              <Link key={l.id} href={`/${locale}/listings/${l.id}`} className="listing" data-lid={l.id} style={{ textDecoration: "none", color: "inherit" }}>
-                <Photo kind={kindFor(l.asset_type)} alt={`${type}, ${dn || rcity}`} h={150} fav badges={[...verifiedBadges(l as any, null, ar), <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{type}</span>, ...(listedSince((l as any).created_at)?.isNew ? [<span key="new" className="tag" style={{ background: "var(--harbor)", color: "#fff", borderColor: "transparent" }}>{dl.newBadge}</span>] : [])]} />
-                <div className="body">
-                  {(() => {
-                    const ls = listedSince((l as any).created_at);
-                    return (<>
-                      {/* The card kept the figure and its unit in separate elements
-                          so the unit could be set smaller, and paid for it with four
-                          inline unit strings and a Latin "m²" on the Arabic card. The
-                          split stays; both parts now come from the unit table. */}
-                      <div className="price" style={{ whiteSpace: "nowrap" }}>{price != null ? formatNumber(Number(price), locale) : dl.onRequest}<small> {formatUnit(l.deal_type === "lease" ? "sar_sqm_year" : "sar", locale, "short")}</small></div>
-                      <div className="ttl">{listingTitle(l, ar ? "ar" : "en")}</div>
-                      <div className="meta"><span>{dn || rcity}</span><i /><span>{formatArea(l.area_sqm, locale)}</span>{(l as any).building_grade && (l as any).building_grade !== "n_a" ? <><i /><span>{gradeLabel((l as any).building_grade, locale)}</span></> : null}</div>
-                      {ls ? <div className="mono muted" style={{ marginTop: 6, fontSize: "0.65625rem", letterSpacing: ".02em" }}>{listedLabel(ls.days, ar)}</div> : null}
-                      {/* Finding 46. The label states the freshness in words and
-                          carries the age, so the dot is decoration and stays
-                          aria-hidden. The reserved verification green is gone from
-                          here: the tick in the photo badges is the only claim on
-                          this card that an evidence-backed check was run. */}
-                      {(() => {
-                        const av = availabilityOf((l as any).availability_confirmed_at);
-                        if (!av) return null;
-                        const c = availabilityTone(av.state);
-                        return (
-                          <div className="row gap6" style={{ marginTop: 5, alignItems: "flex-start" }}>
-                            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: c, display: "inline-block", flex: "0 0 auto", marginTop: 4 }} />
-                            <span className="mono" style={{ fontSize: "0.65625rem", letterSpacing: ".02em", lineHeight: 1.35, color: c }}>{availabilityShortLabel(av, ar)}</span>
-                          </div>
-                        );
-                      })()}
-                    </>);
-                  })()}
-                </div>
-              </Link>
-            );
-          })}
+          {/* PKG-CARD1. This grid used to draw its own card: a `Photo` badge row
+              with the decorative fav star (finding 173's class: no handler),
+              a price assembled inline rather than through `priceParts`, and its
+              own copy of the verified-badge and freshness markup. `ListingCard`
+              is now the one place a listing becomes a card; `showFreshness`
+              keeps the "listed N days ago" and availability lines this page
+              alone shows, and `mapId` keeps the `.listing[data-lid]` hook
+              ListingsMap's hover sync already depends on. */}
+          {shown.map((l) => (
+            <ListingCard key={l.id} listing={l} locale={locale as "en" | "ar"} ui={dict.ui} showFreshness mapId={l.id} />
+          ))}
         </div>
       )}
       </div>
