@@ -47,7 +47,7 @@ test("label reads as affirmation when current, nudge when stale", () => {
   assert.match(availabilityLabel(fresh, "15 Jul 2026", true), /^متاح/);
   const stale = availabilityOf(daysAgo(120), NOW)!;
   assert.match(availabilityLabel(stale, "20 Mar 2026", false), /^Confirm availability with the lister/);
-  assert.match(availabilityLabel(stale, "20 Mar 2026", true), /^تأكṑد من التوفر/);
+  assert.match(availabilityLabel(stale, "20 Mar 2026", true), /^تأكّد من التوفر/);
 });
 
 // ---------------------------------------------------------------- finding 46
@@ -66,7 +66,7 @@ test("short card label: an affirmation when current, a nudge when stale", () => 
   assert.equal(availabilityShortLabel(sample.fresh(), false), "Available · confirmed 3 days ago");
   assert.equal(availabilityShortLabel(sample.stale(), false), "Confirm availability · last confirmed 65 days ago");
   assert.match(availabilityShortLabel(sample.fresh(), true), /^متاح · تأكد التوفر قبل /);
-  assert.match(availabilityShortLabel(sample.stale(), true), /^تأكṑد من التوفر · آخر تأكيد قبل /);
+  assert.match(availabilityShortLabel(sample.stale(), true), /^تأكّد من التوفر · آخر تأكيد قبل /);
 });
 
 test("the aging state no longer claims the space is available", () => {
