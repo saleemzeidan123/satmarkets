@@ -534,7 +534,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             said "مساحة" where this said "عرض". One counted noun answers both. */}
         {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
             and no announcement, so this count is the only thing that says it worked. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\\u00B7"} {dl.mapArea} {"\\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
