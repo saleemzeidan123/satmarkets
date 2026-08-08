@@ -10,6 +10,7 @@ import { getPublishedKpis } from "@/lib/market/published";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { normalizeStatisticKind, statisticLabel } from "@/lib/evidence";
 import { CHECK_METHODS } from "@/lib/listingVerification";
+import { getLister, type Lister } from "@/lib/queries/listings";
 
 export const revalidate = 600;
 
@@ -32,6 +33,11 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   const locale = params.locale;
   const ar = locale === "ar";
   const sb = await getSupabaseServer();
+  // Slice B, item 8. `dataOk` is the one signal that separates "we asked and
+  // there is genuinely nothing published yet" from "we could not reach the
+  // database", so Home's async sections can say the true one of those two
+  // things instead of rendering the same silent gap for both.
+  const dataOk = !!sb;
   const kpis = await getPublishedKpis(locale);
 
   let rows: Listing[] = [];
@@ -118,6 +124,14 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   // one for. `ListingCard` now reads the row directly; this loop keeps only
   // the one decision that is genuinely this page's, not the card's, which is
   // where a lease listing's rent falls in the published band.
+  // Slice B, item 6. Home has no general lister directory to link to (that is
+  // PKG-DISCOVERY-1 slice E, not built yet), so the one honest discovery path
+  // available today is through a listing that is actually featured here, to
+  // the real individual profile route `ListerBadge` already links to on
+  // Listing Detail. Only the lead slot carries it, to keep this addition
+  // proportionate rather than repeating a byline on every grid card.
+  const leadLister: Lister | null = rows[0] ? await getLister(rows[0].account_id) : null;
+
   const featured: FeaturedListing[] = rows.map((l) => {
     const dnEn = l.districts ? l.districts.name_en : null;
     let indexPosition: FeaturedListing["indexPosition"] = null;
@@ -147,5 +161,5 @@ export default async function HomePage(props: { params: Promise<{ locale: string
     verifiedPct: verified > 0 && listings > 0 ? `${Math.round((verified / listings) * 100)}%` : null,
   };
 
-  return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} bandNotes={idxStatements} jobs={{ reqs: openReqs, segs: idxSegs }} />;
+  return <MarketingHome kpis={kpis} locale={locale} featured={featured} stats={stats} bands={heroBands} bandNotes={idxStatements} jobs={{ reqs: openReqs, segs: idxSegs }} dataOk={dataOk} leadLister={leadLister} />;
 }
