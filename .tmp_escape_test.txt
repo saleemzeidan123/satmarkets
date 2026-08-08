@@ -1,2 +1,2 @@
-backslash-u-0627 backslash-u-0644 backslash-u-0645 backslash-u-0635 backslash-u-062f backslash-u-0631
-backslash-u-062e backslash-u-0644 backslash-u-064a backslash-u-0629
+\|u|0627\|u|0644\|u|0645\|u|0635\|u|062f\|u|0631
+\|u|062e\|u|0644\|u|064a\|u|0629
