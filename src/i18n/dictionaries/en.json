@@ -120,7 +120,20 @@
     "findSpace": "Find your space",
     "metaTitle": "SAT Markets | Commercial spaces from owners and licensed brokers",
     "metaDesc": "The neutral commercial exchange for Riyadh: spaces listed by owners and licensed brokers, a source-attributed rent index, and AI that never invents a figure.",
-    "onRequest": "On request"
+    "onRequest": "On request",
+    "featuredEmptyTitle": "No featured listings to show right now",
+    "featuredEmptyBody": "Nothing has published to this slot yet. Browse the full listings index, or post a requirement and let owners and brokers come to you.",
+    "featuredErrorTitle": "Featured listings are temporarily unavailable",
+    "featuredErrorBody": "We could not load listings just now. Try again, or go straight to the listings index.",
+    "bandEmptyTitle": "No published band for this view yet",
+    "bandEmptyBody": "The Rent Index publishes a figure only where the underlying sample is sufficient. Explore the full index for the districts and segments that currently qualify.",
+    "bandErrorTitle": "Rent Index figures are temporarily unavailable",
+    "bandErrorBody": "We could not load the published bands just now. Try again, or open the Rent Index directly.",
+    "retryLabel": "Try again",
+    "verifyEyebrow": "Verification, explained",
+    "verifyHeading": "What Verified actually means here",
+    "verifyBody": "A green Verified mark names one specific, evidence-backed check on that record. It is never a rating and never automatic. Owner verification and listing verification are two different checks, reported on their own, and a listing carries neither unless it earned it.",
+    "verifyLinkLabel": "Read the full verification rules"
   },
   "ld": {
     "notFound": "Listing not found.",
