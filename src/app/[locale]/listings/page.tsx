@@ -30,6 +30,7 @@ import ListingsMap from "@/components/ListingsMapDeferred";
 export const revalidate = 300;
 import SaveSearch from "@/components/SaveSearch";
 import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 import FilterBar, { type LocOpt } from "@/components/FilterBar";
 import { coveredFacetFields, matchesAssetFacets } from "@/lib/facets";
 import { fieldLabel } from "@/lib/fieldLabel";
@@ -125,7 +126,15 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
   const dl = dict.listings;
   const list = (k?: string) => (k ? k.split(",").filter(Boolean) : []);
   const sb = await getSupabaseServer();
+  // PKG-DISCOVERY-1 slice C, finding 207. `!sb` used to fall straight through
+  // to `shown.length === 0`, which rendered the exact same "No matching
+  // spaces" empty state as a filter that genuinely matched nothing. "We could
+  // not reach the store" and "we reached it and it has nothing for you" are
+  // different sentences; `dataOk` is the one signal that tells them apart, the
+  // same signal Home's featured rail and Rent Index panel already carry.
+  const dataOk = !!sb;
   let listings: Listing[] = [];
+  let capped = false;
   let bubbles: DistrictBubble[] = [];
   let pins: ExactPin[] = [];
   const coordByListing = new Map<string, { lat: number; lng: number }>();
@@ -171,6 +180,14 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
     if (searchParams.verified) query = verifiedOnly(query);
     const { data } = await query.order("created_at", { ascending: false });
     listings = (data as Listing[]) ?? [];
+    // PKG-DISCOVERY-1 slice C, item 8. The query above carries `.limit(300)` and
+    // nothing downstream distinguished "300 is every matching row" from "300 is
+    // where we stopped counting". A displayed figure that could silently be a
+    // truncation is the same class of dishonesty as an unattributed one; `capped`
+    // is read once, here, off the raw fetch, before the district/place/bbox/q/
+    // facet filters below narrow `listings` into `shown` for reasons that have
+    // nothing to do with the database cap.
+    capped = listings.length === 300;
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
     let fq = releaseVisibleInventory(sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published")).limit(400);
     if (searchParams.deal) fq = fq.eq("deal_type", searchParams.deal);
@@ -523,7 +540,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--ink)" }}>{crumbLoc}</span>
-          <span className="muted" style={{ fontSize: "0.8125rem" }}>· {formatCounted(shown.length, "space", locale)}</span>
+          <span className="muted" style={{ fontSize: "0.8125rem" }}>· {dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</span>
           <span style={{ flex: 1 }} />
           <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{dl.clear} ✕</Link>
         </div>
@@ -534,7 +551,13 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             said "مساحة" where this said "عرض". One counted noun answers both. */}
         {/* ELITE-4 J3-15: a filter change rewrites the result set with no navigation
             and no announcement, so this count is the only thing that says it worked. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{formatCounted(shown.length, "space", locale)}{searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}</div>
+        {/* PKG-DISCOVERY-1 slice C, finding 207 and item 8. A count is a claim about
+            the database, and "0" is a specific claim: nothing matched. That is not
+            what `!dataOk` means, so it gets its own honest word instead of a number
+            it cannot back up. `capped` names the other silent overstatement this
+            count could make: `.limit(300)` above can end a page-worthy match set
+            without saying so, and this is the one place capable of saying so. */}
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
@@ -563,7 +586,10 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             <Link href={`/${locale}/rent-index`} className="chip" style={{ textDecoration: "none" }}>{dl.fullIndex}</Link>
           </div>
           {idx.length === 0 ? (
-            <p className="muted" style={{ padding: 18, margin: 0, fontSize: "0.84375rem" }}>{dl.noSegments}</p>
+            /* PKG-DISCOVERY-1 slice C, finding 207. `dl.noSegments` says the index has
+               no sufficient segment for this filter, which is untrue when `!sb` meant
+               the query behind it never ran at all. */
+            <p className="muted" style={{ padding: 18, margin: 0, fontSize: "0.84375rem" }}>{dataOk ? dl.noSegments : dl.listingsErrorTitle}</p>
           ) : (
             <ScrollRegion label={dl.indexCut}>
               <table className="dt" style={{ minWidth: 520 }}>
@@ -611,12 +637,21 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         </div>
       ) : shown.length === 0 ? (
         <div style={{ marginTop: 12 }}>
+          {/* PKG-DISCOVERY-1 slice C, finding 207. "No matching spaces" and "we
+              could not reach the store" used to render as the identical empty
+              state; a reader who was told nothing matched had no way to learn
+              the truer answer was "try again". `dataOk` is read once, above,
+              from whether the database connection itself resolved, never from
+              the filters, so it cannot be confused with a real empty result. */}
           <DataState
-            kind="empty"
-            title={bbox ? (dl.emptyMapArea) : (dl.emptyNoMatch)}
-            action={
+            kind={dataOk ? "empty" : "error"}
+            title={dataOk ? (bbox ? dl.emptyMapArea : dl.emptyNoMatch) : dl.listingsErrorTitle}
+            body={dataOk ? undefined : dl.listingsErrorBody}
+            action={dataOk ? (
               <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dl.clearMapArea) : (dl.clearAllFilters)}</Link>
-            }
+            ) : (
+              <RetryButton label={dl.retryLabel} />
+            )}
           />
         </div>
       ) : (
@@ -635,7 +670,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         </div>
       )}
       </div>
-      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} initialBbox={bbox ?? undefined} selectedDistrict={searchParams.district ?? null} />
+      <ListingsMap locale={locale as "en" | "ar"} bubbles={bubbles} pins={pins} baseParams={base} initialBbox={bbox ?? undefined} selectedDistrict={searchParams.district ?? null} resultCount={dataOk ? shown.length : undefined} />
       </div>
     </div>
   );

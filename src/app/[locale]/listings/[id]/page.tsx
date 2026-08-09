@@ -15,6 +15,8 @@ import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
+import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 import { getListingById, getLister, getBuildingById } from "@/lib/queries/listings";
 import ListerBadge from "@/components/ListerBadge";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -43,8 +45,15 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const dict = getDictionary(loc);
   const ar = loc === "ar";
-  const l: any = await getListingById(params.id);
-  if (!l) return { title: dict.ld.notFoundTitle };
+  const { dataOk, row: l } = await getListingById(params.id);
+  // A storage failure gets its own, honest title rather than either the real
+  // title (which the read never confirmed) or "Listing not found" (which
+  // states a fact the read is not in a position to state).
+  if (!dataOk) return { title: dict.ld.unavailableTitleMeta };
+  // status !== "published" reads the same way as "no such id": a draft, an
+  // expired listing or one an owner withdrew is not publicly available, and
+  // the metadata for its URL may not confirm such a record exists.
+  if (!l || l.status !== "published") return { title: dict.ld.notFoundTitle };
   const dn = listingPlace(l, loc) || dict.ld.riyadh;
   const type = assetLabel(l.asset_type, loc);
   // An absent grade is absent. gradeLabel would print N/A into the sentence.
@@ -95,9 +104,27 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
   const lp = locale as "en" | "ar";
   const dict = getDictionary(lp);
   const sb = await getSupabaseServer();
-  const l: any = await getListingById(params.id);
-  const lister = await getLister(l?.account_id);
-  if (!l) return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
+  const { dataOk, row: l } = await getListingById(params.id);
+  // PKG-DISCOVERY-1 item 9. The storage-unavailable case is checked and
+  // rendered before the not-found case, and before the lister lookup below
+  // even runs: it is a distinct, temporary condition, not a stand-in for "no
+  // such listing", and the sentence it renders says so rather than
+  // borrowing the not-found copy. No internal reason (which table, which
+  // column, which query) is stated; a reader gets a retry, not a diagnosis.
+  if (!dataOk) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={dict.ld.unavailableTitle} body={dict.ld.unavailableBody} action={<RetryButton label={dict.ld.retryLabel} />} />
+      </div>
+    );
+  }
+  // A listing that genuinely does not exist and one that exists but is not
+  // published (draft, expired, withdrawn) render the identical sentence: the
+  // reader cannot tell the two apart from this page, which is the point.
+  // Naming the second case differently would confirm an unpublished record
+  // exists at this id, to anyone who has or guesses it.
+  if (!l || l.status !== "published") return <div style={{ maxWidth: 1280, margin: "0 auto", padding: "48px 24px" }} className="muted">{dict.ld.notFound}</div>;
+  const lister = await getLister(l.account_id);
   const dn = listingPlace(l, lp) || dict.ld.riyadh;
   const city = l.districts && l.districts.city ? cityLabel(l.districts.city, locale) : (dict.ld.riyadh);
   const cityEn = l.districts && l.districts.city ? cityLabel(l.districts.city, "en") : "Riyadh";
@@ -149,7 +176,12 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
     // The lister's own pinned coordinates take precedence: it is the exact building.
     if (l.lat != null && l.lng != null) originLL = { lat: Number(l.lat), lng: Number(l.lng), exact: true };
     if (!originLL && l.building_id) {
-      const b: any = await getBuildingById(l.building_id);
+      // A secondary, non-gating lookup: this page's own storage-unavailable
+      // branch above already handles the primary read failing. If the
+      // building's own coordinates cannot be read for any reason, the next
+      // fallback (the district centroid) is tried, same as a genuine "no
+      // such building" would fall through today.
+      const { row: b } = await getBuildingById(l.building_id);
       if (b && b.lat != null && b.lng != null) originLL = { lat: Number(b.lat), lng: Number(b.lng), exact: true };
     }
     if (!originLL && l.district_id) {
