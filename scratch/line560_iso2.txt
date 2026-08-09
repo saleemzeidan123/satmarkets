@@ -1,1 +1,0 @@
-{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link/></> : null}{dataOk && capped ? <> {"·"} {fill()}</> : null}
