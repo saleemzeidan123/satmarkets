@@ -216,7 +216,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
     // reader's language widens to its city rather than printing the other
     // language's name on the map.
     const gcity = new Map((allLocs ?? []).map((d: any) => [d.id, d.city]));
-    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: placeName({ ...g, city: gcity.get(g.id) }, ar ? "ar" : "en") + (g.kind === "development" ? " · " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
+    bubbles = (geo ?? []).filter((g: any) => counts.get(g.id)).map((g: any) => ({ id: g.id, name: placeName({ ...g, city: gcity.get(g.id) }, ar ? "ar" : "en") + (g.kind === "development" ? " " + BULLET_TEMP + " " + dl.project : ""), lat: Number(g.lat), lng: Number(g.lng), count: counts.get(g.id) as number }));
     locations = (allLocs ?? []).map((d: any) => ({ id: d.id, city: d.city || "Other", kind: d.kind || "district", en: d.name_en, ar: d.name_ar, count: counts.get(d.id) ?? 0 }));
     const bids = Array.from(new Set(listings.map((l: any) => l.building_id).filter(Boolean)));
     if (bids.length) {
@@ -422,7 +422,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
   // already carries the development marker from the bubble it comes from.
   const saveDeal = dealParam(searchParams.deal);
   const savePlace = activeDistrict ? activeDistrict.name : (safePlace(searchParams.place) || (canonicalCity(searchParams.city) ? cityLabel(searchParams.city, locale) : ""));
-  const saveLabel = [saveDeal ? dealLabel(saveDeal, locale) : "", savePlace].filter(Boolean).join(" · ") || (dl.allSpaces);
+  const saveLabel = [saveDeal ? dealLabel(saveDeal, locale) : "", savePlace].filter(Boolean).join(" " + BULLET_TEMP2 + " ") || (dl.allSpaces);
 
   const distLoc = searchParams.district ? locations.find((l) => l.id === searchParams.district) : null;
   // Slice C, WS16, three corrections on one line.
@@ -540,7 +540,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--ink)" }}>{crumbLoc}</span>
-          <span className="muted" style={{ fontSize: "0.8125rem" }}>· {dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</span>
+          <span className="muted" style={{ fontSize: "0.8125rem" }}>{BULLET_TEMP3} {dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</span>
           <span style={{ flex: 1 }} />
           <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{dl.clear} ✕</Link>
         </div>
@@ -557,7 +557,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             it cannot back up. `capped` names the other silent overstatement this
             count could make: `.limit(300)` above can end a page-worthy match set
             without saying so, and this is the one place capable of saying so. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " " + BULLET_TEMP4 + " " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
@@ -602,7 +602,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
                     return (
                     <tr key={i}>
                       <td style={{ fontWeight: 600 }}>{(ar ? r.district_label_ar : r.district_label) || r.district_label}</td>
-                      <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " · " + segmentLabel(r.segment, locale) : ""}</td>
+                      <td className="muted">{assetLabel(r.asset_type, locale)}{r.segment ? " " + BULLET_TEMP5 + " " + segmentLabel(r.segment, locale) : ""}</td>
                       {/* PKG-FIG2 closure, finding 131. This cell called `toLocaleString("en-US")`
                           directly, which is the one numeral policy stated in a page rather than
                           read from the one function that owns it. `formatInteger` pins the same
