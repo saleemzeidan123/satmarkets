@@ -1,0 +1,1 @@
+X:\u00B7:Y line560test {"\u00B7"} {dl.mapArea} {"\u00B7"} end {"\u00B7"} finalend
