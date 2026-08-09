@@ -55,6 +55,11 @@ const ALLOW: Record<string, Allow> = {
   "src/components/FilterBar.tsx": { reason: "verification: verified-owners filter", context: VERIFICATION },
   "src/app/[locale]/proto/page.tsx": { reason: "verification: design-system verified swatches", context: VERIFICATION },
   "src/app/[locale]/lister/[id]/page.tsx": { reason: "verification: verified lister", context: VERIFICATION },
+  // PKG-DISCOVERY-1, item 6. The directory card's identity-verified tick reads
+  // the same `listerIdentityVerified` chain the profile page's own badge does,
+  // never the raw `is_verified` column, so it earns the same reserved colour
+  // for the same reason.
+  "src/components/ListerCard.tsx": { reason: "verification: verified lister (directory card)", context: VERIFICATION },
   "src/app/[locale]/compare/page.tsx": { reason: "verification: owner-verified row", context: VERIFICATION },
   "src/app/[locale]/verify/signups/page.tsx": { reason: "verification: verified signup status", context: VERIFICATION },
   "src/app/[locale]/verify/page.tsx": { reason: "verification: verified-dimension Yes", context: VERIFICATION },
