@@ -5,6 +5,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
 import { mapLocale } from "@/lib/mapLocale";
 import { registerRTLTextPlugin } from "@/lib/rtlTextPlugin";
+import { fill, formatNumber } from "@/lib/format";
 // MapLibre paint cannot read CSS custom properties; these values come from the
 // central palette module (mirrors the CSS tokens) rather than inline hex (PKG-1B).
 import { BRAND, MAP } from "@/theme/palette";
@@ -27,8 +28,18 @@ export interface ExactPin { id: string; title: string; lat: number; lng: number;
 const PRIMARY_STYLE = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json";
 const FALLBACK_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
-export default function ListingsMap({ locale, bubbles, pins, baseParams, initialBbox, selectedDistrict }: {
+export default function ListingsMap({ locale, bubbles, pins, baseParams, initialBbox, selectedDistrict, resultCount }: {
   locale: "en" | "ar"; bubbles: DistrictBubble[]; pins: ExactPin[]; baseParams: string; initialBbox?: number[]; selectedDistrict?: string | null;
+  /**
+   * PKG-DISCOVERY-1 slice C, item 7. The floating "Show map" toggle is the one
+   * mobile control that already stays reachable without scrolling (it is
+   * `position:fixed`), while the result count above the grid scrolls away with
+   * it. Rather than a second fixed element competing for the same strip, the
+   * one already anchored there carries the count too. Optional: a caller with
+   * nothing to report (there is exactly one, `/listings`, and it always has a
+   * number by the time it renders) gets the plain, count-free label back.
+   */
+  resultCount?: number;
 }) {
   const ar = locale === "ar";
   const t2 = getDictionary(ar ? "ar" : "en").listingsMap;
@@ -154,7 +165,7 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
 
       m.addSource("p", { type: "geojson", promoteId: "id", data: pinFC() as any });
       m.addSource("hl", { type: "geojson", data: EMPTY });
-      m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": MAP.pin } });
+      m.addLayer({ id: "p-hl", type: "circle", source: "hl", minzoom: 11.5, paint: { "circle-color": MAP.hoverWash, "circle-radius": 12, "circle-stroke-width": 3, "circle-stroke-color": MAP.pin } });
       /* RC12, finding 165. The exact-building mark is the district bubble inverted:
          Paper fill, Harbor ring. Before this, both layers painted `circle-color`
          from `MAP.pin` and `circle-stroke-color` from `MAP.pinStroke`, so the two
@@ -399,7 +410,9 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
           )}
         </div>
       </div>
-      <button type="button" ref={toggleRef} className="btn primary lst-map-toggle" aria-haspopup="dialog" onClick={() => setOpen(true)}>{t2.showMap}</button>
+      <button type="button" ref={toggleRef} className="btn primary lst-map-toggle" aria-haspopup="dialog" onClick={() => setOpen(true)}>
+        {resultCount != null ? fill(t2.showMapCount, { n: formatNumber(resultCount, locale) }) : t2.showMap}
+      </button>
     </>
   );
 }

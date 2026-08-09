@@ -20,6 +20,8 @@ import { arabicIsBehind } from "@/lib/listingArabic";
 import { hashSource } from "@/lib/translate/hash";
 import type { LocationPoint } from "@/lib/nearestLocation";
 import { assessLocationConsistency, type LocationConsistency } from "@/lib/locationConsistency";
+import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 
 const BASE_OWNED = new Set(["asking_rent_sqm", "sale_price"]);
 
@@ -38,17 +40,41 @@ export default async function ManageListingPage(props: { params: Promise<{ local
   const su = await getSessionUser();
   if (!su) redirect(`/${lp}/login`);
   if (!su.accountId) redirect(`/${lp}`);
+  // PKG-DISCOVERY-1 item 8, the manage-listing route's own instance of the
+  // storage-unavailable/not-found distinction item 9 ruled for the public
+  // listing and flyer routes. `if (!sb) notFound()` and the old single-row
+  // read (which turned "zero rows" into an error indistinguishable from a
+  // real failure) both used to tell an owner their own listing does not
+  // exist during a storage outage. This is a private, already-authenticated
+  // route, so there is no information-disclosure reason to collapse the two; the
+  // owner is simply told the read failed and offered a retry.
+  const unavailable = ar
+    ? { title: "تعذّر تحميل هذا العرض", body: "هذه مشكلة في الاتصال، وليست عرضاً مفقوداً. أعد المحاولة بعد قليل.", retry: "أعد المحاولة" }
+    : { title: "This listing could not be loaded", body: "This is a connection problem, not a missing listing. Try again in a moment.", retry: "Try again" };
   const sb = await getSupabaseServer();
-  if (!sb) notFound();
+  if (!sb) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={unavailable.title} body={unavailable.body} action={<RetryButton label={unavailable.retry} />} />
+      </div>
+    );
+  }
 
   // The owner's own row: select everything so the per-asset registry can read its
   // column-backed values (grade, fit-out, clear height, and so on) alongside the
   // jsonb attributes, without enumerating 15 asset types' worth of columns here.
-  const { data: l } = await sb
+  const { data: l, error: listingError } = await sb
     .from("listings")
     .select("*,districts(name_en,name_ar,city)")
     .eq("id", params.id)
-    .single();
+    .maybeSingle();
+  if (listingError) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={unavailable.title} body={unavailable.body} action={<RetryButton label={unavailable.retry} />} />
+      </div>
+    );
+  }
   if (!l) notFound();
   if ((l as any).account_id !== su.accountId) notFound(); // not yours: do not confirm it exists
 

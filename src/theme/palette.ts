@@ -79,4 +79,10 @@ export const MAP = {
   labelInk: BRAND.inkWarm,
   labelHalo: BRAND.paper,
   hit: "#000000",
+  // Finding 177. ListingsMap painted the hover-highlight ring from this exact
+  // value written as a literal, one line away from three siblings that already
+  // read MAP.pin and MAP.pinStroke, while `--map-area-wash` declared the same
+  // rgba() in sat-platform.css. A named role closes the gap: this mirrors that
+  // token so the two cannot drift again.
+  hoverWash: "rgba(58,110,165,0.14)",
 } as const;

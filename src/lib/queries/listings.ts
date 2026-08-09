@@ -3,18 +3,55 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 
 // Request-deduped fetches: called from both generateMetadata and the page
 // component, React cache() collapses them into one query per request.
-export const getListingById = cache(async (id: string) => {
+
+// PKG-DISCOVERY-1 item 9. `getListingById` used to return the row or `null`
+// for three different facts at once: no Supabase client, a genuine "no such
+// id", and any other query error (a real connection failure among them). A
+// caller receiving `null` could not tell "this listing does not exist" from
+// "the platform could not check", so `/listings/[id]` and its flyer both
+// rendered the same "Listing not found" sentence for a storage outage as for
+// a listing that never existed, which is the exact defect class finding 207
+// closed for the API routes and never reached these two page templates.
+//
+// `.single()` is also what let the two collapse: PostgREST turns "zero rows"
+// into an error of the same shape as a real failure, so a caller reading
+// only `{ data }` (as this line did) cannot separate them by construction.
+// `.maybeSingle()` is what its two neighbours below, `getBuildingById` and
+// `getLister`, already use for exactly this reason: zero rows comes back as
+// `{ data: null, error: null }`, and only a real failure sets `error`.
+export type ListingByIdResult = {
+  /** False only when the read itself could not be trusted: no Supabase
+   * client, or the query errored. Never false for a genuine "no such id",
+   * which is `dataOk: true, row: null`. */
+  dataOk: boolean;
+  row: any | null;
+};
+
+export const getListingById = cache(async (id: string): Promise<ListingByIdResult> => {
   const sb = await getSupabaseServer();
-  if (!sb) return null;
-  const { data } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("id", id).single();
-  return data;
+  if (!sb) return { dataOk: false, row: null };
+  const { data, error } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("id", id).maybeSingle();
+  if (error) return { dataOk: false, row: null };
+  return { dataOk: true, row: data ?? null };
 });
 
-export const getBuildingById = cache(async (id: string) => {
+// PKG-DISCOVERY-1 item 8. Same defect class as getListingById above, found
+// on the building profile route during the cross-route sweep: `if (!sb)
+// notFound()` in the page, and this function discarding `error` and
+// returning `null` for a real query failure exactly as it did for a
+// genuine "no such id", collapsed a storage outage into the public
+// not-found page on `/building/[id]`.
+export type BuildingByIdResult = {
+  dataOk: boolean;
+  row: any | null;
+};
+
+export const getBuildingById = cache(async (id: string): Promise<BuildingByIdResult> => {
   const sb = await getSupabaseServer();
-  if (!sb) return null;
-  const { data } = await sb.from("buildings").select("*").eq("id", id).maybeSingle();
-  return data;
+  if (!sb) return { dataOk: false, row: null };
+  const { data, error } = await sb.from("buildings").select("*").eq("id", id).maybeSingle();
+  if (error) return { dataOk: false, row: null };
+  return { dataOk: true, row: data ?? null };
 });
 
 export type Lister = {

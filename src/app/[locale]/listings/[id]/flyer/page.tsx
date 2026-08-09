@@ -11,6 +11,8 @@ import { netArea, askingPrice } from "@/lib/listingFigures";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { Logo } from "@/components/satkit";
 import PrintButton from "@/components/PrintButton";
+import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 import { SITE } from "@/components/JsonLd";
 import QRCode from "qrcode";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -37,8 +39,16 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   if (!isLocale(params.locale)) return {};
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const t = getDictionary(loc).flyer;
-  const l: any = await getListingById(params.id);
-  if (!l) return {};
+  const { dataOk, row: l } = await getListingById(params.id);
+  // PKG-DISCOVERY-1 item 9. Preserved from the listing detail page's own
+  // generateMetadata: a storage failure and a genuinely missing or
+  // unpublished row are different facts, even though this route's existing
+  // behaviour for either one is the same minimal `{}` (inheriting the root
+  // layout's generic title, WS12 defect 3, unchanged and out of this
+  // package's scope). The check stays split so a future change to one branch
+  // cannot accidentally start speaking for the other.
+  if (!dataOk) return {};
+  if (!l || l.status !== "published") return {};
   const ar = loc === "ar";
   const dn = listingPlace(l, loc) || t.riyadh;
   const name = titleMissingIn(l, loc) ? "" : listingTitle(l, loc);
@@ -55,27 +65,49 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
   const ar = locale === "ar";
   const t = getDictionary(ar ? "ar" : "en").flyer;
   const pub = await getPublishedKpis(locale);
+  // PKG-DISCOVERY-1 item 9. This used to run its own raw `.single()` query
+  // for the listing row, a second copy of exactly what getListingById
+  // already does for this route's own generateMetadata above, three lines
+  // apart in the same file. Reading through the shared function instead
+  // fixes the flyer's copy of the same defect the listing detail page had
+  // (a genuine absence and a storage failure both returning `null`) in the
+  // one place that mattered, rather than twice.
+  const { dataOk, row: l } = await getListingById(params.id);
   const sb = await getSupabaseServer();
-  let l: any = null;
   let idxRows: IndexRow[] = [];
   let idxStatements: readonly string[] = [];
-  if (sb) {
-    const { data } = await sb.from("listings").select("*, districts(name_en,name_ar,city)").eq("id", params.id).single();
-    l = data;
-    if (l?.district_id) {
-      // ADV-1E. The flyer is the one surface that leaves the platform: a landlord
-      // prints it and carries it into a meeting, where nothing on the page can be
-      // corrected later. The pricing context on it is a derived display of the
-      // third-party figure and it takes the same decision as every other surface.
-      // A row whose rights are unread or withheld produces no context block at
-      // all, which is the correct outcome for a document that cannot be recalled.
-      const { data: rows } = await sb.from("rent_index_published").select("asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo,district_label,district_label_ar").eq("district_id", l.district_id);
-      const quotable = await quotableRentIndexRows((rows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
-      idxRows = quotable.rows.map((q) => q.row as unknown as IndexRow);
-      idxStatements = quotable.statements;
-    }
+  if (dataOk && l?.status === "published" && l?.district_id && sb) {
+    // ADV-1E. The flyer is the one surface that leaves the platform: a landlord
+    // prints it and carries it into a meeting, where nothing on the page can be
+    // corrected later. The pricing context on it is a derived display of the
+    // third-party figure and it takes the same decision as every other surface.
+    // A row whose rights are unread or withheld produces no context block at
+    // all, which is the correct outcome for a document that cannot be recalled.
+    const { data: rows } = await sb.from("rent_index_published").select("asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo,district_label,district_label_ar").eq("district_id", l.district_id);
+    const quotable = await quotableRentIndexRows((rows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
+    idxRows = quotable.rows.map((q) => q.row as unknown as IndexRow);
+    idxStatements = quotable.statements;
   }
-  if (!l) notFound();
+  // Storage unavailable renders its own bilingual notice with a retry path,
+  // never the same outcome as "this listing does not exist"; see the
+  // listing detail page's identical split for the full reasoning. The flyer
+  // has no DataState-shaped slot to reuse (it is a print document, not a
+  // list surface), so the notice is drawn inline inside the same wrapper the
+  // rest of the route uses, in the same reduced style the print CSS already
+  // treats as chrome.
+  if (!dataOk) {
+    return (
+      <div className="flyer-wrap" style={{ background: "var(--cool)", padding: "64px 24px" }}>
+        <div style={{ maxWidth: 480, margin: "0 auto" }}>
+          <DataState kind="error" title={t.unavailableTitle} body={t.unavailableBody} action={<RetryButton label={t.retryLabel} />} />
+        </div>
+      </div>
+    );
+  }
+  // Not found and "exists but not published" render identically, for the
+  // same reason the listing detail page's split does: naming the second
+  // case differently would confirm an unpublished record exists at this id.
+  if (!l || l.status !== "published") notFound();
   const dn = listingPlace(l, ar ? "ar" : "en") || t.riyadh;
   const title = listingTitle(l, ar ? "ar" : "en");
   const type = assetLabel(l.asset_type, locale);

@@ -11,7 +11,14 @@ const CONTACT_CHANNELS = ["whatsapp", "call", "email", "message"];
 export async function GET(req: NextRequest) {
   if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const supabase = await getSupabaseServer();
-  if (!supabase) return NextResponse.json({ listings: [], note: "supabase not configured" });
+  // Finding 207. This used to answer 200 with an empty array when Supabase was
+  // unreachable, which is indistinguishable from "no listings exist" to any
+  // caller. "None exist" and "we cannot reach the store" are different
+  // sentences; POST on this same route already answers the unreachable case
+  // with 503/`storage_unavailable` (line below), and every other listings
+  // route in this file (`[id]/route.ts`, `[id]/media/route.ts`, `[id]/docs/route.ts`)
+  // does too. GET was the one outlier.
+  if (!supabase) return NextResponse.json({ error: "Storage unavailable. Please try again.", code: "storage_unavailable" }, { status: 503 });
   const { searchParams } = new URL(req.url);
   let query = releaseVisibleInventory(supabase.from("listings").select("*").eq("status", "published")).limit(50);
   const asset = searchParams.get("asset");

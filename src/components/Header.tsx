@@ -84,6 +84,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     { href: `/${locale}/about`, label: dict.nav.about },
     { href: `/${locale}/pricing`, label: dict.nav.pricing },
     { href: `/${locale}/brokers`, label: dict.nav.brokers },
+    { href: `/${locale}/listers`, label: dict.nav.listers },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = dict.nav.signIn;

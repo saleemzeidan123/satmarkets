@@ -4,6 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { Icon } from "@/components/satkit";
 import ListingCard from "@/components/ListingCard";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
 import { fill, formatCounted } from "@/lib/format";
@@ -12,6 +13,8 @@ import { fill, formatCounted } from "@/lib/format";
 // the sentence under it and the page description all used to run off that status.
 import { filingAccountOf, listerIdentityVerified, verifiedBadgeText } from "@/lib/listingVerification";
 import { entityName } from "@/lib/displayName";
+import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 
 // A lister's PUBLIC profile: who they are, and every space they have live. Reads the
 // listers_public view (the safe projection, only for accounts with a published
@@ -57,14 +60,34 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
   const lp = params.locale;
   const ar = lp === "ar";
   const dict = getDictionary(ar ? "ar" : "en");
+  const t0 = dict.listerPage;
+  // PKG-DISCOVERY-1 item 8, the lister profile's own instance of the
+  // storage-unavailable/not-found distinction item 9 ruled for the listing
+  // and flyer routes. `if (!sb) notFound()` and a discarded query `error`
+  // both used to resolve to the same bare notFound() as a genuine "no such
+  // lister", so a storage outage told a reader SAT has no such lister
+  // rather than that the read could not be completed.
   const sb = await getSupabaseServer();
-  if (!sb) notFound();
+  if (!sb) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={t0.unavailableTitle} body={t0.unavailableBody} action={<RetryButton label={t0.retryLabel} />} />
+      </div>
+    );
+  }
 
-  const { data: lister } = await sb
+  const { data: lister, error: listerError } = await sb
     .from("listers_public")
     .select("id,name_en,name_ar,lister_type,is_operator,is_verified,is_demo,about_en,about_ar,website,public_email,public_phone,logo_url,member_since")
     .eq("id", params.id)
     .maybeSingle();
+  if (listerError) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={t0.unavailableTitle} body={t0.unavailableBody} action={<RetryButton label={t0.retryLabel} />} />
+      </div>
+    );
+  }
   if (!lister) notFound();
   const p: any = lister;
   // The badge below is an IDENTITY claim and nothing more. It never implied that the
@@ -96,7 +119,22 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
     : null;
 
   const name = entityName(p, ar ? "ar" : "en");
-  const about = (ar ? p.about_ar : p.about_en) || p.about_en || p.about_ar || "";
+  // Finding 93. This used to fall back to the other language silently: an
+  // Arabic reader with no `about_ar` on file was handed `about_en`, unlabelled,
+  // as if it were the lister's own Arabic words. `entityName`'s reasoning does
+  // not transfer here the way it does for a title: a registered name in the
+  // wrong script is still recognisable at a glance, but a paragraph in the
+  // wrong language is unreadable to the reader it is shown to. The paragraph
+  // itself is not hidden (it is the lister's own written words, and hiding it
+  // would be its own honesty failure toward a reader who could still read
+  // that language), it is labelled: `aboutIsFallback` marks exactly the case
+  // where the shown text is not in the reader's own language, and the render
+  // below states that plainly, with `lang`/`dir` set to the paragraph's own
+  // language rather than the page's.
+  const aboutOwnLang = ar ? p.about_ar : p.about_en;
+  const aboutOtherLang = ar ? p.about_en : p.about_ar;
+  const about = aboutOwnLang || aboutOtherLang || "";
+  const aboutIsFallback = !aboutOwnLang && !!aboutOtherLang;
   const initials = name.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
   // This page used to carry its own private EN and AR object, so its copy sat
   // outside the dictionaries and outside the controlled vocabulary entirely. It
@@ -104,9 +142,38 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
   // rather than one Arabic noun form printed after every number.
   const t = dict.listerPage;
   const role = p.lister_type === "broker" ? t.roleBroker : t.roleOwner;
+  const profileUrl = `${SITE}/${lp}/lister/${params.id}`;
+  // The entity meaning this route's own generateMetadata comment promises lives
+  // "in the Schema.org JSON-LD instead" of og:type, but nothing here ever
+  // emitted any. RealEstateAgent is schema.org's subtype for a business that
+  // acts as a broker; an owner is not one, so the type follows lister_type
+  // exactly the way the visible role tag above does. Every field below is a
+  // column this query actually selected: no address, no licence number and no
+  // rating are invented to fill the shape out, because none of those live on
+  // listers_public. `description` carries the About paragraph only when it is
+  // already in the reader's own language, the same rule the visible fallback
+  // notice above enforces, so structured data cannot restate finding 93's
+  // defect in a place a screen reader and the page's own render never share.
+  const listerEntity = {
+    "@type": p.lister_type === "broker" ? "RealEstateAgent" : "Organization",
+    "@id": `${profileUrl}#lister`,
+    name,
+    mainEntityOfPage: profileUrl,
+    ...(p.website ? { url: p.website, sameAs: [p.website] } : {}),
+    ...(p.logo_url ? { logo: p.logo_url, image: p.logo_url } : {}),
+    ...(p.public_email ? { email: p.public_email } : {}),
+    ...(p.public_phone ? { telephone: p.public_phone } : {}),
+    ...(aboutOwnLang ? { description: aboutOwnLang } : {}),
+  };
 
   return (
     <div style={{ maxWidth: 1160, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: dict.listers.crumbHome, item: `${SITE}/${lp}` },
+        { "@type": "ListItem", position: 2, name: dict.listers.crumbListers, item: `${SITE}/${lp}/listers` },
+        { "@type": "ListItem", position: 3, name, item: profileUrl },
+      ] }} />
+      <JsonLd data={listerEntity} />
       <div className="card" style={{ padding: 22, boxShadow: "var(--sh-1)", display: "flex", gap: 18, alignItems: "flex-start", flexWrap: "wrap" }}>
         {p.logo_url
           ? <img src={p.logo_url} alt={name} style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", flex: "none", border: "1px solid var(--silver)" }} />
@@ -132,7 +199,12 @@ export default async function ListerProfilePage(props: { params: Promise<{ local
             {saleCount > 0 && <><span aria-hidden="true">·</span><span>{saleCount} {t.forSale}</span></>}
             {memberYear && <><span aria-hidden="true">·</span><span>{t.since} <bdi dir="ltr">{memberYear}</bdi></span></>}
           </div>
-          {about && <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, marginTop: 12, maxWidth: 680 }}>{about}</p>}
+          {about && (
+            <div style={{ marginTop: 12, maxWidth: 680 }}>
+              {aboutIsFallback && <p className="muted t-xs" style={{ margin: "0 0 4px" }}>{t.aboutOtherLanguage}</p>}
+              <p className="muted" lang={ar && aboutIsFallback ? "en" : !ar && aboutIsFallback ? "ar" : undefined} dir={ar && aboutIsFallback ? "ltr" : !ar && aboutIsFallback ? "rtl" : undefined} style={{ fontSize: "0.875rem", lineHeight: 1.7 }}>{about}</p>
+            </div>
+          )}
           <div className="row gap10 wrap" style={{ marginTop: 12, fontSize: "0.8125rem" }}>
             {p.website && <a href={p.website} target="_blank" rel="noopener noreferrer nofollow" className="chip" style={{ textDecoration: "none" }}><Icon.pin size={14} /> {t.website}</a>}
             {p.public_phone && <a href={`tel:${p.public_phone}`} className="chip" style={{ textDecoration: "none" }}>{p.public_phone}</a>}

@@ -5,7 +5,7 @@
 
 // Public routes intended to be indexable once ALLOW_INDEX and the launch gates
 // pass. Nothing else belongs in the sitemap.
-export const SITEMAP_ROUTES = ["", "/listings", "/map", "/rent-index", "/advisor", "/requirements", "/locations", "/market", "/brokers"];
+export const SITEMAP_ROUTES = ["", "/listings", "/map", "/rent-index", "/advisor", "/requirements", "/locations", "/market", "/brokers", "/listers"];
 
 // Public routes HELD OUT of indexing until their specific audit gates clear.
 // Held routes are excluded from the sitemap AND noindexed by the middleware

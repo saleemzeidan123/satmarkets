@@ -2,6 +2,7 @@ import { isLocale } from "@/i18n/config";
 import { localeMeta } from "@/lib/meta";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
@@ -37,6 +38,10 @@ export default async function BrokersPage(props: { params: Promise<{ locale: str
   ];
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: b.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: b.crumbBrokers, item: `${SITE}/${locale}/brokers` },
+      ] }} />
       <div className="eyebrow">{b.eyebrow}</div>
       <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "10px 0 0" }}>{b.title}</h1>
       <p className="muted" style={{ marginTop: 8, fontSize: "0.90625rem", maxWidth: 640, lineHeight: 1.6 }}>{b.intro}</p>

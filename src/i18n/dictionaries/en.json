@@ -12,6 +12,7 @@
     "areas": "Location Intelligence",
     "pricing": "Pricing",
     "brokers": "Brokers",
+    "listers": "Owners and brokers directory",
     "signIn": "Sign in",
     "menu": "Menu",
     "browse": "Browse",
@@ -138,6 +139,10 @@
   "ld": {
     "notFound": "Listing not found.",
     "notFoundTitle": "Listing not found | SAT Markets",
+    "unavailableTitle": "This listing could not be loaded",
+    "unavailableBody": "This is a connection problem, not a missing listing. Try again in a moment.",
+    "unavailableTitleMeta": "Temporarily unavailable | SAT Markets",
+    "retryLabel": "Try again",
     "onRequest": "On request",
     "flyerPdf": "Flyer / PDF",
     "share": "Share",
@@ -265,6 +270,12 @@
     "emptyNoMatch": "No matching spaces. Try widening your filters, or clear them all.",
     "clearMapArea": "Clear the map area",
     "clearAllFilters": "Clear all filters",
+    "listingsErrorTitle": "Listings are temporarily unavailable",
+    "listingsErrorBody": "We could not reach the listing records just now. This is not the same as no matches, try again in a moment.",
+    "retryLabel": "Try again",
+    "countUnavailable": "Count unavailable",
+    "capNote": "Showing the first {n}. Add a filter to narrow the results.",
+    "loadingListings": "Loading listings",
     "onRequest": "On request",
     "vsIndexTitle": "Vs the Rent Index, platform sample. Indicative, not advice.",
     "riyadh": "Riyadh",
@@ -388,6 +399,8 @@
     "vUnlimited": "∞"
   },
   "req": {
+    "crumbHome": "Home",
+    "crumbReq": "Requirements",
     "openReqs": "Open requirements",
     "h1": "Occupiers looking for space",
     "sub": "The reverse of a listing. If you are an owner or broker with a match, register interest, the occupier sees who responded and chooses who to talk to.",
@@ -684,6 +697,8 @@
     "navViewings": "Viewings"
   },
   "advisor": {
+    "crumbHome": "Home",
+    "crumbAdvisor": "Advisor",
     "newBadge": "New",
     "whatICanDo": "What I can do",
     "backHome": "Back to home",
@@ -819,6 +834,7 @@
     "scoreVisibility": "Visibility"
   },
   "rentIndex": {
+    "crumbHome": "Home",
     "na": "n/a",
     "thinSample": "Thin sample",
     "eyebrow": "Rent Index",
@@ -1030,6 +1046,10 @@
     "browseUse": "Browse this use",
     "rentIndexLink": "Rent index",
     "metaNotFound": "Building not found | SAT Markets",
+    "unavailableTitle": "This building could not be loaded",
+    "unavailableBody": "This is a connection problem, not a missing building. Try again in a moment.",
+    "unavailableTitleMeta": "Temporarily unavailable | SAT Markets",
+    "retryLabel": "Try again",
     "fallbackName": "Building",
     "crumbHome": "Home",
     "crumbListings": "Listings",
@@ -1182,6 +1202,8 @@
     "photos": "photos"
   },
   "map": {
+    "crumbHome": "Home",
+    "crumbMap": "Map",
     "back": "← Back to listings",
     "eyebrow": "Commercial intelligence map",
     "title": "Saudi commercial buildings",
@@ -1282,7 +1304,8 @@
     "searchArea": "Search this area",
     "closeMap": "Close map",
     "bubblesHint": "Location-level bubbles, green dots are exact buildings",
-    "showMap": "Show map"
+    "showMap": "Show map",
+    "showMapCount": "Show map ({n})"
   },
   "saved": {
     "title": "Saved",
@@ -1318,6 +1341,8 @@
     "upWord": "up"
   },
   "brokers": {
+    "crumbHome": "Home",
+    "crumbBrokers": "Brokers",
     "falLabel": "FAL licence",
     "falBody": "At launch, the FAL number will be checked against the REGA register before a storefront goes live.",
     "idLabel": "Identity and authorization",
@@ -1425,6 +1450,9 @@
   },
   "flyer": {
     "riyadh": "Riyadh",
+    "unavailableTitle": "This flyer could not be loaded",
+    "unavailableBody": "This is a connection problem, not a missing listing. Try again in a moment.",
+    "retryLabel": "Try again",
     "backToListing": "Back to listing",
     "printSave": "Print / save PDF",
     "propertyFlyer": "Property flyer",
@@ -1483,6 +1511,8 @@
     "metaDesc": "Sign in to SAT Markets to manage listings, enquiries and viewings."
   },
   "reqDetail": {
+    "crumbHome": "Home",
+    "crumbReq": "Requirements",
     "back": "All requirements",
     "loading": "Loading requirement",
     "notFound": "Requirement not found.",
@@ -1582,7 +1612,38 @@
     "since": "On SAT Markets since",
     "verifiedBy": "Identity verified by SAT",
     "operator": "SAT Real Estate operates this exchange and lists as a licensed brokerage like any other lister, with no badge or placement another lister cannot earn.",
-    "metaDescVerified": "Commercial spaces listed by {name}, whose identity is verified by SAT Markets, with published Rent Index context where available."
+    "metaDescVerified": "Commercial spaces listed by {name}, whose identity is verified by SAT Markets, with published Rent Index context where available.",
+    "aboutOtherLanguage": "This description is only available in Arabic:",
+    "unavailableTitle": "This lister could not be loaded",
+    "unavailableBody": "This is a connection problem, not a missing lister. Try again in a moment.",
+    "retryLabel": "Try again"
+  },
+  "listers": {
+    "metaTitle": "Owners and brokers directory | SAT Markets",
+    "metaDesc": "Owners and licensed brokers who currently have at least one commercial space live on SAT Markets, with role and identity-verification state shown as recorded.",
+    "crumbHome": "Home",
+    "crumbListers": "Directory",
+    "h1": "Owners and brokers directory",
+    "intro": "Everyone on this list currently has at least one commercial space live on the exchange. Role and identity-verification state are shown as recorded, never inferred.",
+    "filterLabel": "Role",
+    "roleAll": "All roles",
+    "applyFilter": "Apply",
+    "clearFilter": "All listers",
+    "showingRange": "Showing {range} of {total}",
+    "viewProfile": "View profile",
+    "emptyTitle": "No listers match this filter yet",
+    "emptyBody": "This is the honest count for the current filter, not a temporary gap. Try a different role, or clear the filter to see everyone on the exchange.",
+    "unavailableTitle": "The directory is temporarily unavailable",
+    "unavailableBody": "We could not reach the database just now. This is not the same as there being no listers; try again shortly.",
+    "retryLabel": "Try again",
+    "pageUnavailableTitle": "That page is not available",
+    "pageUnavailableBody": "The directory does not have that many pages for this filter. Here is the first page instead.",
+    "backToStart": "Back to the first page",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "pageOf": "Page {page} of {pages}",
+    "loadingDirectory": "Loading the directory",
+    "unnamed": "Unnamed lister"
   },
   "legalMeta": {
     "termsTitle": "Terms of Service | SAT Markets",

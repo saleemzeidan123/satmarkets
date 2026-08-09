@@ -18,6 +18,7 @@ The exception is the Rent Index, which republishes benchmarks derived from the R
 - /en/requirements and /ar/requirements: the demand board. Occupiers post what they need and owners and licensed brokers respond.
 - /en/advisor and /ar/advisor: a question and answer surface grounded in the Rent Index, derived from the REGA Rental Index (Ejar). It never originates a rent figure, a price or a market statistic.
 - /en/brokers and /ar/brokers: how licensed brokers work the exchange, with no assumed commission.
+- /en/listers and /ar/listers: the directory of owners and licensed brokers who currently have at least one commercial space live on the exchange. Paginated; the honest total for the current filter is shown, never a count implied by one page of results. Role and identity-verification state are shown only as recorded, never inferred.
 
 ## Citation
 

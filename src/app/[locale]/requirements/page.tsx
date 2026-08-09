@@ -3,6 +3,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
 import { sizeRange, budgetCeiling } from "@/lib/requirementFigures";
@@ -82,6 +83,10 @@ export default function RequirementsBoard(props: { params: Promise<{ locale: str
  return (
   <div style={{ background: "var(--cool)" }}>
    <div style={{ padding: "36px 24px 48px", maxWidth: 1080, margin: "0 auto" }}>
+    <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+      { "@type": "ListItem", position: 1, name: dict.req.crumbHome, item: `${SITE}/${locale}` },
+      { "@type": "ListItem", position: 2, name: dict.req.crumbReq, item: `${SITE}/${locale}/requirements` },
+    ] }} />
     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
      <div>
       <div className="eyebrow">{dict.req.openReqs}</div>
