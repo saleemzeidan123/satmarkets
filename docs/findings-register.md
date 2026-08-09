@@ -9,3 +9,4 @@ any fix; move to "Closed with live evidence" only after live EN and AR checks.
 
 | Rank | Sev | Finding (short) | Status after PKG-0A | Evidence / note |
 | --- | --- | --- | --- | --- |
+| 1 | P0 | Arabic body/UI inherits Hanken via --sans | Closed with live evidence | PKG-1A WS08: direction-aware `--sans`/`--serif` tokens plus `html[dir=rtl]` body/footer/skip-link/form-control family. Live computed-style sweep on 5 AR pages (home, listings, rent-index, requirements, brokers; 1,589 Arabic nodes) shows 0 Hanken-Latin nodes. |
