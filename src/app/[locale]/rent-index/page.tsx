@@ -157,7 +157,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
    let data = wide.data;
    if (wide.error || !data) ({ data } = await q(NARROW));
    districts = ((data ?? []) as any[]).map((r: any): DRow => {
-    const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " · " + segmentLabel(r.segment, loc) : ""}`;
+    const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " \\u00b7 " + segmentLabel(r.segment, loc) : ""}`;
     const location = ar ? (r.district_label_ar || r.district_label) : r.district_label;
     const cell: RentIndexCell = r;
     // The geography the passport states is the one the reader is looking at,
@@ -227,7 +227,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
  // percentage taken from broker research that we have no licence to republish.
  //
  // The two rent tiles used to carry their unit inside the label string, once per
- // language, which is how "SAR/m²·yr" came to be spelled here and in the unit
+ // language, which is how "SAR/m\\u00b2\\u00b7yr" came to be spelled here and in the unit
  // table separately. The period tile printed the raw "2026-06" from the database
  // while the eyebrow eight lines below printed the same period formatted.
  // PKG-FIG2 closure, finding 132. `formatUnit("sar_sqm_year", ...)` used to
@@ -266,7 +266,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ri.eyebrow}{pub.period ? " · " + formatPeriod(pub.period, ar) : ""}</div>
+      <div className="eyebrow">{ri.eyebrow}{pub.period ? " \\u00b7 " + formatPeriod(pub.period, ar) : ""}</div>
       <h1 style={{ fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
       <div className="muted" style={{ fontSize: "0.84375rem", marginTop: 6 }}>{ri.intro}</div>
       {/* ADV-1E. The four tiles below the header are averages taken across
@@ -362,7 +362,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
          const a = v > 0 ? 0.14 + t * 0.64 : 0;
          const light = t > 0.55;
          return (
-          <div key={i} title={String(d.location) + " · " + String(d.asset)} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
+          <div key={i} title={String(d.location) + " \\u00b7 " + String(d.asset)} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
            <div style={{ fontSize: "0.6875rem", fontWeight: 600, lineHeight: 1.25, color: light ? "var(--on-brand)" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.location}</div>
            <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 700, marginTop: 6, color: light ? "var(--on-brand)" : "var(--azure-d)" }}>{v > 0 ? d.figure : "–"}</div>
           </div>
