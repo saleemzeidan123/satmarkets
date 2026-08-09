@@ -2,6 +2,7 @@ import Link from "next/link";
 import { entityName } from "@/lib/displayName";
 import { filingAccountOf, listerIdentityVerified, verifiedBadgeText } from "@/lib/listingVerification";
 import type { ListerRow } from "@/lib/queries/listers";
+import { Icon } from "@/components/satkit";
 
 // PKG-DISCOVERY-1, item 6. The directory's one card. It shows exactly what
 // `listers_public` records and nothing this codebase would have to guess:
@@ -33,6 +34,13 @@ export default function ListerCard({
   const name = entityName(lister, ar ? "ar" : "en") || unnamedLabel;
   const initials = name.trim().split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const verified = listerIdentityVerified(filingAccountOf(lister));
+  // PKG-DISCOVERY-1 visible-polish follow-up. `roleLabel` already tells the
+  // reader owner vs. broker in text; this adds the same glyph the persona
+  // picker on Home uses for the broker path (Icon.shield, "I am a licensed
+  // broker") so the directory is scannable by shape too, not just by text.
+  // Driven off `lister.lister_type`, a column this card already receives,
+  // not a new claim.
+  const RoleIcon = lister.lister_type === "broker" ? Icon.shield : Icon.user;
   const year = lister.member_since && isFinite(new Date(lister.member_since).getTime())
     ? new Date(lister.member_since).getFullYear()
     : null;
@@ -46,7 +54,7 @@ export default function ListerCard({
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: "1rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><bdi>{name}</bdi></div>
           <div className="row gap6 wrap" style={{ alignItems: "center", marginTop: 4 }}>
-            <span className="tag">{roleLabel}</span>
+            <span className="tag row gap6" style={{ alignItems: "center", display: "inline-flex" }}><RoleIcon size={12} /> {roleLabel}</span>
             {lister.is_operator && <span className="tag">{ar ? "سات العقارية" : "SAT Real Estate"}</span>}
           </div>
         </div>

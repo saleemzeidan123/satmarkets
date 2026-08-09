@@ -384,13 +384,24 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro3}</span>
      </div>
      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
+      {/* Item 6 follow-up, Home visible polish. These four persona cards were
+          text-only, one weight and one size, with nothing to help a scanning
+          eye tell them apart before reading every word. Each now carries the
+          same icon-chip language `.jc-ic` already established on the "Four
+          jobs" cards below, sized down for this denser row, so a returning
+          visitor can recognise "I invest" by its chart glyph as fast as by
+          its label. The icon is decorative (aria-hidden): the link's name is
+          still the label text alone, unchanged from before this pass. */}
       {([
-        [H.personaNeed, L("/listings")],
-        [H.personaHave, L("/list")],
-        [H.personaBroker, L("/requirements")],
-        [H.personaInvest, L("/listings?deal=sale")],
-      ] as [string, string][]).map(([label, href], i) => (
-       <Link key={i} href={href} className="card" style={{ padding: "14px 14px", textAlign: "center", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: "var(--fs-sm)" }}>{label}</Link>
+        [H.personaNeed, L("/listings"), Icon.search],
+        [H.personaHave, L("/list"), Icon.building],
+        [H.personaBroker, L("/requirements"), Icon.shield],
+        [H.personaInvest, L("/listings?deal=sale"), Icon.chart],
+      ] as [string, string, (p: { size?: number }) => React.JSX.Element][]).map(([label, href, I], i) => (
+       <Link key={i} href={href} className="card persona-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "16px 14px", textAlign: "center", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: "var(--fs-sm)" }}>
+        <span className="persona-ic" aria-hidden="true"><I size={18} /></span>
+        {label}
+       </Link>
       ))}
      </div>
     </div>

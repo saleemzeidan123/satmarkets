@@ -167,6 +167,15 @@ html[dir="rtl"]{
 @keyframes floaty { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-7px); } }
 .reveal { opacity:0; }
 .reveal.in { animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) forwards; }
+/* Reveal.tsx (PKG-DISCOVERY-1 slice F) only ever adds the .in class from an
+   IntersectionObserver callback; a reduced-motion preference, a JS failure,
+   or an unsupported IntersectionObserver would otherwise leave content
+   sitting at opacity:0 forever. The global reduced-motion rule below
+   collapses animation-duration to .01ms but does not touch this base
+   opacity:0 state, so it is not sufficient on its own; this rule makes
+   reduced-motion visitors see the content immediately regardless of
+   whether the observer ever fires. */
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;}}
 .float-slow { animation: floaty 7s ease-in-out infinite; }
 .mesh {
   position:relative;
@@ -426,6 +435,15 @@ main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom)
 [dir="rtl"] .job-card:hover .jc-arrow{transform:translateX(-3px);}
 .jc-stat{display:flex;align-items:baseline;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--silver);}
 @media(prefers-reduced-motion:reduce){.job-card,.job-card::after,.jc-ic,.jc-arrow{transition:none;}.job-card:hover{transform:none;}}
+
+/* ---- Home persona picker (PKG-DISCOVERY-1 visible-polish follow-up) ----
+   Same icon-chip language as .jc-ic above, sized down for this denser
+   four-across row so the hover/colour behaviour a returning visitor
+   already learned from the "Four jobs" cards carries over here too. */
+.persona-card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
+.persona-ic{width:34px;height:34px;border-radius:10px;background:var(--cool);color:var(--harbor);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s ease,color .2s ease,transform .2s ease;}
+.persona-card:hover .persona-ic{background:var(--harbor);color:#fff;transform:translateY(-2px);}
+@media(prefers-reduced-motion:reduce){.persona-card,.persona-ic{transition:none;}.persona-card:hover .persona-ic{transform:none;}}
 
 /* ---- Floating SAT Advisor widget ---- */
 .advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(82px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
