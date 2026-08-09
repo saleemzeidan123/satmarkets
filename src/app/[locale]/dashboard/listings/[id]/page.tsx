@@ -219,7 +219,7 @@ export default async function ManageListingPage(props: { params: Promise<{ local
 
   const t = ar ? {
     back: "عروضي", edit: "تعديل التفاصيل", viewPublic: "عرض الصفحة العامة", locked: "الترخيص والتحقّق",
-    lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدَّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
+    lockedNote: "رقم رخصة الإعلان والتحقّق من الملكية لا تُعدّل من هنا؛ تغييرها يتطلّب مراجعة سات ويحمي شارة التوثيق.",
     permit: "رخصة الإعلان", expires: "تنتهي", pendingV: "قيد التحقّق",
     pause: "إيقاف مؤقّت", resume: "إعادة النشر", working: "جارٍ", cannot: "تعذّرت إعادة النشر:",
     st: { published: "منشور", archived: "موقوف", draft: "مسودة", pending_review: "قيد المراجعة", approved: "معتمد", rejected: "مرفوض" } as Record<string, string>,
