@@ -1,1 +1,0 @@
-MARK_A {"\\u00B7"} MARK_B {"\\u00B7"} MARK_C
