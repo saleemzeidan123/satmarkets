@@ -557,8 +557,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             it cannot back up. `capped` names the other silent overstatement this
             count could make: `.limit(300)` above can end a page-worthy match set
             without saying so, and this is the one place capable of saying so. */}
-        {/* PRIME X:\\u00B7:Y */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"\\u00B7"} {dl.mapArea} {"\\u00B7"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"\\u00B7"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
+        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
