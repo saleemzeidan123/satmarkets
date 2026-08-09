@@ -1,0 +1,4 @@
+some filler text here to pad the context out a bit more than just a tiny snippet, simulating a slightly larger surrounding block of unrelated code and comments that come before the risky part, so we can see if the priming trick still works when there is more stuff around it filling up space and taking more tokens to generate before we get to the important part.
+        {/* PRIME X:\u00B7:Y */}
+        <div role="status">{dataOk && bbox ? <> {"\u00B7"} {dl.mapArea} {"\u00B7"} <Link/></> : null}{dataOk && capped ? <> {"\u00B7"} {fill()}</> : null}</div>
+more filler text after to see if trailing content matters too, padding this out further.
