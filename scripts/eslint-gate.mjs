@@ -66,7 +66,15 @@ const PINNED = {
 // can see them, but a warning that cannot fail anything is not a gate, and
 // pretending otherwise is the decorative case this file exists to refuse.
 const WARN_INVENTORY = {
-  "@next/next/no-img-element": 14,
+  // PKG-DISCOVERY-1, item 6. 14 to 15: the Listers directory card
+  // (src/components/ListerCard.tsx) renders a lister's own uploaded logo the
+  // same way every other avatar on the platform already does (ListerBadge,
+  // the lister profile page, ListingCard), a raw <img> rather than
+  // next/image, because the source is an arbitrary external URL a lister
+  // supplied and not a build-time asset next/image can optimise. Recorded
+  // here rather than left to drift, per this file's own rule that a warning
+  // count exists to be seen, not to be stale.
+  "@next/next/no-img-element": 15,
   "react-hooks/exhaustive-deps": 9,
 };
 
