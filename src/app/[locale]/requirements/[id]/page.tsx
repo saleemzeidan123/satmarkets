@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
@@ -170,12 +171,21 @@ export default function RequirementDetail(props: { params: Promise<{ locale: str
  );
 
  const titleAttrs = textLangAttrs((ar && req.titleAr) || req.title);
+ const reqTitle = (ar && req.titleAr) || req.title;
 
  return (
   <div style={{ background: "var(--cool)" }} aria-busy={false}>
    {statusRegion}
    <div style={{ padding: "26px 24px 48px", maxWidth: 880, margin: "0 auto" }}>
-    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: "0.8125rem", color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
+    {/* The requirement's own title, already resolved to the reader's language
+        above the fold (or its honest fallback), is real data the record
+        carries; no field here is invented for the sake of a third crumb. */}
+    <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+      { "@type": "ListItem", position: 1, name: t.crumbHome, item: `${SITE}/${locale}` },
+      { "@type": "ListItem", position: 2, name: t.crumbReq, item: `${SITE}/${locale}/requirements` },
+      { "@type": "ListItem", position: 3, name: reqTitle, item: `${SITE}/${locale}/requirements/${req.id}` },
+    ] }} />
+    <Link href={`/${locale}/requirements`} className="row gap6" style={{ fontSize: "0.8125rem", color: "var(--slate)", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={15} /></span> {t.back}</Link>
     <div className="card pad" style={{ marginTop: 14, boxShadow: "var(--sh-1)" }}>
      <div className="row between" style={{ alignItems: "center" }}>
       <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(req.asset, locale)} · {req.deal === "lease" ? t.lease : t.buy}</span>

@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel } from "@/lib/labels";
 import MapExplorer, { type MapBuilding } from "@/components/MapExplorer";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { quotableRentIndexRows } from "@/lib/market/quotable";
 import { entityName } from "@/lib/displayName";
@@ -66,6 +67,10 @@ export default async function MapPage(props: { params: Promise<{ locale: string 
 
   return (
     <section className="intel-canvas -mx-5 rounded-3xl px-5 py-8 sm:-mx-6 sm:px-8 sm:py-10">
+      <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+        { "@type": "ListItem", position: 1, name: dict.map.crumbHome, item: `${SITE}/${locale}` },
+        { "@type": "ListItem", position: 2, name: dict.map.crumbMap, item: `${SITE}/${locale}/map` },
+      ] }} />
       <a href={`/${locale}/listings`} className="mb-4 inline-flex items-center gap-1.5 text-[0.8125rem] font-medium text-charcoal/70 transition hover:text-charcoal">{dict.map.back}</a>
       <div className="text-[0.6875rem] font-medium uppercase tracking-[0.18em] intel-gold">{dict.map.eyebrow}</div>
       <h1 className="mt-1 font-display text-3xl text-charcoal sm:text-4xl">{dict.map.title}</h1>
