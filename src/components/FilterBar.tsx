@@ -54,6 +54,18 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
      opened the panel. */
   const pillRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const prevOpen = useRef<string | null>(null);
+  // Item 8. The mobile filter sheet. Below the site's small breakpoint
+  // (max-width:640px, matching --bp-sm in sat-platform.css), the same panel
+  // content renders as a real bottom sheet instead of the always-in-flow
+  // dropdown desktop uses: a backdrop, a focus trap, background scroll
+  // locking, and initial focus on open. `isMobileSheet` is read from
+  // matchMedia rather than a CSS-only breakpoint because these behaviors
+  // (scroll lock, focus trap) must not run on desktop, where the panel is a
+  // non-modal popup and trapping Tab or locking the page would be a
+  // regression, not an improvement.
+  const [isMobileSheet, setIsMobileSheet] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const t = (en: string, arr: string) => (ar ? arr : en);
   /* Slice C, WS16. The ordering that ran, when the page told us, and otherwise the
      reader's own parameter. A value the list does not carry names nothing, so the
@@ -88,6 +100,50 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     }, 220);
     return () => { clearTimeout(h); ctl.abort(); };
   }, [q]);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobileSheet(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  // Background scroll locking. Only while the sheet is genuinely a modal
+  // takeover; the desktop popup never locks the page.
+  useEffect(() => {
+    if (!open || !isMobileSheet) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prevOverflow; };
+  }, [open, isMobileSheet]);
+  // Initial focus. The location panel keeps its own autoFocus search input
+  // (unchanged desktop behaviour); every other panel has no focusable
+  // element of its own to land on, so focus goes to the sheet's close
+  // button, per the dialog pattern.
+  useEffect(() => {
+    if (!open || !isMobileSheet || open === "loc") return;
+    closeBtnRef.current?.focus();
+  }, [open, isMobileSheet]);
+  // Contained keyboard focus. Tab and Shift+Tab wrap within the sheet's own
+  // focusable elements rather than escaping into the page behind it.
+  useEffect(() => {
+    if (!open || !isMobileSheet) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const root = panelRef.current;
+      if (!root) return;
+      const items = Array.from(
+        root.querySelectorAll<HTMLElement>('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+      );
+      if (!items.length) return;
+      const first = items[0], last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey) {
+        if (active === first || !active || !root.contains(active)) { e.preventDefault(); last.focus(); }
+      } else if (active === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, isMobileSheet]);
 
   const nav = (patch: Params) => {
     const next: Params = { ...params, ...patch };
@@ -128,6 +184,18 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const activeSize = params.sz ? `${Number(params.sz).toLocaleString("en-US")} m²` : (params.smin || params.smax ? SIZES.find((s) => s[1] === (params.smin || "") && s[2] === (params.smax || ""))?.[0] : "");
   const activeRent = params.rt ? `${Number(params.rt).toLocaleString("en-US")}` : (params.pmin || params.pmax ? RENTS.find((s) => s[1] === (params.pmin || "") && s[2] === (params.pmax || ""))?.[0] : "");
   const activePrice = params.sp ? `${Number(params.sp).toLocaleString("en-US")}` : (params.spmin || params.spmax ? SALE_PRICES.find((s) => s[1] === (params.spmin || "") && s[2] === (params.spmax || ""))?.[0] : "");
+
+  // Correct dialog labelling. Declared after `isSale` on purpose: an earlier
+  // draft of this panel placed an equivalent lookup before `isSale`'s own
+  // declaration in this same function scope, which throws a ReferenceError
+  // at runtime (a temporal-dead-zone read), not a type error `tsc` catches.
+  const PANEL_TITLES: Record<string, [string, string]> = {
+    loc: ["Location", "الموقع"], deal: ["Deal", "الصفقة"], asset: ["Property type", "نوع العقار"],
+    size: ["Size", "المساحة"], rent: isSale ? ["Price", "السعر"] : ["Rent", "الإيجار"],
+    grade: ["Grade", "الفئة"], fit: ["Fit-out", "التجهيز"], sort: ["Sort", "ترتيب"],
+  };
+  const PANEL_TITLE_ID = "fb-panel-title";
+  const panelTitleText = open && PANEL_TITLES[open] ? t(PANEL_TITLES[open][0], PANEL_TITLES[open][1]) : "";
 
   const pill = (key: string, label: string, active: boolean, right?: boolean) => (
     <button type="button" key={key} ref={(el) => { pillRefs.current[key] = el; }} onClick={() => setOpen(open === key ? null : key)}
@@ -289,8 +357,28 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
           </button>
         </div>
       ) : null}
-      {open ? (
-        <div id={PANEL_ID} role="group" className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
+      {open && isMobileSheet ? (
+        <>
+          {/* Backdrop behavior: a full-viewport scrim, click to dismiss. It is a
+              plain descendant of this component's own root, not a portal, so
+              `position:fixed` still escapes the in-flow layout visually while
+              the existing outside-click listener above (bound to `wrapRef`)
+              correctly does NOT treat a backdrop click as "outside", which is
+              why it needs its own explicit onClick here. */}
+          <div className="fb-sheet-backdrop" onClick={() => setOpen(null)} aria-hidden="true" />
+          <div id={PANEL_ID} ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={PANEL_TITLE_ID} className="fb-sheet">
+            <div className="fb-sheet-head">
+              <span id={PANEL_TITLE_ID} className="fb-sheet-title">{panelTitleText}</span>
+              <button type="button" ref={closeBtnRef} onClick={() => setOpen(null)} aria-label={t("Close", "إغلاق")} className="fb-sheet-close">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <div className="fb-sheet-body">{renderPanel()}</div>
+          </div>
+        </>
+      ) : open ? (
+        <div id={PANEL_ID} role="group" aria-labelledby={PANEL_TITLE_ID} className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
+          <span id={PANEL_TITLE_ID} className="sronly">{panelTitleText}</span>
           {renderPanel()}
         </div>
       ) : null}
