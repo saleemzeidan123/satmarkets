@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect, use } from "react";
 import Link from "next/link";
 import { Icon, Logo } from "@/components/satkit";
+import JsonLd, { SITE } from "@/components/JsonLd";
 import { assetLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { useAdvisorChat } from "@/lib/useAdvisorChat";
@@ -150,6 +151,10 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
 
  return (
   <div className="dash">
+   <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
+     { "@type": "ListItem", position: 1, name: av.crumbHome, item: `${SITE}/${locale}` },
+     { "@type": "ListItem", position: 2, name: av.crumbAdvisor, item: `${SITE}/${locale}/advisor` },
+   ] }} />
    <aside className="dside advisor-rail-l" style={{ background: "var(--paper)", color: "var(--ink)", borderRight: "1px solid var(--silver)" }}>
     <div className="brand" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
      <Link href={`/${locale}`} aria-label="Home"><Logo size={26} /></Link>

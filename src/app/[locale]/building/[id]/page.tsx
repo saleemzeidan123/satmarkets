@@ -6,6 +6,8 @@ import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, cityLabel } from "@/lib/labels";
 import { photoFor } from "@/lib/photos";
 import ListingCard from "@/components/ListingCard";
+import DataState from "@/components/DataState";
+import RetryButton from "@/components/RetryButton";
 import { getDictionary } from "@/i18n/getDictionary";
 import type { Listing } from "@/lib/types";
 import JsonLd, { SITE } from "@/components/JsonLd";
@@ -39,7 +41,13 @@ export async function generateMetadata(props: { params: Promise<{ locale: string
   const loc = (params.locale === "ar" ? "ar" : "en") as "en" | "ar";
   const ar = loc === "ar";
   const dict = getDictionary(loc);
-  const b: any = await getBuildingById(params.id);
+  const { dataOk, row: b } = await getBuildingById(params.id);
+  // PKG-DISCOVERY-1 item 8, the building profile's own instance of the
+  // storage-unavailable/not-found distinction item 9 ruled for the listing
+  // and flyer routes: a failed read gets its own honest title, never the
+  // real title (unconfirmed) and never "not found" (a stronger claim than a
+  // failed read is entitled to make).
+  if (!dataOk) return { title: dict.building.unavailableTitleMeta };
   if (!b) return { title: dict.building.metaNotFound };
   const name = entityName(b, loc) || dict.building.fallbackName;
   const place = `${ar ? (b.district_label_ar || b.district_label) : b.district_label}${b.city ? (ar ? "، " : ", ") + cityLabel(b.city, loc) : ""}`;
@@ -57,10 +65,23 @@ export default async function BuildingPage(props: { params: Promise<{ locale: st
   if (!isLocale(params.locale)) notFound();
   const locale = params.locale;const ar = locale === "ar";
   const dict = getDictionary(locale);
+  // PKG-DISCOVERY-1 item 8. This route used to resolve "no Supabase client"
+  // and "a real query error" the same way it resolved "no such building": a
+  // bare notFound(), which put a storage outage in front of a reader as a
+  // false claim that the building does not exist. The storage-unavailable
+  // case is checked first and rendered with a retry, before the not-found
+  // case and before every query below that assumes a working client.
+  const { dataOk, row: b } = await getBuildingById(params.id);
+  if (!dataOk) {
+    return (
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 24px" }}>
+        <DataState kind="error" title={dict.building.unavailableTitle} body={dict.building.unavailableBody} action={<RetryButton label={dict.building.retryLabel} />} />
+      </div>
+    );
+  }
+  if (!b) notFound();
   const sb = await getSupabaseServer();
   if (!sb) notFound();
-  const b: any = await getBuildingById(params.id);
-  if (!b) notFound();
   const [{ data: units }, { data: rentRows }, { data: briefs }] = await Promise.all([
     releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("building_id", b.id).eq("status", "published")).order("created_at", { ascending: false }),
     // ADV-1E. The select carries what the decision needs. `sufficient` alone
