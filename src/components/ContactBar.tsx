@@ -179,7 +179,7 @@ export default function ContactBar(p: Props) {
 
   return (
     <div
-      className="fixed inset-x-0 bottom-0 z-40 grid items-center gap-2 border-t border-line bg-white/90 px-4 pt-3 backdrop-blur md:hidden"
+      className="contact-dock fixed inset-x-0 z-40 grid items-center gap-2 border-t border-line bg-white/90 px-4 pt-3 backdrop-blur md:hidden"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))", gridTemplateColumns: wa && (call || message) ? "1fr auto auto" : "1fr" }}
     >
       {wa ? (

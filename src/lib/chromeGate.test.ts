@@ -265,6 +265,7 @@ test("the layout hands the disclosure to the notice slot, not to the header", ()
 
 const GLOBALS = readFileSync(join("src", "styles", "globals.css"), "utf8");
 const FOOTER_CSS = readFileSync(join("src", "styles", "footer.css"), "utf8");
+const SAT_PLATFORM = readFileSync(join("src", "styles", "sat-platform.css"), "utf8");
 
 test("only a route that renders the tab bar reserves space for it", () => {
   for (const locale of ["en", "ar"]) {
@@ -344,14 +345,23 @@ test("the floating Advisor button clears the bar, and only where the bar is", ()
     "the computed class is not the one the button renders",
   );
 
-  // The two offsets are read out of the stylesheet rather than restated here,
-  // so the relationship is checked against the shipped values.
-  const reserved = Number(/main\.has-tabbar ~ \.foot\{--tabbar-reserve:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
-  const fab = Number(/\.advfab\{[^}]*bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
+  // Item 2, the mobile safe-zone system. The bar's own height moved into one
+  // token, `--tabbar-h` (sat-platform.css :root), so this reservation, the
+  // Advisor button's offset and the Listing Detail contact dock's offset
+  // (below) all read the same number instead of each restating "62px". The
+  // offsets are still read out of the stylesheets rather than restated here,
+  // so the relationship is checked against the shipped values, not a copy of
+  // them.
+  const tabbarH = Number(/--tabbar-h:(\d+)px;/.exec(SAT_PLATFORM)![1]);
+  assert.equal(tabbarH, 62, "the tab bar's own measured height (globals.css:292) and the shared token have drifted apart");
+  assert.match(
+    GLOBALS,
+    /main\.has-tabbar ~ \.foot\{--tabbar-reserve:calc\(var\(--tabbar-h\) \+ env\(safe-area-inset-bottom\)\)/,
+    "the footer's reservation no longer reads the shared tab bar height token",
+  );
+  const fabGap = Number(/\.advfab\{[^}]*bottom:calc\(var\(--tabbar-h\) \+ (\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
   const fabClear = Number(/\.advfab\.no-tabbar\{bottom:calc\((\d+)px \+ env\(safe-area-inset-bottom\)\)/.exec(GLOBALS)![1]);
-  assert.equal(reserved, 62);
-  assert.ok(fab > reserved, `the Advisor button at ${fab}px sits inside the ${reserved}px tab bar`);
-  assert.equal(fab - reserved, fabClear, "the gap above the bar and the gap above the floor are different numbers");
+  assert.equal(fabGap, fabClear, "the gap above the bar and the gap above the floor are different numbers");
 
   // The safe-area inset is the home indicator, which is present whether or not a
   // tab bar is, so it survives in both variants.

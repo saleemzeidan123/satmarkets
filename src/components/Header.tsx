@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import { Logo } from "@/components/satkit";
+import { releaseLabel } from "@/lib/releaseState";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
 
@@ -80,9 +81,15 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     { href: `/${locale}/advisor`, label: dict.nav.advisor },
     { href: `/${locale}/requirements`, label: dict.nav.requirements },
   ];
+  // Item 3, route truth. /pricing's own tier cards render their call-to-action
+  // as a plain <span>, not a link or button (src/app/[locale]/pricing/page.tsx)
+  // -- there is no working purchase flow behind this page yet, which is why
+  // MarketingHome.tsx's own feature grid already carries "Membership plans" as
+  // a disclosed-planned tile rather than a link (PLANNED_FEATS, index 7). This
+  // menu offered the same held page as an ordinary destination.
   const nav = [
     { href: `/${locale}/about`, label: dict.nav.about },
-    { href: `/${locale}/pricing`, label: dict.nav.pricing },
+    { href: `/${locale}/pricing`, label: dict.nav.pricing, planned: true },
     { href: `/${locale}/brokers`, label: dict.nav.brokers },
     { href: `/${locale}/listers`, label: dict.nav.listers },
   ];
@@ -111,7 +118,13 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
-          <Link href={`/${locale}/dashboard`} className="btn-ink px-3.5 py-2 text-[0.8125rem] font-medium">
+          {/* Item 3, route truth. This button rendered on every public page and
+              sent every reader, signed in or not, straight to the session-gated
+              owner shell -- the same defect the Home ruling already fixed on
+              MarketingHome's own CTA (see MarketingHome.homeRuling.test.ts),
+              left standing in the one piece of chrome every page shares. /list
+              is the real, working, public listing intake. */}
+          <Link href={`/${locale}/list`} className="btn-ink px-3.5 py-2 text-[0.8125rem] font-medium">
             <span className="sm:hidden">{dict.nav.list}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
@@ -148,7 +161,17 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
                 <div className="px-2 py-2">
                   <p className="px-2 pb-1 pt-1 text-[0.65625rem] font-semibold uppercase tracking-wider text-charcoal/65">{browseLabel}</p>
-                  {nav.map((n) => (
+                  {/* palette.test.ts's contrast floor: no text-charcoal/NN step below
+                      /65 may carry text anywhere in the product (findings 140/150).
+                      /70 and /65 here match the same de-emphasis this dropdown
+                      already uses a few lines up (browseLabel/accountLabel at /65,
+                      the unselected nav items at /80), not a new pair. */}
+                  {nav.map((n) => n.planned ? (
+                    <span key={n.href} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/70" style={{ cursor: "default" }}>
+                      {n.label}
+                      <span className="text-[0.6875rem] text-charcoal/65">{releaseLabel("planned", ar)}</span>
+                    </span>
+                  ) : (
                     <Link key={n.href} href={n.href} className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] hover:bg-ivory-2 ${active(n.href) ? "bg-ivory-2 font-medium text-charcoal" : "text-charcoal/80"}`}>
                       {n.label}
                     </Link>

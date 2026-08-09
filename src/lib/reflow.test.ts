@@ -106,11 +106,13 @@ const FLOOR_EXEMPT: Record<string, string> = {
     "minmax(40px,auto) is a 40px label gutter on the internal bilingual comparison page, " +
     "which is a development surface, not a product journey. 40px is below every content " +
     "box measured here, so it cannot be the wider of the two.",
-  "src/styles/sat-platform.css:705":
+  "src/styles/sat-platform.css:713":
     ".lst-split's 300px track is the search results map panel. It does not need a min() " +
-    "escape because it is removed entirely below its own breakpoint: sat-platform.css:710 " +
-    "sets `.lst-split{grid-template-columns:1fr}` and :711 sets `.lst-map-panel{display:none}` " +
-    "at max-width:1080px, so the 300px track exists only at widths where 300px fits.",
+    "escape because it is removed entirely below its own breakpoint: sat-platform.css:718 " +
+    "sets `.lst-split{grid-template-columns:1fr}` and :719 sets `.lst-map-panel{display:none}` " +
+    "at max-width:1080px, so the 300px track exists only at widths where 300px fits. " +
+    "Re-pointed from :705 by the item 2 mobile safe-zone repair, which added an 8-line " +
+    "--tabbar-h token block near the top of the same file's :root.",
 };
 
 test("no grid track has a fixed pixel floor it cannot escape", () => {

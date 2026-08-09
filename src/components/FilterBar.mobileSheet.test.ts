@@ -60,7 +60,16 @@ test("mobile sheet: contained keyboard focus. Tab and Shift+Tab wrap within the 
 });
 
 test("mobile sheet: Escape dismissal, and it is not scoped only to mobile (desktop keeps the same behaviour it already had)", () => {
-  assert.match(SRC, /if \(e\.key === "Escape"\) setOpen\(null\);/, "Escape must close the open panel");
+  // UX closure item 1/5 (the mobile Location sheet repair and the "All
+  // filters" two-level sheet) replaced the scattered `setOpen(null)` calls
+  // (Escape, outside click, nav(), clearAll(), the close button, the
+  // backdrop) with one `closeSheet()` helper, so a category drilled into
+  // from "All filters" and its own back-navigation share one definition of
+  // "closed" instead of the two being able to drift apart. `closeSheet`
+  // itself still resolves to `setOpen(null)` underneath; that assertion
+  // moves to the dedicated test below rather than disappearing.
+  assert.match(SRC, /const closeSheet = \(\) => \{ setOpen\(null\); setCameFromAll\(false\); \};/, "closeSheet must reset both the open panel and the All-filters drill-down state");
+  assert.match(SRC, /if \(e\.key === "Escape"\) closeSheet\(\);/, "Escape must close the open panel via closeSheet");
 });
 
 test("mobile sheet: focus restoration returns to the pill that opened the panel", () => {
@@ -74,7 +83,8 @@ test("mobile sheet: focus restoration returns to the pill that opened the panel"
 
 test("mobile sheet: backdrop is present, dismisses on click, and is distinct from the existing outside-click listener", () => {
   assert.match(SRC, /className="fb-sheet-backdrop"/, "a backdrop element must render in mobile mode");
-  assert.match(SRC, /className="fb-sheet-backdrop" onClick=\{\(\) => setOpen\(null\)\}/, "the backdrop must dismiss the sheet on click");
+  // Same closeSheet() consolidation as the Escape test above.
+  assert.match(SRC, /className="fb-sheet-backdrop" onClick=\{closeSheet\}/, "the backdrop must dismiss the sheet on click, via closeSheet");
   assert.match(CSS, /\.fb-sheet-backdrop\{[^}]*position:fixed;inset:0/, "the backdrop must cover the full viewport");
 });
 

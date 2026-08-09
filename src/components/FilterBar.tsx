@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { formatUnit } from "@/lib/format";
+import { Icon } from "@/components/satkit";
 
 // Dropdown filter bar for the exchange. Pills toggle a single in-flow panel
 // rendered below the row, so it never overflows on mobile or in the app shell.
@@ -46,6 +48,15 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const ar = locale === "ar";
   const router = useRouter();
   const [open, setOpen] = useState<string | null>(null);
+  // Item 5, mobile Search discovery. "All filters" opens a two-level sheet: a
+  // category list first, each row's own panel second. This tracks whether the
+  // currently open category panel was reached through that list, so the
+  // sheet header can offer a back chevron into the list instead of only a
+  // close button -- opening a category directly from its own quick-rail pill
+  // still closes straight to the page, unchanged.
+  const [cameFromAll, setCameFromAll] = useState(false);
+  const openCategory = (key: string) => { setCameFromAll(true); setOpen(key); };
+  const closeSheet = () => { setOpen(null); setCameFromAll(false); };
   const [q, setQ] = useState("");
   const [places, setPlaces] = useState<{ label: string; sub: string }[]>([]);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -66,6 +77,31 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const [isMobileSheet, setIsMobileSheet] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  /* Mobile sheet stacking fix. `.fb-sheet` used to render in-place, inside
+     `.lst-filterwrap` (position:sticky, z-index:30). A positioned ancestor
+     with its own z-index creates a new stacking context, and a
+     position:fixed descendant does NOT escape that context for paint order
+     (only for layout) -- so the sheet's own z-index:62 was being compared
+     against siblings only within that z-index:30 box, not against the site
+     header (z-index:40), the bottom tab bar (45) or the Advisor fab (60) at
+     the root level. All three painted over the sheet's top edge, which is
+     exactly what looked like "the sheet doesn't reach the header/tabbar/
+     Advisor" and, wherever the header's bottom edge overlapped the sheet's
+     title bar at the sheet's taller (near-85vh) heights, like the sheet
+     opening already scrolled into the middle of its own content. A portal
+     to a dedicated node appended directly to <body> renders the sheet in
+     the root stacking context, where 62 legitimately outranks all three. */
+  // react-hooks/refs (the React Compiler's ESLint rule) refuses a ref read
+  // during render, and this node is read in the JSX below to decide whether
+  // to portal at all: a ref's `.current` is exactly the kind of value the
+  // rule assumes may be stale or absent when a render is replayed. State
+  // does not have that problem, so the node lives in state instead, built
+  // by useState's lazy initializer (React runs this exactly once, for the
+  // very first render, never again on a re-render) rather than assigned from
+  // inside an effect: `setState` called synchronously in an effect body is
+  // its own, separately pinned finding (react-hooks/set-state-in-effect),
+  // and this sidesteps it rather than trading one finding for another.
+  const [sheetPortalEl] = useState<HTMLDivElement | null>(() => (typeof document !== "undefined" ? document.createElement("div") : null));
   const t = (en: string, arr: string) => (ar ? arr : en);
   /* Slice C, WS16. The ordering that ran, when the page told us, and otherwise the
      reader's own parameter. A value the list does not carry names nothing, so the
@@ -75,12 +111,27 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const PANEL_ID = "fb-panel";
 
   useEffect(() => {
-    const onDoc = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(null); };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(null); };
+    // The mobile sheet portals to a node appended straight to <body> (see
+    // sheetPortalEl above `renderPanel`), outside `wrapRef`'s own subtree.
+    // Left unpatched, this listener reads every click inside the sheet
+    // itself -- including a row in the "All filters" list drilling into its
+    // own category -- as an "outside" click and closes the whole sheet
+    // before the row's own onClick can run, since mousedown fires first.
+    const onDoc = (e: MouseEvent) => {
+      const t = e.target as Node;
+      const insideWrap = wrapRef.current && wrapRef.current.contains(t);
+      const insideSheet = sheetPortalEl && sheetPortalEl.contains(t);
+      if (!insideWrap && !insideSheet) closeSheet();
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeSheet(); };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
     return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
-  }, []);
+    // sheetPortalEl goes from null to a real node exactly once, right after
+    // mount; re-running this effect that one extra time (cleanup then
+    // re-add) is what keeps onDoc's closure from reading a stale null
+    // forever, the way it would with an empty dependency array.
+  }, [sheetPortalEl]);
   useEffect(() => {
     const prev = prevOpen.current;
     prevOpen.current = open;
@@ -115,6 +166,35 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prevOverflow; };
   }, [open, isMobileSheet]);
+  // Mount the portal node, cover-and-inert everything else on the page, and
+  // hide the two floating controls the sheet would otherwise fight for
+  // layering with (the tab bar and the Advisor fab live outside this
+  // component's tree and outside this portal, so they can't be reached by
+  // props -- a body class is the one thing both sides can agree on). Native
+  // `inert` (not just aria-hidden) both removes background content from the
+  // accessibility tree and blocks pointer/keyboard interaction with it,
+  // which is what "cover and inert the background" asks for beyond what the
+  // Tab-trap above already does for keyboard users.
+  useEffect(() => {
+    if (!open || !isMobileSheet) return;
+    const node = sheetPortalEl;
+    if (!node) return;
+    document.body.appendChild(node);
+    document.body.classList.add("fb-sheet-modal-open");
+    const inerted = Array.from(document.body.children).filter((el) => el !== node) as HTMLElement[];
+    inerted.forEach((el) => { el.inert = true; });
+    // Defensive reset: a browser scrolling an autoFocus input into view (the
+    // location panel's search box) has been observed to leave a freshly
+    // mounted scroll container at a non-zero scrollTop instead of showing
+    // its content from the top.
+    const body = node.querySelector<HTMLElement>(".fb-sheet-body");
+    if (body) body.scrollTop = 0;
+    return () => {
+      inerted.forEach((el) => { el.inert = false; });
+      document.body.classList.remove("fb-sheet-modal-open");
+      if (node.parentNode) node.parentNode.removeChild(node);
+    };
+  }, [open, isMobileSheet, sheetPortalEl]);
   // Initial focus. The location panel keeps its own autoFocus search input
   // (unchanged desktop behaviour); every other panel has no focusable
   // element of its own to land on, so focus goes to the sheet's close
@@ -149,7 +229,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     const next: Params = { ...params, ...patch };
     const p = new URLSearchParams();
     Object.entries(next).forEach(([k, v]) => { if (v) p.set(k, String(v)); });
-    setOpen(null);
+    closeSheet();
     router.push(`${basePath}${p.toString() ? `?${p.toString()}` : ""}`);
   };
   const csv = (key: string) => (params[key] ? params[key].split(",").filter(Boolean) : []);
@@ -193,12 +273,13 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     loc: ["Location", "الموقع"], deal: ["Deal", "الصفقة"], asset: ["Property type", "نوع العقار"],
     size: ["Size", "المساحة"], rent: isSale ? ["Price", "السعر"] : ["Rent", "الإيجار"],
     grade: ["Grade", "الفئة"], fit: ["Fit-out", "التجهيز"], sort: ["Sort", "ترتيب"],
+    all: ["All filters", "كل الفلاتر"],
   };
   const PANEL_TITLE_ID = "fb-panel-title";
   const panelTitleText = open && PANEL_TITLES[open] ? t(PANEL_TITLES[open][0], PANEL_TITLES[open][1]) : "";
 
   const pill = (key: string, label: string, active: boolean, right?: boolean) => (
-    <button type="button" key={key} ref={(el) => { pillRefs.current[key] = el; }} onClick={() => setOpen(open === key ? null : key)}
+    <button type="button" key={key} ref={(el) => { pillRefs.current[key] = el; }} onClick={() => { setCameFromAll(false); setOpen(open === key ? null : key); }}
       /* ELITE-4 J3-17: the pill said it was expanded but never said what it opens. */
       aria-expanded={open === key} aria-haspopup="true" aria-controls={open === key ? PANEL_ID : undefined}
       className="chip" style={{ height: 38, padding: "0 13px", borderRadius: 999, gap: 7, cursor: "pointer", marginInlineStart: right ? "auto" : undefined,
@@ -225,6 +306,41 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   );
 
   const renderPanel = () => {
+    if (open === "all") {
+      // Item 5, mobile Search discovery. Every dimension in one list, each
+      // row showing its own current selection, so a reader who wants "Grade"
+      // or "Sort" -- both past the fold of the quick rail on a phone -- has
+      // one always-visible way in that does not depend on discovering the
+      // rail can scroll sideways at all.
+      const any = t("Any", "أي");
+      const cats: { key: string; label: string; summary: string }[] = [
+        { key: "loc", label: t("Location", "الموقع"), summary: selLoc ? nameOf(selLoc) : (params.place || any) },
+        { key: "deal", label: t("Deal", "الصفقة"), summary: params.deal ? (params.deal === "sale" ? t("For sale", "للبيع") : t("For lease", "للإيجار")) : any },
+        { key: "asset", label: t("Property type", "نوع العقار"), summary: assetSel.length ? String(assetSel.length) : any },
+        { key: "size", label: t("Size", "المساحة"), summary: activeSize || any },
+        { key: "rent", label: isSale ? t("Price", "السعر") : t("Rent", "الإيجار"), summary: (isSale ? activePrice : activeRent) || any },
+        { key: "grade", label: t("Grade", "الفئة"), summary: gradeSel.length ? String(gradeSel.length) : any },
+        { key: "fit", label: t("Fit-out", "التجهيز"), summary: fitSel.length ? String(fitSel.length) : any },
+        { key: "sort", label: t("Sort", "ترتيب"), summary: (sortNow ? sorts.find((s) => s.value === sortNow)?.label : sorts[0]?.label) ?? "" },
+      ];
+      return (
+        <div>
+          {cats.map((c) => (
+            <button key={c.key} type="button" onClick={() => openCategory(c.key)} className="row between"
+              style={{ width: "100%", textAlign: ar ? "right" : "left", padding: "12px 4px", border: "none", borderTop: "1px solid var(--silver)", background: "transparent", cursor: "pointer", fontSize: "var(--fs-md)", color: "var(--ink)" }}>
+              <span>{c.label}</span>
+              <span className="row gap6" style={{ alignItems: "center" }}>
+                <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{c.summary}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: "var(--slate-2)", flex: "none", transform: ar ? "rotate(180deg)" : undefined }}><path d="M9 6l6 6-6 6" /></svg>
+              </span>
+            </button>
+          ))}
+          <div style={{ borderTop: "1px solid var(--silver)", paddingTop: 8, marginTop: 4 }}>
+            {check(t("Ownership verified", "الملكية موثّقة"), !!params.verified, () => nav({ verified: params.verified ? "" : "1" }))}
+          </div>
+        </div>
+      );
+    }
     if (open === "loc") return (
       <div>
         {/* ELITE-4 J3-18: autoFocus lands here, so an unnamed box is the first thing
@@ -311,7 +427,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   const clearAll = () => {
     const p = new URLSearchParams();
     if (params.sort) p.set("sort", params.sort);
-    setOpen(null);
+    closeSheet();
     router.push(`${basePath}${p.toString() ? `?${p.toString()}` : ""}`);
   };
   const activeChips: { label: string; clear: Params }[] = [];
@@ -328,6 +444,13 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   return (
     <div ref={wrapRef}>
       <div className="row gap8 wrap lst-filterpills" style={{ alignItems: "center" }}>
+        {/* Item 5, mobile Search discovery. First in DOM order, so on a phone
+            (where this row scrolls horizontally, mask-faded at the trailing
+            edge below) it is the one control never past that fade -- a
+            reader does not have to find out the rail scrolls at all to reach
+            Grade, Fit-out or Sort. Desktop wraps rather than scrolls, so
+            there is nothing here to surface a shortcut past. */}
+        {isMobileSheet && pill("all", activeChips.length ? `${t("All filters", "كل الفلاتر")} (${activeChips.length})` : t("All filters", "كل الفلاتر"), activeChips.length > 0)}
         {pill("loc", selLoc ? nameOf(selLoc) : params.place ? params.place : t("Location", "الموقع"), !!(selLoc || params.place))}
         {pill("deal", params.deal ? (params.deal === "sale" ? t("For sale", "للبيع") : t("For lease", "للإيجار")) : t("Deal", "الصفقة"), !!params.deal)}
         {pill("asset", assetSel.length ? `${t("Type", "النوع")} (${assetSel.length})` : t("Property type", "نوع العقار"), assetSel.length > 0)}
@@ -357,25 +480,44 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
           </button>
         </div>
       ) : null}
-      {open && isMobileSheet ? (
+      {open && isMobileSheet && sheetPortalEl ? createPortal(
         <>
-          {/* Backdrop behavior: a full-viewport scrim, click to dismiss. It is a
-              plain descendant of this component's own root, not a portal, so
-              `position:fixed` still escapes the in-flow layout visually while
-              the existing outside-click listener above (bound to `wrapRef`)
-              correctly does NOT treat a backdrop click as "outside", which is
-              why it needs its own explicit onClick here. */}
-          <div className="fb-sheet-backdrop" onClick={() => setOpen(null)} aria-hidden="true" />
+          {/* Backdrop behavior: a full-viewport scrim, click to dismiss. Portalled
+              to <body> (see sheetPortalEl above) so it and the sheet both paint
+              in the root stacking context, above the header/tabbar/Advisor
+              fab, instead of being trapped inside .lst-filterwrap's own
+              z-index:30 context. The existing outside-click listener above
+              (bound to `wrapRef`, the in-place pill row) correctly does NOT
+              treat a backdrop click as "outside" once the backdrop lives
+              outside that ref's subtree, which is why it needs its own
+              explicit onClick here regardless. */}
+          <div className="fb-sheet-backdrop" onClick={closeSheet} aria-hidden="true" />
           <div id={PANEL_ID} ref={panelRef} role="dialog" aria-modal="true" aria-labelledby={PANEL_TITLE_ID} className="fb-sheet">
             <div className="fb-sheet-head">
+              {/* Item 5. A category opened from the "All filters" list gets a
+                  back chevron into that list instead of straight to close, so
+                  picking the wrong category isn't a full restart. A category
+                  opened directly from its own quick-rail pill keeps the plain
+                  close button, unchanged: there is no list to go back to. */}
+              {cameFromAll && open !== "all" ? (
+                <button type="button" onClick={() => { setCameFromAll(false); setOpen("all"); }} aria-label={t("Back to all filters", "الرجوع إلى كل الفلاتر")} className="fb-sheet-close">
+                  {/* Icon.chevr points right by default; every back affordance on the
+                      platform rotates it 180deg in English and leaves it unrotated in
+                      Arabic (src/lib/rtlChevron.test.ts enumerates every call site and
+                      guards this exact expression against a bare, unconditional
+                      rotation -- this is that test's 6th site). */}
+                  <span aria-hidden="true" style={{ display: "inline-flex", transform: ar ? "none" : "rotate(180deg)" }}><Icon.chevr size={16} /></span>
+                </button>
+              ) : <span aria-hidden="true" />}
               <span id={PANEL_TITLE_ID} className="fb-sheet-title">{panelTitleText}</span>
-              <button type="button" ref={closeBtnRef} onClick={() => setOpen(null)} aria-label={t("Close", "إغلاق")} className="fb-sheet-close">
+              <button type="button" ref={closeBtnRef} onClick={closeSheet} aria-label={t("Close", "إغلاق")} className="fb-sheet-close">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </div>
             <div className="fb-sheet-body">{renderPanel()}</div>
           </div>
-        </>
+        </>,
+        sheetPortalEl,
       ) : open ? (
         <div id={PANEL_ID} role="group" aria-labelledby={PANEL_TITLE_ID} className="card" style={{ marginTop: 10, padding: 12, width: "100%", maxWidth: 460, maxHeight: "min(60vh, 440px)", overflowY: "auto", boxShadow: "var(--sh-1)", boxSizing: "border-box" }}>
           <span id={PANEL_TITLE_ID} className="sronly">{panelTitleText}</span>

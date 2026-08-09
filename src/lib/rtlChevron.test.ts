@@ -32,6 +32,9 @@ const SITES = [
   "app/[locale]/dashboard/enquiries/[id]/page.tsx",
   "app/[locale]/docs/page.tsx",
   "components/MessagesClient.tsx",
+  // Item 5 (PKG-DISCOVERY-1 UX closure). The mobile "All filters" sheet's
+  // back-to-list chevron, added alongside the two-level filter sheet.
+  "components/FilterBar.tsx",
 ];
 
 test("rtl chevrons: every known Icon.chevr back-affordance call site still exists at its recorded path", () => {

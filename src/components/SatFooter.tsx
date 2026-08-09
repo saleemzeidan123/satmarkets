@@ -1,5 +1,6 @@
 import Link from "next/link";
 import LanguageSwitch from "@/components/LanguageSwitch";
+import { releaseLabel } from "@/lib/releaseState";
 
 const HARBOR = "#3A6EA5", INK = "#14181B", COOL = "#F6F8FB";
 
@@ -45,9 +46,29 @@ const FIcon = {
   mail: (s: number) => <svg viewBox="0 0 24 24" width={s} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M4 7l8 6 8-6" /></svg>,
 };
 
+// Item 3, global route truth. Cross-checked against the same ruling
+// MarketingHome.tsx's own feature grid already carries (its PLANNED_FEATS,
+// homeRuling.test.ts): Compare spaces, Investment underwriting, Location
+// Intelligence and Membership plans/Deal tracking are ALL rendered there as
+// non-clickable "Planned" tiles, not live features. This footer used to link
+// every one of the same five concepts as an ordinary destination -- three of
+// them (Compare, Deal, Investment underwriting/Investors) straight into
+// PRIVATE_PREFIXES routes that only make sense mid-task (a comparison with
+// nothing shortlisted yet, a deal room with nothing agreed, underwriting with
+// no asset picked), and "For owners" / "Owners and landlords" / the CTA
+// button all into /dashboard, the same session-gated owner shell the Home
+// ruling already fixed its own "List your space" button away from, in favor
+// of /list. Messages and Notifications are real, working, but session-gated
+// account surfaces with no logged-out value proposition (Notifications is
+// documented in src/lib/chrome.ts as reached "from nowhere in marketing," a
+// rule this footer was breaking); Floor plans (/docs) renders one hardcoded
+// SampleBanner document, not a real per-listing destination. All five are
+// removed rather than mislabeled "planned," since none of them is a future
+// feature -- they are present functionality with no anonymous-visitor
+// destination, which "planned" would misdescribe.
 const FOOT_COLS: [string, string[]][] = [
   ["Platform", ["Listings", "Requirements", "Rent Index", "Compare spaces", "Investment underwriting", "Location Intelligence", "For owners", "Membership"]],
-  ["AI and deals", ["AI Advisor", "Deal room", "Messages", "Notifications", "Floor plans"]],
+  ["AI and deals", ["AI Advisor", "Deal room"]],
   ["Solutions", ["Occupiers", "Owners and landlords", "Brokers", "Listers directory", "Investors"]],
   ["Company", ["About SAT Real Estate", "Our neutrality", "Help center"]],
   // ADV-4B. "How we verify" pointed at /about, which describes the company and
@@ -61,11 +82,16 @@ const FOOT_COLS: [string, string[]][] = [
 // certified, so those four badges asserted capabilities the platform does not
 // have. Do not re-add a badge here without a source, date and scope.
 const FOOT_TRUST = ["FAL 1200025510"];
-const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "Compare spaces": "/compare", "Investment underwriting": "/invest", "Location Intelligence": "/area", "Investment": "/hbu", "For owners": "/dashboard", "Membership": "/pricing", "AI Advisor": "/advisor", "Deal room": "/deal", "Messages": "/messages", "Notifications": "/notifications", "Floor plans": "/docs", "About SAT Real Estate": "/about", "Help center": "/about", "Brokers": "/brokers", "Listers directory": "/listers", "Occupiers": "/listings", "Owners and landlords": "/dashboard", "Investors": "/invest", "Our neutrality": "/neutrality", "How we verify": "/verification", "Data sources": "/sources", "Bilingual standards": "/bilingual", "REGA compliance": "/about", "Terms of Service": "/terms", "Privacy and PDPL": "/privacy", "Contact": "/contact" };
+// Labels rendered as a disclosed, non-clickable "Planned" item instead of a
+// link -- the footer half of the same ruling MarketingHome.tsx's feat grid
+// already enforces for the identical concepts (see comment above FOOT_COLS).
+const PLANNED_LABELS = new Set(["Compare spaces", "Investment underwriting", "Location Intelligence", "Membership", "Investors", "Deal room"]);
+const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "For owners": "/list", "AI Advisor": "/advisor", "About SAT Real Estate": "/about", "Help center": "/contact", "Brokers": "/brokers", "Listers directory": "/listers", "Occupiers": "/listings", "Owners and landlords": "/list", "Our neutrality": "/neutrality", "How we verify": "/verification", "Data sources": "/sources", "Bilingual standards": "/bilingual", "Terms of Service": "/terms", "Privacy and PDPL": "/privacy", "Contact": "/contact" };
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
   const __T: Record<string, string> = {"FAL 1200025510":"فال 1200025510","Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملّاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملّاك والمؤجرون","Brokers":"الوسطاء","Listers directory":"دليل الملّاك والوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","Data sources":"مصادر البيانات","Bilingual standards":"المعايير ثنائية اللغة","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on the record.":"أدرج، أجّر، أو استثمر، استناداً إلى السجل.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملّاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's commercial leasing and sales exchange. Listings that show their verification state, published rent bands attributed to source, deals end to end.":"منصة سعودية للتأجير والبيع التجاري. عروض تُظهر حالة توثيقها، ونطاقات إيجار منشورة منسوبة إلى مصادرها، وصفقات متكاملة."};
-  const t = (x: string): string => (locale === "ar" ? (__T[x] ?? x) : x);
+  const ar = locale === "ar";
+  const t = (x: string): string => (ar ? (__T[x] ?? x) : x);
   const L = (p: string) => `/${locale}${p}`;
   return (
     <footer className="foot">
@@ -76,7 +102,12 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
           <div className="cta-sub">{t("Join owners, occupiers and licensed brokers across the Kingdom.")}</div>
         </div>
         <div className="cta-actions">
-          <Link href={L("/dashboard")} className="btn btn-light">{t("List your space")}</Link>
+          {/* Item 3. This button sent every reader, on every page, to the
+              session-gated owner shell. /list is the same real, working,
+              public intake the Home ruling already moved its own "List your
+              space" CTA to; nothing here should send a colder-entry visitor
+              somewhere that button itself no longer goes. */}
+          <Link href={L("/list")} className="btn btn-light">{t("List your space")}</Link>
           <Link href={L("/listings")} className="btn btn-outline">{t("Browse listings")}</Link>
         </div>
       </div>
@@ -93,7 +124,15 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         {FOOT_COLS.map(([title, links]) => (
           <div className="foot-col" key={title}>
             <h5 className="col-h">{t(title)}</h5>
-            {links.map((l) => (ROUTES[l] ? <Link key={l} href={L(ROUTES[l])}>{t(l)}</Link> : <a key={l}>{t(l)}</a>))}
+            {links.map((l) => {
+              if (PLANNED_LABELS.has(l)) return (
+                <span key={l} className="foot-planned">
+                  {t(l)} <em>{releaseLabel("planned", ar)}</em>
+                </span>
+              );
+              const href = ROUTES[l];
+              return href ? <Link key={l} href={L(href)}>{t(l)}</Link> : null;
+            })}
           </div>
         ))}
       </div>
