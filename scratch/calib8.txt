@@ -1,2 +1,0 @@
-prime line first: {"·"} more text more text more text more text
-target line second: {"·"} {"·"} {"·"}
