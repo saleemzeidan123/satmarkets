@@ -157,7 +157,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
    let data = wide.data;
    if (wide.error || !data) ({ data } = await q(NARROW));
    districts = ((data ?? []) as any[]).map((r: any): DRow => {
-    const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " [[MID]] " + segmentLabel(r.segment, loc) : ""}`;
+    const asset = `${assetLabel(r.asset_type, loc)}${r.segment && r.segment !== "all" ? " · " + segmentLabel(r.segment, loc) : ""}`;
     const location = ar ? (r.district_label_ar || r.district_label) : r.district_label;
     const cell: RentIndexCell = r;
     // The geography the passport states is the one the reader is looking at,
@@ -227,7 +227,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
  // percentage taken from broker research that we have no licence to republish.
  //
  // The two rent tiles used to carry their unit inside the label string, once per
- // language, which is how "SAR/m[[SUP]][[MID]]yr" came to be spelled here and in the unit
+ // language, which is how "SAR/m²·yr" came to be spelled here and in the unit
  // table separately. The period tile printed the raw "2026-06" from the database
  // while the eyebrow eight lines below printed the same period formatted.
  // PKG-FIG2 closure, finding 132. `formatUnit("sar_sqm_year", ...)` used to
@@ -266,7 +266,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
     {/* header band */}
     <div className="row between wrap" style={{ padding: "26px 24px 20px", alignItems: "flex-end", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 16 }}>
      <div>
-      <div className="eyebrow">{ri.eyebrow}{pub.period ? " [[MID]] " + formatPeriod(pub.period, ar) : ""}</div>
+      <div className="eyebrow">{ri.eyebrow}{pub.period ? " · " + formatPeriod(pub.period, ar) : ""}</div>
       <h1 style={{ fontSize: "1.875rem", fontWeight: 700, letterSpacing: "-.02em", margin: "10px 0 0" }}>{ri.h1}</h1>
       <div className="muted" style={{ fontSize: "0.84375rem", marginTop: 6 }}>{ri.intro}</div>
       {/* ADV-1E. The four tiles below the header are averages taken across
