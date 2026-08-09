@@ -37,6 +37,12 @@ import { scrollBehavior } from "@/lib/motion";
 // copy of a type is the same defect as a second copy of a unit table.
 import type { PublishedKpis } from "@/lib/market/published";
 import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
+// Home prototype-link ruling. A feature tile that has no live public
+// destination behind it yet is labelled with the platform's one approved
+// "not live yet" word, in both languages, rather than left silently unlinked
+// or, worse, pointed at a route this component's own tests must confirm is
+// held or private.
+import { releaseLabel } from "@/lib/releaseState";
 
 // PKG-CARD1. This used to flatten and pre-format every figure a card needs
 // (price, title, district, area, badge text) into its own literal shape, which
@@ -206,7 +212,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    ["تحليل الاستثمار", "العائد وصافي الدخل التشغيلي والسيناريوهات على مقارنات توضيحية."],
    ["المستشار الذكي", "بحث وتقييم حواري، مبني على المؤشر."],
    ["أدرج طلباً", "أخبر السوق بما تحتاجه، فيستجيب المُلّاك والوسطاء."],
-   ["لوحة المالك", "أداء العروض، والعملاء المحتملون، ومطابقات الطلبات."],
+   ["دليل الملّاك والوسطاء", "تصفّح من يُدرج حالياً على المنصّة، مع إظهار الدور وحالة التحقق من الهوية كما هي مسجّلة."],
    ["باقات العضوية", "فئات بحدود واضحة للحصص."],
    ["تتبّع الصفقة", "من الاستفسار إلى المعاينة إلى العرض إلى التسليم، مسجّلة في مسار واحد."],
    ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على الحقائق المسجّلة والإيجار مقابل المؤشر."],
@@ -260,7 +266,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
    ["Investment underwriting", "Yield, NOI and scenarios on illustrative comparables."],
    ["AI Advisor", "Conversational search and valuation, grounded in the Index."],
    ["Post a requirement", "Tell the market what you need; owners and brokers respond."],
-   ["Owner dashboard", "Listing performance, leads and requirement matches."],
+   ["Owners and brokers directory", "Browse who is currently listing on the exchange, with role and identity-verification state shown as recorded."],
    ["Membership plans", "Grades with clear quota caps."],
    ["Deal tracking", "Enquiry to viewing to offer to handover, recorded on one thread."],
    ["Compare spaces", "Shortlist side by side on the recorded facts and rent vs index."],
@@ -272,7 +278,20 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ctaList: "List your space", ctaBrowse: "Browse listings",
  };
 
- const featLinks = ["/map","/rent-index","/area","/invest","/advisor","/post-requirement","/dashboard","/pricing","/deal","/compare","/about","/market"];
+ // Home prototype-link ruling. /area, /invest, /pricing, /deal and /compare
+ // are not available product features today: /area's own route-policy entry
+ // says the live page there is "a sample trade-area page", /invest and /deal
+ // each render their own on-page SampleBanner, /compare is a private
+ // prototype that does not function without an `?ids=` list handed to it
+ // from elsewhere, and /pricing is explicitly held per owner decision O1.
+ // Their entries here are blank on purpose: `PLANNED_FEATS` below is what
+ // actually gates the render, but an empty string means a stray render path
+ // can never accidentally turn one into a working link. /dashboard is real
+ // and auth-gated, not a prototype, so index 6 is not held back: its tile now
+ // describes and links to the Listers directory (item 6) instead, a real
+ // public destination that was not represented on this grid at all before.
+ const featLinks = ["/map","/rent-index","","","/advisor","/post-requirement","/listers","","","","/about","/market"];
+ const PLANNED_FEATS = new Set([2, 3, 7, 8, 9]);
  const featKeys = ["h","a","","h","a","","h","a","","h","","a"];
  const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield, Icon.activity];
  const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
@@ -574,13 +593,35 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          <span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 232px), 1fr))", gap: 16 }}>
-         {idxs.map((fi) => { const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => React.JSX.Element; const k = featKeys[fi]; return (
-          <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
-           <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
-           <div className="feat-h">{m[0]}</div>
-           <div className="feat-p">{m[1]}</div>
-          </Link>
-         ); })}
+         {idxs.map((fi) => {
+          const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => React.JSX.Element; const k = featKeys[fi];
+          // Home prototype-link ruling. A planned tile is a plain, non-focusable
+          // div, deliberately NOT sharing the `.feat-card` class: `.feat-card`
+          // carries its own `:hover` rule (lift, shadow, corner-mark, icon
+          // colour change), and a class combinator can only match the hover
+          // affordance away with a specificity fight against whichever
+          // stylesheet happens to load last. `.feat-card-planned` is its own
+          // rule instead, so there is no hover affordance to defeat: nothing
+          // here reads as a working action, and the platform's one approved
+          // "not live yet" word sits next to the heading, in both languages.
+          if (PLANNED_FEATS.has(fi)) return (
+           <div key={fi} className="feat-card-planned">
+            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
+            <div className="row gap8 wrap" style={{ alignItems: "center" }}>
+             <div className="feat-h">{m[0]}</div>
+             <span className="tag" style={{ fontSize: "0.65625rem" }}>{releaseLabel("planned", ar)}</span>
+            </div>
+            <div className="feat-p">{m[1]}</div>
+           </div>
+          );
+          return (
+           <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
+            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
+            <div className="feat-h">{m[0]}</div>
+            <div className="feat-p">{m[1]}</div>
+           </Link>
+          );
+         })}
         </div>
        </div>
       ))}
@@ -592,9 +633,18 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
      <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "var(--on-brand)", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
       <h2 className="serif" style={{ fontSize: "clamp(1.5625rem,5.4vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "var(--on-brand)" }}>{T.ctaH}</h2>
       <p style={{ fontSize: "var(--fs-input)", color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
+      {/* Home prototype-link ruling. This CTA used to send "List your space" to
+          /dashboard, an authenticated area, and paired it with a "Find your
+          next space" button to /find, a private prototype route explicitly
+          named by the ruling. /list is the real, already-honest public page
+          for the first half (PKG-SUP1: it describes the actual intake and
+          says plainly that signing in comes first, never simulates a form),
+          and the heading above already poses exactly two paths, "list... or
+          find...", which /listings (Browse listings) already answers for the
+          second half. A third, redundant "find" button is dropped rather than
+          repointed to a route it would misdescribe. */}
       <div className="row gap12 center wrap">
-       <Link href={L("/dashboard")} className="btn lg" style={{ background: "var(--paper)", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
-       <Link href={L("/find")} className="btn lg" style={{ background: "var(--paper)", color: "var(--ink)", textDecoration: "none" }}>{H.findSpace}</Link>
+       <Link href={L("/list")} className="btn lg" style={{ background: "var(--paper)", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
        <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "var(--on-brand)", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
      </div>
