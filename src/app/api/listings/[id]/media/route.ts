@@ -5,6 +5,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
 import { isPlanType } from "@/lib/planTypes";
+import { MAX_IMAGE_BYTES, MEDIA_CAPS, isAcceptedImageType } from "@/lib/uploadQuality";
 
 export const runtime = "nodejs";
 
@@ -13,17 +14,16 @@ export const runtime = "nodejs";
 // and cap counts. One file per request. Object path: {account}/{listing}/{uuid}.webp
 // in the private listing-media bucket, written under the lister's own account
 // prefix (enforced by storage RLS). Uploading a photo sets no verification flag.
-const MAX_BYTES = 4 * 1024 * 1024; // 4MB, within the serverless request body limit
-// Photo gallery vs floor-plan IMAGES (PDF floor plans go to the /docs route).
-const CAPS: Record<string, number> = { photo: 20, floorplan: 12 };
-
-function sniff(buf: Buffer): boolean {
-  if (buf.length < 12) return false;
-  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return true; // jpeg
-  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) return true; // png
-  if (buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return true; // webp
-  return false;
-}
+//
+// PKG-LISTING-CREATION-1A. The size limit, the per-kind caps and the magic-byte
+// sniff used to be this file's own private copies. They now come from
+// uploadQuality.ts, which the browser-side pre-upload checks read too, so the
+// client cannot reject or accept a file the server would answer differently
+// about; the two used to be two hand-written copies of the same three numbers
+// and one byte pattern, which is exactly the drift this package's "one truth
+// model" requirement exists to close.
+const MAX_BYTES = MAX_IMAGE_BYTES;
+const CAPS = MEDIA_CAPS;
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   }
 
   const input = Buffer.from(await file.arrayBuffer());
-  if (!sniff(input)) return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are accepted.", code: "image_type_rejected" }, { status: 400 });
+  if (!isAcceptedImageType(input)) return NextResponse.json({ error: "Only JPEG, PNG, or WebP images are accepted.", code: "image_type_rejected" }, { status: 400 });
 
   // Re-encode: rotate() applies EXIF orientation then all metadata (including GPS)
   // is dropped, polyglots are neutralized, and the image is normalized to web-sized webp.

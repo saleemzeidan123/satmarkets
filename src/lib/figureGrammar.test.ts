@@ -96,7 +96,18 @@ test("finding 126: the Studio preview renders the figures a visitor is served", 
   // a seventh spelling that no visitor surface renders, so the caption was false
   // on the one screen whose purpose is letting a lister check their own price.
   const studio = read("src/components/ListingStudio.tsx");
-  assert.match(studio, /from "@\/lib\/listingFigures"/, "the preview stopped reading the module every visitor surface reads");
+  // PKG-LISTING-CREATION-1A. The preview no longer calls listingFigures
+  // directly: it calls listingPresentation.ts's buildListingPresentation,
+  // which is the one composer both the Studio's own preview and the real
+  // draft-preview route call, so the two can never compute a figure two
+  // different ways. That composer itself calls listingFigures (asserted
+  // below, against the module's own source, not trusted by name alone), so
+  // the guarantee this test exists to hold, that the Studio never spells a
+  // unit itself, still holds; it is one hop further from this file than it
+  // used to be, and both hops are checked here rather than only the first.
+  assert.match(studio, /from "@\/lib\/listingPresentation"/, "the preview stopped reading the shared presentation composer");
+  const presentation = read("src/lib/listingPresentation.ts");
+  assert.match(presentation, /from "@\/lib\/listingFigures"/, "the shared presentation composer stopped reading the module every visitor surface reads");
 
   // Scoped to the preview's own body, not to the file.
   const start = studio.indexOf("function preview(");
@@ -126,7 +137,14 @@ test("finding 126: the Studio preview renders the figures a visitor is served", 
   assert.match(studio, /areaFieldLabel\(loc\)/, "the intake area label stopped naming its unit through the one table");
   assert.equal(priceFieldLabel("lease", "en").replace(/\u2060/g, ""), "Asking rent (SAR/m\u00b2/yr)");
   assert.equal(priceFieldLabel("lease", "ar").replace(/\u2060/g, ""), "\u0627\u0644\u0625\u064a\u062c\u0627\u0631 \u0627\u0644\u0645\u0637\u0644\u0648\u0628 (\u0631\u064a\u0627\u0644/\u0645\u00b2\u00b7\u0633\u0646\u0629)");
-  assert.ok(previewBody.includes("askingPrice(") && previewBody.includes("netArea("), "the preview stopped drawing its figures from the module");
+  // The preview body itself now calls the shared composer rather than
+  // askingPrice/netArea directly (see the comment above this test's first
+  // assertion); the composer's own source is checked below for the same two
+  // calls, so the chain from the Studio to listingFigures.ts is still real,
+  // just one hop longer than a source-text substring check on this file alone
+  // can see in one place.
+  assert.ok(previewBody.includes("buildListingPresentation("), "the preview stopped drawing its figures from the shared composer");
+  assert.ok(presentation.includes("askingPrice(") && presentation.includes("netArea("), "the shared composer stopped drawing its figures from the module");
 
   // What a visitor is actually served, from the module the public card uses.
   assert.equal(askingPrice("1200", "lease", "en"), "1,200 SAR⁠/⁠m²⁠/⁠yr");
