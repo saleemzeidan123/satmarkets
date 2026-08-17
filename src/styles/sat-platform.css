@@ -776,7 +776,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   button, [role="button"], .btn, .btn-gold, .btn-ink, .btn-ghost, .btn-light, .btn-outline,
   .chip, .tabs .t, .seg span, .seg label, .lang, .lang-seg, .tabbar a,
   select, summary, .melink, .icon-btn, .site-header a {
-    min-height: 44px;
+    min-block-size: 44px;
   }
   .btn-gold, .btn-ink, .btn-ghost, .btn-light, .btn-outline, .lang-seg {
     display: inline-flex;
@@ -790,9 +790,56 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     align-items: center;
   }
   button.icon, .btn.icon, button[aria-label], a[aria-label][class], .icon-btn {
-    min-width: 44px;
-    min-height: 44px;
+    min-inline-size: 44px;
+    min-block-size: 44px;
   }
+  /* A segmented control needs the floor on BOTH axes. The enumeration above
+     claims the block axis and leaves the inline axis to content, which is right
+     for a button whose label already spans 44px and wrong for a two-letter one:
+     the language segments render 19px wide, so the pair presents two 19px
+     targets whose centres sit 21px apart.
+     Widen the segment rather than overlay an invisible hit area. Two 44px
+     overlays centred 21px apart would overlap by more than half, which trades a
+     small-target problem for an ambiguous-target one; widening moves the centres
+     apart as it grows, so the targets stay disjoint. Inline padding keeps the
+     glyphs centred without changing their size. */
+  .lang-seg {
+    min-inline-size: 44px;
+    /* Restated here rather than inherited from the enumeration above so the rule
+       is self-contained: `touchTarget.test.ts` holds that no rule may claim the
+       inline axis without the block axis, which is the guard that stopped a 44
+       by 34 control shipping once already. */
+    min-block-size: 44px;
+    padding-inline: 12px;
+  }
+  /* A text field is a pointer target like any other and was never enumerated.
+     Block axis only: a text input forced to a 44px inline size would fight the
+     grid it sits in, and its inline extent is already far above the floor. */
+  input[type="text"], input[type="search"], input[type="email"], input[type="tel"],
+  input[type="number"], input[type="password"], input:not([type]) {
+    min-block-size: 44px;
+  }
+  /* Standalone text links: applied at the call site, never to every anchor.
+     An anchor inside a sentence is exempt under the WCAG inline exception, and a
+     blanket rule would both be wrong and stretch prose line boxes. This class
+     marks the anchors that are not inline prose: each is the sole content of its
+     container, reads as its own control, and therefore carries the same floor a
+     button does. Only the box that receives the touch changes; the type scale is
+     untouched. */
+  .touch-target {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+  }
+}
+/* The focus ring is not inside the coarse-pointer query on purpose: a keyboard
+   user on a touch device is still a keyboard user, and a target that grew a
+   larger box must show that box when focused or the growth is invisible to
+   them. */
+.touch-target:focus-visible {
+  outline: 2px solid var(--azure-d, #2E5FE0);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ===== Arabic RTL typography fix (Fable advisory 2026-07-09, must-fix 1) =====

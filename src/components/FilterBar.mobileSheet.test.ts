@@ -88,10 +88,19 @@ test("mobile sheet: backdrop is present, dismisses on click, and is distinct fro
   assert.match(CSS, /\.fb-sheet-backdrop\{[^}]*position:fixed;inset:0/, "the backdrop must cover the full viewport");
 });
 
-test("mobile sheet: background scroll locking is gated to open && isMobileSheet, and restores the prior overflow value on cleanup", () => {
-  assert.match(SRC, /document\.body\.style\.overflow = "hidden"/, "opening the mobile sheet must lock body scroll");
-  assert.match(SRC, /document\.body\.style\.overflow = prevOverflow/, "closing the mobile sheet must restore the body's PRIOR overflow value, not unconditionally clear it");
-  assert.match(SRC, /if \(!open \|\| !isMobileSheet\) return;\s*\n\s*const prevOverflow = document\.body\.style\.overflow;/, "the scroll lock must be gated to open && isMobileSheet, so desktop never locks the page");
+test("mobile sheet: background scroll locking is gated to open && isMobileSheet, and restores the prior values on cleanup", () => {
+  // This originally asserted `document.body.style.overflow = "hidden"` and
+  // nothing else, which is exactly the shape of the defect the live matrix
+  // found: this document scrolls on <html>, so locking <body> alone locked
+  // nothing and the page scrolled behind an open sheet. The assertion is kept
+  // but widened to the whole invariant, so the weaker mechanism cannot come
+  // back and still satisfy it.
+  assert.match(SRC, /doc\.style\.overflow = "hidden"/, "the scrolling element (documentElement) must be locked, not body alone");
+  assert.match(SRC, /body\.style\.overflow = "hidden"/, "the body lock is still required alongside it");
+  assert.match(SRC, /body\.style\.position = "fixed"/, "iOS Safari ignores overflow:hidden as a scroll lock; the body must be pinned");
+  assert.match(SRC, /doc\.style\.overflow = prev\.htmlOverflow/, "closing must restore the PRIOR value, not unconditionally clear it");
+  assert.match(SRC, /body\.style\.overflow = prev\.bodyOverflow/, "closing must restore the PRIOR body overflow");
+  assert.match(SRC, /if \(!open \|\| !isMobileSheet\) return;/, "the scroll lock must be gated to open && isMobileSheet, so desktop never locks the page");
 });
 
 test("mobile sheet: RTL placement uses logical CSS, never a hardcoded left/right on the sheet chrome", () => {

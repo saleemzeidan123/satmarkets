@@ -160,11 +160,57 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
   }, []);
   // Background scroll locking. Only while the sheet is genuinely a modal
   // takeover; the desktop popup never locks the page.
+  // The lock must be applied to the element that actually scrolls. This
+  // document scrolls on <html> (`document.scrollingElement` is the
+  // documentElement), so `overflow:hidden` on <body> alone locks nothing: the
+  // page keeps scrolling behind an open sheet under both programmatic and wheel
+  // input, and with no offset recorded, closing returns the reader to wherever
+  // the background drifted rather than where they opened it.
+  //
+  // The `position:fixed` half is not belt-and-braces. iOS Safari ignores
+  // `overflow:hidden` as a scroll lock, and pinning the body is the only
+  // technique that holds there. Pinning is also what makes exact restoration
+  // possible, because the offset is recorded rather than inferred.
+  //
+  // Restoration lives in the cleanup rather than on any one dismissal path, so
+  // Escape, the backdrop, the explicit Close control and an unmount all restore
+  // identically and no future dismissal path can forget to. `scrollRestoration`
+  // is borrowed, not set: it returns to whatever it was, so a component that
+  // mounts and unmounts never permanently changes how the browser restores
+  // history. `behavior:instant` stops a smooth animation replaying the scroll.
   useEffect(() => {
     if (!open || !isMobileSheet) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prevOverflow; };
+    const doc = document.documentElement;
+    const body = document.body;
+    const y = window.scrollY || doc.scrollTop || 0;
+    const prev = {
+      htmlOverflow: doc.style.overflow,
+      bodyOverflow: body.style.overflow,
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyWidth: body.style.width,
+      restoration: ("scrollRestoration" in history ? history.scrollRestoration : undefined) as
+        | ScrollRestoration
+        | undefined,
+    };
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    doc.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${y}px`;
+    // Pinning takes the body out of flow, so without an explicit width it
+    // collapses to its content and the locked page visibly reflows behind the
+    // sheet. Reflowing the thing the reader returns to is its own defect.
+    body.style.width = "100%";
+    return () => {
+      doc.style.overflow = prev.htmlOverflow;
+      body.style.overflow = prev.bodyOverflow;
+      body.style.position = prev.bodyPosition;
+      body.style.top = prev.bodyTop;
+      body.style.width = prev.bodyWidth;
+      window.scrollTo({ top: y, left: 0, behavior: "instant" as ScrollBehavior });
+      if ("scrollRestoration" in history && prev.restoration) history.scrollRestoration = prev.restoration;
+    };
   }, [open, isMobileSheet]);
   // Mount the portal node, cover-and-inert everything else on the page, and
   // hide the two floating controls the sheet would otherwise fight for

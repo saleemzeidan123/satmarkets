@@ -57,7 +57,10 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
             {ar ? "الإعلان مقدَّم من" : "Listed by"}
           </div>
           <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 2 }}>
-            <Link href={`/${lp}/lister/${lister.id}`} style={{ fontSize: "0.96875rem", fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
+            {/* The only interactive thing in this row: its siblings are a status
+                chip and a role tag, neither of which is a control, so nothing
+                larger carries the touch target on its behalf. */}
+            <Link href={`/${lp}/lister/${lister.id}`} className="touch-target" style={{ fontSize: "0.96875rem", fontWeight: 600, color: "var(--harbor)", textDecoration: "none" }}>{name}</Link>
             {/* ADV-1. This drew a bare green "Verified" from
                 accounts.verification_status, which is a workflow status and not a
                 check: account_verifications holds zero rows, so no account on the

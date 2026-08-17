@@ -283,7 +283,7 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
           two real controls beside it, with no handler, no focus and nothing announced.
           Removed rather than invented: implementing sharing is not an accessibility fix. */}
       <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
-        <Link href={L("/listings")} className="mono muted" style={{ fontSize: "0.71875rem", letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
+        <Link href={L("/listings")} className="mono muted touch-target" style={{ fontSize: "0.71875rem", letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
@@ -660,7 +660,7 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
           )}
           {similar.length > 0 && (
             <div style={{ marginTop: 26 }}>
-              <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
+              <div className="modhead"><Icon.building size={18} /><span className="ttl">{dict.ld.similarSpaces}</span><span className="grow" /><Link href={L(`/listings${l.district_id ? `?district=${l.district_id}` : ""}`)} className="muted touch-target" style={{ fontSize: "0.78125rem", textDecoration: "none" }}>{dict.ld.seeAll}</Link></div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 160px), 1fr))", gap: 14, marginTop: 14 }}>
                 {similar.map((s: any) => {
                   const sdn = s.districts ? (ar ? s.districts.name_ar : s.districts.name_en) : dn;
