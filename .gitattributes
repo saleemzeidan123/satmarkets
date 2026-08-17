@@ -1,0 +1,52 @@
+# Line endings are decided here, not by whatever each machine happens to be
+# configured for.
+#
+# WHY THE REPOSITORY-WIDE RULE.
+#
+# Several gates assert on file contents that contain newlines. The clearest is
+# `law 8` in src/lib/mediaStandard.test.ts, which asserts that docs/LAWS.md
+# contains a four-line quotation of the media integrity law written with "\n".
+# Under core.autocrlf=true, the Git for Windows installer default, that file is
+# checked out with CRLF and the assertion cannot match, so the law reads as
+# missing or reworded when nothing about it changed. The same mechanism failed
+# two more gates, in src/components/ListingCard.canonical.test.ts and
+# src/lib/formGroups.test.ts.
+#
+# Every blob committed here is already LF, verified with `git ls-files --eol`
+# reporting no CRLF in the index, and CI is Linux, so this rule changes nothing
+# about what git stores. It only guarantees the working copy matches it, which
+# makes a Windows clone behave like the one CI tests. `eol=lf` is what carries
+# that guarantee: `text=auto` alone still defers to core.autocrlf on checkout.
+* text=auto eol=lf
+
+# Vendored third party files are asserted by hash, so they are checked out byte
+# for byte and never line-ending converted. This rule comes after the wildcard
+# above deliberately: later rules win, so these paths keep no conversion at all
+# rather than the LF conversion the wildcard would otherwise give them.
+#
+# WHY THE VENDOR RULE.
+#
+# public/vendor/mapbox-gl-rtl-text-0.2.3/mapbox-gl-rtl-text.min.js is pinned in
+# src/lib/rtlTextPlugin.test.ts to the sha256 of the file as published in the npm
+# registry tarball, which is the whole point of self hosting it: the gate proves
+# the bytes we serve are the bytes Mapbox published, and provenance is recorded in
+# docs/vendored-third-party.md.
+#
+# With core.autocrlf=true, which is the Git for Windows installer default and is
+# set in the system config on a stock Windows machine, git rewrites every LF to
+# CRLF on checkout for any file it guesses is text. A minified JavaScript file is
+# text by that guess. The committed blob stays correct and CI stays green, so the
+# failure looks like a broken test rather than a broken working copy: the sha256
+# of the checked out file becomes
+# b93a8b4151f8b983c81a06744c755444a981e3d40532778d0adf219da81eaef1
+# instead of the asserted
+# 142f4fc31b4911887bacfea4df1813df67be28dfcb4c56e3f8f576f2e6fdf5d2.
+#
+# `-text` disables that conversion in both directions for these paths. It is the
+# narrow instruction rather than `binary`, which would also suppress diffs and so
+# would hide a real change to the licence notice beside the file.
+#
+# Anything else added under public/vendor is covered by the same rule, which is
+# the intent: a vendored file is a redistributed artefact, and an artefact whose
+# bytes we may not alter must not be altered by a checkout either.
+public/vendor/** -text

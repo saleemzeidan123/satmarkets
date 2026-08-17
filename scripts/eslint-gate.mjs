@@ -1,4 +1,7 @@
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 
 // PKG-NEXT16-SECURITY slice A. The enforcement half of the `next lint`
 // replacement.
@@ -78,19 +81,62 @@ const WARN_INVENTORY = {
   "react-hooks/exhaustive-deps": 9,
 };
 
+// ESLint is run as a script under this process's own Node, not through `npx`.
+//
+// `execFileSync` does not go through a shell, and on Windows the thing on PATH is
+// `npx.cmd` rather than `npx`, so `execFileSync("npx", ...)` fails with ENOENT
+// before ESLint is ever reached. The catch below then reports "eslint produced no
+// output" and exits 2, which reads as a broken lint run rather than as a gate step
+// that cannot start: gate step 6 was unrunnable on Windows for that one reason.
+//
+// Running the resolved binary under `process.execPath` fixes it without a shell,
+// which is also the safer construction, and it skips an npx startup on every run.
+//
+// The location is resolved rather than assumed. A hardcoded `../node_modules`
+// path is correct only while this package is the resolution root, and it goes
+// wrong the first time the dependency is hoisted or the repository grows a
+// workspace. Node's own resolver already answers this question correctly in
+// every one of those layouts.
+//
+// The resolution target is `eslint/package.json` rather than the bin path,
+// because ESLint ships an `exports` map that does not list `./bin/eslint.js`,
+// so asking for the bin directly fails with ERR_PACKAGE_PATH_NOT_EXPORTED.
+// Resolving the manifest and walking to its directory stays on the supported
+// path while still finding the binary wherever the install actually put it.
+const require = createRequire(import.meta.url);
+let ESLINT;
+try {
+  ESLINT = join(dirname(require.resolve("eslint/package.json")), "bin", "eslint.js");
+} catch {
+  console.error("eslint-gate: could not launch eslint, the eslint package did not resolve. Run npm ci.");
+  process.exit(2);
+}
+
+if (!existsSync(ESLINT)) {
+  console.error(`eslint-gate: no eslint at ${ESLINT}. Run npm ci.`);
+  process.exit(2);
+}
+
 let raw;
 try {
-  raw = execFileSync("npx", ["eslint", ".", "-f", "json"], {
+  raw = execFileSync(process.execPath, [ESLINT, ".", "-f", "json"], {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
   });
 } catch (e) {
-  // ESLint exits 1 whenever it reports an error, which is the normal case here,
-  // and the JSON still arrives on stdout. A genuine crash produces no stdout,
-  // and that is the case worth failing on rather than parsing.
+  // Two unrelated failures land here and they must not report the same way.
+  // ESLint exits 1 whenever it reports an error, which is the normal case in
+  // this repository, and the JSON report still arrives on stdout. A failure to
+  // launch the process at all also lands here, and it means the gate never ran,
+  // which deserves its own message rather than the misleading claim that ESLint
+  // was asked and answered nothing.
+  if (e.code === "ENOENT" || e.code === "EACCES") {
+    console.error(`eslint-gate: could not launch eslint (${e.code}) at ${ESLINT}.`);
+    process.exit(2);
+  }
   raw = e.stdout;
   if (!raw || !raw.trim()) {
-    console.error("eslint-gate: eslint produced no output.\n" + (e.stderr || e.message));
+    console.error("eslint-gate: eslint ran but produced no output.\n" + (e.stderr || e.message));
     process.exit(2);
   }
 }
