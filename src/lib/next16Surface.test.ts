@@ -40,12 +40,17 @@ import path from "node:path";
 
 const ROOT = path.join(__dirname, "..", "..");
 
-/** Everything under a directory, by extension. */
+/**
+ * Everything under a directory, by extension, named repo-relative with forward
+ * slashes. The separator is not cosmetic: `API_METHODS` below is keyed by these
+ * names in forward-slash form, and `path.join` separates with a backslash on
+ * Windows, so a joined name matches no key and the route inventory reads as
+ * every file having been added and every recorded one deleted at once.
+ */
 function walk(rel: string, exts: string[]): string[] {
   const out: string[] = [];
-  const abs = path.join(ROOT, rel);
-  for (const entry of fs.readdirSync(abs, { withFileTypes: true })) {
-    const next = path.join(rel, entry.name);
+  for (const entry of fs.readdirSync(path.join(ROOT, rel), { withFileTypes: true })) {
+    const next = `${rel}/${entry.name}`;
     if (entry.isDirectory()) out.push(...walk(next, exts));
     else if (exts.some((e) => entry.name.endsWith(e))) out.push(next);
   }

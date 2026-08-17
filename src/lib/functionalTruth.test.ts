@@ -186,7 +186,9 @@ function apiRouteFiles(): string[] {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) walk(p);
-      else if (e.name === "route.ts") out.push(path.relative(ROOT, p));
+      // Forward slashes, so a route this scan names reads the same on every
+      // platform. `path.relative` separates with a backslash on Windows.
+      else if (e.name === "route.ts") out.push(path.relative(ROOT, p).split(path.sep).join("/"));
     }
   };
   walk(path.join(ROOT, "src", "app", "api"));

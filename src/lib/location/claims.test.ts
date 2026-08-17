@@ -75,12 +75,17 @@ const AR_NEEDLES: readonly RegExp[] = [
 
 const NEEDLES = [...EN_NEEDLES, ...AR_NEEDLES];
 
+// Paths come out of the walk in POSIX form. Every path this file compares one
+// against is written with forward slashes, the EXCEPTIONS entries and the two
+// importer names at the end of the file, and `path.join` separates with a
+// backslash on Windows: unnormalised, no exception would ever match its own file
+// and the gate would report the excepted surfaces as offenders.
 const walk = (dir: string, out: string[] = []): string[] => {
   if (!fs.existsSync(dir)) return out;
   for (const entry of fs.readdirSync(dir)) {
     const p = path.join(dir, entry);
     if (fs.statSync(p).isDirectory()) walk(p, out);
-    else if (/\.tsx?$/.test(p) && !/\.test\.tsx?$/.test(p)) out.push(p);
+    else if (/\.tsx?$/.test(p) && !/\.test\.tsx?$/.test(p)) out.push(p.split(path.sep).join("/"));
   }
   return out;
 };

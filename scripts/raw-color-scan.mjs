@@ -4,7 +4,7 @@
 // does not fail the build. It excludes the token definition files (where hex is
 // the source of truth) and the brand SVG/logo marks.
 import { readdirSync, statSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 
 const ROOT = "src";
 // Files that legitimately hold raw hex: the token sources and brand marks.
@@ -19,11 +19,14 @@ const ALLOW_FILES = [
 ];
 const HEX = /#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g;
 
+// Names are yielded with forward slashes. ALLOW_FILES above is written that way,
+// and `join` separates with a backslash on Windows, so an unnormalised name
+// matches no entry and the token sources get counted as debt.
 function* files(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
     if (statSync(p).isDirectory()) yield* files(p);
-    else if (/\.(tsx|ts)$/.test(name) && !/\.test\.ts$/.test(name)) yield p;
+    else if (/\.(tsx|ts)$/.test(name) && !/\.test\.ts$/.test(name)) yield p.split(sep).join("/");
   }
 }
 

@@ -44,8 +44,24 @@ import path from "node:path";
 // sitting in the list being read by nobody. That is the same rule
 // `location/claims.test.ts` applies to its exceptions, for the same reason.
 
-const ROOT = process.cwd();
-const SRC = path.join(ROOT, "src");
+// PATHS ARE HELD IN ONE FORM, AND IT IS THE FORM THE PATTERNS ARE WRITTEN IN.
+//
+// `path.join` separates with a backslash on Windows. Every prefix test and every
+// pattern below is written with forward slashes, `ROUTE_MODULE` most visibly, so
+// a backslash path silently matches none of them: the runtime root set collapses
+// to the two files added by name, the closure walk reaches almost nothing, and a
+// gate whose whole purpose is to notice unreached modules reports the entire
+// application as unreached. The sanity assertion in the first test is what caught
+// that, which is the reason it is there.
+//
+// So a path enters this file through `abs` or through `walk` and comes out in
+// POSIX form, once, and the patterns stay readable. `fs` accepts forward slashes
+// on every platform, so a normalised path is still a path everywhere.
+const norm = (p: string) => p.split(path.sep).join("/");
+const abs = (...parts: string[]) => norm(path.join(...parts));
+
+const ROOT = norm(process.cwd());
+const SRC = abs(ROOT, "src");
 const EXT = [".ts", ".tsx", ".mts", ".js", ".jsx", ".mjs"];
 
 // ---------------------------------------------------------------------------
@@ -94,7 +110,7 @@ const ALLOWED_UNREACHED: readonly Unreached[] = [
 function walk(dir: string, out: string[] = []): string[] {
   if (!fs.existsSync(dir)) return out;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
+    const p = abs(dir, e.name);
     if (e.isDirectory()) walk(p, out);
     else out.push(p);
   }
@@ -113,12 +129,12 @@ const code = walk(SRC).filter(isCode);
  */
 function resolveSpec(spec: string, from: string): string | null {
   let base: string;
-  if (spec.startsWith("@/")) base = path.join(SRC, spec.slice(2));
-  else if (spec.startsWith(".")) base = path.resolve(path.dirname(from), spec);
+  if (spec.startsWith("@/")) base = abs(SRC, spec.slice(2));
+  else if (spec.startsWith(".")) base = norm(path.resolve(path.dirname(from), spec));
   else return null;
   for (const x of EXT) if (fs.existsSync(base + x)) return base + x;
   for (const x of EXT) {
-    const idx = path.join(base, "index" + x);
+    const idx = abs(base, "index" + x);
     if (fs.existsSync(idx)) return idx;
   }
   if (fs.existsSync(base) && fs.statSync(base).isFile()) return base;
@@ -165,36 +181,36 @@ const ROUTE_MODULE =
   /(^|\/)(page|layout|route|not-found|error|global-error|template|default|loading|sitemap|robots|opengraph-image|icon|apple-icon|manifest)\.(tsx?|jsx?)$/;
 
 const runtimeRoots = new Set<string>(
-  code.filter((f) => f.startsWith(path.join(SRC, "app")) && ROUTE_MODULE.test(f))
+  code.filter((f) => f.startsWith(`${SRC}/app`) && ROUTE_MODULE.test(f))
 );
 for (const n of ["src/middleware.ts", "src/instrumentation.ts"]) {
-  const p = path.join(ROOT, n);
+  const p = abs(ROOT, n);
   if (fs.existsSync(p)) runtimeRoots.add(p);
 }
 
 const toolingRoots = new Set<string>();
 {
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")) as {
+  const pkg = JSON.parse(fs.readFileSync(abs(ROOT, "package.json"), "utf8")) as {
     scripts?: Record<string, string>;
   };
   // A file named in a script is run by that script. `npm run eval` is why the
   // gold set and the grader are not orphans.
   for (const cmd of Object.values(pkg.scripts ?? {})) {
     for (const m of cmd.matchAll(/(?:^|\s)(src\/[\w./[\]-]+\.(?:tsx?|mjs|js))/g)) {
-      const p = path.join(ROOT, m[1]);
+      const p = abs(ROOT, m[1]);
       if (fs.existsSync(p) && isCode(p)) toolingRoots.add(p);
     }
   }
   for (const f of fs.readdirSync(ROOT)) {
-    if (/^(tailwind|next|postcss)\.config\.(ts|js|mjs|cjs)$/.test(f)) toolingRoots.add(path.join(ROOT, f));
+    if (/^(tailwind|next|postcss)\.config\.(ts|js|mjs|cjs)$/.test(f)) toolingRoots.add(abs(ROOT, f));
   }
-  for (const f of walk(path.join(ROOT, "scripts"))) if (isCode(f)) toolingRoots.add(f);
+  for (const f of walk(abs(ROOT, "scripts"))) if (isCode(f)) toolingRoots.add(f);
 }
 
 const runtime = closure(runtimeRoots);
 const anywhere = closure([...runtimeRoots, ...toolingRoots]);
 
-const rel = (f: string) => path.relative(ROOT, f);
+const rel = (f: string) => norm(path.relative(ROOT, f));
 
 // ---------------------------------------------------------------------------
 // The gate
@@ -213,7 +229,7 @@ test("reachability: the walk found the application", () => {
 
 test("reachability: every rendering surface is reached by a route", () => {
   const stranded = code
-    .filter((f) => f.startsWith(path.join(SRC, "components")) || f.startsWith(path.join(SRC, "app")))
+    .filter((f) => f.startsWith(`${SRC}/components`) || f.startsWith(`${SRC}/app`))
     .filter((f) => !runtime.has(f))
     .map(rel)
     .sort();
@@ -225,7 +241,7 @@ test("reachability: every rendering surface is reached by a route", () => {
 });
 
 test("reachability: no module outside the recorded allow list is unreached", () => {
-  const allowed = new Set(ALLOWED_UNREACHED.map((e) => path.join(ROOT, e.file)));
+  const allowed = new Set(ALLOWED_UNREACHED.map((e) => abs(ROOT, e.file)));
   const orphans = code
     .filter((f) => !anywhere.has(f) && !allowed.has(f))
     .map(rel)
@@ -239,7 +255,7 @@ test("reachability: no module outside the recorded allow list is unreached", () 
 
 test("reachability: every allow list entry still exists and is still unreached", () => {
   for (const e of ALLOWED_UNREACHED) {
-    const p = path.join(ROOT, e.file);
+    const p = abs(ROOT, e.file);
     assert.ok(fs.existsSync(p), `allow listed file is gone, so its entry is dead weight: ${e.file}`);
     assert.ok(e.reason.length > 120, `the entry for ${e.file} does not say why it is held`);
     assert.equal(
@@ -268,7 +284,7 @@ const ADV_1C_CHAIN = [
 ] as const;
 
 test("reachability: the Evidence Passport chain is reached from a route", () => {
-  const dormant = ADV_1C_CHAIN.filter((f) => !runtime.has(path.join(ROOT, f)));
+  const dormant = ADV_1C_CHAIN.filter((f) => !runtime.has(abs(ROOT, f)));
   assert.deepEqual(
     dormant,
     [],
@@ -280,12 +296,12 @@ test("reachability: the listing detail route is what reaches it", () => {
   // Not "some route": this one. A future refactor that moves the passport onto a
   // private admin surface would still pass the test above while removing it from
   // every reader, which is the failure boundary 3 was written about.
-  const listing = path.join(SRC, "app", "[locale]", "listings", "[id]", "page.tsx");
+  const listing = abs(SRC, "app", "[locale]", "listings", "[id]", "page.tsx");
   assert.ok(fs.existsSync(listing), "the listing detail route moved");
   const fromListing = closure([listing]);
   for (const f of ADV_1C_CHAIN) {
     assert.ok(
-      fromListing.has(path.join(ROOT, f)),
+      fromListing.has(abs(ROOT, f)),
       `${f} is no longer reached from the listing detail page, which is the surface that renders the passport`
     );
   }
@@ -328,7 +344,7 @@ const REMOVED: readonly Unreached[] = [
 test("boundary 8: the reviewed orphan components stay removed", () => {
   for (const r of REMOVED) {
     assert.equal(
-      fs.existsSync(path.join(ROOT, r.file)),
+      fs.existsSync(abs(ROOT, r.file)),
       false,
       `${r.file} is back. It was reviewed and removed: ${r.reason}`
     );
@@ -339,7 +355,7 @@ test("boundary 8: the reviewed orphan components stay removed", () => {
 test("boundary 8: the orphaned dictionary section went with its component", () => {
   for (const locale of ["en", "ar"] as const) {
     const dict = JSON.parse(
-      fs.readFileSync(path.join(SRC, "i18n", "dictionaries", `${locale}.json`), "utf8")
+      fs.readFileSync(abs(SRC, "i18n", "dictionaries", `${locale}.json`), "utf8")
     ) as Record<string, unknown>;
     assert.equal(
       "locationFilter" in dict,

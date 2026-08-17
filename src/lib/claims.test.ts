@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 
 //
 // Owner ruling 3 and 4 (2026-07-28) regression guard.
@@ -121,7 +121,10 @@ function surfaceFiles(dir: string, out: string[] = []): string[] {
 }
 
 const SURFACES = [...surfaceFiles(join(ROOT, "app")), ...surfaceFiles(join(ROOT, "components"))];
-const rel = (f: string) => f.slice(ROOT.length + 1);
+// Forward slashes, because CHIP_ALLOWED below is written in forward slashes and
+// `join` separates with a backslash on Windows. An unnormalised name matches no
+// entry, so every allowed surface reads as an offender.
+const rel = (f: string) => f.slice(ROOT.length + 1).split(sep).join("/");
 
 // The chip primitive, the resolver's own renderer, and the surfaces handed an
 // already-resolved list by the server. Anything else drawing this chip is drawing
@@ -767,6 +770,13 @@ const CLAIM_SOURCES: string[] = [
 // the guard inside the guard, so it runs only on the extensions it was written for.
 const CODE_EXT = /\.(ts|tsx|mjs|cjs|js)$/;
 
+// A claim source named the way this file and the register name one: repo-relative,
+// forward slashes. The walk builds absolute paths with `join`, which separates with
+// a backslash on Windows, so the reach assertion below has to be handed a
+// normalised name or it reports every module it names as outside the scan.
+const REPO = join(ROOT, "..");
+const repoRel = (f: string) => f.slice(REPO.length + 1).split(sep).join("/");
+
 test("ruling 3: no source file anywhere carries a corpus claim", () => {
   // The count is asserted so that a future refactor which moves a folder out of the
   // walk fails here rather than silently shrinking the guard back to where it was.
@@ -775,7 +785,7 @@ test("ruling 3: no source file anywhere carries a corpus claim", () => {
   for (const f of CLAIM_SOURCES) {
     const raw = readFileSync(f, "utf8");
     const src = CODE_EXT.test(f) ? code(raw) : raw;
-    const rel = f.replace(join(ROOT, ".."), "").replace(/^\//, "");
+    const rel = repoRel(f);
     for (const locale of ["en", "ar"] as const) {
       for (const [re, why] of CORPUS_BANNED[locale]) {
         const m = src.match(new RegExp(re.source, re.flags.replace("g", "")));
@@ -790,7 +800,7 @@ test("ruling 3: the claim scan reaches the three modules that were outside it", 
   // Naming them is the point. A scan that reports zero offenders proves nothing
   // about its own reach, and the previous scan reported zero for weeks while these
   // three carried claims.
-  const rel = new Set(CLAIM_SOURCES.map((f) => f.replace(join(ROOT, ".."), "").replace(/^\//, "")));
+  const rel = new Set(CLAIM_SOURCES.map(repoRel));
   for (const f of ["src/lib/search/searchNote.ts", "src/lib/format.ts", "src/lib/legalContent.ts", "src/lib/agents/agents.ts", "src/middleware.ts", "scripts/seed-demo.mjs", "public/llms.txt", "public/manifest.webmanifest"]) {
     assert.ok(rel.has(f), `${f} is outside the claim scan`);
   }
