@@ -90,6 +90,14 @@
   /* Layers / z-index scale. */
   --z-base:0; --z-raised:5; --z-sticky:30; --z-tabbar:45; --z-header:50; --z-fab:60; --z-overlay:61; --z-panel:62; --z-toast:80; --z-skip:200;
 
+  /* Mobile safe-zone system (item 2). One number for the tab bar's real
+     height, so every fixed-to-bottom control that must clear it (the
+     footer's --tabbar-reserve in globals.css, the Advisor fab, the Listing
+     Detail contact dock) computes its offset from the same source instead
+     of each carrying its own copy of "62px". globals.css:292 has the
+     measurement this number is taken from. */
+  --tabbar-h:62px;
+
   /* Breakpoint MIRRORS for documentation and JS-in-CSS only. The authoritative
      source is src/theme/breakpoints.ts (generates Tailwind screens). CSS custom
      properties cannot drive @media conditions, so real media queries use the
@@ -857,5 +865,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .fb-sheet-title{font-size:var(--fs-md);font-weight:600;}
 .fb-sheet-close{width:32px;height:32px;border-radius:8px;border:1px solid var(--silver-2);background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none;}
 .fb-sheet-body{overflow-y:auto;padding:12px 16px calc(16px + env(safe-area-inset-bottom));}
+/* FilterBar's mobile sheet (item 1 repair) now portals to <body> and sets
+   this class for as long as it is open. The rest of the page is made
+   `inert` from JS (removes it from interaction and the accessibility tree);
+   this rule additionally removes the two floating controls named in the
+   ruling -- the bottom tab bar and the Advisor fab -- from the page
+   entirely while the dialog has the screen, rather than leaving them
+   dimmed and visible through the backdrop. */
+body.fb-sheet-modal-open .tabbar,
+body.fb-sheet-modal-open .advfab{display:none!important;}
 @keyframes fb-sheet-fade{from{opacity:0}to{opacity:1}}
 @keyframes fb-sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}

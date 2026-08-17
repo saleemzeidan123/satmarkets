@@ -36,6 +36,16 @@ export type ListerRow = {
   is_demo: boolean;
   logo_url: string | null;
   member_since: string | null;
+  /**
+   * Real published-listing count for this account. Not a column on
+   * `listers_public` (the view carries none, deliberately; see
+   * 20260809_listers_public_directory_fields.sql), so this is not read off
+   * the view row. It is filled in below the same way
+   * src/app/[locale]/lister/[id]/page.tsx already counts one lister's live
+   * spaces: a direct query against `listings`, batched here across the
+   * page's ids in one extra call rather than one call per card.
+   */
+  published_count: number;
 };
 
 export type ListersPage = {
@@ -95,5 +105,25 @@ export async function listListers(opts: { page?: number; role?: ListerRole | nul
     .range(start, start + pageSize - 1);
 
   if (error) return { dataOk: false, rows: [], total: 0, page, pageSize };
-  return { dataOk: true, rows: (data as ListerRow[]) ?? [], total: count ?? 0, page, pageSize };
+  const rows = (data as Omit<ListerRow, "published_count">[]) ?? [];
+
+  // Item 6's live published-space count. `listers_public` already filters to
+  // accounts with at least one published listing (20260714d), so every row
+  // here has a real count of at least 1; nothing is invented for a lister
+  // this page would not otherwise show. One extra query for the whole page,
+  // not one per card, and skipped entirely when the page has no rows.
+  const counts = new Map<string, number>();
+  if (rows.length > 0) {
+    const { data: pub } = await sb
+      .from("listings")
+      .select("account_id")
+      .eq("status", "published")
+      .in("account_id", rows.map((r) => r.id));
+    for (const row of (pub as { account_id: string }[] | null) ?? []) {
+      counts.set(row.account_id, (counts.get(row.account_id) ?? 0) + 1);
+    }
+  }
+  const withCounts: ListerRow[] = rows.map((r) => ({ ...r, published_count: counts.get(r.id) ?? 0 }));
+
+  return { dataOk: true, rows: withCounts, total: count ?? 0, page, pageSize };
 }

@@ -30,7 +30,13 @@ test("the mobile dock renders nothing when no contact channel resolves, rather t
   // one-line reorder would silently reintroduce the empty-bar defect while
   // still containing this exact string elsewhere in the file.
   const guardIdx = mobileDock.indexOf("if (!wa && !call && !message) return null;");
-  const fixedIdx = mobileDock.indexOf('className="fixed inset-x-0 bottom-0');
+  // UX closure item 2 (one shared mobile safe-zone system) added the
+  // `contact-dock` class ahead of `fixed inset-x-0` and moved the literal
+  // `bottom-0` out into CSS (`.contact-dock`/`main.has-tabbar .contact-dock`
+  // in globals.css), so the dock sits above the tab bar instead of under
+  // it. The class name changed; what this test actually guards, that the
+  // null-return guard precedes the fixed wrapper, did not.
+  const fixedIdx = mobileDock.indexOf('className="contact-dock fixed inset-x-0');
   assert.ok(guardIdx > -1 && fixedIdx > -1 && guardIdx < fixedIdx, "the no-channel guard must appear before the fixed-position wrapper renders");
 });
 

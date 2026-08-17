@@ -118,7 +118,17 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       data-scroll-behavior="smooth"
       className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {/* Reveal.tsx (PKG-DISCOVERY-1 slice F) only ever removes the
+            globals.css `.reveal{opacity:0}` base state from an
+            IntersectionObserver callback that never runs without JS. The
+            prefers-reduced-motion rule beside that base state covers the
+            reduced-motion case; this covers the no-JS case the same way,
+            so a visitor with scripting disabled is not left with content
+            stuck invisible. */}
+        <noscript><style>{".reveal{opacity:1!important;}"}</style></noscript>
+        {children}
+      </body>
     </html>
   );
 }

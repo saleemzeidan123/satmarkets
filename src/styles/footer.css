@@ -33,6 +33,19 @@
 .foot .col-h{font-family:var(--font-mono),monospace;font-size:0.625rem;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-2);margin:0 0 12px;}
 .foot .foot-col a{color:#AEB6C0;font-size:0.8125rem;display:block;padding:5px 0;}
 .foot .foot-col a:hover{color:#fff;}
+/* Item 3, route truth. A disclosed-planned footer entry (SatFooter.tsx,
+   PLANNED_LABELS) matches the link rows around it in size and rhythm but
+   carries none of the link affordances -- no cursor, no hover colour change
+   -- because it is not one: text, not a destination. `em` is styling only
+   here (not semantic emphasis); it carries the same "Planned" word
+   `releaseLabel` renders on Home's own planned tiles, muted one step further
+   so it reads as a status word rather than more label. */
+.foot .foot-planned{display:block;padding:5px 0;font-size:0.8125rem;color:#8A93A0;cursor:default;}
+/* #5B6470 (this file's own --slate) reads 2.98:1 on --ink, well under the
+   4.5:1 text floor palette.test.ts holds the whole product to; --slate-2 read
+   3.77:1 and was no better. #808488 is picked to sit visibly dimmer than the
+   label's #8A93A0 above (5.75:1) while still clearing the floor, at 4.74:1. */
+.foot .foot-planned em{font-style:normal;color:#808488;font-size:0.71875rem;}
 .foot .stores{display:flex;gap:10px;}
 .foot .store{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;border:1px solid #3a444d;background:#11151a;color:#fff;}
 .foot .store .ec{display:block;font-family:var(--font-mono),monospace;font-size:0.53125rem;color:var(--slate-2);letter-spacing:.04em;line-height:1.15;}

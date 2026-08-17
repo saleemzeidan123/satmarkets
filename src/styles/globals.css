@@ -167,6 +167,15 @@ html[dir="rtl"]{
 @keyframes floaty { 0%,100%{ transform: translateY(0); } 50%{ transform: translateY(-7px); } }
 .reveal { opacity:0; }
 .reveal.in { animation: fadeUp .7s cubic-bezier(.2,.7,.2,1) forwards; }
+/* Reveal.tsx (PKG-DISCOVERY-1 slice F) only ever adds the .in class from an
+   IntersectionObserver callback; a reduced-motion preference, a JS failure,
+   or an unsupported IntersectionObserver would otherwise leave content
+   sitting at opacity:0 forever. The global reduced-motion rule below
+   collapses animation-duration to .01ms but does not touch this base
+   opacity:0 state, so it is not sufficient on its own; this rule makes
+   reduced-motion visitors see the content immediately regardless of
+   whether the observer ever fires. */
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;}}
 .float-slow { animation: floaty 7s ease-in-out infinite; }
 .mesh {
   position:relative;
@@ -305,7 +314,7 @@ fieldset { min-inline-size: 0; }
    content under a bar or a gap under nothing. src/lib/chromeGate.test.ts holds the
    two equal, and the shell probe measures the result at nine widths in both
    locales. */
-main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom));}
+main.has-tabbar ~ .foot{--tabbar-reserve:calc(var(--tabbar-h) + env(safe-area-inset-bottom));}
 @media(min-width:1024px){main.has-tabbar ~ .foot{--tabbar-reserve:0px;}}
 @media(max-width:640px){.topnotice:not(.preview-notice){display:none!important;}}
 @media(hover:none){
@@ -427,8 +436,17 @@ main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom)
 .jc-stat{display:flex;align-items:baseline;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--silver);}
 @media(prefers-reduced-motion:reduce){.job-card,.job-card::after,.jc-ic,.jc-arrow{transition:none;}.job-card:hover{transform:none;}}
 
+/* ---- Home persona picker (PKG-DISCOVERY-1 visible-polish follow-up) ----
+   Same icon-chip language as .jc-ic above, sized down for this denser
+   four-across row so the hover/colour behaviour a returning visitor
+   already learned from the "Four jobs" cards carries over here too. */
+.persona-card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease;}
+.persona-ic{width:34px;height:34px;border-radius:10px;background:var(--cool);color:var(--harbor);display:flex;align-items:center;justify-content:center;flex:none;transition:background .2s ease,color .2s ease,transform .2s ease;}
+.persona-card:hover .persona-ic{background:var(--harbor);color:#fff;transform:translateY(-2px);}
+@media(prefers-reduced-motion:reduce){.persona-card,.persona-ic{transition:none;}.persona-card:hover .persona-ic{transform:none;}}
+
 /* ---- Floating SAT Advisor widget ---- */
-.advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(82px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
+.advfab{position:fixed;z-index:60;inset-inline-end:16px;bottom:calc(var(--tabbar-h) + 20px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;background:#3A6EA5;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(20,24,28,.3);transition:transform .18s ease,box-shadow .18s ease;-webkit-tap-highlight-color:transparent;}
 @media(min-width:1024px){.advfab{bottom:22px;inset-inline-end:22px;}}
 /* PKG-E1-READINESS slice B, WS09. 82px above is the tab bar's 62px plus a 20px gap,
    which is right on the routes that get a tab bar and wrong on the ones that do not:
@@ -438,6 +456,30 @@ main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom)
    1024px so the desktop corner position above is untouched, and the safe-area inset is
    kept because a home indicator is there whether or not a tab bar is. */
 @media(max-width:1023px){.advfab.no-tabbar{bottom:calc(20px + env(safe-area-inset-bottom));}}
+/* Item 2, mobile safe-zone system. ContactBar's mobile dock
+   (src/components/ContactBar.tsx, `.contact-dock`) used to sit at `bottom:0`
+   unconditionally, the same edge `.tabbar` occupies. On any route that
+   renders both -- every Listing Detail page is the marketing tier, so it
+   always does below 1024px -- the tab bar painted later in the document and
+   on top, and `document.elementFromPoint` on the primary WhatsApp button's
+   own center returned the tab bar's icon span, not the button: the
+   platform's highest-intent action was fully covered and unclickable.
+   `main.has-tabbar` is the same per-route marker the footer's own
+   `--tabbar-reserve` above already keys off, so this reuses it rather than
+   adding a second way to ask "does this route have a bar": the dock lifts by
+   exactly one `--tabbar-h` only where a bar is actually present to collide
+   with, and both numbers can never drift apart because there is only one. */
+.contact-dock{bottom:env(safe-area-inset-bottom);}
+main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom));}
+/* Same collision, one tier up: lifting the dock above the tab bar puts it
+   directly in the Advisor fab's own reserved band (tab bar height + 20px
+   gap, immediately above). Below 768px -- Tailwind's own `md:hidden` cutoff
+   on `.contact-dock`, matched here rather than re-guessed -- a route with
+   both a tab bar and a live contact dock hides the fab entirely rather than
+   stacking a third floating control into the same corner. */
+@media(max-width:767px){
+  main.has-tabbar:has(.contact-dock) ~ .advfab{display:none;}
+}
 .advfab:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(20,24,28,.36);}
 .advfab:active{transform:scale(.93);}
 .advpanel-back{position:fixed;inset:0;z-index:61;background:rgba(10,14,20,.42);}
@@ -549,8 +591,15 @@ main.has-tabbar ~ .foot{--tabbar-reserve:calc(62px + env(safe-area-inset-bottom)
 .ld-enquiry{position:static;}
 @media(min-width:921px){.ld-enquiry{position:sticky;top:90px;}}
 /* Reserve room for the fixed mobile contact dock (shown below 768px) so it never
-   covers the last of the page content. */
-@media(max-width:767px){.ld-page{padding-bottom:calc(84px + env(safe-area-inset-bottom));}}
+   covers the last of the page content. 84px is the dock's own height; item 2's
+   safe-zone repair (below) lifts the dock by one more `--tabbar-h` on routes
+   that also render the tab bar -- every Listing Detail page, marketing tier --
+   so this reserve grows by the same amount, or the page's own final content
+   would end up hidden under the now-higher dock instead of the dock hiding it. */
+@media(max-width:767px){
+  .ld-page{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
+  main.has-tabbar .ld-page{padding-bottom:calc(84px + var(--tabbar-h) + env(safe-area-inset-bottom));}
+}
 
 
 /* ---- ADV-1C: the Evidence Passport disclosure (Codex boundary 5). ---- */
