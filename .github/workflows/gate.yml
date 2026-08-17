@@ -1,0 +1,84 @@
+# The shipping gate, run automatically.
+#
+# WHY THIS FILE EXISTS.
+#
+# Until this workflow there was no continuous integration in this repository at
+# all: no .github directory, no workflow, no other CI configuration. The Vercel
+# deployment that runs on every pull request runs `npm run build` and nothing
+# else, so the 1851 tests, the typecheck, the Arabic lint, the prose scan and the
+# ESLint ratchet had never once run except when a person remembered to run them.
+# That is how a suite can be green on Linux and ten-red on Windows for as long as
+# nobody happens to look, which is finding 216.
+#
+# The steps below are the seven documented in CLAUDE.md, in the documented order,
+# so this file and that list cannot drift apart without the drift being visible in
+# a diff.
+#
+# NO SECRETS AND NO DATABASE.
+#
+# Nothing here reads a secret and nothing connects to a database. Every
+# `process.env` value this application touches at build time is optional and
+# guarded, which is verified by the build below succeeding on a checkout with no
+# environment file present. A gate that needed production credentials to run
+# would be a gate that cannot run on a fork, and a build that silently depends on
+# a live database is a build whose result means less than it appears to.
+name: gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Only the newest run for a given ref matters. A superseded run is cancelled
+# rather than left to finish and report on code that has already been replaced.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Read-only. This workflow reports a result, it does not write to the repository.
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node 22 is the version the suite is verified against on Linux. The npm
+      # cache is keyed on package-lock.json by this action, so a lockfile change
+      # invalidates it and an unchanged lockfile does not reinstall from the
+      # network.
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install (gate step 1)
+        run: npm ci
+
+      - name: Typecheck (gate step 2)
+        run: npm run typecheck
+
+      - name: Tests (gate step 3)
+        run: npm test
+
+      - name: Arabic lint (gate step 4)
+        run: npm run ar-lint
+
+      # No npm script exists for this one; the gate list in CLAUDE.md names the
+      # scan itself, so it is invoked the same way here.
+      - name: Prose scan (gate step 5)
+        run: node scripts/prose-scan.mjs
+
+      - name: ESLint ratchet (gate step 6)
+        run: npm run lint-gate
+
+      # Fetches Google Fonts at build time, so it needs ordinary network egress
+      # and nothing more.
+      - name: Production build (gate step 7)
+        run: npm run build
