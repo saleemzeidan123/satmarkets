@@ -71,7 +71,14 @@ function rules(body: string): Rule[] {
 }
 
 const COARSE = rules(coarseBlock(platform));
-const FLOORED = new Set(COARSE.filter((r) => /min-height:\s*44px/.test(r.decls)).flatMap((r) => r.selectors));
+// The floor may be declared physically or logically. `min-block-size` is the
+// logical spelling of `min-height` and is what the enumeration now uses, so that
+// a right-to-left document needs no separate rule. Both are accepted here
+// because the invariant this file guards is "a 44px floor exists", not which
+// spelling declares it.
+const MIN_BLOCK = /min-(?:height|block-size):\s*44px/;
+const MIN_INLINE = /min-(?:width|inline-size):\s*44px/;
+const FLOORED = new Set(COARSE.filter((r) => MIN_BLOCK.test(r.decls)).flatMap((r) => r.selectors));
 const DISPLAYED = new Set(COARSE.filter((r) => /display:/.test(r.decls)).flatMap((r) => r.selectors));
 
 // Button variants that are deliberately not controls. Empty on purpose: every
@@ -110,13 +117,13 @@ test("families that can render inline also receive a display", () => {
 });
 
 test("the icon group claims both axes", () => {
-  const iconRules = COARSE.filter((r) => /min-width:\s*44px/.test(r.decls));
+  const iconRules = COARSE.filter((r) => MIN_INLINE.test(r.decls));
   assert.ok(iconRules.length > 0, "the icon-target rule has been removed");
   for (const r of iconRules) {
     assert.match(
       r.decls,
-      /min-height:\s*44px/,
-      `\`${r.selectors.join(", ")}\` sets min-width without min-height. That is what turned a 34px ` +
+      MIN_BLOCK,
+      `\`${r.selectors.join(", ")}\` sets an inline floor without a block floor. That is what turned a 34px ` +
         "square icon link into a 44 by 34 control: wider than it needed to be and still short.",
     );
   }
@@ -132,7 +139,7 @@ test("the header and the footer link columns are covered structurally", () => {
   const footerCoarse = coarseBlock(footer);
   assert.match(
     footerCoarse,
-    /\.foot \.foot-col a\s*\{[^}]*min-height:\s*44px/,
+    /\.foot \.foot-col a\s*\{[^}]*min-(?:height|block-size):\s*44px/,
     "the footer link columns have no touch floor. They are the densest stack of targets on the site " +
       "and sit two abreast on a phone. The rule must live in footer.css: `.foot .foot-col a` is (0,2,1) " +
       "and footer.css is imported last, so an equally specific rule written earlier loses on source order.",

@@ -24,7 +24,15 @@
   padding:32px 38px;border-radius:16px;background:linear-gradient(120deg,#22303d,#2e4150);margin-bottom:46px;overflow:hidden;}
 .foot .cta-title{font-family:var(--font-serif),Georgia,serif;font-size:1.625rem;font-weight:500;color:#fff;letter-spacing:-.01em;}
 .foot .cta-sub{color:#AEB6C0;font-size:0.84375rem;margin-top:7px;}
-.foot .cta-actions{display:flex;gap:12px;flex:none;}
+/* This row must wrap. It is `flex:none`, so it refuses to shrink, and its
+   children are buttons whose automatic minimum size is their own text: at 320px
+   the English pair measures wider than the content box and the second button
+   leaves the viewport. Arabic does not reproduce it, because its labels are
+   shorter, which is the asymmetry a nowrap row hides until a translation grows.
+   Wrapping lets the pair stack instead of clip; `min-width:0` lets a single long
+   label shrink rather than force the wrap. */
+.foot .cta-actions{display:flex;gap:12px;flex:none;flex-wrap:wrap;}
+.foot .cta-actions .btn{min-width:0;}
 .foot .btn{display:inline-flex;align-items:center;justify-content:center;font-size:0.875rem;font-weight:600;padding:12px 20px;border-radius:10px;}
 .foot .btn-light{background:#fff;color:var(--ink);}
 .foot .btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);}
@@ -68,7 +76,12 @@
   .foot .foot-mark{display:none;}
   .foot .cta{flex-direction:column;align-items:flex-start;gap:16px;padding:24px 22px;}
   .foot .cta-actions{width:100%;}
-  .foot .cta-actions .btn{flex:1;}
+  /* `flex:1 1 auto` rather than `flex:1`. The `0%` basis of the shorthand asks
+     both buttons to share the row equally at any width, which is what kept them
+     on one line while their automatic minimum size refused to let them fit. An
+     `auto` basis lets them sit side by side while there is room and wrap to full
+     width when there is not. */
+  .foot .cta-actions .btn{flex:1 1 auto;}
   .foot .foot-cols{grid-template-columns:1fr 1fr;gap:22px 18px;}
   .foot .foot-brand{grid-column:1 / -1;}
   .foot .stores{flex-wrap:wrap;}

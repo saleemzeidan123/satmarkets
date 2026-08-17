@@ -369,7 +369,9 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       )}
       </div>
       <div style={{ textAlign: "center", marginTop: 12 }}>
-       <Link href={L("/post-requirement")} style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{H.postReqPrompt}</Link>
+       {/* Sole content of its row, so it is a standalone control rather than a
+           link inside a sentence, and it carries the touch floor. */}
+       <Link href={L("/post-requirement")} className="touch-target" style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{H.postReqPrompt}</Link>
       </div>
       <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
        <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
