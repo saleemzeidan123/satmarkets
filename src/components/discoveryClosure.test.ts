@@ -176,9 +176,16 @@ test("the sheet's own body keeps its scroll", () => {
 // 3. Touch targets
 // ---------------------------------------------------------------------------
 
-test("the shared touch primitive is explicitly named and declares a block floor", () => {
-  assert.match(coarseBlock, /\.touch-target\s*\{[^}]*min-block-size:\s*44px/, "the shared touch primitive lost its floor");
+test("the shared touch primitive declares the floor on both axes", () => {
+  // A block-only floor is the exact defect this primitive exists to close in a
+  // different shape: a short label such as a breadcrumb "Home" crumb passes a
+  // height check at 44px tall while still measuring far under 44px wide, which
+  // is precisely as much a mis-tap as the reverse. Both axes are required here,
+  // not just one, so a future edit cannot silently drop back to height-only.
+  assert.match(coarseBlock, /\.touch-target\s*\{[^}]*min-block-size:\s*44px/, "the shared touch primitive lost its block floor");
+  assert.match(coarseBlock, /\.touch-target\s*\{[^}]*min-inline-size:\s*44px/, "the shared touch primitive lost its inline floor");
   assert.match(coarseBlock, /\.touch-target\s*\{[^}]*display:\s*inline-flex/, "without a flex box the min size cannot take effect on an inline anchor");
+  assert.match(coarseBlock, /\.touch-target\s*\{[^}]*justify-content:\s*center/, "a short label needs centring on the axis the box just grew on, or it sits pinned to one edge of a wider box");
 });
 
 test("the touch primitive is not applied blanket to every anchor", () => {
@@ -240,6 +247,11 @@ const CALL_SITES: ReadonlyArray<readonly [string, string]> = [
   ["MarketingHome.tsx", "the standalone post-a-requirement prompt, sole content of its row"],
   ["ListerBadge.tsx", "the lister name, the only control in a row of status chips"],
   ["../app/[locale]/listings/[id]/page.tsx", "the detail breadcrumb and the see-all link"],
+  // Measured at 35 by 17 live, the shortest confirmed target in the discovery
+  // matrix and the one an earlier pass on this class missed entirely: this file
+  // was never touched, so a block-only primitive could not have caught it
+  // either. Present in the same source-truth sweep that found it.
+  ["../app/[locale]/listers/page.tsx", "the Home crumb in the listers directory breadcrumb"],
 ];
 
 for (const [file, why] of CALL_SITES) {
@@ -253,4 +265,14 @@ test("the see-all and breadcrumb links on listing detail both carry it", () => {
   const src = read(path.join(COMPONENTS, "../app/[locale]/listings/[id]/page.tsx"));
   const applied = [...src.matchAll(/className="[^"]*touch-target[^"]*"/g)];
   assert.ok(applied.length >= 2, `expected the breadcrumb and the see-all link, found ${applied.length}`);
+});
+
+test("the listers directory breadcrumb row can wrap", () => {
+  // The row containing the touch-target crumb has no flex-wrap of its own
+  // (`.eyebrow` sets none), so a longer Arabic label or a future third crumb
+  // segment needs an explicit `wrap` on this call site rather than relying on
+  // the shared class to provide it, which would affect every other `.eyebrow`
+  // usage across the app (section labels that must not wrap oddly).
+  const src = read(path.join(COMPONENTS, "../app/[locale]/listers/page.tsx"));
+  assert.match(src, /className="eyebrow wrap"/, "the breadcrumb row lost its ability to wrap");
 });

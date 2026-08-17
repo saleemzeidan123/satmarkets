@@ -110,8 +110,11 @@ export default async function ListersPage(props: { params: Promise<{ locale: str
           }}
         />
       )}
-      <div className="eyebrow">
-        <Link href={`/${locale}`} style={{ color: "inherit", textDecoration: "none" }}>{dl.crumbHome}</Link>
+      {/* `wrap` alongside the shared `.eyebrow` flex row: `.eyebrow` itself sets no
+          flex-wrap, and a longer Arabic label or a future third crumb must be able
+          to wrap onto a second line rather than run past the content edge. */}
+      <div className="eyebrow wrap">
+        <Link href={`/${locale}`} className="touch-target" style={{ color: "inherit", textDecoration: "none" }}>{dl.crumbHome}</Link>
         {" / "}{dl.crumbListers}
       </div>
       <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>

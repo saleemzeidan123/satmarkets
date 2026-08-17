@@ -822,14 +822,23 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   /* Standalone text links: applied at the call site, never to every anchor.
      An anchor inside a sentence is exempt under the WCAG inline exception, and a
      blanket rule would both be wrong and stretch prose line boxes. This class
-     marks the anchors that are not inline prose: each is the sole content of its
-     container, reads as its own control, and therefore carries the same floor a
-     button does. Only the box that receives the touch changes; the type scale is
-     untouched. */
+     marks the anchors that are not inline prose: each is its own control, in a
+     breadcrumb trail or standing alone in its container, and therefore carries
+     the same floor a button does.
+     BOTH axes, for the same reason the segmented control above needs both. A
+     short label such as a "Home" breadcrumb crumb can be well under 44px on the
+     inline axis even once the block axis is correct, which is exactly the 35 by
+     44 shape a block-only floor produces: compliant in height, still a mis-tap
+     in practice. Only the box that receives the touch changes; the type scale is
+     untouched, and `padding-inline` plus centred content is what keeps a short
+     label looking placed rather than stretched inside its wider box. */
   .touch-target {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    min-inline-size: 44px;
     min-block-size: 44px;
+    padding-inline: 8px;
   }
 }
 /* The focus ring is not inside the coarse-pointer query on purpose: a keyboard
