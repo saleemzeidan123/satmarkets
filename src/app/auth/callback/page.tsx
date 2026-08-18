@@ -39,6 +39,38 @@ function otpType(raw: string | null): OtpType | null {
   return (OTP_TYPES as readonly string[]).includes(raw ?? "") ? (raw as OtpType) : null;
 }
 
+/**
+ * Which of Supabase's own link shapes actually arrived. This project's
+ * `signInWithOtp` (magic link) call has been directly observed to produce a
+ * `?code=` PKCE parameter, and `flowType: "pkce"` was already set on this
+ * client before this file was touched, which is direct, first-party evidence
+ * this project runs the code-based flow, not the older implicit one. GoTrue's
+ * flow type is a single project-wide setting, not one configurable per email
+ * template, so invite and recovery links issue from the same setting as the
+ * observed magic link. That inference could not be independently confirmed
+ * against the Supabase dashboard's own Auth settings from this environment,
+ * which has no route to it; this function does not gamble on the inference
+ * being right. It reads whichever shape is actually present, in order of how
+ * this project's own emailRedirectTo values are built, and only the `else`
+ * arm is ever reached without a session having actually been established by
+ * one of them.
+ */
+function linkArtifact(u: URL) {
+  const hash = new URLSearchParams(u.hash.startsWith("#") ? u.hash.slice(1) : u.hash);
+  const code = u.searchParams.get("code");
+  const tokenHash = u.searchParams.get("token_hash");
+  // `type` can arrive in the query string (the code and token_hash shapes) or
+  // the hash fragment (the implicit shape, where GoTrue encodes the whole
+  // response after `#`). Both are read; neither is trusted over the other.
+  const type = otpType(u.searchParams.get("type")) ?? otpType(hash.get("type"));
+  const accessToken = hash.get("access_token");
+  const refreshToken = hash.get("refresh_token");
+  if (code) return { kind: "code" as const, code, type };
+  if (tokenHash && type) return { kind: "token_hash" as const, tokenHash, type };
+  if (accessToken && refreshToken) return { kind: "implicit" as const, accessToken, refreshToken, type };
+  return { kind: "none" as const, type };
+}
+
 export default function AuthCallback() {
   const [locale, setLocale] = useState<Locale>(defaultLocale);
   const [msg, setMsg] = useState<string | null>(null);
@@ -56,20 +88,19 @@ export default function AuthCallback() {
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!url || !key) { setMsg(t.errNotConfigured); setFailed(true); return; }
       const sb = createBrowserClient(url, key, { auth: { detectSessionInUrl: false, flowType: "pkce" } });
-      const code = u.searchParams.get("code");
-      const tokenHash = u.searchParams.get("token_hash");
-      const type = otpType(u.searchParams.get("type"));
+      const artifact = linkArtifact(u);
       try {
-        if (code) {
-          const { error } = await sb.auth.exchangeCodeForSession(code);
+        if (artifact.kind === "code") {
+          const { error } = await sb.auth.exchangeCodeForSession(artifact.code);
           if (error) throw error;
-        } else if (tokenHash && type) {
-          const { error } = await sb.auth.verifyOtp({ type, token_hash: tokenHash });
+        } else if (artifact.kind === "token_hash") {
+          const { error } = await sb.auth.verifyOtp({ type: artifact.type as OtpType, token_hash: artifact.tokenHash });
+          if (error) throw error;
+        } else if (artifact.kind === "implicit") {
+          const { error } = await sb.auth.setSession({ access_token: artifact.accessToken, refresh_token: artifact.refreshToken });
           if (error) throw error;
         } else {
-          // implicit hash fallback
-          const { data } = await sb.auth.getSession();
-          if (!data.session) throw new Error("no session");
+          throw new Error("no session artifact in the link");
         }
         // Fold anything saved on this device (while logged out) into the new session's
         // account, so signing in never loses a saved listing or search. Best effort.
@@ -81,8 +112,12 @@ export default function AuthCallback() {
         // carry `next` along so that step can finish the trip once a password is
         // actually set. Every other link type (magic link, OAuth) already led
         // somewhere the reader chose to sign in with a password they already
-        // have, so this branch changes nothing for them.
-        if (type === "invite" || type === "recovery") {
+        // have, so this branch changes nothing for them. Reached only inside
+        // this try block, after one of the three branches above has actually
+        // exchanged or verified a real artifact and thrown on failure: `type`
+        // alone, before that, proves nothing, since it is just a query or hash
+        // value anyone could type into the address bar.
+        if (artifact.type === "invite" || artifact.type === "recovery") {
           window.location.replace(`/${loc}/login?step=set-password&next=${encodeURIComponent(next)}`);
           return;
         }

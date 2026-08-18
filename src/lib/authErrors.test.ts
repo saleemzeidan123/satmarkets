@@ -38,7 +38,8 @@ import { getDictionary } from "@/i18n/getDictionary";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-const LOGIN = read("src/app/[locale]/login/page.tsx");
+const LOGIN = read("src/components/LoginForm.tsx");
+const LOGIN_ROUTE = read("src/app/[locale]/login/page.tsx");
 const CALLBACK = read("src/app/auth/callback/page.tsx");
 const SIGNUP_ROUTE = read("src/app/api/signup/route.ts");
 const SIGNUP_CLIENT = read("src/components/SignupFlow.tsx");
@@ -242,4 +243,101 @@ test("the generic sign-in refusal leaves the reader a way in", () => {
   const ar = getDictionary("ar").login as Record<string, string>;
   assert.match(en.errSignIn, /sign-in link/);
   assert.ok(ar.errSignIn.includes("رابط"), "the Arabic refusal does not mention the link");
+});
+
+// -------------------------------------------- 5. the invite/recovery correction
+//
+// A Codex review of the first version of this flow found that showing the
+// set-password form was gated on nothing but a public query string. Every
+// test in this section exists because that review named a specific failure
+// mode; each one is the source-level shape of the fix for it, in the same
+// idiom the rest of this file already uses, since this repository's own
+// tests read source rather than render React.
+
+test("a public step=set-password URL is not, by itself, proof of anything", () => {
+  // The route file is the only place allowed to decide the password form may
+  // show. It must ask Supabase, not the query string alone, and it must ask
+  // only when the query string requests the step at all (an ordinary sign-in
+  // visit has no reason to spend a session lookup).
+  assert.match(LOGIN_ROUTE, /getSessionUser\(/);
+  assert.match(LOGIN_ROUTE, /wantsSetPassword\s*\?\s*!!\(await getSessionUser\(\)\)\s*:\s*false/);
+  assert.match(LOGIN_ROUTE, /hasSession \? "setPassword" : "linkInvalid"/, "setPassword is not conditioned on a real session");
+  // And the client component it renders must not be able to reach the same
+  // conclusion on its own by reading the address bar: it has to be told.
+  assert.ok(!LOGIN.includes("window.location.search"), "the client form reads the query string itself");
+  assert.ok(!LOGIN.includes("URLSearchParams"), "the client form parses the query string itself");
+});
+
+test("a request with no real session lands on a localized invalid-link state, not the form", () => {
+  assert.match(LOGIN, /"linkInvalid"/);
+  assert.match(LOGIN, /t\.linkInvalidHeading/);
+  assert.match(LOGIN, /t\.linkInvalidBody/);
+  // It must offer a route back to requesting a new link, not a dead end.
+  assert.match(LOGIN, /step === "linkInvalid"[\s\S]{0,400}setStep\("forgot"\)/);
+});
+
+test("the callback trusts `type` only after a real artifact has actually been verified", () => {
+  // The invite/recovery branch that decides where to send the reader must sit
+  // after the try block's exchange/verify calls, never before them: reading
+  // `type` off the URL first and branching on it would trust an unauthenticated
+  // claim about what kind of link this is.
+  const tryStart = CALLBACK.indexOf("try {");
+  const routeToSetPassword = CALLBACK.indexOf('step=set-password');
+  const artifactChecks = CALLBACK.indexOf("exchangeCodeForSession");
+  assert.ok(tryStart > -1 && artifactChecks > tryStart, "no verified exchange happens inside the try block");
+  assert.ok(routeToSetPassword > artifactChecks, "type is acted on before an artifact is verified");
+});
+
+test("the callback actually handles all three shapes a Supabase link can take", () => {
+  assert.match(CALLBACK, /exchangeCodeForSession\(/, "no PKCE code handling");
+  assert.match(CALLBACK, /verifyOtp\(/, "no token_hash handling");
+  assert.match(CALLBACK, /setSession\(\{\s*access_token/, "no implicit hash-fragment handling; getSession() alone cannot see it with detectSessionInUrl: false");
+  assert.match(CALLBACK, /u\.hash/, "the hash fragment is never read at all");
+});
+
+test("the forgot-password step is a real form: Enter submits it, not only a click", () => {
+  assert.match(LOGIN, /<form onSubmit=\{sendReset\}/, "forgot-password is a button, not a form; Enter does nothing");
+  assert.ok(!/type="button"[^>]*onClick=\{sendReset\}/.test(LOGIN), "the old click-only control is still present");
+});
+
+test("the set-password fields point at their shared mismatch/length error", () => {
+  assert.match(LOGIN, /id="new-password"[\s\S]{0,400}?aria-describedby=\{error \? "set-password-error" : undefined\}/);
+  assert.match(LOGIN, /id="confirm-password"[\s\S]{0,400}?aria-describedby=\{error \? "set-password-error" : undefined\}/);
+  assert.match(LOGIN, /id="set-password-error"/);
+});
+
+test("busy disables every submit control the corrected flow added", () => {
+  // Count rather than name each one: three new submit buttons (set-password,
+  // forgot-password, and the pre-existing three still holding this contract
+  // from before), all disabled while a request from this page is in flight.
+  const disabledBusyButtons = (LOGIN.match(/disabled=\{busy\}/g) ?? []).length;
+  assert.ok(disabledBusyButtons >= 5, `only ${disabledBusyButtons} controls are guarded against a duplicate submit`);
+});
+
+test("invite and recovery route through set-password; magic link and OAuth still land on `next` directly", () => {
+  assert.match(CALLBACK, /artifact\.type === "invite" \|\| artifact\.type === "recovery"/);
+  // The unconditional fallthrough for every other type/no-type case.
+  assert.match(CALLBACK, /window\.location\.replace\(next\);/);
+});
+
+test("the set-password step's redirect target is still routed through safeNext", () => {
+  assert.match(LOGIN_ROUTE, /safeNext\(sp\.next\)/, "the query-supplied next is used unsanitised");
+});
+
+test("every string the invite/recovery correction added exists in both languages", () => {
+  const keys = [
+    "setPasswordHeading", "setPasswordSub", "newPasswordPh", "confirmPasswordPh", "setPasswordCta", "settingPassword",
+    "errPasswordTooShort", "errPasswordMismatch", "errSetPassword",
+    "forgotPassword", "resetHeading", "resetSub", "resetCta", "sendingReset", "resetSentBody", "errResetNotSent",
+    "linkInvalidHeading", "linkInvalidBody",
+  ] as const;
+  const en = getDictionary("en").login as Record<string, string>;
+  const ar = getDictionary("ar").login as Record<string, string>;
+  for (const k of keys) {
+    assert.ok(typeof en[k] === "string" && en[k].length > 3, `en.login.${k}`);
+    assert.ok(typeof ar[k] === "string" && ar[k].length > 3, `ar.login.${k}`);
+    assert.ok(ARABIC.test(ar[k]), `ar.login.${k} is not Arabic`);
+    assert.ok(!ARABIC.test(en[k]), `en.login.${k} is not English`);
+    assert.notEqual(en[k], ar[k], k);
+  }
 });
