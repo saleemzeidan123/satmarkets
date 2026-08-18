@@ -60,14 +60,17 @@ export default function SignupActions({ id, status }: { id: string; status: stri
     } catch { setMsg("Could not reach the server."); setBusy(false); }
   }
   const btn = (color: string): CSSProperties => ({ fontSize: "0.6875rem", padding: "3px 9px", borderRadius: 6, border: "1px solid " + color, background: "var(--paper)", color, cursor: busy ? "default" : "pointer", opacity: busy ? 0.5 : 1, whiteSpace: "nowrap" });
-  const isTerminal = status === "provisioned" || status === "verified" || status === "rejected";
   return (
     <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
       {status === "new" && <button disabled={busy} onClick={() => setStatus("contacted")} style={btn("var(--harbor-d)")}>Contacted</button>}
       {(status === "new" || status === "contacted") && <button disabled={busy} onClick={() => setStatus("approved")} style={btn("var(--verified)")}>Approve</button>}
       {status === "approved" && <button disabled={busy} onClick={provision} style={btn("var(--verified)")}>Provision</button>}
       {status === "provisioned" && <button disabled={busy} onClick={() => setStatus("verified")} style={btn("var(--verified)")}>Mark verified</button>}
-      {!isTerminal && <button disabled={busy} onClick={() => setStatus("rejected")} style={btn("var(--red)")}>Reject</button>}
+      {/* Reject stays available outside "rejected" itself, not just the pre-provision
+          states. A request that reached "verified" or "provisioned" incorrectly (the
+          exact bug this file used to have, before "approved" existed as a real step)
+          would otherwise be permanently stuck with no action at all. */}
+      {status !== "rejected" && <button disabled={busy} onClick={() => setStatus("rejected")} style={btn("var(--red)")}>Reject</button>}
       {msg && <span style={{ fontSize: "0.6875rem", color: "var(--red)" }}>{msg}</span>}
     </span>
   );
