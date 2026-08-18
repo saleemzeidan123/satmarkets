@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, use } from "react";
 import Link from "next/link";
 import { getDictionary } from "@/i18n/getDictionary";
 import { authMessage } from "@/lib/authErrors";
+import { safeNext } from "@/lib/authRedirect";
 
 // PKG-E1-READINESS slice E, WS33. Loaded on use, not on paint. Every path below
 // reaches for the client inside a handler that only runs when somebody presses
@@ -35,20 +36,35 @@ const SOCIAL: { provider: "google" | "azure" | "linkedin_oidc" | "apple"; label:
 
 // SM-P1-009: the login screen is fully localized. Every string comes from the
 // dictionary so /ar/login is Arabic, not an Arabic shell around English copy.
-export default function LoginPage(props: { params: Promise<{ locale: string }> }) {
+export default function LoginPage(props: { params: Promise<{ locale: string }>; searchParams: Promise<{ step?: string; next?: string }> }) {
  const params = use(props.params);
+ const sp = use(props.searchParams);
  const ar = params.locale === "ar";
  const t = getDictionary(ar ? "ar" : "en").login;
- const [step, setStep] = useState<"choose" | "sent">("choose");
+ // An invite or a recovery link lands here (from /auth/callback) already
+ // authenticated from its token, having never asked for a password. That
+ // link carries its own `next`, since the one this page would otherwise use
+ // is a plain sign-in destination, not necessarily where the reader was
+ // headed when the link was issued.
+ //
+ // Read from `searchParams`, the framework's own prop for this, rather than
+ // `window.location` in an effect: the server render sees the same query
+ // string as the client does, so the first paint is already correct and
+ // hydration never has two different answers to reconcile.
+ const invited = sp.step === "set-password";
+ const [step, setStep] = useState<"choose" | "sent" | "setPassword" | "forgot" | "resetSent">(invited ? "setPassword" : "choose");
  const [email, setEmail] = useState("");
  const [password, setPassword] = useState("");
+ const [newPassword, setNewPassword] = useState("");
+ const [confirmPassword, setConfirmPassword] = useState("");
+ const [nextAfter] = useState(() => (invited ? safeNext(sp.next) : `/${params.locale}/go`));
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState<string | null>(null);
 
  // ELITE-4 J1-6: setStep("sent") unmounts the magic-link button that had focus, so
  // focus fell to document.body and nothing was announced. Move focus to the panel.
  const sentRef = useRef<HTMLDivElement | null>(null);
- useEffect(() => { if (step === "sent") sentRef.current?.focus(); }, [step]);
+ useEffect(() => { if (step === "sent" || step === "resetSent") sentRef.current?.focus(); }, [step]);
 
  // Slice D of PKG-E1-READINESS, WS25. Every refusal below is resolved through
  // `authMessage`, which names a refusal only when the refusal is true of the
@@ -90,6 +106,41 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
   if (error) setError(authMessage(error, ar, t.errLinkNotSent)); else setStep("sent");
  }
 
+ // Reached only from /auth/callback's invite/recovery branch, so a session
+ // from the link's own token already exists; this only names the password.
+ async function submitNewPassword(e: React.FormEvent) {
+  e.preventDefault();
+  setError(null);
+  if (newPassword.length < 8) { setError(t.errPasswordTooShort); return; }
+  if (newPassword !== confirmPassword) { setError(t.errPasswordMismatch); return; }
+  const sb = await supabase();
+  if (!sb) { setError(t.errNotConfigured); return; }
+  setBusy(true);
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  setBusy(false);
+  if (error) { setError(authMessage(error, ar, t.errSetPassword)); return; }
+  window.location.replace(nextAfter);
+ }
+
+ // Deliberately silent on which addresses hold accounts, the same tolerance
+ // `emailLink` already keeps: Supabase answers success for an unknown address
+ // exactly as for a known one, so the confirmation panel says so rather than
+ // implying an account was found. Only a request-level refusal (rate limit,
+ // malformed address) ever reaches `error` here.
+ async function sendReset() {
+  setError(null);
+  if (!email) { setError(t.errEnterEmail); return; }
+  const sb = await supabase();
+  if (!sb) { setError(t.errNotConfigured); return; }
+  setBusy(true);
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+   redirectTo: `${window.location.origin}/auth/callback?type=recovery&next=/${params.locale}/go`,
+  });
+  setBusy(false);
+  if (error) { setError(authMessage(error, ar, t.errResetNotSent)); return; }
+  setStep("resetSent");
+ }
+
  // Social sign-in / sign-up. One tap, no password, account created on first use.
  // The provider must be enabled in Supabase Auth (its OAuth client id/secret set)
  // for the button to work; until then it returns a configuration error, which we
@@ -124,6 +175,9 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
        <input id="login-email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailPh} autoComplete="email" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
        <label htmlFor="login-password" className="sr-only">{t.passwordPh}</label>
        <input id="login-password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.passwordPh} autoComplete="current-password" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <div className="text-end">
+        <button type="button" onClick={() => { setError(null); setStep("forgot"); }} className="text-[0.78125rem] text-azure-d hover:underline" style={{ minHeight: 44 }}>{t.forgotPassword}</button>
+       </div>
        <button type="submit" disabled={busy} className="btn-gold flex w-full items-center justify-center gap-2 py-3 text-[0.875rem] font-medium" style={{ opacity: busy ? 0.6 : 1, minHeight: 44 }}>{busy ? t.signingIn : t.signIn}</button>
        {error && <p role="alert" className="text-sm text-red">{error}</p>}
       </form>
@@ -155,6 +209,51 @@ export default function LoginPage(props: { params: Promise<{ locale: string }> }
       </div>
       <h1 className="mt-4 font-display text-2xl text-charcoal">{t.checkEmail}</h1>
       <p className="mt-2 text-[0.84375rem] text-charcoal/70">{t.checkEmailBody} {email || t.yourInbox}.</p>
+      <button type="button" onClick={() => setStep("choose")} className="mt-6 text-[0.78125rem] text-azure-d hover:underline" style={{ minHeight: 44 }}>{t.backToSignIn}</button>
+     </div>
+    )}
+
+    {step === "setPassword" && (
+     <>
+      <div className="eyebrow">{t.eyebrow}</div>
+      <h1 className="mt-2 font-display text-2xl text-charcoal">{t.setPasswordHeading}</h1>
+      <p className="mt-2 text-[0.84375rem] leading-relaxed text-charcoal/70">{t.setPasswordSub}</p>
+
+      <form onSubmit={submitNewPassword} className="mt-6 space-y-3">
+       <label htmlFor="new-password" className="sr-only">{t.newPasswordPh}</label>
+       <input id="new-password" name="new-password" type="password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t.newPasswordPh} autoComplete="new-password" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <label htmlFor="confirm-password" className="sr-only">{t.confirmPasswordPh}</label>
+       <input id="confirm-password" name="confirm-password" type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t.confirmPasswordPh} autoComplete="new-password" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <button type="submit" disabled={busy} className="btn-gold flex w-full items-center justify-center gap-2 py-3 text-[0.875rem] font-medium" style={{ opacity: busy ? 0.6 : 1, minHeight: 44 }}>{busy ? t.settingPassword : t.setPasswordCta}</button>
+       {error && <p role="alert" className="text-sm text-red">{error}</p>}
+      </form>
+     </>
+    )}
+
+    {step === "forgot" && (
+     <>
+      <div className="eyebrow">{t.eyebrow}</div>
+      <h1 className="mt-2 font-display text-2xl text-charcoal">{t.resetHeading}</h1>
+      <p className="mt-2 text-[0.84375rem] leading-relaxed text-charcoal/70">{t.resetSub}</p>
+
+      <div className="mt-6 space-y-3">
+       <label htmlFor="reset-email" className="sr-only">{t.emailPh}</label>
+       <input id="reset-email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailPh} autoComplete="email" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <button type="button" onClick={sendReset} disabled={busy} className="btn-gold flex w-full items-center justify-center gap-2 py-3 text-[0.875rem] font-medium" style={{ opacity: busy ? 0.6 : 1, minHeight: 44 }}>{busy ? t.sendingReset : t.resetCta}</button>
+       {error && <p role="alert" className="text-sm text-red">{error}</p>}
+      </div>
+
+      <button type="button" onClick={() => { setError(null); setStep("choose"); }} className="mt-5 text-[0.78125rem] text-azure-d hover:underline" style={{ minHeight: 44 }}>{t.backToSignIn}</button>
+     </>
+    )}
+
+    {step === "resetSent" && (
+     <div ref={sentRef} tabIndex={-1} role="status" className="text-center">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl" style={{ background: "var(--azure-wash)", color: "var(--harbor-d)" }}>
+       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m4 13 5 5L20 7"/></svg>
+      </div>
+      <h1 className="mt-4 font-display text-2xl text-charcoal">{t.checkEmail}</h1>
+      <p className="mt-2 text-[0.84375rem] text-charcoal/70">{t.resetSentBody} {email || t.yourInbox}.</p>
       <button type="button" onClick={() => setStep("choose")} className="mt-6 text-[0.78125rem] text-azure-d hover:underline" style={{ minHeight: 44 }}>{t.backToSignIn}</button>
      </div>
     )}

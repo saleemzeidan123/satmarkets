@@ -153,8 +153,10 @@ test("neither sign-in surface renders the authentication library's own sentence"
   }
 });
 
-test("the login page resolves all three of its refusals, and creates on link", () => {
-  assert.equal((LOGIN.match(/authMessage\(/g) ?? []).length, 3, "a sign-in path refuses without the table");
+test("the login page resolves all five of its refusals, and creates on link", () => {
+  // Five: password sign-in, magic link, OAuth, set-password (reached from an
+  // invite or recovery link), and the forgot-password request itself.
+  assert.equal((LOGIN.match(/authMessage\(/g) ?? []).length, 5, "a sign-in path refuses without the table");
   assert.match(LOGIN, /shouldCreateUser:\s*true/);
   // Stated rather than inherited from the library default, so that turning it
   // off has to be typed by somebody who can then be asked why.

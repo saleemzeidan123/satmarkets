@@ -75,6 +75,17 @@ export default function AuthCallback() {
         // account, so signing in never loses a saved listing or search. Best effort.
         await mergeSavedOnLogin();
         await mergeSavedSearchesOnLogin();
+        // An invite or a recovery link authenticates the reader from the token
+        // alone; neither one has ever asked them for a password. Route through
+        // the login page's set-password step instead of straight to `next`, and
+        // carry `next` along so that step can finish the trip once a password is
+        // actually set. Every other link type (magic link, OAuth) already led
+        // somewhere the reader chose to sign in with a password they already
+        // have, so this branch changes nothing for them.
+        if (type === "invite" || type === "recovery") {
+          window.location.replace(`/${loc}/login?step=set-password&next=${encodeURIComponent(next)}`);
+          return;
+        }
         // hard navigation so the server sees the freshly written cookies
         window.location.replace(next);
       } catch (e) {
