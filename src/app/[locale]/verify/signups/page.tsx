@@ -49,7 +49,7 @@ export default async function SignupQueue() {
     <main style={wrap}>
       <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", letterSpacing: ".18em", textTransform: "uppercase", color: "var(--harbor)" }}>SAT Markets, internal</div>
       <h1 style={{ fontFamily: "var(--font-serif), serif", fontSize: "1.875rem", margin: "6px 0 4px" }}>Signup requests</h1>
-      <p style={{ color: "var(--slate)", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request verified; account provisioning follows when auth goes live.</p>
+      <p style={{ color: "var(--slate)", margin: "0 0 20px" }}>{rows.length} requests, {news} new. Every account opens only after this review. Approve marks the request approved; Provision then creates the account and sends the invitation.</p>
       <ScrollRegion label="Signup requests" style={{ border: "1px solid var(--silver)", borderRadius: 12 }}>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <caption className="sronly">Signup requests</caption>
@@ -65,7 +65,7 @@ export default async function SignupQueue() {
                 <td style={td}><a href={`mailto:${r.email}`} style={{ color: "var(--harbor-d)" }}>{r.email}</a>{r.phone ? <div style={{ fontFamily: "var(--font-mono), monospace", fontSize: "0.6875rem", color: "var(--slate)" }}>{r.phone}</div> : null}</td>
                 <td style={{ ...td, maxWidth: 260 }}>{detailsSummary(r.details)}</td>
                 <td style={td}>{r.locale}</td>
-                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber-d)" }}>{r.status}</span></td>
+                <td style={td}><span style={{ fontWeight: 600, color: r.status === "verified" || r.status === "provisioned" ? "var(--verified)" : r.status === "rejected" ? "var(--red)" : r.status === "contacted" ? "var(--harbor-d)" : "var(--amber-d)" }}>{r.status}</span></td>
                 <td style={{ ...td, maxWidth: 180, color: "var(--slate)", fontSize: "0.75rem" }}>{r.notes || ""}</td>
                 <td style={td}><SignupActions id={r.id} status={r.status} /></td>
               </tr>
