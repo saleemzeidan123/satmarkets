@@ -80,6 +80,26 @@ function render(overrides: Partial<Parameters<typeof DraftPreview>[0]> = {}): st
   return renderToStaticMarkup(<DraftPreview {...baseProps(overrides)} />);
 }
 
+test("render: the published-preview badge claims content parity, not page parity, in both languages", () => {
+  // Codex review of 9132714: the badge previously read "Preview, matches the
+  // current public page", which overclaimed parity with page-level modules
+  // this preview deliberately excludes (location intelligence, similar
+  // listings, the flyer, live contact actions; see the file header). The
+  // corrected wording scopes the claim to the listing's own content.
+  const en = render({ status: "published" });
+  assert.match(en, /Listing content matches the current public listing/);
+  assert.doesNotMatch(en, /matches the current public page/i);
+  const ar = render({ status: "published", initialLocale: "ar" });
+  assert.match(ar, /محتوى العرض مطابق لمحتوى الإعلان العام الحالي/);
+  assert.doesNotMatch(ar, /تطابق الصفحة العامة/);
+});
+
+test("render: the draft-preview badge states there is no public URL, unaffected by the published-badge wording", () => {
+  const en = render({ status: "draft" });
+  assert.match(en, /Draft preview, no public URL exists/);
+  assert.doesNotMatch(en, /Listing content matches the current public listing/);
+});
+
 test("render: a media query failure shows the temporary-fault warning, in both languages", () => {
   const en = render({ mediaState: "query_failed" });
   assert.match(en, /could not be read just now/);

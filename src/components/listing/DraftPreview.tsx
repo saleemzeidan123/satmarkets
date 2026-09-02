@@ -23,22 +23,27 @@ import {
 import type { FilingAccount, VerifiableListing } from "@/lib/listingVerification";
 import type { PublicEvidenceView } from "@/lib/evidenceView";
 
-// PKG-LISTING-CREATION-1A, requirement G. The exact bilingual preview.
+// PKG-LISTING-CREATION-1A, requirement G. The bilingual listing-content preview.
 //
-// Every value rendered here was computed once, by listingPresentation.ts,
-// server side, for both languages, before this component ever mounted. This
-// component makes no figure, no label and no verification decision on its
-// own: it toggles which of the two already-built bundles is on screen and
-// lays them out with the same shared components (ListingFactsGrid,
-// ListingAttributeSection, VerificationSummary, AdPermit, Gallery) the public
-// listing page itself uses. A reviewer reading this file for drift risk
-// should look for a place a number or a word is computed here rather than
-// received as a prop; there is deliberately none.
+// "Exact" here means exact parity for the listing's own content, in both
+// languages, not duplication of every module the public detail page happens
+// to render. Every value rendered here was computed once, by
+// listingPresentation.ts, server side, for both languages, before this
+// component ever mounted. This component makes no figure, no label and no
+// verification decision on its own: it toggles which of the two
+// already-built bundles is on screen and lays them out with the same shared
+// components (ListingFactsGrid, ListingAttributeSection, VerificationSummary,
+// AdPermit, Gallery) the public listing page itself uses. A reviewer reading
+// this file for drift risk should look for a place a number or a word is
+// computed here rather than received as a prop; there is deliberately none.
 //
-// WHAT THIS DOES NOT ATTEMPT. Location facts (nearest metro, travel time),
-// similar listings and the flyer are page-level features of the public
-// detail page, not properties of the listing, and are out of this preview's
-// stated coverage. The contact block below is NOT the live ContactBar: a
+// WHAT THIS DOES NOT ATTEMPT, AND WHY THE VISIBLE BADGE SAYS "LISTING
+// CONTENT", NOT "PAGE". Location facts (nearest metro, travel time), similar
+// listings and the flyer are page-level features of the public detail page,
+// not properties of the listing, and are out of this preview's stated
+// coverage; an earlier badge wording ("matches the current public page")
+// claimed page-level parity this preview does not provide, and was corrected
+// per Codex review. The contact block below is NOT the live ContactBar: a
 // draft has no public URL and messaging a lister previewing their own listing
 // is not a real action, so this shows which channels will be offered,
 // inertly, rather than wiring dead WhatsApp and message-thread links.
@@ -188,7 +193,7 @@ export default function DraftPreview({
         <span className="tag" style={{ background: "var(--cool)", color: "var(--slate)" }}>
           {status === "draft"
             ? (isAr ? "معاينة مسودة، لا يوجد رابط عام لها" : "Draft preview, no public URL exists")
-            : (isAr ? "معاينة، تطابق الصفحة العامة الحالية" : "Preview, matches the current public page")}
+            : (isAr ? "محتوى العرض مطابق لمحتوى الإعلان العام الحالي" : "Listing content matches the current public listing")}
         </span>
       </div>
 

@@ -101,6 +101,11 @@ const ALLOWED_UNREACHED: readonly Unreached[] = [
     reason:
       "The twelve measure product scorecard that the same dictionary feeds. It is unreached for the same recorded reason, and for a second one: ten of the twelve measures have no baseline because no design partner round has run, so there is nothing yet for a surface to render. events.test.ts asserts the two sides stay consistent and that no measure carries an invented target meanwhile.",
   },
+  {
+    file: "src/test/domEnv.ts",
+    reason:
+      "A jsdom bootstrap (globalThis.window/document/navigator and friends) that DraftPreview.interaction.test.tsx imports first, by design, so a real component can be mounted and clicked in a test process with no browser. This file's own header explains why: a test importing a module proves the module compiles, never that a reader sees its output, so runtime and tooling roots deliberately exclude test files, which makes anything reached only from a test permanently, correctly unreached here. It ships nothing: no route, no build script and no production bundle ever imports it, and it would be a defect if one started to.",
+  },
 ];
 
 // ---------------------------------------------------------------------------
