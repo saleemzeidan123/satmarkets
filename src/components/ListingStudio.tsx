@@ -1,13 +1,13 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import MediaBrief from "@/components/MediaBrief";
 import LocationPicker from "@/components/LocationPicker";
 import { intakeFields, type AssetField } from "@/lib/assetFields";
 import { areaFieldLabel, fieldLabel, priceFieldLabel } from "@/lib/fieldLabel";
 import { intakeErrorMessage } from "@/lib/listingIntakeErrors";
 import { assetLabel, dealLabel } from "@/lib/labels";
-import { askingPrice, netArea } from "@/lib/listingFigures";
 import { DOCUMENT_KINDS, documentLabel, type DocumentKind } from "@/lib/documentKinds";
 import { planTypesFor, defaultPlanType, planLabel, type PlanType } from "@/lib/planTypes";
 import type { LocationPoint } from "@/lib/nearestLocation";
@@ -30,6 +30,10 @@ import {
   type StepState,
   type StudioStep,
 } from "@/lib/listingStudio";
+import { evidenceMission, evidenceSummary, evidenceRequirementLabel, evidenceFulfilmentLabel, type EvidenceItem } from "@/lib/guidedEvidence";
+import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
+import { arabicOriginLabel, arabicReviewLabel, type ArabicOriginContext } from "@/lib/provenanceDisplay";
+import { checkFileType, checkFileSize, checkDecodable, checkMinDimensions, readOrientationHint, findDuplicates } from "@/lib/uploadQuality";
 
 // The Listing Studio, the surface ADV-2 is built to produce.
 //
@@ -256,6 +260,19 @@ export default function ListingStudio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState<FormFields>(seed.f);
+  // Mirrors `f`, kept current by the effect below. save()'s translate
+  // response handler (further down) needs to read the CURRENT title_ar /
+  // description_ar the instant that response arrives, from inside a plain
+  // Promise callback, not a state updater; reading it via a setF updater's
+  // own side effect is not reliable, because React does not guarantee an
+  // updater runs synchronously at the call site once more than one update to
+  // the same state is queued in the same tick (confirmed against this
+  // project's own installed React 19.2: a second setF call to the same
+  // state in one synchronous block is queued, not eagerly computed, so a
+  // flag set inside its updater cannot be trusted immediately after the
+  // call). A ref read has no such ambiguity.
+  const fRef = useRef(f);
+  useEffect(() => { fRef.current = f; }, [f]);
   const [rightToMarket, setRightToMarket] = useState(seed.rightToMarket);
   const [availableAt, setAvailableAt] = useState(seed.availableAt);
   const [place, setPlace] = useState<Place>(seed.place);
@@ -268,6 +285,44 @@ export default function ListingStudio({
   const [docKinds, setDocKinds] = useState<DocumentKind[]>([]);
   const [attrs, setAttrs] = useState<Record<string, unknown>>(seed.attrs);
   const [ch, setCh] = useState<Channels>(seed.ch);
+  // Session-only. See guidedEvidence.ts's own header: no column exists to hold a
+  // per-item "unavailable, here is why" answer, so it lives here for the length
+  // of this visit and is never sent to the server. Key is the evidence item's
+  // key (a photo shot key or a registry field key); value is the reason, which
+  // may be empty.
+  const [unavailableItems, setUnavailableItems] = useState<Map<string, string>>(new Map());
+  // Session-only review, per field: "I have read this and it reads
+  // correctly". Never rewrites origin; see provenanceDisplay.ts's own
+  // header. Tracked separately per field because reviewing the title says
+  // nothing about whether the description was also read.
+  const [titleReviewedThisSession, setTitleReviewedThisSession] = useState(false);
+  const [descriptionReviewedThisSession, setDescriptionReviewedThisSession] = useState(false);
+  // Real, session-observed authorship evidence: true only the instant this
+  // session's own code sees the lister type into the field directly. This
+  // is the one path that may ever report an Arabic field as genuinely
+  // lister_supplied, because it is the only one this module can actually
+  // verify (see arabicWordingOrigin in provenanceDisplay.ts).
+  const [arabicTitleEditedThisSession, setArabicTitleEditedThisSession] = useState(false);
+  const [arabicDescriptionEditedThisSession, setArabicDescriptionEditedThisSession] = useState(false);
+  // Real, session-observed translation evidence: true only from the instant
+  // this session's own save() reads back a translate() response that
+  // confirms it wrote this exact field, and false again the moment the
+  // lister edits the field afterward (provenanceDisplay.ts's own docs). Never
+  // set from listings.ar_translation_status / ar_translated_at: those prove
+  // a translation happened at some point, never that the field still holds
+  // that output now (Codex review of 8b9f72d item 1).
+  const [arabicTitleTranslatedThisSessionUnedited, setArabicTitleTranslatedThisSessionUnedited] = useState(false);
+  const [arabicDescriptionTranslatedThisSessionUnedited, setArabicDescriptionTranslatedThisSessionUnedited] = useState(false);
+  // PKG-LISTING-CREATION-1A. Deterministic, explainable, decided in the
+  // browser before a byte reaches the network. Never blocks by itself (a
+  // rejected file is simply not added to the queue, with a stated reason);
+  // never silently drops a file the lister selected without saying so.
+  const [photoWarnings, setPhotoWarnings] = useState<string[]>([]);
+  // Guards onPhotoFilesSelected against a stale async result overwriting a
+  // newer selection. A ref, not state: it must read as current the instant
+  // the async work finishes, with no render in between. See
+  // onPhotoFilesSelected's own comment.
+  const photoSelectionToken = useRef(0);
   // What the server already holds for this listing. Uploads add to it after they
   // succeed, so a file counts as supplied once, whether it went up on this visit
   // or a previous one.
@@ -312,8 +367,131 @@ export default function ListingStudio({
     setFloorTypes(floorFiles.map(() => defaultPlanType(v)));
   };
 
+  // PKG-LISTING-CREATION-1A, corrected under Codex review of 922780d. Every
+  // selected photo is checked before it joins the upload queue:
+  // content-sniffed type (not filename), size, decodability, minimum usable
+  // dimensions, content fingerprint against the rest of THIS selection, and
+  // an advisory EXIF orientation hint. A rejected file is named, with the
+  // specific reason, and is never queued. A duplicate group now keeps
+  // exactly one file and drops the rest from the queue, matching what the
+  // warning actually says; the previous version warned "only one copy is
+  // needed" and then queued every copy anyway. Nothing here touches files
+  // already on the server: cross-session duplicate detection needs a
+  // persisted content hash the schema does not have today (see
+  // docs/pkg-listing-creation-1a-deferred-contracts.md).
+  //
+  // RACE GUARD. This function is async across several awaited checks. If the
+  // lister reselects files before an earlier call finishes, the earlier
+  // call's result must not land after the newer one and silently replace it
+  // with a stale selection. `photoSelectionToken` is a ref (not state) so it
+  // reads as current the instant the async work resolves, with no render in
+  // between; only the call that is still the latest one when its work
+  // finishes is allowed to call setFiles.
+  async function onPhotoFilesSelected(selected: File[]) {
+    touch();
+    const myToken = ++photoSelectionToken.current;
+    const warnings: string[] = [];
+    const accepted: File[] = [];
+    for (const file of selected) {
+      const sizeCheck = checkFileSize(file);
+      if (!sizeCheck.ok) {
+        warnings.push(t(
+          `${file.name}: too large (limit 4MB).`,
+          `${file.name}: كبير جداً (الحد 4 ميغابايت).`,
+        ));
+        continue;
+      }
+      const typeCheck = await checkFileType(file);
+      if (!typeCheck.ok) {
+        warnings.push(t(
+          `${file.name}: not a JPEG, PNG or WebP image.`,
+          `${file.name}: ليست صورة JPEG أو PNG أو WebP.`,
+        ));
+        continue;
+      }
+      const decodeCheck = await checkDecodable(file);
+      if (!decodeCheck.ok) {
+        warnings.push(t(
+          `${file.name}: could not be read as an image.`,
+          `${file.name}: تعذّرت قراءتها كصورة.`,
+        ));
+        continue;
+      }
+      const dimCheck = checkMinDimensions(decodeCheck.width, decodeCheck.height);
+      if (!dimCheck.ok) {
+        warnings.push(t(
+          `${file.name}: too small (${dimCheck.width}×${dimCheck.height}px, minimum ${dimCheck.minWidth}×${dimCheck.minHeight}px).`,
+          `${file.name}: صغيرة جداً (${dimCheck.width}×${dimCheck.height} بكسل، الحد الأدنى ${dimCheck.minWidth}×${dimCheck.minHeight} بكسل).`,
+        ));
+        continue;
+      }
+      // Advisory only, never a block (see readOrientationHint's own header):
+      // the server already applies EXIF orientation on upload, so this file
+      // is accepted either way. The hint only explains, before upload, why a
+      // browser-built thumbnail of the raw file might look sideways.
+      const orientation = await readOrientationHint(file);
+      if (orientation === "rotate_advised") {
+        warnings.push(t(
+          `${file.name}: stored rotated; it will display upright once uploaded.`,
+          `${file.name}: محفوظة بزاوية دوران؛ ستظهر بشكل صحيح بعد الرفع.`,
+        ));
+      }
+      accepted.push(file);
+    }
+    let deduped = accepted;
+    if (accepted.length > 0) {
+      const dupes = await findDuplicates(accepted);
+      const drop = new Set<number>();
+      for (const group of dupes) {
+        const [keepIndex, ...dropIndexes] = group.fileIndexes;
+        for (const i of dropIndexes) drop.add(i);
+        const keptName = accepted[keepIndex].name;
+        const droppedNames = dropIndexes.map((i) => accepted[i].name).join(", ");
+        warnings.push(t(
+          `These files are identical: ${keptName}, ${droppedNames}. Keeping ${keptName}; the others were not queued.`,
+          `هذه الملفات متطابقة: ${keptName}، ${droppedNames}. أُبقيت ${keptName}؛ لم تُضَف البقية إلى قائمة الرفع.`,
+        ));
+      }
+      deduped = accepted.filter((_, i) => !drop.has(i));
+    }
+    if (photoSelectionToken.current !== myToken) return; // superseded by a newer selection; discard this stale result
+    setPhotoWarnings(warnings);
+    setFiles(deduped);
+  }
+
   const photoUrls = useMemo(() => photos.split(/\n+/).map((s) => s.trim()).filter(Boolean), [photos]);
   const steps = useMemo(() => studioSteps(f.asset_type), [f.asset_type]);
+
+  // The guided evidence mission (PKG-LISTING-CREATION-1A). This Studio has no
+  // per-shot record of which photo covers which category, only a count, so
+  // photo-kind items resolve on whether ANY photo is attached rather than
+  // per-category coverage; the server-side preview route degrades the same way,
+  // for the same reason, honestly, rather than claiming it can see something it
+  // cannot (see docs/pkg-listing-creation-1a-deferred-contracts.md).
+  const evidenceItems: EvidenceItem[] = useMemo(() => evidenceMission({
+    assetType: f.asset_type,
+    // This module has no live query of its own to fail: stored.photos is a
+    // count seeded once, server-side, when this page loaded
+    // (dashboard/new/page.tsx), plus pasted links and freshly selected
+    // files, both entirely client state. A failure in that seeding query is
+    // a gap in that page's own data-fetching, not something this component
+    // can detect or represent; "unknown" never applies to what is actually
+    // computed here, from what this component actually has.
+    photoInventory: (stored.photos + photoUrls.length + files.length) > 0 ? "present" : "empty",
+    attributes: attrs,
+    unavailable: unavailableItems,
+  }), [f.asset_type, stored.photos, photoUrls.length, files.length, attrs, unavailableItems]);
+  const evidenceSum = useMemo(() => evidenceSummary(evidenceItems), [evidenceItems]);
+
+  function setItemUnavailable(key: string, unavailable: boolean, reason: string) {
+    touch();
+    setUnavailableItems((prev) => {
+      const next = new Map(prev);
+      if (unavailable) next.set(key, reason);
+      else next.delete(key);
+      return next;
+    });
+  }
 
   // The facts as the model reads them: what is already on the server plus what
   // has been chosen on this visit and not uploaded yet.
@@ -458,7 +636,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="title_ar">{t("Arabic title", "العنوان بالعربية")}</label>
-            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => set("title_ar", e.target.value)} className={inp} />
+            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => { setArabicTitleEditedThisSession(true); setArabicTitleTranslatedThisSessionUnedited(false); set("title_ar", e.target.value); }} className={inp} />
             <p className={help}>{t("Leave this empty and SAT drafts it from the English, marked as a translation.", "اتركه فارغاً لتصوغه سات من الإنجليزية، ويظهر بوصفه ترجمة.")}</p>
           </div>
         );
@@ -474,7 +652,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="description_ar">{t("Arabic description", "الوصف بالعربية")}</label>
-            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => set("description_ar", e.target.value)} className={inp} />
+            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => { setArabicDescriptionEditedThisSession(true); setArabicDescriptionTranslatedThisSessionUnedited(false); set("description_ar", e.target.value); }} className={inp} />
           </div>
         );
       case "area_sqm":
@@ -612,10 +790,22 @@ export default function ListingStudio({
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 multiple
-                onChange={(e) => { touch(); setFiles(Array.from(e.target.files ?? [])); }}
+                onChange={(e) => { void onPhotoFilesSelected(Array.from(e.target.files ?? [])); }}
                 className="text-[0.8125rem]"
               />
               <p className={help}>{t("JPEG, PNG or WebP, up to 4MB each. Images are processed and their metadata stripped.", "JPEG أو PNG أو WebP، حتى 4 ميغابايت لكل صورة. تُعالَج الصور وتُزال بياناتها الوصفية.")}</p>
+              {files.length > 0 && (
+                <p className="text-[0.6875rem] text-charcoal/70 mt-1">
+                  {t(`${files.length} file(s) ready to upload.`, `${files.length} ملفاً جاهزاً للرفع.`)}
+                </p>
+              )}
+              {photoWarnings.length > 0 && (
+                <ul role="status" className="mt-1 space-y-0.5">
+                  {photoWarnings.map((w, i) => (
+                    <li key={i} className="text-[0.6875rem] text-red">{w}</li>
+                  ))}
+                </ul>
+              )}
             </div>
             <div>
               <label className={lbl} htmlFor="photo_urls">{t("Or paste photo links, one per line", "أو ألصق روابط الصور، رابط في كل سطر")}</label>
@@ -747,48 +937,88 @@ export default function ListingStudio({
     }
   }
 
+  // PKG-LISTING-CREATION-1A. This adapter is the ONLY place Studio state turns
+  // into a DraftListingInput, so the review step's preview and the real preview
+  // route both compute figures, labels and attribute rows through the exact
+  // same function (buildListingPresentation), never a second, hand-derived
+  // copy. What it cannot supply from client state alone: uploaded photos as
+  // resolved URLs (nothing here has signed them), and any SAT-side verification
+  // column (a draft has none to show regardless). Both are honestly absent
+  // here rather than faked, and the "View the full preview" link below reaches
+  // the server route where photos and verification state are real.
+  function draftInputFromState(): DraftListingInput {
+    const d = districts.find((x) => x.id === place.districtId);
+    return {
+      asset_type: f.asset_type,
+      deal_type: f.deal_type,
+      area_sqm: f.area_sqm === "" ? null : Number(f.area_sqm),
+      price: f.price === "" ? null : Number(f.price),
+      title_en: f.title_en, title_ar: f.title_ar,
+      description_en: f.description_en, description_ar: f.description_ar,
+      reference_code: null,
+      district: d ? { name_en: d.name_en, name_ar: d.name_ar, city: d.city ?? null } : null,
+      contact_phone: f.contact_phone, contact_email: f.contact_email,
+      contact_channels: Object.entries(ch).filter(([, v]) => v).map(([k]) => k),
+      video_url: f.video_url,
+      building_grade: (attrs.building_grade as string) ?? null,
+      fitout_condition: (attrs.fitout_condition as string) ?? null,
+      attributes: attrs,
+      ad_permit_no: f.ad_permit_no, ad_permit_expires_at: f.ad_permit_expires_at,
+      right_to_market_confirmed: rightToMarket,
+      // Codex review of 922780d: demo status and verification status are
+      // different concepts. A genuine owner draft is not sample data merely
+      // because SAT has not verified it; is_demo is never set true as a
+      // verification shortcut. This composer has no real is_demo flag to
+      // read (it is not part of Studio form state), so it is honestly
+      // omitted rather than defaulted to a claim nobody checked.
+    };
+  }
+
   function preview(l: "en" | "ar") {
     const isAr = l === "ar";
-    const title = isAr ? f.title_ar : f.title_en;
-    const body = isAr ? f.description_ar : f.description_en;
-    // PKG-FIG1, finding 126. This block is captioned "As a visitor will read
-    // it", which is a claim about fidelity, and its figures broke the claim. The
-    // price was rendered as `formatMoney(price) + " per sqm per year"`, in Arabic
-    // " للمتر المربع سنوياً": a seventh spelling of a unit no visitor surface
-    // renders anywhere. The public card, the compare table, the map pin and the
-    // printable flyer all serve `SAR/m2/yr` and its Arabic form. So the one
-    // screen built to let a lister check that their price reads correctly showed
-    // it to them in a sentence the market never sees, and the unit was decided
-    // here by `f.deal_type === "sale"` rather than by the module every visitor
-    // surface reads.
-    //
-    // Both figures now come from `listingFigures.ts`, so the caption is true by
-    // construction rather than by two authors agreeing. An unstated figure draws
-    // nothing here for the same reason it draws nothing there. The lister is not
-    // left guessing: the missing-facts panel sitting directly above this preview
-    // is what names an absent fact, and it reads that from `listingQuality.ts`,
-    // which owns the definition. This preview's job is to be the visitor's view,
-    // not a second opinion on completeness.
-    const areaText = netArea(f.area_sqm, l);
-    const priceText = askingPrice(f.price, f.deal_type, l);
-    const d = districts.find((x) => x.id === place.districtId);
-    const dName = placeName(d, isAr ? "ar" : "en") || null;
+    const titleCtx: ArabicOriginContext = {
+      editedThisSession: arabicTitleEditedThisSession,
+      translatedThisSessionUnedited: arabicTitleTranslatedThisSessionUnedited,
+    };
+    const descriptionCtx: ArabicOriginContext = {
+      editedThisSession: arabicDescriptionEditedThisSession,
+      translatedThisSessionUnedited: arabicDescriptionTranslatedThisSessionUnedited,
+    };
+    const p = buildListingPresentation(draftInputFromState(), l, {
+      arabicOrigin: { title: titleCtx, description: descriptionCtx },
+      arabicReviewed: { title: titleReviewedThisSession, description: descriptionReviewedThisSession },
+    });
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="rounded border border-line p-3" lang={l}>
         <div className="text-[0.6875rem] uppercase tracking-wide text-charcoal/65 mb-1">{isAr ? "العربية" : "English"}</div>
         <div className="font-display text-lg text-charcoal">
-          {title || (isAr ? "بلا عنوان بعد" : "No title yet")}
+          {p.title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </div>
+        {/* Origin and review are two independent facts (Codex review of
+            8b9f72d item 2): confirming review never rewrites or hides origin,
+            so both always render together. Gated on origin being non-null
+            rather than on p.title, because p.title can be a description-
+            derived fallback (listingTitle.ts) even when there is no Arabic
+            title at all, which origin:null already says honestly. */}
+        {isAr && p.arabicWording.title.origin && (
+          <p className="text-[0.6875rem] text-charcoal/70 mt-1">
+            {arabicOriginLabel(p.arabicWording.title.origin, true)} · {arabicReviewLabel(p.arabicWording.title.review, true)}
+          </p>
+        )}
         <div className="text-[0.8125rem] text-charcoal/70 mt-1">
-          {assetLabel(f.asset_type, l)} · {dealLabel(f.deal_type, l)}
-          {dName ? ` · ${dName}` : ""}
+          {p.assetTypeLabel} · {p.dealLabel}{p.place ? ` · ${p.place}` : ""}
         </div>
-        {(areaText || priceText) && (
+        {(p.figures.areaText || p.figures.priceText) && (
           <div className="text-[0.8125rem] text-charcoal/70">
-            {areaText ?? ""}{areaText && priceText ? " · " : ""}{priceText ?? ""}
+            {p.figures.areaText ?? ""}{p.figures.areaText && p.figures.priceText ? " · " : ""}{p.figures.priceText ?? ""}
           </div>
         )}
-        {body && <p className="text-[0.8125rem] text-charcoal/70 mt-2 whitespace-pre-line">{body}</p>}
+        {p.descriptionText && <p className="text-[0.8125rem] text-charcoal/70 mt-2 whitespace-pre-line">{p.descriptionText}</p>}
+        {isAr && p.arabicWording.description.origin && (
+          <p className="text-[0.6875rem] text-charcoal/70 mt-1">
+            {arabicOriginLabel(p.arabicWording.description.origin, true)} · {arabicReviewLabel(p.arabicWording.description.review, true)}
+          </p>
+        )}
       </div>
     );
   }
@@ -894,54 +1124,111 @@ export default function ListingStudio({
     }
     // Arabic the lister wrote is already stamped as current by the write path, so
     // this fills only what was left empty and never overwrites their words.
-    try {
-      fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) });
-    } catch {}
+    // The response is read, not discarded, so the Studio can record real,
+    // session-observed evidence for whichever field this call actually
+    // wrote: per Codex review of 8b9f72d item 1, ar_translation_status and
+    // ar_translated_at only prove some translation happened at some point,
+    // never that the field still holds that exact output now, so the only
+    // honest "AI suggested" claim is one this session watched happen and
+    // that still matches the field. Not awaited inline, so the save itself
+    // still finishes and reports success without waiting on a translation
+    // call, same as before this change; the state update below just lands a
+    // moment later. Guarded against the lister starting to type their own
+    // Arabic in the gap between this request firing and its response
+    // arriving, by reading fRef.current (not f, which this closure captured
+    // stale at save()'s own call time, and not a flag set inside a setF
+    // updater, which is not reliably synchronous once two updates queue in
+    // the same tick): their text always wins, and the origin flag is set
+    // only for whichever field genuinely was still empty when the response
+    // arrived, decided once, outside React's state-update machinery
+    // entirely, so it cannot go stale between the check and the read.
+    fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) })
+      .then((r) => r.json())
+      .then((tr: { status?: string; title_ar?: string | null; description_ar?: string | null }) => {
+        if (tr.status !== "translated") return;
+        const patch: Partial<FormFields> = {};
+        const titleApplied = typeof tr.title_ar === "string" && fRef.current.title_ar === "";
+        if (titleApplied) patch.title_ar = tr.title_ar as string;
+        const descriptionApplied = typeof tr.description_ar === "string" && fRef.current.description_ar === "";
+        if (descriptionApplied) patch.description_ar = tr.description_ar as string;
+        if (titleApplied || descriptionApplied) setF((p) => ({ ...p, ...patch }));
+        if (titleApplied) setArabicTitleTranslatedThisSessionUnedited(true);
+        if (descriptionApplied) setArabicDescriptionTranslatedThisSessionUnedited(true);
+      })
+      .catch(() => {});
 
-    // Files chosen on this visit, and only those. Each array is emptied after the
-    // round, so returning to this step and saving again does not upload the same
-    // photograph a second time.
+    // PKG-LISTING-CREATION-1A. Files chosen on this visit, uploaded one at a
+    // time. This used to clear every file array unconditionally once the
+    // round finished, which meant a single failed upload, a dropped
+    // connection on file 4 of 6, silently discarded that photograph: the
+    // lister was told the draft saved (which was true) with no sign that one
+    // of their photos was not actually attached. Failed files now stay in
+    // their input's state so a second "Save changes" press retries exactly
+    // and only what did not make it, without re-selecting anything or losing
+    // whatever did succeed in the same round.
     let addedPhotos = 0;
     let addedPlans = 0;
     let addedDocs = 0;
+    const failedPhotoLabels: string[] = [];
+    const failedPlanLabels: string[] = [];
+    const remainingFiles: File[] = [];
     for (const file of files) {
       const fd = new FormData();
       fd.append("file", file);
+      let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/media`, { method: "POST", body: fd });
-        if (r.ok) addedPhotos++;
+        ok = r.ok;
       } catch {}
+      if (ok) addedPhotos++;
+      else { remainingFiles.push(file); failedPhotoLabels.push(file.name); }
     }
     const addedPlanTypes: (string | null)[] = [];
+    const remainingFloorFiles: File[] = [];
+    const remainingFloorTypes: PlanType[] = [];
     for (let i = 0; i < floorFiles.length; i++) {
       const file = floorFiles[i];
+      const type = floorTypes[i] ?? defaultPlanType(f.asset_type);
       const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
       const fd = new FormData();
       fd.append("file", file);
       fd.append("kind", "floorplan");
-      fd.append("plan_type", floorTypes[i] ?? defaultPlanType(f.asset_type));
+      fd.append("plan_type", type);
+      let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd });
-        if (r.ok) { addedPlans++; addedPlanTypes.push(floorTypes[i] ?? defaultPlanType(f.asset_type)); }
+        ok = r.ok;
       } catch {}
+      if (ok) { addedPlans++; addedPlanTypes.push(type); }
+      else { remainingFloorFiles.push(file); remainingFloorTypes.push(type); failedPlanLabels.push(file.name); }
     }
+    let remainingBrochure: File | null = null;
+    let brochureFailed = false;
     if (brochureFile) {
       const fd = new FormData();
       fd.append("file", brochureFile);
       fd.append("kind", "brochure");
+      let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/docs`, { method: "POST", body: fd });
-        if (r.ok) addedDocs++;
+        ok = r.ok;
       } catch {}
+      if (ok) addedDocs++;
+      else { remainingBrochure = brochureFile; brochureFailed = true; }
     }
+    const remainingDocFiles: File[] = [];
+    const remainingDocKinds: DocumentKind[] = [];
     for (let i = 0; i < docFiles.length; i++) {
       const fd = new FormData();
       fd.append("file", docFiles[i]);
       fd.append("kind", docKinds[i] ?? "other");
+      let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/documents`, { method: "POST", body: fd });
-        if (r.ok) addedDocs++;
+        ok = r.ok;
       } catch {}
+      if (ok) addedDocs++;
+      else { remainingDocFiles.push(docFiles[i]); remainingDocKinds.push(docKinds[i]); }
     }
 
     setStored((p) => ({
@@ -950,17 +1237,27 @@ export default function ListingStudio({
       planTypes: [...p.planTypes, ...addedPlanTypes],
       documents: p.documents + addedDocs,
     }));
-    setFiles([]);
-    setFloorFiles([]);
-    setFloorTypes([]);
-    setBrochureFile(null);
-    setDocFiles([]);
-    setDocKinds([]);
+    // Only the files that actually made it are cleared from their inputs.
+    // Whatever failed stays exactly where it was, ready to retry.
+    setFiles(remainingFiles);
+    setFloorFiles(remainingFloorFiles);
+    setFloorTypes(remainingFloorTypes);
+    setBrochureFile(remainingBrochure);
+    setDocFiles(remainingDocFiles);
+    setDocKinds(remainingDocKinds);
     setPhotos("");
     setUploadRound((n) => n + 1);
     setListingId(id);
     setSaved(true);
     setBusy(false);
+
+    const failedUploads = [...failedPhotoLabels, ...failedPlanLabels, ...(brochureFailed && brochureFile ? [brochureFile.name] : [])];
+    if (failedUploads.length > 0) {
+      setError(t(
+        `The listing saved, but ${failedUploads.length} file(s) did not upload: ${failedUploads.join(", ")}. They are still selected below; press Save again to retry them.`,
+        `حُفظ العرض، لكن ${failedUploads.length} ملفاً لم يُرفع: ${failedUploads.join("، ")}. لا تزال محددة أدناه؛ اضغط حفظ مجدداً لإعادة المحاولة.`,
+      ));
+    }
     // The lister stays in the Studio rather than being thrown out to the
     // dashboard: saving is a checkpoint, not an exit. replace() rather than
     // push() so the address becomes the resumable one without leaving a blank
@@ -1098,15 +1395,75 @@ export default function ListingStudio({
           )}
 
           {step.kind === "media" && (
-            <MediaBrief
-              assetType={f.asset_type}
-              held={{
-                photos: stored.photos + photoUrls.length + files.length,
-                planTypes: [...stored.planTypes, ...floorTypes.slice(0, floorFiles.length)],
-                video: f.video_url.trim().length > 0,
-              }}
-              ar={ar}
-            />
+            <>
+              <MediaBrief
+                assetType={f.asset_type}
+                held={{
+                  photos: stored.photos + photoUrls.length + files.length,
+                  planTypes: [...stored.planTypes, ...floorTypes.slice(0, floorFiles.length)],
+                  video: f.video_url.trim().length > 0,
+                }}
+                ar={ar}
+              />
+              {/* PKG-LISTING-CREATION-1A. Each photo view this asset type asks for,
+                  with the six-state vocabulary and a real, session-only way to say
+                  a view genuinely does not exist rather than leaving it silently
+                  missing. This does not replace MediaBrief above; MediaBrief is the
+                  bilingual "why" for each view, this is the state and the
+                  mark-unavailable control. */}
+              <div className="mt-4 rounded border border-line p-3">
+                <div className="text-[0.75rem] font-medium text-charcoal/80">
+                  {t("Each view, and its state", "كل لقطة، وحالتها")}
+                </div>
+                <ul className="mt-2 space-y-2">
+                  {evidenceItems.filter((i) => i.kind === "photo").map((item) => (
+                    <li key={item.key} className="text-[0.75rem]">
+                      <div className="flex items-center justify-between gap-2">
+                        <span>{ar ? item.label_ar : item.label_en}</span>
+                        <span className="text-charcoal/65">
+                          {item.fulfilment ? evidenceFulfilmentLabel(item.fulfilment, ar) : evidenceRequirementLabel(item.requirement, ar)}
+                        </span>
+                      </div>
+                      {/* Not gated on fulfilment: the mission's per-shot
+                          fulfilment, absent real per-shot data, is at best
+                          "unknown" once any photo exists, never a proof this
+                          specific shot is covered (see evidenceMission's own
+                          header). Gating the checkbox on fulfilment hid the
+                          only control that can say a shot genuinely does not
+                          exist the moment any photo was attached, for every
+                          other shot; it stays reachable regardless. */}
+                      {item.weight !== "optional" && (
+                        <div className="mt-1">
+                          <label className="flex items-center gap-1.5 text-[0.6875rem] text-charcoal/70">
+                            <input
+                              type="checkbox"
+                              checked={item.fulfilment === "unavailable"}
+                              onChange={(e) => setItemUnavailable(item.key, e.target.checked, unavailableItems.get(item.key) ?? "")}
+                            />
+                            {t("This view does not exist for this space", "هذه اللقطة غير موجودة لهذه المساحة")}
+                          </label>
+                          {item.fulfilment === "unavailable" && (
+                            <input
+                              type="text"
+                              value={unavailableItems.get(item.key) ?? ""}
+                              onChange={(e) => setItemUnavailable(item.key, true, e.target.value)}
+                              placeholder={t("Why, briefly (optional)", "السبب، باختصار (اختياري)")}
+                              className="mt-1 w-full rounded border border-charcoal/20 px-2 py-1 text-[0.6875rem] min-h-[44px]"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-[0.6875rem] text-charcoal/70 mt-2">
+                  {t(
+                    "These answers are kept for this visit only and are not saved to the listing. They help you track what is left, and disappear if you leave this page.",
+                    "هذه الإجابات محفوظة لهذه الزيارة فقط ولا تُحفظ في العرض. تساعدك على معرفة ما تبقّى، وتختفي إن غادرت الصفحة.",
+                  )}
+                </p>
+              </div>
+            </>
           )}
 
           {step.platformKeys.map(renderPlatform)}
@@ -1144,12 +1501,55 @@ export default function ListingStudio({
                   </ul>
                 )}
               </div>
+              {/* PKG-LISTING-CREATION-1A. The evidence mission's own completeness
+                  summary, counted by the six-state vocabulary, never a single
+                  fabricated score (see guidedEvidence.ts). Distinct from "Still
+                  missing" above, which reads listingQuality.ts's essential facts;
+                  this reads the fuller mission, photos included. */}
+              <div>
+                <div className="text-[0.75rem] font-medium text-charcoal/80">{t("Evidence mission", "مهمة الأدلة")}</div>
+                <p className="text-[0.75rem] text-charcoal/70 mt-1">
+                  {t(
+                    `${evidenceSum.requiredOutstanding} required item(s) still missing, ${evidenceSum.recommendedOutstanding} recommended item(s) still missing, ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} with coverage unknown, ${evidenceSum.unavailable} marked unavailable.`,
+                    `${evidenceSum.requiredOutstanding} عنصراً مطلوباً لا يزال ناقصاً، ${evidenceSum.recommendedOutstanding} موصى به لا يزال ناقصاً، ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} تغطيتها غير معروفة، ${evidenceSum.unavailable} مُحدَّد كغير متاح.`,
+                  )}
+                </p>
+              </div>
               <div>
                 <div className="text-[0.75rem] font-medium text-charcoal/80">{t("As a visitor will read it", "كما سيقرأه الزائر")}</div>
                 <div className="mt-2 space-y-2">
                   {preview("en")}
                   {preview("ar")}
                 </div>
+                {ar && f.title_ar && !titleReviewedThisSession && (
+                  <button
+                    type="button"
+                    onClick={() => setTitleReviewedThisSession(true)}
+                    className="mt-2 me-3 text-[0.75rem] text-signal underline min-h-[44px]"
+                  >
+                    {t("I've reviewed the Arabic title above", "راجعتُ العنوان العربي أعلاه")}
+                  </button>
+                )}
+                {ar && f.description_ar && !descriptionReviewedThisSession && (
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionReviewedThisSession(true)}
+                    className="mt-2 text-[0.75rem] text-signal underline min-h-[44px]"
+                  >
+                    {t("I've reviewed the Arabic description above", "راجعتُ الوصف العربي أعلاه")}
+                  </button>
+                )}
+                {/* The real preview: the same server route, the same rendering the
+                    public page uses, with real uploaded photos and real
+                    verification state. Only reachable once a row exists to render. */}
+                {listingId !== null && (
+                  <Link
+                    href={`/${locale}/dashboard/listings/${listingId}/preview`}
+                    className="mt-2 inline-block text-[0.75rem] text-signal underline min-h-[44px]"
+                  >
+                    {t("View the full preview, with your uploaded photos", "عرض المعاينة الكاملة، بالصور التي رفعتها")}
+                  </Link>
+                )}
               </div>
               <p className="text-[0.6875rem] text-charcoal/65">
                 {t("Saved as a draft. SAT reviews a listing before it publishes, and nothing here is a confirmation by SAT.", "يُحفظ كمسودة. تراجع سات العرض قبل نشره، ولا شيء هنا تأكيد من سات.")}

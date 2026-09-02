@@ -9,7 +9,7 @@ import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel, availabilityTone } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, fillProse, formatArea, formatCounted, formatMoney, formatNumber, formatUnit, formatWithUnit } from "@/lib/format";
+import { fill, fillProse, formatArea, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -30,14 +30,17 @@ import { travelTime } from "@/lib/location/travel";
 import { textLangAttrs } from "@/lib/textScript";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
-import EvidencePassport from "@/components/EvidencePassport";
-import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
+import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
+import { listingTermsRows } from "@/lib/listingTermsRows";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
 import { getSessionUser } from "@/lib/auth/session";
 import { documentLabel } from "@/lib/documentKinds";
 import { videoEmbed } from "@/lib/videoEmbed";
 import { priceParts } from "@/lib/listingFigures";
+import { factsGridTiles } from "@/lib/listingFactsGrid";
+import ListingFactsGrid from "@/components/listing/ListingFactsGrid";
+import ListingAttributeSection from "@/components/listing/ListingAttributeSection";
 
 export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
   const params = await props.params;
@@ -406,142 +409,45 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
               two-tile strip. Every tile is a present, typed-column fact: n_a and null
               are skipped, so a tile never shows a non-answer. These specs are drawn up
               from the detail section below, not duplicated. */}
-          <div id="ov" style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 16, marginTop: 22 }}>
-            {(() => {
-              const T = (dict as any).ld;
-              // Every tile below used to carry its own unit string, which is how the
-              // Arabic page came to print a Latin "m²" and "kVA" beside Arabic labels
-              // and how the parking line hand-built a counted phrase. The unit table
-              // and the money and area formatters answer all of them, and they carry
-              // the bidi isolation the raw concatenations were missing.
-              // ADV-1C: the third element is the database column the figure came
-              // from, which is how a tile finds its own passport. A tile with no
-              // column named carries no evidence disclosure rather than a generic
-              // one, because a grade or a fit-out condition is a stated attribute
-              // and not a measured or computed figure: giving it a passport would
-              // dress a category label as a number with provenance.
-              const tiles: ([string, string, string?] | null)[] = [
-                [dict.ld.area, formatArea(l.area_sqm, lp), "area_sqm"],
-                (l.building_grade && l.building_grade !== "n_a") ? [dict.ld.grade, gradeLabel(l.building_grade, locale)] : null,
-                (l.fitout_condition && l.fitout_condition !== "n_a") ? [dict.ld.fitout, fitoutLabel(l.fitout_condition, locale)] : null,
-                l.clear_height_m != null ? [T.clearHeight, formatWithUnit(Number(l.clear_height_m), "metre", lp, "long", 2)] : null,
-                l.loading_docks != null ? [T.loadingDocks, formatNumber(Number(l.loading_docks), lp)] : null,
-                l.power_kva != null ? [T.power, formatWithUnit(Number(l.power_kva), "kva", lp, "long", 0)] : null,
-                l.parking_ratio != null ? [T.parking, fill(T.parkingRatio, { area: formatArea(Number(l.parking_ratio), lp) })] : null,
-                l.civil_defense_approved ? [T.civilDefense, T.approved] : null,
-                [lease ? (dict.ld.asking) : (dict.ld.price), price != null ? (lease ? formatWithUnit(Number(price), "sar_sqm_year", lp, "short", 0) : formatMoney(Number(price), lp)) : (dict.ld.onRequest), lease ? "asking_rent_sqm" : "sale_price"],
-              ];
-              return (tiles.filter(Boolean) as [string, string, string?][]).map((s, i) => {
-                const ev = s[2] ? evidence.get(s[2]) : undefined;
-                return (
-                  <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
-                    <div className="muted" style={{ fontSize: "0.71875rem" }}>{s[0]}</div>
-                    <div className="mono" style={{ fontSize: "1rem", fontWeight: 500, marginTop: 8 }}>{s[1]}</div>
-                    {ev ? <EvidencePassport view={ev} label={s[0]} ar={ar} locale={lp} /> : null}
-                  </div>
-                );
-              });
-            })()}
+          <div id="ov" style={{ scrollMarginTop: 80 }}>
+            <ListingFactsGrid tiles={factsGridTiles(l, dict, lp)} evidence={evidence} ar={ar} locale={lp} />
           </div>
-          {(() => {
-            const T = (dict as any).ld;
-            // The headline typed-column specs (clear height, docks, power, parking,
-            // civil defense) are now promoted into the at-a-glance facts grid above,
-            // so this section carries only the registry-driven per-asset fields stored
-            // in `attributes` (office floor plate and ceiling height, warehouse yard
-            // depth and column grid, and so on). The section auto-hides when empty.
-            const rows: [string, string][] = [];
-            rows.push(...spaceAttributeRows(l.asset_type, l.attributes, ar));
-            if (rows.length === 0) return null;
-            return (
-              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.spaceTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
-                  {rows.map((r, i) => (
-                    <div key={i}>
-                      <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
-                      <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{T.statedGeneric}</div>
-              </div>
-            );
-          })()}
-          {(() => {
-            const T = (dict as any).ld;
-            // The terms block carried its own number formatter, its own year and
-            // month plurals and four inline unit strings. Arabic "سنوات" is right
-            // for three to ten and wrong for one, two and eleven up, and "شهراً"
-            // was printed after every month count for the same reason. The
-            // counted nouns and the unit table answer all of it, and the money
-            // and rate formatters keep the Latin unit off the Arabic page.
-            const termFmt = (m: number) => (m % 12 === 0 ? formatCounted(m / 12, "year", lp) : formatCounted(m, "month", lp));
-            const vatFmt = (v: string) => (v === "inclusive" ? T.vatInclusive : T.vatExclusive);
-            // ADV-1C: as in the facts grid above, the optional third element is
-            // the column the figure came from. Only the two figures that carry a
-            // passport name one; a lease term in months or a VAT treatment is a
-            // contractual term rather than a measured or computed figure.
-            const rows: [string, string, string?][] = [];
-            if (lease) {
-              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, formatWithUnit(Number(l.service_charge_sqm), "sar_sqm_year", lp, "short", 0), "service_charge_sqm"]);
-              if (l.lease_term_months != null) rows.push([T.leaseTerm, termFmt(Number(l.lease_term_months))]);
-              if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, formatCounted(Number(l.rent_free_months), "month", lp)]);
-              if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, formatMoney(Number(l.fitout_contribution), lp)]);
-              if (l.break_option_months != null) rows.push([T.breakOption, formatCounted(Number(l.break_option_months), "month", lp)]);
-            } else {
-              // Price per m2 is COMPUTED (price / area), never entered, so a lister
-              // can never post one that contradicts their own price. Prefer a stored
-              // column if present, else derive it.
-              const pps = l.sale_price_sqm != null
-                ? Number(l.sale_price_sqm)
-                : (l.sale_price != null && l.area_sqm ? Number(l.sale_price) / Number(l.area_sqm) : null);
-              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, formatWithUnit(Math.round(pps), "sar_sqm", lp, "short", 0), "sale_price_sqm"]);
-            }
-            if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
-            // Registry commercial attributes with no typed column (price basis, deal
-            // scope, turnover rent, and so on for the newer asset types).
-            rows.push(...commercialAttributeRows(l.asset_type, l.attributes, ar));
-            if (rows.length === 0) return null;
-            return (
-              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{T.termsTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
-                  {rows.map((r, i) => {
-                    const ev = r[2] ? evidence.get(r[2]) : undefined;
-                    return (
-                      <div key={i}>
-                        <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
-                        <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
-                        {ev ? <EvidencePassport view={ev} label={r[0]} ar={ar} locale={lp} /> : null}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{T.statedByLister}</div>
-              </div>
-            );
-          })()}
-          {(() => {
-            // Compliance and permits (registry-driven, Phase 1). Civil Defense is
-            // excluded here because it already shows under The space.
-            const rows = complianceRows(l.asset_type, l, ar);
-            if (rows.length === 0) return null;
-            return (
-              <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-                <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{(dict as any).ld.complianceTitle}</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
-                  {rows.map((r, i) => (
-                    <div key={i}>
-                      <div className="muted" style={{ fontSize: "0.71875rem" }}>{r[0]}</div>
-                      <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r[1]}</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{(dict as any).ld.statedGeneric}</div>
-              </div>
-            );
-          })()}
+          {/* The headline typed-column specs (clear height, docks, power, parking,
+              civil defense) are promoted into the at-a-glance facts grid above, so
+              this section carries only the registry-driven per-asset fields stored
+              in `attributes` (office floor plate and ceiling height, warehouse yard
+              depth and column grid, and so on). Auto-hides when empty. */}
+          <ListingAttributeSection
+            title={(dict as any).ld.spaceTitle}
+            rows={spaceAttributeRows(l.asset_type, l.attributes, ar).map(([label, value]) => ({ label, value }))}
+            footnote={(dict as any).ld.statedGeneric}
+            ar={ar}
+            locale={lp}
+          />
+          {/* PKG-LISTING-CREATION-1A. The row list (lease/sale-specific hand-built
+              rows plus the registry-driven commercial attributes) now lives in
+              listingTermsRows.ts, shared with the draft preview, so the two
+              surfaces cannot independently drift on exactly the two figures
+              (service charge, price per sqm) that carry an Evidence Passport. */}
+          <ListingAttributeSection
+            title={dict.ld.termsTitle}
+            rows={listingTermsRows(l, dict, lp).map(({ label, value, evidenceKey }) => ({
+              label, value,
+              evidence: evidenceKey ? evidence.get(evidenceKey) : undefined,
+            }))}
+            footnote={dict.ld.statedByLister}
+            ar={ar}
+            locale={lp}
+          />
+          {/* Compliance and permits (registry-driven, Phase 1). Civil Defense is
+              excluded here because it already shows under The space. */}
+          <ListingAttributeSection
+            title={(dict as any).ld.complianceTitle}
+            rows={complianceRows(l.asset_type, l, ar).map(([label, value]) => ({ label, value }))}
+            footnote={(dict as any).ld.statedGeneric}
+            ar={ar}
+            locale={lp}
+          />
           {floorPlans.length > 0 && (() => {
             // Group by plan type. If every plan shares a type, that type names the
             // whole section (land reads "Cadastral survey (Kroki)", not "Floor plans");
