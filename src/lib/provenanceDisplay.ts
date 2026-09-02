@@ -123,9 +123,10 @@ export function notConfirmed(): DisplayProvenance {
 //      field: real, unambiguous evidence of `lister_supplied`.
 //   2. This session's own code observed the exact, current field value
 //      arrive as this session's own translate response, unedited since:
-//      real, unambiguous evidence of `ai_suggested`. (ListingStudio.tsx
-//      awaits the translate call now and reads the text it returns, rather
-//      than firing it blind; see that file's own comment.)
+//      real, unambiguous evidence of `ai_suggested`. (ListingStudio.tsx now
+//      reads that call's response back and applies the text it returns,
+//      rather than firing it blind and discarding the answer; see that
+//      file's own comment.)
 // A loaded record with neither signal, which is every record on a fresh
 // page load including the whole standalone preview route, is honestly
 // `origin_unknown`. Durable per-field provenance would be the schema fix
@@ -226,8 +227,8 @@ export function arabicOriginLabel(o: ArabicOrigin, ar: boolean): string {
 
 const ARABIC_ORIGIN_ARIA: Record<ArabicOrigin, [string, string]> = {
   lister_supplied: ["Observed this session: the lister typed this text themselves", "لوحظ خلال هذه الجلسة: كتب المُعلن هذا النص بنفسه"],
-  ai_suggested: ["Observed this session: this session's own translation produced this exact text, unedited since", "لوحظ خلال هذه الجلسة: أنتجت الترجمة الخاصة بهذه الجلسة هذا النص تحديداً، ولم يُعدَّل منذ ذلك"],
-  origin_unknown: ["Present on the record, but nothing this session observed proves who wrote it or whether it is still machine output", "موجودة في السجل، لكن لا شيء لاحظته هذه الجلسة يثبت من كتبها أو أنها لا تزال ناتج ترجمة آلية"],
+  ai_suggested: ["Observed this session: this session's own translation produced this exact text, unedited since", "لوحظ خلال هذه الجلسة: هذا النص هو بعينه ما أنتجته ترجمة هذه الجلسة، ولم يُعدَّل منذ ذلك الحين"],
+  origin_unknown: ["Present on the record, but nothing this session observed proves who wrote it or whether it is still machine output", "موجودة في السجل، لكن لم ترصد هذه الجلسة ما يثبت من كتبها أو ما إذا كانت لا تزال ناتج ترجمة آلية"],
 };
 
 export function arabicOriginAria(o: ArabicOrigin, ar: boolean): string {
@@ -236,7 +237,7 @@ export function arabicOriginAria(o: ArabicOrigin, ar: boolean): string {
 
 const ARABIC_REVIEW_LABEL: Record<ArabicReview, [string, string]> = {
   unreviewed: ["Not yet reviewed", "لم تتم مراجعتها بعد"],
-  reviewed_this_session: ["Reviewed this session", "روجعت خلال هذه الجلسة"],
+  reviewed_this_session: ["Reviewed this session", "رُوجعت خلال هذه الجلسة"],
 };
 
 export function arabicReviewLabel(r: ArabicReview, ar: boolean): string {
@@ -245,7 +246,7 @@ export function arabicReviewLabel(r: ArabicReview, ar: boolean): string {
 
 const ARABIC_REVIEW_ARIA: Record<ArabicReview, [string, string]> = {
   unreviewed: ["Nobody has confirmed this text reads correctly yet", "لم يؤكّد أحد أن هذا النص صحيح بعد"],
-  reviewed_this_session: ["The lister confirmed this text reads correctly during this visit; this review is not saved and will not survive a reload", "أكّد المُعلن أن هذا النص صحيح خلال هذه الزيارة؛ هذه المراجعة غير محفوظة ولن تبقى بعد إعادة تحميل الصفحة"],
+  reviewed_this_session: ["The lister confirmed this text reads correctly during this visit; this review is not saved and will not survive a reload", "أكّد المُعلن خلال هذه الزيارة أن هذا النص صحيح؛ هذه المراجعة غير محفوظة ولن تبقى بعد إعادة تحميل الصفحة"],
 };
 
 export function arabicReviewAria(r: ArabicReview, ar: boolean): string {

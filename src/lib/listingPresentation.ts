@@ -172,13 +172,21 @@ function withProvenance(
 }
 
 /**
- * English has no AI-generation path in this app, only EN-to-AR translation,
- * so the English locale's provenance question is only ever "is there English
+ * title_en and description_en are written only by the two save endpoints
+ * (POST /api/listings, PATCH /api/listings/[id]), from whatever the request
+ * body carries, with no AI-generation step anywhere in that write path. So
+ * the English locale's provenance question is only ever "is there English
  * text at all," never a real origin/review question the way the Arabic side
- * is. Kept as its own function (rather than an inline ternary feeding a
- * spread) so the object literal below is checked against its declared return
- * type directly, instead of losing that contextual type across a spread and
- * silently widening "unreviewed" to plain `string`.
+ * is. This does not claim a lister could never paste AI-drafted English text
+ * in from elsewhere (the advisor chat, for instance, can suggest listing
+ * copy as chat output); that would be indistinguishable from typing it
+ * themselves, the same as it would be for text copied from anywhere else,
+ * and is not a claim this function is in a position to make either way.
+ *
+ * Kept as its own named function, rather than an inline ternary feeding a
+ * spread, for readability: one branch is a real per-field lookup, the other
+ * is a fixed rule, and naming them separately reads better than interleaving
+ * both inside one object literal.
  */
 function arabicWordingForLocale(
   ar: boolean,

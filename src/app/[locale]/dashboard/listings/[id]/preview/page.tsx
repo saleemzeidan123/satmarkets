@@ -36,8 +36,10 @@ export const dynamic = "force-dynamic";
 // listingTermsRows.ts needs beyond the service_charge_sqm/sale_price_sqm
 // already listed below: lease_term_months, rent_free_months,
 // fitout_contribution, break_option_months, vat_treatment. A column missing
-// from this list surfaces as an empty field, verifiably, at typecheck and in
-// the live preview, not as a silent wrong value.
+// from this list surfaces as an empty field in the live preview, not as a
+// silent wrong value; it is not caught at typecheck (see the item-8 comment
+// below, on the cast this list feeds), only by keeping this list and the
+// fields actually read out of the row in sync by hand.
 //
 // ar_translation_status and ar_translated_at were dropped from this list
 // under the same review, item 1: this route has no session to have observed

@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MediaBrief from "@/components/MediaBrief";
@@ -260,6 +260,19 @@ export default function ListingStudio({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [f, setF] = useState<FormFields>(seed.f);
+  // Mirrors `f`, kept current by the effect below. save()'s translate
+  // response handler (further down) needs to read the CURRENT title_ar /
+  // description_ar the instant that response arrives, from inside a plain
+  // Promise callback, not a state updater; reading it via a setF updater's
+  // own side effect is not reliable, because React does not guarantee an
+  // updater runs synchronously at the call site once more than one update to
+  // the same state is queued in the same tick (confirmed against this
+  // project's own installed React 19.2: a second setF call to the same
+  // state in one synchronous block is queued, not eagerly computed, so a
+  // flag set inside its updater cannot be trusted immediately after the
+  // call). A ref read has no such ambiguity.
+  const fRef = useRef(f);
+  useEffect(() => { fRef.current = f; }, [f]);
   const [rightToMarket, setRightToMarket] = useState(seed.rightToMarket);
   const [availableAt, setAvailableAt] = useState(seed.availableAt);
   const [place, setPlace] = useState<Place>(seed.place);
@@ -457,9 +470,13 @@ export default function ListingStudio({
   // cannot (see docs/pkg-listing-creation-1a-deferred-contracts.md).
   const evidenceItems: EvidenceItem[] = useMemo(() => evidenceMission({
     assetType: f.asset_type,
-    // The Studio always knows its own photo count exactly (server-confirmed
-    // stored count, plus pasted links and freshly selected files); there is
-    // no query here that can fail, so "unknown" never applies client-side.
+    // This module has no live query of its own to fail: stored.photos is a
+    // count seeded once, server-side, when this page loaded
+    // (dashboard/new/page.tsx), plus pasted links and freshly selected
+    // files, both entirely client state. A failure in that seeding query is
+    // a gap in that page's own data-fetching, not something this component
+    // can detect or represent; "unknown" never applies to what is actually
+    // computed here, from what this component actually has.
     photoInventory: (stored.photos + photoUrls.length + files.length) > 0 ? "present" : "empty",
     attributes: attrs,
     unavailable: unavailableItems,
@@ -1118,32 +1135,25 @@ export default function ListingStudio({
     // call, same as before this change; the state update below just lands a
     // moment later. Guarded against the lister starting to type their own
     // Arabic in the gap between this request firing and its response
-    // arriving: their text always wins, and the origin flag is set only
-    // when the translated text was actually applied.
+    // arriving, by reading fRef.current (not f, which this closure captured
+    // stale at save()'s own call time, and not a flag set inside a setF
+    // updater, which is not reliably synchronous once two updates queue in
+    // the same tick): their text always wins, and the origin flag is set
+    // only for whichever field genuinely was still empty when the response
+    // arrived, decided once, outside React's state-update machinery
+    // entirely, so it cannot go stale between the check and the read.
     fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) })
       .then((r) => r.json())
       .then((tr: { status?: string; title_ar?: string | null; description_ar?: string | null }) => {
         if (tr.status !== "translated") return;
-        if (typeof tr.title_ar === "string") {
-          const translated = tr.title_ar;
-          let applied = false;
-          setF((p) => {
-            if (p.title_ar !== "") return p;
-            applied = true;
-            return { ...p, title_ar: translated };
-          });
-          if (applied) setArabicTitleTranslatedThisSessionUnedited(true);
-        }
-        if (typeof tr.description_ar === "string") {
-          const translated = tr.description_ar;
-          let applied = false;
-          setF((p) => {
-            if (p.description_ar !== "") return p;
-            applied = true;
-            return { ...p, description_ar: translated };
-          });
-          if (applied) setArabicDescriptionTranslatedThisSessionUnedited(true);
-        }
+        const patch: Partial<FormFields> = {};
+        const titleApplied = typeof tr.title_ar === "string" && fRef.current.title_ar === "";
+        if (titleApplied) patch.title_ar = tr.title_ar as string;
+        const descriptionApplied = typeof tr.description_ar === "string" && fRef.current.description_ar === "";
+        if (descriptionApplied) patch.description_ar = tr.description_ar as string;
+        if (titleApplied || descriptionApplied) setF((p) => ({ ...p, ...patch }));
+        if (titleApplied) setArabicTitleTranslatedThisSessionUnedited(true);
+        if (descriptionApplied) setArabicDescriptionTranslatedThisSessionUnedited(true);
       })
       .catch(() => {});
 

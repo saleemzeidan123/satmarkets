@@ -180,7 +180,7 @@ test("regression (a): an omitted arabicOrigin opt (the fresh-session/reload case
 
 test("the English side of Arabic wording is judged on the English field itself: lister_supplied when present, null when absent, review never applies", () => {
   const p = buildListingPresentation(BASE, "en", { arabicReviewed: { title: true } });
-  assert.equal(p.arabicWording.title.origin, "lister_supplied", "English title is lister-typed English, not AI output, regardless of the Arabic review flag");
+  assert.equal(p.arabicWording.title.origin, "lister_supplied", "present English text is lister_supplied regardless of the Arabic review flag, since nothing writes title_en except the save endpoints, from the request body");
   assert.equal(p.arabicWording.title.review, "unreviewed", "review is an Arabic-side concept; the English branch never reads the Arabic review flag");
   const noEnTitle: DraftListingInput = { ...BASE, title_en: null };
   const p2 = buildListingPresentation(noEnTitle, "en");
