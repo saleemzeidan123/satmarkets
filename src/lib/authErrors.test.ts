@@ -325,6 +325,17 @@ test("the set-password step's redirect target is still routed through safeNext",
   assert.match(LOGIN_ROUTE, /safeNext\(sp\.next\)/, "the query-supplied next is used unsanitised");
 });
 
+test("every password field carries a labelled visibility toggle", () => {
+  // Owner request, in the owner's own words: a visible eye for the password.
+  // Three fields hold a password on this form (sign-in, new, confirm); each
+  // gets its own toggle, labelled from the dictionary and stated as pressed
+  // state rather than left as an unlabelled icon.
+  const toggles = (LOGIN.match(/aria-pressed=\{show/g) ?? []).length;
+  assert.equal(toggles, 3, `${toggles} password fields carry a visibility toggle`);
+  assert.match(LOGIN, /type=\{showPw \? "text" : "password"\}/);
+  assert.match(LOGIN, /aria-label=\{showPw \? t\.hidePassword : t\.showPassword\}/);
+});
+
 test("a token_hash link is spent only by the reader's own confirm, never by page load", () => {
   // Live evidence behind this one: Outlook Safe Links and Chrome preloading
   // each consumed a single-use recovery link before its owner's click, four
@@ -345,6 +356,7 @@ test("every string the invite/recovery correction added exists in both languages
     "forgotPassword", "resetHeading", "resetSub", "resetCta", "sendingReset", "resetSentBody", "errResetNotSent",
     "linkInvalidHeading", "linkInvalidBody",
     "confirmHeading", "confirmBody", "confirmCta",
+    "showPassword", "hidePassword",
   ] as const;
   const en = getDictionary("en").login as Record<string, string>;
   const ar = getDictionary("ar").login as Record<string, string>;

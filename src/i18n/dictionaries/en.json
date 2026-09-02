@@ -1527,6 +1527,8 @@
     "confirmHeading": "Confirm to continue",
     "confirmBody": "For your security, this link works only after you confirm it here. That keeps automatic email scanners from using it up before you do.",
     "confirmCta": "Continue",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "signOut": "Sign out",
     "metaTitle": "Sign in | SAT Markets",
     "metaDesc": "Sign in to SAT Markets to manage listings, enquiries and viewings."

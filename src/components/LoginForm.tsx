@@ -35,6 +35,18 @@ const SOCIAL: { provider: "google" | "azure" | "linkedin_oidc" | "apple"; label:
 
 type Step = "choose" | "sent" | "setPassword" | "forgot" | "resetSent" | "linkInvalid";
 
+// The owner asked for this in exactly these words: a visible eye for the
+// password. Shown state renders the crossed eye (the action available is
+// hiding), hidden state the open one. The button is a peer of the input, not
+// inside the label, so screen readers meet one field and one control.
+function EyeIcon({ open }: { open: boolean }) {
+ return open ? (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="m1 1 22 22"/></svg>
+ ) : (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+ );
+}
+
 // SM-P1-009: the login screen is fully localized. Every string comes from the
 // dictionary so /ar/login is Arabic, not an Arabic shell around English copy.
 //
@@ -56,6 +68,9 @@ export default function LoginForm({ locale, initialStep, nextAfter }: { locale: 
  const [confirmPassword, setConfirmPassword] = useState("");
  const [busy, setBusy] = useState(false);
  const [error, setError] = useState<string | null>(null);
+ const [showPw, setShowPw] = useState(false);
+ const [showNew, setShowNew] = useState(false);
+ const [showConfirm, setShowConfirm] = useState(false);
 
  // ELITE-4 J1-6: setStep("sent") unmounts the magic-link button that had focus, so
  // focus fell to document.body and nothing was announced. Move focus to the panel.
@@ -173,7 +188,10 @@ export default function LoginForm({ locale, initialStep, nextAfter }: { locale: 
        <label htmlFor="login-email" className="sr-only">{t.emailPh}</label>
        <input id="login-email" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailPh} autoComplete="email" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
        <label htmlFor="login-password" className="sr-only">{t.passwordPh}</label>
-       <input id="login-password" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.passwordPh} autoComplete="current-password" className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <div className="relative">
+        <input id="login-password" name="password" type={showPw ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t.passwordPh} autoComplete="current-password" className="w-full rounded-lg border border-line px-3 py-2.5 pe-12 text-[0.875rem] outline-none" />
+        <button type="button" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? t.hidePassword : t.showPassword} aria-pressed={showPw} className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center justify-center text-charcoal/65 hover:text-charcoal" style={{ minWidth: 44, minHeight: 44 }}><EyeIcon open={showPw} /></button>
+       </div>
        <div className="text-end">
         <button type="button" onClick={() => { setError(null); setStep("forgot"); }} className="text-[0.78125rem] text-azure-d hover:underline" style={{ minHeight: 44 }}>{t.forgotPassword}</button>
        </div>
@@ -220,9 +238,15 @@ export default function LoginForm({ locale, initialStep, nextAfter }: { locale: 
 
       <form onSubmit={submitNewPassword} className="mt-6 space-y-3">
        <label htmlFor="new-password" className="sr-only">{t.newPasswordPh}</label>
-       <input id="new-password" name="new-password" type="password" required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t.newPasswordPh} autoComplete="new-password" aria-invalid={!!error} aria-describedby={error ? "set-password-error" : undefined} className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <div className="relative">
+        <input id="new-password" name="new-password" type={showNew ? "text" : "password"} required minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t.newPasswordPh} autoComplete="new-password" aria-invalid={!!error} aria-describedby={error ? "set-password-error" : undefined} className="w-full rounded-lg border border-line px-3 py-2.5 pe-12 text-[0.875rem] outline-none" />
+        <button type="button" onClick={() => setShowNew((v) => !v)} aria-label={showNew ? t.hidePassword : t.showPassword} aria-pressed={showNew} className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center justify-center text-charcoal/65 hover:text-charcoal" style={{ minWidth: 44, minHeight: 44 }}><EyeIcon open={showNew} /></button>
+       </div>
        <label htmlFor="confirm-password" className="sr-only">{t.confirmPasswordPh}</label>
-       <input id="confirm-password" name="confirm-password" type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t.confirmPasswordPh} autoComplete="new-password" aria-invalid={!!error} aria-describedby={error ? "set-password-error" : undefined} className="w-full rounded-lg border border-line px-3 py-2.5 text-[0.875rem] outline-none" />
+       <div className="relative">
+        <input id="confirm-password" name="confirm-password" type={showConfirm ? "text" : "password"} required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t.confirmPasswordPh} autoComplete="new-password" aria-invalid={!!error} aria-describedby={error ? "set-password-error" : undefined} className="w-full rounded-lg border border-line px-3 py-2.5 pe-12 text-[0.875rem] outline-none" />
+        <button type="button" onClick={() => setShowConfirm((v) => !v)} aria-label={showConfirm ? t.hidePassword : t.showPassword} aria-pressed={showConfirm} className="absolute end-0 top-1/2 flex -translate-y-1/2 items-center justify-center text-charcoal/65 hover:text-charcoal" style={{ minWidth: 44, minHeight: 44 }}><EyeIcon open={showConfirm} /></button>
+       </div>
        <button type="submit" disabled={busy} className="btn-gold flex w-full items-center justify-center gap-2 py-3 text-[0.875rem] font-medium" style={{ opacity: busy ? 0.6 : 1, minHeight: 44 }}>{busy ? t.settingPassword : t.setPasswordCta}</button>
        {error && <p id="set-password-error" role="alert" className="text-sm text-red">{error}</p>}
       </form>
