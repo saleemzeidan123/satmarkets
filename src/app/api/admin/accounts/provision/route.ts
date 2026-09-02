@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
 import { authed } from "@/lib/adminauth";
+import { isLocale, defaultLocale } from "@/i18n/config";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   const { data: reqRow, error: readErr } = await sb
     .from("signup_requests")
-    .select("id,role,full_name,company,email,phone,status,is_demo,details")
+    .select("id,role,full_name,company,email,phone,status,is_demo,details,locale")
     .eq("id", body.signup_id)
     .maybeSingle();
 
@@ -118,11 +119,23 @@ export async function POST(req: NextRequest) {
   // "let me in without an invitation" is exactly the thing an attacker would ask for.
   const site = process.env.NEXT_PUBLIC_SITE_URL || "";
   const isDemo = !!r.is_demo;
+  const loc = isLocale(r.locale) ? r.locale : defaultLocale;
 
+  // The invite must land on /auth/callback, the one page that actually
+  // exchanges the link's token for a session (PKCE `code=`, or a `token_hash`
+  // it can verify). It used to redirect straight to /en/login, a page with no
+  // code to do either, which silently established a session from the token
+  // (via the client SDK's own default detection) with no password ever
+  // asked for and no route back once the link was already spent. `type=invite`
+  // survives Supabase's own query-string append, so the callback can tell
+  // this apart from an ordinary sign-in link and route to the set-password
+  // step instead of straight into the dashboard.
   const { data: invited, error: inviteErr } = isDemo
     ? await sb.auth.admin.createUser({ email: String(r.email), email_confirm: true })
     : await sb.auth.admin.inviteUserByEmail(String(r.email), {
-        redirectTo: site ? `${site}/en/login` : undefined,
+        redirectTo: site
+          ? `${site}/auth/callback?type=invite&next=${encodeURIComponent(`/${loc}/go`)}`
+          : undefined,
       });
 
   if (inviteErr || !invited?.user) {

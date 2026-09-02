@@ -38,8 +38,10 @@ import { getDictionary } from "@/i18n/getDictionary";
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
-const LOGIN = read("src/app/[locale]/login/page.tsx");
-const CALLBACK = read("src/app/auth/callback/page.tsx");
+const LOGIN = read("src/components/LoginForm.tsx");
+const LOGIN_ROUTE = read("src/app/[locale]/login/page.tsx");
+const CALLBACK = read("src/components/AuthCallbackClient.tsx");
+const CALLBACK_ROUTE = read("src/app/auth/callback/page.tsx");
 const SIGNUP_ROUTE = read("src/app/api/signup/route.ts");
 const SIGNUP_CLIENT = read("src/components/SignupFlow.tsx");
 const SOURCE = read("src/lib/authErrors.ts");
@@ -153,8 +155,10 @@ test("neither sign-in surface renders the authentication library's own sentence"
   }
 });
 
-test("the login page resolves all three of its refusals, and creates on link", () => {
-  assert.equal((LOGIN.match(/authMessage\(/g) ?? []).length, 3, "a sign-in path refuses without the table");
+test("the login page resolves all five of its refusals, and creates on link", () => {
+  // Five: password sign-in, magic link, OAuth, set-password (reached from an
+  // invite or recovery link), and the forgot-password request itself.
+  assert.equal((LOGIN.match(/authMessage\(/g) ?? []).length, 5, "a sign-in path refuses without the table");
   assert.match(LOGIN, /shouldCreateUser:\s*true/);
   // Stated rather than inherited from the library default, so that turning it
   // off has to be typed by somebody who can then be asked why.
@@ -240,4 +244,141 @@ test("the generic sign-in refusal leaves the reader a way in", () => {
   const ar = getDictionary("ar").login as Record<string, string>;
   assert.match(en.errSignIn, /sign-in link/);
   assert.ok(ar.errSignIn.includes("رابط"), "the Arabic refusal does not mention the link");
+});
+
+// -------------------------------------------- 5. the invite/recovery correction
+//
+// A Codex review of the first version of this flow found that showing the
+// set-password form was gated on nothing but a public query string. Every
+// test in this section exists because that review named a specific failure
+// mode; each one is the source-level shape of the fix for it, in the same
+// idiom the rest of this file already uses, since this repository's own
+// tests read source rather than render React.
+
+test("a public step=set-password URL is not, by itself, proof of anything", () => {
+  // The route file is the only place allowed to decide the password form may
+  // show. It must ask Supabase, not the query string alone, and it must ask
+  // only when the query string requests the step at all (an ordinary sign-in
+  // visit has no reason to spend a session lookup).
+  assert.match(LOGIN_ROUTE, /getSessionUser\(/);
+  assert.match(LOGIN_ROUTE, /wantsSetPassword\s*\?\s*!!\(await getSessionUser\(\)\)\s*:\s*false/);
+  assert.match(LOGIN_ROUTE, /hasSession \? "setPassword" : "linkInvalid"/, "setPassword is not conditioned on a real session");
+  // And the client component it renders must not be able to reach the same
+  // conclusion on its own by reading the address bar: it has to be told.
+  assert.ok(!LOGIN.includes("window.location.search"), "the client form reads the query string itself");
+  assert.ok(!LOGIN.includes("URLSearchParams"), "the client form parses the query string itself");
+});
+
+test("a request with no real session lands on a localized invalid-link state, not the form", () => {
+  assert.match(LOGIN, /"linkInvalid"/);
+  assert.match(LOGIN, /t\.linkInvalidHeading/);
+  assert.match(LOGIN, /t\.linkInvalidBody/);
+  // It must offer a route back to requesting a new link, not a dead end.
+  assert.match(LOGIN, /step === "linkInvalid"[\s\S]{0,400}setStep\("forgot"\)/);
+});
+
+test("the callback trusts `type` only after a real artifact has actually been verified", () => {
+  // The invite/recovery branch that decides where to send the reader must sit
+  // after the try block's exchange/verify calls, never before them: reading
+  // `type` off the URL first and branching on it would trust an unauthenticated
+  // claim about what kind of link this is.
+  const tryStart = CALLBACK.indexOf("try {");
+  const routeToSetPassword = CALLBACK.indexOf('step=set-password');
+  const artifactChecks = CALLBACK.indexOf("exchangeCodeForSession");
+  assert.ok(tryStart > -1 && artifactChecks > tryStart, "no verified exchange happens inside the try block");
+  assert.ok(routeToSetPassword > artifactChecks, "type is acted on before an artifact is verified");
+});
+
+test("the callback actually handles all three shapes a Supabase link can take", () => {
+  assert.match(CALLBACK, /exchangeCodeForSession\(/, "no PKCE code handling");
+  assert.match(CALLBACK, /verifyOtp\(/, "no token_hash handling");
+  assert.match(CALLBACK, /setSession\(\{\s*access_token/, "no implicit hash-fragment handling; getSession() alone cannot see it with detectSessionInUrl: false");
+  assert.match(CALLBACK, /u\.hash/, "the hash fragment is never read at all");
+});
+
+test("the forgot-password step is a real form: Enter submits it, not only a click", () => {
+  assert.match(LOGIN, /<form onSubmit=\{sendReset\}/, "forgot-password is a button, not a form; Enter does nothing");
+  assert.ok(!/type="button"[^>]*onClick=\{sendReset\}/.test(LOGIN), "the old click-only control is still present");
+});
+
+test("the set-password fields point at their shared mismatch/length error", () => {
+  assert.match(LOGIN, /id="new-password"[\s\S]{0,400}?aria-describedby=\{error \? "set-password-error" : undefined\}/);
+  assert.match(LOGIN, /id="confirm-password"[\s\S]{0,400}?aria-describedby=\{error \? "set-password-error" : undefined\}/);
+  assert.match(LOGIN, /id="set-password-error"/);
+});
+
+test("busy disables every submit control the corrected flow added", () => {
+  // Count rather than name each one: three new submit buttons (set-password,
+  // forgot-password, and the pre-existing three still holding this contract
+  // from before), all disabled while a request from this page is in flight.
+  const disabledBusyButtons = (LOGIN.match(/disabled=\{busy\}/g) ?? []).length;
+  assert.ok(disabledBusyButtons >= 5, `only ${disabledBusyButtons} controls are guarded against a duplicate submit`);
+});
+
+test("invite and recovery route through set-password; magic link and OAuth still land on `next` directly", () => {
+  assert.match(CALLBACK, /artifact\.type === "invite" \|\| artifact\.type === "recovery"/);
+  // The unconditional fallthrough for every other type/no-type case.
+  assert.match(CALLBACK, /window\.location\.replace\(next\);/);
+});
+
+test("the set-password step's redirect target is still routed through safeNext", () => {
+  assert.match(LOGIN_ROUTE, /safeNext\(sp\.next\)/, "the query-supplied next is used unsanitised");
+});
+
+test("every password field carries a labelled visibility toggle", () => {
+  // Owner request, in the owner's own words: a visible eye for the password.
+  // Three fields hold a password on this form (sign-in, new, confirm); each
+  // gets its own toggle, labelled from the dictionary and stated as pressed
+  // state rather than left as an unlabelled icon.
+  const toggles = (LOGIN.match(/aria-pressed=\{show/g) ?? []).length;
+  assert.equal(toggles, 3, `${toggles} password fields carry a visibility toggle`);
+  assert.match(LOGIN, /type=\{showPw \? "text" : "password"\}/);
+  assert.match(LOGIN, /aria-label=\{showPw \? t\.hidePassword : t\.showPassword\}/);
+});
+
+test("a successful submit keeps its busy label until the next page arrives", () => {
+  // The owner watched "Set password" snap back to its resting label during
+  // the second the navigation takes and read it as nothing having happened.
+  // On the two handlers that end in a hard navigation, busy is released only
+  // on the error path; success holds the working label through unload.
+  const signInBody = LOGIN.slice(LOGIN.indexOf("async function passwordSignIn"), LOGIN.indexOf("async function emailLink"));
+  const setPwBody = LOGIN.slice(LOGIN.indexOf("async function submitNewPassword"), LOGIN.indexOf("async function sendReset"));
+  for (const [name, body] of [["passwordSignIn", signInBody], ["submitNewPassword", setPwBody]] as const) {
+    assert.equal((body.match(/setBusy\(false\)/g) ?? []).length, 1, `${name} releases busy somewhere off the error path`);
+    assert.match(body, /if \(error\) \{ setBusy\(false\);/, `${name} does not scope the release to the error branch`);
+    assert.match(body, /window\.location\.replace/, `${name} no longer navigates`);
+  }
+});
+
+test("a token_hash link is spent only by the reader's own confirm, never by page load", () => {
+  // Live evidence behind this one: Outlook Safe Links and Chrome preloading
+  // each consumed a single-use recovery link before its owner's click, four
+  // times across two environments, while the auth server logged a successful
+  // exchange nobody ever saw. A token the email carries directly may therefore
+  // only be spent inside a click handler. Scanners and preloaders do not click.
+  assert.match(CALLBACK_ROUTE, /token_hash/, "the server route never reads the token_hash off the link");
+  assert.match(CALLBACK, /confirmNeeded/, "no confirm gate exists");
+  assert.match(CALLBACK, /!props\.code && !!props\.tokenHash/, "the gate is not derived from the server-passed link shape");
+  assert.match(CALLBACK, /if \(gated\) return;/, "the mount effect consumes gated links anyway");
+  assert.match(CALLBACK, /disabled=\{busy\} onClick=\{confirm\}/, "no human control spends the token");
+});
+
+test("every string the invite/recovery correction added exists in both languages", () => {
+  const keys = [
+    "setPasswordHeading", "setPasswordSub", "newPasswordPh", "confirmPasswordPh", "setPasswordCta", "settingPassword",
+    "errPasswordTooShort", "errPasswordMismatch", "errSetPassword",
+    "forgotPassword", "resetHeading", "resetSub", "resetCta", "sendingReset", "resetSentBody", "errResetNotSent",
+    "linkInvalidHeading", "linkInvalidBody",
+    "confirmHeading", "confirmBody", "confirmCta",
+    "showPassword", "hidePassword",
+  ] as const;
+  const en = getDictionary("en").login as Record<string, string>;
+  const ar = getDictionary("ar").login as Record<string, string>;
+  for (const k of keys) {
+    assert.ok(typeof en[k] === "string" && en[k].length > 3, `en.login.${k}`);
+    assert.ok(typeof ar[k] === "string" && ar[k].length > 3, `ar.login.${k}`);
+    assert.ok(ARABIC.test(ar[k]), `ar.login.${k} is not Arabic`);
+    assert.ok(!ARABIC.test(en[k]), `en.login.${k} is not English`);
+    assert.notEqual(en[k], ar[k], k);
+  }
 });
