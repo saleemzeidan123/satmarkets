@@ -40,7 +40,8 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
 const LOGIN = read("src/components/LoginForm.tsx");
 const LOGIN_ROUTE = read("src/app/[locale]/login/page.tsx");
-const CALLBACK = read("src/app/auth/callback/page.tsx");
+const CALLBACK = read("src/components/AuthCallbackClient.tsx");
+const CALLBACK_ROUTE = read("src/app/auth/callback/page.tsx");
 const SIGNUP_ROUTE = read("src/app/api/signup/route.ts");
 const SIGNUP_CLIENT = read("src/components/SignupFlow.tsx");
 const SOURCE = read("src/lib/authErrors.ts");
@@ -324,12 +325,26 @@ test("the set-password step's redirect target is still routed through safeNext",
   assert.match(LOGIN_ROUTE, /safeNext\(sp\.next\)/, "the query-supplied next is used unsanitised");
 });
 
+test("a token_hash link is spent only by the reader's own confirm, never by page load", () => {
+  // Live evidence behind this one: Outlook Safe Links and Chrome preloading
+  // each consumed a single-use recovery link before its owner's click, four
+  // times across two environments, while the auth server logged a successful
+  // exchange nobody ever saw. A token the email carries directly may therefore
+  // only be spent inside a click handler. Scanners and preloaders do not click.
+  assert.match(CALLBACK_ROUTE, /token_hash/, "the server route never reads the token_hash off the link");
+  assert.match(CALLBACK, /confirmNeeded/, "no confirm gate exists");
+  assert.match(CALLBACK, /!props\.code && !!props\.tokenHash/, "the gate is not derived from the server-passed link shape");
+  assert.match(CALLBACK, /if \(gated\) return;/, "the mount effect consumes gated links anyway");
+  assert.match(CALLBACK, /disabled=\{busy\} onClick=\{confirm\}/, "no human control spends the token");
+});
+
 test("every string the invite/recovery correction added exists in both languages", () => {
   const keys = [
     "setPasswordHeading", "setPasswordSub", "newPasswordPh", "confirmPasswordPh", "setPasswordCta", "settingPassword",
     "errPasswordTooShort", "errPasswordMismatch", "errSetPassword",
     "forgotPassword", "resetHeading", "resetSub", "resetCta", "sendingReset", "resetSentBody", "errResetNotSent",
     "linkInvalidHeading", "linkInvalidBody",
+    "confirmHeading", "confirmBody", "confirmCta",
   ] as const;
   const en = getDictionary("en").login as Record<string, string>;
   const ar = getDictionary("ar").login as Record<string, string>;
