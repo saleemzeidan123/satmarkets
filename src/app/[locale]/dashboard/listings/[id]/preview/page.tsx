@@ -7,6 +7,7 @@ import { buildListingPresentation, type DraftListingInput } from "@/lib/listingP
 import { evidenceMission } from "@/lib/guidedEvidence";
 import { filingAccountOf } from "@/lib/listingVerification";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
+import { getLister } from "@/lib/queries/listings";
 import DataState from "@/components/DataState";
 import RetryButton from "@/components/RetryButton";
 import DraftPreview, { type DraftPreviewListingData } from "@/components/listing/DraftPreview";
@@ -46,6 +47,14 @@ export const dynamic = "force-dynamic";
 // a translation happen in, so it can never claim ai_suggested regardless of
 // what these two columns say, and reading them here to reach for a claim
 // they cannot support was exactly the defect that review found.
+//
+// is_operator and is_verified were REMOVED here (live-QA finding during the
+// same round, not a Codex-numbered item): they were never columns on
+// listings, confirmed against the live Postgres logs ("column
+// listings.is_operator does not exist") the first time this route was
+// actually exercised signed in, against a real row. Both live only on
+// listers_public, keyed by account id; see the getLister() call below,
+// which is the same lookup the public listing page already uses.
 const PREVIEW_COLUMNS = [
   "id", "status", "account_id", "asset_type", "deal_type",
   "title_en", "title_ar", "description_en", "description_ar", "reference_code",
@@ -57,7 +66,7 @@ const PREVIEW_COLUMNS = [
   "contact_phone", "contact_email", "contact_channels", "video_url",
   "ad_permit_no", "ad_permit_number", "ad_permit_expires_at", "right_to_market_confirmed",
   "ownership_verified", "authorization_verified", "verified_at", "verified_by", "verification_method",
-  "lister_type", "is_demo", "is_operator", "is_verified",
+  "lister_type", "is_demo",
   "availability_confirmed_at",
 ].join(",");
 
@@ -168,7 +177,26 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
     district,
   };
 
-  const account = filingAccountOf(L as { lister_type?: string | null; is_operator?: boolean | null; is_verified?: boolean | null; is_demo?: boolean | null });
+  // Live-QA finding, this correction round: is_operator and is_verified are
+  // not columns on listings at all, they are exposed only through
+  // listers_public (keyed by account id), the same way the public listing
+  // page reads them via getLister(l.account_id). The previous version of
+  // this line asserted them as if they were columns on L, which PostgREST
+  // genuinely rejects (confirmed against the live Postgres logs: "column
+  // listings.is_operator does not exist"); this route had apparently never
+  // been exercised end to end, signed in, against a real row, before now.
+  // lister_type and is_demo are read from L (listings) rather than from
+  // this lookup because they are real columns there too, and
+  // listers_public's own lister_type is deliberately rewritten for public
+  // display (see filingAccountOf's own header), which is not what this
+  // owner-only route wants.
+  const lister = await getLister(L.account_id as string | null | undefined);
+  const account = filingAccountOf({
+    lister_type: (L.lister_type as string | null) ?? null,
+    is_operator: lister?.is_operator ?? null,
+    is_verified: lister?.is_verified ?? null,
+    is_demo: (L.is_demo as boolean | null) ?? null,
+  });
 
   // Codex review of 8b9f72d item 1. This server route has no session, so it
   // never observed a lister type into a field or a translate call's exact
