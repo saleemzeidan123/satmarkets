@@ -13,7 +13,14 @@ import {
 import type { VerificationDimension, VerificationState } from "@/lib/evidence";
 import { spaceAttributeRows, commercialAttributeRows, complianceRows } from "@/lib/attributeDisplay";
 import { fieldsFor } from "@/lib/assetFields";
-import { fromProvenanceTier, arabicWordingProvenance, notConfirmed, type DisplayProvenance } from "@/lib/provenanceDisplay";
+import {
+  fromProvenanceTier,
+  notConfirmed,
+  arabicWordingDisplay,
+  type DisplayProvenance,
+  type ArabicWordingDisplay,
+  type ArabicOriginContext,
+} from "@/lib/provenanceDisplay";
 
 // PKG-LISTING-CREATION-1A, requirement A. The one composer both the Studio's
 // review step and the standalone draft preview call.
@@ -79,8 +86,8 @@ export interface AttributeRow {
 }
 
 export interface ArabicWordingState {
-  title: { state: ArabicState; provenance: DisplayProvenance };
-  description: { state: ArabicState; provenance: DisplayProvenance };
+  title: { state: ArabicState; display: ArabicWordingDisplay };
+  description: { state: ArabicState; display: ArabicWordingDisplay };
 }
 
 export const PRESENTATION_MODEL_VERSION = 1;
@@ -157,7 +164,14 @@ function withProvenance(
 export function buildListingPresentation(
   l: DraftListingInput,
   locale: Loc,
-  opts?: { arabicConfirmedThisSession?: boolean; account?: FilingAccount | null; now?: number },
+  opts?: {
+    /** Session-only "I have read this and it reads correctly", per field. Never rewrites origin; see provenanceDisplay.ts. */
+    arabicReviewed?: { title?: boolean; description?: boolean };
+    /** Real origin evidence for the Arabic title/description; see ArabicOriginContext. */
+    arabicOrigin?: { title?: ArabicOriginContext; description?: ArabicOriginContext };
+    account?: FilingAccount | null;
+    now?: number;
+  },
 ): ListingPresentation {
   const ar = locale === "ar";
   const now = opts?.now ?? Date.now();
@@ -187,15 +201,21 @@ export function buildListingPresentation(
   const arabicWording: ArabicWordingState = {
     title: {
       state: arabicState({ value: l.title_ar, english: l.title_en }),
-      provenance: ar
-        ? arabicWordingProvenance({ value: l.title_ar, english: l.title_en }, opts?.arabicConfirmedThisSession ?? false)
-        : (l.title_en ? fromProvenanceTier("entered") : notConfirmed()),
+      display: ar
+        ? arabicWordingDisplay(
+            { value: l.title_ar, english: l.title_en },
+            { ...opts?.arabicOrigin?.title, reviewedThisSession: opts?.arabicReviewed?.title ?? false },
+          )
+        : (l.title_en ? "lister_supplied" : "not_confirmed"),
     },
     description: {
       state: arabicState({ value: l.description_ar, english: l.description_en }),
-      provenance: ar
-        ? arabicWordingProvenance({ value: l.description_ar, english: l.description_en }, opts?.arabicConfirmedThisSession ?? false)
-        : (l.description_en ? fromProvenanceTier("entered") : notConfirmed()),
+      display: ar
+        ? arabicWordingDisplay(
+            { value: l.description_ar, english: l.description_en },
+            { ...opts?.arabicOrigin?.description, reviewedThisSession: opts?.arabicReviewed?.description ?? false },
+          )
+        : (l.description_en ? "lister_supplied" : "not_confirmed"),
     },
   };
 

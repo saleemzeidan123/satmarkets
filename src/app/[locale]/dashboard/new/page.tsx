@@ -147,6 +147,8 @@ export default async function NewListingPage(
         floorplan_count: floorplans.data?.length ?? 0,
         floorplan_types: (floorplans.data ?? []).map((r: any) => (r?.plan_type == null ? null : String(r.plan_type))),
         document_count: (brochures.count ?? 0) + (documents.count ?? 0),
+        ar_translation_status: L.ar_translation_status == null ? null : String(L.ar_translation_status),
+        ar_translated_at: L.ar_translated_at == null ? null : String(L.ar_translated_at),
       };
     }
   }

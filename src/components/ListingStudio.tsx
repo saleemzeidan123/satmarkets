@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import MediaBrief from "@/components/MediaBrief";
@@ -30,10 +30,10 @@ import {
   type StepState,
   type StudioStep,
 } from "@/lib/listingStudio";
-import { evidenceMission, evidenceSummary, evidenceStateLabel, type EvidenceItem } from "@/lib/guidedEvidence";
+import { evidenceMission, evidenceSummary, evidenceRequirementLabel, evidenceFulfilmentLabel, type EvidenceItem } from "@/lib/guidedEvidence";
 import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
-import { displayProvenanceLabel } from "@/lib/provenanceDisplay";
-import { checkFileType, checkFileSize, findDuplicates } from "@/lib/uploadQuality";
+import { arabicWordingDisplayLabel, type ArabicOriginContext } from "@/lib/provenanceDisplay";
+import { checkFileType, checkFileSize, checkDecodable, checkMinDimensions, readOrientationHint, findDuplicates } from "@/lib/uploadQuality";
 
 // The Listing Studio, the surface ADV-2 is built to produce.
 //
@@ -118,6 +118,11 @@ export type StudioInitial = {
   // asset is shown by, and that question needs the recorded type, not the count.
   floorplan_types: (string | null)[];
   document_count: number;
+  // Real, row-level evidence of Arabic origin (see provenanceDisplay.ts).
+  // Listing-level, not per-field. Null on a listing that has never been
+  // through the translate endpoint.
+  ar_translation_status: string | null;
+  ar_translated_at: string | null;
 };
 
 type FormFields = {
@@ -172,6 +177,10 @@ function seedFrom(initial: StudioInitial | null | undefined) {
       floorplans: initial?.floorplan_count ?? 0,
       planTypes: (initial?.floorplan_types ?? []) as (string | null)[],
       documents: initial?.document_count ?? 0,
+    },
+    arabicOriginRecord: {
+      translationStatus: initial?.ar_translation_status ?? null,
+      translatedAt: initial?.ar_translated_at ?? null,
     },
   };
 }
@@ -278,12 +287,29 @@ export default function ListingStudio({
   // key (a photo shot key or a registry field key); value is the reason, which
   // may be empty.
   const [unavailableItems, setUnavailableItems] = useState<Map<string, string>>(new Map());
-  const [arabicConfirmedThisSession, setArabicConfirmedThisSession] = useState(false);
+  // Session-only review, per field: "I have read this and it reads
+  // correctly". Never rewrites origin; see provenanceDisplay.ts's own
+  // header. Tracked separately per field because reviewing the title says
+  // nothing about whether the description was also read.
+  const [titleReviewedThisSession, setTitleReviewedThisSession] = useState(false);
+  const [descriptionReviewedThisSession, setDescriptionReviewedThisSession] = useState(false);
+  // Real, session-observed authorship evidence: true only the instant this
+  // session's own code sees the lister type into the field directly. This
+  // is the one path that may ever report an Arabic field as genuinely
+  // lister_supplied, because it is the only one this module can actually
+  // verify (see arabicWordingOrigin in provenanceDisplay.ts).
+  const [arabicTitleEditedThisSession, setArabicTitleEditedThisSession] = useState(false);
+  const [arabicDescriptionEditedThisSession, setArabicDescriptionEditedThisSession] = useState(false);
   // PKG-LISTING-CREATION-1A. Deterministic, explainable, decided in the
   // browser before a byte reaches the network. Never blocks by itself (a
   // rejected file is simply not added to the queue, with a stated reason);
   // never silently drops a file the lister selected without saying so.
   const [photoWarnings, setPhotoWarnings] = useState<string[]>([]);
+  // Guards onPhotoFilesSelected against a stale async result overwriting a
+  // newer selection. A ref, not state: it must read as current the instant
+  // the async work finishes, with no render in between. See
+  // onPhotoFilesSelected's own comment.
+  const photoSelectionToken = useRef(0);
   // What the server already holds for this listing. Uploads add to it after they
   // succeed, so a file counts as supplied once, whether it went up on this visit
   // or a previous one.
@@ -328,17 +354,29 @@ export default function ListingStudio({
     setFloorTypes(floorFiles.map(() => defaultPlanType(v)));
   };
 
-  // PKG-LISTING-CREATION-1A. Every selected photo is checked before it joins
-  // the upload queue: content-sniffed type (not filename), size, and content
-  // fingerprint against the rest of THIS selection. A rejected file is named,
-  // with the specific reason, and is never queued; a file that duplicates
-  // another one already in this selection is queued once with a warning
-  // rather than silently dropped or silently uploaded twice. Nothing here
-  // touches files already on the server: cross-session duplicate detection
-  // needs a persisted content hash the schema does not have today (see
+  // PKG-LISTING-CREATION-1A, corrected under Codex review of 922780d. Every
+  // selected photo is checked before it joins the upload queue:
+  // content-sniffed type (not filename), size, decodability, minimum usable
+  // dimensions, content fingerprint against the rest of THIS selection, and
+  // an advisory EXIF orientation hint. A rejected file is named, with the
+  // specific reason, and is never queued. A duplicate group now keeps
+  // exactly one file and drops the rest from the queue, matching what the
+  // warning actually says; the previous version warned "only one copy is
+  // needed" and then queued every copy anyway. Nothing here touches files
+  // already on the server: cross-session duplicate detection needs a
+  // persisted content hash the schema does not have today (see
   // docs/pkg-listing-creation-1a-deferred-contracts.md).
+  //
+  // RACE GUARD. This function is async across several awaited checks. If the
+  // lister reselects files before an earlier call finishes, the earlier
+  // call's result must not land after the newer one and silently replace it
+  // with a stale selection. `photoSelectionToken` is a ref (not state) so it
+  // reads as current the instant the async work resolves, with no render in
+  // between; only the call that is still the latest one when its work
+  // finishes is allowed to call setFiles.
   async function onPhotoFilesSelected(selected: File[]) {
     touch();
+    const myToken = ++photoSelectionToken.current;
     const warnings: string[] = [];
     const accepted: File[] = [];
     for (const file of selected) {
@@ -358,20 +396,54 @@ export default function ListingStudio({
         ));
         continue;
       }
-      accepted.push(file);
-    }
-    if (accepted.length > 0) {
-      const dupes = await findDuplicates(accepted);
-      for (const group of dupes) {
-        const names = group.fileIndexes.map((i) => accepted[i].name).join(", ");
+      const decodeCheck = await checkDecodable(file);
+      if (!decodeCheck.ok) {
         warnings.push(t(
-          `These files are identical: ${names}. Only one copy is needed.`,
-          `هذه الملفات متطابقة: ${names}. تكفي نسخة واحدة.`,
+          `${file.name}: could not be read as an image.`,
+          `${file.name}: تعذّرت قراءتها كصورة.`,
+        ));
+        continue;
+      }
+      const dimCheck = checkMinDimensions(decodeCheck.width, decodeCheck.height);
+      if (!dimCheck.ok) {
+        warnings.push(t(
+          `${file.name}: too small (${dimCheck.width}×${dimCheck.height}px, minimum ${dimCheck.minWidth}×${dimCheck.minHeight}px).`,
+          `${file.name}: صغيرة جداً (${dimCheck.width}×${dimCheck.height} بكسل، الحد الأدنى ${dimCheck.minWidth}×${dimCheck.minHeight} بكسل).`,
+        ));
+        continue;
+      }
+      // Advisory only, never a block (see readOrientationHint's own header):
+      // the server already applies EXIF orientation on upload, so this file
+      // is accepted either way. The hint only explains, before upload, why a
+      // browser-built thumbnail of the raw file might look sideways.
+      const orientation = await readOrientationHint(file);
+      if (orientation === "rotate_advised") {
+        warnings.push(t(
+          `${file.name}: stored rotated; it will display upright once uploaded.`,
+          `${file.name}: محفوظة بزاوية دوران؛ ستظهر بشكل صحيح بعد الرفع.`,
         ));
       }
+      accepted.push(file);
     }
+    let deduped = accepted;
+    if (accepted.length > 0) {
+      const dupes = await findDuplicates(accepted);
+      const drop = new Set<number>();
+      for (const group of dupes) {
+        const [keepIndex, ...dropIndexes] = group.fileIndexes;
+        for (const i of dropIndexes) drop.add(i);
+        const keptName = accepted[keepIndex].name;
+        const droppedNames = dropIndexes.map((i) => accepted[i].name).join(", ");
+        warnings.push(t(
+          `These files are identical: ${keptName}, ${droppedNames}. Keeping ${keptName}; the others were not queued.`,
+          `هذه الملفات متطابقة: ${keptName}، ${droppedNames}. أُبقيت ${keptName}؛ لم تُضَف البقية إلى قائمة الرفع.`,
+        ));
+      }
+      deduped = accepted.filter((_, i) => !drop.has(i));
+    }
+    if (photoSelectionToken.current !== myToken) return; // superseded by a newer selection; discard this stale result
     setPhotoWarnings(warnings);
-    setFiles(accepted);
+    setFiles(deduped);
   }
 
   const photoUrls = useMemo(() => photos.split(/\n+/).map((s) => s.trim()).filter(Boolean), [photos]);
@@ -544,7 +616,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="title_ar">{t("Arabic title", "العنوان بالعربية")}</label>
-            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => set("title_ar", e.target.value)} className={inp} />
+            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => { setArabicTitleEditedThisSession(true); set("title_ar", e.target.value); }} className={inp} />
             <p className={help}>{t("Leave this empty and SAT drafts it from the English, marked as a translation.", "اتركه فارغاً لتصوغه سات من الإنجليزية، ويظهر بوصفه ترجمة.")}</p>
           </div>
         );
@@ -560,7 +632,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="description_ar">{t("Arabic description", "الوصف بالعربية")}</label>
-            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => set("description_ar", e.target.value)} className={inp} />
+            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => { setArabicDescriptionEditedThisSession(true); set("description_ar", e.target.value); }} className={inp} />
           </div>
         );
       case "area_sqm":
@@ -873,13 +945,23 @@ export default function ListingStudio({
       attributes: attrs,
       ad_permit_no: f.ad_permit_no, ad_permit_expires_at: f.ad_permit_expires_at,
       right_to_market_confirmed: rightToMarket,
-      is_demo: true, // a draft has never been checked; never implied verified
+      // Codex review of 922780d: demo status and verification status are
+      // different concepts. A genuine owner draft is not sample data merely
+      // because SAT has not verified it; is_demo is never set true as a
+      // verification shortcut. This composer has no real is_demo flag to
+      // read (it is not part of Studio form state), so it is honestly
+      // omitted rather than defaulted to a claim nobody checked.
     };
   }
 
   function preview(l: "en" | "ar") {
     const isAr = l === "ar";
-    const p = buildListingPresentation(draftInputFromState(), l, { arabicConfirmedThisSession });
+    const titleCtx: ArabicOriginContext = { ...seed.arabicOriginRecord, editedThisSession: arabicTitleEditedThisSession };
+    const descriptionCtx: ArabicOriginContext = { ...seed.arabicOriginRecord, editedThisSession: arabicDescriptionEditedThisSession };
+    const p = buildListingPresentation(draftInputFromState(), l, {
+      arabicOrigin: { title: titleCtx, description: descriptionCtx },
+      arabicReviewed: { title: titleReviewedThisSession, description: descriptionReviewedThisSession },
+    });
     return (
       <div dir={isAr ? "rtl" : "ltr"} className="rounded border border-line p-3" lang={l}>
         <div className="text-[0.6875rem] uppercase tracking-wide text-charcoal/65 mb-1">{isAr ? "العربية" : "English"}</div>
@@ -888,7 +970,7 @@ export default function ListingStudio({
         </div>
         {isAr && p.title && (
           <p className="text-[0.6875rem] text-charcoal/70 mt-1">
-            {displayProvenanceLabel(p.arabicWording.title.provenance, true)}
+            {arabicWordingDisplayLabel(p.arabicWording.title.display, true)}
           </p>
         )}
         <div className="text-[0.8125rem] text-charcoal/70 mt-1">
@@ -902,7 +984,7 @@ export default function ListingStudio({
         {p.descriptionText && <p className="text-[0.8125rem] text-charcoal/70 mt-2 whitespace-pre-line">{p.descriptionText}</p>}
         {isAr && p.descriptionText && (
           <p className="text-[0.6875rem] text-charcoal/70 mt-1">
-            {displayProvenanceLabel(p.arabicWording.description.provenance, true)}
+            {arabicWordingDisplayLabel(p.arabicWording.description.display, true)}
           </p>
         )}
       </div>
@@ -1277,27 +1359,29 @@ export default function ListingStudio({
                     <li key={item.key} className="text-[0.75rem]">
                       <div className="flex items-center justify-between gap-2">
                         <span>{ar ? item.label_ar : item.label_en}</span>
-                        <span className="text-charcoal/65">{evidenceStateLabel(item.state, ar)}</span>
+                        <span className="text-charcoal/65">
+                          {item.fulfilment ? evidenceFulfilmentLabel(item.fulfilment, ar) : evidenceRequirementLabel(item.requirement, ar)}
+                        </span>
                       </div>
-                      {/* PKG-LISTING-CREATION-1A fix. Not gated on item.state:
-                          the mission's per-shot "supplied" reading is a coarse
-                          any-photo-exists guess (see evidenceMission's own
-                          header), not real per-shot coverage, so a shot that
-                          reads required_by_rule/recommended may still
-                          genuinely not exist. Excluding those states hid the
-                          only control that can correct a wrong guess the
-                          moment any photo was attached, for every other shot. */}
+                      {/* Not gated on fulfilment: the mission's per-shot
+                          fulfilment, absent real per-shot data, is at best
+                          "unknown" once any photo exists, never a proof this
+                          specific shot is covered (see evidenceMission's own
+                          header). Gating the checkbox on fulfilment hid the
+                          only control that can say a shot genuinely does not
+                          exist the moment any photo was attached, for every
+                          other shot; it stays reachable regardless. */}
                       {item.weight !== "optional" && (
                         <div className="mt-1">
                           <label className="flex items-center gap-1.5 text-[0.6875rem] text-charcoal/70">
                             <input
                               type="checkbox"
-                              checked={item.state === "unavailable"}
+                              checked={item.fulfilment === "unavailable"}
                               onChange={(e) => setItemUnavailable(item.key, e.target.checked, unavailableItems.get(item.key) ?? "")}
                             />
                             {t("This view does not exist for this space", "هذه اللقطة غير موجودة لهذه المساحة")}
                           </label>
-                          {item.state === "unavailable" && (
+                          {item.fulfilment === "unavailable" && (
                             <input
                               type="text"
                               value={unavailableItems.get(item.key) ?? ""}
@@ -1365,8 +1449,8 @@ export default function ListingStudio({
                 <div className="text-[0.75rem] font-medium text-charcoal/80">{t("Evidence mission", "مهمة الأدلة")}</div>
                 <p className="text-[0.75rem] text-charcoal/70 mt-1">
                   {t(
-                    `${evidenceSum.requiredOutstanding} required item(s) still missing, ${evidenceSum.recommendedOutstanding} recommended item(s) still missing, ${evidenceSum.unavailable} marked unavailable.`,
-                    `${evidenceSum.requiredOutstanding} عنصراً مطلوباً لا يزال ناقصاً، ${evidenceSum.recommendedOutstanding} موصى به لا يزال ناقصاً، ${evidenceSum.unavailable} مُحدَّد كغير متاح.`,
+                    `${evidenceSum.requiredOutstanding} required item(s) still missing, ${evidenceSum.recommendedOutstanding} recommended item(s) still missing, ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} with coverage unknown, ${evidenceSum.unavailable} marked unavailable.`,
+                    `${evidenceSum.requiredOutstanding} عنصراً مطلوباً لا يزال ناقصاً، ${evidenceSum.recommendedOutstanding} موصى به لا يزال ناقصاً، ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} تغطيتها غير معروفة، ${evidenceSum.unavailable} مُحدَّد كغير متاح.`,
                   )}
                 </p>
               </div>
@@ -1376,13 +1460,22 @@ export default function ListingStudio({
                   {preview("en")}
                   {preview("ar")}
                 </div>
-                {ar && (f.title_ar || f.description_ar) && !arabicConfirmedThisSession && (
+                {ar && f.title_ar && !titleReviewedThisSession && (
                   <button
                     type="button"
-                    onClick={() => setArabicConfirmedThisSession(true)}
+                    onClick={() => setTitleReviewedThisSession(true)}
+                    className="mt-2 me-3 text-[0.75rem] text-signal underline min-h-[44px]"
+                  >
+                    {t("I've reviewed the Arabic title above", "راجعتُ العنوان العربي أعلاه")}
+                  </button>
+                )}
+                {ar && f.description_ar && !descriptionReviewedThisSession && (
+                  <button
+                    type="button"
+                    onClick={() => setDescriptionReviewedThisSession(true)}
                     className="mt-2 text-[0.75rem] text-signal underline min-h-[44px]"
                   >
-                    {t("Confirm the Arabic above reads correctly", "أؤكد أن النص العربي أعلاه صحيح")}
+                    {t("I've reviewed the Arabic description above", "راجعتُ الوصف العربي أعلاه")}
                   </button>
                 )}
                 {/* The real preview: the same server route, the same rendering the

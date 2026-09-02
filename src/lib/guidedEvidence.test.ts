@@ -5,25 +5,29 @@ import { mediaStandardFor } from "./mediaStandard";
 import {
   evidenceMission,
   outstandingItems,
+  unknownCoverageItems,
   evidenceSummary,
-  evidenceStateLabel,
-  type EvidenceState,
+  evidenceRequirementLabel,
+  evidenceFulfilmentLabel,
+  type EvidenceRequirement,
+  type EvidenceFulfilment,
 } from "./guidedEvidence";
 
-const ALL_STATES: EvidenceState[] = [
-  "required_by_rule", "recommended", "conditionally_applicable",
-  "not_applicable", "unavailable", "awaiting_evidence",
-];
+const ALL_REQUIREMENTS: EvidenceRequirement[] = ["required_by_standard", "recommended", "conditional", "not_applicable"];
+const ALL_FULFILMENTS: EvidenceFulfilment[] = ["supplied", "awaiting_evidence", "unavailable", "unknown"];
 
 // Named by code point, not written as a literal, so this file's own bytes
 // never contain the character ar-lint forbids in shipped copy.
 const EM_DASH = String.fromCharCode(0x2014);
 
-test("every mission item's state is one of the six named states, nothing else", () => {
+test("every mission item's requirement and fulfilment are recognised values, and fulfilment is null exactly for conditional/not_applicable", () => {
   for (const type of ["office", "retail", "warehouse", "land", "mixed_use"]) {
     const items = evidenceMission({ assetType: type });
     for (const item of items) {
-      assert.ok(ALL_STATES.includes(item.state), `${type}/${item.key} has an unrecognised state: ${item.state}`);
+      assert.ok(ALL_REQUIREMENTS.includes(item.requirement), `${type}/${item.key} has an unrecognised requirement: ${item.requirement}`);
+      if (item.fulfilment !== null) assert.ok(ALL_FULFILMENTS.includes(item.fulfilment), `${type}/${item.key} has an unrecognised fulfilment: ${item.fulfilment}`);
+      const shouldBeNull = item.requirement === "conditional" || item.requirement === "not_applicable";
+      assert.equal(item.fulfilment === null, shouldBeNull, `${type}/${item.key}: fulfilment must be null exactly when requirement is conditional or not_applicable`);
     }
   }
 });
@@ -35,48 +39,93 @@ test("with nothing supplied, every required photo shot and required field reads 
   const requiredFieldKeys = new Set(fieldsFor("office").filter((f) => f.required).map((f) => f.key));
   for (const item of items) {
     if (item.kind === "photo" && requiredShotKeys.has(item.key)) {
-      assert.equal(item.state, "awaiting_evidence", `required shot ${item.key} did not read awaiting_evidence when unsupplied`);
+      assert.equal(item.requirement, "required_by_standard");
+      assert.equal(item.fulfilment, "awaiting_evidence", `required shot ${item.key} did not read awaiting_evidence when unsupplied`);
     }
-    if (item.kind === "fact" && requiredFieldKeys.has(item.key) && item.state !== "conditionally_applicable" && item.state !== "not_applicable") {
-      assert.equal(item.state, "awaiting_evidence", `required field ${item.key} did not read awaiting_evidence when unanswered`);
+    if (item.kind === "fact" && requiredFieldKeys.has(item.key) && item.requirement !== "conditional" && item.requirement !== "not_applicable") {
+      assert.equal(item.fulfilment, "awaiting_evidence", `required field ${item.key} did not read awaiting_evidence when unanswered`);
     }
   }
 });
 
-test("a supplied required photo shot is required_by_rule, not awaiting_evidence", () => {
+test("a photo shot with no per-shot data and at least one photograph reads coverage unknown, never supplied", () => {
+  // This is the defect Codex's review found: the first version marked every
+  // shot "supplied" the moment any photograph existed. hasAnyPhoto alone can
+  // never prove a SPECIFIC shot was photographed, so it must never produce
+  // "supplied" for a photo item; "unknown" is the honest ceiling.
+  const items = evidenceMission({ assetType: "office", hasAnyPhoto: true });
+  const photoItems = items.filter((i) => i.kind === "photo");
+  assert.ok(photoItems.length > 1, "test fixture assumption: office has more than one photo shot");
+  for (const item of photoItems) {
+    assert.notEqual(item.fulfilment, "supplied", `${item.key} read supplied from hasAnyPhoto alone`);
+    assert.equal(item.fulfilment, "unknown");
+  }
+});
+
+test("one arbitrary photograph never satisfies multiple named shot categories", () => {
+  // Restated directly: with hasAnyPhoto true and no real per-shot data, no
+  // two distinct shot keys may both read "supplied" from that one signal,
+  // because none of them may read "supplied" from it at all.
+  const items = evidenceMission({ assetType: "warehouse", hasAnyPhoto: true });
+  const suppliedPhotoKeys = items.filter((i) => i.kind === "photo" && i.fulfilment === "supplied").map((i) => i.key);
+  assert.deepEqual(suppliedPhotoKeys, []);
+});
+
+test("with zero photographs, every shot reads awaiting_evidence, not unknown", () => {
+  const items = evidenceMission({ assetType: "office", hasAnyPhoto: false });
+  for (const item of items.filter((i) => i.kind === "photo")) {
+    assert.equal(item.fulfilment, "awaiting_evidence");
+  }
+});
+
+test("real per-shot data is the only path that may report a photo shot as supplied", () => {
   const standard = mediaStandardFor("office");
   const requiredShot = standard.shots.find((s) => s.weight === "required")!;
   const items = evidenceMission({ assetType: "office", photoShotsSupplied: new Set([requiredShot.key]) });
   const item = items.find((i) => i.key === requiredShot.key)!;
-  assert.equal(item.state, "required_by_rule");
+  assert.equal(item.requirement, "required_by_standard");
+  assert.equal(item.fulfilment, "supplied");
+  // Every OTHER shot, absent from the real per-shot set, stays unmet, not
+  // promoted by the one shot that genuinely was supplied.
+  const others = items.filter((i) => i.kind === "photo" && i.key !== requiredShot.key);
+  assert.ok(others.every((i) => i.fulfilment === "awaiting_evidence"));
 });
 
-test("a supplied recommended (expected) photo shot is recommended, not required_by_rule", () => {
+test("a supplied recommended (expected) photo shot is recommended, not required_by_standard", () => {
   const standard = mediaStandardFor("office");
   const expectedShot = standard.shots.find((s) => s.weight === "expected")!;
   const items = evidenceMission({ assetType: "office", photoShotsSupplied: new Set([expectedShot.key]) });
   const item = items.find((i) => i.key === expectedShot.key)!;
-  assert.equal(item.state, "recommended");
+  assert.equal(item.requirement, "recommended");
+  assert.equal(item.fulfilment, "supplied");
 });
 
-test("an answered field reads required_by_rule or recommended, matching its own required flag", () => {
+test("an answered field reads required_by_standard or recommended, matching its own required flag, with real fulfilment", () => {
   const field = fieldsFor("office").find((f) => f.key === "building_grade")!;
   assert.equal(field.required, true, "test fixture assumption: building_grade is required on office");
   const items = evidenceMission({ assetType: "office", attributes: { building_grade: "a" } });
   const item = items.find((i) => i.key === "building_grade")!;
-  assert.equal(item.state, "required_by_rule");
+  assert.equal(item.requirement, "required_by_standard");
+  assert.equal(item.fulfilment, "supplied");
 });
 
-test("an item marked unavailable this session carries its reason and never reads awaiting_evidence", () => {
+test("marking an item unavailable overrides a coarse 'unknown' guess, and unavailable is never counted as supplied", () => {
   const standard = mediaStandardFor("warehouse");
   const requiredShot = standard.shots.find((s) => s.weight === "required")!;
   const items = evidenceMission({
     assetType: "warehouse",
+    hasAnyPhoto: true, // would otherwise read "unknown" for every shot
     unavailable: new Map([[requiredShot.key, "The yard is not accessible until the tenant vacates."]]),
   });
   const item = items.find((i) => i.key === requiredShot.key)!;
-  assert.equal(item.state, "unavailable");
+  assert.equal(item.fulfilment, "unavailable");
   assert.equal(item.unavailableReason, "The yard is not accessible until the tenant vacates.");
+  const s = evidenceSummary(items);
+  assert.ok(s.unavailable >= 1);
+  // unavailable must never be reachable through the "supplied" counter: it
+  // is an explanation for an outstanding requirement, not evidence the
+  // requirement was met.
+  assert.notEqual(item.fulfilment, "supplied");
 });
 
 test("unavailable with an empty reason still reads unavailable, and the reason is null rather than an empty string", () => {
@@ -84,27 +133,30 @@ test("unavailable with an empty reason still reads unavailable, and the reason i
   const requiredShot = standard.shots.find((s) => s.weight === "required")!;
   const items = evidenceMission({ assetType: "warehouse", unavailable: new Map([[requiredShot.key, ""]]) });
   const item = items.find((i) => i.key === requiredShot.key)!;
-  assert.equal(item.state, "unavailable");
+  assert.equal(item.fulfilment, "unavailable");
   assert.equal(item.unavailableReason, null);
 });
 
-test("a genuinely conditional field with its gate unanswered reads conditionally_applicable and names the gate", () => {
+test("a genuinely conditional field with its gate unanswered reads requirement conditional, fulfilment null, and names the gate", () => {
   const items = evidenceMission({ assetType: "showroom" });
   const item = items.find((i) => i.key === "mezzanine_area_sqm")!;
-  assert.equal(item.state, "conditionally_applicable");
+  assert.equal(item.requirement, "conditional");
+  assert.equal(item.fulfilment, null);
   assert.equal(item.conditionOn?.key, "mezzanine");
 });
 
-test("a conditional field whose gate answers no reads not_applicable, not awaiting_evidence", () => {
+test("a conditional field whose gate answers no reads not_applicable, fulfilment null", () => {
   const items = evidenceMission({ assetType: "showroom", attributes: { mezzanine: "no" } });
   const item = items.find((i) => i.key === "mezzanine_area_sqm")!;
-  assert.equal(item.state, "not_applicable");
+  assert.equal(item.requirement, "not_applicable");
+  assert.equal(item.fulfilment, null);
 });
 
 test("a conditional field whose gate answers yes behaves as an ordinary unmet field, not stuck conditional forever", () => {
   const items = evidenceMission({ assetType: "showroom", attributes: { mezzanine: "yes" } });
   const item = items.find((i) => i.key === "mezzanine_area_sqm")!;
-  assert.equal(item.state, "awaiting_evidence");
+  assert.notEqual(item.requirement, "conditional");
+  assert.equal(item.fulfilment, "awaiting_evidence");
 });
 
 test("a field belonging to a different asset type never appears in this type's mission at all", () => {
@@ -120,17 +172,30 @@ test("computed and sourced fields are excluded from the mission entirely, never 
   assert.ok(!items.some((i) => i.key === "zoning_balady"), "a sourced, not-yet-wired field was asked of the lister");
 });
 
-test("outstandingItems returns exactly the awaiting_evidence items, nothing else", () => {
-  const items = evidenceMission({ assetType: "land" });
+test("outstandingItems returns exactly the awaiting_evidence items, excluding unknown", () => {
+  const items = evidenceMission({ assetType: "land", hasAnyPhoto: true });
   const outstanding = outstandingItems(items);
-  assert.ok(outstanding.every((i) => i.state === "awaiting_evidence"));
-  assert.equal(outstanding.length, items.filter((i) => i.state === "awaiting_evidence").length);
+  assert.ok(outstanding.every((i) => i.fulfilment === "awaiting_evidence"));
+  assert.equal(outstanding.length, items.filter((i) => i.fulfilment === "awaiting_evidence").length);
+  // The photo shots are all "unknown" here (hasAnyPhoto true, no per-shot
+  // data), so none of them may appear in outstandingItems.
+  const photoKeys = new Set(items.filter((i) => i.kind === "photo").map((i) => i.key));
+  assert.ok(outstanding.every((i) => !photoKeys.has(i.key) || i.kind !== "photo"));
+});
+
+test("unknownCoverageItems returns exactly the unknown-fulfilment items", () => {
+  const items = evidenceMission({ assetType: "land", hasAnyPhoto: true });
+  const unknown = unknownCoverageItems(items);
+  assert.ok(unknown.length > 0);
+  assert.ok(unknown.every((i) => i.fulfilment === "unknown"));
+  assert.equal(unknown.length, items.filter((i) => i.fulfilment === "unknown").length);
 });
 
 test("evidenceSummary counts partition the mission with no item double counted", () => {
-  const items = evidenceMission({ assetType: "mixed_use", attributes: { has_retail: true } });
+  const items = evidenceMission({ assetType: "mixed_use", attributes: { has_retail: true }, hasAnyPhoto: true });
   const s = evidenceSummary(items);
-  const sum = s.requiredOutstanding + s.recommendedOutstanding + s.unavailable + s.notApplicable + s.conditionallyApplicable + s.supplied;
+  const sum = s.requiredOutstanding + s.recommendedOutstanding + s.requiredUnknownCoverage + s.recommendedUnknownCoverage
+    + s.unavailable + s.notApplicable + s.conditional + s.supplied;
   assert.equal(sum, s.total);
   assert.equal(s.total, items.length);
 });
@@ -142,15 +207,36 @@ test("evidenceSummary is never a single fabricated completeness score, only name
   assert.ok(!keys.some((k) => /score|percent|pct/i.test(k)), "a score-shaped field appeared on the evidence summary");
 });
 
-test("every state has a distinct, non-empty EN and AR label with no em dash", () => {
-  for (const s of ALL_STATES) {
-    const en = evidenceStateLabel(s, false);
-    const ar = evidenceStateLabel(s, true);
-    assert.ok(en.length > 0 && ar.length > 0, `${s} missing a label`);
+test("every requirement and fulfilment value has a distinct, non-empty EN and AR label with no em dash", () => {
+  for (const r of ALL_REQUIREMENTS) {
+    const en = evidenceRequirementLabel(r, false);
+    const ar = evidenceRequirementLabel(r, true);
+    assert.ok(en.length > 0 && ar.length > 0, `${r} missing a label`);
     assert.notEqual(en, ar);
     assert.ok(!en.includes(EM_DASH));
     assert.ok(!ar.includes(EM_DASH));
   }
+  for (const f of ALL_FULFILMENTS) {
+    const en = evidenceFulfilmentLabel(f, false);
+    const ar = evidenceFulfilmentLabel(f, true);
+    assert.ok(en.length > 0 && ar.length > 0, `${f} missing a label`);
+    assert.notEqual(en, ar);
+    assert.ok(!en.includes(EM_DASH));
+    assert.ok(!ar.includes(EM_DASH));
+  }
+});
+
+test("the required-by-standard label never reads as a statutory or REGA requirement", () => {
+  // Codex review of 922780d: the platform's own enforced check is a minimum
+  // PHOTO COUNT, not a per-shot mandate, and the label must not imply
+  // otherwise. "Rule" (as in the old required_by_rule) reads as a specific,
+  // individually-enforced mandate; the corrected label names the platform
+  // standard instead.
+  const en = evidenceRequirementLabel("required_by_standard", false);
+  const ar = evidenceRequirementLabel("required_by_standard", true);
+  assert.ok(/SAT/.test(en) && /standard/i.test(en), `label does not name the SAT listing standard: ${en}`);
+  assert.ok(!/REGA|law|statute|legal/i.test(en), `label reads as a statutory requirement: ${en}`);
+  assert.ok(ar.length > 0);
 });
 
 test("the conditions table only names fields that actually exist in that asset type's registry", () => {

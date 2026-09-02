@@ -97,7 +97,7 @@ test("space, commercial and compliance rows are drawn from the real per-asset re
     assert.ok(row.label.length > 0);
     assert.ok(row.value.length > 0);
     assert.ok(
-      ["lister_supplied", "platform_retrieved", "sat_verified", "ai_suggested", "not_confirmed"].includes(row.provenance),
+      ["lister_supplied", "platform_derived", "sat_verified", "ai_suggested", "not_confirmed"].includes(row.provenance),
       `row "${row.label}" carries an unrecognised provenance category: ${row.provenance}`,
     );
   }
@@ -110,20 +110,37 @@ test("every space row's field is genuinely entered provenance, not verified or c
   assert.equal(floorLevel!.provenance, "lister_supplied");
 });
 
-test("Arabic wording with no session confirmation reads ai_suggested when present, and not_confirmed when absent", () => {
+test("Arabic wording with no origin evidence reads origin_unknown when present, and not_confirmed when absent", () => {
+  // Corrected under Codex review of 922780d: the previous default was
+  // ai_suggested, an unproven claim with no recorded event behind it.
   const p = buildListingPresentation(BASE, "ar");
-  assert.equal(p.arabicWording.title.provenance, "ai_suggested");
-  assert.equal(p.arabicWording.description.provenance, "not_confirmed", "description_ar is null in the fixture");
+  assert.equal(p.arabicWording.title.display, "origin_unknown");
+  assert.equal(p.arabicWording.description.display, "not_confirmed", "description_ar is null in the fixture");
 });
 
-test("an explicit session confirmation promotes Arabic wording provenance to lister_supplied", () => {
-  const p = buildListingPresentation(BASE, "ar", { arabicConfirmedThisSession: true });
-  assert.equal(p.arabicWording.title.provenance, "lister_supplied");
+test("a real machine-translation record (status + timestamp) reads ai_suggested", () => {
+  const translated: DraftListingInput = { ...BASE };
+  const p = buildListingPresentation(translated, "ar", {
+    arabicOrigin: { title: { translationStatus: "machine", translatedAt: "2026-08-01" } },
+  });
+  assert.equal(p.arabicWording.title.display, "ai_suggested");
 });
 
-test("the English side of Arabic wording provenance is judged on the English field itself, not the Arabic confirmation flag", () => {
-  const p = buildListingPresentation(BASE, "en", { arabicConfirmedThisSession: true });
-  assert.equal(p.arabicWording.title.provenance, "lister_supplied", "English title is lister-typed English, not AI output");
+test("review sets reviewed_this_session and never rewrites origin to lister_supplied", () => {
+  const p = buildListingPresentation(BASE, "ar", { arabicReviewed: { title: true } });
+  assert.equal(p.arabicWording.title.display, "reviewed_this_session");
+});
+
+test("a session-observed direct edit is the only path to a real lister_supplied origin", () => {
+  const p = buildListingPresentation(BASE, "ar", {
+    arabicOrigin: { title: { editedThisSession: true } },
+  });
+  assert.equal(p.arabicWording.title.display, "lister_supplied");
+});
+
+test("the English side of Arabic wording display is judged on the English field itself, always lister_supplied when present", () => {
+  const p = buildListingPresentation(BASE, "en", { arabicReviewed: { title: true } });
+  assert.equal(p.arabicWording.title.display, "lister_supplied", "English title is lister-typed English, not AI output, regardless of the Arabic review flag");
 });
 
 test("contact, video and ad permit fields pass through unmodified, since they are not subject to any figure logic", () => {
