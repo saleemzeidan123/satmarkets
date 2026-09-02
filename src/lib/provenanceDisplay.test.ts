@@ -4,17 +4,21 @@ import {
   fromProvenanceTier,
   notConfirmed,
   arabicWordingOrigin,
-  arabicWordingDisplay,
+  arabicWordingFacts,
   displayProvenanceLabel,
   displayProvenanceAria,
-  arabicWordingDisplayLabel,
-  arabicWordingDisplayAria,
+  arabicOriginLabel,
+  arabicOriginAria,
+  arabicReviewLabel,
+  arabicReviewAria,
   type DisplayProvenance,
-  type ArabicWordingDisplay,
+  type ArabicOrigin,
+  type ArabicReview,
 } from "./provenanceDisplay";
 
-const ALL: DisplayProvenance[] = ["lister_supplied", "platform_derived", "sat_verified", "ai_suggested", "not_confirmed"];
-const ALL_ARABIC: ArabicWordingDisplay[] = ["not_confirmed", "origin_unknown", "ai_suggested", "reviewed_this_session", "lister_supplied"];
+const ALL: DisplayProvenance[] = ["lister_supplied", "platform_derived", "sat_verified", "not_confirmed"];
+const ALL_ARABIC_ORIGIN: ArabicOrigin[] = ["lister_supplied", "ai_suggested", "origin_unknown"];
+const ALL_ARABIC_REVIEW: ArabicReview[] = ["unreviewed", "reviewed_this_session"];
 
 test("entered maps to lister_supplied", () => {
   assert.equal(fromProvenanceTier("entered"), "lister_supplied");
@@ -52,8 +56,13 @@ test("the platform_derived label never says bare 'retrieved': a computed value w
   assert.ok(arText.length > 0);
 });
 
-test("no sixth category exists anywhere the switch cannot reach", () => {
-  assert.equal(ALL.length, 5);
+test("no fifth category exists anywhere the switch cannot reach", () => {
+  // Codex review of 8b9f72d: ai_suggested was removed from this vocabulary
+  // entirely, because nothing in this module could ever produce it here
+  // (only the Arabic-specific ArabicOrigin vocabulary below can); it was
+  // dead, unreachable code, confirmed by grep before removal.
+  assert.equal(ALL.length, 4);
+  assert.ok(!ALL.includes("ai_suggested" as DisplayProvenance));
 });
 
 test("notConfirmed() is the not_confirmed category", () => {
@@ -99,78 +108,117 @@ test("sat_verified is the only DisplayProvenance category naming SAT as having c
 });
 
 // ---------------------------------------------------------------------------
-// Arabic wording origin and review, corrected under Codex review of 922780d
+// Arabic wording origin and review, corrected across two Codex review rounds
+// (922780d, then 8b9f72d). See provenanceDisplay.ts's own header for the
+// full account of both defects; the tests below are organised by the
+// regression coverage the second round required explicitly.
 // ---------------------------------------------------------------------------
 
-test("an absent field is not_confirmed regardless of any context", () => {
-  assert.equal(arabicWordingDisplay({ value: null }, {}), "not_confirmed");
-  assert.equal(arabicWordingDisplay({ value: "" }, { editedThisSession: true, reviewedThisSession: true }), "not_confirmed");
+test("arabicWordingOrigin with no session-observed signal at all is origin_unknown", () => {
+  assert.equal(arabicWordingOrigin(), "origin_unknown");
+  assert.equal(arabicWordingOrigin(null), "origin_unknown");
+  assert.equal(arabicWordingOrigin({}), "origin_unknown");
 });
 
-test("present Arabic with no origin evidence at all is origin_unknown, never ai_suggested by default", () => {
-  // The corrected default: the previous version defaulted every unconfirmed
-  // present field to ai_suggested, which overclaimed the same way
-  // lister_supplied would have, just in the other direction. With no
-  // evidence either way, the honest reading is that origin is not recorded.
-  assert.equal(arabicWordingOrigin({ value: "مكتب في حي العليا" }, {}), "origin_unknown");
-  assert.equal(arabicWordingDisplay({ value: "مكتب في حي العليا" }, {}), "origin_unknown");
+test("arabicWordingOrigin: a session-observed direct edit is lister_supplied", () => {
+  assert.equal(arabicWordingOrigin({ editedThisSession: true }), "lister_supplied");
 });
 
-test("ai_suggested requires a real machine-translation record: both a status of machine and a timestamp", () => {
-  const field = { value: "مكتب في حي العليا", english: "Office in Olaya" };
-  assert.equal(arabicWordingOrigin(field, { translationStatus: "machine", translatedAt: "2026-01-01" }), "ai_suggested");
-  // Missing translatedAt: not a real record.
-  assert.equal(arabicWordingOrigin(field, { translationStatus: "machine", translatedAt: null }), "origin_unknown");
-  // Status is not "machine": no record of a machine translation.
-  assert.equal(arabicWordingOrigin(field, { translationStatus: "pending", translatedAt: "2026-01-01" }), "origin_unknown");
-  // Deliberately NOT gated on hash currency: a hash mismatch means the
-  // Arabic may be stale relative to newer English (arabicIsBehind's own
-  // concern), not that the record of who produced the current text stopped
-  // being true, so a "stale" field with a real machine-translation record
-  // still reads ai_suggested.
+test("arabicWordingOrigin: a session-observed, unedited translate output is ai_suggested", () => {
+  assert.equal(arabicWordingOrigin({ translatedThisSessionUnedited: true }), "ai_suggested");
 });
 
-test("only a session-observed direct edit produces lister_supplied, and it overrides everything else", () => {
+test("arabicWordingOrigin: a session-observed edit outranks a session-observed translation", () => {
+  // Both true is the in-session version of "translated, then hand-edited
+  // afterward": the edit is the more specific, more current claim.
+  assert.equal(arabicWordingOrigin({ editedThisSession: true, translatedThisSessionUnedited: true }), "lister_supplied");
+});
+
+test("regression (a): a field this session neither edited nor watched being translated is origin_unknown, never inferred from durable metadata", () => {
+  // Codex review of 8b9f72d item 1's exact scenario: a lister translates,
+  // hand-edits the Arabic afterward, then reloads. On reload this is a fresh
+  // session, so neither editedThisSession nor translatedThisSessionUnedited
+  // can be true (both are session-only, by construction: see
+  // ArabicOriginContext's own header), regardless of what
+  // listings.ar_translation_status / ar_translated_at still say on the row.
+  // arabicWordingOrigin's signature does not even accept those two columns
+  // any more, so there is no path left for this file to compile a call that
+  // infers origin from them.
+  const freshSessionCtx = {};
+  assert.equal(arabicWordingOrigin(freshSessionCtx), "origin_unknown");
   const field = { value: "مكتب في حي العليا", english: "Office in Olaya", srcHash: "h1", englishHash: "h1" };
-  assert.equal(arabicWordingOrigin(field, { editedThisSession: true }), "lister_supplied");
-  // Even alongside a real machine-translation record, a session-observed
-  // direct edit is the stronger, more specific claim and wins.
-  assert.equal(arabicWordingOrigin(field, { translationStatus: "machine", translatedAt: "2026-01-01", editedThisSession: true }), "lister_supplied");
+  assert.equal(arabicWordingFacts(field, freshSessionCtx).origin, "origin_unknown");
 });
 
-test("review sets a distinct display value and never rewrites origin", () => {
-  const aiField = { value: "مكتب في حي العليا", english: "Office in Olaya", srcHash: "h1", englishHash: "h1" };
-  const ctx = { translationStatus: "machine", translatedAt: "2026-01-01" };
-  assert.equal(arabicWordingDisplay(aiField, ctx), "ai_suggested");
-  assert.equal(arabicWordingDisplay(aiField, { ...ctx, reviewedThisSession: true }), "reviewed_this_session");
-  // origin_unknown promotes the same way.
-  const unknownField = { value: "مكتب في حي العليا", english: "Office in Olaya" };
-  assert.equal(arabicWordingDisplay(unknownField, {}), "origin_unknown");
-  assert.equal(arabicWordingDisplay(unknownField, { reviewedThisSession: true }), "reviewed_this_session");
-  // A genuinely lister_supplied origin is not relabelled by review; it was
-  // already the strongest claim this module can make.
-  const editedField = { value: "مكتب في حي العليا", english: "Office in Olaya" };
-  assert.equal(arabicWordingDisplay(editedField, { editedThisSession: true, reviewedThisSession: true }), "lister_supplied");
+test("arabicWordingFacts: an absent field is origin null regardless of context, even a session-observed edit", () => {
+  // A category error, not an unknown origin (see ArabicWordingFacts's own
+  // header): there is no wording here to have an origin. Checked even
+  // against editedThisSession: true, because arabicState's own absence
+  // check runs first and is not overridden by any context.
+  assert.equal(arabicWordingFacts({ value: null }, {}).origin, null);
+  assert.equal(arabicWordingFacts({ value: "" }, { editedThisSession: true }).origin, null);
 });
 
-test("sat_verified is deliberately not a reachable ArabicWordingDisplay value", () => {
-  // Nothing in this codebase verifies Arabic WORDING specifically; including
-  // an unreachable value would be exactly the kind of dead, misleading code
-  // this package's own review already found once.
-  assert.ok(!ALL_ARABIC.includes("sat_verified" as ArabicWordingDisplay));
+test("arabicWordingFacts: present Arabic with no origin evidence at all is origin_unknown, never ai_suggested by default", () => {
+  const field = { value: "مكتب في حي العليا" };
+  assert.equal(arabicWordingFacts(field, {}).origin, "origin_unknown");
 });
 
-test("every ArabicWordingDisplay value has a non-empty EN and AR label and aria, distinct EN vs AR, no em dash", () => {
+test("regression (b): review confirmation never rewrites origin, in either direction", () => {
+  // Codex review of 8b9f72d item 2, the exact required scenario. Checked for
+  // all three origins: a real lister_supplied edit, a real session-observed
+  // translation, and the honest origin_unknown default. In every case,
+  // adding reviewedThisSession: true changes review and leaves origin
+  // byte-for-byte the value it already was.
+  const field = { value: "مكتب في حي العليا", english: "Office in Olaya", srcHash: "h1", englishHash: "h1" };
+
+  const edited = arabicWordingFacts(field, { editedThisSession: true, reviewedThisSession: true });
+  assert.equal(edited.origin, "lister_supplied");
+  assert.equal(edited.review, "reviewed_this_session");
+
+  const translated = arabicWordingFacts(field, { translatedThisSessionUnedited: true, reviewedThisSession: true });
+  assert.equal(translated.origin, "ai_suggested");
+  assert.equal(translated.review, "reviewed_this_session");
+
+  const unknown = arabicWordingFacts(field, { reviewedThisSession: true });
+  assert.equal(unknown.origin, "origin_unknown");
+  assert.equal(unknown.review, "reviewed_this_session");
+});
+
+test("review defaults to unreviewed and is never inferred from origin", () => {
+  const field = { value: "مكتب في حي العليا" };
+  assert.equal(arabicWordingFacts(field, { editedThisSession: true }).review, "unreviewed");
+  assert.equal(arabicWordingFacts(field, {}).review, "unreviewed");
+});
+
+test("every ArabicOrigin value has a non-empty EN and AR label and aria, distinct EN vs AR, no em dash", () => {
   const EM_DASH = String.fromCharCode(0x2014);
-  for (const v of ALL_ARABIC) {
-    const enLabel = arabicWordingDisplayLabel(v, false);
-    const arLabel = arabicWordingDisplayLabel(v, true);
+  for (const v of ALL_ARABIC_ORIGIN) {
+    const enLabel = arabicOriginLabel(v, false);
+    const arLabel = arabicOriginLabel(v, true);
     assert.ok(enLabel.length > 0 && arLabel.length > 0, `${v} missing a label`);
     assert.notEqual(enLabel, arLabel);
     assert.ok(!enLabel.includes(EM_DASH));
     assert.ok(!arLabel.includes(EM_DASH));
-    const enAria = arabicWordingDisplayAria(v, false);
-    const arAria = arabicWordingDisplayAria(v, true);
+    const enAria = arabicOriginAria(v, false);
+    const arAria = arabicOriginAria(v, true);
+    assert.ok(enAria.length > 0 && arAria.length > 0, `${v} missing an aria description`);
+    assert.ok(!enAria.includes(EM_DASH));
+    assert.ok(!arAria.includes(EM_DASH));
+  }
+});
+
+test("every ArabicReview value has a non-empty EN and AR label and aria, distinct EN vs AR, no em dash", () => {
+  const EM_DASH = String.fromCharCode(0x2014);
+  for (const v of ALL_ARABIC_REVIEW) {
+    const enLabel = arabicReviewLabel(v, false);
+    const arLabel = arabicReviewLabel(v, true);
+    assert.ok(enLabel.length > 0 && arLabel.length > 0, `${v} missing a label`);
+    assert.notEqual(enLabel, arLabel);
+    assert.ok(!enLabel.includes(EM_DASH));
+    assert.ok(!arLabel.includes(EM_DASH));
+    const enAria = arabicReviewAria(v, false);
+    const arAria = arabicReviewAria(v, true);
     assert.ok(enAria.length > 0 && arAria.length > 0, `${v} missing an aria description`);
     assert.ok(!enAria.includes(EM_DASH));
     assert.ok(!arAria.includes(EM_DASH));
@@ -178,8 +226,8 @@ test("every ArabicWordingDisplay value has a non-empty EN and AR label and aria,
 });
 
 test("reviewed_this_session's aria discloses that the review is not saved", () => {
-  const en = arabicWordingDisplayAria("reviewed_this_session", false);
-  const arText = arabicWordingDisplayAria("reviewed_this_session", true);
+  const en = arabicReviewAria("reviewed_this_session", false);
+  const arText = arabicReviewAria("reviewed_this_session", true);
   assert.doesNotMatch(en, /rega/i);
   assert.match(en, /not saved|will not survive/i, `aria does not disclose the review is session-only: ${en}`);
   assert.ok(arText.length > 0);

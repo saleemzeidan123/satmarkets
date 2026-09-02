@@ -32,7 +32,7 @@ import {
 } from "@/lib/listingStudio";
 import { evidenceMission, evidenceSummary, evidenceRequirementLabel, evidenceFulfilmentLabel, type EvidenceItem } from "@/lib/guidedEvidence";
 import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
-import { arabicWordingDisplayLabel, type ArabicOriginContext } from "@/lib/provenanceDisplay";
+import { arabicOriginLabel, arabicReviewLabel, type ArabicOriginContext } from "@/lib/provenanceDisplay";
 import { checkFileType, checkFileSize, checkDecodable, checkMinDimensions, readOrientationHint, findDuplicates } from "@/lib/uploadQuality";
 
 // The Listing Studio, the surface ADV-2 is built to produce.
@@ -118,11 +118,6 @@ export type StudioInitial = {
   // asset is shown by, and that question needs the recorded type, not the count.
   floorplan_types: (string | null)[];
   document_count: number;
-  // Real, row-level evidence of Arabic origin (see provenanceDisplay.ts).
-  // Listing-level, not per-field. Null on a listing that has never been
-  // through the translate endpoint.
-  ar_translation_status: string | null;
-  ar_translated_at: string | null;
 };
 
 type FormFields = {
@@ -177,10 +172,6 @@ function seedFrom(initial: StudioInitial | null | undefined) {
       floorplans: initial?.floorplan_count ?? 0,
       planTypes: (initial?.floorplan_types ?? []) as (string | null)[],
       documents: initial?.document_count ?? 0,
-    },
-    arabicOriginRecord: {
-      translationStatus: initial?.ar_translation_status ?? null,
-      translatedAt: initial?.ar_translated_at ?? null,
     },
   };
 }
@@ -300,6 +291,15 @@ export default function ListingStudio({
   // verify (see arabicWordingOrigin in provenanceDisplay.ts).
   const [arabicTitleEditedThisSession, setArabicTitleEditedThisSession] = useState(false);
   const [arabicDescriptionEditedThisSession, setArabicDescriptionEditedThisSession] = useState(false);
+  // Real, session-observed translation evidence: true only from the instant
+  // this session's own save() reads back a translate() response that
+  // confirms it wrote this exact field, and false again the moment the
+  // lister edits the field afterward (provenanceDisplay.ts's own docs). Never
+  // set from listings.ar_translation_status / ar_translated_at: those prove
+  // a translation happened at some point, never that the field still holds
+  // that output now (Codex review of 8b9f72d item 1).
+  const [arabicTitleTranslatedThisSessionUnedited, setArabicTitleTranslatedThisSessionUnedited] = useState(false);
+  const [arabicDescriptionTranslatedThisSessionUnedited, setArabicDescriptionTranslatedThisSessionUnedited] = useState(false);
   // PKG-LISTING-CREATION-1A. Deterministic, explainable, decided in the
   // browser before a byte reaches the network. Never blocks by itself (a
   // rejected file is simply not added to the queue, with a stated reason);
@@ -457,7 +457,10 @@ export default function ListingStudio({
   // cannot (see docs/pkg-listing-creation-1a-deferred-contracts.md).
   const evidenceItems: EvidenceItem[] = useMemo(() => evidenceMission({
     assetType: f.asset_type,
-    hasAnyPhoto: (stored.photos + photoUrls.length + files.length) > 0,
+    // The Studio always knows its own photo count exactly (server-confirmed
+    // stored count, plus pasted links and freshly selected files); there is
+    // no query here that can fail, so "unknown" never applies client-side.
+    photoInventory: (stored.photos + photoUrls.length + files.length) > 0 ? "present" : "empty",
     attributes: attrs,
     unavailable: unavailableItems,
   }), [f.asset_type, stored.photos, photoUrls.length, files.length, attrs, unavailableItems]);
@@ -616,7 +619,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="title_ar">{t("Arabic title", "العنوان بالعربية")}</label>
-            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => { setArabicTitleEditedThisSession(true); set("title_ar", e.target.value); }} className={inp} />
+            <input id="title_ar" dir="rtl" value={f.title_ar} onChange={(e) => { setArabicTitleEditedThisSession(true); setArabicTitleTranslatedThisSessionUnedited(false); set("title_ar", e.target.value); }} className={inp} />
             <p className={help}>{t("Leave this empty and SAT drafts it from the English, marked as a translation.", "اتركه فارغاً لتصوغه سات من الإنجليزية، ويظهر بوصفه ترجمة.")}</p>
           </div>
         );
@@ -632,7 +635,7 @@ export default function ListingStudio({
         return (
           <div key={key}>
             <label className={lbl} htmlFor="description_ar">{t("Arabic description", "الوصف بالعربية")}</label>
-            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => { setArabicDescriptionEditedThisSession(true); set("description_ar", e.target.value); }} className={inp} />
+            <textarea id="description_ar" dir="rtl" rows={4} value={f.description_ar} onChange={(e) => { setArabicDescriptionEditedThisSession(true); setArabicDescriptionTranslatedThisSessionUnedited(false); set("description_ar", e.target.value); }} className={inp} />
           </div>
         );
       case "area_sqm":
@@ -956,8 +959,14 @@ export default function ListingStudio({
 
   function preview(l: "en" | "ar") {
     const isAr = l === "ar";
-    const titleCtx: ArabicOriginContext = { ...seed.arabicOriginRecord, editedThisSession: arabicTitleEditedThisSession };
-    const descriptionCtx: ArabicOriginContext = { ...seed.arabicOriginRecord, editedThisSession: arabicDescriptionEditedThisSession };
+    const titleCtx: ArabicOriginContext = {
+      editedThisSession: arabicTitleEditedThisSession,
+      translatedThisSessionUnedited: arabicTitleTranslatedThisSessionUnedited,
+    };
+    const descriptionCtx: ArabicOriginContext = {
+      editedThisSession: arabicDescriptionEditedThisSession,
+      translatedThisSessionUnedited: arabicDescriptionTranslatedThisSessionUnedited,
+    };
     const p = buildListingPresentation(draftInputFromState(), l, {
       arabicOrigin: { title: titleCtx, description: descriptionCtx },
       arabicReviewed: { title: titleReviewedThisSession, description: descriptionReviewedThisSession },
@@ -968,9 +977,15 @@ export default function ListingStudio({
         <div className="font-display text-lg text-charcoal">
           {p.title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </div>
-        {isAr && p.title && (
+        {/* Origin and review are two independent facts (Codex review of
+            8b9f72d item 2): confirming review never rewrites or hides origin,
+            so both always render together. Gated on origin being non-null
+            rather than on p.title, because p.title can be a description-
+            derived fallback (listingTitle.ts) even when there is no Arabic
+            title at all, which origin:null already says honestly. */}
+        {isAr && p.arabicWording.title.origin && (
           <p className="text-[0.6875rem] text-charcoal/70 mt-1">
-            {arabicWordingDisplayLabel(p.arabicWording.title.display, true)}
+            {arabicOriginLabel(p.arabicWording.title.origin, true)} · {arabicReviewLabel(p.arabicWording.title.review, true)}
           </p>
         )}
         <div className="text-[0.8125rem] text-charcoal/70 mt-1">
@@ -982,9 +997,9 @@ export default function ListingStudio({
           </div>
         )}
         {p.descriptionText && <p className="text-[0.8125rem] text-charcoal/70 mt-2 whitespace-pre-line">{p.descriptionText}</p>}
-        {isAr && p.descriptionText && (
+        {isAr && p.arabicWording.description.origin && (
           <p className="text-[0.6875rem] text-charcoal/70 mt-1">
-            {arabicWordingDisplayLabel(p.arabicWording.description.display, true)}
+            {arabicOriginLabel(p.arabicWording.description.origin, true)} · {arabicReviewLabel(p.arabicWording.description.review, true)}
           </p>
         )}
       </div>
@@ -1092,9 +1107,45 @@ export default function ListingStudio({
     }
     // Arabic the lister wrote is already stamped as current by the write path, so
     // this fills only what was left empty and never overwrites their words.
-    try {
-      fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) });
-    } catch {}
+    // The response is read, not discarded, so the Studio can record real,
+    // session-observed evidence for whichever field this call actually
+    // wrote: per Codex review of 8b9f72d item 1, ar_translation_status and
+    // ar_translated_at only prove some translation happened at some point,
+    // never that the field still holds that exact output now, so the only
+    // honest "AI suggested" claim is one this session watched happen and
+    // that still matches the field. Not awaited inline, so the save itself
+    // still finishes and reports success without waiting on a translation
+    // call, same as before this change; the state update below just lands a
+    // moment later. Guarded against the lister starting to type their own
+    // Arabic in the gap between this request firing and its response
+    // arriving: their text always wins, and the origin flag is set only
+    // when the translated text was actually applied.
+    fetch(`/api/listings/${id}/translate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tier: "fast" }) })
+      .then((r) => r.json())
+      .then((tr: { status?: string; title_ar?: string | null; description_ar?: string | null }) => {
+        if (tr.status !== "translated") return;
+        if (typeof tr.title_ar === "string") {
+          const translated = tr.title_ar;
+          let applied = false;
+          setF((p) => {
+            if (p.title_ar !== "") return p;
+            applied = true;
+            return { ...p, title_ar: translated };
+          });
+          if (applied) setArabicTitleTranslatedThisSessionUnedited(true);
+        }
+        if (typeof tr.description_ar === "string") {
+          const translated = tr.description_ar;
+          let applied = false;
+          setF((p) => {
+            if (p.description_ar !== "") return p;
+            applied = true;
+            return { ...p, description_ar: translated };
+          });
+          if (applied) setArabicDescriptionTranslatedThisSessionUnedited(true);
+        }
+      })
+      .catch(() => {});
 
     // PKG-LISTING-CREATION-1A. Files chosen on this visit, uploaded one at a
     // time. This used to clear every file array unconditionally once the

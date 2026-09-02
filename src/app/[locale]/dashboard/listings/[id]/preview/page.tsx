@@ -32,13 +32,23 @@ export const dynamic = "force-dynamic";
 // column-backed asset fields (verified by grep against assetFields.ts:
 // asking_rent_sqm, building_grade, civil_defense_approved, clear_height_m,
 // fitout_condition, loading_docks, parking_ratio, power_kva, sale_price),
-// and the two Arabic-origin columns ar_translation_status/ar_translated_at.
-// A column missing from this list surfaces as an empty field, verifiably, at
-// typecheck and in the live preview, not as a silent wrong value.
+// and (Codex review of 8b9f72d item 6) the five commercial-terms columns
+// listingTermsRows.ts needs beyond the service_charge_sqm/sale_price_sqm
+// already listed below: lease_term_months, rent_free_months,
+// fitout_contribution, break_option_months, vat_treatment. A column missing
+// from this list surfaces as an empty field, verifiably, at typecheck and in
+// the live preview, not as a silent wrong value.
+//
+// ar_translation_status and ar_translated_at were dropped from this list
+// under the same review, item 1: this route has no session to have observed
+// a translation happen in, so it can never claim ai_suggested regardless of
+// what these two columns say, and reading them here to reach for a claim
+// they cannot support was exactly the defect that review found.
 const PREVIEW_COLUMNS = [
   "id", "status", "account_id", "asset_type", "deal_type",
   "title_en", "title_ar", "description_en", "description_ar", "reference_code",
   "area_sqm", "asking_rent_sqm", "sale_price", "sale_price_sqm", "service_charge_sqm",
+  "lease_term_months", "rent_free_months", "fitout_contribution", "break_option_months", "vat_treatment",
   "building_grade", "fitout_condition", "clear_height_m", "loading_docks", "power_kva",
   "parking_ratio", "civil_defense_approved",
   "attributes", "district_id",
@@ -47,7 +57,6 @@ const PREVIEW_COLUMNS = [
   "ownership_verified", "authorization_verified", "verified_at", "verified_by", "verification_method",
   "lister_type", "is_demo", "is_operator", "is_verified",
   "availability_confirmed_at",
-  "ar_translation_status", "ar_translated_at",
 ].join(",");
 
 export default async function DraftPreviewPage(props: { params: Promise<{ locale: string; id: string }> }) {
@@ -72,10 +81,18 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
     );
   }
 
+  // Codex review of 8b9f72d item 3. The account constraint now sits inside
+  // the query itself, not only in the application-level check two lines
+  // below: a row belonging to a different account is not merely rejected
+  // after being fetched, it is never fetched. The application-level check
+  // stays as a second, independent boundary rather than being removed, so
+  // one query that forgot the .eq() (or a future refactor that drops it)
+  // does not, by itself, expose another account's draft.
   const { data: row, error: listingError } = await sb
     .from("listings")
     .select(`${PREVIEW_COLUMNS},districts(name_en,name_ar,city)`)
     .eq("id", params.id)
+    .eq("account_id", su.accountId)
     .maybeSingle();
   if (listingError) {
     return (
@@ -85,13 +102,20 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
     );
   }
   if (!row) notFound();
-  // The select() argument is assembled from PREVIEW_COLUMNS at runtime, not a
-  // literal, so the client's clever per-column return-type inference cannot
-  // parse it and falls back to an error-shaped generic; the row's real shape
-  // is exactly the explicit PREVIEW_COLUMNS list above, checked by the
-  // fields actually read out of it below, not by this cast.
+  // Codex review of 8b9f72d item 8. This is an unchecked assertion, not a
+  // verified one, and the previous version of this comment overstated what
+  // it does: nothing here, at typecheck or at runtime, actually confirms
+  // that PREVIEW_COLUMNS above and the fields read out of L below stay in
+  // sync. The select() argument is assembled from PREVIEW_COLUMNS at
+  // runtime, not a literal, so the client's per-column return-type inference
+  // cannot parse it and falls back to an error-shaped generic type, which is
+  // why this cast exists at all; correctness rests entirely on this file's
+  // own author keeping the two lists matched by hand. A column present in
+  // PREVIEW_COLUMNS but never read below is harmless; a column read below
+  // but missing from PREVIEW_COLUMNS surfaces as `undefined` silently, not
+  // as an error, at either typecheck or runtime.
   const L = row as unknown as Record<string, unknown>;
-  if (L.account_id !== su.accountId) notFound(); // not the caller's own listing: do not confirm it exists
+  if (L.account_id !== su.accountId) notFound(); // second boundary: see the query comment above
 
   const districtsRaw = L.districts as { name_en?: string | null; name_ar?: string | null; city?: string | null } | { name_en?: string | null; name_ar?: string | null; city?: string | null }[] | null;
   const district = Array.isArray(districtsRaw) ? (districtsRaw[0] ?? null) : districtsRaw;
@@ -124,6 +148,15 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
     }
   }
   const mediaState: "ok" | "query_failed" = mediaError ? "query_failed" : "ok";
+  // Codex review of 8b9f72d item 4. Driven by the raw row count
+  // (photoRows), never by how many signed URLs happened to succeed
+  // (photos.length): a row that exists but whose signed URL failed is still
+  // a real photo, disclosed above via unloadedPhotoCount, not a reason to
+  // read this draft as having none. "unknown" only when the query itself
+  // failed, which is the one case this route genuinely cannot answer either
+  // way.
+  const photoInventory: "present" | "empty" | "unknown" =
+    mediaError ? "unknown" : (photoRows ?? []).length > 0 ? "present" : "empty";
 
   const isSale = L.deal_type === "sale";
   const price = isSale ? L.sale_price : L.asking_rent_sqm;
@@ -135,34 +168,23 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
 
   const account = filingAccountOf(L as { lister_type?: string | null; is_operator?: boolean | null; is_verified?: boolean | null; is_demo?: boolean | null });
 
-  // Real, row-level evidence of Arabic origin. Listing-level (not per-field;
-  // see provenanceDisplay.ts's own header), and this server route has no
-  // session to observe a direct edit in, so `editedThisSession` is never set
-  // here: a fresh load can only ever read what the row itself records.
-  const arabicOriginCtx = {
-    translationStatus: (L.ar_translation_status as string | null) ?? null,
-    translatedAt: (L.ar_translated_at as string | null) ?? null,
-  };
-
-  const enPresentation = buildListingPresentation(draftInput, "en", {
-    account,
-    arabicOrigin: { title: arabicOriginCtx, description: arabicOriginCtx },
-  });
-  const arPresentation = buildListingPresentation(draftInput, "ar", {
-    account,
-    arabicOrigin: { title: arabicOriginCtx, description: arabicOriginCtx },
-  });
+  // Codex review of 8b9f72d item 1. This server route has no session, so it
+  // never observed a lister type into a field or a translate call's exact
+  // output; the only honest arabicOrigin evidence it could ever supply is
+  // none, which is exactly what omitting the opt below already produces
+  // (arabicWordingOrigin's default is origin_unknown). Passing anything
+  // built from listings.ar_translation_status / ar_translated_at here would
+  // be inferring current-field authorship from listing-level, imprecise
+  // metadata, the exact defect that review found.
+  const enPresentation = buildListingPresentation(draftInput, "en", { account });
+  const arPresentation = buildListingPresentation(draftInput, "ar", { account });
 
   // The mission needs per-shot photo coverage, which this route does not have
-  // (listing_media carries no shot key). A query failure and a genuinely
-  // empty draft must not read the same: `hasAnyPhoto: true` on a failed query
-  // is not a claim that a photo exists, it is what forces evidenceMission's
-  // existing, honest "unknown coverage" branch (see guidedEvidence.ts) rather
-  // than the "zero photos, definitely missing" branch a real empty draft
-  // correctly reaches.
+  // (listing_media carries no shot key), so photo-kind items resolve on
+  // whether any photo exists at all rather than per-category coverage.
   const items = evidenceMission({
     assetType: String(L.asset_type ?? ""),
-    hasAnyPhoto: mediaState === "query_failed" ? true : photos.length > 0,
+    photoInventory,
     attributes: (L.attributes as Record<string, unknown> | null) ?? {},
   });
 
@@ -171,13 +193,22 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
   // listingEvidenceByField nor the passport builder reads `status` anywhere,
   // and a listing passport is never tier "sourced", so no public market or
   // REGA-attributed figure can be attached to a lister's own draft value).
-  const geography = [enPresentation.place, enPresentation.city].filter(Boolean).join(", ");
-  const evidenceMap = listingEvidenceByField(L as unknown as Parameters<typeof listingEvidenceByField>[0], {
-    locale: lp,
-    account,
-    geography,
-  });
-  const evidence = Object.fromEntries(evidenceMap);
+  //
+  // Codex review of 8b9f72d item 5. Built once per locale, not once at this
+  // request's initial locale: a passport's wording and the geography it
+  // cites (place, city) are locale text, and DraftPreview's EN/AR toggle is
+  // client-side with no round trip back to this route, so a single map built
+  // here would silently keep stale-language evidence text on screen after
+  // the reader switched languages. listingEvidenceByField never reads which
+  // UI locale is active, only the `locale` and `geography` it is told, so
+  // two real, independent calls are what a genuine per-locale answer needs.
+  const geographyEn = [enPresentation.place, enPresentation.city].filter(Boolean).join(", ");
+  const geographyAr = [arPresentation.place, arPresentation.city].filter(Boolean).join(", ");
+  const evidenceRow = L as unknown as Parameters<typeof listingEvidenceByField>[0];
+  const evidence = {
+    en: Object.fromEntries(listingEvidenceByField(evidenceRow, { locale: "en", account, geography: geographyEn })),
+    ar: Object.fromEntries(listingEvidenceByField(evidenceRow, { locale: "ar", account, geography: geographyAr })),
+  };
 
   const listingData: DraftPreviewListingData = {
     id: String(L.id),

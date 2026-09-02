@@ -90,6 +90,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const update: Record<string, unknown> = {};
   let model = "";
   let touched = false;
+  // Returned to the caller below, alongside `fields`, so a client that reads
+  // its own response (rather than firing and forgetting it, as the write
+  // path's comment already notes callers must not overwrite lister-authored
+  // Arabic) can hold real, session-observed evidence of exactly what this
+  // call wrote, instead of only a listing-level "a translation happened at
+  // some point" flag. See ListingStudio.tsx's save() and provenanceDisplay.ts.
+  let translatedTitleAr: string | null = null;
+  let translatedDescriptionAr: string | null = null;
 
   // ADV-3A.1. A REFUSAL IS ANSWERED, NOT RECORDED AS A TRANSLATION.
   //
@@ -125,6 +133,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       update.title_ar_src_hash = r.srcHash;
       model = r.model;
       touched = true;
+      translatedTitleAr = r.arabic;
     }
   }
 
@@ -142,6 +151,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       update.description_ar_src_hash = r.srcHash;
       model = r.model;
       touched = true;
+      translatedDescriptionAr = r.arabic;
     }
   }
 
@@ -172,5 +182,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     );
   }
 
-  return NextResponse.json({ status: "translated", id, model, fields: Object.keys(update) });
+  return NextResponse.json({
+    status: "translated",
+    id,
+    model,
+    fields: Object.keys(update),
+    title_ar: translatedTitleAr,
+    description_ar: translatedDescriptionAr,
+  });
 }

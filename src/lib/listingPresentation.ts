@@ -1,7 +1,7 @@
 import { assetLabel, dealLabel, fitoutLabel, gradePhrase, cityLabel } from "@/lib/labels";
 import { listingTitle, listingPlace, type TitledListing, type Loc } from "@/lib/listingTitle";
 import { askingPrice, netArea, annualTotal, priceParts } from "@/lib/listingFigures";
-import { arabicState, type ArabicState } from "@/lib/listingArabic";
+import { arabicState, type ArabicState, type ArabicField } from "@/lib/listingArabic";
 import {
   filingAccountOf,
   listingDimensionState,
@@ -11,14 +11,17 @@ import {
   type FilingAccount,
 } from "@/lib/listingVerification";
 import type { VerificationDimension, VerificationState } from "@/lib/evidence";
-import { spaceAttributeRows, commercialAttributeRows, complianceRows } from "@/lib/attributeDisplay";
+import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
 import { fieldsFor } from "@/lib/assetFields";
+import { listingTermsRows, type TermsRow, type TermsRowSource } from "@/lib/listingTermsRows";
+import { getDictionary } from "@/i18n/getDictionary";
 import {
   fromProvenanceTier,
   notConfirmed,
-  arabicWordingDisplay,
+  arabicWordingFacts,
   type DisplayProvenance,
-  type ArabicWordingDisplay,
+  type ArabicOrigin,
+  type ArabicReview,
   type ArabicOriginContext,
 } from "@/lib/provenanceDisplay";
 
@@ -52,6 +55,13 @@ export interface DraftListingInput extends TitledListing, VerifiableListing {
   deal_type: string;
   area_sqm: unknown;
   price: unknown; // asking_rent_sqm or sale_price, whichever the deal type uses
+  service_charge_sqm?: number | string | null;
+  lease_term_months?: number | string | null;
+  rent_free_months?: number | string | null;
+  fitout_contribution?: number | string | null;
+  break_option_months?: number | string | null;
+  sale_price_sqm?: number | string | null;
+  vat_treatment?: string | null;
   description_en?: string | null;
   description_ar?: string | null;
   building_grade?: string | null;
@@ -86,8 +96,8 @@ export interface AttributeRow {
 }
 
 export interface ArabicWordingState {
-  title: { state: ArabicState; display: ArabicWordingDisplay };
-  description: { state: ArabicState; display: ArabicWordingDisplay };
+  title: { state: ArabicState; origin: ArabicOrigin | null; review: ArabicReview };
+  description: { state: ArabicState; origin: ArabicOrigin | null; review: ArabicReview };
 }
 
 export const PRESENTATION_MODEL_VERSION = 1;
@@ -121,7 +131,7 @@ export interface ListingPresentation {
   verifiedBadgeTexts: string[];
 
   spaceRows: AttributeRow[];
-  commercialRows: AttributeRow[];
+  termsRows: TermsRow[];
   complianceRows: AttributeRow[];
 
   contact: {
@@ -161,6 +171,25 @@ function withProvenance(
   });
 }
 
+/**
+ * English has no AI-generation path in this app, only EN-to-AR translation,
+ * so the English locale's provenance question is only ever "is there English
+ * text at all," never a real origin/review question the way the Arabic side
+ * is. Kept as its own function (rather than an inline ternary feeding a
+ * spread) so the object literal below is checked against its declared return
+ * type directly, instead of losing that contextual type across a spread and
+ * silently widening "unreviewed" to plain `string`.
+ */
+function arabicWordingForLocale(
+  ar: boolean,
+  field: ArabicField,
+  englishPresent: boolean,
+  ctx: ArabicOriginContext & { reviewedThisSession?: boolean },
+): { origin: ArabicOrigin | null; review: ArabicReview } {
+  if (ar) return arabicWordingFacts(field, ctx);
+  return { origin: englishPresent ? "lister_supplied" : null, review: "unreviewed" };
+}
+
 export function buildListingPresentation(
   l: DraftListingInput,
   locale: Loc,
@@ -174,6 +203,7 @@ export function buildListingPresentation(
   },
 ): ListingPresentation {
   const ar = locale === "ar";
+  const dict = getDictionary(locale);
   const now = opts?.now ?? Date.now();
   const account = opts?.account ?? filingAccountOf(l);
 
@@ -201,26 +231,46 @@ export function buildListingPresentation(
   const arabicWording: ArabicWordingState = {
     title: {
       state: arabicState({ value: l.title_ar, english: l.title_en }),
-      display: ar
-        ? arabicWordingDisplay(
-            { value: l.title_ar, english: l.title_en },
-            { ...opts?.arabicOrigin?.title, reviewedThisSession: opts?.arabicReviewed?.title ?? false },
-          )
-        : (l.title_en ? "lister_supplied" : "not_confirmed"),
+      ...arabicWordingForLocale(
+        ar,
+        { value: l.title_ar, english: l.title_en },
+        !!l.title_en,
+        { ...opts?.arabicOrigin?.title, reviewedThisSession: opts?.arabicReviewed?.title ?? false },
+      ),
     },
     description: {
       state: arabicState({ value: l.description_ar, english: l.description_en }),
-      display: ar
-        ? arabicWordingDisplay(
-            { value: l.description_ar, english: l.description_en },
-            { ...opts?.arabicOrigin?.description, reviewedThisSession: opts?.arabicReviewed?.description ?? false },
-          )
-        : (l.description_en ? "lister_supplied" : "not_confirmed"),
+      ...arabicWordingForLocale(
+        ar,
+        { value: l.description_ar, english: l.description_en },
+        !!l.description_en,
+        { ...opts?.arabicOrigin?.description, reviewedThisSession: opts?.arabicReviewed?.description ?? false },
+      ),
     },
   };
 
   const assetType = l.asset_type;
   const attrs = l.attributes ?? {};
+
+  // PKG-LISTING-CREATION-1A, Codex review of 8b9f72d item 6. `price` on
+  // DraftListingInput is already the asking_rent_sqm-or-sale_price union the
+  // rest of this module uses (see the field's own comment); it is a real
+  // sale price only when the deal itself is a sale, which is exactly the
+  // condition listingTermsRows needs to fall back to it.
+  const termsSource: TermsRowSource = {
+    deal_type: l.deal_type,
+    service_charge_sqm: l.service_charge_sqm,
+    lease_term_months: l.lease_term_months,
+    rent_free_months: l.rent_free_months,
+    fitout_contribution: l.fitout_contribution,
+    break_option_months: l.break_option_months,
+    sale_price_sqm: l.sale_price_sqm,
+    sale_price: lease ? null : (l.price as number | string | null),
+    area_sqm: l.area_sqm as number | string | null,
+    vat_treatment: l.vat_treatment,
+    asset_type: assetType,
+    attributes: attrs,
+  };
 
   return {
     modelVersion: PRESENTATION_MODEL_VERSION,
@@ -239,7 +289,7 @@ export function buildListingPresentation(
     verification,
     verifiedBadgeTexts: verifiedBadgeTexts(l, account, ar, now),
     spaceRows: withProvenance(spaceAttributeRows(assetType, attrs, ar), assetType, "space"),
-    commercialRows: withProvenance(commercialAttributeRows(assetType, attrs, ar), assetType, "commercial"),
+    termsRows: listingTermsRows(termsSource, dict, locale),
     complianceRows: withProvenance(complianceRows(assetType, l as unknown as Record<string, unknown>, ar), assetType, "compliance"),
     contact: {
       phone: l.contact_phone || null,

@@ -193,8 +193,19 @@ export interface EvidenceMissionInput {
    * module ever inferring it from a photo count.
    */
   photoShotsSupplied?: ReadonlySet<string>;
-  /** Whether ANY photograph has been supplied at all, with no claim about which shot it answers. */
-  hasAnyPhoto?: boolean;
+  /**
+   * The draft's photo inventory, with no claim about which shot any photo
+   * answers. Codex review of 8b9f72d: a boolean here invited exactly the
+   * defect it found, `hasAnyPhoto: true` used as a deliberate false value to
+   * force the "unknown" branch on a media-query failure. The real, honest
+   * signal has three states: "present" (real listing_media rows exist,
+   * whether or not a signed URL could be issued for them), "empty" (the
+   * query succeeded and returned zero rows, a genuine fact), and "unknown"
+   * (the query itself failed, or the caller has no basis to say either way).
+   * Omitted defaults to "empty" for backward compatibility with callers that
+   * have no photo signal to give at all.
+   */
+  photoInventory?: "present" | "empty" | "unknown";
   /** The draft's own attributes jsonb, to read whether a fact field is answered. */
   attributes?: Record<string, unknown>;
   /** Session-only lister declarations: item key to a reason string (may be empty). */
@@ -231,11 +242,12 @@ export function evidenceMission(input: EvidenceMissionInput): EvidenceItem[] {
       items.push(shotToItem(shot, requirement, input.photoShotsSupplied.has(shot.key) ? "supplied" : "awaiting_evidence"));
       continue;
     }
-    // No per-shot data. Zero photographs anywhere means every shot is
-    // genuinely, knowably unmet. Any photograph existing at all means this
-    // specific shot's coverage cannot be determined from a count, so it is
-    // reported as unknown, never as supplied.
-    const fulfilment: EvidenceFulfilment = input.hasAnyPhoto ? "unknown" : "awaiting_evidence";
+    // No per-shot data. A confirmed-empty inventory means every shot is
+    // genuinely, knowably unmet. Any photo existing ("present"), or the
+    // inventory itself being indeterminate ("unknown"), both mean this
+    // specific shot's coverage cannot be determined, so it is reported as
+    // unknown, never as supplied and never silently folded into "empty".
+    const fulfilment: EvidenceFulfilment = (input.photoInventory ?? "empty") === "empty" ? "awaiting_evidence" : "unknown";
     items.push(shotToItem(shot, requirement, fulfilment));
   }
 
@@ -338,7 +350,13 @@ export function evidenceSummary(items: readonly EvidenceItem[]): EvidenceSummary
 }
 
 const REQUIREMENT_LABEL: Record<EvidenceRequirement, [string, string]> = {
-  required_by_standard: ["Required by the SAT listing standard", "مطلوب وفق معايير سات للإعلان"],
+  // Codex review of 8b9f72d, with Fable's own read on the phrasing: "للإعلان"
+  // ("for the advertisement") shares a root with "رخصة الإعلان" (the
+  // advertising licence) already used elsewhere in this app, so it risked
+  // reading as that statutory requirement rather than SAT's own listing
+  // quality bar. "لجودة العرض" ("for the quality of the listing") names the
+  // quality bar directly and cannot be mistaken for a licence condition.
+  required_by_standard: ["Required by the SAT listing standard", "مطلوب وفق معيار سات لجودة العرض"],
   recommended: ["Recommended", "مُوصى به"],
   conditional: ["Depends on another answer", "يعتمد على إجابة أخرى"],
   not_applicable: ["Not applicable", "لا ينطبق"],

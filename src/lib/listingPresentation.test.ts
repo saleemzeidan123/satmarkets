@@ -90,17 +90,36 @@ test("a draft with a genuine, dated, actor-attributed check resolves that one di
   assert.equal(ownership?.state, "verified");
 });
 
-test("space, commercial and compliance rows are drawn from the real per-asset registry, each carrying a provenance tag", () => {
+test("space and compliance rows are drawn from the real per-asset registry, each carrying a provenance tag", () => {
   const p = buildListingPresentation(BASE, "en");
   assert.ok(p.spaceRows.length > 0, "office attributes with real values must produce space rows");
-  for (const row of [...p.spaceRows, ...p.commercialRows, ...p.complianceRows]) {
+  for (const row of [...p.spaceRows, ...p.complianceRows]) {
     assert.ok(row.label.length > 0);
     assert.ok(row.value.length > 0);
     assert.ok(
-      ["lister_supplied", "platform_derived", "sat_verified", "ai_suggested", "not_confirmed"].includes(row.provenance),
+      ["lister_supplied", "platform_derived", "sat_verified", "not_confirmed"].includes(row.provenance),
       `row "${row.label}" carries an unrecognised provenance category: ${row.provenance}`,
     );
   }
+});
+
+test("termsRows is listingTermsRows.ts's own output, wired through unmodified, evidence keys included", () => {
+  // Codex review of 8b9f72d item 6: this composer no longer computes its own
+  // registry-only commercialRows; it calls the exact function the public
+  // page also calls (listingTermsRows.ts), so the two surfaces cannot drift.
+  // The row-building logic itself (lease vs sale branching, price-per-sqm
+  // derivation, VAT wording) is listingTermsRows.test.ts's concern; this
+  // test only confirms the composer actually wires it in.
+  const withServiceCharge: DraftListingInput = { ...BASE, service_charge_sqm: 120 };
+  const p = buildListingPresentation(withServiceCharge, "en");
+  const row = p.termsRows.find((r) => r.evidenceKey === "service_charge_sqm");
+  assert.ok(row, "a lease listing with a stated service charge should produce a service_charge_sqm terms row");
+  assert.ok(row!.label.length > 0 && row!.value.length > 0);
+
+  const sale: DraftListingInput = { ...BASE, deal_type: "sale", price: 5_000_000, area_sqm: 1000, sale_price_sqm: null };
+  const salePresentation = buildListingPresentation(sale, "en");
+  const priceRow = salePresentation.termsRows.find((r) => r.evidenceKey === "sale_price_sqm");
+  assert.ok(priceRow, "a sale listing with a price and an area should derive a price-per-sqm terms row even with no stored sale_price_sqm column");
 });
 
 test("every space row's field is genuinely entered provenance, not verified or computed, on a freshly drafted listing", () => {
@@ -110,37 +129,62 @@ test("every space row's field is genuinely entered provenance, not verified or c
   assert.equal(floorLevel!.provenance, "lister_supplied");
 });
 
-test("Arabic wording with no origin evidence reads origin_unknown when present, and not_confirmed when absent", () => {
-  // Corrected under Codex review of 922780d: the previous default was
-  // ai_suggested, an unproven claim with no recorded event behind it.
+test("Arabic wording has no origin evidence by default: origin_unknown when present, null when absent", () => {
+  // Corrected across two Codex review rounds: neither an unproven
+  // ai_suggested default (round one, 922780d) nor an inference from
+  // listing-level ar_translation_status/ar_translated_at (round two,
+  // 8b9f72d item 1) is a real claim this composer can make with nothing
+  // session-observed to back it.
   const p = buildListingPresentation(BASE, "ar");
-  assert.equal(p.arabicWording.title.display, "origin_unknown");
-  assert.equal(p.arabicWording.description.display, "not_confirmed", "description_ar is null in the fixture");
+  assert.equal(p.arabicWording.title.origin, "origin_unknown");
+  assert.equal(p.arabicWording.title.review, "unreviewed");
+  assert.equal(p.arabicWording.description.origin, null, "description_ar is null in the fixture: a category error, not an unknown origin");
 });
 
-test("a real machine-translation record (status + timestamp) reads ai_suggested", () => {
-  const translated: DraftListingInput = { ...BASE };
-  const p = buildListingPresentation(translated, "ar", {
-    arabicOrigin: { title: { translationStatus: "machine", translatedAt: "2026-08-01" } },
+test("a session-observed, unedited translate output reads ai_suggested", () => {
+  const p = buildListingPresentation(BASE, "ar", {
+    arabicOrigin: { title: { translatedThisSessionUnedited: true } },
   });
-  assert.equal(p.arabicWording.title.display, "ai_suggested");
+  assert.equal(p.arabicWording.title.origin, "ai_suggested");
 });
 
-test("review sets reviewed_this_session and never rewrites origin to lister_supplied", () => {
-  const p = buildListingPresentation(BASE, "ar", { arabicReviewed: { title: true } });
-  assert.equal(p.arabicWording.title.display, "reviewed_this_session");
+test("regression (b): review sets reviewed_this_session and never rewrites origin, whatever the origin already was", () => {
+  const unknownOrigin = buildListingPresentation(BASE, "ar", { arabicReviewed: { title: true } });
+  assert.equal(unknownOrigin.arabicWording.title.origin, "origin_unknown");
+  assert.equal(unknownOrigin.arabicWording.title.review, "reviewed_this_session");
+
+  const editedOrigin = buildListingPresentation(BASE, "ar", {
+    arabicOrigin: { title: { editedThisSession: true } },
+    arabicReviewed: { title: true },
+  });
+  assert.equal(editedOrigin.arabicWording.title.origin, "lister_supplied", "review must not disturb a real lister_supplied origin");
+  assert.equal(editedOrigin.arabicWording.title.review, "reviewed_this_session");
 });
 
 test("a session-observed direct edit is the only path to a real lister_supplied origin", () => {
   const p = buildListingPresentation(BASE, "ar", {
     arabicOrigin: { title: { editedThisSession: true } },
   });
-  assert.equal(p.arabicWording.title.display, "lister_supplied");
+  assert.equal(p.arabicWording.title.origin, "lister_supplied");
 });
 
-test("the English side of Arabic wording display is judged on the English field itself, always lister_supplied when present", () => {
+test("regression (a): an omitted arabicOrigin opt (the fresh-session/reload case) reads origin_unknown, never ai_suggested", () => {
+  // DraftListingInput carries no ar_translation_status / ar_translated_at
+  // field at all any more, so there is nothing left for this composer to
+  // misread on a fresh load; omitting the opt is exactly what every
+  // standalone preview page load does (see preview/page.tsx), and it must
+  // never default toward ai_suggested.
+  const p = buildListingPresentation(BASE, "ar");
+  assert.equal(p.arabicWording.title.origin, "origin_unknown");
+});
+
+test("the English side of Arabic wording is judged on the English field itself: lister_supplied when present, null when absent, review never applies", () => {
   const p = buildListingPresentation(BASE, "en", { arabicReviewed: { title: true } });
-  assert.equal(p.arabicWording.title.display, "lister_supplied", "English title is lister-typed English, not AI output, regardless of the Arabic review flag");
+  assert.equal(p.arabicWording.title.origin, "lister_supplied", "English title is lister-typed English, not AI output, regardless of the Arabic review flag");
+  assert.equal(p.arabicWording.title.review, "unreviewed", "review is an Arabic-side concept; the English branch never reads the Arabic review flag");
+  const noEnTitle: DraftListingInput = { ...BASE, title_en: null };
+  const p2 = buildListingPresentation(noEnTitle, "en");
+  assert.equal(p2.arabicWording.title.origin, null);
 });
 
 test("contact, video and ad permit fields pass through unmodified, since they are not subject to any figure logic", () => {

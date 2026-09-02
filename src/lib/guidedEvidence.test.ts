@@ -48,33 +48,59 @@ test("with nothing supplied, every required photo shot and required field reads 
   }
 });
 
-test("a photo shot with no per-shot data and at least one photograph reads coverage unknown, never supplied", () => {
+test("a photo shot with no per-shot data and a present inventory reads coverage unknown, never supplied", () => {
   // This is the defect Codex's review found: the first version marked every
-  // shot "supplied" the moment any photograph existed. hasAnyPhoto alone can
-  // never prove a SPECIFIC shot was photographed, so it must never produce
-  // "supplied" for a photo item; "unknown" is the honest ceiling.
-  const items = evidenceMission({ assetType: "office", hasAnyPhoto: true });
+  // shot "supplied" the moment any photograph existed. photoInventory:
+  // "present" alone can never prove a SPECIFIC shot was photographed, so it
+  // must never produce "supplied" for a photo item; "unknown" is the honest
+  // ceiling.
+  const items = evidenceMission({ assetType: "office", photoInventory: "present" });
   const photoItems = items.filter((i) => i.kind === "photo");
   assert.ok(photoItems.length > 1, "test fixture assumption: office has more than one photo shot");
   for (const item of photoItems) {
-    assert.notEqual(item.fulfilment, "supplied", `${item.key} read supplied from hasAnyPhoto alone`);
+    assert.notEqual(item.fulfilment, "supplied", `${item.key} read supplied from photoInventory: "present" alone`);
     assert.equal(item.fulfilment, "unknown");
   }
 });
 
 test("one arbitrary photograph never satisfies multiple named shot categories", () => {
-  // Restated directly: with hasAnyPhoto true and no real per-shot data, no
-  // two distinct shot keys may both read "supplied" from that one signal,
-  // because none of them may read "supplied" from it at all.
-  const items = evidenceMission({ assetType: "warehouse", hasAnyPhoto: true });
+  // Restated directly: with photoInventory "present" and no real per-shot
+  // data, no two distinct shot keys may both read "supplied" from that one
+  // signal, because none of them may read "supplied" from it at all.
+  const items = evidenceMission({ assetType: "warehouse", photoInventory: "present" });
   const suppliedPhotoKeys = items.filter((i) => i.kind === "photo" && i.fulfilment === "supplied").map((i) => i.key);
   assert.deepEqual(suppliedPhotoKeys, []);
 });
 
-test("with zero photographs, every shot reads awaiting_evidence, not unknown", () => {
-  const items = evidenceMission({ assetType: "office", hasAnyPhoto: false });
+test("with an empty inventory, every shot reads awaiting_evidence, not unknown", () => {
+  const items = evidenceMission({ assetType: "office", photoInventory: "empty" });
   for (const item of items.filter((i) => i.kind === "photo")) {
     assert.equal(item.fulfilment, "awaiting_evidence");
+  }
+});
+
+test("an omitted photoInventory defaults to empty, not present", () => {
+  // Backward compatibility for a caller with no photo signal to give at
+  // all, stated explicitly in EvidenceMissionInput's own header.
+  const withDefault = evidenceMission({ assetType: "office" });
+  const withExplicitEmpty = evidenceMission({ assetType: "office", photoInventory: "empty" });
+  const photoFulfilments = (items: ReturnType<typeof evidenceMission>) =>
+    items.filter((i) => i.kind === "photo").map((i) => i.fulfilment);
+  assert.deepEqual(photoFulfilments(withDefault), photoFulfilments(withExplicitEmpty));
+});
+
+test("an unknown inventory reads coverage unknown, the same as a present one, never awaiting_evidence", () => {
+  // Codex review of 8b9f72d item 4, and required regression (d): a media
+  // query failure must never be read the same as a genuinely empty draft.
+  // guidedEvidence.ts itself does not know WHY the inventory is unknown
+  // (that is the caller's concern, see listingPreviewWiring.test.ts for the
+  // preview route's own row-count-vs-query-failure wiring); its own
+  // contract is just that "unknown" behaves like "present", never like
+  // "empty", for every shot.
+  const items = evidenceMission({ assetType: "office", photoInventory: "unknown" });
+  for (const item of items.filter((i) => i.kind === "photo")) {
+    assert.equal(item.fulfilment, "unknown");
+    assert.notEqual(item.fulfilment, "awaiting_evidence");
   }
 });
 
@@ -114,7 +140,7 @@ test("marking an item unavailable overrides a coarse 'unknown' guess, and unavai
   const requiredShot = standard.shots.find((s) => s.weight === "required")!;
   const items = evidenceMission({
     assetType: "warehouse",
-    hasAnyPhoto: true, // would otherwise read "unknown" for every shot
+    photoInventory: "present", // would otherwise read "unknown" for every shot
     unavailable: new Map([[requiredShot.key, "The yard is not accessible until the tenant vacates."]]),
   });
   const item = items.find((i) => i.key === requiredShot.key)!;
@@ -173,18 +199,18 @@ test("computed and sourced fields are excluded from the mission entirely, never 
 });
 
 test("outstandingItems returns exactly the awaiting_evidence items, excluding unknown", () => {
-  const items = evidenceMission({ assetType: "land", hasAnyPhoto: true });
+  const items = evidenceMission({ assetType: "land", photoInventory: "present" });
   const outstanding = outstandingItems(items);
   assert.ok(outstanding.every((i) => i.fulfilment === "awaiting_evidence"));
   assert.equal(outstanding.length, items.filter((i) => i.fulfilment === "awaiting_evidence").length);
-  // The photo shots are all "unknown" here (hasAnyPhoto true, no per-shot
-  // data), so none of them may appear in outstandingItems.
+  // The photo shots are all "unknown" here (photoInventory "present", no
+  // per-shot data), so none of them may appear in outstandingItems.
   const photoKeys = new Set(items.filter((i) => i.kind === "photo").map((i) => i.key));
   assert.ok(outstanding.every((i) => !photoKeys.has(i.key) || i.kind !== "photo"));
 });
 
 test("unknownCoverageItems returns exactly the unknown-fulfilment items", () => {
-  const items = evidenceMission({ assetType: "land", hasAnyPhoto: true });
+  const items = evidenceMission({ assetType: "land", photoInventory: "present" });
   const unknown = unknownCoverageItems(items);
   assert.ok(unknown.length > 0);
   assert.ok(unknown.every((i) => i.fulfilment === "unknown"));
@@ -192,7 +218,7 @@ test("unknownCoverageItems returns exactly the unknown-fulfilment items", () => 
 });
 
 test("evidenceSummary counts partition the mission with no item double counted", () => {
-  const items = evidenceMission({ assetType: "mixed_use", attributes: { has_retail: true }, hasAnyPhoto: true });
+  const items = evidenceMission({ assetType: "mixed_use", attributes: { has_retail: true }, photoInventory: "present" });
   const s = evidenceSummary(items);
   const sum = s.requiredOutstanding + s.recommendedOutstanding + s.requiredUnknownCoverage + s.recommendedUnknownCoverage
     + s.unavailable + s.notApplicable + s.conditional + s.supplied;

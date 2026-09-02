@@ -9,7 +9,7 @@ import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityLabel, availabilityTone } from "@/lib/availability";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
-import { fill, fillProse, formatArea, formatCounted, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
+import { fill, fillProse, formatArea, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
 import ListingEnquiry from "@/components/ListingEnquiry";
@@ -30,7 +30,8 @@ import { travelTime } from "@/lib/location/travel";
 import { textLangAttrs } from "@/lib/textScript";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
-import { spaceAttributeRows, complianceRows, commercialAttributeRows } from "@/lib/attributeDisplay";
+import { spaceAttributeRows, complianceRows } from "@/lib/attributeDisplay";
+import { listingTermsRows } from "@/lib/listingTermsRows";
 import Gallery from "@/components/Gallery";
 import { planLabel } from "@/lib/planTypes";
 import { getSessionUser } from "@/lib/auth/session";
@@ -423,54 +424,21 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
             ar={ar}
             locale={lp}
           />
-          {(() => {
-            const T = (dict as any).ld;
-            // The terms block carried its own number formatter, its own year and
-            // month plurals and four inline unit strings. Arabic "سنوات" is right
-            // for three to ten and wrong for one, two and eleven up, and "شهراً"
-            // was printed after every month count for the same reason. The
-            // counted nouns and the unit table answer all of it, and the money
-            // and rate formatters keep the Latin unit off the Arabic page.
-            const termFmt = (m: number) => (m % 12 === 0 ? formatCounted(m / 12, "year", lp) : formatCounted(m, "month", lp));
-            const vatFmt = (v: string) => (v === "inclusive" ? T.vatInclusive : T.vatExclusive);
-            // ADV-1C: as in the facts grid above, the optional third element is
-            // the column the figure came from. Only the two figures that carry a
-            // passport name one; a lease term in months or a VAT treatment is a
-            // contractual term rather than a measured or computed figure.
-            const rows: [string, string, string?][] = [];
-            if (lease) {
-              if (l.service_charge_sqm != null) rows.push([T.serviceCharge, formatWithUnit(Number(l.service_charge_sqm), "sar_sqm_year", lp, "short", 0), "service_charge_sqm"]);
-              if (l.lease_term_months != null) rows.push([T.leaseTerm, termFmt(Number(l.lease_term_months))]);
-              if (l.rent_free_months != null && Number(l.rent_free_months) > 0) rows.push([T.rentFree, formatCounted(Number(l.rent_free_months), "month", lp)]);
-              if (l.fitout_contribution != null && Number(l.fitout_contribution) > 0) rows.push([T.fitoutContribution, formatMoney(Number(l.fitout_contribution), lp)]);
-              if (l.break_option_months != null) rows.push([T.breakOption, formatCounted(Number(l.break_option_months), "month", lp)]);
-            } else {
-              // Price per m2 is COMPUTED (price / area), never entered, so a lister
-              // can never post one that contradicts their own price. Prefer a stored
-              // column if present, else derive it.
-              const pps = l.sale_price_sqm != null
-                ? Number(l.sale_price_sqm)
-                : (l.sale_price != null && l.area_sqm ? Number(l.sale_price) / Number(l.area_sqm) : null);
-              if (pps != null && Number.isFinite(pps)) rows.push([T.pricePerSqm, formatWithUnit(Math.round(pps), "sar_sqm", lp, "short", 0), "sale_price_sqm"]);
-            }
-            if (l.vat_treatment) rows.push([T.vat, vatFmt(l.vat_treatment)]);
-            // Registry commercial attributes with no typed column (price basis, deal
-            // scope, turnover rent, and so on for the newer asset types).
-            rows.push(...commercialAttributeRows(l.asset_type, l.attributes, ar));
-            if (rows.length === 0) return null;
-            return (
-              <ListingAttributeSection
-                title={T.termsTitle}
-                rows={rows.map(([label, value, evidenceKey]) => ({
-                  label, value,
-                  evidence: evidenceKey ? evidence.get(evidenceKey) : undefined,
-                }))}
-                footnote={T.statedByLister}
-                ar={ar}
-                locale={lp}
-              />
-            );
-          })()}
+          {/* PKG-LISTING-CREATION-1A. The row list (lease/sale-specific hand-built
+              rows plus the registry-driven commercial attributes) now lives in
+              listingTermsRows.ts, shared with the draft preview, so the two
+              surfaces cannot independently drift on exactly the two figures
+              (service charge, price per sqm) that carry an Evidence Passport. */}
+          <ListingAttributeSection
+            title={dict.ld.termsTitle}
+            rows={listingTermsRows(l, dict, lp).map(({ label, value, evidenceKey }) => ({
+              label, value,
+              evidence: evidenceKey ? evidence.get(evidenceKey) : undefined,
+            }))}
+            footnote={dict.ld.statedByLister}
+            ar={ar}
+            locale={lp}
+          />
           {/* Compliance and permits (registry-driven, Phase 1). Civil Defense is
               excluded here because it already shows under The space. */}
           <ListingAttributeSection

@@ -5,6 +5,7 @@ import { buildListingPresentation, type DraftListingInput } from "@/lib/listingP
 import { evidenceMission } from "@/lib/guidedEvidence";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
+import { arabicOriginLabel, arabicReviewLabel } from "@/lib/provenanceDisplay";
 import DraftPreview, { type DraftPreviewListingData } from "./DraftPreview";
 
 // Codex review of 922780d, item 11: source-text guards (listingPreviewWiring.
@@ -57,7 +58,7 @@ const LISTING: DraftPreviewListingData = {
 function baseProps(overrides: Partial<Parameters<typeof DraftPreview>[0]> = {}) {
   const en = buildListingPresentation(INPUT, "en");
   const ar = buildListingPresentation(INPUT, "ar");
-  const items = evidenceMission({ assetType: "office", hasAnyPhoto: false, attributes: {} });
+  const items = evidenceMission({ assetType: "office", photoInventory: "empty", attributes: {} });
   return {
     status: "draft",
     en,
@@ -68,7 +69,7 @@ function baseProps(overrides: Partial<Parameters<typeof DraftPreview>[0]> = {}) 
     mediaState: "ok" as const,
     unloadedPhotoCount: 0,
     evidenceItems: items,
-    evidence: {},
+    evidence: { en: {}, ar: {} },
     initialLocale: "en" as const,
     dict: { en: getDictionary("en"), ar: getDictionary("ar") },
     ...overrides,
@@ -120,11 +121,73 @@ test("render: a real Evidence Passport, built the same way the public page build
   // exact function preview/page.tsx calls (see listingPreviewWiring.test.ts),
   // so this proves the wiring produces visible output, not just that the
   // prop was threaded through.
-  const evidenceMap = listingEvidenceByField(LISTING, { locale: "en", account: null, geography: "Al Olaya, Riyadh" });
-  const evidence = Object.fromEntries(evidenceMap);
-  assert.ok(evidence.area_sqm, "test fixture assumption: the office listing fixture produces an area_sqm passport");
-  const withEvidence = render({ evidence });
+  const enMap = Object.fromEntries(listingEvidenceByField(LISTING, { locale: "en", account: null, geography: "Al Olaya, Riyadh" }));
+  assert.ok(enMap.area_sqm, "test fixture assumption: the office listing fixture produces an area_sqm passport");
+  const withEvidence = render({ evidence: { en: enMap, ar: {} } });
   assert.match(withEvidence, /<details/, "an Evidence Passport disclosure should render when evidence is supplied");
-  const withoutEvidence = render({ evidence: {} });
+  const withoutEvidence = render({ evidence: { en: {}, ar: {} } });
   assert.doesNotMatch(withoutEvidence, /<details/, "no passport should render when no evidence is supplied");
+});
+
+test("regression (e): evidence and its geography follow the active locale, both directions", () => {
+  // Codex review of 8b9f72d item 5. Two real, distinct passport maps (built
+  // the same way preview/page.tsx now builds one per locale), each carrying
+  // a geography string only that locale's map could produce. Rendering with
+  // each as the initial locale proves the selection is genuinely keyed by
+  // the active locale, not a single map built once and reused regardless.
+  const enGeography = "Al Olaya, Riyadh";
+  const arGeography = "حي العليا، الرياض";
+  const evidence = {
+    en: Object.fromEntries(listingEvidenceByField(LISTING, { locale: "en", account: null, geography: enGeography })),
+    ar: Object.fromEntries(listingEvidenceByField(LISTING, { locale: "ar", account: null, geography: arGeography })),
+  };
+  const enRender = render({ evidence, initialLocale: "en" });
+  assert.match(enRender, new RegExp(enGeography));
+  assert.doesNotMatch(enRender, new RegExp(arGeography));
+
+  const arRender = render({ evidence, initialLocale: "ar" });
+  assert.match(arRender, new RegExp(arGeography));
+  assert.doesNotMatch(arRender, new RegExp(enGeography));
+});
+
+test("regression (g) / item 6: a real Evidence Passport renders on the terms section's service-charge row when the evidence map carries one", () => {
+  // Resolves the "exact preview" contradiction by actually completing
+  // parity rather than disclaiming it: the terms section now attaches
+  // evidence exactly like the public page's own terms section does.
+  const leaseWithServiceCharge: DraftListingInput = { ...INPUT, service_charge_sqm: 120 };
+  const enPresentation = buildListingPresentation(leaseWithServiceCharge, "en");
+  assert.ok(
+    enPresentation.termsRows.some((r) => r.evidenceKey === "service_charge_sqm"),
+    "test fixture assumption: a lease with a stated service charge produces a terms row carrying the evidenceKey",
+  );
+  const enMap = Object.fromEntries(
+    listingEvidenceByField({ ...LISTING, service_charge_sqm: 120 }, { locale: "en", account: null, geography: null }),
+  );
+  assert.ok(enMap.service_charge_sqm, "test fixture assumption: a lease with a stated service charge produces a service_charge_sqm passport");
+  const withEvidence = render({
+    en: enPresentation,
+    ar: buildListingPresentation(leaseWithServiceCharge, "ar"),
+    evidence: { en: enMap, ar: {} },
+  });
+  // At least two passports now: the facts-grid one (area_sqm, asserted by
+  // the earlier test) and this one on the terms section.
+  const passportCount = (withEvidence.match(/<details/g) ?? []).length;
+  assert.ok(passportCount >= 2, `expected at least 2 Evidence Passports (facts grid + terms), got ${passportCount}`);
+});
+
+test("regression (b) / item 2: Arabic origin and review render as two independent facts, together, never one hiding the other", () => {
+  const html = render({ initialLocale: "ar" });
+  // With no arabicOrigin opt (a fresh, session-less build, exactly what
+  // preview/page.tsx now always passes), origin reads origin_unknown and
+  // review reads unreviewed. Both labels must appear together.
+  assert.match(html, new RegExp(arabicOriginLabel("origin_unknown", true)));
+  assert.match(html, new RegExp(arabicReviewLabel("unreviewed", true)));
+});
+
+test("item 2: no origin or review badge renders at all when there is no Arabic wording to have one", () => {
+  const noArabic: DraftListingInput = { ...INPUT, title_ar: null, description_ar: null };
+  const html = render({ en: buildListingPresentation(noArabic, "en"), ar: buildListingPresentation(noArabic, "ar"), initialLocale: "ar" });
+  for (const origin of ["lister_supplied", "ai_suggested", "origin_unknown"] as const) {
+    assert.doesNotMatch(html, new RegExp(arabicOriginLabel(origin, true)));
+  }
 });

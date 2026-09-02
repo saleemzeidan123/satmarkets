@@ -64,23 +64,18 @@ test("the mark-unavailable checkbox never counts as evidence the requirement was
   assert.match(STUDIO, /checked=\{item\.fulfilment === "unavailable"\}/);
 });
 
-test("Arabic review is a distinct action from authorship, and origin is real evidence, not a session guess", () => {
-  // Codex review of 922780d, item 3. A lister clicking "reviewed" must never
-  // rewrite origin to lister_supplied; only a session-observed direct edit
-  // of the field may do that. The draft preview client-side mirrors
-  // arabicWordingDisplay's own rule: lister_supplied and not_confirmed are
-  // never touched by the review flag.
-  assert.match(DRAFT_PREVIEW, /effectiveArabicDisplay/, "the badge should read a value computed with the review overlay");
-  assert.doesNotMatch(
-    DRAFT_PREVIEW,
-    /ArabicWordingBadge value=\{p\.arabicWording\.(title|description)\.display\}/,
-    "a badge reads the raw, never-updated presentation value again, bypassing the review overlay",
-  );
-  assert.match(
-    DRAFT_PREVIEW,
-    /if \(base === "lister_supplied" \|\| base === "not_confirmed"\) return base;/,
-    "the review overlay must never touch a real lister_supplied or an absent value",
-  );
+test("origin and review are two independent fields, never collapsed into one flat display value again", () => {
+  // Codex review of 8b9f72d, item 2. Round one (922780d) fixed "review
+  // overwrites origin"; round two found the flat ArabicWordingDisplay type
+  // itself was still the defect, because collapsing two facts into one
+  // field is what let a caller merge them by construction. Neither
+  // effectiveArabicDisplay nor ArabicWordingDisplay may exist any more.
+  assert.doesNotMatch(DRAFT_PREVIEW, /effectiveArabicDisplay/, "the flat merge-into-one-value helper is back");
+  assert.doesNotMatch(DRAFT_PREVIEW, /ArabicWordingDisplay/, "the flat, collapsed display type is back");
+  // Origin is read straight from the presentation and never reassigned by
+  // this component; review is a separate, independently-computed value.
+  assert.match(DRAFT_PREVIEW, /const titleOrigin[^=]*=\s*p\.arabicWording\.title\.origin/, "origin should be read directly, not derived");
+  assert.match(DRAFT_PREVIEW, /const titleReview[^=]*=\s*titleReviewed \? "reviewed_this_session" : p\.arabicWording\.title\.review/, "review should merge only the review dimension, never origin");
   // ListingStudio: real, session-observed edits are tracked per field and
   // feed origin; the review buttons are a separate action per field.
   assert.match(STUDIO, /setArabicTitleEditedThisSession/);
@@ -89,12 +84,34 @@ test("Arabic review is a distinct action from authorship, and origin is real evi
   assert.match(STUDIO, /setDescriptionReviewedThisSession/);
 });
 
-test("the Arabic title's display is shown on both preview surfaces, not just computed", () => {
-  // listingPresentation.ts computes arabicWording.title.display and
+test("the Arabic title's origin is shown on both preview surfaces, not just computed", () => {
+  // listingPresentation.ts computes arabicWording.title.origin and
   // listingPresentation.test.ts asserts it, but an earlier version of
-  // neither rendering surface read it.
-  assert.match(DRAFT_PREVIEW, /titleDisplay/, "the draft preview route should render a title provenance badge");
-  assert.match(STUDIO, /arabicWording\.title\.display/, "the Studio's own inline preview should render a title provenance badge too");
+  // neither rendering surface read it (and an even earlier version read a
+  // now-removed .display field instead).
+  assert.match(DRAFT_PREVIEW, /titleOrigin/, "the draft preview route should render a title origin badge");
+  assert.match(STUDIO, /arabicWording\.title\.origin/, "the Studio's own inline preview should render a title origin badge too");
+});
+
+test("regression (a) / item 1: no code path infers Arabic origin from ar_translation_status or ar_translated_at any more", () => {
+  // Codex review of 8b9f72d item 1's core fix: those two columns prove a
+  // translation event happened SOMETIME, never that the CURRENT field still
+  // equals that output. Both column names legitimately still appear in this
+  // package's own prose explaining why they are no longer read (this file's
+  // own paragraph above is one), so this checks for the actual removed DATA
+  // FLOW constructs, not the column names as English text: the listing-level
+  // record object each file used to build, and the type field that carried
+  // it into Studio state.
+  assert.doesNotMatch(STUDIO, /arabicOriginRecord/, "the dead listing-level Arabic origin record should no longer be threaded through Studio state");
+  assert.doesNotMatch(STUDIO, /ar_translation_status:\s*string/, "StudioInitial should no longer declare a listing-level translation-status field");
+  assert.doesNotMatch(PREVIEW_ROUTE, /arabicOriginCtx/, "the dead listing-level Arabic origin context should no longer be built in the preview route");
+  assert.doesNotMatch(PREVIEW_ROUTE, /"ar_translation_status", "ar_translated_at"/, "PREVIEW_COLUMNS should no longer select the two listing-level columns");
+  // The Studio now reads its own translate() response back, rather than
+  // firing it blind, which is what makes a real translatedThisSessionUnedited
+  // signal possible at all.
+  assert.match(STUDIO, /setArabicTitleTranslatedThisSessionUnedited/, "the Studio should track a real, session-observed translation signal per field");
+  assert.match(STUDIO, /\/translate`, \{ method: "POST"/, "save() should still call the translate endpoint");
+  assert.match(STUDIO, /\.then\(\(r\) => r\.json\(\)\)/, "save() should read the translate response back instead of firing and forgetting it");
 });
 
 test("a real draft is never marked demo as a verification shortcut", () => {
@@ -136,4 +153,59 @@ test("real Evidence Passports are wired into the draft preview's facts grid", ()
   // Codex review of 922780d, item 10.
   assert.match(PREVIEW_ROUTE, /listingEvidenceByField/);
   assert.match(DRAFT_PREVIEW, /evidenceMap/);
+});
+
+test("regression (f) / item 3: the preview query itself is scoped to the caller's own account, not only checked afterward", () => {
+  // Codex review of 8b9f72d item 3. The application-level check
+  // (`L.account_id !== su.accountId`) must remain as a second boundary, not
+  // be replaced by the query constraint; both assertions below must hold at
+  // once.
+  assert.match(
+    PREVIEW_ROUTE,
+    /\.eq\("id", params\.id\)\s*\.eq\("account_id", su\.accountId\)/,
+    "the listings query should constrain on account_id immediately after id, before .maybeSingle()",
+  );
+  assert.match(
+    PREVIEW_ROUTE,
+    /L\.account_id !== su\.accountId/,
+    "the application-level ownership check must remain as a second, independent boundary",
+  );
+});
+
+test("regression (c) and (d) / item 4: photo inventory is driven by the raw row count, and a query failure reads unknown, never empty", () => {
+  // (c): a row that exists but whose signed URL failed must still count as
+  // present. photoInventory must be computed from photoRows (the raw query
+  // result), never from photos.length (only the successfully-signed subset).
+  assert.match(
+    PREVIEW_ROUTE,
+    /\(photoRows \?\? \[\]\)\.length > 0/,
+    "photoInventory should be driven by the raw row count, not by how many signed URLs succeeded",
+  );
+  assert.doesNotMatch(
+    PREVIEW_ROUTE,
+    /photoInventory[\s\S]{0,80}photos\.length > 0/,
+    "photoInventory must not be derived from photos.length, the signed-URL-succeeded subset",
+  );
+  // (d): a query failure must read "unknown", never silently fall through
+  // to "empty".
+  assert.match(
+    PREVIEW_ROUTE,
+    /mediaError \? "unknown"/,
+    "a media query failure should map photoInventory to \"unknown\"",
+  );
+  // The old false-value sentinel (hasAnyPhoto: true forced on a query
+  // failure to reach evidenceMission's unknown branch) must be gone
+  // entirely, along with the parameter name it was passed under.
+  assert.doesNotMatch(PREVIEW_ROUTE, /hasAnyPhoto/, "the old boolean sentinel parameter should no longer be referenced");
+  assert.match(PREVIEW_ROUTE, /photoInventory/, "the real tri-state signal should be threaded to evidenceMission");
+});
+
+test("regression (g) / item 6: the terms section actually attaches evidence now, the exact-preview claim is no longer contradicted", () => {
+  assert.match(
+    DRAFT_PREVIEW,
+    /evidenceKey \? evidenceMap\.get\(evidenceKey\) : undefined/,
+    "the terms section should attach a real Evidence Passport for rows that carry an evidenceKey",
+  );
+  assert.match(DRAFT_PREVIEW, /p\.termsRows/, "the terms section should render the shared listingTermsRows.ts output");
+  assert.doesNotMatch(DRAFT_PREVIEW, /p\.commercialRows/, "the old registry-only rows field should no longer be referenced");
 });

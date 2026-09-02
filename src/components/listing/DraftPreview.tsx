@@ -13,9 +13,12 @@ import type { ListingPresentation } from "@/lib/listingPresentation";
 import type { EvidenceItem } from "@/lib/guidedEvidence";
 import { evidenceSummary, evidenceRequirementLabel, evidenceFulfilmentLabel } from "@/lib/guidedEvidence";
 import {
-  arabicWordingDisplayLabel,
-  arabicWordingDisplayAria,
-  type ArabicWordingDisplay,
+  arabicOriginLabel,
+  arabicOriginAria,
+  arabicReviewLabel,
+  arabicReviewAria,
+  type ArabicOrigin,
+  type ArabicReview,
 } from "@/lib/provenanceDisplay";
 import type { FilingAccount, VerifiableListing } from "@/lib/listingVerification";
 import type { PublicEvidenceView } from "@/lib/evidenceView";
@@ -106,15 +109,24 @@ export default function DraftPreview({
   /** Uploaded files whose signed URL could not be issued this load; a load fault, not a missing photo. */
   unloadedPhotoCount: number;
   evidenceItems: EvidenceItem[];
-  /** Real Evidence Passports for this draft's own figures, built the same way the public page builds them. */
-  evidence: Record<string, PublicEvidenceView>;
+  /**
+   * Real Evidence Passports for this draft's own figures, built the same way
+   * the public page builds them, one map per locale. Codex review of
+   * 8b9f72d item 5: a passport's wording and the geography it cites (place,
+   * city) are locale text, so a single flat map built at the page's initial
+   * locale went stale the instant the toggle below switched language. Two
+   * complete maps, selected by the active locale, is what lets the toggle
+   * change languages without also silently keeping stale-language evidence
+   * text on screen.
+   */
+  evidence: { en: Record<string, PublicEvidenceView>; ar: Record<string, PublicEvidenceView> };
   initialLocale: "en" | "ar";
   /** Both locales' dictionaries, so the toggle needs no round trip. */
   dict: { en: Dictionary; ar: Dictionary };
 }) {
   const [locale, setLocale] = useState<"en" | "ar">(initialLocale);
   // Session-only. Never persisted (no column exists to hold it), and never
-  // rewrites origin: see arabicWordingDisplay's own header in
+  // rewrites origin: see arabicWordingFacts's own header in
   // provenanceDisplay.ts. Tracked separately per field because reviewing the
   // title says nothing about whether the description was also read.
   const [titleReviewed, setTitleReviewed] = useState(false);
@@ -123,22 +135,24 @@ export default function DraftPreview({
   const p = isAr ? ar : en;
   const d = dict[locale];
   const summary = evidenceSummary(evidenceItems);
-  const evidenceMap = new Map(Object.entries(evidence));
+  const evidenceMap = new Map(Object.entries(evidence[locale]));
 
-  // The server-built presentation never learns about this client-only
-  // review (there is no field-level column to persist it to). This mirrors,
-  // for display only, exactly what arabicWordingDisplay itself does:
-  // "reviewed" only overlays ai_suggested or origin_unknown, and a real
-  // lister_supplied origin (session-observed direct edit, which this
-  // read-only preview can never produce) is left exactly as computed.
-  const effectiveArabicDisplay = (base: ArabicWordingDisplay, reviewed: boolean): ArabicWordingDisplay => {
-    if (base === "lister_supplied" || base === "not_confirmed") return base;
-    return reviewed ? "reviewed_this_session" : base;
-  };
-  const titleDisplay = effectiveArabicDisplay(p.arabicWording.title.display, titleReviewed);
-  const descriptionDisplay = effectiveArabicDisplay(p.arabicWording.description.display, descriptionReviewed);
-  const titleNeedsReview = (p.arabicWording.title.display === "ai_suggested" || p.arabicWording.title.display === "origin_unknown") && !titleReviewed;
-  const descriptionNeedsReview = (p.arabicWording.description.display === "ai_suggested" || p.arabicWording.description.display === "origin_unknown") && !descriptionReviewed;
+  // Origin and review are two independent facts (Codex review of 8b9f72d
+  // item 2). Origin is read straight off the server-built presentation and
+  // is never touched here. Review has a real, server-computed half (always
+  // "unreviewed" from this route, which has no session to have confirmed
+  // anything in) and a client-only half (this component's own state, never
+  // persisted, no column exists to hold it): the two are merged into one
+  // effective review value, but that merge only ever produces "reviewed" or
+  // "unreviewed" for the REVIEW dimension, and never reaches into or
+  // replaces origin. A real lister_supplied origin is exactly as untouched
+  // by this as an ai_suggested or origin_unknown one.
+  const titleOrigin: ArabicOrigin | null = p.arabicWording.title.origin;
+  const titleReview: ArabicReview = titleReviewed ? "reviewed_this_session" : p.arabicWording.title.review;
+  const descriptionOrigin: ArabicOrigin | null = p.arabicWording.description.origin;
+  const descriptionReview: ArabicReview = descriptionReviewed ? "reviewed_this_session" : p.arabicWording.description.review;
+  const titleNeedsReview = (titleOrigin === "ai_suggested" || titleOrigin === "origin_unknown") && titleReview !== "reviewed_this_session";
+  const descriptionNeedsReview = (descriptionOrigin === "ai_suggested" || descriptionOrigin === "origin_unknown") && descriptionReview !== "reviewed_this_session";
 
   const heroPlaceholder = photos.length === 0;
 
@@ -229,9 +243,12 @@ export default function DraftPreview({
         <h2 className="serif" style={{ fontSize: "1.875rem", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>
           {p.title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </h2>
-        {isAr && p.title && (
+        {/* Gated on origin, not on p.title: p.title can be a description-
+            derived fallback (listingTitle.ts) even when there is no Arabic
+            title at all, which origin: null already says honestly. */}
+        {isAr && titleOrigin && (
           <div className="row gap8" style={{ marginTop: 6, alignItems: "center" }}>
-            <ArabicWordingBadge value={titleDisplay} ar={isAr} />
+            <ArabicOriginBadge origin={titleOrigin} review={titleReview} ar={isAr} />
             {titleNeedsReview && (
               <button type="button" className="chip touch-target" onClick={() => setTitleReviewed(true)}>
                 {isAr ? "راجعتُ هذا العنوان" : "I've reviewed this title"}
@@ -258,23 +275,31 @@ export default function DraftPreview({
         <ListingFactsGrid tiles={factsGridTiles(listing as unknown as FactsGridSource, d, locale)} evidence={evidenceMap} ar={isAr} locale={locale} />
 
         <ListingAttributeSection title={d.ld.spaceTitle} rows={p.spaceRows} footnote={d.ld.statedGeneric} ar={isAr} locale={locale} />
-        {/* No evidence prop here: the public page's own "terms" section builds
-            its two evidence-bearing rows (service charge, sale price/sqm) by
-            hand, from typed columns this composer's commercialRows never
-            reads (commercialRows is only the registry-driven attributes;
-            see listingPresentation.ts). Attaching evidence keyed by label
-            would risk a wrong match. Left honestly without one, matching
-            what the public page's own space and compliance sections already
-            do (neither ever carries an EvidencePassport either). */}
-        <ListingAttributeSection title={d.ld.termsTitle} rows={p.commercialRows} footnote={d.ld.statedByLister} ar={isAr} locale={locale} />
+        {/* PKG-LISTING-CREATION-1A, Codex review of 8b9f72d item 6. Real
+            Evidence Passports now attach to the two rows the public page
+            also gives one (service charge, sale price/sqm): both surfaces
+            build this row list from the same listingTermsRows.ts, keyed the
+            same way, so the lookup below is the public page's own pattern,
+            not a second, independently-drifting one. */}
+        <ListingAttributeSection
+          title={d.ld.termsTitle}
+          rows={p.termsRows.map(({ label, value, evidenceKey }) => ({
+            label,
+            value,
+            evidence: evidenceKey ? evidenceMap.get(evidenceKey) : undefined,
+          }))}
+          footnote={d.ld.statedByLister}
+          ar={isAr}
+          locale={locale}
+        />
         <ListingAttributeSection title={d.ld.complianceTitle} rows={p.complianceRows} footnote={d.ld.statedGeneric} ar={isAr} locale={locale} />
 
         {p.descriptionText && (
           <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
             <p style={{ fontSize: "0.90625rem", lineHeight: 1.7, margin: 0 }}>{p.descriptionText}</p>
-            {isAr && (
+            {isAr && descriptionOrigin && (
               <div className="row gap8" style={{ marginTop: 10, alignItems: "center" }}>
-                <ArabicWordingBadge value={descriptionDisplay} ar={isAr} />
+                <ArabicOriginBadge origin={descriptionOrigin} review={descriptionReview} ar={isAr} />
                 {descriptionNeedsReview && (
                   <button type="button" className="chip touch-target" onClick={() => setDescriptionReviewed(true)}>
                     {isAr ? "راجعتُ هذا الوصف" : "I've reviewed this description"}
@@ -305,14 +330,14 @@ function toggleBtnStyle(active: boolean): React.CSSProperties {
   };
 }
 
-function ArabicWordingBadge({ value, ar }: { value: ArabicWordingDisplay; ar: boolean }) {
+function ArabicOriginBadge({ origin, review, ar }: { origin: ArabicOrigin; review: ArabicReview; ar: boolean }) {
   return (
     <span
       className="tag"
-      title={arabicWordingDisplayAria(value, ar)}
-      style={{ fontSize: "0.6875rem", background: value === "ai_suggested" || value === "origin_unknown" ? "var(--cool)" : undefined }}
+      title={`${arabicOriginAria(origin, ar)} · ${arabicReviewAria(review, ar)}`}
+      style={{ fontSize: "0.6875rem", background: origin === "ai_suggested" || origin === "origin_unknown" ? "var(--cool)" : undefined }}
     >
-      {arabicWordingDisplayLabel(value, ar)}
+      {arabicOriginLabel(origin, ar)} · {arabicReviewLabel(review, ar)}
     </span>
   );
 }
