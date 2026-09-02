@@ -17,6 +17,20 @@ Read this fully before doing any work. It is the standing context for every AI s
 5. No retry-commit litter. If an approach fails, clean up before trying another.
 6. Disclose every known gap in PR bodies honestly, including partial recoveries and environment limitations.
 
+## Obstacle protocol
+
+When work hits an obstacle, classify it first: product defect, test-environment limitation, external quota or outage, missing credential or owner action, owner decision, or a counsel/regulatory/vendor dependency. Fix product defects immediately when in scope. Reduce every external obstacle to the smallest acceptance item it actually blocks, and record that item in the blocked-evidence queue below with: exact evidence missing, cause, owner, retry trigger, and whether it blocks merging or only formal closure. Then keep moving: continue every independent task the dependency does not touch (research, spec, automated coverage, design review, threat modeling, test prep). Never weaken an acceptance gate to keep moving. Never fabricate live evidence, delivery, authenticated access, data rights, or production behavior. Never repeatedly retry a rate-limited service; record the failure time, pick a rational retry interval, and move to the next package. Ask the owner only when the action genuinely needs their identity, credentials, purchase, or legal authority, bundled into one request rather than one interruption per issue. Automated tests are a separate evidence class from live evidence, never a substitute for it. Do not say "nothing remains" until the full dependency graph is checked and every remaining task is genuinely blocked.
+
+## Blocked-evidence queue
+
+Parked items that do not block engineering progress elsewhere. Cleared automatically when the retry trigger fires; do not re-derive them from scratch each session.
+
+| Evidence missing | Cause | Owner | Retry trigger | Blocks |
+| --- | --- | --- | --- | --- |
+| App-triggered Arabic password-recovery live proof | Supabase built-in mailer's fixed rate limit (no dashboard override without custom SMTP) | Saleem: wait, or decide on custom SMTP | Quota window clears, or SMTP configured | Formal closure of the PR #19 auth work only; PR #19 is already merged |
+| Supabase Dashboard-triggered recovery live proof | Same rate limit | Same | Same | Same |
+| One fresh production invitation journey on an owner-controlled, deliverable address | Rate limit, and no fresh address confirmed yet | Saleem: supply the address | Address supplied and quota available | Same |
+
 ## Style and product rules
 
 - No em dashes anywhere in repo content. Use commas, periods, or parentheses.
@@ -44,17 +58,17 @@ Vercel builds every PR automatically; the preview deployment doubles as a produc
 - Supabase: production database for this app is NOT the "SAT Website" project (`gwyeserfgxcxhwfdjfav`, that is satestate.com's intake DB). Confirm you are pointed at the real satmarkets project before any migration or audit work.
 - The site intentionally shows a preview-environment banner and demo-flagged sample listings. That is a tested feature (`publicFacts.test.ts`), not a bug.
 
-## State as of 2026-08-17
+## State as of 2026-09-02
 
-- `main` HEAD: `d9e817d454e26f7efba3893462674f6aa2d39bdc` (PR #11, the PKG-DISCOVERY-1 UX closure package: Location sheet portal fix, safe-zone tabbar token system, route-truth audit, FilterBar "All filters" two-level sheet, ListerCard verification/count/RTL work, `listers_public` directory-fields migration plus schema guard test).
-- Before it: PR #10 (`ba1aa97`) restored `docs/findings-register.md` to the intact historical blob `0c46ac74` (227 lines), verified byte-identical. Known gap, disclosed in that PR: roughly 355 bytes of later row edits from a lost repair blob (`9404a765`) were not recoverable.
-- Production deployment `dpl_GwE2iNhoPEWNLXiKsiiRrMYpxSyb` is live at exactly `d9e817d`. Full gate was clean at merge (1851/1851 tests, ratchet held at 49).
+- `main` HEAD: `4dc52b44a3c2afd444e1a7463d439e98fd1dcbb9` (PR #19, the corrected invite/password-reset auth flow: token_hash confirm-gate so a scanner or browser preloader can no longer spend a single-use link before the reader's own click, password-visibility toggles, busy-label fix, dual-branch email templates for app- and dashboard-triggered sends). Full gate was clean at merge (1891/1891 tests, ratchet held at 49). Production confirmed serving this exact commit.
+- Between the 2026-08-17 position below and this one, PRs #5 through #19 shipped (PKG-DISCOVERY-1 remaining slices, the shared listing-card system, SEO/AI discovery work, a findings-register recovery, this file's own rewrite in PR #12, portable gates in PR #13, discovery defect fixes in PR #14-15, the signup-provisioning console fix in PR #17-18, and PR #19 above). `docs/session-resume.md` and `docs/status-ledger.md` describe an older ephemeral-sandbox operating model (`/tmp/sm2`, `tools/ship.py`) that this file's own PR #12 rewrite superseded; their position tables predate PR #5 and are historical, not current. Trust this file and `git log` over them for current state.
+- PR #16 (PKG-LISTING-CREATION-1A, guided evidence capture and bilingual preview for listing creation) is open, rebased onto `4dc52b4`, full gate clean (1960/1960 tests). Held unmerged pending authenticated QA and independent review; see `docs/pkg-listing-creation-1a-deferred-contracts.md`.
 
 ## Open items (verify current state before acting; this list ages)
 
-1. Supabase production audit for `supabase/migrations/20260809_listers_public_directory_fields.sql`: confirm against the REAL production schema the actual columns, grants, RLS, security-invoker state, that anonymous reads expose no PII (`public_email`/`public_phone` only if explicitly approved), published-only filtering, and published-inventory-only counts. This was blocked because no connected tool could reach the real database. Do not apply or assume the migration is applied without this audit.
-2. Live 320px and 390px pixel-width verification (EN and AR) of the discovery UX: automated suites cover it (`FilterBar.mobileSheet.test.ts`, `reflow.test.ts`, `touchTarget.test.ts`), but a real narrow-viewport visual pass was never completed.
-3. The SAT Knowledge Base root `CLAUDE.md` has a pending "Agent honesty and verification protocol" insertion (drafted, never applied, because that file lives outside this repo).
+1. Supabase production audit for `supabase/migrations/20260809_listers_public_directory_fields.sql`: confirm against the REAL production schema the actual columns, grants, RLS, security-invoker state, that anonymous reads expose no PII (`public_email`/`public_phone` only if explicitly approved), published-only filtering, and published-inventory-only counts. Re-check whether this is still open before re-blocking on it; a later session may have reached the database.
+2. Live 320px and 390px pixel-width verification (EN and AR) of the discovery UX: automated suites cover it (`FilterBar.mobileSheet.test.ts`, `reflow.test.ts`, `touchTarget.test.ts`), but re-check whether a real narrow-viewport visual pass has since been completed.
+3. The three items in the blocked-evidence queue above (Arabic and dashboard-triggered recovery proof, one fresh invitation journey), parked on the Supabase built-in mailer's rate limit.
 
 ## Session start checklist
 

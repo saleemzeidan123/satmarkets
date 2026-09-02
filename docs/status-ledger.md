@@ -3,6 +3,14 @@
 One authoritative place to read what is true right now. Created as slice A of
 PKG-ELITE-E1 under the Codex instruction of 2026-08-01.
 
+**Correction, 2026-09-02.** This file's position tables below predate PR #5 and were
+written for an ephemeral-sandbox operating model (`/tmp/sm2`, `tools/ship.py`) that the
+root `CLAUDE.md` rewrite in PR #12 superseded. They are historical, not current, and were
+never updated through PRs #5 to #19. For current position, read the root `CLAUDE.md`
+"State as of" section and `git log`, not the tables below. This file's own findings and
+decisions (D1 through D37 in `docs/decision-register.md`, everything in
+`docs/findings-register.md`) remain live and binding; only the position snapshot is stale.
+
 **How this file is used.** Before proposing or re-running any package, read this file.
 A package listed as completed is not re-run and not re-proposed unless a regression is
 found and recorded here first. Where this file and a package narrative disagree, this
