@@ -1,5 +1,14 @@
 # Session resume
 
+**Correction, 2026-09-02.** Section 1's position table and section 10's "what is owed
+next" predate PR #5 and describe an ephemeral-sandbox operating model (`/tmp/sm2`,
+`tools/ship.py`, Google Fonts blocked, every Supabase tool permission-denied) that the
+root `CLAUDE.md` rewrite in PR #12 superseded; this project is now worked from a
+persistent local clone with normal git/GitHub/Vercel/Supabase access. Read the root
+`CLAUDE.md` for current position and its own session-start checklist instead of section 1
+below. Sections 7 to 9 (standing authority, owner rulings, evidence discipline) remain
+live and binding.
+
 ## What this file is
 
 The conversation Claude works in is not durable. It compacts, it slows down, and it ends.
