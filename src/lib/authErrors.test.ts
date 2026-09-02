@@ -336,6 +336,20 @@ test("every password field carries a labelled visibility toggle", () => {
   assert.match(LOGIN, /aria-label=\{showPw \? t\.hidePassword : t\.showPassword\}/);
 });
 
+test("a successful submit keeps its busy label until the next page arrives", () => {
+  // The owner watched "Set password" snap back to its resting label during
+  // the second the navigation takes and read it as nothing having happened.
+  // On the two handlers that end in a hard navigation, busy is released only
+  // on the error path; success holds the working label through unload.
+  const signInBody = LOGIN.slice(LOGIN.indexOf("async function passwordSignIn"), LOGIN.indexOf("async function emailLink"));
+  const setPwBody = LOGIN.slice(LOGIN.indexOf("async function submitNewPassword"), LOGIN.indexOf("async function sendReset"));
+  for (const [name, body] of [["passwordSignIn", signInBody], ["submitNewPassword", setPwBody]] as const) {
+    assert.equal((body.match(/setBusy\(false\)/g) ?? []).length, 1, `${name} releases busy somewhere off the error path`);
+    assert.match(body, /if \(error\) \{ setBusy\(false\);/, `${name} does not scope the release to the error branch`);
+    assert.match(body, /window\.location\.replace/, `${name} no longer navigates`);
+  }
+});
+
 test("a token_hash link is spent only by the reader's own confirm, never by page load", () => {
   // Live evidence behind this one: Outlook Safe Links and Chrome preloading
   // each consumed a single-use recovery link before its owner's click, four

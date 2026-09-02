@@ -90,13 +90,16 @@ export default function LoginForm({ locale, initialStep, nextAfter }: { locale: 
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
   const { error } = await sb.auth.signInWithPassword({ email, password });
-  setBusy(false);
   // The generic sentence points at the sign-in link on purpose. It is the one
   // route back in that works for a confirmed account and an unconfirmed one
   // alike, so the reader is never told which of the two they are.
-  if (error) { setError(authMessage(error, ar, t.errSignIn)); return; }
+  if (error) { setBusy(false); setError(authMessage(error, ar, t.errSignIn)); return; }
   // Hard navigation so the server sees the freshly written session cookies. /go
-  // routes owners to the dashboard and occupiers to their own home.
+  // routes owners to the dashboard and occupiers to their own home. `busy`
+  // deliberately stays true until the page unloads: the owner watched this
+  // button snap back to its resting label during the second the navigation
+  // takes and read it as nothing having happened. The label a reader sees
+  // between a successful request and the next page is part of the answer.
   window.location.replace(`/${locale}/go`);
  }
 
@@ -130,8 +133,9 @@ export default function LoginForm({ locale, initialStep, nextAfter }: { locale: 
   if (!sb) { setError(t.errNotConfigured); return; }
   setBusy(true);
   const { error } = await sb.auth.updateUser({ password: newPassword });
-  setBusy(false);
-  if (error) { setError(authMessage(error, ar, t.errSetPassword)); return; }
+  if (error) { setBusy(false); setError(authMessage(error, ar, t.errSetPassword)); return; }
+  // Stays "Saving" until the page unloads, for the same reason passwordSignIn
+  // does: releasing the button before the navigation lands reads as a failure.
   window.location.replace(nextAfter);
  }
 
