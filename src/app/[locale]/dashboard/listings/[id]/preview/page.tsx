@@ -6,7 +6,6 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
 import { evidenceMission } from "@/lib/guidedEvidence";
 import { filingAccountOf } from "@/lib/listingVerification";
-import { mediaStandardFor } from "@/lib/mediaStandard";
 import DataState from "@/components/DataState";
 import RetryButton from "@/components/RetryButton";
 import DraftPreview from "@/components/listing/DraftPreview";
@@ -103,12 +102,15 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
   // (listing_media carries no shot key), so it degrades honestly to "any photo
   // present" rather than claiming per-category coverage it cannot see. See
   // the deferred-contracts doc: a shot_key column on listing_media is what
-  // would close this gap.
-  const standard = mediaStandardFor(String(L.asset_type ?? ""));
+  // would close this gap. (A photos.length >= standard.shots.length ?
+  // "mark every shot supplied" : undefined heuristic used to sit here; it
+  // produced the exact same result as hasAnyPhoto alone in every case,
+  // including the one it looked like it was distinguishing, so it was
+  // removed rather than left implying a per-count precision this route does
+  // not have.)
   const items = evidenceMission({
     assetType: String(L.asset_type ?? ""),
     hasAnyPhoto: photos.length > 0,
-    photoShotsSupplied: photos.length >= standard.shots.length ? new Set(standard.shots.map((s) => s.key)) : undefined,
     attributes: (L.attributes as Record<string, unknown> | null) ?? {},
   });
 

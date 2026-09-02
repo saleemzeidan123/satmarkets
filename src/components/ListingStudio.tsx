@@ -886,6 +886,11 @@ export default function ListingStudio({
         <div className="font-display text-lg text-charcoal">
           {p.title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </div>
+        {isAr && p.title && (
+          <p className="text-[0.6875rem] text-charcoal/70 mt-1">
+            {displayProvenanceLabel(p.arabicWording.title.provenance, true)}
+          </p>
+        )}
         <div className="text-[0.8125rem] text-charcoal/70 mt-1">
           {p.assetTypeLabel} · {p.dealLabel}{p.place ? ` · ${p.place}` : ""}
         </div>
@@ -1274,7 +1279,15 @@ export default function ListingStudio({
                         <span>{ar ? item.label_ar : item.label_en}</span>
                         <span className="text-charcoal/65">{evidenceStateLabel(item.state, ar)}</span>
                       </div>
-                      {(item.state === "awaiting_evidence" || item.state === "unavailable") && item.weight !== "optional" && (
+                      {/* PKG-LISTING-CREATION-1A fix. Not gated on item.state:
+                          the mission's per-shot "supplied" reading is a coarse
+                          any-photo-exists guess (see evidenceMission's own
+                          header), not real per-shot coverage, so a shot that
+                          reads required_by_rule/recommended may still
+                          genuinely not exist. Excluding those states hid the
+                          only control that can correct a wrong guess the
+                          moment any photo was attached, for every other shot. */}
+                      {item.weight !== "optional" && (
                         <div className="mt-1">
                           <label className="flex items-center gap-1.5 text-[0.6875rem] text-charcoal/70">
                             <input

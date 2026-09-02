@@ -70,6 +70,20 @@ export default function DraftPreview({
   const d = dict[locale];
   const summary = evidenceSummary(evidenceItems);
 
+  // The server-built presentation never learns about this client-only
+  // confirmation (there is no field-level column to persist it to; see
+  // arabicWordingProvenance's own header). This mirrors, for display only,
+  // exactly what that function would return if asked again with
+  // confirmedThisSession true: an already-absent field stays not_confirmed,
+  // and only a genuinely ai_suggested field promotes.
+  const effectiveArabicProvenance = (base: DisplayProvenance): DisplayProvenance =>
+    confirmedThisSession && base === "ai_suggested" ? "lister_supplied" : base;
+  const titleProvenance = effectiveArabicProvenance(p.arabicWording.title.provenance);
+  const descriptionProvenance = effectiveArabicProvenance(p.arabicWording.description.provenance);
+  const arabicNeedsConfirm =
+    (p.arabicWording.title.provenance === "ai_suggested" || p.arabicWording.description.provenance === "ai_suggested")
+    && !confirmedThisSession;
+
   return (
     <div dir={isAr ? "rtl" : "ltr"} lang={locale} style={{ fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <div
@@ -127,6 +141,7 @@ export default function DraftPreview({
         <h2 className="serif" style={{ fontSize: "1.875rem", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>
           {p.title || (isAr ? "بلا عنوان بعد" : "No title yet")}
         </h2>
+        {isAr && p.title && <ProvenanceBadge value={titleProvenance} ar={isAr} />}
         <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: "0.875rem" }}>
           {p.place ? <span className="row gap6"><Icon.pin size={16} /> {p.place}{p.city ? (isAr ? "، " : ", ") + p.city : ""}</span> : null}
           {p.figures.areaText ? <span>{p.figures.areaText}</span> : null}
@@ -154,10 +169,10 @@ export default function DraftPreview({
             <p style={{ fontSize: "0.90625rem", lineHeight: 1.7, margin: 0 }}>{p.descriptionText}</p>
             {isAr && (
               <div className="row gap8" style={{ marginTop: 10, alignItems: "center" }}>
-                <ProvenanceBadge value={p.arabicWording.description.provenance} ar={isAr} />
-                {p.arabicWording.description.provenance === "ai_suggested" && !confirmedThisSession && (
+                <ProvenanceBadge value={descriptionProvenance} ar={isAr} />
+                {arabicNeedsConfirm && (
                   <button type="button" className="chip touch-target" onClick={() => setConfirmedThisSession(true)}>
-                    {isAr ? "أؤكد صحة النص العربي" : "Confirm this Arabic reads correctly"}
+                    {isAr ? "أؤكد صحة النص العربي أعلاه" : "Confirm the Arabic above reads correctly"}
                   </button>
                 )}
               </div>
