@@ -200,6 +200,21 @@ test("regression (c) and (d) / item 4: photo inventory is driven by the raw row 
   assert.match(PREVIEW_ROUTE, /photoInventory/, "the real tri-state signal should be threaded to evidenceMission");
 });
 
+test("PKG-LISTING-CREATION-1B outcome A: the preview route now reads durable evidence marks, not an always-empty unavailable map", () => {
+  // Deferred-contracts item 2's own words: this route "has no session to
+  // read state from" and "cannot show this promotion at all". The durable
+  // listing_evidence_marks ledger closed that; a caller that stopped
+  // reading the table, or stopped threading its result into evidenceMission,
+  // would silently regress the preview route back to that exact gap.
+  assert.match(PREVIEW_ROUTE, /listing_evidence_marks/, "the preview route should read the durable evidence-marks ledger");
+  assert.match(PREVIEW_ROUTE, /currentEvidenceMarks/, "the preview route should reduce the ledger with the shared helper, not its own copy of the reduction");
+  assert.match(
+    PREVIEW_ROUTE,
+    /unavailable:\s*unavailableMarks/,
+    "the reduced marks must actually be threaded into evidenceMission's unavailable parameter",
+  );
+});
+
 test("regression (g) / item 6: the terms section actually attaches evidence now, the exact-preview claim is no longer contradicted", () => {
   assert.match(
     DRAFT_PREVIEW,

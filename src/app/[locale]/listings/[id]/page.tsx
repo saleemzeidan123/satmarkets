@@ -12,6 +12,7 @@ import { localeMeta } from "@/lib/meta";
 import { fill, fillProse, formatArea, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
+import { scopeToPublicMedia } from "@/lib/mediaVisibility";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
@@ -197,9 +198,16 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
   const floorPlans: { url: string; isPdf: boolean; label: string | null; planType: string | null }[] = [];
   const brochures: { url: string; label: string | null }[] = [];
   if (sb) {
-    const { data: media } = await sb.from("listing_media")
-      .select("path,source,kind,mime,alt_en,alt_ar,plan_type,sort_order")
-      .eq("listing_id", l.id).in("kind", ["photo", "floorplan", "brochure"]).order("sort_order");
+    // PKG-LISTING-CREATION-1B, Codex finding: the only place in this
+    // codebase that ever serves real, uploaded listing_media to an
+    // anonymous reader (mediaVisibility.test.ts enumerates and enforces
+    // this). scopeToPublicMedia() is the one rule for what such a reader
+    // may see, applied at the query itself, not trusted to a later filter.
+    const { data: media } = await scopeToPublicMedia(
+      sb.from("listing_media")
+        .select("path,source,kind,mime,alt_en,alt_ar,plan_type,sort_order")
+        .eq("listing_id", l.id).in("kind", ["photo", "floorplan", "brochure"]),
+    ).order("sort_order");
     for (const m of (media ?? []) as { path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null; plan_type: string | null }[]) {
       if (!m.path) continue;
       const label = ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar);

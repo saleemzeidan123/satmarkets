@@ -75,24 +75,25 @@ import { mediaStandardFor, type MediaShot, type ShotWeight } from "./mediaStanda
 //   resolved whether it applies, or that does not apply at all, is a
 //   category error, not an unmet fulfilment.
 //
-// WHY UNAVAILABLE IS SESSION ONLY, AND WHY THAT IS DISCLOSED RATHER THAN
-// HIDDEN. Marking one photograph category or one fact as "unavailable, here
-// is why" is a real and useful thing for a lister to be able to say, and the
-// existing schema has no column to hold it: `listing_media` has no per-shot
-// key, and `listings.attributes` holds values, not the absence of a value
-// with a stated reason. Persisting a lister's "unavailable" answer into an
-// unrelated text field would be exactly the dishonest persistence this
-// package was told not to do. So it lives in memory for the length of the
-// Studio session, the UI says so plainly, and the schema this would need to
-// survive a reload is written up in
-// docs/pkg-listing-creation-1a-deferred-contracts.md rather than faked.
-// Marking an item unavailable is an EXPLANATION for an outstanding
-// requirement, never evidence that the requirement was met: `unavailable`
-// stays a distinct fulfilment value, is never folded into `supplied` by
-// this module or any of its summary counts, and no caller may treat it as
-// satisfying a publication requirement (there is no publication gate in
-// this codebase to satisfy today, and this module gives that future gate no
-// way to make that mistake).
+// WHY UNAVAILABLE IS AN INPUT MAP, NOT SOMETHING THIS MODULE READS ITSELF.
+// Marking one photograph category or one fact as "unavailable, here is why"
+// is a real and useful thing for a lister to be able to say. Under
+// PKG-LISTING-CREATION-1A it lived in Studio component state only, disclosed
+// as session-only rather than faked as saved
+// (docs/pkg-listing-creation-1a-deferred-contracts.md item 2). Under
+// PKG-LISTING-CREATION-1B it is durable: public.listing_evidence_marks is an
+// append-only ledger of exactly this fact (see that migration's own header
+// for why append-only), and a caller reduces its rows to a current-state map
+// before calling this function. This module still does none of that reading
+// or reducing itself, deliberately: it stays pure over whatever `unavailable`
+// map it is given, whether that map came from Studio session state, a
+// database read, or (in a test) a literal. Marking an item unavailable is an
+// EXPLANATION for an outstanding requirement, never evidence that the
+// requirement was met: `unavailable` stays a distinct fulfilment value, is
+// never folded into `supplied` by this module or any of its summary counts,
+// and no caller may treat it as satisfying a publication requirement (there
+// is no publication gate in this codebase to satisfy today, and this module
+// gives that future gate no way to make that mistake).
 //
 // CONDITIONS. A field is genuinely conditional only when another field in the
 // SAME registry entry already gates it, and the gate is named here rather
@@ -208,12 +209,61 @@ export interface EvidenceMissionInput {
   photoInventory?: "present" | "empty" | "unknown";
   /** The draft's own attributes jsonb, to read whether a fact field is answered. */
   attributes?: Record<string, unknown>;
-  /** Session-only lister declarations: item key to a reason string (may be empty). */
+  /**
+   * Lister declarations, item key to a reason string. Session-only under
+   * PKG-LISTING-CREATION-1A; under PKG-LISTING-CREATION-1B a caller with
+   * database access typically builds this via currentEvidenceMarks() below,
+   * reducing the durable listing_evidence_marks ledger to its current state.
+   */
   unavailable?: ReadonlyMap<string, string>;
 }
 
 function isAnswered(v: unknown): boolean {
   return v !== null && v !== undefined && v !== "";
+}
+
+/** One row of the listing_evidence_marks ledger, as a caller would select it. */
+export interface EvidenceMarkRow {
+  item_kind: string;
+  item_key: string;
+  action: string;
+  reason: string | null;
+  /** Sortable in ledger order: an ISO timestamp, or any string that sorts correctly ascending. */
+  created_at: string;
+}
+
+/**
+ * Reduces an append-only listing_evidence_marks read (every row for one
+ * listing, any order) to its current state: the latest action per
+ * (item_kind, item_key), kept only where that latest action is
+ * marked_unavailable. A cleared item, or one never marked at all, is simply
+ * absent from the result, exactly as an unmarked item was under
+ * PKG-LISTING-CREATION-1A's session-only Map.
+ *
+ * Pure and small on purpose: this table holds at most a handful of rows per
+ * listing (one per guided-evidence item a lister has ever marked), so a
+ * plain "latest row per key wins" reduction needs no SQL-side DISTINCT ON to
+ * be simple, correct, and fast enough. Every reader of this ledger (the
+ * Studio's resume path, the preview route) should call this rather than
+ * keep its own copy of the reduction, the same "one truth model" reason
+ * mediaStandard.ts's shot taxonomy lives in one place.
+ */
+export function currentEvidenceMarks(
+  rows: readonly EvidenceMarkRow[],
+): { item_kind: "photo" | "fact"; item_key: string; reason: string }[] {
+  const latest = new Map<string, EvidenceMarkRow>();
+  for (const row of [...rows].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0))) {
+    latest.set(`${row.item_kind}:${row.item_key}`, row);
+  }
+  // Exactly one action counts as currently effective. 20260905's own
+  // invalidated_by_asset_change needs no separate branch here: it is
+  // excluded the same way cleared already is, by not being this one
+  // string, which is what makes "the latest row per item wins" a correct,
+  // single definition of current state rather than one this function and
+  // the trigger that appends invalidations could drift apart on.
+  return Array.from(latest.values())
+    .filter((r) => r.action === "marked_unavailable")
+    .map((r) => ({ item_kind: r.item_kind === "fact" ? "fact" as const : "photo" as const, item_key: r.item_key, reason: r.reason ?? "" }));
 }
 
 /**
@@ -369,7 +419,7 @@ export function evidenceRequirementLabel(r: EvidenceRequirement, ar: boolean): s
 const FULFILMENT_LABEL: Record<EvidenceFulfilment, [string, string]> = {
   supplied: ["Supplied", "مُقدَّم"],
   awaiting_evidence: ["Still needed", "لا يزال مطلوباً"],
-  unavailable: ["Marked unavailable", "مُحدَّد كغير متاح"],
+  unavailable: ["Marked unavailable", "مُحدَّد كغير موجود"],
   unknown: ["Coverage unknown", "التغطية غير معروفة"],
 };
 
