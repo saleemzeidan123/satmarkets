@@ -119,7 +119,7 @@ export default async function NewListingPage(
         // listing, any order (currentEvidenceMarks reduces it), so a mark
         // made last visit is not asked for again this visit.
         sb.from("listing_evidence_marks")
-          .select("item_kind, item_key, action, reason, created_at")
+          .select("item_kind, item_key, action, reason, created_at, seq")
           .eq("listing_id", draftId),
       ]);
       const evidenceMarks = currentEvidenceMarks(evidenceMarkRows.data ?? []);

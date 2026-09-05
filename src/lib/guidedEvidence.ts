@@ -228,8 +228,14 @@ export interface EvidenceMarkRow {
   item_key: string;
   action: string;
   reason: string | null;
-  /** Sortable in ledger order: an ISO timestamp, or any string that sorts correctly ascending. */
+  /** Human-readable timestamp only. NOT the ordering key: Postgres's
+   * created_at is transaction-stable, so two rows can share a value, which
+   * would make "latest" ambiguous. Kept for display/audit purposes. */
   created_at: string;
+  /** The real total order: a database-generated identity value (20260902's
+   * own seq column), monotonic and unique, never reused, never settable by
+   * a caller. This, not created_at, decides "current state" below. */
+  seq: number;
 }
 
 /**
@@ -252,7 +258,7 @@ export function currentEvidenceMarks(
   rows: readonly EvidenceMarkRow[],
 ): { item_kind: "photo" | "fact"; item_key: string; reason: string }[] {
   const latest = new Map<string, EvidenceMarkRow>();
-  for (const row of [...rows].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0))) {
+  for (const row of [...rows].sort((a, b) => a.seq - b.seq)) {
     latest.set(`${row.item_kind}:${row.item_key}`, row);
   }
   // Exactly one action counts as currently effective. 20260905's own
@@ -264,6 +270,25 @@ export function currentEvidenceMarks(
   return Array.from(latest.values())
     .filter((r) => r.action === "marked_unavailable")
     .map((r) => ({ item_kind: r.item_kind === "fact" ? "fact" as const : "photo" as const, item_key: r.item_key, reason: r.reason ?? "" }));
+}
+
+/**
+ * Whether item_key names a real, addressable evidence item for this asset
+ * type: a photo shot mediaStandard.ts actually defines, or a fact field
+ * assetFields.ts actually defines. Codex review: the evidence-marks route
+ * previously accepted any non-empty string under 120 characters as a valid
+ * item_key, which let a caller assert "this does not exist" against a shot
+ * name that means nothing for the listing's real asset type (or that is
+ * not a real shot or fact key at all), a ledger entry that can never be
+ * meaningfully read back. The listing's asset_type must be read
+ * server-side for this check, the same rule mediaCategorization.ts's own
+ * isValidShotKey already holds shot_key validation to, for the same
+ * reason: the caller cannot be trusted to state its own asset type.
+ */
+export function isValidEvidenceItemKey(assetType: string, itemKind: string, itemKey: string): boolean {
+  if (itemKind === "photo") return mediaStandardFor(assetType).shots.some((s) => s.key === itemKey);
+  if (itemKind === "fact") return fieldsFor(assetType).some((f) => f.key === itemKey);
+  return false;
 }
 
 /**

@@ -218,7 +218,7 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
   // them for the Studio's own resume path.
   const { data: evidenceMarkRows } = await sb
     .from("listing_evidence_marks")
-    .select("item_kind, item_key, action, reason, created_at")
+    .select("item_kind, item_key, action, reason, created_at, seq")
     .eq("listing_id", params.id);
   const unavailableMarks = new Map(currentEvidenceMarks(evidenceMarkRows ?? []).map((m) => [m.item_key, m.reason]));
 

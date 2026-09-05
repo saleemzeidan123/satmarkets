@@ -93,7 +93,11 @@ begin
         listing_id, item_kind, item_key, action
       from public.listing_evidence_marks
       where listing_id = new.id
-      order by item_kind, item_key, created_at desc
+      -- seq, not created_at: the real total order (see 20260902's own
+      -- comment on the column). Two rows sharing a created_at value would
+      -- make DISTINCT ON's choice of "latest" arbitrary under the old
+      -- ordering; seq never ties.
+      order by item_kind, item_key, seq desc
     ) as latest
     where latest.action = 'marked_unavailable';
   end if;

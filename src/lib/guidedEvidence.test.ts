@@ -10,6 +10,7 @@ import {
   evidenceRequirementLabel,
   evidenceFulfilmentLabel,
   currentEvidenceMarks,
+  isValidEvidenceItemKey,
   type EvidenceRequirement,
   type EvidenceFulfilment,
   type EvidenceMarkRow,
@@ -288,44 +289,73 @@ test("the conditions table only names fields that actually exist in that asset t
 // PKG-LISTING-CREATION-1B outcome A. currentEvidenceMarks() reduces a raw
 // listing_evidence_marks read (any order, the whole ledger) to the map
 // evidenceMission()'s own `unavailable` input expects.
-function mark(item_kind: string, item_key: string, action: string, reason: string | null, created_at: string): EvidenceMarkRow {
-  return { item_kind, item_key, action, reason, created_at };
+//
+// Codex review: seq, not created_at, is the real total order (see
+// 20260902's own migration comment: Postgres's created_at is
+// transaction-stable, so two rows can share a value). Every test below
+// passes seq explicitly, standing for the database identity value real
+// rows would carry, so "which row is latest" is never left to depend on
+// created_at or on array order, matching how the real reducer now works.
+function mark(item_kind: string, item_key: string, action: string, reason: string | null, created_at: string, seq: number): EvidenceMarkRow {
+  return { item_kind, item_key, action, reason, created_at, seq };
 }
 
 test("currentEvidenceMarks: a single marked_unavailable row is returned", () => {
-  const rows = [mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z")];
+  const rows = [mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1)];
   assert.deepEqual(currentEvidenceMarks(rows), [{ item_kind: "photo", item_key: "approach", reason: "No street frontage exists here" }]);
 });
 
 test("currentEvidenceMarks: a later cleared row removes an earlier mark", () => {
   const rows = [
-    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z"),
-    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z"),
+    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z", 2),
   ];
   assert.deepEqual(currentEvidenceMarks(rows), []);
 });
 
 test("currentEvidenceMarks: re-marking after a clear returns the newer reason, not the old one", () => {
   const rows = [
-    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z"),
-    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z"),
-    mark("photo", "approach", "marked_unavailable", "Frontage was later demolished", "2026-09-03T00:00:00Z"),
+    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z", 2),
+    mark("photo", "approach", "marked_unavailable", "Frontage was later demolished", "2026-09-03T00:00:00Z", 3),
   ];
   assert.deepEqual(currentEvidenceMarks(rows), [{ item_kind: "photo", item_key: "approach", reason: "Frontage was later demolished" }]);
 });
 
-test("currentEvidenceMarks: reads by timestamp, not by array order", () => {
+test("currentEvidenceMarks: reads by seq, not by array order or created_at", () => {
   const rows = [
-    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z"),
-    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z"),
+    // Array position 0, but the OLDER created_at AND the lower seq: must lose.
+    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1),
+    // Array position 1, later created_at and higher seq: must win.
+    mark("photo", "approach", "cleared", null, "2026-09-02T00:00:00Z", 2),
   ];
-  assert.deepEqual(currentEvidenceMarks(rows), [], "the row array is out of chronological order; the later (cleared) row must still win");
+  assert.deepEqual(currentEvidenceMarks(rows), [], "seq 2 (cleared) must win over seq 1 regardless of array order");
+});
+
+test("currentEvidenceMarks: two events sharing an identical created_at are still ordered correctly, by seq", () => {
+  // The exact scenario 20260902's migration comment names: Postgres's
+  // created_at is transaction-stable, so a mark and its own clearing can
+  // carry the identical timestamp. seq must still disambiguate correctly.
+  const SAME_INSTANT = "2026-09-01T00:00:00.000Z";
+  const rows = [
+    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", SAME_INSTANT, 5),
+    mark("photo", "approach", "cleared", null, SAME_INSTANT, 6),
+  ];
+  assert.deepEqual(currentEvidenceMarks(rows), [], "seq 6 (cleared) must win over seq 5 despite an identical created_at");
+
+  // And the reverse: if the mark happened to be assigned the higher seq
+  // despite an identical timestamp, it must be the one that wins.
+  const reversed = [
+    mark("photo", "roof", "cleared", null, SAME_INSTANT, 7),
+    mark("photo", "roof", "marked_unavailable", "Roof access was later blocked", SAME_INSTANT, 8),
+  ];
+  assert.deepEqual(currentEvidenceMarks(reversed), [{ item_kind: "photo", item_key: "roof", reason: "Roof access was later blocked" }]);
 });
 
 test("currentEvidenceMarks: a fact and a photo sharing the same key string are tracked independently", () => {
   const rows = [
-    mark("photo", "loading", "marked_unavailable", "No loading dock on this plot", "2026-09-01T00:00:00Z"),
-    mark("fact", "loading", "marked_unavailable", "Loading capacity was never assessed", "2026-09-01T00:00:01Z"),
+    mark("photo", "loading", "marked_unavailable", "No loading dock on this plot", "2026-09-01T00:00:00Z", 1),
+    mark("fact", "loading", "marked_unavailable", "Loading capacity was never assessed", "2026-09-01T00:00:00Z", 2),
   ];
   const result = currentEvidenceMarks(rows);
   assert.equal(result.length, 2);
@@ -338,7 +368,7 @@ test("currentEvidenceMarks: an empty ledger returns an empty list", () => {
 });
 
 test("currentEvidenceMarks output feeds evidenceMission() directly", () => {
-  const rows = [mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z")];
+  const rows = [mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1)];
   const unavailable = new Map(currentEvidenceMarks(rows).map((m) => [m.item_key, m.reason]));
   const items = evidenceMission({ assetType: "office", unavailable });
   const approach = items.find((i) => i.key === "approach");
@@ -356,16 +386,16 @@ test("currentEvidenceMarks output feeds evidenceMission() directly", () => {
 // merely assert it.
 test("currentEvidenceMarks: an invalidated_by_asset_change row makes an earlier mark ineffective, same as cleared", () => {
   const rows = [
-    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z"),
-    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z"),
+    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z", 2),
   ];
   assert.deepEqual(currentEvidenceMarks(rows), []);
 });
 
 test("currentEvidenceMarks: reverting the asset type does not resurrect the original, invalidated mark", () => {
   const rows = [
-    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z"),
-    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z"),
+    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z", 2),
     // Reverting retail -> showroom -> retail finds nothing currently
     // effective to invalidate a second time (the trigger's own WHERE
     // clause), so no further row is appended here. The assertion that
@@ -376,9 +406,9 @@ test("currentEvidenceMarks: reverting the asset type does not resurrect the orig
 
 test("currentEvidenceMarks: a genuinely new mark made after invalidation is effective again", () => {
   const rows = [
-    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z"),
-    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z"),
-    mark("photo", "frontage", "marked_unavailable", "No street-facing glazing under showroom either", "2026-09-03T00:00:00Z"),
+    mark("photo", "frontage", "marked_unavailable", "No frontage, it is an interior mall unit", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z", 2),
+    mark("photo", "frontage", "marked_unavailable", "No street-facing glazing under showroom either", "2026-09-03T00:00:00Z", 3),
   ];
   assert.deepEqual(currentEvidenceMarks(rows), [
     { item_kind: "photo", item_key: "frontage", reason: "No street-facing glazing under showroom either" },
@@ -387,10 +417,57 @@ test("currentEvidenceMarks: a genuinely new mark made after invalidation is effe
 
 test("currentEvidenceMarks: an item never marked unavailable is untouched by an unrelated invalidation", () => {
   const rows = [
-    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z"),
-    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z"),
+    mark("photo", "approach", "marked_unavailable", "No street frontage exists here", "2026-09-01T00:00:00Z", 1),
+    mark("photo", "frontage", "invalidated_by_asset_change", "asset type changed from retail to showroom", "2026-09-02T00:00:00Z", 2),
   ];
   assert.deepEqual(currentEvidenceMarks(rows), [
     { item_kind: "photo", item_key: "approach", reason: "No street frontage exists here" },
   ]);
+});
+
+// Codex review: the evidence-marks route previously accepted any string
+// under 120 characters as item_key. isValidEvidenceItemKey is the real
+// check now applied server-side, against the listing's own real asset
+// type, mirroring mediaCategorization.ts's isValidShotKey exactly.
+test("isValidEvidenceItemKey: a real shot for this asset type is valid", () => {
+  assert.equal(isValidEvidenceItemKey("warehouse", "photo", "loading"), true);
+  assert.equal(isValidEvidenceItemKey("office", "photo", "approach"), true);
+});
+
+test("isValidEvidenceItemKey: a shot belonging to a different asset type is rejected", () => {
+  assert.equal(isValidEvidenceItemKey("office", "photo", "loading"), false);
+});
+
+test("isValidEvidenceItemKey: a real fact field for this asset type is valid", () => {
+  const realField = fieldsFor("office")[0]?.key;
+  assert.ok(realField, "office must have at least one fact field for this test to mean anything");
+  assert.equal(isValidEvidenceItemKey("office", "fact", realField), true);
+});
+
+test("isValidEvidenceItemKey: a fact key belonging to a different asset type is rejected", () => {
+  const officeOnly = fieldsFor("office").find((f) => !fieldsFor("warehouse").some((w) => w.key === f.key));
+  assert.ok(officeOnly, "there must be at least one office-only fact field for this test to mean anything");
+  assert.equal(isValidEvidenceItemKey("warehouse", "fact", officeOnly!.key), false);
+});
+
+test("isValidEvidenceItemKey: an arbitrary caller-supplied string is rejected even under 120 characters", () => {
+  assert.equal(isValidEvidenceItemKey("office", "photo", "not_a_real_shot"), false);
+  assert.equal(isValidEvidenceItemKey("office", "fact", "not_a_real_field"), false);
+  assert.equal(isValidEvidenceItemKey("office", "photo", ""), false);
+});
+
+test("isValidEvidenceItemKey: an unrecognised item_kind is always rejected", () => {
+  assert.equal(isValidEvidenceItemKey("office", "document", "approach"), false);
+});
+
+test("isValidEvidenceItemKey: mediaStandard's own shots for a given type all validate, generically across all 15 asset types", () => {
+  for (const t of [
+    "office", "serviced", "retail", "showroom", "medical", "warehouse",
+    "self_storage", "education", "hospitality", "land", "mixed_use",
+    "gas_station", "wedding_hall", "worker_housing", "entertainment",
+  ]) {
+    for (const s of mediaStandardFor(t).shots) {
+      assert.equal(isValidEvidenceItemKey(t, "photo", s.key), true, `${s.key} should validate for ${t}`);
+    }
+  }
 });

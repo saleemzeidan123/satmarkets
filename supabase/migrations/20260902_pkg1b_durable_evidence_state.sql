@@ -48,6 +48,19 @@ create table if not exists public.listing_evidence_marks (
   actor_user_id  uuid not null references public.users(id),
   actor_account_id uuid not null references public.accounts(id),
   created_at  timestamptz not null default now(),
+  -- Codex review: created_at is transaction-stable in Postgres (every
+  -- statement in the same transaction, and any statements whose clocks
+  -- round to the same tick, can share an identical value), so it is not a
+  -- total order on its own; two rows for the same item with the same
+  -- created_at would make "current state" ambiguous. seq is the real,
+  -- authoritative order: a database-generated identity value, monotonic
+  -- and immutable once assigned, never reused, never settable by a caller.
+  -- Every reader of "current state" (this migration's own index, the
+  -- invalidation trigger in 20260905, and guidedEvidence.ts's
+  -- currentEvidenceMarks()) orders by seq, not by created_at. created_at
+  -- is kept as the human-readable timestamp the UI and audit views show;
+  -- it is no longer load-bearing for ordering.
+  seq         bigint generated always as identity,
   constraint listing_evidence_marks_reason_shape check (
     (action = 'marked_unavailable' and reason is not null and length(btrim(reason)) >= 8)
     or (action = 'cleared' and reason is null)
@@ -55,11 +68,11 @@ create table if not exists public.listing_evidence_marks (
 );
 
 -- The query every reader of "current state" actually runs: latest row per
--- item. DESC on created_at so a caller can `distinct on (listing_id,
--- item_kind, item_key) ... order by ... created_at desc` straight off this
--- index.
+-- item, by seq (the real total order), not created_at. DESC so a caller can
+-- `distinct on (listing_id, item_kind, item_key) ... order by ... seq desc`
+-- straight off this index.
 create index if not exists listing_evidence_marks_current_idx
-  on public.listing_evidence_marks (listing_id, item_kind, item_key, created_at desc);
+  on public.listing_evidence_marks (listing_id, item_kind, item_key, seq desc);
 
 alter table public.listing_evidence_marks enable row level security;
 
@@ -94,4 +107,18 @@ create policy "owner or sat appends evidence marks"
 -- with RLS on, no mark can be rewritten or erased by anyone, including SAT.
 
 comment on table public.listing_evidence_marks is
-  'Append-only ledger of "marked unavailable, here is why" and its clearing, per listing item. Current state for one item is its latest row. Never updated or deleted. Marking an item unavailable is not, and must never be read as, satisfying a publication requirement.';
+  'Append-only ledger of "marked unavailable, here is why" and its clearing, per listing item. Current state for one item is its latest row by seq (not created_at, which is not a total order). Never updated or deleted. Marking an item unavailable is not, and must never be read as, satisfying a publication requirement.';
+
+-- Codex review: concurrent conflict policy, stated once, here.
+--
+-- Two callers racing to mark and clear the same item (or two marks, or two
+-- clears) are never rejected and never lock against each other: each is
+-- its own INSERT into an append-only table, so both succeed and both are
+-- durably recorded. There is no "conflict" in the lock-contention sense.
+-- What decides which one is CURRENT is seq: whichever insert's identity
+-- value is higher is later, full stop, and every reader agrees, because
+-- every reader uses the same seq-ordered query. This is last-writer-wins
+-- by a real total order, not by wall-clock time, and it is a deliberate
+-- choice: the ledger's job is to record what was asserted and in what
+-- order, not to arbitrate which caller "should have won" a race that both
+-- callers experienced as a normal, unsynchronized action.
