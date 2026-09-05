@@ -121,6 +121,12 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       sort_order: count ?? 0,
       alt_en: label || null,
       plan_type: planType,
+      // Codex review round 3, item 1: see the identical comment in
+      // media/route.ts. Floorplans and brochures go through the same
+      // getPublicListingMedia() filter as photos, so the same window
+      // (public-by-default before content_sha256 is ever recorded) applies
+      // here too.
+      visibility: "private",
     })
     .select("id")
     .single();
@@ -134,7 +140,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 
   const { data: trustedRows, error: trustedErr } = await serviceRole
     .from("listing_media")
-    .update({ content_sha256: sha256 })
+    .update({ content_sha256: sha256, visibility: "public" })
     .eq("id", mediaId)
     .select("id");
   // Codex review round 2, item 12 (Fable threat-model review): see the

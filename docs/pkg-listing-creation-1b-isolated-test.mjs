@@ -1161,6 +1161,57 @@ async function main() {
       }
     });
 
+    console.log("\n=== Step 8f: newly inserted media is not publicly eligible before the trusted integrity write completes (Codex review round 3, item 1) ===");
+    await check("a row inserted visibility='private' does not appear in the public-media filter until the trusted UPDATE flips it to 'public'", async () => {
+      // Reproduces media/route.ts's and docs/route.ts's own two-phase write
+      // exactly: phase 1 (the session-scoped client's own INSERT) now sets
+      // visibility='private' explicitly rather than taking the column's own
+      // 'public' default, and phase 2 (the service-role UPDATE that writes
+      // content_sha256/original_path/derived_*) flips it to 'public' in the
+      // SAME statement, not a separate one after. A request landing between
+      // the two phases must see nothing.
+      const acctW = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const listingW = (await admin.query("insert into public.listings (account_id) values ($1) returning id", [acctW])).rows[0].id;
+      const userW = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+      const c = await asTestRole(pg, { userId: userW, accountId: acctW, isSat: false });
+      const svc = await asServiceRole(pg);
+      try {
+        const mediaId = (
+          await c.query(
+            "insert into public.listing_media (listing_id, path, kind, source, visibility) values ($1, 'acct/listing/new.webp', 'photo', 'upload', 'private') returning id",
+            [listingW],
+          )
+        ).rows[0].id;
+
+        const midway = await admin.query(
+          "select path from public.listing_media where id = $1 and visibility = 'public' and moderation_state <> 'removed'",
+          [mediaId],
+        );
+        assert(midway.rowCount === 0, "the row must not be publicly visible between the two phases of the write");
+
+        // All four derivation fields together, matching migration D's own
+        // listing_media_derivation_shape constraint (recorded together or
+        // not at all) and the real route's own UPDATE payload exactly.
+        await svc.query(
+          `update public.listing_media
+             set content_sha256 = 'deadbeef', original_path = 'acct/listing/originals/new.jpg',
+                 derived_transforms = '{downscale,format_convert}', derived_by = 'system:upload-pipeline',
+                 derived_at = now(), visibility = 'public'
+             where id = $1`,
+          [mediaId],
+        );
+
+        const after = await admin.query(
+          "select path from public.listing_media where id = $1 and visibility = 'public' and moderation_state <> 'removed'",
+          [mediaId],
+        );
+        assert(after.rowCount === 1, "the row must become publicly visible once the trusted write completes and flips visibility in the same statement");
+      } finally {
+        await c.end();
+        await svc.end();
+      }
+    });
+
     console.log("\n=== Step 9: rollback, then forward re-apply ===");
     await check("rollback SQL runs with no error", async () => {
       await admin.query(ROLLBACK_SQL);

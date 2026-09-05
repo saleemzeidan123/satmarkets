@@ -199,6 +199,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       sort_order: count ?? 0,
       alt_en: label || null,
       plan_type: planType,
+      // Codex review round 3, item 1: visibility's own column default is
+      // 'public' (src/lib/mediaVisibility.ts), which would otherwise make
+      // this row publicly readable (getPublicListingMedia()) the instant
+      // this INSERT commits, before the trusted-column UPDATE below has
+      // recorded content_sha256/original_path/derived_* at all. Inserted
+      // private and flipped to public only inside that same UPDATE, so a
+      // request landing between the two never sees a row whose integrity
+      // record does not exist yet. Not a trusted column (migration B's own
+      // trigger deliberately leaves visibility to the owner, see section 6
+      // of the runbook), so the session client may legitimately set it.
+      visibility: "private",
     })
     .select("id")
     .single();
@@ -220,6 +231,9 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       derived_transforms: derivation.transforms,
       derived_by: derivation.appliedBy,
       derived_at: derivation.appliedAt,
+      // Made public in the SAME write that finalizes the integrity record,
+      // not a separate step after it: see the INSERT's own comment above.
+      visibility: "public",
     })
     .eq("id", mediaId)
     .select("id");
