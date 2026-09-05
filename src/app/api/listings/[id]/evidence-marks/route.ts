@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
+import { isValidEvidenceItemKey } from "@/lib/guidedEvidence";
 
 export const runtime = "nodejs";
 
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!sb) return NextResponse.json({ error: "Storage unavailable.", code: "storage_unavailable" }, { status: 503 });
 
   const listingId = params.id;
-  const { data: listing } = await sb.from("listings").select("id, account_id").eq("id", listingId).single();
+  const { data: listing } = await sb.from("listings").select("id, account_id, asset_type").eq("id", listingId).single();
   if (!listing) return NextResponse.json({ error: "Listing not found.", code: "listing_not_found" }, { status: 404 });
   // Owner writes on their own listing, or SAT writes on any listing (assisting
   // a lister, or correcting a record), matching the table's own RLS policy.
@@ -59,6 +60,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   const action = typeof body.action === "string" ? body.action : "";
   if (!ITEM_KINDS.has(itemKind) || !itemKey || itemKey.length > 120 || !ACTIONS.has(action)) {
     return NextResponse.json({ error: "That request could not be read. Reload the page and try again.", code: "invalid_request_body" }, { status: 400 });
+  }
+  // Codex review: a length check alone accepted any string as a valid
+  // item_key, letting a caller assert "does not exist" against a shot or
+  // fact key that means nothing for this listing's real asset type, read
+  // server-side (never the client's own claim) exactly as media
+  // categorization already does for shot_key.
+  if (!isValidEvidenceItemKey((listing as { asset_type: string }).asset_type, itemKind, itemKey)) {
+    return NextResponse.json({ error: "That item is not part of this listing's guided evidence.", code: "item_key_invalid" }, { status: 400 });
   }
 
   // Forbidden for cleared (nothing to explain about no longer asserting

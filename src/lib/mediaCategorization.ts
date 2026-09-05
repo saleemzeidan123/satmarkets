@@ -4,16 +4,16 @@
 // media_condition (see supabase/migrations/20260902b_pkg1b_media_categorization.sql
 // for the columns themselves and the reasoning behind their shape).
 //
-// is_cover, rights_acknowledged_by/at, visibility and moderation_state are
-// deliberately untouched here. The migration added all seven columns
-// together because they share one table and one design review, but is_cover
-// in particular collides with an existing, unrelated "cover photo" concept
-// this codebase already has, implicit in sort_order (see media/route.ts's
-// own PATCH, which makes sort_order 0 the cover). Whether the new boolean
-// replaces that convention or serves some other purpose is a real product
-// decision with public-facing blast radius that has not been made, so this
-// module, and the route and UI built against it, stop at the three columns
-// that carry no such conflict.
+// rights_acknowledged_by/at, visibility and moderation_state are
+// deliberately untouched here: no control sets any of them yet, and
+// building validation for a state nothing can produce would be a
+// half-finished feature. An earlier migration draft also added an
+// is_cover boolean, which would have collided with this codebase's
+// existing, working "cover photo" convention (sort_order 0, see
+// media/route.ts's own PATCH); Codex's own review resolved that
+// collision by removing is_cover from the migration entirely rather than
+// leaving a second, unused source of truth for the same fact, so there is
+// no fourth column waiting here, only three genuinely deferred ones.
 //
 // Pure: no I/O, no React, no clock, matching mediaStandard.ts's own
 // discipline. No em dashes (Law 2).

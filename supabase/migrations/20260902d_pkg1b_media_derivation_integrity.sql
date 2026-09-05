@@ -94,3 +94,69 @@ comment on column public.listing_media.derived_by is
   'What applied derived_transforms: a system identifier (e.g. system:upload-pipeline) for this package''s unconditional processing, or in a future feature this schema does not itself add, the user who applied an optional edit.';
 comment on column public.listing_media.derived_at is
   'When derived_transforms was applied. Set together with original_path and derived_by in the same insert; never updated afterwards, since a listing_media row''s file is replaced by deleting and re-uploading, not edited in place.';
+
+-- Codex review: these four columns are the system's own record of what it
+-- did to a file, not a fact a caller's own session may assert about
+-- itself. A lister able to set original_path/derived_by/derived_at/
+-- derived_transforms directly could claim a pipeline ran that never did
+-- (or point original_path at a storage object that is not really theirs),
+-- which is exactly the forged-provenance risk this migration's own
+-- integrity model exists to close. Written only through
+-- getSupabaseServiceRole() (src/lib/supabase/serviceRole.ts).
+--
+-- A trigger, not a column-level REVOKE: 20260902b's own comment records
+-- why a REVOKE was tried first and does not actually work (a pre-existing
+-- table-level GRANT silently outranks it). current_user = 'service_role'
+-- is the one role this trigger exempts, matching exactly how
+-- getSupabaseServiceRole() connects.
+create or replace function public.listing_media_protect_trusted_columns_d()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- service_role is the trusted app-level write path, and is the intended,
+  -- reachable exemption in production. A genuine Postgres superuser
+  -- (rolsuper) is exempted too, since it holds strictly more power than
+  -- this trigger could ever meaningfully restrict; this is a defence-in-depth
+  -- exemption for whatever runs this migration (e.g. a self-hosted
+  -- Postgres superuser), not a claim about what Supabase's own hosted
+  -- SQL-editor session runs as. Codex review round 2, item 12 (Fable
+  -- threat-model review, citing supabase.com/docs/guides/database/postgres/roles-superuser):
+  -- Supabase's own `postgres` role in a managed project is NOT flagged
+  -- rolsuper, so an operator using the Supabase dashboard's SQL editor does
+  -- NOT reach this exemption and IS subject to this trigger like any other
+  -- non-service_role session. That is not a defect: the trigger's actual
+  -- job (blocking authenticated/anon from forging these columns) still
+  -- holds regardless. If an operator genuinely needs to bypass this
+  -- trigger from the SQL editor, the correct fix is an explicit,
+  -- auditable role switch (e.g. `set role service_role;`, if the
+  -- session's own privileges permit it) confirmed against the real
+  -- project before it is relied on, not a signal to loosen this
+  -- exemption; docs/pkg-listing-creation-1b-migration-runbook.md section
+  -- 9 names this as a real-schema preflight question, not yet answered
+  -- from this environment.
+  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+    return new;
+  end if;
+  if TG_OP = 'INSERT' then
+    if new.original_path is not null or new.derived_by is not null
+       or new.derived_at is not null or cardinality(new.derived_transforms) > 0 then
+      raise exception 'only a trusted server process may set original_path/derived_transforms/derived_by/derived_at' using errcode = '42501';
+    end if;
+  elsif TG_OP = 'UPDATE' then
+    if new.original_path is distinct from old.original_path
+       or new.derived_by is distinct from old.derived_by
+       or new.derived_at is distinct from old.derived_at
+       or new.derived_transforms is distinct from old.derived_transforms then
+      raise exception 'only a trusted server process may change original_path/derived_transforms/derived_by/derived_at' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists listing_media_protect_trusted_columns_d on public.listing_media;
+create trigger listing_media_protect_trusted_columns_d
+  before insert or update on public.listing_media
+  for each row
+  execute function public.listing_media_protect_trusted_columns_d();

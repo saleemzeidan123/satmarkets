@@ -8,9 +8,9 @@
 -- made guidedEvidence.ts's per-shot coverage degrade to "any photo present"
 -- in PKG-LISTING-CREATION-1A (deferred-contracts item 1); this migration is
 -- that item's own drafted schema, extended with the rest of outcome B:
--- building/unit scope, current-vs-illustrative condition, an explicit cover
--- flag, a rights acknowledgement, a visibility state, and a moderation
--- state that does not imply approval before review has happened.
+-- building/unit scope, current-vs-illustrative condition, a rights
+-- acknowledgement, a visibility state, and a moderation state that does
+-- not imply approval before review has happened.
 --
 -- UNCATEGORISED IS A VALID, HONEST STATE.
 --
@@ -18,6 +18,20 @@
 -- shot" and never inferred as any particular shot; the same convention this
 -- package's own guidedEvidence.ts already uses for fulfilment being null on
 -- a conditional item. No column here defaults to a guess.
+--
+-- NO is_cover COLUMN, ON PURPOSE. Codex review: an earlier draft of this
+-- migration added one, and the application deliberately never built a
+-- control that could set it (mediaCategorization.ts's own header comment
+-- named the reason: this codebase already has a working, sort_order = 0,
+-- "cover photo" convention, used by the public listing page, the card
+-- component, and the dashboard media manager's own "make cover" action). A
+-- second, unused column recording the same fact a different way is a
+-- double source of truth waiting to drift, not a deferred feature; the
+-- ruling for this package is to keep the one rule that already works
+-- everywhere rather than ship an inert column beside it. If a future
+-- package genuinely needs a cover concept sort_order cannot express, that
+-- is a new, deliberate design decision, not a column already sitting here
+-- unused.
 
 alter table public.listing_media
   add column if not exists shot_key text null,
@@ -25,7 +39,6 @@ alter table public.listing_media
     check (media_scope in ('building', 'unit')),
   add column if not exists media_condition text null
     check (media_condition in ('current', 'illustrative')),
-  add column if not exists is_cover boolean not null default false,
   add column if not exists rights_acknowledged_by uuid null references public.users(id),
   add column if not exists rights_acknowledged_at timestamptz null,
   -- 'public' is the honest default, not 'private', for the same reason
@@ -48,14 +61,89 @@ alter table public.listing_media
   add column if not exists moderation_state text not null default 'unreviewed'
     check (moderation_state in ('unreviewed', 'flagged', 'removed'));
 
--- At most one cover photo per listing. A real DB constraint, not an
--- application-level "unset the old one first" convention that a concurrent
--- request could race past the same way PKG-LISTING-CREATION-1A's own review
--- found ownership needed enforcing in the query itself, not only in app
--- code.
-create unique index if not exists listing_media_one_cover_per_listing
-  on public.listing_media (listing_id)
-  where is_cover;
+-- Codex review: a trusted-write boundary, enforced here in the database,
+-- not only by application-route logic (a signed-in user can call
+-- Supabase/PostgREST directly with their own session, bypassing any route
+-- that never runs).
+--
+-- A first version of this tried a column-level REVOKE from "authenticated"
+-- and was wrong: Postgres's column-level REVOKE does not retract a
+-- broader, pre-existing TABLE-level GRANT (this codebase's own
+-- authenticated role already has table-level UPDATE on listing_media for
+-- shot_key/media_scope/media_condition), so the REVOKE was a silent
+-- no-op, caught only because an adversarial test actually tried the write
+-- rather than trusting the SQL to mean what it said. A trigger is used
+-- instead: it fires regardless of the grant structure already in place
+-- (this migration does not need to know, or match, whatever the real
+-- production table's existing grants are), and it is what the isolated
+-- test harness's own adversarial tests actually exercise.
+--
+-- rights_acknowledged_by/at record who acknowledged rights and when: a
+-- fact only that real action may produce, never a value the row's own
+-- owner asserts about themselves. moderation_state is a SAT/reviewer
+-- decision about content, not the lister's own to make (see the runbook's
+-- own section on visibility vs. moderation authority). Both are written,
+-- when a real workflow exists to write them, only through
+-- getSupabaseServiceRole() (src/lib/supabase/serviceRole.ts), which
+-- connects to Postgres AS Supabase's real service_role, the one role this
+-- trigger exempts.
+--
+-- visibility is deliberately NOT protected here: it is the owner's own
+-- privacy choice about their own photo (see item 6's ruling), so it stays
+-- reachable through the ordinary owner-scoped RLS update policy once a
+-- real control exists to set it, the same as shot_key/media_scope/
+-- media_condition above.
+create or replace function public.listing_media_protect_trusted_columns_b()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- service_role is the trusted app-level write path, and is the intended,
+  -- reachable exemption in production. A genuine Postgres superuser
+  -- (rolsuper) is exempted too, since it holds strictly more power than
+  -- this trigger could ever meaningfully restrict; this is a defence-in-depth
+  -- exemption for whatever runs this migration (e.g. a self-hosted
+  -- Postgres superuser), not a claim about what Supabase's own hosted
+  -- SQL-editor session runs as. Codex review round 2, item 12 (Fable
+  -- threat-model review, citing supabase.com/docs/guides/database/postgres/roles-superuser):
+  -- Supabase's own `postgres` role in a managed project is NOT flagged
+  -- rolsuper, so an operator using the Supabase dashboard's SQL editor does
+  -- NOT reach this exemption and IS subject to this trigger like any other
+  -- non-service_role session. That is not a defect: the trigger's actual
+  -- job (blocking authenticated/anon from forging these columns) still
+  -- holds regardless. If an operator genuinely needs to bypass this
+  -- trigger from the SQL editor, the correct fix is an explicit,
+  -- auditable role switch (e.g. `set role service_role;`, if the
+  -- session's own privileges permit it) confirmed against the real
+  -- project before it is relied on, not a signal to loosen this
+  -- exemption; docs/pkg-listing-creation-1b-migration-runbook.md section
+  -- 9 names this as a real-schema preflight question, not yet answered
+  -- from this environment.
+  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+    return new;
+  end if;
+  if TG_OP = 'INSERT' then
+    if new.rights_acknowledged_by is not null
+       or new.rights_acknowledged_at is not null
+       or new.moderation_state is distinct from 'unreviewed' then
+      raise exception 'only a trusted server process may set rights_acknowledged_by/at or a non-default moderation_state' using errcode = '42501';
+    end if;
+  elsif TG_OP = 'UPDATE' then
+    if new.rights_acknowledged_by is distinct from old.rights_acknowledged_by
+       or new.rights_acknowledged_at is distinct from old.rights_acknowledged_at
+       or new.moderation_state is distinct from old.moderation_state then
+      raise exception 'only a trusted server process may change rights_acknowledged_by/at or moderation_state' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists listing_media_protect_trusted_columns_b on public.listing_media;
+create trigger listing_media_protect_trusted_columns_b
+  before insert or update on public.listing_media
+  for each row
+  execute function public.listing_media_protect_trusted_columns_b();
 
 -- "Changing the asset type must not silently retain incompatible media
 -- classifications" (outcome B). The shot taxonomy is asset-type-specific

@@ -56,3 +56,68 @@ comment on column public.listing_media.content_sha256 is
 
 create unique index if not exists listing_media_content_sha256_unique
   on public.listing_media (listing_id, content_sha256);
+
+-- Codex review: the hash's own honesty (see the comment above: "never
+-- selected into any client-facing response") is a read-side convention.
+-- This is the write-side counterpart, enforced by the database: a
+-- caller's own session ("authenticated") must never be able to set an
+-- arbitrary content_sha256 directly, which would let it either forge a
+-- false duplicate-collision against another lister's upload or falsify
+-- its own file's recorded fingerprint. Written only through
+-- getSupabaseServiceRole() (src/lib/supabase/serviceRole.ts), after the
+-- upload route has already verified session and listing ownership with
+-- the ordinary client, matching the real hash of the bytes actually
+-- received.
+--
+-- A trigger, not a column-level REVOKE: 20260902b's own comment records
+-- why a REVOKE was tried first and does not actually work (a pre-existing
+-- table-level GRANT silently outranks it). current_user = 'service_role'
+-- is the one role this trigger exempts, matching exactly how
+-- getSupabaseServiceRole() connects.
+create or replace function public.listing_media_protect_trusted_columns_c()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- service_role is the trusted app-level write path, and is the intended,
+  -- reachable exemption in production. A genuine Postgres superuser
+  -- (rolsuper) is exempted too, since it holds strictly more power than
+  -- this trigger could ever meaningfully restrict; this is a defence-in-depth
+  -- exemption for whatever runs this migration (e.g. a self-hosted
+  -- Postgres superuser), not a claim about what Supabase's own hosted
+  -- SQL-editor session runs as. Codex review round 2, item 12 (Fable
+  -- threat-model review, citing supabase.com/docs/guides/database/postgres/roles-superuser):
+  -- Supabase's own `postgres` role in a managed project is NOT flagged
+  -- rolsuper, so an operator using the Supabase dashboard's SQL editor does
+  -- NOT reach this exemption and IS subject to this trigger like any other
+  -- non-service_role session. That is not a defect: the trigger's actual
+  -- job (blocking authenticated/anon from forging these columns) still
+  -- holds regardless. If an operator genuinely needs to bypass this
+  -- trigger from the SQL editor, the correct fix is an explicit,
+  -- auditable role switch (e.g. `set role service_role;`, if the
+  -- session's own privileges permit it) confirmed against the real
+  -- project before it is relied on, not a signal to loosen this
+  -- exemption; docs/pkg-listing-creation-1b-migration-runbook.md section
+  -- 9 names this as a real-schema preflight question, not yet answered
+  -- from this environment.
+  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+    return new;
+  end if;
+  if TG_OP = 'INSERT' then
+    if new.content_sha256 is not null then
+      raise exception 'only a trusted server process may set content_sha256' using errcode = '42501';
+    end if;
+  elsif TG_OP = 'UPDATE' then
+    if new.content_sha256 is distinct from old.content_sha256 then
+      raise exception 'only a trusted server process may change content_sha256' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists listing_media_protect_trusted_columns_c on public.listing_media;
+create trigger listing_media_protect_trusted_columns_c
+  before insert or update on public.listing_media
+  for each row
+  execute function public.listing_media_protect_trusted_columns_c();
