@@ -30,18 +30,36 @@ export type PublicMediaRow = {
 
 /**
  * Every photo, floor plan and brochure row an anonymous visitor may see for
- * one listing, in display order. Returns [] on any storage failure or when
- * the listing has no such media, never throws: a public page's own
- * DataState handling is for the listing lookup itself, not for this.
+ * one listing, in display order.
+ *
+ * Codex review round 3, item 2: this used to return a bare `[]` on EITHER
+ * a genuine "no such media" OR any query/client failure, the same
+ * dataOk-collapsing defect `getListingById`/`getBuildingById`
+ * (src/lib/queries/listings.ts) were already fixed for. A caller could not
+ * tell "this listing really has no photos" from "we could not check", so a
+ * transient Supabase outage read identically to an empty listing and
+ * silently fell back to a generic placeholder image, which is misleading
+ * in a different way than either honest state. Matches the same
+ * `{ dataOk, ... }` shape those two functions already use, so a caller
+ * checks it the same way.
  */
-export const getPublicListingMedia = cache(async (listingId: string): Promise<PublicMediaRow[]> => {
+export type PublicListingMediaResult = {
+  /** False only when the read itself could not be trusted: no Supabase
+   * client, or the query errored. Never false for a genuine "no media",
+   * which is `dataOk: true, media: []`. */
+  dataOk: boolean;
+  media: PublicMediaRow[];
+};
+
+export const getPublicListingMedia = cache(async (listingId: string): Promise<PublicListingMediaResult> => {
   const sb = await getSupabaseServer();
-  if (!sb) return [];
-  const { data } = await scopeToPublicMedia(
+  if (!sb) return { dataOk: false, media: [] };
+  const { data, error } = await scopeToPublicMedia(
     sb.from("listing_media")
       .select("path,source,kind,mime,alt_en,alt_ar,plan_type,sort_order")
       .eq("listing_id", listingId)
       .in("kind", ["photo", "floorplan", "brochure"]),
   ).order("sort_order");
-  return (data as PublicMediaRow[]) ?? [];
+  if (error) return { dataOk: false, media: [] };
+  return { dataOk: true, media: (data as PublicMediaRow[]) ?? [] };
 });

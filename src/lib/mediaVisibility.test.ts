@@ -130,6 +130,28 @@ test("the canonical public reader actually applies the public-media rule", () =>
   );
 });
 
+// Codex review round 3, item 2: matches the same dataOk-distinguishing
+// shape src/lib/queries/listings.ts's own getListingById/getBuildingById
+// already use, checked the same way this codebase already checks those
+// (source inspection, since none of these query-layer functions has a
+// mocked-client unit test anywhere in this repo; a real client is only
+// exercised live or via the structural scan above).
+test("the canonical public reader distinguishes a real query failure from a genuinely empty result", () => {
+  const src = readFileSync(join(ROOT, "lib/queries/publicMedia.ts"), "utf8");
+  assert.match(
+    src,
+    /dataOk/,
+    "getPublicListingMedia() must return a dataOk flag: without it, a Supabase outage and a listing with no " +
+      "photos are indistinguishable to every caller, the same defect class getListingById/getBuildingById were " +
+      "already fixed for.",
+  );
+  assert.match(
+    src,
+    /error\s*}\s*=\s*await\s+scopeToPublicMedia|const\s*{\s*data,\s*error\s*}/,
+    "the query's own returned error must actually be read, not discarded, or dataOk can never become false.",
+  );
+});
+
 test("the public listing page consumes the canonical reader, not a query of its own", () => {
   const src = readFileSync(join(ROOT, "app/[locale]/listings/[id]/page.tsx"), "utf8");
   assert.match(
