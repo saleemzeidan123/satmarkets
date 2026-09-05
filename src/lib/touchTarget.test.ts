@@ -203,3 +203,29 @@ test("the inactive language segment passes SC 1.4.3 on its own pill", () => {
     `the active language segment is ${onRatio.toFixed(2)}:1, white on #${on[1]}, below 4.5:1`,
   );
 });
+
+// ---------------------------------------------------------------------------
+// PKG-LISTING-CREATION-1B outcome B/E. The three new per-photo categorisation
+// controls (shot/scope/condition) added no CSS of their own for the
+// coarse-pointer floor: they inherit it for free from the bare `select`
+// selector already in the enumeration above, which applies to every
+// <select> in the app regardless of class. That inheritance is only real as
+// long as these three controls stay real <select> elements; a future
+// refactor to a custom-styled div-based dropdown would silently drop out of
+// the bare-tag rule with nothing to catch it, so this locks in the markup
+// choice itself, not a new CSS rule.
+// ---------------------------------------------------------------------------
+test("ListingMediaManager's three categorisation controls are real <select> elements, inheriting the bare-select coarse-pointer floor", () => {
+  const src = readFileSync(join(ROOT, "src", "components", "ListingMediaManager.tsx"), "utf8");
+  const selectCount = (src.match(/<select\b/g) ?? []).length;
+  assert.ok(
+    selectCount >= 3,
+    `expected at least 3 <select> elements (shot, scope, condition), found ${selectCount}. If any of ` +
+      "these three were changed to a non-<select> control, they would silently drop out of the generic " +
+      "`select { min-block-size: 44px }` rule in sat-platform.css's coarse-pointer block and need an " +
+      "explicit floor of their own.",
+  );
+  assert.match(src, /aria-label=\{t\.shotAt/, "the shot select lost its per-tile accessible name");
+  assert.match(src, /aria-label=\{t\.scopeAt/, "the scope select lost its per-tile accessible name");
+  assert.match(src, /aria-label=\{t\.conditionAt/, "the condition select lost its per-tile accessible name");
+});

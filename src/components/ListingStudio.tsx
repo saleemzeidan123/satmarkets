@@ -34,6 +34,7 @@ import { evidenceMission, evidenceSummary, evidenceRequirementLabel, evidenceFul
 import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
 import { arabicOriginLabel, arabicReviewLabel, type ArabicOriginContext } from "@/lib/provenanceDisplay";
 import { checkFileType, checkFileSize, checkDecodable, checkMinDimensions, readOrientationHint, findDuplicates } from "@/lib/uploadQuality";
+import { apiErrorMessage } from "@/lib/apiErrors";
 
 // The Listing Studio, the surface ADV-2 is built to produce.
 //
@@ -118,6 +119,11 @@ export type StudioInitial = {
   // asset is shown by, and that question needs the recorded type, not the count.
   floorplan_types: (string | null)[];
   document_count: number;
+  // PKG-LISTING-CREATION-1B outcome A. The listing_evidence_marks ledger's
+  // current state (its latest row per item, where that latest row is a
+  // marked_unavailable, not a cleared): what to seed unavailableItems with
+  // so a mark made last visit is not asked for again.
+  evidence_marks: { item_kind: "photo" | "fact"; item_key: string; reason: string }[];
 };
 
 type FormFields = {
@@ -285,12 +291,18 @@ export default function ListingStudio({
   const [docKinds, setDocKinds] = useState<DocumentKind[]>([]);
   const [attrs, setAttrs] = useState<Record<string, unknown>>(seed.attrs);
   const [ch, setCh] = useState<Channels>(seed.ch);
-  // Session-only. See guidedEvidence.ts's own header: no column exists to hold a
-  // per-item "unavailable, here is why" answer, so it lives here for the length
-  // of this visit and is never sent to the server. Key is the evidence item's
-  // key (a photo shot key or a registry field key); value is the reason, which
-  // may be empty.
-  const [unavailableItems, setUnavailableItems] = useState<Map<string, string>>(new Map());
+  // PKG-LISTING-CREATION-1B outcome A. Seeded from the durable
+  // listing_evidence_marks ledger when resuming a draft (see StudioInitial's
+  // own evidence_marks field), so a mark made last visit is not asked for
+  // again. Key is the evidence item's key (a photo shot key or a registry
+  // field key); value is the reason. Local state still updates instantly on
+  // every keystroke for live evidenceMission() computation; saveEvidenceMark
+  // below is what makes a reason durable, once it is a real reason (see its
+  // own comment) and the draft has an id to save it against.
+  const [unavailableItems, setUnavailableItems] = useState<Map<string, string>>(
+    () => new Map((initial?.evidence_marks ?? []).filter((m) => m.item_kind === "photo").map((m) => [m.item_key, m.reason])),
+  );
+  const [evidenceMarkError, setEvidenceMarkError] = useState<string | null>(null);
   // Session-only review, per field: "I have read this and it reads
   // correctly". Never rewrites origin; see provenanceDisplay.ts's own
   // header. Tracked separately per field because reviewing the title says
@@ -491,6 +503,40 @@ export default function ListingStudio({
       else next.delete(key);
       return next;
     });
+    // Unchecking is unambiguous and durable immediately. Marking unavailable
+    // is committed on blur (commitUnavailableReason below) once the typed
+    // reason is real, not on every keystroke.
+    if (!unavailable) void saveEvidenceMark(key, "cleared");
+  }
+
+  /** Fired on the reason field's blur: the one moment a typed reason is "done". */
+  function commitUnavailableReason(key: string) {
+    const reason = (unavailableItems.get(key) ?? "").trim();
+    if (reason.length >= 8) void saveEvidenceMark(key, "marked_unavailable", reason);
+  }
+
+  /**
+   * Writes one row to listing_evidence_marks. A no-op, not an error, before
+   * the draft has its own id: the durable ledger has nothing to attach to
+   * yet, and the in-memory Map above already carries the mark for this
+   * visit's own evidenceMission() computation regardless.
+   */
+  async function saveEvidenceMark(itemKey: string, action: "marked_unavailable" | "cleared", reason?: string) {
+    if (!listingId) return;
+    setEvidenceMarkError(null);
+    try {
+      const res = await fetch(`/api/listings/${listingId}/evidence-marks`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ item_kind: "photo", item_key: itemKey, action, reason }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        setEvidenceMarkError(apiErrorMessage(j.code, ar, t("That could not be saved.", "تعذّر حفظ ذلك.")));
+      }
+    } catch {
+      setEvidenceMarkError(t("That could not be saved.", "تعذّر حفظ ذلك."));
+    }
   }
 
   // The facts as the model reads them: what is already on the server plus what
@@ -660,7 +706,7 @@ export default function ListingStudio({
           <div key={key}>
             <label className={lbl} htmlFor="area_sqm">{areaFieldLabel(loc)} *</label>
             <input id="area_sqm" {...flagFor("area_sqm", true)} type="number" inputMode="numeric" value={f.area_sqm} onChange={(e) => set("area_sqm", e.target.value)} className={inp} />
-            <p className={help}>{t("Area sets the unit rate and every comparison this listing appears in.", "المساحة تحدد سعر المتر وكل مقارنة تظهر فيها هذه القائمة.")}</p>
+            <p className={help}>{t("Area sets the unit rate and every comparison this listing appears in.", "المساحة تحدد سعر المتر وكل مقارنة يظهر فيها هذا العرض.")}</p>
           </div>
         );
       case "price":
@@ -1092,8 +1138,8 @@ export default function ListingStudio({
       field?: string;
     };
     if (!res.ok) {
-      /* RC10, finding 22. `json.error` used to be rendered here, and it is an
-         English sentence composed in the route, so every refusal on this form
+      /* RC10, finding 22. The route's own English-language field on this
+         response used to be rendered here directly, composed in the route, so every refusal on this form
          was delivered to an Arabic lister in English: the wrong area, the
          expired licence, the missing permit, the pin outside the Kingdom, and
          on a failed write PostgREST's own internal message. The route now
@@ -1178,7 +1224,15 @@ export default function ListingStudio({
       let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/media`, { method: "POST", body: fd });
-        ok = r.ok;
+        // PKG-LISTING-CREATION-1B outcome C interacting with the retry
+        // mechanism above: a dropped connection AFTER the server saved the
+        // file but BEFORE the response arrived looks identical, from here,
+        // to a genuine failure, so this file would be retried. Without this
+        // line the retry would hit the new duplicate-content constraint and
+        // come back 409 forever, turning "already attached, actually fine"
+        // into a permanently stuck failure. A duplicate response IS the
+        // attached state this loop is trying to reach, so it counts as ok.
+        ok = r.ok || r.status === 409;
       } catch {}
       if (ok) addedPhotos++;
       else { remainingFiles.push(file); failedPhotoLabels.push(file.name); }
@@ -1197,7 +1251,9 @@ export default function ListingStudio({
       let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/${isPdf ? "docs" : "media"}`, { method: "POST", body: fd });
-        ok = r.ok;
+        // See the photo loop's own comment above: a 409 here means this
+        // exact file is already attached, which is retry success, not failure.
+        ok = r.ok || r.status === 409;
       } catch {}
       if (ok) { addedPlans++; addedPlanTypes.push(type); }
       else { remainingFloorFiles.push(file); remainingFloorTypes.push(type); failedPlanLabels.push(file.name); }
@@ -1211,7 +1267,9 @@ export default function ListingStudio({
       let ok = false;
       try {
         const r = await fetch(`/api/listings/${id}/docs`, { method: "POST", body: fd });
-        ok = r.ok;
+        // See the photo loop's own comment above: a 409 here means this
+        // exact file is already attached, which is retry success, not failure.
+        ok = r.ok || r.status === 409;
       } catch {}
       if (ok) addedDocs++;
       else { remainingBrochure = brochureFile; brochureFailed = true; }
@@ -1405,12 +1463,14 @@ export default function ListingStudio({
                 }}
                 ar={ar}
               />
-              {/* PKG-LISTING-CREATION-1A. Each photo view this asset type asks for,
-                  with the six-state vocabulary and a real, session-only way to say
-                  a view genuinely does not exist rather than leaving it silently
-                  missing. This does not replace MediaBrief above; MediaBrief is the
-                  bilingual "why" for each view, this is the state and the
-                  mark-unavailable control. */}
+              {/* PKG-LISTING-CREATION-1A, extended by PKG-LISTING-CREATION-1B
+                  outcome A. Each photo view this asset type asks for, with
+                  its requirement/fulfilment state and a real way to say a
+                  view genuinely does not exist, durable once the typed
+                  reason is real (saveEvidenceMark) rather than lost on
+                  reload. This does not replace MediaBrief above; MediaBrief
+                  is the bilingual "why" for each view, this is the state and
+                  the mark-unavailable control. */}
               <div className="mt-4 rounded border border-line p-3">
                 <div className="text-[0.75rem] font-medium text-charcoal/80">
                   {t("Each view, and its state", "كل لقطة، وحالتها")}
@@ -1443,13 +1503,25 @@ export default function ListingStudio({
                             {t("This view does not exist for this space", "هذه اللقطة غير موجودة لهذه المساحة")}
                           </label>
                           {item.fulfilment === "unavailable" && (
-                            <input
-                              type="text"
-                              value={unavailableItems.get(item.key) ?? ""}
-                              onChange={(e) => setItemUnavailable(item.key, true, e.target.value)}
-                              placeholder={t("Why, briefly (optional)", "السبب، باختصار (اختياري)")}
-                              className="mt-1 w-full rounded border border-charcoal/20 px-2 py-1 text-[0.6875rem] min-h-[44px]"
-                            />
+                            <>
+                              <input
+                                type="text"
+                                value={unavailableItems.get(item.key) ?? ""}
+                                onChange={(e) => setItemUnavailable(item.key, true, e.target.value)}
+                                onBlur={() => commitUnavailableReason(item.key)}
+                                placeholder={t("Why, in a few words", "السبب في بضع كلمات")}
+                                className="mt-1 w-full rounded border border-charcoal/20 px-2 py-1 text-[0.6875rem] min-h-[44px]"
+                              />
+                              {(unavailableItems.get(item.key) ?? "").trim().length < 8 ? (
+                                <p className="mt-1 text-[0.6875rem] text-charcoal/65">
+                                  {t("Add a reason, 8 characters or more, to save this permanently.", "أضف سبباً من 8 أحرف على الأقل ليُحفظ هذا بشكل دائم.")}
+                                </p>
+                              ) : !listingId ? (
+                                <p className="mt-1 text-[0.6875rem] text-charcoal/65">
+                                  {t("Saved once this draft is first saved.", "يُحفظ عند حفظ هذه المسودة لأول مرة.")}
+                                </p>
+                              ) : null}
+                            </>
                           )}
                         </div>
                       )}
@@ -1458,10 +1530,13 @@ export default function ListingStudio({
                 </ul>
                 <p className="text-[0.6875rem] text-charcoal/70 mt-2">
                   {t(
-                    "These answers are kept for this visit only and are not saved to the listing. They help you track what is left, and disappear if you leave this page.",
-                    "هذه الإجابات محفوظة لهذه الزيارة فقط ولا تُحفظ في العرض. تساعدك على معرفة ما تبقّى، وتختفي إن غادرت الصفحة.",
+                    "A view marked as not existing, with a real reason, is saved to this listing and asked for again only if you clear the mark. This never counts as supplying the view.",
+                    "اللقطة المحدَّدة كغير موجودة، مع سبب حقيقي، تُحفظ في هذا العرض ولا تُطلب مجدداً إلا إذا ألغيت التحديد. هذا لا يُعدّ تقديماً للقطة بأي حال.",
                   )}
                 </p>
+                {evidenceMarkError && (
+                  <p role="alert" className="text-[0.6875rem] text-red mt-2">{evidenceMarkError}</p>
+                )}
               </div>
             </>
           )}
@@ -1482,7 +1557,7 @@ export default function ListingStudio({
               <div>
                 <div className="text-[0.75rem] font-medium text-charcoal/80">{t("Still missing", "ما زال ناقصاً")}</div>
                 {missing.length === 0 ? (
-                  <p className="text-[0.75rem] text-charcoal/70 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن تحملها هذه القائمة موجودة.")}</p>
+                  <p className="text-[0.75rem] text-charcoal/70 mt-1">{t("Nothing. Every fact this listing can carry is here.", "لا شيء. كل حقيقة يمكن أن يحملها هذا العرض موجودة.")}</p>
                 ) : (
                   <ul className="mt-1.5 space-y-2">
                     {missing.map((c) => (
@@ -1511,7 +1586,7 @@ export default function ListingStudio({
                 <p className="text-[0.75rem] text-charcoal/70 mt-1">
                   {t(
                     `${evidenceSum.requiredOutstanding} required item(s) still missing, ${evidenceSum.recommendedOutstanding} recommended item(s) still missing, ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} with coverage unknown, ${evidenceSum.unavailable} marked unavailable.`,
-                    `${evidenceSum.requiredOutstanding} عنصراً مطلوباً لا يزال ناقصاً، ${evidenceSum.recommendedOutstanding} موصى به لا يزال ناقصاً، ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} تغطيتها غير معروفة، ${evidenceSum.unavailable} مُحدَّد كغير متاح.`,
+                    `${evidenceSum.requiredOutstanding} عنصراً مطلوباً لا يزال ناقصاً، ${evidenceSum.recommendedOutstanding} موصى به لا يزال ناقصاً، ${evidenceSum.requiredUnknownCoverage + evidenceSum.recommendedUnknownCoverage} تغطيتها غير معروفة، ${evidenceSum.unavailable} مُحدَّد كغير موجود.`,
                   )}
                 </p>
               </div>

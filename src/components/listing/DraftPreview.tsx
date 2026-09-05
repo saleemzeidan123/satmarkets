@@ -380,7 +380,7 @@ function EvidenceMissionSummary({
       )}
       {unavailable.length > 0 && (
         <div style={{ marginTop: 10 }}>
-          <div className="muted" style={{ fontSize: "0.71875rem" }}>{ar ? "مُحدَّد كغير متاح" : "Marked unavailable"}</div>
+          <div className="muted" style={{ fontSize: "0.71875rem" }}>{ar ? "مُحدَّد كغير موجود" : "Marked unavailable"}</div>
           <ul style={{ marginTop: 4, paddingInlineStart: 18, fontSize: "0.8125rem" }}>
             {unavailable.map((i) => (
               <li key={i.key}>
