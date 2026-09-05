@@ -807,3 +807,56 @@ that this has been checked against production's real grants (section 4.1's
 gap applies here exactly as it does everywhere else in this package,
 post-migration query 6 in section 10 remains the real, live confirmation
 this runbook still owes).
+
+## 14. Primary sources for the three regulation-derived shots
+
+Section 12's Fable review asserted three shots (warehouse fire protection,
+gas station service block, worker housing fire safety) were tied to real
+Saudi regulatory requirements, from the reviewing model's own general
+knowledge, not a checked citation. Codex's own instruction was explicit:
+record primary sources for anything derived from regulation, and never
+present market convention as a legal requirement. Verified by web search,
+2026-09-05, before letting the claims stand as written:
+
+- **Warehouse fire protection** (`fire_protection`): Saudi Building Code
+  SBC 801 (Fire Protection Requirements) incorporates NFPA 13 (Standard
+  for the Installation of Sprinkler Systems), which requires ESFR
+  sprinkler heads for rack storage above 7.5m; Civil Defense enforces SBC
+  compliance as a building-licensing gate.
+  [SBC 801, official document](https://sbc.gov.sa/ar/BC/Documents/tableofcontent2024/SBC%20801/SBC801_CR_241224-FA.pdf),
+  a primary government source. Corroborating secondary detail:
+  [Sprinkler Systems in Saudi Arabia](https://dar-alhmaya.com/en/sprinkler-systems-in-saudi-arabia-regulations-technology-and-best-practices/),
+  [Saudi Civil Defense Fire Safety Regulations](https://www.lifeco-uk.com/saudi-civil-defense-regulations-for-fire-safety-equipment/).
+- **Gas station service block** (`service_block`): MOMRAH's fuel-station
+  licensing categories require a Category A station to provide a mosque
+  of at least 200 sqm (a Category B station, a 20 sqm prayer room),
+  separate men's and women's restrooms (with real, enforced fines for
+  uncleanliness), and a retail shop.
+  [Complete Fuel Stations Guide 2025](https://raghdan.sa/en/news/complete-fuel-stations-guide-2025-categories-permits-requirements-qualification-and-approved-companies-in-saudi-arabia/),
+  an industry guide summarizing MOMRAH's own categories, not the raw
+  government text itself; corroborating:
+  [Saudi Arabia: 2,500 riyal fine imposed on petrol stations for unkept toilets](https://gulfnews.com/world/gulf/saudi/saudi-arabia-2500-riyal-fine-imposed-on-petrol-stations-for-unkept-toilets-1.98780543).
+- **Worker housing fire safety** (`fire_safety`): labor accommodation is
+  jointly regulated by MOMRAH and HRSD (Ministry of Human Resources and
+  Social Development), whose standards name fire safety systems (alarms,
+  extinguishers) and emergency exits as required, regularly inspected
+  compliance items, alongside per-person space and occupancy limits
+  `assetFields.ts` already records separately.
+  [Legal Requirements for Labor Camp Accommodation in Saudi Arabia](https://www.namariq.com.sa/legal-requirements-for-labor-camp-accommodation-in-saudi-arabia/),
+  [Health and safety in the work environment, HRSD](https://www.hrsd.gov.sa/en/care-about-you/health-and-safety)
+  (the ministry's own site, a primary source for the framework's
+  existence, though not itself the specific worker-housing standard text).
+
+None of these three shots' own lister-facing `why_en`/`why_ar` text was
+rewritten as a result: each already read as a practical, defensible
+statement rather than an overclaimed legal mandate, and the claims check
+out against what was found. What changed is that each now carries a
+source citation in `mediaStandard.ts`'s own comments, so the claim is
+recorded rather than merely believed. The nine shots added on Fable
+review that are NOT regulation-derived (market-convention shots like
+wedding_hall's two-section convention, showroom's mezzanine, retail's F&B
+services and outdoor seating, gas station's ancillary income units, and
+worker housing's compound perimeter and utilities provision) are
+presented in their own why-text as practical/market reasoning, not as
+citing a specific regulation, which is the correct treatment for a market
+convention and was not changed here.
