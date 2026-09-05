@@ -50,7 +50,11 @@ test("the exported constants match the migration's own vocabulary", () => {
   assert.equal(HIDDEN_MODERATION_STATE, "removed");
 });
 
-const ROOT = join(process.cwd(), "src", "app");
+// Codex review, item 3: the scan now covers the complete src tree (not
+// only src/app, where a query helper under src/lib would previously have
+// gone unseen), and every OWNER_SCOPED entry must show a real ownership
+// or SAT-reviewer check nearby, not merely a comment claiming one exists.
+const ROOT = join(process.cwd(), "src");
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -61,40 +65,40 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-const rel = (p: string) => p.split(join("src", "app"))[1].split("\\").join("/").replace(/^\//, "");
+const rel = (p: string) => p.split(join("src"))[1].split("\\").join("/").replace(/^\//, "");
 
 /**
- * Every file under src/app this scan has confirmed queries listing_media at
- * all, with why it is not a public-facing exposure. Each reads its own
- * account's data (ownership checked in the same route/page, elsewhere) or
- * writes only (no anonymous reader is involved either way). A file
- * removed from here without also being deleted, or moved without this
- * list following it, fails "every listing_media reader is classified"
- * below on purpose.
+ * Every file under src this scan has confirmed queries listing_media
+ * directly, with why it is not a public-facing exposure. Each reads its
+ * own account's data (ownership checked in the same route/page) or the
+ * SAT reviewer's own visibility, or writes only (no anonymous reader is
+ * involved either way). A file removed from here without also being
+ * deleted, or moved without this list following it, fails "every
+ * listing_media reader is classified" below on purpose.
  */
 const OWNER_SCOPED_SURFACES = new Set<string>([
-  "[locale]/dashboard/listings/[id]/page.tsx",
-  "[locale]/dashboard/listings/[id]/preview/page.tsx",
-  "[locale]/dashboard/listings/page.tsx",
-  "[locale]/dashboard/new/page.tsx",
-  "api/listings/route.ts",
-  "api/listings/[id]/route.ts",
-  "api/listings/[id]/docs/route.ts",
-  "api/listings/[id]/media/route.ts",
-  "api/listings/[id]/media/[mediaId]/route.ts",
+  "app/[locale]/dashboard/listings/[id]/page.tsx",
+  "app/[locale]/dashboard/listings/[id]/preview/page.tsx",
+  "app/[locale]/dashboard/listings/page.tsx",
+  "app/[locale]/dashboard/new/page.tsx",
+  "app/api/listings/route.ts",
+  "app/api/listings/[id]/route.ts",
+  "app/api/listings/[id]/docs/route.ts",
+  "app/api/listings/[id]/media/route.ts",
+  "app/api/listings/[id]/media/[mediaId]/route.ts",
 ]);
 
 /**
- * Every file under src/app this scan has confirmed serves listing_media to
- * a reader who is not authenticated as the listing's own owner (or SAT):
- * an anonymous visitor to the public listing page. Each MUST apply the
+ * Every file under src this scan has confirmed is a real, executed query
+ * an anonymous visitor's request can reach: today, exactly the one
+ * canonical reader (src/lib/queries/publicMedia.ts). Each MUST apply the
  * public-media rule; the assertion below fails if one does not.
  */
-const PUBLIC_SURFACES = new Set<string>(["[locale]/listings/[id]/page.tsx"]);
+const PUBLIC_SURFACES = new Set<string>(["lib/queries/publicMedia.ts"]);
 
-test("every file under src/app that queries listing_media is classified as public or owner-scoped", () => {
+test("every file under src that queries listing_media directly is classified as public or owner-scoped", () => {
   const queriesMedia = walk(ROOT).filter((p) => readFileSync(p, "utf8").includes('.from("listing_media")'));
-  assert.ok(queriesMedia.length >= 8, `expected at least 8 files querying listing_media, found ${queriesMedia.length}; the scan itself may have stopped working`);
+  assert.ok(queriesMedia.length >= 9, `expected at least 9 files querying listing_media, found ${queriesMedia.length}; the scan itself may have stopped working`);
 
   const unclassified = queriesMedia
     .map(rel)
@@ -116,17 +120,59 @@ test("every file under src/app that queries listing_media is classified as publi
   }
 });
 
-test("every PUBLIC_SURFACES file actually applies the public-media rule", () => {
-  const missing: string[] = [];
-  for (const r of PUBLIC_SURFACES) {
-    const p = join(ROOT, r);
-    const src = readFileSync(p, "utf8");
-    if (!/scopeToPublicMedia/.test(src)) missing.push(r);
+test("the canonical public reader actually applies the public-media rule", () => {
+  const src = readFileSync(join(ROOT, "lib/queries/publicMedia.ts"), "utf8");
+  assert.match(
+    src,
+    /scopeToPublicMedia/,
+    "src/lib/queries/publicMedia.ts is the declared canonical reader for listing_media but does not call " +
+      "scopeToPublicMedia(). A future unfiltered query here would serve private or removed media to an anonymous reader.",
+  );
+});
+
+test("the public listing page consumes the canonical reader, not a query of its own", () => {
+  const src = readFileSync(join(ROOT, "app/[locale]/listings/[id]/page.tsx"), "utf8");
+  assert.match(
+    src,
+    /getPublicListingMedia/,
+    "the public listing detail page must call getPublicListingMedia(), the one canonical reader, rather than " +
+      "construct its own listing_media query (which is exactly how this package's own visibility gap happened).",
+  );
+  assert.doesNotMatch(
+    src,
+    /\.from\("listing_media"\)/,
+    "the public listing detail page should not query listing_media directly at all now that " +
+      "getPublicListingMedia() exists; a direct query here would be a second, independently-drifting copy of the public-media rule.",
+  );
+});
+
+/**
+ * Codex review: "a comment is not proof." Every OWNER_SCOPED file must
+ * show a real session check (getSessionUser, or a su./session variable
+ * this codebase's own convention already uses) AND a real ownership
+ * comparison (account_id checked against the caller's own, or an
+ * is_sat/isSat escape hatch for the reviewer role) somewhere in its
+ * source, not merely a claim in this test file that one exists elsewhere.
+ */
+test("every OWNER_SCOPED file actually contains a session and ownership check, not only a claim in this test", () => {
+  const missingSession: string[] = [];
+  const missingOwnership: string[] = [];
+  for (const r of OWNER_SCOPED_SURFACES) {
+    const src = readFileSync(join(ROOT, r), "utf8");
+    if (!/getSessionUser|createServerClient|getSupabaseServer/.test(src)) missingSession.push(r);
+    const hasComparison = /account_id\s*(!==|===)\s*su\.accountId|su\.accountId\s*(!==|===)\s*.*account_id/.test(src);
+    const hasQueryScope = /\.eq\(\s*["']account_id["']\s*,\s*su\.accountId\s*\)/.test(src);
+    const hasOwnAccountWrite = /account_id:\s*su\.accountId/.test(src);
+    const hasSatEscape = /su\.isSat|isSat/.test(src);
+    if (!hasComparison && !hasQueryScope && !hasOwnAccountWrite && !hasSatEscape) {
+      missingOwnership.push(r);
+    }
   }
+  assert.deepEqual(missingSession, [], `${missingSession.join(", ")} is OWNER_SCOPED but has no visible session-resolution call at all`);
   assert.deepEqual(
-    missing,
+    missingOwnership,
     [],
-    `${missing.join(", ")} is a declared public surface for listing_media but does not call scopeToPublicMedia(). ` +
-      "A future unfiltered query on this route would serve private or removed media to an anonymous reader.",
+    `${missingOwnership.join(", ")} is OWNER_SCOPED but shows no account-ownership comparison or SAT escape hatch; ` +
+      "either it is missing a real authorization check, or this scan's pattern needs updating to recognise the one it has.",
   );
 });
