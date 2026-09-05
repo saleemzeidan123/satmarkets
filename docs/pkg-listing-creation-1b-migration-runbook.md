@@ -2,18 +2,21 @@
 
 Prepared for the single controlled production-migration gate. Nothing in
 this document has been applied to production. Branch `pkg/listing-creation-1b`,
-built on `main` at `6713366` (PR #21, merged).
+built on `main` at `524f188` (PR #16, merged; see `CLAUDE.md`'s own "state
+as of" section for confirmation this is still current before trusting it).
 
 This is a living document. Section 4 now carries real, executed evidence
-from a real local Postgres 16 engine (53/53, section 4.2), but that engine
+from a real local Postgres 16 engine (82/82, section 4.2), but that engine
 runs a reconstructed stand-in schema, not the real production schema, for
 the reason section 4.1 gives; the gap that remains before the gate opens is
 specifically a run against production's real schema, grants and RLS
-function bodies, not a general absence of isolated testing.
+function bodies, not a general absence of isolated testing. Section 15
+records a second, independent round of Codex review (13 items) against this
+same draft PR, and everything that round changed.
 
 ## 1. Exact final SQL
 
-Five files, applied in this order. Content is not reproduced inline; the
+Seven files, applied in this order. Content is not reproduced inline; the
 files themselves are the source of truth (this repository's own honesty
 protocol: large content moves by git object transfer, not by retyping
 through a model). Verify each against its checksum in section 3 before
@@ -24,21 +27,32 @@ applying.
 3. `supabase/migrations/20260902c_pkg1b_media_content_fingerprint.sql` (outcome C)
 4. `supabase/migrations/20260902d_pkg1b_media_derivation_integrity.sql` (outcome D)
 5. `supabase/migrations/20260905_pkg1b_evidence_mark_invalidation.sql` (outcome A follow-up, Codex-required)
+6. `supabase/migrations/20260905b_pkg1b_media_cleanup_queue.sql` (Codex review round 2, item 7: durable orphan/deletion-failure cleanup ledger; see section 15)
+7. `supabase/migrations/20260905c_pkg1b_media_url_photo_block.sql` (Codex review round 2, item 12: database-level rejection of a new external-URL photo, closing the direct-PostgREST bypass of item 8's own application-route fix; see section 15)
 
 ## 2. Schema diff
 
-The first four migrations are purely additive: a new table, new
-nullable-or-defaulted columns on an existing table, new indexes, one new
-trigger/function pair. The fifth widens two existing CHECK constraints
+Every migration in this package is additive: new tables, new
+nullable-or-defaulted columns on an existing table, new indexes, new
+triggers/functions. Migration E widens two existing CHECK constraints
 (replaced, not narrowed: every value the original constraints accepted is
-still accepted) and adds one new trigger/function pair. No migration drops,
-renames, or alters the type of anything that exists today.
+still accepted). No migration drops, renames, or alters the type of
+anything that existed before this package. `is_cover` (below) is the one
+column this package itself added and then removed again, in the same draft,
+before it ever reached production; see section 15, item 5.
 
-### New table
+### New tables
 
 | Table | Purpose |
 | --- | --- |
-| `public.listing_evidence_marks` | Append-only ledger: a lister marking one guided-evidence item unavailable (with a reason, minimum 8 characters) or clearing that mark. Current state for one item is its latest row. |
+| `public.listing_evidence_marks` | Append-only ledger: a lister marking one guided-evidence item unavailable (with a reason, minimum 8 characters) or clearing that mark. Current state for one item is its latest row by `seq` (see below), not by `created_at`. |
+| `public.media_cleanup_queue` | Codex review round 2, item 7. Durable record of a storage/DB cleanup step (an upload rollback, or a deletion) that could not be confirmed to have succeeded. service_role/superuser only; see section 15, item 7 and this migration's own header comment. |
+
+### New columns on `public.listing_evidence_marks`
+
+| Column | Type | Default | Added by |
+| --- | --- | --- | --- |
+| `seq` | `bigint generated always as identity` | n/a (identity) | A, as originally drafted (not added later): the authoritative total order for this table. `created_at` remains, but is documentary only; see section 15, item 1. |
 
 ### New columns on `public.listing_media`
 
@@ -47,7 +61,6 @@ renames, or alters the type of anything that exists today.
 | `shot_key` | `text` | null | B |
 | `media_scope` | `text`, check `in ('building','unit')` | null | B |
 | `media_condition` | `text`, check `in ('current','illustrative')` | null | B |
-| `is_cover` | `boolean not null` | `false` | B |
 | `rights_acknowledged_by` | `uuid` references `public.users(id)` | null | B |
 | `rights_acknowledged_at` | `timestamptz` | null | B |
 | `visibility` | `text not null`, check `in ('public','private')` | `'public'` | B |
@@ -58,21 +71,33 @@ renames, or alters the type of anything that exists today.
 | `derived_by` | `text` | null | D |
 | `derived_at` | `timestamptz` | null | D |
 
+`is_cover boolean not null default false` was in migration B as originally
+drafted and is NOT in the final version: Codex review round 2, item 5 ruled
+it a second, unused source of truth for the same fact `sort_order = 0`
+already states, and the simplest acceptable answer was to remove the column
+outright rather than build UI for two conventions. See section 15, item 5.
+
 ### New indexes and constraints
 
 | Object | On | Kind | Purpose |
 | --- | --- | --- | --- |
-| `listing_evidence_marks_current_idx` | `listing_evidence_marks (listing_id, item_kind, item_key, created_at desc)` | btree | current-state read path |
-| `listing_media_one_cover_per_listing` | `listing_media (listing_id) where is_cover` | unique, partial | at most one cover photo per listing |
+| `listing_evidence_marks_current_idx` | `listing_evidence_marks (listing_id, item_kind, item_key, seq desc)` | btree | current-state read path, ordered by the real total order (`seq`), not `created_at` (see section 15, item 1) |
 | `listing_media_content_sha256_unique` | `listing_media (listing_id, content_sha256)` | unique | cross-session upload duplicate protection (see section 8: not partial, indexes every row) |
 | `listing_media_derivation_shape` | `listing_media` | check constraint | original/transforms/appliedBy/appliedAt recorded together or not at all |
+| `media_cleanup_queue_unresolved_idx` | `media_cleanup_queue (queued_at) where resolved_at is null` | btree, partial | the reconciliation query (section 16) reads only unresolved entries |
+
+`listing_media_one_cover_per_listing` (a unique partial index on `is_cover`)
+was in migration B as originally drafted and is NOT in the final version,
+removed together with the column it indexed; see above.
 
 ### New functions and triggers
 
 | Object | Fires | Purpose |
 | --- | --- | --- |
 | `public.clear_media_shot_keys_on_asset_type_change()` (`security definer`) | `after update of asset_type on public.listings` | clears every `shot_key` on the listing's media so a photo cannot silently keep a label from a taxonomy that no longer applies |
-| `public.invalidate_evidence_marks_on_asset_type_change()` (not `security definer`, see section 5) | `after update of asset_type on public.listings` | appends an `invalidated_by_asset_change` row for every `listing_evidence_marks` item still effectively `marked_unavailable` at the moment the asset type changes, the same protection the row above already gives `shot_key`, shaped to fit an append-only table instead of a plain `UPDATE` |
+| `public.invalidate_evidence_marks_on_asset_type_change()` (not `security definer`, see section 5) | `after update of asset_type on public.listings` | appends an `invalidated_by_asset_change` row for every `listing_evidence_marks` item still effectively `marked_unavailable` at the moment the asset type changes (by `seq`, not `created_at`), the same protection the row above already gives `shot_key`, shaped to fit an append-only table instead of a plain `UPDATE`. Codex review round 2, item 2 ruled this conservative-invalidate-everything behaviour an accepted product-safety decision for 1B; see section 15. |
+| `public.listing_media_protect_trusted_columns_b()` / `_c()` / `_d()` (`before insert or update on public.listing_media`, one per migration B/C/D) | before insert/update | Codex review round 2, item 4. Rejects (42501) any INSERT/UPDATE from a role other than `service_role` or a genuine superuser that sets that migration's own trusted columns (B: `rights_acknowledged_by/at`, `moderation_state`; C: `content_sha256`; D: `original_path`, `derived_*`). Replaces an earlier column-level `REVOKE` design, found empirically not to work: see section 15, item 4. |
+| `public.listing_media_block_new_url_photos()` (migration G, `before insert or update on public.listing_media`) | before insert/update | Codex review round 2, item 12. Rejects (23514, a payload-shape check violation, not a privilege error) any row transitioning into `kind='photo'` + `source='url'`, for every role including `service_role`, no exemption. Closes the direct-PostgREST bypass of item 8's own application-route fix; see section 15, item 12. |
 
 ### Widened constraints (migration E)
 
@@ -84,29 +109,65 @@ renames, or alters the type of anything that exists today.
 ### RLS
 
 `listing_evidence_marks` is a new table with RLS enabled and two policies
-(select, insert; no update, no delete, see section 5). No migration in this
-package changes RLS on any existing table, and no migration adds a public or
-anonymous grant on any new column (see section 5 and 8). Migration E adds no
-new policy: `invalidate_evidence_marks_on_asset_type_change()` writes under
-the exact same insert policy every other write to this table already must
-satisfy (see section 5).
+(select, insert; no update, no delete, see section 5). `media_cleanup_queue`
+is a new table with RLS enabled and ZERO policies for any command, a
+complete default-deny for `authenticated`/`anon` regardless of any
+table-level grant they hold; only `service_role` (BYPASSRLS) and genuine
+superusers can read or write it (proven adversarially, section 4.2 Step
+8d). No migration in this package changes RLS on any existing table, and no
+migration adds a public or anonymous grant on any new column (see section 5
+and 8). Migration E adds no new policy: `invalidate_evidence_marks_on_asset_type_change()`
+writes under the exact same insert policy every other write to this table
+already must satisfy (see section 5). The `listing_media_protect_trusted_columns_*`
+triggers (migrations B/C/D) are not RLS policies; they are ordinary
+`BEFORE` triggers enforcing a column-level rule RLS itself cannot express
+(RLS governs which rows a role sees/affects, not which columns of an
+otherwise-permitted row it may set).
 
 ## 3. Checksums
 
-SHA-256, computed `2026-09-04` against the working tree on
-`pkg/listing-creation-1b` at commit `67133667e3b0fd368169caf4722b41aee2d00596`.
-Recompute and compare before applying; a mismatch means the file changed
-since this runbook was written and this document is stale.
+SHA-256, recomputed `2026-09-05` against the working tree on
+`pkg/listing-creation-1b`, at the end of Codex review round 2 (section 15),
+which edited migrations A, B, C, D and added F and G across two passes (the
+second, item 12's own Fable threat-model review, made further edits to B,
+C, D and added G on top of the first pass's own changes). Recompute and
+compare before applying; a mismatch means the file changed since this
+runbook was written and this document is stale.
 
 ```
-bfc64008e0e2183f5f52bd87072b8d3a771c71866c13fcf8a57ec151ef624202  20260902_pkg1b_durable_evidence_state.sql
-04e176d0cb7fded4000d2d81b859b2af7c928707dbe913fcace80be0b85b5f93  20260902b_pkg1b_media_categorization.sql
-649e3eb57ef0925121db333b8503797b94a4b7aea80f11ec70dcea2ea41e322a  20260902c_pkg1b_media_content_fingerprint.sql
-ea45f0f62504b9909b950e278f5647d7be323532f3071e63bd457a9007eefcf4  20260902d_pkg1b_media_derivation_integrity.sql
-391a2a39f693562841ce7c09043e0f4647ae430043f5b3b2102954212fa2d488  20260905_pkg1b_evidence_mark_invalidation.sql
+bd123db64bf422d73913d94e54d9defc4dc05ea9aa675c9166877dc921e1e1e6  20260902_pkg1b_durable_evidence_state.sql
+617025cb7ae39ae9d90d212f7b52f1728a1f1f5f25d2fa01db94ce936535ca93  20260902b_pkg1b_media_categorization.sql
+76925066af3ca56a6c5736f5abcfc5f44811708c37cdc73c4f6bc7b348f2cfc1  20260902c_pkg1b_media_content_fingerprint.sql
+20a5b04ec577ffad77c1c4370a3c0843ebf0975796ddc85c9316f44424b5ef09  20260902d_pkg1b_media_derivation_integrity.sql
+4cbbe887346bc6b592d833afec4eb15a93bc494c1c797ca218918bb3a7330853  20260905_pkg1b_evidence_mark_invalidation.sql
+8c2dbd6fd745b3da307cbce440b99c220afc4f339c898e921ed2e5b5739ff6eb  20260905b_pkg1b_media_cleanup_queue.sql
+eaed33c90522a9f6a62eba64af78e03c60bfaea582d0f62ec65b99d3fb65b545  20260905c_pkg1b_media_url_photo_block.sql
 ```
 
-(`sha256sum supabase/migrations/20260902*.sql supabase/migrations/20260905*.sql` from the repository root reproduces these. Migration B's checksum changed 2026-09-05 after a Fable review of Arabic terminology and schema semantics found `visibility` defaulting to `'private'` while the public listing page applies no visibility filter at all, see section 4.2 and section 5; the default was corrected to `'public'` to match actual current behaviour, matching the same honesty standard `moderation_state`'s own default was already held to. Migration E is new the same day, added in response to two Codex findings on this package before it could be called ready, see section 13. A, C and D are unchanged.)
+(`sha256sum supabase/migrations/20260902*.sql supabase/migrations/20260905*.sql`
+from the repository root reproduces these.
+
+History: migration B's checksum first changed 2026-09-05 (before round 2)
+after a Fable review of Arabic terminology and schema semantics found
+`visibility` defaulting to `'private'` while the public listing page applied
+no visibility filter at all, see section 4.2 and section 5; the default was
+corrected to `'public'` to match actual current behaviour. Migration E was
+added the same day for the two Codex findings recorded in section 13. Then,
+in the SAME-DAY round 2 review (section 15), first pass: A gained the `seq`
+identity column and its index/trigger updates (item 1); B lost `is_cover`
+and its index and gained the `listing_media_protect_trusted_columns_b`
+trigger (items 4 and 5); C and D each gained their own
+`listing_media_protect_trusted_columns_c`/`_d` trigger (item 4); E's
+invalidation query now orders by `seq` instead of `created_at` (item 1); F
+is new (item 7). Second pass, item 12's own Fable threat-model review,
+same day: B, C and D's own trigger comments were corrected (their claim
+that a genuine platform operator's SQL-editor session reaches the
+superuser exemption was not verified when first written and is likely
+false for a managed Supabase project, see section 15 item 12 and the
+migrations' own updated comments); G is new (item 12, the direct-PostgREST
+url-photo bypass). Every one of these was re-verified against the isolated
+harness after being made, not merely asserted; section 4.2 carries the
+final 82/82 result.)
 
 ## 4. Isolated-environment results
 
@@ -148,7 +209,7 @@ the base schema exists only in the live production database, matching
 exactly the drift Supabase's own docs name as the near-universal cause of
 `MIGRATIONS_FAILED`.
 
-### 4.2 Real local Postgres 16, reconstructed stand-in schema: executed, 53/53
+### 4.2 Real local Postgres 16, reconstructed stand-in schema: executed, 82/82
 
 Not blocked by anything above, because it does not touch production or
 depend on the production project's own recorded migration ledger. Ran via
@@ -163,61 +224,129 @@ committed:
 **What it is, precisely, so the result is not overstated.** Since the real
 base schema exists nowhere locally (section 4.1), this harness bootstraps a
 minimal, hand-written stand-in for `accounts`/`users`/`listings`/
-`listing_media` (only the columns these four migrations actually reference)
+`listing_media` (only the columns these seven migrations actually reference)
 and call-compatible stub versions of `app_user_id()`/`app_account_id()`/
 `app_is_sat()` (same zero-argument signature and return type, backed by
-session GUCs the test sets directly, not the real bodies). It then reads
-and applies the four real migration files verbatim, byte for byte, from
-`supabase/migrations/`, no paraphrasing.
+session GUCs the test sets directly, not the real bodies), plus a
+`service_role` stand-in role (`nologin bypassrls`, matching what Supabase's
+real `service_role` grants) used to exercise `getSupabaseServiceRole()`'s
+own privileged path. It then reads and applies all seven real migration files
+verbatim, byte for byte, from `supabase/migrations/`, no paraphrasing. The
+harness was re-run after every one of Codex review round 2's edits (section
+15), not only once at the end; the trajectory (56 to 74 in the first pass,
+then 74 to 82 in the second, item 12's own Fable threat-model review, with
+three separate rounds of real bugs found and fixed along the way) is part
+of the evidence, not incidental to it.
 
-**What 53/53 passing actually demonstrates, each backed by a named test in
+**What 82/82 passing actually demonstrates, each backed by a named test in
 the output file, not merely reasoned about:**
 
 - **Idempotent reapplication, actually executed twice, not just
-  statically read for `IF NOT EXISTS`:** all four files applied cleanly a
-  first time, then all four applied cleanly a *second* time in the same
+  statically read for `IF NOT EXISTS`:** all seven files applied cleanly a
+  first time, then all seven applied cleanly a *second* time in the same
   session with zero errors.
 - **RLS policy logic**, exercised as a genuinely non-owner, non-superuser
   role (RLS does not restrict a table owner or superuser, so the harness
-  creates a separate `app_test_role` and runs every policy scenario under
-  `SET ROLE`), covering every branch the two policies encode: owner reads
-  and writes their own listing's marks; a forged `actor_user_id` is denied;
-  a different, non-owning account is denied both read and write; SAT reads
-  and writes across accounts; SAT itself is denied writing with the
-  listing's own `actor_account_id` instead of its own, the specific
-  anti-masquerade design decision section 5 describes; no role can UPDATE or
-  DELETE any row (zero rows affected, matching "no policy exists" rather
-  than an error); the `reason` shape CHECK constraint rejects a short reason
-  and a non-null reason on `cleared`, independent of RLS.
+  creates a separate role, named `authenticated` to match Supabase's own
+  real role name, and runs every policy scenario under `SET ROLE`),
+  covering every branch the two `listing_evidence_marks` policies encode:
+  owner reads and writes their own listing's marks; a forged
+  `actor_user_id` is denied; a different, non-owning account is denied both
+  read and write; SAT reads and writes across accounts; SAT itself is
+  denied writing with the listing's own `actor_account_id` instead of its
+  own, the specific anti-masquerade design decision section 5 describes; no
+  role can UPDATE or DELETE any row (zero rows affected, matching "no
+  policy exists" rather than an error); the `reason` shape CHECK constraint
+  rejects a short reason and a non-null reason on `cleared`, independent of
+  RLS.
+- **`seq` is a real, monotonic, database-generated total order (Codex
+  review round 2, item 1):** two evidence-mark rows given the SAME literal
+  `created_at` timestamp (forced explicitly in the insert, reproducing the
+  exact collision the migration's own comment names as `created_at`'s real
+  weakness under Postgres's transaction-stable `now()`) still resolve to
+  the correct, deterministic "current" row by `seq`, in both possible
+  orderings; a concurrent mark-and-clear on the same item (genuinely
+  concurrent connections, `Promise.allSettled`, not sequential calls) both
+  land as separate append-only rows, with `seq` alone deciding which reads
+  as current, the documented conflict policy from section 15, item 1.
+- **The database-enforced trusted-write boundary (Codex review round 2,
+  item 4)**, adversarially, against the caller's own session role
+  (`authenticated`), not merely against a superuser who was never subject
+  to it: direct UPDATE of `content_sha256`, `original_path`, `derived_by`,
+  `moderation_state` and `rights_acknowledged_by` is denied (42501) even on
+  the account's own row; an INSERT that tries to set any of those columns
+  is denied the same way; `authenticated` CAN still write the columns it
+  legitimately owns (`shot_key`), proving the trigger is not simply
+  blocking all writes; `service_role` CAN write every one of the protected
+  columns, the positive case the whole design depends on.
+- **The canonical public-media filter, run as the literal query, not a
+  description of it (Codex review round 2, item 3):** four rows on one
+  listing (public+unreviewed, private, removed, public+flagged) run through
+  exactly `visibility = 'public' AND moderation_state <> 'removed'`; the
+  result is exactly the public+unreviewed and public+flagged rows, and
+  neither the private nor the removed row is ever returned.
+- **`media_cleanup_queue` (Codex review round 2, item 7)**: the table and
+  its 7 columns exist; RLS is enabled with zero policies, proven adversarially
+  (not merely asserted): `authenticated` can neither read a row that
+  genuinely exists nor insert one (both 42501), while `service_role` can do
+  both; a queued entry survives its referenced `listing_media` row being
+  deleted first (the exact "deletion already succeeded, storage cleanup did
+  not" ordering the table exists to record), because `listing_media_id` is
+  a plain informational value with no foreign key, by design.
 - **Concurrency**, using genuinely concurrent connections
   (`Promise.allSettled` across two separate `pg` clients, not sequential
   calls): two simultaneous inserts of the same `content_sha256` on the same
-  listing resolve to exactly one success and one `23505`; two simultaneous
-  `is_cover = true` updates on the same listing resolve the same way.
-- **NULL-safety**: two rows with `content_sha256 = null` on the same
+  listing resolve to exactly one success and one `23505`.
+- **NULL-safety**: multiple rows with `content_sha256 = null` on the same
   listing do not conflict, confirming migration C's own stated claim.
-- **The asset-type-change trigger** (outcome B) clears `shot_key` when
-  `asset_type` actually changes, and leaves it untouched when an UPDATE
-  does not change `asset_type` (the negative case, guarding against an
-  over-broad trigger).
+- **The asset-type-change triggers**, both of them: `shot_key` (outcome B)
+  clears when `asset_type` actually changes and stays untouched otherwise
+  (the negative case, guarding against an over-broad trigger); the
+  evidence-mark invalidation trigger (migration E, Codex review round 2
+  item 2) appends an `invalidated_by_asset_change` row for every
+  currently-effective mark (conservative by design, confirmed against
+  `seq`-based "currently effective," not `created_at`), leaves an
+  already-cleared mark alone (no spurious invalidation), and does not
+  resurrect an invalidated mark on a later revert to the original type.
 - **The derivation-shape CHECK constraint** (outcome D) accepts both
   legal shapes (fully null, fully populated) and rejects a half-populated
   row.
+- **`is_cover` genuinely does not exist** (Codex review round 2, item 5):
+  not merely unused by the application, absent from
+  `information_schema.columns` entirely.
 - **Rollback, then forward re-apply, executed end to end**: section 7's
-  actual rollback SQL (copied verbatim into the harness) runs with no
-  error, removes the new table and all 13 new columns, leaves existing
-  `listing_media` rows in place (proving this is a column-level rollback,
-  not data loss), and all four migrations then re-apply cleanly afterward,
-  proving the rollback path itself does not leave the schema in a state
-  that blocks a subsequent forward fix.
+  actual rollback SQL (copied verbatim into the harness, and kept in sync
+  with every trigger this round added) runs with no error, removes both new
+  tables, all 12 new `listing_media` columns and every new
+  trigger/function, leaves existing `listing_media` rows in place (proving
+  this is a column-level rollback, not data loss), and all seven migrations
+  then re-apply cleanly afterward, proving the rollback path itself does
+  not leave the schema in a state that blocks a subsequent forward fix.
 
-**A concrete bug this exercise caught before production, unrelated to the
-migrations themselves:** section 10 query 3 originally selected
-`polname, polcmd` from `pg_policies`, columns that exist on the lower-level
-`pg_policy` catalog but not on the `pg_policies` view; it would have failed
-with "column does not exist" if run as originally written. Found by making
-the identical mistake in this harness first and hitting the real error.
-Corrected to `policyname, cmd` in both places.
+**Concrete bugs this exercise caught before production, unrelated to
+whether the migrations' SQL merely parses:**
+
+- Section 10 query 3 originally selected `polname, polcmd` from
+  `pg_policies`, columns that exist on the lower-level `pg_policy` catalog
+  but not on the `pg_policies` view; it would have failed with "column does
+  not exist" if run as originally written. Found by making the identical
+  mistake in this harness first and hitting the real error. Corrected to
+  `policyname, cmd` in both places.
+- Codex review round 2, item 4's first design used a column-level `REVOKE`
+  to build the trusted-write boundary. The harness's own new adversarial
+  tests failed against it: `authenticated` could still write the
+  "protected" columns. Root cause, confirmed by direct Postgres privilege
+  reasoning: a column-level `REVOKE` does not retract a broader
+  pre-existing table-level `GRANT` (which `authenticated` already holds on
+  every table via this project's own baseline grants). Replaced with the
+  trigger design in the schema diff above, which does not depend on
+  matching production's exact grant baseline at all.
+- The same round's trigger design then blocked the harness's own superuser
+  test connection, breaking three unrelated, pre-existing tests that used
+  it to probe constraint/index behaviour, not the trust boundary. Fixed by
+  exempting genuine superusers (`select rolsuper from pg_roles where
+  rolname = current_user`) alongside `service_role`, reasoned safe because
+  Supabase's real `authenticated`/`anon` are never superusers.
 
 **What this does not prove, honestly, and what remains genuinely blocked:**
 that these exact statements execute cleanly against the real production
@@ -225,13 +354,16 @@ schema's actual existing objects, indexes, triggers or grants; the real
 bodies of `app_user_id()`/`app_account_id()`/`app_is_sat()` (the stand-in
 schema, base tables and stub functions were reconstructed from this
 codebase's own TypeScript usage, not copied from production); the real
-column-privilege/grant boundaries (section 10 query 6); and real production
-row counts, lock duration, or scale behaviour (section 8). Closing that
+column-privilege/grant boundaries (section 10 query 6, and whether
+production's own `authenticated` grant shape matches the table-level grant
+this harness had to discover empirically, above); and real production row
+counts, lock duration, or scale behaviour (section 8). Closing that
 remaining gap still requires either the Supabase CLI repair path already
 recorded in `CLAUDE.md`'s blocked-evidence queue, or direct, explicit
 production access this environment does not have. Full application-code
-gate (`npm run typecheck`, 2037 tests, `npm run ar-lint`, `npm run
-lint-gate`, `npm run build`) remains clean on this branch, separately.
+gate (`npm run typecheck`, 2074 tests, `npm run ar-lint`, `npm run
+lint-gate`, `npm run build`) remains clean on this branch, separately (see
+section 15's own closing summary for the exact run that confirmed this).
 
 ## 5. Security and RLS evidence
 
@@ -293,10 +425,20 @@ private by convention rather than by a new RLS surface:
   server code already holding the service-role storage/database client, the
   same boundary that already protects every other `listing_media` object.
 
-This is a convention, not a database-enforced boundary, and is exactly the
-kind of thing section 9's post-migration verification queries should
-re-confirm against the real, live grants rather than only against this
-package's own source code.
+This is a convention about READS (no application code selects these columns
+onto a page or into an API response), not a database-enforced boundary
+against reading them, and is exactly the kind of thing section 9's
+post-migration verification queries should re-confirm against the real,
+live grants rather than only against this package's own source code. The
+separate question of WRITES is no longer only a convention: Codex review
+round 2, item 4 (section 15) added a database-enforced trusted-write
+boundary (the `listing_media_protect_trusted_columns_b/c/d` triggers in the
+schema diff above) specifically so an owner's own session cannot forge
+`content_sha256`, `original_path`, `derived_*`, `moderation_state` or
+`rights_acknowledged_*` even by calling Supabase/PostgREST directly,
+bypassing the application route entirely. Reads and writes are genuinely
+different exposures and this package now closes one of the two at the
+database level; the other (reads) remains the convention described above.
 
 `visibility` defaults to `'public'`, not `'private'`, and this is
 deliberate, corrected 2026-09-05 (see section 3's checksum note and section
@@ -322,12 +464,16 @@ changes what feeds `moderation_state`, not this rule.
 3. `20260902c_pkg1b_media_content_fingerprint.sql`
 4. `20260902d_pkg1b_media_derivation_integrity.sql`
 5. `20260905_pkg1b_evidence_mark_invalidation.sql`
+6. `20260905b_pkg1b_media_cleanup_queue.sql`
 
 Steps 1-4 do not depend on each other; this order is the filename order and
 the order Codex reviewed the outcomes in (A, B, C, D), not a technical
 requirement of the SQL itself. Step 5 is a genuine dependency on step 1: it
 alters constraints `20260902_pkg1b_durable_evidence_state.sql` creates, and
-must run after it.
+must run after it. Step 6 (`media_cleanup_queue`) depends on nothing in this
+package; it is a wholly independent new table and could in principle run
+first, but is ordered last to match both the filename/date order and the
+order Codex's second review round raised it in.
 
 ## 7. Rollback or forward-recovery procedure
 
@@ -368,6 +514,14 @@ Rollback SQL, in reverse order, for use only in the narrow pre-real-usage
 window described above:
 
 ```sql
+-- Reverse of migration F. Wholly independent (see section 6): safe to drop
+-- first or last. resolved_at/resolved_by are not separately handled: the
+-- table drop takes every row with it, which is acceptable pre-real-usage
+-- (section 7's own scope) but is exactly the case that makes rollback after
+-- real usage unsafe (an unresolved cleanup obligation would be lost, not
+-- merely the row format).
+drop table if exists public.media_cleanup_queue;
+
 -- Reverse of migration E. Needs no separate constraint reversal: reverse of
 -- migration A below drops listing_evidence_marks outright, taking every
 -- constraint on it with it. Only the trigger and function, defined on
@@ -377,6 +531,8 @@ drop trigger if exists invalidate_evidence_marks_on_asset_type_change on public.
 drop function if exists public.invalidate_evidence_marks_on_asset_type_change();
 
 -- Reverse of migration D
+drop trigger if exists listing_media_protect_trusted_columns_d on public.listing_media;
+drop function if exists public.listing_media_protect_trusted_columns_d();
 alter table public.listing_media drop constraint if exists listing_media_derivation_shape;
 alter table public.listing_media
   drop column if exists original_path,
@@ -385,18 +541,20 @@ alter table public.listing_media
   drop column if exists derived_at;
 
 -- Reverse of migration C
+drop trigger if exists listing_media_protect_trusted_columns_c on public.listing_media;
+drop function if exists public.listing_media_protect_trusted_columns_c();
 drop index if exists public.listing_media_content_sha256_unique;
 alter table public.listing_media drop column if exists content_sha256;
 
 -- Reverse of migration B
+drop trigger if exists listing_media_protect_trusted_columns_b on public.listing_media;
+drop function if exists public.listing_media_protect_trusted_columns_b();
 drop trigger if exists clear_media_shot_keys_on_asset_type_change on public.listings;
 drop function if exists public.clear_media_shot_keys_on_asset_type_change();
-drop index if exists public.listing_media_one_cover_per_listing;
 alter table public.listing_media
   drop column if exists shot_key,
   drop column if exists media_scope,
   drop column if exists media_condition,
-  drop column if exists is_cover,
   drop column if exists rights_acknowledged_by,
   drop column if exists rights_acknowledged_at,
   drop column if exists visibility,
@@ -406,19 +564,25 @@ alter table public.listing_media
 drop table if exists public.listing_evidence_marks;
 ```
 
+This is kept byte-for-byte in sync with `docs/pkg-listing-creation-1b-isolated-test.mjs`'s
+own `ROLLBACK_SQL` constant, which is what section 4.2's "rollback, then
+forward re-apply" result actually executes; a change to one without the
+other is a documentation defect, not merely a style drift, since section
+4.2's evidence is only honest if this is the SQL it describes.
+
 ## 8. Expected lock and execution risk
 
 Row-count-dependent. **Before applying, run `select count(*) from
 public.listing_media;` and `select count(*) from public.listings;` and
 compare against the numbers below.** For a small table (this platform's
 likely current scale; not confirmed from this environment) every statement
-in all four files should complete in well under a second with no
+across all seven files should complete in well under a second with no
 meaningfully observable lock. The two statements worth naming specifically
 if that count turns out to be large:
 
 - **Migration C's `create unique index ... on listing_media (listing_id,
-  content_sha256)` is not partial** (unlike migration B's `is_cover` index):
-  it indexes every row in the table, not only a matching subset. A plain
+  content_sha256)` is not partial:** it indexes every row in the table, not
+  only a matching subset. A plain
   `CREATE UNIQUE INDEX` (no `CONCURRENTLY`) takes a lock that blocks writes
   to `listing_media` for the duration of the build. For a large table, an
   operator should consider building this index with `CONCURRENTLY` in a
@@ -441,11 +605,17 @@ of whatever actually runs the migration (the Supabase CLI, the dashboard's
 own migration runner, or a direct `psql` session), which was not confirmed
 from this environment.
 
-Every other statement across all four files (`CREATE TABLE`, nullable/
-constant-default `ADD COLUMN`, the partial `is_cover` index over what is
-currently zero matching rows, `CREATE OR REPLACE FUNCTION`, `CREATE
-TRIGGER`, `ENABLE ROW LEVEL SECURITY`, every policy) is a fast,
-metadata-level or near-empty-set operation regardless of table size.
+Every other statement across all seven files (`CREATE TABLE` (both
+`listing_evidence_marks` and, in migration F, `media_cleanup_queue`, the
+second starting empty so it carries no row-scan cost regardless of the
+existing tables' size), nullable/constant-default `ADD COLUMN`, the
+`generated always as identity` column migration A adds, `CREATE OR REPLACE
+FUNCTION`, every `CREATE TRIGGER` (including the three
+`listing_media_protect_trusted_columns_*` triggers, each a `BEFORE`
+row-level trigger that adds per-row overhead only to future INSERT/UPDATE
+statements, not to migration application itself), `ENABLE ROW LEVEL
+SECURITY`, every policy) is a fast, metadata-level or near-empty-set
+operation regardless of table size.
 
 ## 9. Production backup or recovery point
 
@@ -469,47 +639,83 @@ order:
 ```sql
 -- 1. The core objects exist.
 select table_name from information_schema.tables
-  where table_schema = 'public' and table_name = 'listing_evidence_marks';
+  where table_schema = 'public' and table_name in ('listing_evidence_marks', 'media_cleanup_queue');
 select column_name, data_type, is_nullable, column_default
   from information_schema.columns
   where table_schema = 'public' and table_name = 'listing_media'
-    and column_name in ('shot_key','media_scope','media_condition','is_cover',
+    and column_name in ('shot_key','media_scope','media_condition',
       'rights_acknowledged_by','rights_acknowledged_at','visibility',
       'moderation_state','content_sha256','original_path',
       'derived_transforms','derived_by','derived_at')
   order by column_name;
+-- Expect exactly 12 rows, and no row named is_cover: it was in an earlier
+-- draft of migration B and was removed before this package could be called
+-- ready (Codex review round 2, item 5; section 15). A row named is_cover
+-- here means the applied migration does not match this runbook.
+select column_name from information_schema.columns
+  where table_schema = 'public' and table_name = 'listing_media' and column_name = 'is_cover';
+-- Expect zero rows.
+select column_name from information_schema.columns
+  where table_schema = 'public' and table_name = 'listing_evidence_marks' and column_name = 'seq';
+-- Expect exactly one row: seq is the authoritative ordering column (section 15, item 1).
 
--- 2. RLS is actually on, not just intended.
-select relrowsecurity, relforcerowsecurity from pg_class
-  where relname = 'listing_evidence_marks';
+-- 2. RLS is actually on, not just intended, on BOTH new tables.
+select relname, relrowsecurity, relforcerowsecurity from pg_class
+  where relname in ('listing_evidence_marks', 'media_cleanup_queue');
 
--- 3. Exactly two policies exist, select and insert only (append-only by omission).
-select policyname, cmd from pg_policies
-  where tablename = 'listing_evidence_marks';
+-- 3. listing_evidence_marks has exactly two policies (select, insert only:
+--    append-only by omission); media_cleanup_queue has ZERO (Codex review
+--    round 2, item 7: complete default-deny for authenticated/anon
+--    regardless of any table-level grant, service_role/superuser only).
+select tablename, policyname, cmd from pg_policies
+  where tablename in ('listing_evidence_marks', 'media_cleanup_queue');
 
--- 4. Both new unique indexes and the check constraint exist.
+-- 4. The unique indexes and check constraint exist. listing_media_one_cover_per_listing
+--    must NOT appear (removed with is_cover, see query 1's own note above).
 select indexname, indexdef from pg_indexes
-  where tablename = 'listing_media'
-    and indexname in ('listing_media_one_cover_per_listing','listing_media_content_sha256_unique');
+  where tablename in ('listing_media', 'media_cleanup_queue')
+    and indexname in ('listing_media_content_sha256_unique',
+      'listing_media_one_cover_per_listing', 'media_cleanup_queue_unresolved_idx');
 select conname, contype from pg_constraint
   where conname = 'listing_media_derivation_shape';
 
--- 5. Both triggers exist and are enabled.
+-- 5. Every trigger exists and is enabled ('O' = fires in origin/local mode,
+--    the normal enabled state), including the three trusted-write-boundary
+--    triggers (Codex review round 2, item 4; section 15).
 select tgname, tgenabled from pg_trigger
   where tgname in ('clear_media_shot_keys_on_asset_type_change',
-    'invalidate_evidence_marks_on_asset_type_change');
+    'invalidate_evidence_marks_on_asset_type_change',
+    'listing_media_protect_trusted_columns_b',
+    'listing_media_protect_trusted_columns_c',
+    'listing_media_protect_trusted_columns_d');
+-- Expect 5 rows, all tgenabled = 'O'.
 
 -- 5b. The widened action vocabulary is really there (migration E).
 select conname, pg_get_constraintdef(oid) from pg_constraint
   where conname = 'listing_evidence_marks_action_check';
 
--- 6. No public/anon grant leaks the private columns (expect no rows, or
---    rows matching only the service role / postgres, never anon/authenticated
---    directly on these specific columns beyond what RLS already scopes).
+-- 6. Column-level grants on the private columns. UNLIKE the first round of
+--    this runbook, a broad grant here (authenticated holding table-level
+--    INSERT/UPDATE, which query 6's original comment expected to see NONE
+--    of) is now EXPECTED and is not itself a finding: Codex review round 2,
+--    item 4 (section 15) found that a column-level REVOKE does not survive
+--    a pre-existing table-level GRANT, and deliberately does not attempt to
+--    narrow production's own grant baseline. The real enforcement to verify
+--    is query 5 above (the three protect triggers exist and are enabled),
+--    plus query 6b below (they actually fire).
 select grantee, privilege_type from information_schema.column_privileges
   where table_name = 'listing_media'
-    and column_name in ('content_sha256','original_path','derived_transforms','derived_by','derived_at')
+    and column_name in ('content_sha256','original_path','derived_transforms','derived_by','derived_at','moderation_state','rights_acknowledged_by','rights_acknowledged_at')
   order by grantee;
+
+-- 6b. The trusted-write boundary actually fires against a real row, using
+--     the lowest-privileged real role (authenticated), not merely a
+--     superuser session that was never subject to it. RUN THIS AS THE
+--     AUTHENTICATED ROLE (e.g. `set role authenticated;` first, matching
+--     one of the listing's own real owning rows and its RLS context), not
+--     as the connection's default superuser, or this query will misreport
+--     a pass. Expect an insufficient_privilege (42501) error, not success.
+-- update public.listing_media set moderation_state = 'flagged' where id = '<any real row id>';
 
 -- 7. Existing rows are genuinely unaffected: same row counts as pre-migration,
 --    every new nullable column null, every new column with a constant
@@ -518,26 +724,33 @@ select count(*) from public.listing_media;
 select count(*) as total,
        count(*) filter (where content_sha256 is not null) as hashed,
        count(*) filter (where original_path is not null) as with_original,
-       count(*) filter (where is_cover) as covers,
        count(*) filter (where visibility <> 'public') as non_public,
        count(*) filter (where moderation_state <> 'unreviewed') as reviewed
   from public.listing_media;
--- Expect hashed = with_original = covers = non_public = reviewed = 0
--- immediately after migration, before any new upload has happened.
--- non_public = 0 (not total = 0) is deliberate: visibility now defaults to
--- 'public', matching the actual, already-live behaviour of the public
--- listing page (no visibility filter exists anywhere in that read path),
--- so every existing row should read as public, not private, the moment
--- this column exists.
+-- Expect hashed = with_original = non_public = reviewed = 0 immediately
+-- after migration, before any new upload has happened. non_public = 0 (not
+-- total = 0) is deliberate: visibility now defaults to 'public', matching
+-- the actual, already-live behaviour of the public listing page (no
+-- visibility filter exists anywhere in that read path), so every existing
+-- row should read as public, not private, the moment this column exists.
+select count(*) from public.media_cleanup_queue;
+-- Expect 0: this table starts empty and only ever gains a row from a real
+-- upload or deletion failure (section 16), neither of which the migration
+-- itself causes.
 ```
 
-Idempotent reapplication, both concurrency tests, and RLS authorization as
-owner/SAT/a different account are now covered against the reconstructed
-local schema (section 4.2, 53/53). Re-run against the real production
-database once reachable (section 4.1 still blocks this): the reconstructed
-schema does not carry production's real grants, so query 6 above (no
-public/anon leak on the private columns) has no local substitute and stays
-fully outstanding.
+Idempotent reapplication, both concurrency tests, RLS authorization as
+owner/SAT/a different account, and the trusted-write-boundary triggers
+firing against the lowest-privileged real role are now covered against the
+reconstructed local schema (section 4.2, 82/82). Re-run query 6b above
+against real production once reachable (section 4.1 still blocks this): the
+reconstructed schema's own equivalent of this exact scenario already passed
+(section 4.2, Step 8b), but that is not a substitute for confirming it
+against production's real `authenticated` role and real existing rows, and
+query 6 (the raw grant listing) has no local substitute for confirming it
+matches production's actual, possibly-different grant baseline (query 6's
+own note above explains why a broad grant there is expected and not itself
+a finding).
 
 ## 11. Application deployment plan
 
@@ -766,10 +979,18 @@ so the two cannot drift apart. Applied at the one real call site. Every
   label**: the owner's own dashboard media manager now selects
   `visibility` and renders a "Private" badge on any photo not `'public'`.
   No control to actually set a photo private was built in this pass (that
-  is a real product decision, the same class as `is_cover`'s own deferred
-  scope, not an oversight); the badge is the forward-compatible half, so
-  the Studio can never silently disagree with what the public page shows
-  once a future package adds that control.
+  was, at the time this finding was written, a real product decision in
+  the same class as `is_cover`'s own then-current scope; `is_cover` was
+  since removed outright rather than left deferred, see section 15 item 5,
+  so the comparison is now historical rather than a live analogy); the
+  badge is the forward-compatible half, so the Studio can never silently
+  disagree with what the public page shows once a future package adds that
+  control. **Codex review round 2, item 6 update:** this remains an honest
+  description today. No mechanism anywhere in this codebase writes
+  `visibility` to anything other than its default, so "owner-controlled
+  visibility" is enforcement infrastructure only, not a shipped control;
+  this runbook does not describe it as a completed feature, only as a rule
+  that is correctly enforced wherever a value could someday appear.
 - **Rejected media must never render publicly**: `moderation_state <>
   'removed'` is the second half of the same filter, not a separate one.
 - **Unreviewed media's treatment is explicit**: `'unreviewed'` (today's
@@ -779,7 +1000,22 @@ so the two cannot drift apart. Applied at the one real call site. Every
   (`mediaVisibility.test.ts`), not left to be inferred. Full moderation
   enforcement (acting on `'flagged'`, building a review workflow) belongs
   to a future package (LST-6 or equivalent), stated here precisely rather
-  than silently expanded into this one.
+  than silently expanded into this one. **Codex review round 2, item 6
+  update, on exactly what `'flagged'` means today:** a flag is a pending
+  concern, not a takedown decision; it is `'removed'` alone that hides
+  media, precisely so a future reviewer can flag something for a second
+  look without that action itself acting as an undisclosed removal. This
+  is safe specifically BECAUSE nothing untrusted can set `moderation_state`
+  at all (see section 15, item 4's trusted-write-boundary triggers,
+  adversarially proven in section 4.2 Step 8b): "public + flagged stays
+  visible" is only an acceptable rule once it is impossible for an
+  ordinary lister session to set `'flagged'` on their own media to mean
+  whatever they want it to mean, which is now proven, not merely assumed.
+  Rights acknowledgement is held to the same honesty standard: `rights_acknowledged_by`/`_at`
+  exist and are now trusted-write-protected (nothing untrusted can forge
+  them), but nothing in this pass writes them either, so rights capture is
+  not described as completed, only as a column that exists and cannot be
+  falsified once something does write it.
 - **Existing media is backfilled deliberately, not by accident**: there is
   no backfill to write, because the default itself (`'public'`) already
   matches what every existing row's actual, live behaviour has always
@@ -852,11 +1088,916 @@ rewritten as a result: each already read as a practical, defensible
 statement rather than an overclaimed legal mandate, and the claims check
 out against what was found. What changed is that each now carries a
 source citation in `mediaStandard.ts`'s own comments, so the claim is
-recorded rather than merely believed. The nine shots added on Fable
-review that are NOT regulation-derived (market-convention shots like
-wedding_hall's two-section convention, showroom's mezzanine, retail's F&B
-services and outdoor seating, gas station's ancillary income units, and
-worker housing's compound perimeter and utilities provision) are
-presented in their own why-text as practical/market reasoning, not as
-citing a specific regulation, which is the correct treatment for a market
-convention and was not changed here.
+recorded rather than merely believed.
+
+**Correction, 2026-09-05, from the item 12 Fable evidence review (section
+15).** This section originally said "the nine shots added on Fable review"
+and asserted the non-regulation-derived ones were all "presented in their
+own why-text as practical/market reasoning, not as citing a specific
+regulation... and was not changed here." Both parts were wrong, caught by
+an independent second review rather than by this section's own original
+author: the actual count is **eleven** shots (ten `expected` plus
+`outdoor_seating`, `optional`), not nine, and `bride_suite`
+(wedding_hall's bride's suite and preparation rooms) was missing from this
+list entirely; and one of the eight market-convention shots,
+`compound_perimeter` (worker housing's gate, perimeter and bus bay), was
+in fact NOT presented as practical reasoning at the time this section was
+written: its why-text called security and worker transport "licensing
+questions", asserting a regulatory basis this file never checked or cited,
+exactly the failure mode this section exists to guard against. It has
+since been softened to honest practical/product reasoning (see
+`mediaStandard.ts`'s own new comment on that shot), and
+`mediaStandard.test.ts` now carries a regression guard
+("the eight market-convention shots added this package never claim a
+regulatory basis") scoped to this package's own eleven additions, so this
+specific class of drift cannot silently recur. The complete, corrected
+list: `fire_protection`, `service_block`, `fire_safety` (regulation-derived,
+section 14 above); `fnb_services`, `outdoor_seating`, `mezzanine`,
+`ancillary_units`, `sections_separate`, `bride_suite`,
+`compound_perimeter`, `utilities_provision` (market convention, all eight
+now genuinely presented as such). A separate, unrelated, pre-existing shot
+(`education`'s `outdoor`, from an earlier package, asserting outdoor space
+is "a licensing input" with no citation) was found carrying the same
+pattern during this same review; it is out of this package's own scope and
+is tracked as its own follow-up rather than fixed here.
+
+## 15. Codex review round 2: the 13-item PR #22 correction and closure cycle
+
+**2026-09-05.** Codex independently reviewed the actual PR #22 head
+(`c937981`, section 14 and the runbook's own git history above), found the
+gate and Vercel preview green but the package not yet authorized for
+production migration or merge, and issued 13 numbered requirements as one
+consolidated correction-and-closure cycle, to be worked through without
+pausing for intermediate approval. The inconclusive Vercel-preview-caching
+observation this same file recorded on 2026-09-05 (whether a degraded load
+was a genuine cache-miss hitting a real schema-mismatch or Next.js/Vercel
+serving a pre-existing render) was explicitly closed as "recorded once, not
+re-investigated": nothing below reopens it, per that instruction.
+
+Each item below states what Codex found, what was decided, what was built,
+and the actual evidence, in the same "not claimed until verified" standard
+the rest of this runbook holds itself to.
+
+### Item 1: deterministic evidence-ledger ordering
+
+**The finding.** `currentEvidenceMarks()` (TypeScript) and the migration
+E invalidation trigger (SQL) both determined "the current row for this
+item" using only `created_at`. Postgres's `now()` is transaction-stable
+(every statement in the same transaction sees the identical timestamp), so
+two marks written in the same transaction, or by two backend calls that
+happen to land in the same wall-clock instant, are not distinguishable by
+`created_at` at all; "latest" becomes arbitrary exactly when it matters
+most (a mark and a near-simultaneous clear on the same item).
+
+**The fix.** `supabase/migrations/20260902_pkg1b_durable_evidence_state.sql`
+(the foundational, still-unapplied migration, corrected directly rather
+than preserved as-is to avoid touching a draft file) adds `seq bigint
+generated always as identity`: a real, database-generated, monotonic,
+unique, immutable total order, impossible to tie. The current-state index,
+the migration E trigger's `DISTINCT ON` query, and `guidedEvidence.ts`'s
+`currentEvidenceMarks()` reducer all now order by `seq desc`, not
+`created_at desc`. `created_at` remains on the table as a human-readable
+timestamp only; it is documented, in the migration's own column comment, as
+explicitly not the ordering key.
+
+**No substitute identifier.** A random UUID would satisfy "unique" but not
+"reflects real write order," which is the actual property this fix needs;
+`seq`'s value is exactly "the order Postgres actually committed these rows
+in," which is what "current" is supposed to mean.
+
+**Concurrent conflict policy, stated explicitly, not left implicit.** Two
+racing writers to the same item never lock or reject each other: this table
+is append-only by design (section 5), so both writes always succeed as
+separate rows. `seq` alone decides which one reads as "current," which
+makes this last-writer-wins by real total commit order, not by wall-clock
+timestamp and not by which caller "should" have won some business-logic
+race. The migration's own new comment states this is deliberate: the
+ledger records what was asserted and in what order, not an arbitration of
+intent between two callers.
+
+**Evidence.** `guidedEvidence.test.ts`: every existing `mark()` call updated
+to require an explicit `seq`; the ordering test rewritten to "reads by seq,
+not by array order or created_at"; a new test constructs two rows sharing
+the identical `created_at` value and confirms `seq` still resolves the
+correct current row in both possible orderings. Isolated harness (section
+4.2): "`seq` is a real, monotonic, database-generated identity," the
+same-`created_at` collision test against the real database, and "concurrent
+mark and clear on the same item: both are recorded (append-only), seq
+decides which is current" using genuinely concurrent connections.
+
+### Item 2: the conservative asset-type invalidation decision, clarified
+
+**The ruling.** Migration E's trigger invalidates EVERY currently-effective
+evidence mark on an asset-type change, not only the ones whose meaning
+actually changed (section 13, Finding 1 already documented why a reliable
+"genuinely identical semantics" check would need a second taxonomy-mapping
+table this package does not build). Codex accepted this as final for 1B,
+explicitly as a product-safety decision, not as equivalent to an earlier
+"preserve compatible marks" proposal: conservative-invalidate-everything is
+safe by construction (a false "needs reconfirmation" costs a lister one
+re-assertion; a false "still valid" could let a stale safety-relevant
+assertion silently survive a type change it was never actually made
+about), on the condition that reconfirmation is easy and does not erase
+history, and that a later revert of the asset type does not resurrect the
+old mark.
+
+**Reconfirmation is already easy, by construction, with no new UI
+needed.** An `invalidated_by_asset_change` row simply stops being "the
+latest mark" the moment a lister marks the item again;
+`currentEvidenceMarks()`'s existing filter already reads that as "needs
+reconfirmation," surfacing it back in the same guided-evidence checklist
+the lister already uses for every other unresolved item. No second screen
+or special notice UI was needed to satisfy "reconfirmation must be easy."
+
+**What WAS missing, and was added: an explanation of *why*.** A lister
+seeing a previously-answered item reappear with no context would
+reasonably read it as a bug. `ListingStudio.tsx`'s asset-type field is
+`disabled` once a listing is saved (a real, existing UI fact confirmed by
+reading the component, not assumed: there is today no live path through
+the application that changes `asset_type` on an already-saved listing), so
+its own disabled-state help text is where this explanation now lives, in
+both languages, added to the existing text rather than as new UI: it states
+that evidence exceptions are asked for again under the new asset type
+before that type is ever changeable through this UI. `listingPreviewWiring.test.ts`
+gained a test confirming both language strings are present.
+
+**History is never erased.** Reverting to the original asset type does not
+resurrect an invalidated mark (isolated harness: "reverting to the original
+asset type does not resurrect the invalidated mark"); every row this table
+has ever held, including every invalidation, remains exactly as written,
+matching the table's own append-only design from section 5.
+
+**Honesty on scope.** Semantic carry-forward across asset types (only
+invalidating marks whose meaning genuinely changed) is deliberately not
+attempted and is not planned as a near-term follow-up; it would need a
+generated cross-asset-type shot/fact taxonomy this package has no
+mechanism to validate, and building one to serve a single trigger's
+precision would be exactly the kind of speculative infrastructure this
+project's own house rules ask not to build ahead of a real need.
+
+### Item 3: the media-exposure structural test, rebuilt on a canonical reader
+
+**The finding.** `mediaVisibility.test.ts`'s original structural scan only
+searched `src/app` for the exact text `.from("listing_media")`, which would
+miss a query helper under `src/lib`, a different quoting style, a shared
+query module, an RPC call, or a storage-URL-only access path; its own
+allowlist asserted ownership enforcement in a comment without proving any
+route actually had one.
+
+**The fix.** `src/lib/queries/publicMedia.ts` is now the one canonical
+reader for what an anonymous visitor may see of a listing's media
+(`getPublicListingMedia()`, matching this codebase's own established
+`src/lib/queries/` convention: a `cache()`-wrapped function that resolves
+its own Supabase client, the same shape as `getLister()` in `listings.ts`).
+`src/app/[locale]/listings/[id]/page.tsx`, the one real public exposure
+point, now calls it instead of querying `listing_media` directly.
+`mediaVisibility.test.ts` was rebuilt: the scan now walks the complete
+`src` tree (not only `src/app`), classifying every file that queries
+`listing_media` at all as either the one canonical `PUBLIC_SURFACES` reader
+(which must call `scopeToPublicMedia()`) or an explicitly reasoned
+`OWNER_SCOPED_SURFACES` entry; a new test confirms the public listing page
+calls `getPublicListingMedia()` AND no longer queries `listing_media`
+directly at all (closing the exact "a second, independently-drifting copy
+of the rule" risk this finding named); a new test walks every
+`OWNER_SCOPED_SURFACES` file and requires it to show a REAL session
+check (`getSessionUser`/`createServerClient`/`getSupabaseServer`) and a
+REAL ownership comparison, matched against four legitimate shapes found by
+actually reading each file (`account_id !== su.accountId`,
+`.eq("account_id", su.accountId)` query-scoping, `account_id: su.accountId`
+on a creation route's own INSERT, or `su.isSat` as the reviewer escape
+hatch), not merely a claim in the test file's own comment.
+
+**Runtime proof, not only structural.** Isolated harness (section 4.2):
+four `listing_media` rows on one fresh listing, covering
+public+unreviewed, private, removed, and public+flagged, run through the
+literal filter query `scopeToPublicMedia()`/`getPublicListingMedia()`
+generate; the result is exactly the two public, non-removed rows, and
+explicit assertions confirm neither the private nor the removed row is
+ever returned, whatever else is true of the row.
+
+### Item 4: a database-enforced trusted-write boundary
+
+**The finding.** `content_sha256`, `original_path`, `derived_transforms`,
+`derived_by`, `derived_at`, `moderation_state`, `rights_acknowledged_by`,
+`rights_acknowledged_at` were writable by an owner's own session through
+Supabase/PostgREST directly, RLS permitting, regardless of what the
+application route itself validated: app-route validation is not a database
+boundary, and a caller that skips the route (calling the same table with
+their own session credentials) was never actually stopped.
+
+**First design, tried and found broken by the review's own adversarial
+tests.** A column-level `REVOKE INSERT/UPDATE (col) ... FROM authenticated`
+was added to migrations B/C/D. The isolated harness's new adversarial tests
+(written to verify exactly this) failed: `authenticated` could still write
+the "protected" columns. Root cause, confirmed by direct Postgres privilege
+reasoning: a column-level `REVOKE` does not retract a pre-existing
+TABLE-level `GRANT` the role already holds (this project's own baseline
+already grants table-level INSERT/UPDATE with no column list). This was
+caught by the tests, not by inspection, which is itself the argument for
+having written the adversarial tests before believing the fix worked.
+
+**The actual fix: per-migration `BEFORE INSERT OR UPDATE` triggers.**
+`listing_media_protect_trusted_columns_b/c/d` (schema diff, section 2) each
+raise `insufficient_privilege` (42501) if the caller (not `service_role`,
+not a genuine superuser) tries to set that migration's own trusted columns,
+on either INSERT or UPDATE. This mechanism does not depend on knowing or
+matching production's real grant baseline at all, which is exactly what
+made the REVOKE approach fragile. A superuser exemption
+(`select rolsuper from pg_roles where rolname = current_user`) was added
+after the trigger design first broke three unrelated, pre-existing harness
+tests that used a superuser connection to probe constraint/index behaviour,
+not the trust boundary; this is reasoned safe because Supabase's real
+`authenticated`/`anon` roles are never superusers, so the exemption only
+ever applies to a genuine platform operator, never to an ordinary user
+session, whatever else is true about it.
+
+**Correction, 2026-09-05, from the item 12 Fable threat-model review
+(section 15).** This section originally went further and claimed the
+exemption's practical effect was that "a genuine platform operator... who
+already has full control regardless" could always reach it via the
+Supabase dashboard's own SQL editor. That specific claim was not
+verified when written and, per Supabase's own documentation
+(`supabase.com/docs/guides/database/postgres/roles-superuser`), is likely
+false: the `postgres` role a managed Supabase project's SQL editor runs as
+is NOT flagged `rolsuper`. The SECURITY property this section is actually
+about is unaffected either way (`authenticated`/`anon` are correctly
+blocked, adversarially proven, section 4.2 Step 8b); what was wrong was an
+OPERATIONAL claim about who can bypass the trigger for legitimate
+administration. The three migration files' own comments (B/C/D) have been
+corrected to state this honestly rather than assert an unverified bypass
+path; item 9's real-schema preflight is where this should actually be
+confirmed, one way or the other, before it is relied on.
+
+**The trusted server-write path.** `src/lib/supabase/serviceRole.ts`
+(`getSupabaseServiceRole()`) matches this codebase's own pre-existing
+convention exactly (`src/app/api/admin/accounts/provision/route.ts`):
+server-only, returns `null` when unconfigured (never silently falls back to
+the ordinary client), and is used only after the caller's own session and
+listing ownership are already confirmed with the normal session-scoped
+client. `media/route.ts` and `docs/route.ts` now fetch it BEFORE any
+storage write (Codex review round 2, item 7 hardened this further; see
+below), and write the safe columns via the session client, then the
+trusted columns via the service-role client, in a second, separate write.
+
+**Item key validation, the same finding's second half.** "Arbitrary
+caller-supplied keys must not be accepted merely because they are under 120
+characters." `isValidEvidenceItemKey(assetType, itemKind, itemKey)`
+(`guidedEvidence.ts`, mirroring `mediaCategorization.ts`'s existing
+`isValidShotKey` pattern) checks a photo key against
+`mediaStandardFor(assetType).shots` and a fact key against
+`fieldsFor(assetType)`, both read from the listing's REAL, server-side
+`asset_type`, never the client's claim. `api/listings/[id]/evidence-marks/route.ts`
+now selects `asset_type` and calls this validator before accepting a mark.
+
+**Evidence.** Isolated harness (section 4.2, Step 8b): five adversarial
+per-column UPDATE-denied tests, an INSERT-denied test, a positive control
+(`authenticated` can still write `shot_key`, proving the trigger is
+selective, not a blanket write-lock), and a positive `service_role` test
+covering every protected column across all three migrations.
+`guidedEvidence.test.ts`: 7 new tests for `isValidEvidenceItemKey`
+(real shot valid, cross-asset-type shot rejected, real fact field valid,
+cross-type fact rejected, an arbitrary under-120-character string
+rejected, an unrecognised `item_kind` rejected, and a table-driven check
+across all 15 asset types).
+
+### Item 5: the cover-state double truth, resolved
+
+**The ruling.** Migration B, as drafted, added `is_cover boolean not null
+default false` and a unique partial index enforcing at most one cover per
+listing, while the application had always used, and continued to use,
+`sort_order = 0` as the cover convention; the categorization route
+deliberately never wrote `is_cover` at all. Codex's own ruling: "the
+simplest acceptable answer for 1B is to keep the existing ordering rule and
+remove the unused field," explicitly not describing this as a deferred
+feature.
+
+**The fix.** `is_cover` and `listing_media_one_cover_per_listing` were
+removed from migration B entirely (the schema diff, section 2, and the
+migration's own new comment record why); every stale reference describing
+it as "deferred" (`ListingMediaManager.tsx`, `media/[mediaId]/route.ts`,
+`mediaCategorization.ts`, the isolated harness's own column-count
+assertions and rollback SQL) was corrected to state it was removed, not
+merely unbuilt-for. `sort_order = 0` remains the one, single cover
+convention.
+
+**Evidence.** Isolated harness (section 4.2): "is_cover genuinely does not
+exist (removed, not merely unused)," checked directly against
+`information_schema.columns`, not only against application code no longer
+referencing it.
+
+### Item 6: visibility and moderation, stated exactly
+
+Covered in place, alongside the original Finding 2 write-up it corrects and
+extends (section 13, Finding 2, the two "Codex review round 2, item 6
+update" paragraphs), rather than duplicated here. In summary: `'flagged'`
+is defined precisely (a pending concern, not a takedown; only `'removed'`
+hides media) and that definition is now safe to rely on specifically
+because item 4's trusted-write-boundary triggers make it provably true
+that no untrusted session can set `moderation_state` at all (adversarially
+proven, not merely asserted, in section 4.2 Step 8b). Visibility is
+documented as enforcement infrastructure only: no mechanism anywhere in
+this codebase writes `visibility` to anything but its default, so
+"owner-controlled visibility" is not described as a shipped feature.
+Rights acknowledgement is held to the same standard: the columns exist and
+are now trusted-write-protected, but nothing writes them, so rights capture
+is not described as completed.
+
+### Item 7: the original-media orphan and deletion failure modes, closed
+
+**The finding.** Upload writes the derivative to storage, then the
+original to storage, then the `listing_media` row, with only a bare
+try/catch around each cleanup-on-failure step; deletion removed the DB row
+first, then best-effort cleaned storage. A failure partway through either
+direction could leave a real file (the original, carrying stripped-EXIF
+concerns only for the derivative, not for itself) in storage with no
+durable record, and the preserved original was stored under the
+browser-supplied `file.type`, not the type this server had actually
+verified.
+
+**A second, more precise failure mode found by reading the actual vendored
+SDK source, not assumed.** `@supabase/storage-js`'s `.remove()` and
+`@supabase/postgrest-js`'s query builder both resolve to an ordinary
+`{ data: null, error }` for an API-level failure (a bucket policy refusal,
+an RLS-denied delete, a constraint violation) and only THROW for a
+lower-level failure (network, timeout) — verified directly in
+`node_modules/@supabase/storage-js/src/lib/common/BaseApiClient.ts`'s own
+`handleOperation()`. Every "best effort" cleanup in this package, before
+this item, wrapped the call in try/catch and never checked the returned
+`.error`, which means the single most likely real failure (the request
+reached the server and was refused) was the one case silently missed.
+
+**The fix.**
+
+- `src/lib/mediaCleanup.ts`: `bestEffortWithFallback(operation, onFailure)`
+  checks BOTH failure shapes (thrown, or resolved with a non-null `.error`)
+  and calls `onFailure` for either. `queueMediaCleanup(serviceRole, params)`
+  durably records what could not be confirmed cleaned up; it never throws
+  (its own failure degrades to a structured log line, the last line of
+  defence for a best-effort failure) and accepts a `null` service-role
+  client (the deletion path does not fail an already-decided response over
+  a missing credential).
+- `supabase/migrations/20260905b_pkg1b_media_cleanup_queue.sql` (migration
+  F): `media_cleanup_queue`, a durable, service_role/superuser-only ledger
+  of cleanup obligations. Not a tombstone state on `listing_media` itself:
+  nothing reads a "pending delete" row on that table (the migration's own
+  header explains this choice in full), so the durable record lives in its
+  own table instead of adding a transient status value nothing consumes to
+  a live inventory table.
+- `media/route.ts` and `docs/route.ts` now fetch the service-role client
+  BEFORE any storage write (not only once the trusted-column update needs
+  it), failing fast (503) if unconfigured, which avoids the
+  inconsistent-state window entirely for that specific cause rather than
+  cleaning up after it. Every remaining best-effort cleanup call in both
+  routes, and in `media/[mediaId]/route.ts`'s DELETE handler, now goes
+  through `bestEffortWithFallback` + `queueMediaCleanup`.
+- `src/lib/uploadQuality.ts`: `mimeForSniffedType()` maps the server's own
+  verified sniff result (`sniffImageType`, the same magic-byte read that
+  decided whether to accept the upload at all) to the real MIME type; the
+  preserved original is now stored under this, not `file.type`.
+- Deletion continues to remove the `listing_media` row FIRST, which is what
+  actually satisfies "deletion must immediately remove public visibility":
+  `getPublicListingMedia()` reads live rows, so a deleted row is
+  instantaneously gone from any public response the moment the row-delete
+  commits, independent of whether the subsequent storage cleanup succeeds.
+
+**Orphan-reconciliation procedure and retention window: section 16.**
+
+**Evidence.** `src/lib/mediaCleanup.test.ts` (9 tests): both failure shapes
+trigger the fallback, success does not, a Supabase-style thenable (not a
+full `Promise`) is accepted, `queueMediaCleanup` records the right fields
+and never throws under any failure combination (queue insert returns an
+error, queue insert throws, no service-role client at all).
+`src/lib/uploadQuality.test.ts`: `mimeForSniffedType` mapped correctly for
+all three accepted types, falls back to `application/octet-stream` for
+unrecognised content, and a dedicated test constructs a file whose sniffed
+type (PNG) disagrees with its browser-supplied type (`image/jpeg`) to prove
+the fix actually changes behaviour in the scenario it exists for. Isolated
+harness (section 4.2, Step 8d): `media_cleanup_queue`'s columns and RLS
+(zero policies) exist; `authenticated` can neither read nor insert a row
+(both 42501); `service_role` can do both; a queued entry survives its
+referenced `listing_media` row already being deleted, the exact ordering a
+deletion-cleanup failure produces.
+
+### Item 8: the external-URL integrity bypass, closed
+
+**The finding.** `api/listings/route.ts` (create) and
+`api/listings/[id]/route.ts` (update) both accepted a `body.photos` array
+of arbitrary `https://` URLs and attached each as an ordinary
+`listing_media` row (`source: 'url'`), with none of the hashing, duplicate
+protection, type/size validation, EXIF handling, immutable original
+preservation, or controlled storage a real upload gets. This let an
+unverified, third-party-hosted link stand in as equivalent to verified
+evidence, fed by a real, live Studio control ("Or paste photo links, one
+per line").
+
+**The fix taken: the smaller of Codex's two offered paths.** Rather than
+build a server-side ingestion pipeline for remote URLs (hashing, sniffing,
+re-encoding and preserving an original fetched FROM a third-party host,
+which would also need its own SSRF/redirect/DNS-rebinding/oversized-response/
+content-type-deception/timeout protection), 1B stops accepting new
+URL-sourced photos entirely. The Studio's "paste photo links" textarea and
+its backing state were removed (`ListingStudio.tsx`; `photoUrls` stays as a
+referentially-stable, always-empty array so the pre-existing photo-count/
+evidence-mission logic reading `photoUrls.length` needs no further
+change). Both routes no longer read `body.photos` for new-row creation.
+Pre-existing `source='url'` rows (mock listings, anything attached before
+this change) are untouched and continue to display: `getPublicListingMedia()`
+does not filter by `source`, so this is a create/update-path restriction
+only, never a read-path or data change. Floor-plan links (`kind='floorplan'`)
+are deliberately out of scope for this restriction, stated explicitly in
+both routes' own new comments and in the structural test below: a floor
+plan is a single reference document, not a guided-evidence photo shot a
+lister could pass off as verified property-condition evidence.
+
+**Evidence Passports, checked directly, not assumed.** Grepped
+`EvidencePassport.tsx` and `evidence.ts` for any reference to
+`listing_media`, `content_sha256`, or media `source` at all: none exists.
+That machinery is entirely about market-data provenance (medians,
+registered sources like REGA), never about photo integrity, so "Evidence
+Passports must never describe a legacy external URL as an
+integrity-preserved upload" is satisfied today by the two systems having no
+coupling at all, confirmed rather than assumed, and recorded here so a
+future feature that DOES connect them inherits the constraint deliberately
+rather than by accident.
+
+**Evidence.** `src/lib/externalPhotoUrl.test.ts` (5 tests): neither route's
+source reads `body.photos` (matched against the actual code shape,
+`Array.isArray(body.photos)`/`body.photos as`, not merely the substring, so
+the tests' own explanatory prose does not self-trigger); neither route
+inserts a `kind: "photo"` + `source: "url"` combination; the Studio's
+source no longer contains the paste-links UI; `getPublicListingMedia()`
+does not filter by `source`. Full application gate re-run clean afterward
+(section 15's own closing summary).
+
+### Item 11: schema-independent responsive and accessibility QA, completed now rather than deferred
+
+**Codex's own instruction: do not wait on production schema access for QA
+that does not depend on it.** `e2e/responsive-1b.spec.ts` (22 tests, all
+passing against a local `npm run dev`, not the live deployment or any
+migrated schema) covers what is actually reachable without authentication:
+5 viewport widths (320/390/430/768/1280px) x 2 locales for load/overflow/
+console-error correctness; real RTL element order (bounding-box position,
+not a mirrored screenshot, so the check is against the actual rendered
+cascade rather than a bitmap comparison that a horizontally-flipped-but-
+logically-unchanged page would also pass); visible keyboard focus on the
+first several tab stops, both locales; the "Open SAT Advisor" control
+against the 44px floor, both locales (the one control Codex's own item 11
+checklist names specifically); no loss of that same control across all 5
+breakpoints, including after scrolling to the page's own bottom; and a
+live, emulated `prefers-reduced-motion: reduce` check against
+`globals.css`'s own `.reveal` rule (`src/lib/motion.ts`'s own source-level
+guard already covers the JS-side scroll-behaviour half; this is the
+CSS-side half, exercised in a real browser rather than only read as source).
+
+**What this genuinely is not, stated as plainly as the file's own header
+comment states it.** Every Studio-specific item on Codex's own list lives
+behind authentication this environment's own standing rule refuses to
+automate (it never enters a password on the user's behalf, which is a
+stricter and different limitation than the `resize_window` tool limitation
+`CLAUDE.md`'s own "Open items" list already tracks): the per-photo
+shot/scope/condition selects, the Private badge, the asset-type-change
+reconfirmation notice in situ, upload/cancel/retry/replace/delete/reorder
+(including keyboard-accessible non-drag reorder), and a slow/interrupted/
+reload/resumed-draft upload. None of these are claimed as covered, mocked,
+or approximated by this file; `src/lib/coarsePointerFloor.test.ts` and
+`ListingMediaManager.tsx`'s own accessible-naming already prove those
+controls' MARKUP shape at the source level (real `<select>` elements, one
+accessible name per photo), which this file does not duplicate and is a
+genuinely different kind of evidence from a live, rendered viewport check.
+
+**Real findings surfaced along the way, disclosed rather than
+suppressed.** The first run of this file found three pre-existing, and
+entirely unrelated to this package's own scope, WCAG 2.5.5-style tap-target
+gaps in the SHARED site header at 390px: the wordmark/logo link (35px
+tall), the "List your space" CTA link (37.5px tall), and the hamburger Menu
+button (36px tall, both locales). None of these are fixed here (out of
+scope for PKG-LISTING-CREATION-1B; fixing them would be exactly the kind of
+unrequested surrounding cleanup this project's own house rules ask not to
+bundle into an unrelated change) and none of them are asserted on by the
+committed test (which would otherwise be permanently, and misleadingly,
+red over a defect this package did not introduce); both facts are recorded
+in the test file's own comments, and a background task
+(`task_b0db50f5`) was raised to fix them independently. A second, genuinely
+benign finding (a console warning that the site's CSP is delivered
+report-only with a directive that has no effect in that mode) is filtered
+out of the console-error check by name, with a comment explaining why,
+rather than either silently weakening the check for real future errors or
+letting an unrelated site-wide CSP question block this package's own new
+test.
+
+### Item 9: production schema preflight, prepared but not executable here
+
+**Still mandatory, still blocked, for the same reason as section 4.1: no
+credentialed access to the real production database or a working native
+branch from this environment.** What follows is the exact checklist to run
+the moment either becomes available (CLI repair per `CLAUDE.md`'s
+blocked-evidence queue, or direct authorized access), so opening that
+access turns immediately into execution rather than into designing the
+checklist from scratch under time pressure.
+
+**Step A. Read-only snapshot of the real schema.** Run, and save the output
+of, each of the following against production (a read-only role or a
+freshly-created, unmodified branch is sufficient; none of these mutate
+anything):
+
+```sql
+-- Every column, type, nullability and default on the two tables this
+-- package touches.
+select table_name, column_name, data_type, is_nullable, column_default
+  from information_schema.columns
+  where table_schema = 'public' and table_name in ('listings', 'listing_media', 'listing_evidence_marks')
+  order by table_name, ordinal_position;
+
+-- Every constraint (check, unique, foreign key, primary key).
+select conrelid::regclass as table_name, conname, contype, pg_get_constraintdef(oid)
+  from pg_constraint
+  where connamespace = 'public'::regnamespace
+    and conrelid::regclass::text in ('listings', 'listing_media')
+  order by table_name, conname;
+
+-- Every index.
+select tablename, indexname, indexdef from pg_indexes
+  where schemaname = 'public' and tablename in ('listings', 'listing_media');
+
+-- Every RLS policy, and whether RLS is even enabled.
+select relname, relrowsecurity, relforcerowsecurity from pg_class
+  where relname in ('listings', 'listing_media');
+select tablename, policyname, cmd, qual, with_check from pg_policies
+  where tablename in ('listings', 'listing_media');
+
+-- Every trigger already on these tables (this package assumes it is
+-- adding the ONLY triggers on listing_media; confirm nothing else fires
+-- on the same events first).
+select tgname, tgrelid::regclass, tgenabled, pg_get_triggerdef(oid) from pg_trigger
+  where tgrelid::regclass::text in ('listings', 'listing_media') and not tgisinternal;
+
+-- The three RLS helper functions this package's own policies and triggers
+-- depend on, but does not define: their REAL bodies, argument signatures,
+-- and security mode (definer vs invoker) have never been read from this
+-- environment (section 4.1).
+select proname, pg_get_function_identity_arguments(oid), prosecdef, pg_get_functiondef(oid)
+  from pg_proc
+  where proname in ('app_user_id', 'app_account_id', 'app_is_sat') and pronamespace = 'public'::regnamespace;
+
+-- Column and table grants, the real baseline the trusted-write-boundary
+-- triggers (section 15, item 4) were deliberately designed not to depend
+-- on, but should still be read and compared against what this runbook's
+-- own local harness assumed.
+select grantee, table_name, privilege_type from information_schema.role_table_grants
+  where table_schema = 'public' and table_name in ('listings', 'listing_media')
+  order by table_name, grantee;
+
+-- Item 12's own most severe finding (section 15, item 12), checked
+-- directly: does anon (the key shipped in every page's own client bundle,
+-- not a secret) hold table-level SELECT on listing_media with no column
+-- restriction, which would let it read content_sha256/original_path/
+-- derived_* via a direct PostgREST call, bypassing every query this
+-- package's own application code writes entirely?
+select grantee, column_name from information_schema.column_privileges
+  where table_schema = 'public' and table_name = 'listing_media' and privilege_type = 'SELECT'
+    and grantee in ('anon', 'authenticated')
+  order by grantee, column_name;
+-- If this returns EVERY column for anon/authenticated (not a restricted
+-- list), the table-level grant covers them and item 12's finding is live.
+
+-- Storage bucket policies for the bucket this package's uploads/originals
+-- and media_cleanup_queue's own referenced paths live in. Read every
+-- policy's own qual/with_check text, not just that policies exist: item
+-- 12's finding depends on whether any SELECT policy on storage.objects for
+-- this bucket is scoped to a path prefix (e.g. only public, non-originals
+-- paths) or covers the whole bucket including originals/.
+select * from storage.buckets where id = 'listing-media';
+select policyname, cmd, qual, with_check from pg_policies where tablename = 'objects' and schemaname = 'storage';
+```
+
+**Step B. Compare against every assumption these seven migrations make**,
+specifically: that `listings.id` and `listing_media.listing_id` are both
+`uuid` with the foreign key this package's own `references` clauses expect;
+that `listing_media` has no existing column named `seq`, `visibility`,
+`moderation_state`, `shot_key`, `media_scope`, `media_condition`,
+`content_sha256`, `original_path`, `derived_transforms`, `derived_by`, or
+`derived_at` (an existing column with any of these names, of a different
+shape, would make this package's `ADD COLUMN` either fail outright or
+silently coexist with an unrelated meaning); that no existing trigger on
+`listing_media` already fires `BEFORE INSERT OR UPDATE` in a way that could
+interact with the three new trusted-column-protection triggers (execution
+order between multiple triggers on the same event is alphabetical by
+trigger name in Postgres, which is worth confirming does not create a
+conflict); that the storage bucket named `listing-media` exists, is
+private, and its own policies genuinely restrict by the
+`{account}/{listing}/...` path prefix the application code assumes,
+INCLUDING the `originals/` subfolder and paths a `service_role` client
+writes to on the caller's behalf (the account-prefix convention holds
+naturally when the session client writes it, but this package now also has
+`service_role` writing paths that were computed under an owner's own
+request; confirm the bucket policy is not somehow narrower than that
+expects).
+
+**Step C. Repair or reconcile any migration-history drift** found via the
+Supabase CLI path already recorded in `CLAUDE.md`'s blocked-evidence queue
+(`supabase link`, `supabase migration fetch`, find the failing statement in
+Postgres Logs, `supabase migration repair <timestamp> --status applied`),
+before attempting anything below.
+
+**Step D. Re-run the isolated harness's own seven migration files against a
+schema reconstructed from Step A's REAL snapshot**, not the current
+hand-written stand-in (section 4.2's own stated limitation). This is
+mechanical once Step A's output exists: replace the harness's
+`BOOTSTRAP_SQL` stand-in tables/functions with the real `CREATE TABLE`/
+`CREATE FUNCTION` statements Step A actually returned, then re-run
+unchanged.
+
+**Step E. Confirm the original-object storage path is accepted by the
+real bucket policy** (Step B), by performing one real, disposable
+server-side upload attempt against production storage under a test
+account/listing pair created for exactly this purpose, then deleting both
+the test rows and the test objects afterward. Not simulated: this is the
+one step in this checklist that cannot be answered by reading metadata
+alone, because a storage policy's actual behavior can differ from its
+displayed definition in ways only a real request reveals (e.g. a
+CDN-layer rule, or a Storage-API-version difference from what the local
+harness's own stand-in models).
+
+**Step F. Confirm old application code keeps working immediately after
+the additive migration and before this PR's own code deploys**, by loading
+the current production listing pages (a few real, already-published
+listings, EN and AR) immediately after Step A/D's migrations are applied to
+a branch or staging copy, before this PR's own frontend code is present
+there. Every migration in this package is additive and nothing existing
+selects `select *` on `listing_media` (confirmed by grep across this
+codebase, section 5), so this is expected to be a non-event; Step F is
+what turns "expected" into "confirmed."
+
+**Step G. Confirm reapplication and rollback against the REAL schema**,
+the same two checks section 4.2 already performed against the
+reconstructed stand-in, run again here once Steps A-D make a real-schema
+run possible.
+
+**If native branches remain broken when this is next attempted**: continue
+every item this dependency does not touch (all thirteen items in this
+section proceed without it, as this cycle itself demonstrates), and record
+the exact remaining blocker once in `CLAUDE.md`'s blocked-evidence queue
+rather than repeating it across multiple documents.
+
+### Item 10: safe production rollout order
+
+Prepared, not executed. Restructures sections 6, 7 and 9's own content into
+the exact step-by-step form an operator actually follows, with who performs
+each step, the expected result, the condition that means stop, and the
+recovery action if that condition is met. Nothing here authorizes running
+any of it; PR #22 stays draft and unmerged until item 9's checklist is
+actually complete (section 15's own closing summary states this plainly).
+
+| # | Step | Who | Expected result | Stop condition | Recovery action |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Confirm PITR is enabled (Project Settings > Database > Point in Time Recovery), or take a manual backup, immediately before starting (section 9) | Saleem / whoever holds Supabase project ownership | PITR shows enabled with a real recovery window, or a fresh manual backup completes | PITR is off AND a manual backup fails or cannot be confirmed | Do not proceed to step 2. Fix or confirm the backup path first; there is no safe step 2 without it |
+| 2 | Run item 9, Step A's read-only snapshot queries against production; save the output. **This step is now also where item 12's most severe finding (below) is checked**: confirm what `anon`/`authenticated` can actually SELECT on `listing_media` (every column, or a restricted set), and what the `storage.objects` policy for the `listing-media` bucket actually allows for the `originals/` prefix specifically | Whoever holds production DB access | All queries return without error; output saved alongside this runbook; the anon/authenticated column-grant and storage-policy results are recorded explicitly, not skimmed past | Any query errors, Steps A/B in item 9 surface a schema assumption this package's migrations contradict, OR `anon`/`authenticated` can select `original_path`/`content_sha256`/`derived_*` and/or sign a URL for any object under `originals/` | Stop. A schema-assumption mismatch: reconcile the migration files (or the assumption) before continuing. A confirmed anon-read gap: apply item 12's prepared (not yet applied) grant-restriction migration and re-run this step before proceeding to step 3; do not apply the rest of this package's migrations while a real anon-read gap on trusted/original-photo columns is confirmed open |
+| 3 | Run item 9, Step C: repair any migration-history drift via the Supabase CLI | Saleem (or whoever holds CLI/credential access; see `CLAUDE.md`'s blocked-evidence queue) | `supabase migration repair` completes; the project's migration history and live schema agree | The CLI reports a failure this runbook's own reasoning does not anticipate | Stop. Do not attempt a workaround (e.g. forcing a migration marker) without understanding the actual drift first |
+| 4 | Run item 9, Step D: re-run the isolated harness against a schema reconstructed from step 2's real snapshot | Whoever is applying this migration | 82/82 (or the current total; section 4.2) against the real-schema reconstruction, same as the stand-in run | Any test fails that passed against the stand-in schema | Stop. The failure is telling you something the stand-in schema could not: do not apply until the specific discrepancy is understood and either the migration or the harness's real-schema reconstruction is corrected |
+| 5 | Run item 9, Step E: one real, disposable test upload against production storage under a throwaway account/listing, then delete both | Whoever is applying this migration | The object uploads to the expected `{account}/{listing}/...` path and its `originals/` subfolder under the real bucket policy | The upload is rejected, or lands somewhere other than the expected path shape | Stop. The storage-policy assumption in the schema diff (section 2) does not hold in production; do not apply the columns that depend on it until this is resolved |
+| 6 | Apply the seven migrations in the order given in section 6, inside a single transaction per file (the Supabase CLI's own default) | Whoever is applying this migration | Each file applies with no error; section 10's post-migration verification queries all return the expected values | Any migration file errors, or any section 10 query returns an unexpected value | Do NOT attempt to "fix forward" mid-sequence. Stop; run the section 7 rollback SQL for whichever files did apply (all-or-nothing per file, since each runs in its own transaction, but files already committed before the failing one need the rollback SQL run in reverse from that point); confirm the schema is back to its pre-migration state before deciding on a next attempt |
+| 7 | Run item 9, Step F: load a handful of real, already-published listing pages (EN and AR) immediately after migration, before this PR's own application code deploys | Whoever is applying this migration | Existing listing pages render exactly as they did before migration (every change in this package is additive; section 2) | Any existing page errors, renders differently, or is slower in an observable way | Stop. This means an additive assumption in section 2 was wrong; roll back per step 6's recovery action before investigating further, rather than leaving a live discrepancy in place while debugging |
+| 8 | Deploy this PR's application code (the Vercel deployment for `pkg/listing-creation-1b`, promoted to production) | Whoever holds Vercel deploy access for the `sat-markets` team | The deployment reaches Ready with no build error; the gate's own build check (already green in CI, `CLAUDE.md`) is reproduced on the production build target | The build fails, or the deployment does not reach Ready | Stop. Revert the Vercel deployment to the immediately-prior production deployment (schema stays in place, inert; section 7's own "forward recovery of the application" path). Do not touch the schema over an application-layer failure |
+| 9 | Run every section 10 post-migration verification query again, now against production with this PR's application code live | Whoever is applying this migration | Every query matches its stated expected value in section 10, including query 6b's adversarial trigger check (run as the real `authenticated` role, not a superuser session) | Query 6b succeeds where it should be denied (42501), or any other query disagrees with section 10's stated expectation | Stop and treat as a security-relevant regression, not a cosmetic mismatch: revert the application deployment (step 8's recovery action) immediately; the schema's trusted-write boundary is the specific thing item 4 (section 15) exists to guarantee |
+| 10 | Smoke-test the new Studio surfaces live: upload a photo, categorize it (shot/scope/condition), mark and clear a guided-evidence item, attempt (and expect to be refused) pasting a photo URL, on both a desktop and a narrow viewport, EN and AR | Saleem, or whoever performs the first live acceptance pass | Every action succeeds or is refused exactly as designed (sections 15 items 4 and 8); no console error; no visual regression against section 11's own responsive evidence | Any of the above disagrees with the designed behaviour | Stop. Revert the application deployment (step 8's recovery action); the schema is additive and safe to leave in place while the application-layer defect is fixed forward |
+| 11 | Monitor `media_cleanup_queue` and application error logs for the first real 24-48 hours of live uploads/deletions | Whoever holds production monitoring access | Zero, or only rare/explained, entries in `media_cleanup_queue`; no unexpected spike in upload/delete error rates | A sustained stream of `media_cleanup_queue` entries, or an error-rate spike | Investigate via section 16's reconciliation procedure before it reaches the 30-day retention-review window; do not let entries accumulate unexamined |
+| 12 | Update `CLAUDE.md`'s "State as of" section and the findings register (`docs/findings-register.md`) to record the migration as applied, with the actual date, the actual PR merge, and a link back to this runbook's own evidence sections | Whoever is applying this migration | Both documents reflect reality the same day the migration is applied | Either document is left unupdated | Not a rollback condition, but a documentation debt: fix it before the next session, since `CLAUDE.md`'s own protocol treats an out-of-date "state as of" section as worse than a missing one |
+
+### Item 12: three bounded Fable reviews, given the actual diff and this runbook
+
+Three independent `model: "fable"` agents, each briefed with real file
+paths and this runbook rather than a generic prompt, each returning a
+genuine finding set rather than a clean bill of health. All three ran
+concurrently; all three are disposed of below, not merely logged.
+
+**(a) Threat-model and privacy review**, scoped to original storage,
+privileged fields, direct Supabase access, orphan cleanup, remote URLs,
+and public signed URLs. Six findings, ranked; every one checked against
+the actual code before acting (this section states what was verified
+directly versus inferred from general Supabase documentation, since this
+environment cannot reach the real production database, section 4.1):
+
+1. **Most severe, NOT fixed here, prepared for item 9's preflight
+   instead.** The read-side counterpart to section 5's own already-disclosed
+   "convention, not enforcement" gap: if `anon`'s real production grant on
+   `listing_media` is the ordinary, unrestricted table-level `SELECT` a
+   default Supabase project grants (this environment cannot confirm either
+   way, matching the exact limitation section 4.1 already names), then a
+   direct PostgREST call with the public anon key — embedded in every
+   page's own client bundle, not a secret — can read `original_path`,
+   `content_sha256` and every other column for ANY listing's media,
+   bypassing `getPublicListingMedia()`'s own filtering entirely (that
+   function's restraint only governs what this codebase's OWN query code
+   selects; it cannot restrain an arbitrary caller's own direct query
+   against the same table). Combined with a storage `objects` policy that
+   (if also unrestricted for `anon`, again unconfirmed) allows signing a
+   URL for any path, this could expose the preserved original — kept
+   specifically because it is untouched and may carry EXIF/GPS data — for
+   any published listing, and would mean `moderation_state = 'removed'`
+   media remains fetchable by direct object path indefinitely, since
+   hiding a row from a query does not delete the underlying storage
+   object. **Why not fixed now:** the correct fix (restrict `anon`/
+   `authenticated`'s column-level SELECT grant on `listing_media`, and/or
+   move originals to a service-role-only bucket) touches production
+   privilege grants this environment cannot test against the real schema,
+   and this package's own item 4 already learned, empirically, that
+   Postgres grant precedence is subtle enough to get wrong without a real
+   test target (the column-REVOKE-vs-table-GRANT lesson). Applying an
+   untested privilege change to production blind is exactly the
+   "production as an exploratory test environment" item 9 exists to
+   forbid. **What is prepared instead:** the exact candidate migration,
+   below, to be validated against a REAL schema snapshot (item 9, Step A,
+   now explicitly checks the anon/authenticated column grants and the
+   storage policy for this reason) before it is ever applied, and item 10's
+   own rollout step 2 now gates on this check explicitly.
+
+   ```sql
+   -- PREPARED, NOT APPLIED. Requires item 9 Step A's real grant snapshot
+   -- first, to confirm both that anon/authenticated currently hold the
+   -- broad grant this assumes, and that no legitimate current read path
+   -- (this codebase's own code, confirmed by grep to never select these
+   -- columns; a future path is a different matter) depends on it.
+   revoke select on public.listing_media from anon, authenticated;
+   grant select (
+     id, listing_id, path, kind, source, mime, bytes, alt_en, alt_ar,
+     plan_type, sort_order, visibility, moderation_state,
+     shot_key, media_scope, media_condition, created_at
+   ) on public.listing_media to anon, authenticated;
+   -- Deliberately excluded: content_sha256, original_path,
+   -- derived_transforms, derived_by, derived_at, rights_acknowledged_by,
+   -- rights_acknowledged_at. Column-level SELECT, unlike the column-level
+   -- REVOKE this package's item 4 found ineffective for WRITES, is the
+   -- correct primitive for reads: PostgreSQL's column-privilege model
+   -- checks the column list at query-plan time for SELECT, so this is not
+   -- exposed to the same table-grant-precedence trap (that trap was
+   -- specifically that a column REVOKE cannot narrow a pre-existing
+   -- table-level GRANT; here the table-level GRANT is revoked outright
+   -- first, then a new, narrower one is added). Still: test this exact
+   -- sequence against the real schema before applying, not only reason
+   -- about it, given this package's own history of finding grant
+   -- semantics to be more subtle than they first appear.
+   ```
+
+2. **Fixed.** Item 8's application-route fix did not close the same
+   capability at the database: an owner's own session JWT could call
+   PostgREST directly and recreate a `kind='photo'` + `source='url'` row,
+   bypassing every Next.js route entirely (the RLS insert policy checks
+   listing ownership, not payload shape). Closed by migration G
+   (`20260905c_pkg1b_media_url_photo_block.sql`), a trigger with no role
+   exemption at all, since no role has a legitimate reason to create this
+   row shape any more; adversarially proven in the isolated harness (Step
+   8e) for both `authenticated` and `service_role`. Item 8's own section
+   above and `src/lib/externalPhotoUrl.test.ts` are both updated to
+   describe this as the database-level half of item 8's fix, not a
+   separate, unrelated change.
+3. **Fixed.** `.remove()` can return `{ data: [], error: null }` — a 200
+   "success" that silently removed nothing — when a storage policy filters
+   out objects the caller may not delete, a failure shape this package's
+   `bestEffortWithFallback` could not see (it only checks `.error`). New
+   `removeStorageObjects()` (`src/lib/mediaCleanup.ts`) additionally
+   compares the returned count against the requested count and treats any
+   shortfall as a failure, at every storage-removal call site across
+   `media/route.ts`, `docs/route.ts` and `media/[mediaId]/route.ts`.
+4. **Disposition: folded into finding 1.** "Removed" media staying
+   fetchable by direct object path is the same underlying gap as finding
+   1 (anon storage read access), not a separate one; no separate fix.
+5. **Fixed (documentation only; the security property was never actually
+   weakened).** The claim that the superuser exemption in migrations
+   B/C/D's own comments meant "a genuine platform operator... already has
+   full control" via the Supabase dashboard's SQL editor was unverified
+   and is likely false (Supabase's own docs: the managed `postgres` role
+   is not `rolsuper`). The trigger's real job — blocking `authenticated`/
+   `anon` — is unaffected either way; only the OPERATIONAL claim about who
+   reaches the exemption was wrong. Corrected in all three migrations' own
+   comments and in section 15, item 4 above.
+6. **Fixed.** The trusted-column UPDATE in the upload two-phase write
+   (`media/route.ts`, `docs/route.ts`) used no `.select()`, so an UPDATE
+   matching zero rows (the row deleted by a concurrent request between the
+   INSERT and this UPDATE) reported no error and fell through to a success
+   response for a media id that no longer existed. Both routes now select
+   the updated id back and treat an empty result as a failure, routed
+   through the same cleanup path as a real error.
+
+**(b) Saudi Arabic copy review**, scoped to the five specific pieces of new
+Studio copy Codex named. All five real, concrete fixes applied directly
+(not deferred): the asset-type reconfirmation notice's "يثبت" (ambiguously
+readable as "proves") and "بموجب" (contract/legal-register word, wrong
+tone for a plain field lock) corrected, and the dropped "under the new
+one" restored to the Arabic; three leftover "حالة" (condition) references
+found and renamed to match the already-completed "نوع الصورة" (photo type)
+rename elsewhere (`ListingMediaManager.tsx`'s `conditionAt` accessible
+name, and two `apiErrors.ts` messages whose ENGLISH also still said
+"condition", not only their Arabic); `والحنفيات` (colloquial "the taps")
+corrected to `وحنفيات الحريق` (the term Civil Defense documentation
+actually uses) in the fire-protection shot label; `جناح العروسة` (Egyptian
+form) corrected to `جناح العروس` (Saudi/MSA form) in the bride-suite shot
+label. The private badge ("خاصة") and the error-recovery message tone were
+reviewed and confirmed already correct, not changed.
+
+**(c) Asset-specific evidence review**, independently classifying all
+eleven shots this package added (not nine, see section 15 item 13's
+housekeeping note below) into regulation-derived / market-convention /
+SAT's-own-standard. One real, concrete finding, fixed: `compound_perimeter`'s
+why-text claimed "licensing questions" (a regulatory basis) with no
+citation, in direct contradiction with this section's own classification
+of it as market convention; softened to honest practical/product reasoning
+(see `mediaStandard.ts`'s own new comment on that shot). A related,
+NARROWER regression guard was added
+(`mediaStandard.test.ts`, "the eight market-convention shots added this
+package never claim a regulatory basis"), scoped to this package's own
+eleven shots specifically, not a general audit of every shot this codebase
+has ever defined. A second instance of the identical pattern was found, by
+chance, in an unrelated, pre-existing shot from an earlier package
+(`education`'s `outdoor`); it is out of this package's own scope and is
+tracked as its own follow-up (a spawned background task), not fixed here.
+Two comment-level (not lister-facing) precision fixes were also applied:
+the `fire_protection` shot's code comment overstated NFPA 13 as flatly
+mandating ESFR sprinklers at a specific height threshold, softened to what
+this environment can actually stand behind (NFPA 13 governs sprinkler
+design for high-piled storage, without asserting the specific mandate);
+`service_block`'s wording was left as-is after review (Fable's suggested
+"mosque or prayer area" softening was considered but the existing text
+already reflects the same category-dependent nuance in its own
+supporting comment, so no change was made to avoid re-litigating an
+already-adequate answer).
+
+### Item 13: housekeeping
+
+Confirmed via `git status` at the start of this round and again before the
+final commit: no unrelated local artifact (`Riyadh_Relocation_Targets_Sep2026.pdf`
+or otherwise) was staged or present; only files this round's own 13 items
+actually touched appear in the diff. PR #22 remains draft. All seven
+migrations remain unapplied to production. No gate was weakened to reach
+green (the ESLint ratchet held at its existing 49 pinned errors throughout,
+introduced no new rule; `npm test`'s count only ever grew). The "nine
+shots" miscount item 12(c) corrected (actually eleven; section 14's own
+text was fixed in place, not left standing alongside a correction) is
+recorded here rather than as a separate item, since it is a housekeeping
+correction to this document's own arithmetic, not a code or product
+decision.
+
+## 16. Orphan-reconciliation procedure and retention window (item 7)
+
+`media_cleanup_queue` (section 2, section 15 item 7) durably records a
+storage/DB cleanup step that could not be confirmed to have succeeded. It
+is not read by any automatic job in this environment; resolution is
+manual, by an operator with `service_role`/superuser access, following
+this procedure.
+
+**Retention window: 30 days.** An entry unresolved 30 days after
+`queued_at` is a real operational gap (an orphaned storage object,
+potentially still carrying stripped-EXIF/GPS data if it is a preserved
+original, with a real ongoing storage cost and a real, if narrow, privacy
+exposure for as long as it exists unreviewed), not a theoretical one, and
+should be investigated before that window closes, not treated as
+background noise after. This is a policy stated here because no
+application code enforces it automatically in this pass; step 11 of
+section 10's rollout table is where live monitoring against this window
+actually happens.
+
+**The reconciliation query**, run periodically (recommended: weekly, or
+triggered by step 11's own monitoring) against production, with
+`service_role` or superuser access:
+
+```sql
+-- Every unresolved queue entry older than a day, oldest first: the working
+-- list for an operator's actual review pass.
+select id, listing_id, listing_media_id, storage_paths, reason, queued_at
+  from public.media_cleanup_queue
+  where resolved_at is null and queued_at < now() - interval '1 day'
+  order by queued_at asc;
+
+-- For each storage_paths entry above, confirm with the Storage API (or the
+-- Supabase dashboard's own Storage browser) whether the object still
+-- exists. Two outcomes:
+--   (a) it does not exist (an earlier retry, or the original failure was
+--       transient and a later, unrelated request happened to clean it up):
+--       mark resolved.
+--   (b) it still exists: delete it via the Storage API, confirm the
+--       delete succeeded, THEN mark resolved. Do not mark resolved before
+--       confirming the delete.
+update public.media_cleanup_queue
+  set resolved_at = now(), resolved_by = '<operator name>'
+  where id = <id>;
+
+-- Entries older than the 30-day retention window with no resolution: name
+-- these specifically when reporting on this table's health, rather than
+-- reporting only the raw unresolved count, since a 2-day-old entry and a
+-- 45-day-old entry are not the same severity of gap.
+select id, listing_id, storage_paths, reason, queued_at,
+       now() - queued_at as age
+  from public.media_cleanup_queue
+  where resolved_at is null and queued_at < now() - interval '30 days'
+  order by queued_at asc;
+```
+
+**Why this is a documented manual procedure rather than an automated job in
+this pass.** Building a scheduled reconciliation job (a Supabase Edge
+Function or an external cron calling the Storage API on a schedule) is
+real, additional server-side infrastructure with its own failure modes
+(what happens when the reconciliation job itself fails?) that this
+package's own scope did not include designing or testing; per this
+project's own house rules against speculative infrastructure, the honest
+choice is a documented, correct manual procedure now, stated precisely
+enough that automating it later is a mechanical translation of this
+query, not a redesign.
