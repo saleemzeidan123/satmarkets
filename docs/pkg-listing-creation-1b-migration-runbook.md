@@ -1936,13 +1936,47 @@ recorded here rather than as a separate item, since it is a housekeeping
 correction to this document's own arithmetic, not a code or product
 decision.
 
-## 16. Orphan-reconciliation procedure and retention window (item 7)
+## 16. Orphan-reconciliation procedure and retention window (item 7, updated item 4)
 
 `media_cleanup_queue` (section 2, section 15 item 7) durably records a
-storage/DB cleanup step that could not be confirmed to have succeeded. It
-is not read by any automatic job in this environment; resolution is
-manual, by an operator with `service_role`/superuser access, following
-this procedure.
+storage/DB cleanup step that could not be confirmed to have succeeded.
+
+**Stated precisely, per Codex review round 3, item 4, correcting this
+section's own earlier wording.** The QUEUE is durable (a real table,
+service_role/superuser only, written by the application whenever a
+cleanup could not be confirmed). RECONCILING an entry is not automated:
+nothing in this codebase reads the queue on a schedule, and
+`getSupabaseServiceRole()`'s own null case (an outage at the exact moment
+of a cleanup failure) degrades `queueMediaCleanup()` to a structured log
+line instead of a queue row, which is not durable in the same sense a row
+survives (a log line's own retention depends entirely on the hosting
+platform's log policy, not on anything this codebase controls). Calling
+the queue itself "not fully automated or always durable" is the honest
+description; what changed this round is that reconciling it is no longer
+only a hand-typed SQL procedure.
+
+**`scripts/reconcile-media-cleanup-queue.mjs` is the reconciliation
+procedure now, runnable, not merely a documented query.** For every
+unresolved entry, oldest first: checks each named storage path against
+the real Storage API (a signed-URL attempt, the cheapest real existence
+check), reports what it finds, and — only with `--apply` — deletes any
+object still present (using the same removed-count verification
+`src/lib/mediaCleanup.ts`'s `removeStorageObjects()` uses, so a
+policy-filtered silent no-op is caught here too, not only in the
+application) and marks the row resolved once the delete is actually
+confirmed. Default (no `--apply`) is report-only. **Not run against a
+real Supabase project from this environment**, for the same reason
+nothing else schema-dependent has been (no credentialed production
+access, section 4.1); its logic is a direct translation of the SQL
+procedure below, which section 4.2's own harness cannot execute either
+(the isolated harness is a bare Postgres socket, with no Storage API
+layer at all). This is disclosed, not claimed as live-tested.
+
+**Still not automated on a schedule, and stated as such rather than
+implied otherwise.** Running the script is an operator's own action
+(cron, a manual weekly run, or wiring it into whatever job scheduler a
+future package adds); nothing in this PR invokes it by itself. Resolution
+requires `service_role`/superuser access, following this procedure.
 
 **Retention window: 30 days.** An entry unresolved 30 days after
 `queued_at` is a real operational gap (an orphaned storage object,
@@ -1991,13 +2025,151 @@ select id, listing_id, storage_paths, reason, queued_at,
   order by queued_at asc;
 ```
 
-**Why this is a documented manual procedure rather than an automated job in
-this pass.** Building a scheduled reconciliation job (a Supabase Edge
-Function or an external cron calling the Storage API on a schedule) is
-real, additional server-side infrastructure with its own failure modes
-(what happens when the reconciliation job itself fails?) that this
-package's own scope did not include designing or testing; per this
-project's own house rules against speculative infrastructure, the honest
-choice is a documented, correct manual procedure now, stated precisely
-enough that automating it later is a mechanical translation of this
-query, not a redesign.
+**Why this is an operator-run script rather than a scheduled job in this
+pass.** Building a scheduled reconciliation job (a Supabase Edge Function
+or an external cron invoking `reconcile-media-cleanup-queue.mjs` on a
+schedule) is real, additional server-side infrastructure with its own
+failure modes (what happens when the reconciliation job itself fails?)
+that this package's own scope did not include designing or testing; per
+this project's own house rules against speculative infrastructure, the
+honest choice is a real, runnable, operator-invoked script now, written
+precisely enough that scheduling it later is a deployment decision, not a
+redesign of its logic.
+
+## 17. Codex review round 3: narrow closure findings against `ee973f8`
+
+**2026-09-05, same day as round 2.** A third, independent Codex review of
+the round-2 head (`ee973f8`) accepted every one of the 13 prior items
+without asking for rework, and raised five narrower, genuinely new
+findings. No migration file changed in this round (verified: `git diff
+--stat -- supabase/migrations/` is empty); every checksum in section 3
+remains current.
+
+### Item 1: newly inserted media was briefly publicly eligible before its integrity record existed
+
+**The finding.** `visibility` defaults to `'public'` (section 5). The
+two-phase write (session client inserts safe columns, service-role client
+writes trusted columns in a second call, item 4) meant a row existed,
+publicly readable by `getPublicListingMedia()`, for the short window
+between those two calls, with `content_sha256`/`original_path`/`derived_*`
+all still null. Not a privacy leak of anything hidden (the derivative
+object itself was already a validly re-encoded, EXIF-stripped webp by
+insert time), but a real, if narrow, integrity-provenance gap: a public
+reader could see a photo before this codebase's own claim that it is a
+verified, traced derivation was actually true of that row.
+
+**The fix.** The INSERT (session client) now sets `visibility: 'private'`
+explicitly rather than taking the column default; the trusted-column
+UPDATE (service-role client) sets `visibility: 'public'` in the SAME
+statement that finalizes `content_sha256`/`original_path`/`derived_*`.
+`visibility` is not a trigger-protected column (item 6's own ruling: it is
+the owner's), so the session client may legitimately set it. Applied to
+both `media/route.ts` and `docs/route.ts` (floor plans and brochures go
+through the identical public-media filter). A row that fails the trusted
+write is deleted before ever having been public, an improvement over the
+prior behaviour, not merely a neutral side effect.
+
+**Evidence.** Isolated harness, Step 8f: a row inserted `visibility='private'`
+is confirmed absent from the literal public-media filter query; the same
+row, after an UPDATE matching the real route's payload shape exactly
+(all four derivation fields plus `visibility='public'`, in one statement),
+is confirmed present.
+
+### Item 2: `getPublicListingMedia()` collapsed "no photos" and "could not check" into the same empty result
+
+**The finding.** The function returned `[]` for a client-unavailable
+case, a genuine query error (silently discarded, never even read), AND a
+listing with no media, indistinguishably. This is the exact defect class
+`src/lib/queries/listings.ts`'s own `getListingById`/`getBuildingById`
+were already fixed for elsewhere in this codebase (a `dataOk` flag,
+distinguishing "the read itself could not be trusted" from "genuinely
+nothing here") — this package's own new query module had reintroduced it.
+
+**The fix.** `getPublicListingMedia()` now returns `{ dataOk, media }`,
+matching that exact established shape. The public listing page reads
+`dataOk`; when false, the single-photo fallback renders the same generic
+placeholder as before, now paired with an honest, dictionary-sourced,
+bilingual caption ("Photos could not be loaded just now. This is a
+connection problem, not a listing with no photos." / its Arabic) rather
+than looking identical to a listing that genuinely has none. Shown only
+in that fallback path, not the multi-photo gallery, and never for a
+genuinely empty result.
+
+**Evidence.** `mediaVisibility.test.ts`: two new structural checks confirm
+the source both exposes `dataOk` and actually reads the query's own
+`error` rather than discarding it (a real error is what makes `dataOk`
+false in the first place). No mocked-client unit test was added, matching
+this codebase's own established precedent: `listings.ts`'s own
+`getListingById`/`getBuildingById` have no such test either; this class
+of function is verified by source inspection plus live/E2E, not a
+hand-built Supabase client mock.
+
+### Item 3: real production grant/RLS/storage-policy snapshot — still blocked, now for a precisely diagnosed reason
+
+**Checked, not merely re-asserted as blocked.** A Supabase MCP connection
+is available in this environment and does work: `list_projects` returns
+three real projects (`poddmoljnzoomrvkvmga`/"sb1-9j1yzxdn", both
+INACTIVE; `wvilxqkcgbzhfsdfvvun`/"SAT CRM", INACTIVE; `gwyeserfgxcxhwfdjfav`/
+"SAT Website", ACTIVE_HEALTHY), all under organization `ojvzgqiyzebscdiacvnj`.
+**None of these is the real target.** The documented production project
+for this app is `ltqgwpivmumfwqdxwwgo`, org `sat-market` (section 4.1);
+none of the three returned projects matches that ref, and `gwyeserfgxcxhwfdjfav`
+("SAT Website") is the exact project `CLAUDE.md`'s own Infrastructure
+section already warns is a DIFFERENT app's real production database
+(satestate.com's intake DB), not the satmarkets marketplace. Querying it
+under the assumption it might stand in for the real target would have
+been the precise mistake that warning exists to prevent, so none of the
+three projects was queried at all beyond `list_projects` itself.
+
+**What this actually narrows.** The blocker is no longer "no Supabase
+access from this environment" in general; it is specifically "the
+Supabase MCP connection available here is authenticated to the wrong
+account/organization." This is a more precise, more actionable fact than
+this runbook could state before this check, and is the one access
+question named in this round's own closing summary below.
+
+**The prepared fix remains exactly as section 15 item 12 left it**:
+a candidate column-scoped `REVOKE`-then-`GRANT` migration, restricting
+`anon`/`authenticated` SELECT on `listing_media` away from the
+integrity/rights columns, written but deliberately not applied, pending
+this exact snapshot.
+
+### Item 4: the cleanup queue's own honesty, and making reconciliation operationally real
+
+Covered in place in section 16, which this round's own review corrected
+rather than duplicated here: the queue itself is durable (a real,
+`service_role`-only table); reconciling an entry was not automated
+before this round and still is not scheduled after it, and both facts are
+now stated as such rather than the more comfortable "documented manual
+procedure" framing this section used to carry. What changed is that
+reconciliation is now `scripts/reconcile-media-cleanup-queue.mjs`, a real,
+runnable script (report-only by default, `--apply` to actually delete
+confirmed-orphaned objects and mark rows resolved, using the same
+removed-count verification `removeStorageObjects()` uses), not only a SQL
+procedure an operator has to hand-execute. Not run against a real
+Supabase project from this environment, for the same reason nothing else
+schema-dependent has been; this is disclosed in the script's own header
+and in section 16, not claimed as live-tested.
+
+### Item 5: the PR's own description was stale relative to its actual diff
+
+Corrected directly on GitHub (not duplicated here): migration count (five
+to seven), test totals (2060 to 2076), isolated-harness count (53 to 83),
+a summary of round 2's 13 items and round 3's five, and the current
+"what is not yet done" list matching this section's own account rather
+than the original, much narrower two-finding summary the description
+still carried.
+
+### Closing summary for this round
+
+Full gate clean (typecheck, 2076/2076 tests, `ar-lint`, prose scan,
+`lint-gate` held at 49, build); isolated harness 83/83 (see the fresh
+Step 8f above). Gate: [GitHub Actions](https://github.com/saleemzeidan123/satmarkets/pull/22/checks)
+green on the commit that closes this round. Vercel: Ready. Nothing here
+authorizes merge or production migration; PR #22 remains draft, all seven
+migrations remain unapplied. The one precise access action this round
+narrows the blocker to: reconnect or reauthorize the Supabase MCP
+integration (or supply CLI/dashboard credentials another way) under the
+account that actually owns organization `sat-market` / project
+`ltqgwpivmumfwqdxwwgo`, since the account currently connected does not
+include it.

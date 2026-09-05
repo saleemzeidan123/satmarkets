@@ -97,6 +97,9 @@ Postgres up on port 55432, database satmarkets_test created.
   PASS  authenticated CAN still insert kind='photo' + source='upload' (the real upload path, unaffected)
   PASS  an EXISTING legacy kind='photo' + source='url' row can still be updated on an unrelated column (categorization is not blocked)
 
+=== Step 8f: newly inserted media is not publicly eligible before the trusted integrity write completes (Codex review round 3, item 1) ===
+  PASS  a row inserted visibility='private' does not appear in the public-media filter until the trusted UPDATE flips it to 'public'
+
 === Step 9: rollback, then forward re-apply ===
   PASS  rollback SQL runs with no error
   PASS  listing_evidence_marks is gone after rollback
@@ -116,5 +119,5 @@ Postgres up on port 55432, database satmarkets_test created.
 Stopping embedded Postgres (persistent:false, data directory will be removed)...
 
 ============================================================
-RESULT: 82 passed, 0 failed (of 82)
+RESULT: 83 passed, 0 failed (of 83)
 ============================================================
