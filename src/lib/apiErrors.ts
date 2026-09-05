@@ -76,6 +76,7 @@ export type ApiErrorCode =
   // Durable evidence state, /api/listings/[id]/evidence-marks POST.
   | "evidence_reason_required"
   | "evidence_mark_failed"
+  | "item_key_invalid"
   // Reorder, /api/listings/[id]/media PATCH.
   | "no_order"
   | "no_matching_photos"
@@ -255,6 +256,16 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
     "اذكر بإيجاز سبب عدم وجود هذا العنصر.",
   ],
   evidence_mark_failed: ["That could not be saved. Try again.", "تعذّر حفظ ذلك. أعد المحاولة."],
+  /**
+   * Codex review: item_key was previously accepted as any string under 120
+   * characters. This is reached only by a malformed or forged request
+   * (the Studio only ever sends a real shot or fact key it already
+   * displays), so a technical register is appropriate here.
+   */
+  item_key_invalid: [
+    "That item is not part of this listing's guided evidence.",
+    "هذا العنصر ليس من ضمن عناصر الإثبات الموجّه لهذا العرض.",
+  ],
 
   no_order: ["No new order was received.", "لم يصل ترتيب جديد."],
   no_matching_photos: [
@@ -281,12 +292,12 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
     "هذا ليس نطاقاً معروفاً في المنصة. اختر المبنى أو الوحدة.",
   ],
   media_condition_invalid: [
-    "That is not a condition this platform recognises. Choose current or illustrative.",
-    "هذه ليست حالة معروفة في المنصة. اختر الحالة الراهنة أو التوضيحية.",
+    "That is not a photo type this platform recognises. Choose current or illustrative.",
+    "هذا ليس نوع صورة معروفاً في المنصة. اختر صورة حالية أو توضيحية.",
   ],
   no_categorization_fields: [
-    "Nothing to update. Choose a shot, a scope, or a condition first.",
-    "لا يوجد ما يُحدَّث. اختر لقطة أو نطاقاً أو حالة أولاً.",
+    "Nothing to update. Choose a shot, a scope, or a photo type first.",
+    "لا يوجد ما يُحدَّث. اختر لقطة أو نطاقاً أو نوع الصورة أولاً.",
   ],
   categorize_failed: ["The category could not be saved.", "تعذّر حفظ التصنيف."],
 

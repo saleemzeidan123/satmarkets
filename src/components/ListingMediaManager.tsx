@@ -15,15 +15,16 @@ import { mediaStandardFor } from "@/lib/mediaStandard";
 // Verification is never touched here: a photo is a photo.
 //
 // PKG-LISTING-CREATION-1B outcome B. shot_key, media_scope and media_condition
-// are the only three of the migration's seven new listing_media columns this
-// pass builds UI for. is_cover, rights_acknowledged_by/at, visibility and
-// moderation_state are deliberately absent: this component already has an
-// unrelated, working "cover photo" concept (sort_order 0, the t.cover badge
-// and makeCover below), and whether the new is_cover boolean replaces that,
-// or means something else alongside it, is a product decision with
-// public-facing blast radius that has not been made. Building UI for a column
-// that does nothing visible yet would be a half-finished feature, so it and
-// the other three columns wait for a separate, later decision.
+// are the only three of the migration's new listing_media columns this pass
+// builds UI for (plus the read-only visibility badge below). This component
+// already has a working "cover photo" concept (sort_order 0, the t.cover
+// badge and makeCover below); an earlier draft of the migration also added
+// an is_cover boolean, and Codex's own review ruled it out entirely (not
+// deferred: removed from the migration) rather than ship a second,
+// unused source of truth for the same fact. rights_acknowledged_by/at and
+// moderation_state remain out of scope for this pass: no control sets
+// either yet, and building UI for a state nothing can produce would be a
+// half-finished feature, so they wait for a separate, later decision.
 type Photo = {
   id: string;
   url: string | null;
@@ -98,14 +99,15 @@ export default function ListingMediaManager({
     errCategorize: "تعذّر حفظ التصنيف.", categorized: "تم الحفظ",
     shotAt: (n: number) => `لقطة الصورة ${n}`,
     scopeAt: (n: number) => `نطاق الصورة ${n}`,
-    conditionAt: (n: number) => `حالة الصورة ${n}`,
+    conditionAt: (n: number) => `نوع الصورة ${n}`,
     // Codex finding: visibility is enforced on every public read now (see
     // mediaVisibility.ts), but nothing in this pass gives a lister a control
     // to actually set it to private (that is its own product decision, the
-    // same class as is_cover above). This badge is the honest, forward-
-    // compatible half: if a photo's visibility is ever recorded as private
-    // by any means, its owner sees that plainly here, rather than the
-    // Studio silently disagreeing with what the public page shows.
+    // same "no control exists yet" class as rights_acknowledged_by/at
+    // above). This badge is the honest, forward-compatible half: if a
+    // photo's visibility is ever recorded as private by any means, its
+    // owner sees that plainly here, rather than the Studio silently
+    // disagreeing with what the public page shows.
     privateBadge: "خاصة",
   } : {
     title: "Photos", cover: "Cover", makeCover: "Make cover", remove: "Remove", add: "Add photos",
@@ -126,7 +128,7 @@ export default function ListingMediaManager({
     errCategorize: "Could not save the category.", categorized: "Saved",
     shotAt: (n: number) => `Shot for photo ${n}`,
     scopeAt: (n: number) => `Scope for photo ${n}`,
-    conditionAt: (n: number) => `Condition for photo ${n}`,
+    conditionAt: (n: number) => `Photo type for photo ${n}`,
     privateBadge: "Private",
   };
 

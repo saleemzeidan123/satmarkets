@@ -282,7 +282,6 @@ export default function ListingStudio({
   const [rightToMarket, setRightToMarket] = useState(seed.rightToMarket);
   const [availableAt, setAvailableAt] = useState(seed.availableAt);
   const [place, setPlace] = useState<Place>(seed.place);
-  const [photos, setPhotos] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [floorFiles, setFloorFiles] = useState<File[]>([]);
   const [floorTypes, setFloorTypes] = useState<PlanType[]>([]);
@@ -471,7 +470,18 @@ export default function ListingStudio({
     setFiles(deduped);
   }
 
-  const photoUrls = useMemo(() => photos.split(/\n+/).map((s) => s.trim()).filter(Boolean), [photos]);
+  // Codex review, item 8: the Studio used to let a lister paste arbitrary photo
+  // links here, which the server attached as verified-looking evidence with none
+  // of the hashing, duplicate protection, type/size validation, EXIF handling or
+  // controlled storage a real upload gets (see api/listings/route.ts and
+  // api/listings/[id]/route.ts, which no longer accept new photo URLs at all).
+  // Rather than leave an input that silently does nothing, the input is removed;
+  // photoUrls stays as a stable, always-empty array so the counting logic below
+  // (which predates this change and is still correct for uploaded files) does
+  // not need to be rederived at each call site. A referentially stable []
+  // (useMemo with no deps), not a fresh literal per render, because line ~553
+  // below lists this identifier itself, not its .length, as a dependency.
+  const photoUrls = useMemo((): string[] => [], []);
   const steps = useMemo(() => studioSteps(f.asset_type), [f.asset_type]);
 
   // The guided evidence mission (PKG-LISTING-CREATION-1A). This Studio has no
@@ -853,10 +863,6 @@ export default function ListingStudio({
                 </ul>
               )}
             </div>
-            <div>
-              <label className={lbl} htmlFor="photo_urls">{t("Or paste photo links, one per line", "أو ألصق روابط الصور، رابط في كل سطر")}</label>
-              <textarea id="photo_urls" dir="ltr" rows={3} value={photos} onChange={(e) => { touch(); setPhotos(e.target.value); }} className={inp} />
-            </div>
           </div>
         );
       case "photo_set": {
@@ -1116,9 +1122,6 @@ export default function ListingStudio({
       // confirmation they made earlier, and on a create it reads the same as absent.
       availability_confirmed_at: availableAt,
       attributes: attrs,
-      // Only the links typed on this visit. The box is cleared after a save, so a
-      // link that is already a media row is never sent twice.
-      photos: photoUrls,
     };
     const existing = listingId;
     const res = await fetch(existing ? `/api/listings/${existing}` : `/api/listings`, {
@@ -1303,7 +1306,6 @@ export default function ListingStudio({
     setBrochureFile(remainingBrochure);
     setDocFiles(remainingDocFiles);
     setDocKinds(remainingDocKinds);
-    setPhotos("");
     setUploadRound((n) => n + 1);
     setListingId(id);
     setSaved(true);
@@ -1436,8 +1438,8 @@ export default function ListingStudio({
                 {listingId !== null && (
                   <p className={help}>
                     {t(
-                      "The asset type decides which facts this listing carries, so it is fixed once the listing is saved. A different asset type is a different listing.",
-                      "نوع الأصل يحدد الحقائق التي يحملها هذا العرض، ولذلك يثبت بعد حفظ العرض. نوع أصل مختلف يعني عرضاً مختلفاً.",
+                      "The asset type decides which facts this listing carries, so it is fixed once the listing is saved. A different asset type is a different listing. It also decides which photo shots and evidence questions apply; if this ever changes, anything marked unavailable under the old type is asked for again under the new one, not silently kept.",
+                      "نوع الأصل يحدد الحقائق التي يحملها هذا العرض، ولذلك لا يمكن تغييره بعد حفظ العرض. نوع أصل مختلف يعني عرضاً مختلفاً. كما يحدد اللقطات وأسئلة الإثبات المطلوبة؛ فإذا تغيّر هذا النوع مستقبلاً، يُطلب مجدداً ضمن النوع الجديد كل ما سبق تحديده كغير موجود في النوع السابق، لا أن يُحتفظ به دون مراجعة.",
                     )}
                   </p>
                 )}
