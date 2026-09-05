@@ -5,6 +5,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { intakeFields } from "@/lib/assetFields";
 import { PLATFORM_OWNED_FIELD_KEYS } from "@/lib/listingQuality";
+import { currentEvidenceMarks } from "@/lib/guidedEvidence";
 import type { LocationPoint } from "@/lib/nearestLocation";
 import ListingStudio, { type StudioInitial } from "@/components/ListingStudio";
 
@@ -106,7 +107,7 @@ export default async function NewListingPage(
       // returning lister is not told to supply photographs they supplied on
       // Tuesday. Counted, never listed: the Studio is an intake surface, and
       // managing existing media is the dashboard editor's job.
-      const [photos, floorplans, brochures, documents] = await Promise.all([
+      const [photos, floorplans, brochures, documents, evidenceMarkRows] = await Promise.all([
         sb.from("listing_media").select("id", { count: "exact", head: true }).eq("listing_id", draftId).eq("kind", "photo"),
         // Plans are read as rows rather than counted, because the media standard asks
         // whether an attached plan is of a kind this asset is shown by, and the recorded
@@ -114,7 +115,14 @@ export default async function NewListingPage(
         sb.from("listing_media").select("plan_type").eq("listing_id", draftId).eq("kind", "floorplan"),
         sb.from("listing_media").select("id", { count: "exact", head: true }).eq("listing_id", draftId).eq("kind", "brochure"),
         sb.from("listing_documents").select("id", { count: "exact", head: true }).eq("listing_id", draftId).is("deleted_at", null),
+        // PKG-LISTING-CREATION-1B outcome A. The whole ledger for this
+        // listing, any order (currentEvidenceMarks reduces it), so a mark
+        // made last visit is not asked for again this visit.
+        sb.from("listing_evidence_marks")
+          .select("item_kind, item_key, action, reason, created_at, seq")
+          .eq("listing_id", draftId),
       ]);
+      const evidenceMarks = currentEvidenceMarks(evidenceMarkRows.data ?? []);
 
       const isSale = L.deal_type === "sale";
       const price = isSale ? L.sale_price : L.asking_rent_sqm;
@@ -147,6 +155,7 @@ export default async function NewListingPage(
         floorplan_count: floorplans.data?.length ?? 0,
         floorplan_types: (floorplans.data ?? []).map((r: any) => (r?.plan_type == null ? null : String(r.plan_type))),
         document_count: (brochures.count ?? 0) + (documents.count ?? 0),
+        evidence_marks: evidenceMarks,
       };
     }
   }

@@ -143,6 +143,7 @@
     "unavailableBody": "This is a connection problem, not a missing listing. Try again in a moment.",
     "unavailableTitleMeta": "Temporarily unavailable | SAT Markets",
     "retryLabel": "Try again",
+    "mediaUnavailable": "Photos could not be loaded just now. This is a connection problem, not a listing with no photos.",
     "onRequest": "On request",
     "flyerPdf": "Flyer / PDF",
     "share": "Share",

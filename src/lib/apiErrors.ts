@@ -71,6 +71,12 @@ export type ApiErrorCode =
   // Shared by both upload routes.
   | "upload_failed"
   | "attach_failed"
+  | "duplicate_media"
+  | "media_integrity_check_failed"
+  // Durable evidence state, /api/listings/[id]/evidence-marks POST.
+  | "evidence_reason_required"
+  | "evidence_mark_failed"
+  | "item_key_invalid"
   // Reorder, /api/listings/[id]/media PATCH.
   | "no_order"
   | "no_matching_photos"
@@ -78,6 +84,12 @@ export type ApiErrorCode =
   // Removal, /api/listings/[id]/media/[mediaId] DELETE.
   | "media_not_found"
   | "remove_failed"
+  // Categorization, /api/listings/[id]/media/[mediaId] PATCH.
+  | "shot_key_invalid"
+  | "media_scope_invalid"
+  | "media_condition_invalid"
+  | "no_categorization_fields"
+  | "categorize_failed"
   // Slice B. Pause and republish, /api/listings/[id]/status POST.
   | "not_configured"
   | "status_transition_not_allowed"
@@ -218,6 +230,42 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
     "The file was stored but could not be attached to the listing.",
     "تم حفظ الملف لكن تعذّر إرفاقه بالعرض.",
   ],
+  /**
+   * PKG-LISTING-CREATION-1B outcome C. Content-fingerprint duplicate
+   * protection on listing_media, so the same photo or document uploaded
+   * again in a later session is named rather than silently attached twice.
+   */
+  duplicate_media: [
+    "This file has already been uploaded to this listing.",
+    "سبق رفع هذا الملف إلى هذا العرض.",
+  ],
+  /**
+   * Deferred-contracts item 7. mediaPublishable() refusing is not a case a
+   * reader can fix by trying again with a different file: the pipeline
+   * itself, not the upload, is what would need to change. This can only be
+   * reached by a future edit to this route's own fixed transform list, never
+   * by anything a lister does today.
+   */
+  media_integrity_check_failed: [
+    "This upload could not be verified as safe to publish. Try again shortly.",
+    "تعذّر التحقق من سلامة هذا الملف للنشر. أعد المحاولة بعد قليل.",
+  ],
+
+  evidence_reason_required: [
+    "Say why this does not exist, in a few words.",
+    "اذكر بإيجاز سبب عدم وجود هذا العنصر.",
+  ],
+  evidence_mark_failed: ["That could not be saved. Try again.", "تعذّر حفظ ذلك. أعد المحاولة."],
+  /**
+   * Codex review: item_key was previously accepted as any string under 120
+   * characters. This is reached only by a malformed or forged request
+   * (the Studio only ever sends a real shot or fact key it already
+   * displays), so a technical register is appropriate here.
+   */
+  item_key_invalid: [
+    "That item is not part of this listing's guided evidence.",
+    "هذا العنصر ليس من ضمن عناصر الإثبات الموجّه لهذا العرض.",
+  ],
 
   no_order: ["No new order was received.", "لم يصل ترتيب جديد."],
   no_matching_photos: [
@@ -228,6 +276,30 @@ const MESSAGES: Record<ApiErrorCode, [string, string]> = {
 
   media_not_found: ["That file is no longer on this listing.", "لم يعد هذا الملف على هذا العرض."],
   remove_failed: ["The file could not be removed.", "تعذّر حذف الملف."],
+  /**
+   * PKG-LISTING-CREATION-1B outcome B. Per-shot categorization on one
+   * already-uploaded photo. Three separate codes for the three fields
+   * rather than one generic code and an interpolated field name, for the
+   * reason this file states at its own head: an English field name spliced
+   * into a translated sentence is an English word inside an Arabic one.
+   */
+  shot_key_invalid: [
+    "That is not a shot this listing's asset type uses. Choose one from the list.",
+    "هذه ليست من اللقطات التي يستخدمها نوع أصل هذا العرض. اختر واحدة من القائمة.",
+  ],
+  media_scope_invalid: [
+    "That is not a scope this platform recognises. Choose building or unit.",
+    "هذا ليس نطاقاً معروفاً في المنصة. اختر المبنى أو الوحدة.",
+  ],
+  media_condition_invalid: [
+    "That is not a photo type this platform recognises. Choose current or illustrative.",
+    "هذا ليس نوع صورة معروفاً في المنصة. اختر صورة حالية أو توضيحية.",
+  ],
+  no_categorization_fields: [
+    "Nothing to update. Choose a shot, a scope, or a photo type first.",
+    "لا يوجد ما يُحدَّث. اختر لقطة أو نطاقاً أو نوع الصورة أولاً.",
+  ],
+  categorize_failed: ["The category could not be saved.", "تعذّر حفظ التصنيف."],
 
   not_configured: [
     "This is temporarily unavailable. Try again shortly.",
