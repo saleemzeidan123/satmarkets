@@ -179,12 +179,21 @@ const EXTRA: Record<string, MediaShot[]> = {
     // records sprinkler_type and civil_defense_approved for this asset type
     // with no shot asking for evidence of either. Source, verified
     // 2026-09-05: Saudi Building Code SBC 801 (Fire Protection Requirements)
-    // incorporates NFPA 13, which requires ESFR sprinkler heads for rack
-    // storage above 7.5m; Civil Defense enforces SBC compliance as a
+    // incorporates NFPA 13, which governs sprinkler system design for
+    // high-piled rack storage; Civil Defense enforces SBC compliance as a
     // licensing gate. This is a real code citation, not market convention
     // presented as one; see docs/pkg-listing-creation-1b-migration-runbook.md
-    // section 14 for how this was checked.
-    SHOT("fire_protection", "expected", "Fire protection: sprinklers, pump room and hydrants", "أنظمة الحماية من الحريق: الرشاشات وغرفة المضخات والحنفيات",
+    // section 14 for how this was checked. A second, independent Codex-round
+    // Fable review (2026-09-05) flagged this comment's earlier, more
+    // specific wording ("requires ESFR sprinkler heads for rack storage
+    // above 7.5m") as likely overprecise: NFPA 13 offers ESFR as one
+    // permitted protection scheme among several for high-piled storage,
+    // not a flat mandate at that exact threshold, and the 7.5m figure was
+    // a secondary-source paraphrase this environment could not itself
+    // verify against the standard's own clause. Softened accordingly; the
+    // underlying claim this shot exists to support (a real code, with a
+    // real licensing consequence) is unaffected.
+    SHOT("fire_protection", "expected", "Fire protection: sprinklers, pump room and hydrants", "أنظمة الحماية من الحريق: الرشاشات وغرفة المضخات وحنفيات الحريق",
       "Civil Defense approval decides whether a tenant can be licensed in the building at all, and it is usually the first thing a logistics tenant's safety officer asks to see.",
       "تحدّد موافقة الدفاع المدني إمكانية ترخيص المستأجر في المبنى أصلاً، وغالباً ما تكون أول ما يطلب مسؤول السلامة لدى مستأجر لوجستي رؤيته."),
   ],
@@ -276,7 +285,7 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("sections_separate", "expected", "Each section shown separately, with its own entrance", "كل قسم معروضاً على حدة، بمدخله الخاص",
       "Saudi wedding halls are almost always run as two separate sections, men's and women's, each with its own entrance and often its own parking. A buyer or operator prices on both sections and how well they are separated.",
       "تُدار قاعات الأفراح في السعودية غالباً كقسمين منفصلين للرجال والنساء، لكل منهما مدخله الخاص وغالباً موقفه الخاص. يقيّم المشتري أو المشغّل القسمين معاً ومدى الفصل بينهما."),
-    SHOT("bride_suite", "expected", "Bride's suite and preparation rooms", "جناح العروسة وغرف التجهيز",
+    SHOT("bride_suite", "expected", "Bride's suite and preparation rooms", "جناح العروس وغرف التجهيز",
       "A standard expectation for this asset type and part of what a booking is priced against.",
       "توقّع معتاد لهذا النوع من الأصول، وجزء مما يُسعَّر الحجز بناءً عليه."),
   ],
@@ -298,9 +307,22 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("fire_safety", "expected", "Fire exits and extinguishers", "مخارج الطوارئ وطفايات الحريق",
       "The Civil Defense approval a labor camp needs to operate turns on this, and it is the first thing an inspection checks.",
       "عليها تتوقف موافقة الدفاع المدني اللازمة لتشغيل السكن العمالي، وهي أول ما يُراجَع في أي تفتيش."),
+    // PKG-LISTING-CREATION-1B, Codex review round 2, item 12 (Fable
+    // evidence review): the why-text here previously called security and
+    // worker transport "licensing questions", asserting a regulatory basis
+    // this file never checked or cited, in direct contradiction with
+    // docs/pkg-listing-creation-1b-migration-runbook.md sections 12 and 14,
+    // which file this shot as market convention, not regulation-derived.
+    // The review that caught this explicitly declined to supply its own
+    // citation rather than guess one; per this project's own honesty
+    // protocol (never present market convention as a legal requirement,
+    // never fabricate evidence), the fix is to soften the claim to the
+    // practical/product reasoning this shot actually rests on, matching
+    // every other market-convention shot's own tone, not to invent a
+    // regulation to make the stronger wording true.
     SHOT("compound_perimeter", "expected", "Compound gate, perimeter and bus bay", "بوابة المجمّع والسور وموقف الحافلات",
-      "Security and worker transport are both licensing questions for this asset type, not amenities.",
-      "الأمن ونقل العمال كلاهما مسألة ترخيص لهذا النوع من الأصول، لا رفاهية إضافية."),
+      "Security and worker transport both affect how a buyer or operator prices and staffs this property, and neither is visible from a photo of a room.",
+      "الأمن ونقل العمال يؤثران في كيفية تسعير المشتري أو المشغّل لهذا العقار وتزويده بالعاملين، ولا يظهر أي منهما في صورة لغرفة واحدة."),
     SHOT("utilities_provision", "expected", "Water tanks, sewage and backup power provision", "خزانات المياه والصرف الصحي ومصدر الطاقة الاحتياطي",
       "Many camps run on tankered water and a generator rather than a network connection, and which one decides real operating cost.",
       "يعتمد كثير من المجمعات على تعبئة المياه بالصهاريج ومولد كهربائي بدل التوصيل بالشبكة، ومعرفة ذلك تحدّد التكلفة التشغيلية الفعلية."),
