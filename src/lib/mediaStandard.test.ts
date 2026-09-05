@@ -298,3 +298,21 @@ test("law 8: a fully traced, permitted derivation is publishable", () => {
   assert.deepEqual(mediaIntegrityFaults(TRACED), []);
   assert.equal(mediaPublishable(TRACED), true);
 });
+
+// PKG-LISTING-CREATION-1B outcome D. media/route.ts's own unconditional
+// pipeline (rotate to apply EXIF orientation, resize, re-encode to webp)
+// writes exactly this literal transform pair as every upload's
+// derived_transforms. This is the first real call site for the machinery
+// above; if a future change to that pipeline adds a transform not on
+// mediaStandard.ts's allow list, this is the test that catches it, rather
+// than the defect surfacing as a suddenly-unpublishable photo in production.
+test("law 8: the upload route's own derivation record is publishable by construction", () => {
+  const uploadPipelineDerivation: MediaDerivation = {
+    originalRef: "acct/listing/originals/file.jpg",
+    transforms: ["downscale", "format_convert"],
+    appliedBy: "system:upload-pipeline",
+    appliedAt: "2026-09-04T00:00:00Z",
+  };
+  assert.deepEqual(mediaIntegrityFaults(uploadPipelineDerivation), []);
+  assert.equal(mediaPublishable(uploadPipelineDerivation), true);
+});

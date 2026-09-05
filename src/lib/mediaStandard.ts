@@ -132,6 +132,15 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("back_of_house", "expected", "Storage and back of house", "المخزن والمناطق الخلفية",
       "Stock space and staff access, which decide whether the shop can trade at the volume it was taken for.",
       "مساحة البضاعة ودخول العاملين، وهما يحدّدان قدرة المحل على العمل بالحجم المطلوب."),
+    // PKG-LISTING-CREATION-1B, added on Fable review: an F&B tenant is
+    // priced into "retail" (labels.ts) with no shot naming what actually
+    // decides whether the unit can be fitted out as a restaurant or cafe.
+    SHOT("fnb_services", "expected", "Kitchen extraction, grease trap and gas provision", "شفط المطبخ ومصيدة الدهون وتمديد الغاز",
+      "For a food and beverage tenant these decide whether the unit can be fitted out at all, and an extraction route to the roof is often the one thing that cannot be added later.",
+      "بالنسبة لمستأجر مطعم أو مقهى، تحدّد هذه العناصر إمكانية تجهيز الوحدة أصلاً، ومسار الشفط إلى السطح غالباً ما يكون العنصر الوحيد الذي يتعذّر إضافته لاحقاً."),
+    SHOT("outdoor_seating", "optional", "Outdoor seating area and its frontage", "منطقة الجلسات الخارجية وواجهتها",
+      "A real driver of value for a cafe or restaurant tenant, and a fact a plan does not carry.",
+      "عامل مهم في قيمة الوحدة لمستأجري المقاهي والمطاعم، وهو ما لا يُظهره المخطط."),
   ],
   showroom: [
     SHOT("frontage", "required", "The display frontage", "واجهة العرض",
@@ -140,6 +149,10 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("clear_span", "expected", "The clear span and column positions", "الامتداد الصافي ومواقع الأعمدة",
       "Columns decide what can be displayed and where. A stated area does not.",
       "الأعمدة تحدّد ما يمكن عرضه وأين. المساحة المذكورة لا تفعل ذلك."),
+    // PKG-LISTING-CREATION-1B, added on Fable review.
+    SHOT("mezzanine", "expected", "The mezzanine, where one exists", "الميزانين، إن وُجد",
+      "Saudi showrooms very often carry one, and it is extra area a stated ground-floor size does not capture.",
+      "كثيراً ما تضم المعارض التجارية في السعودية ميزانيناً، وهو مساحة إضافية لا يعكسها المقاس المذكور للدور الأرضي."),
   ],
   medical: [
     SHOT("services_provision", "required", "Drainage, water and power provision", "تصريف المياه والتغذية بالماء والكهرباء",
@@ -162,6 +175,12 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("power", "expected", "The power supply and distribution board", "التغذية الكهربائية ولوحة التوزيع",
       "Available load decides which operations can take the building at all.",
       "الحمل المتاح يحدّد العمليات التي يمكنها استخدام المبنى أصلاً."),
+    // PKG-LISTING-CREATION-1B, added on Fable review: assetFields.ts already
+    // records sprinkler_type and civil_defense_approved for this asset type
+    // with no shot asking for evidence of either.
+    SHOT("fire_protection", "expected", "Fire protection: sprinklers, pump room and hydrants", "أنظمة الحماية من الحريق: الرشاشات وغرفة المضخات والحنفيات",
+      "Civil Defense approval decides whether a tenant can be licensed in the building at all, and it is usually the first thing a logistics tenant's safety officer asks to see.",
+      "تحدّد موافقة الدفاع المدني إمكانية ترخيص المستأجر في المبنى أصلاً، وغالباً ما تكون أول ما يطلب مسؤول السلامة لدى مستأجر لوجستي رؤيته."),
   ],
   self_storage: [
     SHOT("unit_range", "required", "The range of unit sizes", "نطاق أحجام الوحدات",
@@ -196,7 +215,7 @@ const EXTRA: Record<string, MediaShot[]> = {
   land: [
     SHOT("boundaries", "required", "The boundaries, from each corner", "الحدود من كل ركن",
       "Where the plot stops. A survey states it and a photograph shows what is standing on the line today.",
-      "أين ينتهي المخطط. الكروكي يذكر الحد والصورة تُظهر ما يقف عليه اليوم."),
+      "أين تنتهي القطعة. الكروكي يذكر الحد والصورة تُظهر ما يقف عليه اليوم."),
     SHOT("road_frontage", "required", "Road frontage and access point", "واجهة الطريق ونقطة الدخول",
       "Frontage width and the road it faces carry most of the value of a plot.",
       "عرض الواجهة والطريق الذي تطل عليه يحملان معظم قيمة الأرض."),
@@ -217,11 +236,22 @@ const EXTRA: Record<string, MediaShot[]> = {
   ],
   gas_station: [
     SHOT("forecourt", "required", "The forecourt and pump layout", "الساحة الأمامية وتوزيع المضخات",
-      "Vehicle movement across the site is the operation, and it is only legible from above the ground.",
-      "حركة المركبات عبر الموقع هي التشغيل نفسه، ولا تُقرأ إلا من مستوى الأرض وما فوقها."),
+      "Vehicle movement across the site is the operation, and it is only legible from an elevated viewpoint.",
+      "حركة المركبات عبر الموقع هي التشغيل نفسه، ولا تُقرأ بوضوح إلا من نقطة مرتفعة تُظهر الموقع بالكامل."),
     SHOT("canopy_signage", "expected", "Canopy, signage and lighting", "المظلة واللوحات والإنارة",
       "What a driver sees at speed, which decides whether they stop.",
       "ما يراه السائق مسرعاً، وهو ما يحدّد توقفه من عدمه."),
+    // PKG-LISTING-CREATION-1B, added on Fable review: the kingdom's
+    // fuel-station regulations make the prayer room, restrooms and store
+    // mandatory (assetFields.ts already records them), and sub-tenancy
+    // income from ancillary units is often a large part of what the site is
+    // actually worth.
+    SHOT("service_block", "expected", "Service block: mosque, restrooms and store", "مبنى الخدمات: المسجد ودورات المياه والمحل",
+      "Required under the kingdom's fuel-station regulations and, in practice, what decides whether a station passes inspection.",
+      "مطلوبة بموجب أنظمة محطات الوقود في المملكة، وهي عملياً ما يحدّد اجتياز المحطة للتفتيش."),
+    SHOT("ancillary_units", "expected", "Ancillary income units (quick service, tyre and oil service)", "الوحدات التأجيرية الإضافية (مطاعم سريعة، خدمة الإطارات والزيوت)",
+      "Sub-tenancy income from these units is often a large part of what the offer is actually worth.",
+      "غالباً ما يشكّل دخل التأجير من الباطن لهذه الوحدات جزءاً كبيراً من القيمة الفعلية للعرض."),
   ],
   wedding_hall: [
     SHOT("main_hall", "required", "The main hall at full width", "الصالة الرئيسية بكامل عرضها",
@@ -230,14 +260,36 @@ const EXTRA: Record<string, MediaShot[]> = {
     SHOT("service_kitchen", "expected", "Catering kitchen and service route", "مطبخ الضيافة ومسار الخدمة",
       "Whether the hall can serve the number it seats.",
       "هل تستطيع الصالة خدمة العدد الذي تتسع له."),
+    // PKG-LISTING-CREATION-1B, added on Fable review: Saudi wedding halls
+    // are almost always run as two separate sections, and "the main hall"
+    // alone does not say whether or how well they are separated.
+    SHOT("sections_separate", "expected", "Each section shown separately, with its own entrance", "كل قسم معروضاً على حدة، بمدخله الخاص",
+      "Saudi wedding halls are almost always run as two separate sections, men's and women's, each with its own entrance and often its own parking. A buyer or operator prices on both sections and how well they are separated.",
+      "تُدار قاعات الأفراح في السعودية غالباً كقسمين منفصلين للرجال والنساء، لكل منهما مدخله الخاص وغالباً موقفه الخاص. يقيّم المشتري أو المشغّل القسمين معاً ومدى الفصل بينهما."),
+    SHOT("bride_suite", "expected", "Bride's suite and preparation rooms", "جناح العروسة وغرف التجهيز",
+      "A standard expectation for this asset type and part of what a booking is priced against.",
+      "توقّع معتاد لهذا النوع من الأصول، وجزء مما يُسعَّر الحجز بناءً عليه."),
   ],
   worker_housing: [
     SHOT("room_typical", "required", "A typical room with its occupancy", "غرفة نموذجية مع عدد شاغليها",
       "Occupancy per room is the compliance question, and it is answered by the photograph or not at all.",
       "عدد شاغلي الغرفة هو سؤال الالتزام، ويُجاب عنه بالصورة أو لا يُجاب."),
-    SHOT("amenity_block", "required", "Washrooms, kitchen and dining", "دورات المياه والمطبخ وصالة الطعام",
+    SHOT("amenity_block", "required", "Washrooms, kitchen, dining and prayer room", "دورات المياه والمطبخ وصالة الطعام والمصلى",
       "Shared facilities against the head count they serve.",
       "المرافق المشتركة مقابل عدد الأشخاص الذين تخدمهم."),
+    // PKG-LISTING-CREATION-1B, added on Fable review: this asset type is
+    // bought and licensed on compliance and utilities more than on the room
+    // itself, and assetFields.ts already records perimeter_security and
+    // bus_parking with no shot asking for evidence of either.
+    SHOT("fire_safety", "expected", "Fire exits and extinguishers", "مخارج الطوارئ وطفايات الحريق",
+      "The Civil Defense approval a labor camp needs to operate turns on this, and it is the first thing an inspection checks.",
+      "عليها تتوقف موافقة الدفاع المدني اللازمة لتشغيل السكن العمالي، وهي أول ما يُراجَع في أي تفتيش."),
+    SHOT("compound_perimeter", "expected", "Compound gate, perimeter and bus bay", "بوابة المجمّع والسور وموقف الحافلات",
+      "Security and worker transport are both licensing questions for this asset type, not amenities.",
+      "الأمن ونقل العمال كلاهما مسألة ترخيص لهذا النوع من الأصول، لا رفاهية إضافية."),
+    SHOT("utilities_provision", "expected", "Water tanks, sewage and backup power provision", "خزانات المياه والصرف الصحي ومصدر الطاقة الاحتياطي",
+      "Many camps run on tankered water and a generator rather than a network connection, and which one decides real operating cost.",
+      "يعتمد كثير من المجمعات على تعبئة المياه بالصهاريج ومولد كهربائي بدل التوصيل بالشبكة، ومعرفة ذلك تحدّد التكلفة التشغيلية الفعلية."),
   ],
   entertainment: [
     SHOT("main_volume", "required", "The main volume, including height", "الحجم الرئيسي بما فيه الارتفاع",

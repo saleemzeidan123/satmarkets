@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
-import { randomUUID } from "crypto";
+import { randomUUID, createHash } from "crypto";
 import { isPlanType } from "@/lib/planTypes";
 
 export const runtime = "nodejs";
@@ -49,6 +49,28 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     return NextResponse.json({ error: "Only PDF documents are accepted here.", code: "document_type_rejected" }, { status: 400 });
   }
 
+  // PKG-LISTING-CREATION-1B outcome C: the same content-hash duplicate
+  // protection media/route.ts now applies to photos, extended to this
+  // route's PDFs since both write to listing_media and share its unique
+  // index. Pre-check is a non-authoritative early exit; the index is the
+  // real safety net (see the insErr.code === "23505" branch below).
+  //
+  // Deliberately BEFORE the cap check below, matching media/route.ts's own
+  // ordering and for the same reason: a listing already at its document cap,
+  // retrying a request whose earlier response was lost, must still recognise
+  // "this exact file is already attached" rather than answer a limit error
+  // for a file that isn't actually a new addition at all.
+  const sha256 = createHash("sha256").update(buf).digest("hex");
+  const { data: existingDup } = await sb
+    .from("listing_media")
+    .select("id")
+    .eq("listing_id", listingId)
+    .eq("content_sha256", sha256)
+    .maybeSingle();
+  if (existingDup) {
+    return NextResponse.json({ error: "This document has already been uploaded for this listing.", code: "duplicate_media" }, { status: 409 });
+  }
+
   const { count } = await sb
     .from("listing_media")
     .select("id", { count: "exact", head: true })
@@ -82,10 +104,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       sort_order: count ?? 0,
       alt_en: label || null,
       plan_type: planType,
+      content_sha256: sha256,
     })
     .select("id")
     .single();
-  if (insErr) return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  if (insErr) {
+    try { await sb.storage.from("listing-media").remove([objectKey]); } catch { /* ignore: best-effort cleanup */ }
+    if (insErr.code === "23505") {
+      return NextResponse.json({ error: "This document has already been uploaded for this listing.", code: "duplicate_media" }, { status: 409 });
+    }
+    return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  }
 
   return NextResponse.json({ id: (row as { id: string })?.id });
 }
