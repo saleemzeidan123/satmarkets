@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { getSessionUser } from "@/lib/auth/session";
 import { isValidShotKey, isValidMediaScope, isValidMediaCondition } from "@/lib/mediaCategorization";
+import { queueMediaCleanup, removeStorageObjects } from "@/lib/mediaCleanup";
 
 export const runtime = "nodejs";
 
@@ -44,15 +46,30 @@ export async function DELETE(
   if (error) return NextResponse.json({ error: "Could not remove the photo.", code: "remove_failed" }, { status: 400 });
 
   // Best-effort storage cleanup; a failure here never fails the request because the
-  // row (the source of truth for what shows) is already gone. The preserved
-  // original (outcome D) is removed alongside the derivative: once the row is
-  // gone neither file has a reader left, and leaving the original behind would
-  // be exactly the undisclosed-orphan failure mode this package's own review
-  // of the upload path was written to close.
+  // row (the source of truth for what shows) is already gone, which is what
+  // "deletion must immediately remove public visibility" (Codex review, item 7)
+  // actually requires. The preserved original (outcome D) is removed alongside
+  // the derivative: once the row is gone neither file has a reader left, and
+  // leaving the original behind would be exactly the undisclosed-orphan
+  // failure mode this package's own review of the upload path was written to
+  // close. A failure here is no longer silently discarded: removeStorageObjects
+  // checks the returned `.error` (a storage policy refusal resolves to one of
+  // these, it does not throw, see mediaCleanup.ts's own header) AND, per a
+  // Codex review round 2 (item 12, Fable threat-model review) finding, the
+  // case where a policy silently filters out objects the caller may not
+  // delete: that resolves with a 200 `{ data: [], error: null }`, no error
+  // at all, which only a returned-count check can catch. Either failure
+  // shape is queued durably rather than lost the moment this request ends.
+  // serviceRole may be null (an outage at the exact moment of an
+  // otherwise-successful deletion); queueMediaCleanup degrades to a log
+  // line rather than failing this already-decided response over it.
   const m = media as { path: string; source: string; original_path: string | null };
   if (m.source === "upload" && m.path) {
     const toRemove = m.original_path ? [m.path, m.original_path] : [m.path];
-    try { await sb.storage.from("listing-media").remove(toRemove); } catch { /* ignore */ }
+    const serviceRole = getSupabaseServiceRole();
+    await removeStorageObjects(sb, "listing-media", toRemove,
+      () => queueMediaCleanup(serviceRole, { listingId: params.id, listingMediaId: params.mediaId, storagePaths: toRemove, reason: "deletion_storage_remove_failed" }),
+    );
   }
 
   return NextResponse.json({ ok: true });
@@ -75,9 +92,11 @@ export async function DELETE(
 // listing is an office when it is a warehouse would otherwise be able to
 // attach a shot key that means nothing for what the listing actually is.
 //
-// is_cover, rights_acknowledged_by/at, visibility and moderation_state are
+// rights_acknowledged_by/at, visibility and moderation_state are
 // deliberately not settable here; see mediaCategorization.ts's own header
-// for why is_cover in particular is held back.
+// for why. is_cover does not exist: an earlier migration draft added it,
+// and Codex's own review removed it entirely rather than duplicate the
+// sort_order = 0 cover convention this codebase already has.
 export async function PATCH(
   req: NextRequest,
   props: { params: Promise<{ id: string; mediaId: string }> }
@@ -148,7 +167,7 @@ export async function PATCH(
     const raw = body.media_condition;
     const condition = raw === null ? null : typeof raw === "string" ? raw : undefined;
     if (condition === undefined || !isValidMediaCondition(condition)) {
-      return NextResponse.json({ error: "That is not a condition this platform recognises.", code: "media_condition_invalid" }, { status: 400 });
+      return NextResponse.json({ error: "That is not a photo type this platform recognises.", code: "media_condition_invalid" }, { status: 400 });
     }
     update.media_condition = condition;
   }

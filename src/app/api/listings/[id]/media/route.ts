@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { getSessionUser } from "@/lib/auth/session";
 import sharp from "sharp";
 import { randomUUID, createHash } from "crypto";
 import { isPlanType } from "@/lib/planTypes";
-import { MAX_IMAGE_BYTES, MEDIA_CAPS, isAcceptedImageType, sniffImageType } from "@/lib/uploadQuality";
+import { MAX_IMAGE_BYTES, MEDIA_CAPS, isAcceptedImageType, sniffImageType, mimeForSniffedType } from "@/lib/uploadQuality";
 import { mediaPublishable, type MediaDerivation } from "@/lib/mediaStandard";
+import { bestEffortWithFallback, queueMediaCleanup, removeStorageObjects } from "@/lib/mediaCleanup";
 
 // PKG-LISTING-CREATION-1B, outcomes C and D. What every upload through this
 // route now also does, beyond PKG-LISTING-CREATION-1A's original re-encode:
@@ -54,6 +56,17 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   if (!listing) return NextResponse.json({ error: "Listing not found.", code: "listing_not_found" }, { status: 404 });
   if ((listing as { account_id: string }).account_id !== su.accountId) {
     return NextResponse.json({ error: "This is not your listing.", code: "not_your_listing" }, { status: 403 });
+  }
+
+  // Codex review, item 7: fetched now, before any storage write, not only
+  // once the trusted-column update needs it. Every successful upload ends
+  // up needing this anyway (the trusted columns below cannot be set without
+  // it), so failing here, before either storage object is written, avoids
+  // the exact inconsistent-state window ("two objects written, DB insert
+  // never even attempted") this review item exists to close.
+  const serviceRole = getSupabaseServiceRole();
+  if (!serviceRole) {
+    return NextResponse.json({ error: "This could not be saved right now. Try again in a moment.", code: "storage_unavailable" }, { status: 503 });
   }
 
   const form = await req.formData().catch(() => null);
@@ -151,15 +164,29 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // The original is kept so mediaIntegrityFaults() can be answered rather
   // than assumed (outcome D), under the same private-bucket, owner-prefixed
   // path convention as the derivative, in an originals/ subfolder that no
-  // listing_media column a client can read ever points to.
+  // listing_media column a client can read ever points to. Content type is
+  // the SNIFFED type (mimeForSniffedType, from the same magic-byte read that
+  // decided whether to accept this upload at all), not the browser-supplied
+  // file.type: Codex review, item 7, the same "never trust a client-asserted
+  // type" reasoning isAcceptedImageType above already applies to acceptance.
   const { error: origUpErr } = await sb.storage
     .from("listing-media")
-    .upload(originalKey, input, { contentType: file.type || "application/octet-stream", upsert: false });
+    .upload(originalKey, input, { contentType: mimeForSniffedType(sniffImageType(input)), upsert: false });
   if (origUpErr) {
-    try { await sb.storage.from("listing-media").remove([objectKey]); } catch { /* ignore: best-effort cleanup of the derivative we just wrote */ }
+    await removeStorageObjects(sb, "listing-media", [objectKey],
+      () => queueMediaCleanup(serviceRole, { listingId, storagePaths: [objectKey], reason: "upload_original_failed" }),
+    );
     return NextResponse.json({ error: "Upload failed.", code: "upload_failed" }, { status: 400 });
   }
 
+  // Codex review, trusted-write boundary: content_sha256/original_path/
+  // derived_* are protected at the database level (see 20260902c/d's own
+  // triggers) against the caller's own session, which is what `sb` is.
+  // The safe columns are inserted first, with the session-scoped client
+  // (so the listing's own RLS ownership check still applies to the
+  // insert itself); the trusted columns are set in a second, separate
+  // write, using the service-role client, which is the one thing in this
+  // codebase allowed to write them.
   const { data: row, error: insErr } = await sb
     .from("listing_media")
     .insert({
@@ -172,27 +199,64 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       sort_order: count ?? 0,
       alt_en: label || null,
       plan_type: planType,
+    })
+    .select("id")
+    .single();
+  if (insErr) {
+    // Both objects just landed in storage; an insert failure of any kind
+    // must not leave them as undisclosed orphans.
+    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
+      () => queueMediaCleanup(serviceRole, { listingId, storagePaths: [objectKey, originalKey], reason: "upload_insert_failed" }),
+    );
+    return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  }
+  const mediaId = (row as { id: string }).id;
+
+  const { data: trustedRows, error: trustedErr } = await serviceRole
+    .from("listing_media")
+    .update({
       content_sha256: contentHash,
       original_path: originalKey,
       derived_transforms: derivation.transforms,
       derived_by: derivation.appliedBy,
       derived_at: derivation.appliedAt,
     })
-    .select("id")
-    .single();
-  if (insErr) {
-    // Both objects just landed in storage; an insert failure of any kind
-    // (including the rare concurrent-duplicate race the pre-check above
-    // cannot catch) must not leave them as undisclosed orphans.
-    try { await sb.storage.from("listing-media").remove([objectKey, originalKey]); } catch { /* ignore: best-effort cleanup */ }
-    if (insErr.code === "23505") {
+    .eq("id", mediaId)
+    .select("id");
+  // Codex review round 2, item 12 (Fable threat-model review): an
+  // .update().eq() with no .select() reports no error when it matches zero
+  // rows, which is indistinguishable from success. If this row was deleted
+  // by a concurrent request (the owner's own second tab, or this same
+  // listing's cascade) between the INSERT above and this UPDATE, the old
+  // code would fall through to the success response below for a media id
+  // that no longer exists. .select("id") makes "matched nothing" visible.
+  if (!trustedErr && (trustedRows ?? []).length === 0) {
+    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
+      () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
+    );
+    return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  }
+  if (trustedErr) {
+    // The rare concurrent-duplicate race the pre-check above cannot catch
+    // surfaces here, at listing_media_content_sha256_unique. Either way,
+    // the row this request created is not usable (no hash recorded means
+    // no working duplicate protection for it), so it is removed along
+    // with both storage objects rather than left as a half-tracked photo.
+    await bestEffortWithFallback(
+      () => sb.from("listing_media").delete().eq("id", mediaId),
+      () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
+    );
+    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
+      () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
+    );
+    if (trustedErr.code === "23505") {
       return NextResponse.json({ error: "This photo has already been uploaded for this listing.", code: "duplicate_media" }, { status: 409 });
     }
     return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
   }
 
   const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(objectKey, 3600);
-  return NextResponse.json({ id: (row as { id: string })?.id, url: signed?.signedUrl ?? null });
+  return NextResponse.json({ id: mediaId, url: signed?.signedUrl ?? null });
 }
 
 // Reorder a listing's photos (which also sets the cover: sort_order 0 is the hero).
