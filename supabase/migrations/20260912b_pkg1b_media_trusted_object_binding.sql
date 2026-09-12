@@ -95,6 +95,32 @@ end $$;
 comment on table public.listing_media_legacy_backfill_done is
   'Existence of any row records that the one-time is_legacy_media backfill (20260912b_pkg1b_media_trusted_object_binding.sql) has already run; stops a later reapplication of that migration from re-marking rows created since. Never written to by application code.';
 
+-- CORRECTION, same-day second adversarial review: this table was created
+-- above with no explicit grant or RLS, relying implicitly on whatever
+-- Supabase's own default-privilege configuration happens to be for a
+-- newly created public-schema table. This package's own real, confirmed
+-- production evidence (docs/pkg-listing-creation-1b-migration-runbook.md
+-- section 18) is that anon/authenticated hold broad, unrestricted
+-- SELECT/INSERT/UPDATE/DELETE/TRUNCATE by default on every table checked
+-- so far; there is no reason to assume this ONE new table is different,
+-- and its own safety must not rest on that unverified assumption. If a
+-- client could TRUNCATE or DELETE this table's one row, a later
+-- reapplication of this same migration (already required to be safe,
+-- see above) would treat the backfill as never having run and mark
+-- EVERY currently-null-hash row (including a genuinely pending, not-yet-
+-- finalized upload, or a forged row) as legacy, defeating the entire
+-- point. RLS enabled with zero policies (matching 20260905b's own
+-- media_cleanup_queue pattern exactly: complete default-deny for
+-- SELECT/INSERT/UPDATE/DELETE regardless of any table-level grant) plus
+-- an explicit REVOKE (RLS does not govern TRUNCATE at all, confirmed
+-- earlier this package's own history with a real, disposable local
+-- reproduction; only an explicit revoke closes that specific gap) is
+-- belt-and-suspenders on purpose: this table's own safety must be
+-- provably true, not incidentally true because of how RLS happens to
+-- interact with an assumed grant baseline.
+alter table public.listing_media_legacy_backfill_done enable row level security;
+revoke all on public.listing_media_legacy_backfill_done from public, anon, authenticated;
+
 -- Trusted-write boundary for is_legacy_media, matching 20260902b/c/d's own
 -- pattern exactly: a caller's own session must never be able to assert
 -- "this row is legacy" for a row it just created, which would trivially
@@ -135,6 +161,70 @@ create trigger listing_media_protect_legacy_flag
 -- 20260902c's own trigger.
 
 grant select (is_legacy_media, derivation_verified) on public.listing_media to anon, authenticated;
+
+-- CORRECTION, same-day second adversarial review: derivation_verified only
+-- ever proves "content_sha256 was set for THIS ROW at some point". It does
+-- NOT bind that fact to the row's CURRENT path, because path/source/
+-- listing_id are NOT trusted-column-protected above (INSERT-time values
+-- are legitimately owner-supplied, before finalization exists to protect
+-- anything yet). Without the freeze below, an owner could: legitimately
+-- upload one real photo (derivation_verified becomes true), then UPDATE
+-- that same row's path to point at a DIFFERENT object entirely (another
+-- account's private/original object, or an object whose own real media
+-- row was removed by moderation) -- content_sha256 is unchanged, so
+-- derivation_verified stays true, and the storage policy's own
+-- `lm.path = objects.name AND derivation_verified` check would admit the
+-- substituted object. The identical problem applies to an
+-- is_legacy_media = true row: nothing stopped its path from being
+-- repointed either. A THIRD variant is a race, not merely a later
+-- update: between the real upload route's own INSERT (path set, not yet
+-- trusted) and its OWN later trusted UPDATE (which sets content_sha256
+-- but has never touched path), a concurrent request on the owner's own
+-- session could repoint path in that window; the later trusted UPDATE
+-- would then finalize trust for a row now pointing somewhere else
+-- entirely, since that UPDATE never re-asserts path.
+--
+-- THE FIX: path/source/listing_id are never UPDATE-able by a non-trusted
+-- caller, unconditionally, regardless of the row's trust state at the
+-- time. This is deliberately NOT conditional on "only once already
+-- trusted": the race above is exploitable precisely because the row is
+-- NOT YET trusted at the moment of the malicious update, so a
+-- trust-state-conditional freeze would not close it. Nothing in this
+-- codebase ever legitimately updates these three columns after INSERT
+-- (grep across src confirms: the reorder PATCH touches only sort_order,
+-- the categorize PATCH touches only shot_key/media_scope/media_condition;
+-- there is no "replace this photo's file in place" feature anywhere,
+-- only delete-and-reupload), so this closes the gap with no loss of any
+-- real capability. Captions (alt_en/alt_ar), categorization, ordering
+-- and the owner's own visibility choice are all untouched by this
+-- trigger and remain exactly as writable as before.
+create or replace function public.listing_media_freeze_object_identity()
+returns trigger
+language plpgsql
+as $$
+begin
+  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+    return new;
+  end if;
+  if TG_OP = 'UPDATE' then
+    if new.path is distinct from old.path
+       or new.source is distinct from old.source
+       or new.listing_id is distinct from old.listing_id then
+      raise exception 'path, source and listing_id may not be changed once a row exists; delete and re-upload instead' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists listing_media_freeze_object_identity on public.listing_media;
+create trigger listing_media_freeze_object_identity
+  before update on public.listing_media
+  for each row
+  execute function public.listing_media_freeze_object_identity();
+
+comment on function public.listing_media_freeze_object_identity() is
+  'Closes the object-identity-substitution gap found by adversarial review of this migration''s own first version: derivation_verified/is_legacy_media alone proved a row was TRUSTED AT SOME POINT, never that its CURRENT path is what was trusted. INSERT remains free (the real two-phase upload write needs this); no non-trusted UPDATE may ever change path/source/listing_id again, closing the post-trust substitution, the legacy-row substitution, and the pre-finalization race uniformly.';
 
 comment on column public.listing_media.is_legacy_media is
   'True for exactly the rows that already existed, with no content_sha256, when this migration first ran (a one-time backfill). Never true for any row inserted afterward. Trusted-column protected: only the migration''s own backfill may ever set it.';

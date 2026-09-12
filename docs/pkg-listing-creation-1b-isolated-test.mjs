@@ -276,6 +276,22 @@ create role service_role nologin bypassrls;
 grant usage on schema public to service_role;
 grant select, insert, update, delete on all tables in schema public to service_role;
 
+-- Security closure, third adversarial review, item 3: the blanket GRANTs
+-- above are ONE-TIME, applying only to tables that already exist at this
+-- point in the script. A table created LATER by a migration (e.g.
+-- listing_media_legacy_backfill_done) would get NO grant at all under
+-- this harness as previously written, which does not accurately model
+-- the real project: this package's own real, confirmed production
+-- evidence is that anon/authenticated hold broad grants by default on
+-- every table checked so far, strongly implying a real
+-- ALTER DEFAULT PRIVILEGES (or equivalent) applies broadly in the real
+-- project, not that each table happens to have been granted by hand.
+-- Modelled here so that a later migration's own explicit REVOKE against
+-- this default (the marker table's own lockdown) is a genuine test of
+-- overriding a real default, not a vacuous pass against a harness that
+-- never granted anything by default in the first place.
+alter default privileges in schema public grant select, insert, update, delete, truncate on tables to anon, authenticated;
+
 -- Base-schema gap (docs/pkg-listing-creation-1b-migration-runbook.md
 -- section 4.1 / 18): everything below this line is NOT in any local
 -- migration file. It is part of the real production schema this
@@ -666,6 +682,90 @@ async function main() {
       );
       assert(r.rows[0].is_legacy_media === true, "a row with no content_sha256 that existed before this migration first ran must be marked legacy");
       assert(r.rows[0].derivation_verified === false, "derivation_verified must stay false: this row never went through the trusted pipeline, it is only legacy");
+    });
+
+    console.log("\n=== Step 1c-2: the legacy-backfill marker table is locked down (third adversarial review, item 3) ===");
+    // The default-privileges statement in BOOTSTRAP_SQL means a table
+    // created with no explicit grant/RLS of its own WOULD otherwise be
+    // fully open to anon/authenticated, matching this package's own real,
+    // confirmed production evidence for every other table checked so far.
+    // A positive control on a DIFFERENT, deliberately-unprotected table
+    // proves that baseline is genuinely modelled (not simply "nothing
+    // was ever granted in this harness"), so the marker table's own
+    // zero-privilege result below is evidence of its OWN explicit
+    // lockdown, not an accident of an empty harness.
+    await check("positive control: a table with no explicit grant/RLS of its own DOES inherit the default-privilege baseline (proves the baseline itself is real)", async () => {
+      await admin.query("create table public.unprotected_control_table (id int primary key)");
+      const r = await admin.query("select has_table_privilege('anon', 'public.unprotected_control_table', 'SELECT') as anon_select");
+      assert(r.rows[0].anon_select === true, "a table with no explicit revoke must inherit the default-privilege grant; if this is false, the harness's own baseline is not modelling reality and the marker-table test below would be meaningless");
+    });
+
+    await check("listing_media_legacy_backfill_done: anon/authenticated/PUBLIC have ZERO effective privileges, for every DML privilege including TRUNCATE", async () => {
+      for (const role of ["anon", "authenticated"]) {
+        for (const priv of ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE"]) {
+          const r = await admin.query(
+            "select has_table_privilege($1, 'public.listing_media_legacy_backfill_done', $2) as has_priv",
+            [role, priv],
+          );
+          assert(r.rows[0].has_priv === false, `${role} must have NO ${priv} privilege on the marker table, got true`);
+        }
+      }
+      // PUBLIC itself, not only the two named roles: has_table_privilege
+      // also accepts the literal pseudo-role name.
+      const pub = await admin.query("select has_table_privilege('public', 'public.listing_media_legacy_backfill_done', 'SELECT') as has_priv");
+      assert(pub.rows[0].has_priv === false, "the PUBLIC pseudo-role must have no SELECT on the marker table either");
+    });
+
+    await check("client tampering (INSERT, UPDATE, DELETE) against the marker table is rejected outright, both by RLS-zero-policies and by the explicit REVOKE", async () => {
+      const c = await asAnonRole(pg);
+      try {
+        for (const sql of [
+          "insert into public.listing_media_legacy_backfill_done default values",
+          "update public.listing_media_legacy_backfill_done set backfilled_at = now()",
+          "delete from public.listing_media_legacy_backfill_done",
+        ]) {
+          let denied = false;
+          try {
+            await c.query(sql);
+          } catch (e) {
+            denied = e.code === "42501";
+          }
+          assert(denied, `expected insufficient_privilege (42501) for: ${sql}`);
+        }
+      } finally {
+        await c.end();
+      }
+    });
+
+    await check("client tampering via TRUNCATE is rejected (RLS does not govern TRUNCATE at all; only the explicit REVOKE closes this)", async () => {
+      const c = await asAnonRole(pg);
+      try {
+        let denied = false;
+        try {
+          await c.query("truncate public.listing_media_legacy_backfill_done");
+        } catch (e) {
+          denied = e.code === "42501";
+        }
+        assert(denied, "expected insufficient_privilege (42501) truncating the marker table; RLS alone would NOT catch this, since TRUNCATE is not governed by row security");
+      } finally {
+        await c.end();
+      }
+    });
+
+    await check("client tampering cannot suppress the initial backfill or reset its one-time guarantee: the marker row itself, and every already-backfilled row, survive an anon TRUNCATE/DELETE attempt unchanged", async () => {
+      const before = await admin.query("select count(*) from public.listing_media_legacy_backfill_done");
+      assert(Number(before.rows[0].count) === 1, "fixture sanity: exactly one marker row should exist at this point");
+      const c = await asAnonRole(pg);
+      try {
+        await c.query("truncate public.listing_media_legacy_backfill_done").catch(() => {});
+        await c.query("delete from public.listing_media_legacy_backfill_done").catch(() => {});
+      } finally {
+        await c.end();
+      }
+      const after = await admin.query("select count(*) from public.listing_media_legacy_backfill_done");
+      assert(Number(after.rows[0].count) === 1, "the marker row must be completely unaffected by anon's own tampering attempts, whether or not those attempts threw");
+      const legacyStillMarked = await admin.query("select is_legacy_media from public.listing_media where id = $1", [preMigrationLegacyMediaId]);
+      assert(legacyStillMarked.rows[0].is_legacy_media === true, "the pre-migration row's own legacy status must be completely unaffected by anon's tampering attempts against the marker table");
     });
 
     console.log("\n=== Step 2: reapplication idempotency (rerun all ten, expect zero errors) ===");
@@ -1745,9 +1845,17 @@ async function main() {
       gMediaDraft = (
         await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gListingDraft, gPath(gListingDraft, "draft.webp")])
       ).rows[0].id;
+      // Finalized via service_role (item 2 correction, same class of fix as
+      // gMediaFlagged above): this row's own test isolates the demo-
+      // visibility dimension specifically ("becomes visible once
+      // demo_visible() is true"), which requires every OTHER eligibility
+      // condition, trust included, to already hold; otherwise the test
+      // cannot tell "still hidden because untrusted" from "still hidden
+      // because not demo-visible".
       gMediaDemo = (
         await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gListingDemo, gPath(gListingDemo, "demo.webp")])
       ).rows[0].id;
+      await gSvc.query("update public.listing_media set content_sha256 = 'demotesthash' where id = $1", [gMediaDemo]);
 
       // Storage objects mirroring every row above, plus one true orphan
       // (no listing_media row at all) and the preserved original.
@@ -1777,15 +1885,33 @@ async function main() {
       });
 
       for (const [label, roleFn] of [["unrelated authenticated stranger", () => asTestRole(pg, { userId: gUserStranger, accountId: gAcctStranger, isSat: false })], ["anonymous", () => asAnonRole(pg)]]) {
-        await check(`${label} sees only eligible+flagged+legacy media on a published listing (not private/removed/pending)`, async () => {
+        await check(`${label} sees only eligible+flagged media on a published listing (item 2 correction: NOT the forged row either, matching storage eligibility now)`, async () => {
+          // Correction, item 2 of the second adversarial review: an
+          // earlier version of this expected set INCLUDED
+          // forged-no-upload.webp, because the row-visibility policy at
+          // the time had no trust gate at all -- an incorrect expected
+          // outcome baked into the test, not proof the boundary was
+          // closed. The real, captured legacy row (preMigrationLegacyPath)
+          // is on a DIFFERENT listing (step0bListingV), so it is
+          // deliberately not part of THIS listing's own expected set.
           const c = await roleFn();
           try {
             const r = await c.query("select path from public.listing_media where listing_id = $1 order by path", [gListingPub]);
             const paths = r.rows.map((row) => row.path).sort();
             assert(
-              JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
-              `${label}: expected exactly the 3 eligible rows, got ${JSON.stringify(paths)}`,
+              JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp")].sort()),
+              `${label}: expected exactly the 2 eligible rows (forged-no-upload.webp must now be excluded too), got ${JSON.stringify(paths)}`,
             );
+          } finally {
+            await c.end();
+          }
+        });
+
+        await check(`${label} (item 2) cannot read the forged row's own metadata via the table either, not only its storage object`, async () => {
+          const c = await roleFn();
+          try {
+            const r = await c.query("select 1 from public.listing_media where listing_id = $1 and path = $2", [gListingPub, gPath(gListingPub, "forged-no-upload.webp")]);
+            assert(r.rowCount === 0, `${label}: a forged row's own path/metadata must not be readable via the table, even though it was already correctly unreachable in storage`);
           } finally {
             await c.end();
           }
@@ -1848,8 +1974,8 @@ async function main() {
           const r = await c.query("select path from public.listing_media where listing_id = $1 order by path", [gListingPub]);
           const paths = r.rows.map((row) => row.path).sort();
           assert(
-            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
-            `an authenticated session with isSat=true and no other real privilege should see exactly the 3 eligible rows, same as any stranger, got ${JSON.stringify(paths)}`,
+            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp")].sort()),
+            `an authenticated session with isSat=true and no other real privilege should see exactly the 2 eligible rows (item 2 correction: not the forged row either), same as any stranger, got ${JSON.stringify(paths)}`,
           );
         } finally {
           await c.end();
@@ -1946,12 +2072,53 @@ async function main() {
         assert(r.rows[0].content_sha256 === "eligiblehash", "service_role must retain full read access; this is the one path the app's own fixed prechecks now use");
       });
 
+      // Third adversarial review, item 5b: the runbook's own section 10
+      // preflight query (`information_schema.column_privileges` with no
+      // privilege_type filter) would ALWAYS return non-zero rows even in
+      // the correctly-fixed state, since anon/authenticated legitimately,
+      // unavoidably hold table-wide INSERT/UPDATE (an already-accepted
+      // baseline this package's own history established: a column-level
+      // REVOKE cannot retract a pre-existing table-level GRANT), which
+      // that view surfaces per-column regardless of privilege_type. The
+      // corrected preflight checks SELECT specifically, via
+      // has_column_privilege (role-independent, not subject to
+      // information_schema's own restricted-role visibility limits,
+      // already discovered earlier this package's own history), with a
+      // visible-column positive control proving the check itself is
+      // live, not vacuously true. Executed here for real, against a real
+      // Postgres engine, not only written into the runbook.
+      const SENSITIVE_COLUMNS = ["content_sha256", "original_path", "derived_transforms", "derived_by", "derived_at"];
+      const VISIBLE_POSITIVE_CONTROL_COLUMNS = ["path", "alt_en", "visibility", "moderation_state", "derivation_verified", "is_legacy_media"];
+      await check("AFTER FIX (item 5b, corrected preflight): has_column_privilege(SELECT) is false for anon/authenticated on every sensitive column, with visible-column positive controls proving the check is live", async () => {
+        for (const role of ["anon", "authenticated"]) {
+          for (const col of SENSITIVE_COLUMNS) {
+            const r = await admin.query(
+              "select has_column_privilege($1, 'public.listing_media', $2, 'SELECT') as can_select",
+              [role, col],
+            );
+            assert(r.rows[0].can_select === false, `${role} must NOT have SELECT on ${col}`);
+          }
+          for (const col of VISIBLE_POSITIVE_CONTROL_COLUMNS) {
+            const r = await admin.query(
+              "select has_column_privilege($1, 'public.listing_media', $2, 'SELECT') as can_select",
+              [role, col],
+            );
+            assert(r.rows[0].can_select === true, `POSITIVE CONTROL: ${role} must have SELECT on ${col} (a non-sensitive, intentionally-readable column); if this is false, the check methodology itself is broken, not the security boundary`);
+          }
+        }
+      });
+
       await check("AFTER FIX: the real getPublicListingMedia() query shape (its exact select+filter list) still succeeds for anon and returns exactly the eligible set", async () => {
         // src/lib/queries/publicMedia.ts's own select list and
         // src/lib/mediaVisibility.ts's own scopeToPublicMedia() filter,
         // reproduced verbatim, not paraphrased, run as anon: the one
         // canonical public reader this package's own round-2 review
         // introduced must not be broken by the column restriction above.
+        // Correction, item 2 of the second adversarial review: the .or()
+        // clause is part of the real scopeToPublicMedia() now (mediaVisibility.ts),
+        // reproduced here too; the earlier version of this query (and its
+        // own expected set) predates that fix and incorrectly included
+        // the forged row.
         const c = await asAnonRole(pg);
         try {
           const r = await c.query(
@@ -1959,13 +2126,14 @@ async function main() {
                from public.listing_media
               where listing_id = $1 and kind in ('photo','floorplan','brochure')
                 and visibility = 'public' and moderation_state <> 'removed'
+                and (derivation_verified = true or is_legacy_media = true)
               order by sort_order`,
             [gListingPub],
           );
           const paths = r.rows.map((row) => row.path).sort();
           assert(
-            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
-            `getPublicListingMedia()'s own query shape must keep working and returning the right rows for anon, got ${JSON.stringify(paths)}`,
+            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp")].sort()),
+            `getPublicListingMedia()'s own query shape must keep working and returning exactly the trusted, eligible rows for anon (not the forged row), got ${JSON.stringify(paths)}`,
           );
         } finally {
           await c.end();
@@ -2177,6 +2345,176 @@ async function main() {
         }
       });
 
+      // Third adversarial review, item 1: derivation_verified/is_legacy_media
+      // alone prove a row was trusted AT SOME POINT, never that its CURRENT
+      // path is what was trusted, because path/source/listing_id were not
+      // frozen. A dedicated victim account/object, distinct from every
+      // other fixture in this file, keeps these three tests self-contained.
+      {
+        const victimAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const victimListing = (
+          await admin.query(
+            `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+             values ($1, 'published', '7200000008', now() + interval '30 days') returning id`,
+            [victimAcct],
+          )
+        ).rows[0].id;
+        const victimPrivatePath = `${victimAcct}/${victimListing}/private-victim-object.webp`;
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [victimPrivatePath]);
+
+        await check("AFTER FIX (item 1, correction: object-identity freeze), scenario A: an owner CANNOT repoint an already-TRUSTED row's own path to a victim object via UPDATE; BEFORE this fix (trigger disabled) the same UPDATE succeeds, proving the gap was real", async () => {
+          const finalizedId = (
+            await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gListingPub, gPath(gListingPub, "freeze-test-finalized.webp")])
+          ).rows[0].id;
+          await gSvc.query("update public.listing_media set content_sha256 = 'freezetesthash' where id = $1", [finalizedId]);
+          const verified = await admin.query("select derivation_verified from public.listing_media where id = $1", [finalizedId]);
+          assert(verified.rows[0].derivation_verified === true, "fixture setup: the row must genuinely be derivation_verified before this test means anything");
+
+          await admin.query("alter table public.listing_media disable trigger listing_media_freeze_object_identity");
+          const owner1 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            const beforeFix = await owner1.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, finalizedId]);
+            assert(beforeFix.rowCount === 1, "BEFORE FIX (trigger disabled): the path substitution must succeed, proving the gap the review found was real, not hypothetical");
+          } finally {
+            await owner1.end();
+            await admin.query("alter table public.listing_media enable trigger listing_media_freeze_object_identity");
+            await admin.query("update public.listing_media set path = $1 where id = $2", [gPath(gListingPub, "freeze-test-finalized.webp"), finalizedId]);
+          }
+
+          const owner2 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            let denied = false;
+            try {
+              await owner2.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, finalizedId]);
+            } catch (e) {
+              denied = e.code === "42501";
+            }
+            assert(denied, "AFTER FIX (trigger enabled): the SAME path substitution on an already-trusted row must be rejected (42501)");
+          } finally {
+            await owner2.end();
+          }
+        });
+
+        await check("AFTER FIX (item 1, correction), scenario B: an owner CANNOT repoint a genuine is_legacy_media=true row's own path either; BEFORE this fix the same UPDATE succeeds", async () => {
+          const legacyLikeId = (
+            await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gListingPub, gPath(gListingPub, "freeze-test-legacy.webp")])
+          ).rows[0].id;
+          await admin.query("update public.listing_media set is_legacy_media = true where id = $1", [legacyLikeId]);
+
+          await admin.query("alter table public.listing_media disable trigger listing_media_freeze_object_identity");
+          const owner1 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            const beforeFix = await owner1.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, legacyLikeId]);
+            assert(beforeFix.rowCount === 1, "BEFORE FIX (trigger disabled): a legacy row's own path substitution must also succeed, proving the same gap applies to legacy rows");
+          } finally {
+            await owner1.end();
+            await admin.query("alter table public.listing_media enable trigger listing_media_freeze_object_identity");
+            await admin.query("update public.listing_media set path = $1 where id = $2", [gPath(gListingPub, "freeze-test-legacy.webp"), legacyLikeId]);
+          }
+
+          const owner2 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            let denied = false;
+            try {
+              await owner2.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, legacyLikeId]);
+            } catch (e) {
+              denied = e.code === "42501";
+            }
+            assert(denied, "AFTER FIX (trigger enabled): a legacy row's own path substitution must also be rejected (42501)");
+          } finally {
+            await owner2.end();
+          }
+        });
+
+        await check("AFTER FIX (item 1, correction), scenario C: the pre-finalization RACE is closed unconditionally, not merely once-already-trusted; BEFORE this fix the same mid-window UPDATE succeeds", async () => {
+          // Reproduces the real two-phase write's own timing: phase 1 (the
+          // owner's own session) INSERTs with visibility='private', NOT YET
+          // trusted (content_sha256 null, is_legacy_media false). The freeze
+          // must apply even here, in the window BEFORE the later trusted
+          // UPDATE ever runs, or a concurrent request in that exact window
+          // could repoint path while the row still looks "pending", and the
+          // real upload route's own later trusted UPDATE (which never
+          // touches path) would finalize trust for a row now pointing
+          // somewhere else entirely.
+          const pendingId = (
+            await admin.query("insert into public.listing_media (listing_id, path, source, visibility) values ($1, $2, 'upload', 'private') returning id", [gListingPub, gPath(gListingPub, "freeze-test-race.webp")])
+          ).rows[0].id;
+          const notYetTrusted = await admin.query("select derivation_verified, is_legacy_media from public.listing_media where id = $1", [pendingId]);
+          assert(notYetTrusted.rows[0].derivation_verified === false && notYetTrusted.rows[0].is_legacy_media === false, "fixture setup: this row must genuinely be untrusted at this point for the race test to mean anything");
+
+          await admin.query("alter table public.listing_media disable trigger listing_media_freeze_object_identity");
+          const owner1 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            const beforeFix = await owner1.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, pendingId]);
+            assert(beforeFix.rowCount === 1, "BEFORE FIX (trigger disabled): a concurrent path change during the pending window must also succeed, proving the finalization race was real");
+          } finally {
+            await owner1.end();
+            await admin.query("alter table public.listing_media enable trigger listing_media_freeze_object_identity");
+            await admin.query("update public.listing_media set path = $1 where id = $2", [gPath(gListingPub, "freeze-test-race.webp"), pendingId]);
+          }
+
+          const owner2 = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            let denied = false;
+            try {
+              await owner2.query("update public.listing_media set path = $1 where id = $2", [victimPrivatePath, pendingId]);
+            } catch (e) {
+              denied = e.code === "42501";
+            }
+            assert(denied, "AFTER FIX (trigger enabled): the mid-window path change must be rejected even though the row is not yet trusted, since the freeze is unconditional");
+          } finally {
+            await owner2.end();
+          }
+        });
+
+        await check("AFTER FIX (item 1, correction): source and listing_id are frozen the same way path is, and captions/categorization/ordering/visibility remain fully owner-editable", async () => {
+          const c = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            // 'legacy-import', not 'url': gMediaEligible's own kind is
+            // 'photo', and source='url' on an existing kind='photo' row
+            // ALSO trips migration G's own, separate, pre-existing
+            // listing_media_block_new_url_photos trigger (23514, fires
+            // first in trigger-name order), which would make this
+            // specific value ambiguous about WHICH protection actually
+            // fired. An arbitrary non-'url' string isolates the freeze
+            // trigger's own 42501 cleanly.
+            let sourceDenied = false;
+            try {
+              await c.query("update public.listing_media set source = 'legacy-import' where id = $1", [gMediaEligible]);
+            } catch (e) {
+              sourceDenied = e.code === "42501";
+            }
+            assert(sourceDenied, "source must be frozen the same way path is");
+
+            const otherOwnListing = (
+              await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gAcctOwner])
+            ).rows[0].id;
+            let listingDenied = false;
+            try {
+              await c.query("update public.listing_media set listing_id = $1 where id = $2", [otherOwnListing, gMediaEligible]);
+            } catch (e) {
+              listingDenied = e.code === "42501";
+            }
+            assert(listingDenied, "listing_id must be frozen too, even to another listing the SAME owner genuinely owns");
+
+            // Preserved capabilities: captions, categorization, ordering,
+            // and the owner's own privacy choice are all untouched by this
+            // freeze and must keep working exactly as before.
+            const alt = await c.query("update public.listing_media set alt_en = 'Updated caption' where id = $1", [gMediaEligible]);
+            assert(alt.rowCount === 1, "captions (alt_en/alt_ar) must remain owner-editable");
+            const cat = await c.query("update public.listing_media set shot_key = 'entrance' where id = $1", [gMediaEligible]);
+            assert(cat.rowCount === 1, "categorization (shot_key) must remain owner-editable");
+            const ord = await c.query("update public.listing_media set sort_order = 5 where id = $1", [gMediaEligible]);
+            assert(ord.rowCount === 1, "ordering (sort_order) must remain owner-editable");
+            const vis = await c.query("update public.listing_media set visibility = 'private' where id = $1", [gMediaEligible]);
+            assert(vis.rowCount === 1, "the owner's own visibility choice must remain editable");
+            await admin.query("update public.listing_media set visibility = 'public' where id = $1", [gMediaEligible]);
+          } finally {
+            await c.end();
+          }
+        });
+      }
+
       await check("AFTER FIX: the owner can still read/sign EVERY object under their own account prefix, unaffected by eligibility (own-folder branch unchanged)", async () => {
         const c = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
         try {
@@ -2200,6 +2538,88 @@ async function main() {
       });
     } finally {
       await gSvc.end();
+    }
+
+    console.log("\n=== Step 8h: the deployment-window reconciliation query (third adversarial review, item 4) ===");
+    // scripts/reconcile-deployment-window-legacy-gap.mjs's own core SELECT,
+    // reproduced verbatim: content_sha256 is null, is_legacy_media is
+    // false, created_at within an explicit [from, to) window. Proves the
+    // query correctly includes a row created BY THE OLD APPLICATION CODE
+    // inside the real deployment gap, and correctly excludes rows outside
+    // that window or already trusted/legacy, using REAL created_at values
+    // on a real Postgres engine, not merely reasoned about.
+    {
+      const gapAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const gapListing = (
+        await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapAcct])
+      ).rows[0].id;
+      const windowFrom = "2026-09-15T10:00:00Z";
+      const windowTo = "2026-09-15T10:07:00Z";
+
+      const insideWindowId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, "gap/inside-window.webp", "2026-09-15T10:03:00Z"],
+        )
+      ).rows[0].id;
+      const beforeWindowId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, "gap/before-window.webp", "2026-09-15T09:55:00Z"],
+        )
+      ).rows[0].id;
+      const afterWindowId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, "gap/after-window.webp", "2026-09-15T11:00:00Z"],
+        )
+      ).rows[0].id;
+      const insideWindowButTrustedId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, "gap/inside-window-but-trusted.webp", "2026-09-15T10:04:00Z"],
+        )
+      ).rows[0].id;
+      await admin.query("update public.listing_media set content_sha256 = 'gaptesthash' where id = $1", [insideWindowButTrustedId]);
+
+      async function gapQuery() {
+        return admin.query(
+          `select id from public.listing_media
+             where content_sha256 is null and is_legacy_media = false
+               and created_at >= $1 and created_at < $2
+             order by created_at`,
+          [windowFrom, windowTo],
+        );
+      }
+
+      await check("the deployment-window query catches a row created by the old app inside the exact window", async () => {
+        const r = await gapQuery();
+        const ids = r.rows.map((row) => row.id);
+        assert(ids.includes(insideWindowId), "a row created inside [from, to) with no content_sha256 must be caught");
+      });
+      await check("the deployment-window query excludes rows outside the window", async () => {
+        const r = await gapQuery();
+        const ids = r.rows.map((row) => row.id);
+        assert(!ids.includes(beforeWindowId), "a row created before the window must not be caught (it is either genuinely legacy, already backfilled, or someone else's concern)");
+        assert(!ids.includes(afterWindowId), "a row created after the window must not be caught: this is the exact boundary that keeps this script from ever legalizing a forged row inserted later");
+      });
+      await check("the deployment-window query excludes a row that already has content_sha256, even inside the window", async () => {
+        const r = await gapQuery();
+        const ids = r.rows.map((row) => row.id);
+        assert(!ids.includes(insideWindowButTrustedId), "a row that genuinely completed trusted finalization must never be touched by this reconciliation, window or not");
+      });
+      await check("applying the reconciliation (matching the script's own UPDATE) marks exactly the caught row, and it becomes storage/table eligible afterward", async () => {
+        const before = await admin.query("select is_legacy_media from public.listing_media where id = $1", [insideWindowId]);
+        assert(before.rows[0].is_legacy_media === false, "fixture sanity: not yet marked");
+        const r = await gapQuery();
+        const ids = r.rows.map((row) => row.id);
+        await admin.query("update public.listing_media set is_legacy_media = true where id = any($1::uuid[])", [ids]);
+        const after = await admin.query("select is_legacy_media, derivation_verified from public.listing_media where id = $1", [insideWindowId]);
+        assert(after.rows[0].is_legacy_media === true, "the caught row must now be marked legacy, restoring its own public eligibility");
+        assert(after.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-reconciliation, not a genuine finalized upload, and the two signals must never be conflated");
+        const stillExcluded = await admin.query("select is_legacy_media from public.listing_media where id = $1", [afterWindowId]);
+        assert(stillExcluded.rows[0].is_legacy_media === false, "a row outside the window must remain untouched by this same apply");
+      });
     }
 
     console.log("\n=== Step 9: rollback, then forward re-apply ===");

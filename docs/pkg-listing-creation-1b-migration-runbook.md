@@ -848,7 +848,20 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    legitimate, legacy media) and that a direct attempt to fetch a signed
    URL for a KNOWN preserved-original path (if one can be identified from
    this session's own test fixtures, never a real customer's) is refused.
-5. Record the live evidence, split honestly between what was checked
+5. **Required, not optional (section 21, item 4): run the deployment-window
+   reconciliation.** Record the exact timestamp migrations were applied
+   (step 1) and the exact timestamp the new application code was confirmed
+   live (after step 4). Any real upload made through the OLD application
+   code in that window (or during any later period it runs again, e.g. an
+   application rollback that keeps this schema) lands with
+   `is_legacy_media=false, derivation_verified=false`: correctly untrusted
+   for a forged row, wrongly excluded for this legitimate one. Run
+   `node scripts/reconcile-deployment-window-legacy-gap.mjs --from=<applied> --to=<live>`
+   (report only), review the listed rows are genuinely real uploads by
+   their own account owner, then re-run with `--apply`. Re-run after any
+   later rollback-then-forward-roll cycle, with that period's own real
+   timestamps; never with a guessed or unbounded window.
+6. Record the live evidence, split honestly between what was checked
    authenticated-live, what was checked anonymously-live, and what was
    checked by a deterministic test, matching this package's own
    established practice from PR #16.
@@ -3226,3 +3239,22 @@ consolidated commit and handback follow. `map_anchors` and the CI billing
 lock remain Saleem's own actions; nothing else changed about the
 production-decision boundary section 19 already established: still
 prepared, tested, and unapplied.
+
+## 21. Third adversarial review, same day: disposition table
+
+Kept short per instruction. Full technical detail lives in the migration
+files' and script's own comments, not repeated here.
+
+| # | Finding | Confirmed real? | Fix | Evidence |
+| --- | --- | --- | --- | --- |
+| 1 | `derivation_verified`/`is_legacy_media` prove a row was trusted at some point, never that its CURRENT `path` is what was trusted. `path`/`source`/`listing_id` were owner-writable via UPDATE, on a finalized row, a legacy row, or mid-race before finalization. | Yes, live, all 4 named scenarios | New trigger `listing_media_freeze_object_identity` (`20260912b_pkg1b_media_trusted_object_binding.sql`): unconditional UPDATE-freeze on path/source/listing_id, for every non-service_role/superuser caller, regardless of trust state. INSERT unaffected; captions/categorization/ordering/visibility unaffected. | Harness: 4 new before(trigger disabled)/after checks, 168/168 total |
+| 2 | The trust gate existed only in the storage policy. The table-level `"public read eligible media of published"` policy and `scopeToPublicMedia()`/`isPubliclyVisibleMedia()` still admitted a forged/unfinished row's own metadata. The harness's own prior expected-eligible-set for the forged row was wrong, not proof of closure. | Yes, own bug confirmed | `(derivation_verified OR is_legacy_media)` added to `20260912d`'s policy qual and to `mediaVisibility.ts`'s rule (both the predicate and the query filter) | Harness expected-sets corrected + 1 new table-level denial check; typecheck confirms no other caller of the now-stricter `MediaVisibilityRow` |
+| 3 | `listing_media_legacy_backfill_done` had no explicit grant/RLS; safety rested on an unverified default-privilege assumption. | Yes, reasoned from this package's own confirmed production default-grant pattern | RLS enabled with zero policies + explicit `REVOKE ALL ... FROM public, anon, authenticated` (closes TRUNCATE, which RLS never governs) | Harness: positive control proves the default-grant baseline is real; 4 new checks prove zero effective privilege and that tampering cannot suppress or reset the one-time backfill |
+| 4 | The currently-deployed (old, pre-PKG-1B) app never writes `content_sha256`. A real upload through it, in the window between migration-apply and new-app-live (or during any app rollback with the new schema retained), lands `is_legacy_media=false, derivation_verified=false`: correctly excluded as untrusted, wrongly excluded as illegitimate. | Yes, reasoned; not observed live (nothing applied to production) | `scripts/reconcile-deployment-window-legacy-gap.mjs`: report-only by default, requires explicit `--from`/`--to` (no default window, sanity-capped at 48h, overridable only with `--force-wide-window`), marks only rows in that exact bound. Runbook section 11 updated to name this as a required post-deploy (and post-rollback) step, not merely "verify no upload happened." | Core query logic (catches inside-window, excludes outside-window and already-trusted) tested live against real rows with controlled `created_at`, in the harness |
+| 5a | Cited `main` at `6713366`, claimed as an ancestor of `524f188`. | Reviewer's SHA was right; this session's own prior claim was wrong (stale local `main` ref, never freshly fetched) | `git fetch origin main` confirms real tip is `6713366`, one commit AHEAD of `524f188` (PR #21, docs-only). Direction of the earlier claim was backwards. Substance unchanged: `6713366`'s own DELETE handler still has no `original_path` reference, confirmed at the corrected SHA. | `git fetch` + `git show 6713366:...` |
+| 5b | Section 10's `column_privileges` query expected zero rows without filtering `privilege_type`, so it would always "fail" even when correctly fixed (anon/authenticated's pre-existing, accepted table-wide INSERT/UPDATE surfaces per-column in that view regardless). | Yes, own bug confirmed | Query corrected to `has_column_privilege(role, table, column, 'SELECT')` per sensitive column, with visible-column positive controls (`path`, `alt_en`, `visibility`, `moderation_state`, `derivation_verified`, `is_legacy_media`) | Executed for real in the harness (not only rewritten in the runbook): all 5 sensitive columns × 2 roles false, all 6 control columns × 2 roles true |
+
+Full local gate re-run on the final integrated code: typecheck clean,
+2080/2080 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
+clean. Isolated harness: 168/168 (up from 152/152). Nothing applied to
+production; PR #22 remains draft.

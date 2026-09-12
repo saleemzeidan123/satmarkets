@@ -24,25 +24,50 @@ import { isPubliclyVisibleMedia, PUBLIC_MEDIA_VISIBILITY, HIDDEN_MODERATION_STAT
 // one category or the other, on purpose, rather than silently shipping
 // unfiltered.
 
-test("isPubliclyVisibleMedia: public and not removed is visible", () => {
-  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed" }), true);
-  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "flagged" }), true);
+// Security closure correction (second adversarial review): every fixture
+// below now also states derivation_verified/is_legacy_media explicitly,
+// matching MediaVisibilityRow's own required fields. A finalized real
+// upload is derivation_verified: true, is_legacy_media: false; a genuine
+// pre-migration row is the reverse; a forged or not-yet-finalized row is
+// both false, and must never read as publicly visible regardless of its
+// visibility/moderation_state values.
+const finalized = { derivation_verified: true, is_legacy_media: false };
+const legacy = { derivation_verified: false, is_legacy_media: true };
+const untrusted = { derivation_verified: false, is_legacy_media: false };
+
+test("isPubliclyVisibleMedia: public and not removed is visible, for a finalized upload", () => {
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed", ...finalized }), true);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "flagged", ...finalized }), true);
+});
+
+test("isPubliclyVisibleMedia: public and not removed is visible, for genuine legacy media", () => {
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed", ...legacy }), true);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "flagged", ...legacy }), true);
 });
 
 test("isPubliclyVisibleMedia: private is never visible, whatever its moderation state", () => {
-  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "unreviewed" }), false);
-  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "flagged" }), false);
-  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "removed" }), false);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "unreviewed", ...finalized }), false);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "flagged", ...finalized }), false);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "private", moderation_state: "removed", ...finalized }), false);
 });
 
 test("isPubliclyVisibleMedia: removed is never visible, even if public", () => {
-  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "removed" }), false);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "removed", ...finalized }), false);
 });
 
 test("isPubliclyVisibleMedia: unreviewed (the default, and today the only real state) stays visible", () => {
   // If this ever flipped, every photo on the platform would vanish: nothing
   // has ever been reviewed, because no review workflow exists yet.
-  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed" }), true);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed", ...finalized }), true);
+});
+
+test("isPubliclyVisibleMedia: a forged or not-yet-finalized row is never visible, even with public+unreviewed", () => {
+  // The exact gap the second adversarial review found: a row inserted
+  // directly (bypassing the upload route) or still mid-two-phase-write can
+  // have visibility=public and moderation_state=unreviewed (both column
+  // defaults) without ever having been through the trusted pipeline.
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "unreviewed", ...untrusted }), false);
+  assert.equal(isPubliclyVisibleMedia({ visibility: "public", moderation_state: "flagged", ...untrusted }), false);
 });
 
 test("the exported constants match the migration's own vocabulary", () => {

@@ -4,9 +4,10 @@ import { scopeToPublicMedia } from "@/lib/mediaVisibility";
 
 // Codex review, item 3. The single canonical reader for what an anonymous
 // visitor may see of a listing's media. mediaVisibility.ts states the rule
-// (visibility = 'public' AND moderation_state <> 'removed'); this is the
-// one place that rule is actually applied as a real query, so a public
-// page never has to remember to call scopeToPublicMedia() itself, and
+// (visibility = 'public', moderation_state <> 'removed', and
+// derivation_verified or is_legacy_media, security closure correction);
+// this is the one place that rule is actually applied as a real query, so a
+// public page never has to remember to call scopeToPublicMedia() itself, and
 // mediaVisibility.test.ts's structural scan has exactly one real query to
 // verify rather than one per public page.
 //

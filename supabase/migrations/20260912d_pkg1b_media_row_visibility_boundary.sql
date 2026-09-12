@@ -53,6 +53,24 @@
 -- what this session's read-only connection captured, is also untouched;
 -- this migration only replaces the one named "public read media of
 -- published".
+--
+-- CORRECTION, same-day second adversarial review: this policy's own first
+-- version required visibility/moderation_state but still admitted a
+-- forged or not-yet-finalized row (a direct INSERT bypassing the upload
+-- route, or a genuinely pending row with visibility flipped early),
+-- exactly the class of row 20260912c_pkg1b_storage_originals_read_
+-- boundary.sql's own storage-side fix already excludes from Storage. That
+-- left a real, if narrower, gap open at the ROW level: such a row's own
+-- non-sensitive columns (path, alt_en/ar, shot_key) were still readable
+-- via a direct PostgREST metadata call and via getPublicListingMedia()
+-- (which relies on this same RLS boundary, not a query-level filter of
+-- its own), presenting an unfinished or forged record as if it were valid
+-- public media, even though its underlying storage object was already
+-- correctly unreachable. This migration's own qual now requires
+-- `(derivation_verified OR is_legacy_media)` too
+-- (20260912b_pkg1b_media_trusted_object_binding.sql), aligning table-row
+-- eligibility with storage eligibility exactly, so a denied object can
+-- never leave its own metadata record presented as valid public media.
 
 drop policy if exists "public read media of published" on public.listing_media;
 -- Reapplication safety: CREATE POLICY has no OR REPLACE / IF NOT EXISTS
@@ -66,6 +84,7 @@ create policy "public read eligible media of published" on public.listing_media 
   using (
     visibility = 'public'
     and moderation_state <> 'removed'
+    and (derivation_verified or is_legacy_media)
     and exists (
       select 1 from public.listings l
       where l.id = listing_media.listing_id
@@ -77,4 +96,4 @@ create policy "public read eligible media of published" on public.listing_media 
   );
 
 comment on policy "public read eligible media of published" on public.listing_media is
-  'Replaces "public read media of published" (listing eligibility only, no awareness of the media row''s own visibility/moderation_state). Now requires both: the row itself must be visibility=public and moderation_state<>removed, matching mediaVisibility.ts''s isPubliclyVisibleMedia() exactly, AND the listing must be published with a valid, unexpired permit and pass the demo-visibility rule, matching the original qual unchanged.';
+  'Replaces "public read media of published" (listing eligibility only, no awareness of the media row''s own visibility/moderation_state, and, in this migration''s own first version, no awareness of trust either). Requires: visibility=public and moderation_state<>removed, matching mediaVisibility.ts''s isPubliclyVisibleMedia() exactly; derivation_verified or is_legacy_media, matching the storage policy''s own trust gate exactly (20260912b/c); and the listing published with a valid, unexpired permit, passing the demo-visibility rule.';
