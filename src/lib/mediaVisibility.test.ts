@@ -198,3 +198,51 @@ test("every OWNER_SCOPED file actually contains a session and ownership check, n
       "either it is missing a real authorization check, or this scan's pattern needs updating to recognise the one it has.",
   );
 });
+
+// Security closure, 2026-09-12: content_sha256 and original_path SELECT is
+// revoked from anon/authenticated at the database (20260912_pkg1b_sensitive_
+// media_column_grants.sql). A query chain against listing_media that
+// references either column, run through the ordinary session client (`sb`,
+// getSupabaseServer()'s own conventional name in every route in this
+// package), would now fail with a permission error at runtime, not merely
+// omit the column: this exact defect shipped once (media/route.ts's own
+// duplicate-content precheck, and media/[mediaId]/route.ts's own DELETE
+// handler, both fixed in the same change that added the grant restriction).
+// A comment explaining the fix is not proof it stays fixed; this scans the
+// real source, the same discipline the rest of this file already applies.
+const SENSITIVE_COLUMN_ROUTES = [
+  "app/api/listings/[id]/media/route.ts",
+  "app/api/listings/[id]/docs/route.ts",
+  "app/api/listings/[id]/media/[mediaId]/route.ts",
+];
+
+test("every listing_media query chain referencing content_sha256 or original_path uses the service-role client, never the ordinary session client", () => {
+  const violations: string[] = [];
+  let sensitiveChainsFound = 0;
+  for (const r of SENSITIVE_COLUMN_ROUTES) {
+    const src = readFileSync(join(ROOT, r), "utf8");
+    // Captures the client variable immediately before .from("listing_media"),
+    // then everything up to that statement's own closing semicolon (fluent
+    // Supabase query chains never contain an internal semicolon), so a
+    // LATER, unrelated statement's own comment mentioning these column
+    // names can never be mistaken for part of THIS chain.
+    const chainRe = /(\w+)\s*\.from\("listing_media"\)((?:(?!;)[\s\S])*?);/g;
+    let m: RegExpExecArray | null;
+    while ((m = chainRe.exec(src))) {
+      const [, client, chain] = m;
+      // Quoted string literal (.eq("content_sha256", ...), .select("original_path"))
+      // or object-literal key (content_sha256: value): real usage. A bare
+      // mention in a comment (explaining the trusted-write boundary, which
+      // several of these chains legitimately have nearby) has neither
+      // quotes nor a following colon and must not trip this.
+      if (/["']content_sha256["']|["']original_path["']|\bcontent_sha256\s*:|\boriginal_path\s*:/.test(chain)) {
+        sensitiveChainsFound++;
+        if (client !== "serviceRole") {
+          violations.push(`${r}: a listing_media query chain via \`${client}\` references content_sha256/original_path (must use serviceRole)`);
+        }
+      }
+    }
+  }
+  assert.ok(sensitiveChainsFound >= 5, `expected at least 5 sensitive-column query chains across ${SENSITIVE_COLUMN_ROUTES.join(", ")}, found ${sensitiveChainsFound}; the scan itself may have stopped matching`);
+  assert.deepEqual(violations, [], violations.join("\n"));
+});

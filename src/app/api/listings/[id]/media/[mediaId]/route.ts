@@ -34,13 +34,38 @@ export async function DELETE(
 
   // The row must belong to THIS listing, not just exist. Selecting it also confirms
   // it is visible to the owner under RLS before we try to remove it.
+  //
+  // original_path is deliberately NOT in this select: its SELECT is revoked
+  // from the ordinary session client (20260912_pkg1b_sensitive_media_column_
+  // grants.sql), so including it here would fail this whole existence check
+  // with a permission error, which `!media` would then misreport as "media
+  // not found" for every deletion. It is fetched separately below, via
+  // serviceRole, before the row is deleted (that read would return nothing
+  // once the row is gone).
   const { data: media } = await sb
     .from("listing_media")
-    .select("id, path, source, original_path")
+    .select("id, path, source")
     .eq("id", params.mediaId)
     .eq("listing_id", params.id)
     .maybeSingle();
   if (!media) return NextResponse.json({ error: "Media not found.", code: "media_not_found" }, { status: 404 });
+  const m = media as { path: string; source: string };
+
+  // original_path read via serviceRole (see the select() comment above),
+  // BEFORE the delete below: ownership of params.id was already confirmed
+  // against the listing above, so this does not widen access, only reads a
+  // column the ordinary client is no longer privileged to see. Must happen
+  // before the row is gone, or this read finds nothing.
+  const serviceRole = getSupabaseServiceRole();
+  let originalPath: string | null = null;
+  if (m.source === "upload" && serviceRole) {
+    const { data: withOriginal } = await serviceRole
+      .from("listing_media")
+      .select("original_path")
+      .eq("id", params.mediaId)
+      .maybeSingle();
+    originalPath = (withOriginal as { original_path: string | null } | null)?.original_path ?? null;
+  }
 
   const { error } = await sb.from("listing_media").delete().eq("id", params.mediaId).eq("listing_id", params.id);
   if (error) return NextResponse.json({ error: "Could not remove the photo.", code: "remove_failed" }, { status: 400 });
@@ -63,10 +88,8 @@ export async function DELETE(
   // serviceRole may be null (an outage at the exact moment of an
   // otherwise-successful deletion); queueMediaCleanup degrades to a log
   // line rather than failing this already-decided response over it.
-  const m = media as { path: string; source: string; original_path: string | null };
   if (m.source === "upload" && m.path) {
-    const toRemove = m.original_path ? [m.path, m.original_path] : [m.path];
-    const serviceRole = getSupabaseServiceRole();
+    const toRemove = originalPath ? [m.path, originalPath] : [m.path];
     await removeStorageObjects(sb, "listing-media", toRemove,
       () => queueMediaCleanup(serviceRole, { listingId: params.id, listingMediaId: params.mediaId, storagePaths: toRemove, reason: "deletion_storage_remove_failed" }),
     );

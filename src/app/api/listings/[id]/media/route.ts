@@ -96,15 +96,28 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // ListingStudio.tsx's retry loop), must still recognise "this exact file
   // is already attached" rather than answer photo_limit_reached for a file
   // that isn't actually a new addition at all.
+  //
+  // Security closure, 2026-09-12: content_sha256's own SELECT is revoked
+  // from the ordinary session client (20260912_pkg1b_sensitive_media_column_
+  // grants.sql), so filtering on it with `sb` would fail with a permission
+  // error, not merely return no match. Read through serviceRole instead:
+  // ownership of this listing was already confirmed above with `sb`, so
+  // this does not widen who can trigger the check, only which client is
+  // privileged enough to evaluate content_sha256 at all. A failure here is
+  // logged and treated as "could not confirm", not as "no duplicate": the
+  // unique index enforced at the trusted-column UPDATE below (also via
+  // serviceRole) remains the real, authoritative safety net either way.
   const contentHash = createHash("sha256").update(input).digest("hex");
   const originalExt = sniffImageType(input) ?? "bin";
-  const { data: existingDup } = await sb
+  const { data: existingDup, error: dupCheckErr } = await serviceRole
     .from("listing_media")
     .select("id")
     .eq("listing_id", listingId)
     .eq("content_sha256", contentHash)
     .maybeSingle();
-  if (existingDup) {
+  if (dupCheckErr) {
+    console.error("media upload duplicate precheck failed (non-authoritative, continuing)", dupCheckErr);
+  } else if (existingDup) {
     return NextResponse.json({ error: "This photo has already been uploaded for this listing.", code: "duplicate_media" }, { status: 409 });
   }
 

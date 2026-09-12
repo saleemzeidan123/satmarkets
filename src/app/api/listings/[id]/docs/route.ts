@@ -71,14 +71,22 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // retrying a request whose earlier response was lost, must still recognise
   // "this exact file is already attached" rather than answer a limit error
   // for a file that isn't actually a new addition at all.
+  //
+  // Security closure, 2026-09-12: read through serviceRole, matching
+  // media/route.ts's own identical fix and for the same reason:
+  // content_sha256's SELECT is revoked from the ordinary session client
+  // (20260912_pkg1b_sensitive_media_column_grants.sql). Ownership of this
+  // listing is already confirmed above with `sb`.
   const sha256 = createHash("sha256").update(buf).digest("hex");
-  const { data: existingDup } = await sb
+  const { data: existingDup, error: dupCheckErr } = await serviceRole
     .from("listing_media")
     .select("id")
     .eq("listing_id", listingId)
     .eq("content_sha256", sha256)
     .maybeSingle();
-  if (existingDup) {
+  if (dupCheckErr) {
+    console.error("document upload duplicate precheck failed (non-authoritative, continuing)", dupCheckErr);
+  } else if (existingDup) {
     return NextResponse.json({ error: "This document has already been uploaded for this listing.", code: "duplicate_media" }, { status: 409 });
   }
 

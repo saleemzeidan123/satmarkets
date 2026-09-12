@@ -2477,3 +2477,404 @@ was applied to production; every query above was a plain `SELECT` against
 system catalogs or `information_schema`, run through a connector whose
 own connected role (`supabase_read_only_user`) cannot write in the first
 place.
+
+## 19. Security closure batch, 2026-09-12: three migrations designed, implemented and tested; not applied
+
+Authorized scope for this section, quoted precisely because it bounds
+everything below: "Prepare and test the implementation; this is not
+authorization to apply production migrations, change bucket configuration,
+or merge." Six numbered items. Baseline: PR head `08a24fb` (confirmed, item
+1, below); nothing newer existed on the branch or the PR itself.
+
+### Item 1: baseline and real evidence, re-confirmed fresh
+
+`git fetch` + the GitHub API (same reused git-credential technique as
+2026-09-09) confirmed the actual PR #22 head is `08a24fb9bc944ee7ca761df5e4e892b1109ec1af`,
+identical to local and to `origin/pkg/listing-creation-1b`; `draft: true`;
+one PR comment (a Vercel deployment bot notice, nothing substantive); no new
+Codex review text existed to act on. **One anomaly found and diagnosed, not
+acted on**: GitHub's own `gate` check-run against this exact, already-green
+SHA shows a fresh `failure` created 2026-09-12T12:27:33Z (three days after
+the SHA's own prior successful run on 2026-09-09), with zero steps, zero
+billable milliseconds, and no assigned runner (`runner_id: 0`). This is the
+signature of a runner-acquisition failure (an Actions quota/concurrency
+limit, or a similar account-level condition), not a code or test failure,
+and not something this local session's own `npm` gate (run in full at the
+end of this section) can diagnose or fix from here. Recorded as a fact for
+whoever next looks at Actions billing/usage for this repository, the same
+way this file already records the Vercel-subscription-lapse failure mode;
+does not block anything below, since the local gate is the one this
+session controls and reports on directly.
+
+**The `listing-media` bucket's real setting**, from `storage.buckets`
+directly, not a code comment: `public: false`. Genuinely private. This
+matters for the shape of the fix (below): a private bucket means Storage's
+`/object/authenticated/...` and `/object/sign/...` endpoints govern every
+read, and BOTH enforce the bucket's RLS SELECT policy for the calling
+role, exactly like a public bucket's policy would if one existed; the
+private flag does not, by itself, mitigate anything, because the real
+storage policy explicitly lists `anon` as an allowed role. An RLS-only fix
+is therefore sufficient and correct; no bucket-level change, and no
+private-storage redesign, was needed or made.
+
+**Real `pg_policies` text, re-confirmed**: the five `listing_media`
+policies and the one storage policy from section 18 are unchanged and
+still live, reproduced verbatim in the isolated test harness's own
+bootstrap now (see item 4).
+
+**Effective grants including PUBLIC and inherited privileges**, obtained
+two ways, role-independent: `aclexplode()` against `pg_class.relacl` for
+`listing_media`, `storage.objects`, `storage.buckets` and `map_anchors`
+found **zero PUBLIC-pseudo-role grants on any of the four** (every grant
+is to a named role: `anon`, `authenticated`, `postgres`, `service_role`,
+`supabase_storage_admin`); `pg_auth_members` found **no role membership
+at all** for `anon`/`authenticated`/`service_role` (each is a bare,
+non-member role, `rolinherit = true` but nothing to inherit from), so
+"inherited privileges" contributes nothing beyond the direct grants
+already on record. `has_table_privilege()` re-confirmed the exact same
+`anon`/`authenticated` table-wide SELECT/INSERT/UPDATE/DELETE/TRUNCATE
+shape on `listing_media` as 2026-09-09's finding, now also independently
+obtained for `storage.objects` and `storage.buckets` (same shape) and
+`map_anchors` (same shape, see item 5).
+
+**The real, current `listing_media` schema** (`information_schema.columns`,
+13 columns) confirmed, again, that none of this package's seven migrations
+have ever applied to production: `id, listing_id, path, kind, sort_order,
+alt_en, alt_ar, created_at, is_demo, source, mime, bytes, plan_type` only.
+No `content_sha256`, `visibility`, `moderation_state`, or any other
+PKG-1B column exists yet. Every fix below is therefore necessarily an
+unapplied migration file, never a live ALTER against today's table.
+
+### Item 2: three migrations, not two
+
+Two were anticipated (a column-grant fix and a storage-policy fix). A
+third, real gap was found while building the adversarial test harness for
+item 4, not designed in advance:
+
+**`supabase/migrations/20260912_pkg1b_sensitive_media_column_grants.sql`.**
+`REVOKE SELECT ON public.listing_media FROM anon, authenticated;` followed
+by `GRANT SELECT (`, naming every column except `content_sha256`,
+`original_path`, `derived_transforms`, `derived_by`, `derived_at` (the
+exact five columns 20260902c/d's own comments already called "never
+selected into any client-facing response"), `) ... TO anon, authenticated;`.
+Table-level REVOKE, not a column-level one: 20260902b/c/d's own comments
+already record that a column-level REVOKE cannot retract a pre-existing
+table-level GRANT (Postgres checks both independently; either passing is
+enough), which is why the write-side boundary uses triggers instead. For
+SELECT specifically, unlike INSERT/UPDATE, there is no trigger equivalent
+needed or possible (Postgres has no per-column read hook) — but the fix
+IS complete: once the broad table-level grant is actually revoked, only
+the explicitly re-granted columns are reachable, by either path. Verified
+this survives future columns correctly (fails closed: a new column is not
+selectable by anon/authenticated until explicitly added to the grant list,
+called out explicitly in the migration's own comment as a discipline
+future migrations must follow, not an oversight).
+
+**`supabase/migrations/20260912b_pkg1b_storage_originals_read_boundary.sql`.**
+Replaces (drops, then recreates under a new name; does not supplement) the
+real, live `"read media objects of published or own listing"` policy.
+The owner's-own-folder and `app_is_sat()` branches are unchanged. The
+published-listing branch no longer matches on folder membership
+(`(storage.foldername(name))[2] = <listing>`, which cannot distinguish a
+derivative from its own `originals/` sibling); it now requires
+`lm.path = objects.name` for a `listing_media` row that is itself
+`visibility = 'public' AND moderation_state <> 'removed'` and whose
+listing is published, permit-valid and demo-eligible, mirroring the real
+table policy's own qual exactly. Because the app only ever writes an
+original's path into `original_path`, never into `path`, no original
+object can satisfy `lm.path = objects.name` for any row, under any naming
+convention, now or in the future; this is a stronger, more durable
+mechanism than parsing the `originals/` path segment would have been.
+"Public derivative access must correspond to an eligible media record, not
+simply an object under a published listing's folder" (the standing
+instruction for this batch) is exactly this design.
+
+**`supabase/migrations/20260912c_pkg1b_media_row_visibility_boundary.sql`,
+found while building item 4's own adversarial harness, not anticipated.**
+The real, live `"public read media of published"` TABLE policy on
+`listing_media` itself — reproduced verbatim in the harness's own
+bootstrap for the first time this round (see item 4) — has no reference
+anywhere to `listing_media.visibility` or `listing_media.moderation_state`.
+It is a policy about the LISTING only (status, permit, demo). Once those
+two columns exist, this means the ROW-LEVEL policy admits every media row
+of a published, permit-valid listing regardless of that row's own privacy
+or moderation state: `src/lib/queries/publicMedia.ts`'s own
+`scopeToPublicMedia()` filter is an APPLICATION-level addition on top,
+never enforced by the database's own row policy. A direct PostgREST call
+that omits that filter (`GET .../listing_media?listing_id=eq.<id>`, no
+`visibility=` parameter) would receive a private or removed row's `path`,
+`alt_en`/`alt_ar`, `shot_key` and the rest (not `content_sha256`/
+`original_path`, which the first migration above already blocks
+regardless of which row policy admits the row). This is real, proven
+against the real policy text (see item 4's Step 1b), and squarely inside
+this batch's own stated scope ("media visibility, moderation" named
+explicitly as something to enforce "at the underlying access boundary").
+The fix replaces the policy (same reasoning as above: permissive policies
+combine with OR, so a second, narrower policy alongside the old one would
+change nothing) with a version requiring `visibility = 'public' AND
+moderation_state <> 'removed'` in addition to the original listing-level
+qual, unchanged. Owner-CRUD policies are untouched: an owner still sees
+every state of their own media, exactly as today.
+
+**What was deliberately NOT touched.** `anon`/`authenticated`'s table-wide
+DELETE/INSERT/UPDATE/TRUNCATE grants on `listing_media` (RLS already gates
+DELETE/INSERT/UPDATE correctly via the owner-CRUD policies for every
+identity that resolves to an account; TRUNCATE is the one already-recorded,
+already-separately-tracked exception RLS cannot gate at all, unrelated to
+this batch's own "read boundary" scope and not folded in here to avoid
+widening this package beyond what was asked). `rights_acknowledged_by`/`at`
+were left in the readable column set: neither migration C/D's own comments
+nor anything else names them as sensitive, and restricting them without a
+demonstrated need risks breaking an unaudited legitimate display for a
+privacy gain that is not demonstrated (a bare uuid foreign key, not itself
+resolvable to PII by an anonymous caller).
+
+### Item 3: application compatibility, three real sites found and fixed
+
+**The named one**: `media/route.ts`'s duplicate-content precheck
+(`.eq("content_sha256", contentHash)`, selecting only `id`) ran through
+the ordinary session client and discarded its own query error. Once
+`content_sha256`'s SELECT is revoked from `authenticated`, referencing it
+ANYWHERE in a query (Postgres checks privilege on every column a query
+touches, including `WHERE`, not only the output list) fails with
+`42501` — silently, since the error was never checked, meaning the
+precheck would always report "no duplicate" after this round's own fix,
+without the fix. **Fixed**: reads through `getSupabaseServiceRole()`
+instead (already fetched earlier in the same handler for the later
+trusted-column UPDATE), with the error now logged, not swallowed; treated
+as "could not confirm cheaply," not "confirmed clean," since the real,
+authoritative protection (`listing_media_content_sha256_unique`, enforced
+at the same trusted UPDATE) still applies regardless of whether this
+early exit succeeds. `docs/route.ts` had the identical pattern and the
+identical fix.
+
+**A second, unnamed site, found by the audit this batch's own item 3
+explicitly required**: `media/[mediaId]/route.ts`'s DELETE handler
+selected `id, path, source, original_path` through the ordinary session
+client to decide which storage objects to remove. Same failure shape,
+worse consequence: `!media` (the existence check) would start returning
+true on every permission error, meaning **every photo deletion would
+report "Media not found" (404) once this round's own fix applied**, a
+severe, live regression to a legitimate, everyday owner operation, not a
+security question at all. **Fixed**: `original_path` is no longer in the
+ownership-and-existence SELECT (which stays on the ordinary client,
+preserving its existing RLS-based reasoning unchanged); a second, narrow
+`serviceRole` read of `original_path` alone runs immediately before the
+row is deleted (ownership of the parent listing was already confirmed
+with the ordinary client beforehand, so this widens no access, only which
+client is privileged enough to read one column). Sequencing mattered: an
+earlier draft of this fix read `original_path` via `serviceRole` AFTER
+the row's own DELETE, which returns nothing once the row is gone; caught
+before commit, not after, by re-reading the diff against the actual write
+order, not assumed correct because it typechecked.
+
+**Whether an owner can expose a pending upload early, tested by reasoning
+through every reachable path, not assumed.** The two-phase write
+(private INSERT, then a service-role UPDATE that both finalizes the
+integrity columns and flips `visibility` to `'public'` in the same
+statement, closed by round 3 item 1) leaves a real window only if the
+request is killed at the process level between those two statements
+(Supabase-js resolves `{data, error}` rather than throwing for ordinary
+query failures, so there is no realistic in-request exception path to
+catch here; adding a `try/catch` for a scenario that does not occur would
+be exactly the unnecessary defensive coding this codebase's own
+conventions warn against). If such a row is ever left stuck at
+`visibility = 'private'`, nothing today stops the owner from later
+setting it to `'public'` themselves (no application UI does this yet;
+migration B's own comment deliberately leaves `visibility` as "the
+owner's own privacy choice," unprotected by any trigger, a round-2
+decision this batch does not revisit). Concluded, not fixed: the content
+such a flip would expose already passed the same safety processing
+(EXIF/GPS strip, `mediaPublishable()`) as any successfully finalized
+photo, since that processing happens BEFORE the row exists at all; the
+owner is already fully authorized to make any of their own listing's
+media public at will; the only real consequence is a missing
+`content_sha256`/`original_path`/`derived_*` bookkeeping record for that
+one row, not exposure of anything unsafe or unauthorized to anyone. A
+database-level transition guard was considered and rejected: it cannot
+distinguish this stuck-pending state from ordinary legacy rows (both have
+`content_sha256 IS NULL`), so it would also block a legacy row's own
+legitimate private-then-public-again toggle, a real, demonstrated
+collision, not a hypothetical one. An orphan-row reconciliation sweep
+(the same pattern `media_cleanup_queue`/`reconcile-media-cleanup-queue.mjs`
+already uses for storage objects) would close the underlying orphan
+itself, but is an operational-completeness improvement, not a security
+fix, and is left out of this batch on purpose rather than expanding it.
+
+### Item 4: the isolated test harness, extended with the real policies, 141/141
+
+`docs/pkg-listing-creation-1b-isolated-test.mjs` now reproduces, verbatim,
+the five real `listing_media` policies, the one real storage policy (both
+in their pre-fix form, in `BOOTSTRAP_SQL`, since neither is in any local
+migration file — the same base-schema gap section 4.1/18 already
+document), `storage.foldername()`, and `app.demo_visible()`. A fourth,
+SAT-wide `listing_media` SELECT policy is included but explicitly marked
+reconstructed/unconfirmed (the real `pg_policies` capture returned five
+rows, not a sixth SAT one; every trigger in this package already treats
+`app_is_sat()` as trusted well beyond owner scope, so this is a reasoned
+stand-in, not a claim about a row this session actually saw). A genuine
+`anon` role stand-in was added (the harness previously only had
+`authenticated`, sometimes with no identity GUC set, which is not the
+same role a real unauthenticated PostgREST caller connects as).
+
+**Structure**: Step 0b (before any migration applies) proves the real,
+live storage policy lets an unrelated stranger read both a published
+listing's derivative and its preserved original. Step 1a applies the
+seven pre-existing migrations. Step 1b (base migrations applied, this
+round's three security migrations not yet applied) proves `anon` can
+directly `SELECT content_sha256, original_path`, and proves an unrelated
+stranger can read a `visibility = 'private'` row's own `path` through the
+real, still-unpatched row policy — the item-2-discovery finding, caught
+live, not merely reasoned about. Step 1c applies this round's three
+migrations. Step 8g, after everything has applied, proves the fixed state
+across every role item 4 names (anonymous, unrelated authenticated, the
+owning account specifically — not just "any authenticated caller" — SAT,
+service_role) and every named scenario (an eligible public derivative,
+private media, removed media, flagged media staying visible per the
+already-established rule, a pending/not-yet-finalized upload, the
+preserved original, a true orphan object with no matching row at all,
+an expired-permit listing, an unpublished listing, a demo listing with
+and without `demo_visible()`, valid legacy media reproduced as a
+default-only insert with no explicit visibility ever set, and legitimate
+owner editing/deletion, both the positive case and the negative
+stranger-cannot case). Step 9 proves both rollback (the old broad grant
+and old policies are genuinely restored, checked directly against
+`pg_policies`/`has_table_privilege`, not inferred from "ran with no
+error") and forward re-apply (the fix is genuinely back) survive a full
+cycle.
+
+**Three real bugs the harness itself caught, fixed in the actual
+migration files, not worked around in the test:** `20260912b` and
+`20260912c` each originally dropped only the policy name they were
+replacing, not their OWN new name; a reapply therefore collided with
+itself (`CREATE POLICY` has no `OR REPLACE`/`IF NOT EXISTS` form in
+Postgres). Both now drop their own target name first too, proven by
+Step 2's reapplication-idempotency check, which failed honestly before
+the fix and passes after. A harness-only bug, not a migration bug, was
+also caught and fixed: a pre-existing "extend the blanket grant to cover
+a genuinely new table" convenience statement was scoped to `ALL TABLES IN
+SCHEMA public`, which on Step 9's own forward-re-apply path silently
+re-widened `listing_media` back to unrestricted `SELECT` immediately
+after this round's own fix had already correctly narrowed it in the same
+pass — scoped to the two specific tables that actually need it instead.
+
+**A fourth, unrelated environment fix**: this Windows build of
+`embedded-postgres` does not bundle the `pgcrypto` extension at all
+(confirmed: no `share/postgresql/extension` directory exists in its
+native package). The harness's own bootstrap required it only for
+`gen_random_uuid()`, which has been a Postgres core built-in since
+PG13; the `CREATE EXTENSION` line was dead weight on a real Postgres 16
+harness and is removed, not worked around.
+
+**Real API/PostgREST evidence versus database-harness evidence, kept
+separate, as required**: everything in this section is real Postgres
+policy enforcement on a real, disposable local Postgres 16, using the
+real, captured production policy text — genuine database-level evidence,
+not application-level reasoning. It is explicitly NOT a live call against
+the real production PostgREST/Storage HTTP API (still blocked; see the
+`CLAUDE.md` blocked-evidence queue, unchanged by this round) and is never
+described as one anywhere in this file, the harness's own header, or the
+handback. Signed-URL validity: unchanged from what the application code
+already does (`createSignedUrl(objectKey, 3600)`, one hour, in
+`media/route.ts`); this round changed who may obtain a signed URL for
+which object, not how long one lasts once issued, and no change was made
+to that value.
+
+Full run, this round's final state: **141 passed, 0 failed** (was 83/83
+before this round; the increase is 10 migrations now covered instead of
+7, plus the full role/scenario matrix above).
+
+### Item 5: `map_anchors`, read-only, not modified, reported separately
+
+Re-confirmed `relrowsecurity = false` (RLS is not merely policy-less, the
+feature itself is off for this table). Newly obtained this round, the
+part item 5 specifically asked for beyond the bare RLS-disabled fact:
+`has_table_privilege()` for `anon`/`authenticated`/`service_role` against
+`SELECT`/`INSERT`/`UPDATE`/`DELETE`/`TRUNCATE` returns **true for every
+combination**, for `anon` included. Since RLS is not merely unpoliced but
+entirely disabled, none of those grants are filtered by any row
+condition; every one is fully, unconditionally effective. Unlike
+`listing_media`'s own TRUNCATE finding, this is not "reasoned, not
+tested" for the INSERT/UPDATE/DELETE grants specifically: PostgREST maps
+all three to real REST verbs on every table's standard endpoint, with no
+special case for `map_anchors`, so **a genuinely unauthenticated caller
+holding only the public anon key can read, insert, update, or delete any
+of this table's 104 rows directly** (`city, kind, name_en, name_ar, line,
+lat, lng, seq, source, created_at`: map/transit-anchor reference data,
+not customer PII or financial data by its own column shape, but real,
+non-demo, live application data: 104 rows, not a seed/fixture count).
+This is a real, directly exploitable, unauthenticated read-and-write
+exposure on a table entirely unrelated to PKG-LISTING-CREATION-1B, more
+directly reachable than anything found in `listing_media` this round
+specifically because ordinary INSERT/UPDATE/DELETE (unlike TRUNCATE) ARE
+mapped to PostgREST's REST verbs. **Not modified**, per this batch's own
+explicit instruction: no `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`, no
+policy, no grant change, prepared or otherwise. `CLAUDE.md`'s blocked-
+evidence queue is updated with this exact finding, standing alone from
+PKG-LISTING-CREATION-1B, as its own separately-trackable item.
+
+### Item 6: what remains, in exact production-decision terms
+
+**Not applied, and this session took no action that would apply them:**
+the three new migrations
+(`20260912_pkg1b_sensitive_media_column_grants.sql`,
+`20260912b_pkg1b_storage_originals_read_boundary.sql`,
+`20260912c_pkg1b_media_row_visibility_boundary.sql`), in that order,
+alongside the seven already-drafted ones, unapplied, same as before.
+Order matters: all three depend on columns/tables the seven base
+migrations create (`visibility`, `moderation_state`, `content_sha256`,
+`original_path`), so they must apply strictly after all seven, in any
+order relative to each other (no dependency between the three themselves,
+confirmed by the harness applying them in the stated order without
+issue; not tested in a different relative order, since there is no
+reason to choose one).
+
+**Compatibility/recovery plan**: all three security migrations are
+individually idempotent (safe to rerun) and individually reversible
+(exact `DROP`/re-`CREATE` reversal SQL for each is in the isolated
+harness's own `ROLLBACK_SQL`, proven, this round, to genuinely restore
+prior behaviour, not merely execute without error, and forward-re-apply
+proven to genuinely restore the fix afterward). The three known
+compatibility sites (media upload precheck, docs upload precheck, media
+deletion) are already fixed in this same change set, gated on the SAME
+migrations, so applying the migrations and deploying the application
+code together (not the migrations alone, ahead of the code, which would
+briefly make the DELETE route in particular start 404ing on every
+deletion) is the correct order. `content_sha256`-dependent duplicate
+protection during any window where only the column-grant migration has
+applied but the route fix has not yet deployed would silently skip its
+early-exit optimization without breaking correctness, since the real
+safety net is the unique index, not this precheck; not a reason to
+sequence differently, only a reason to prefer deploying both together
+regardless.
+
+**Authorization test results**: 141/141 in the isolated harness (item 4),
+2077/2077 in the project's own `npm test` (including one new permanent
+regression guard, `src/lib/mediaVisibility.test.ts`'s scan asserting
+every `listing_media` query chain referencing `content_sha256`/
+`original_path` uses `serviceRole`, never the ordinary session client),
+`ar-lint` clean, `lint-gate` held at 49 pinned errors, `npm run build`
+clean. `npm ci` not independently rerun this round (no dependency
+changes); the environment's existing `node_modules` was used, matching
+this round's own scope (no package.json change).
+
+**Remaining evidence gaps, unchanged by this round, not claimed closed**:
+real production PostgREST/Storage HTTP API evidence (as opposed to real
+Postgres RLS/grant evidence, which this round newly has) remains blocked,
+same reason as before (see `CLAUDE.md`'s blocked-evidence queue); the 27
+missing early migrations remain a hypothesis, not reconstructed or
+repaired, per this batch's own explicit instruction; `map_anchors`
+remains unremediated, reported, not fixed (item 5); the GitHub Actions
+`gate` check-run anomaly (item 1) is observed, not diagnosed further or
+fixed.
+
+**Exact production actions awaiting approval, and only these:** applying
+the three new migrations (in the stated order, after the seven existing
+ones) to the real production database; deploying this round's three
+application-code fixes alongside them; nothing about the bucket's
+public/private setting (confirmed correct, `false`, and never proposed to
+change); no merge of PR #22, which remains draft.
+
+**Status: this security-closure batch is ready for a production decision,
+not for another research round.** Every independently-completable
+preparation and test step named in this batch's own six items is done.
