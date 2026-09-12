@@ -4459,6 +4459,48 @@ async function main() {
         `only the genuinely unreferenced, untracked object should ever be identified as a sweep candidate, got: ${JSON.stringify(orphans)}`,
       );
     });
+
+    // === Step 11: the precompat patch's own embedded cleanup logic is
+    // MECHANICALLY verified against the tested scripts/precompatRouteCleanup.ts,
+    // not only by manual discipline (tenth adversarial review, item 2).
+    // Same reasoning as Step 0, applied to a second place this package
+    // found manual "keep two copies in sync" discipline is not durable:
+    // the patch embeds a full copy of the tested module's own file
+    // (verified this round to apply to real main), and the two must never
+    // drift, or the patch would ship untested logic. Only the file's own
+    // leading header comment is allowed to differ between the two (each
+    // is written for its own audience); the actual code, from the shared
+    // exported function onward, must be byte-identical. ===
+    await check("PRECOMPAT PATCH'S OWN EMBEDDED CLEANUP LOGIC MATCHES THE TESTED scripts/precompatRouteCleanup.ts EXACTLY", async () => {
+      const patchPath = path.join(repoRoot, "docs", "pkg-listing-creation-1b-precompat-route-patch.diff");
+      const patchText = readFileSync(patchPath, "utf8");
+      const testedPath = path.join(repoRoot, "scripts", "precompatRouteCleanup.ts");
+      const testedText = readFileSync(testedPath, "utf8");
+
+      const newFileMarker = "diff --git a/src/lib/precompatRouteCleanup.ts b/src/lib/precompatRouteCleanup.ts";
+      const newFileStart = patchText.indexOf(newFileMarker);
+      assert(newFileStart !== -1, "fixture sanity: could not find the patch's own new-file section for src/lib/precompatRouteCleanup.ts; the patch may have been restructured without updating this check");
+      const newFileSection = patchText.slice(newFileStart);
+      const hunkMatch = newFileSection.match(/@@ -0,0 \+1,\d+ @@\n([\s\S]*)$/);
+      assert(hunkMatch, "fixture sanity: could not find the new-file hunk body in the patch");
+      const patchedFileContent = hunkMatch[1]
+        .split("\n")
+        .filter((line) => line.length > 0)
+        .map((line) => {
+          assert(line.startsWith("+"), `every line of a brand-new file's own diff hunk must be a '+' addition; the patch may be malformed: ${JSON.stringify(line)}`);
+          return line.slice(1);
+        })
+        .join("\n");
+
+      const marker = "export async function cleanUpOldRouteObjectOnInsertFailure";
+      assert(patchedFileContent.includes(marker) && testedText.includes(marker), "fixture sanity: could not locate the shared marker function in one of the two files");
+      const patchedBody = patchedFileContent.slice(patchedFileContent.indexOf(marker)).trim();
+      const testedBody = testedText.slice(testedText.indexOf(marker)).trim();
+      assert(
+        patchedBody === testedBody,
+        `the patch's own embedded cleanup logic (from '${marker}' onward) has drifted from the tested scripts/precompatRouteCleanup.ts. Diff length: patched=${patchedBody.length} chars, tested=${testedBody.length} chars.`,
+      );
+    });
   } finally {
     await admin.end();
     console.log("\nStopping embedded Postgres (persistent:false, data directory will be removed)...");

@@ -22,13 +22,30 @@
  * left off — but there is no separate audit trail of the SCRIPT'S OWN runs,
  * only of the queue rows it touches.
  *
- * For each unresolved queue row, oldest first:
+ * For each unresolved queue row, oldest first (the actual per-row decision
+ * lives in mediaCleanupReconciliation.mjs's own decideRowAction(), which
+ * this file only calls -- kept there specifically so it is independently
+ * regression-tested, tenth adversarial review, item 1):
+ *   0. Reason "storage_object_unreferenced" (written only by
+ *      scripts/sweep-unreferenced-media-objects.mjs) is a SPECULATIVE
+ *      candidate, never a confirmed failure, and is skipped here
+ *      unconditionally, regardless of --apply and regardless of what the
+ *      existence check below would find. See mediaCleanupReconciliation.mjs
+ *      for why: unlike every other reason in this table, this one has no
+ *      guarantee the object cannot still become legitimately referenced
+ *      after the sweep looked and before this script runs.
  *   1. For every path in storage_paths, ask Storage whether the object still
- *      exists (a signed-URL attempt: Supabase has no direct "exists" call,
- *      and this is cheaper than a download).
- *   2. If every path is already gone: mark the row resolved. Nothing to
- *      delete; a retry, or an unrelated cleanup, already finished the job.
- *   3. If any path still exists:
+ *      exists (the Storage SDK's own exists() call). A failure that is NOT
+ *      a confirmed "not found" (network, rate-limit, a transient 5xx) is
+ *      its own third outcome, "unknown", and is never treated as proof of
+ *      absence.
+ *   2. If any path's status is "unknown": skip the row, left unresolved for
+ *      a retry. Never resolved on a lookup this script could not actually
+ *      complete.
+ *   3. If every path is confirmed already gone: mark the row resolved.
+ *      Nothing to delete; a retry, or an unrelated cleanup, already
+ *      finished the job.
+ *   4. If any path is confirmed to still exist:
  *        - default (no --apply): report it and take no action.
  *        - --apply: delete the remaining objects, confirm the delete
  *          actually removed them (the same removed-count check
@@ -46,6 +63,7 @@
  * one place outside the running app that is allowed to hold that key).
  */
 import { createClient } from "@supabase/supabase-js";
+import { checkPathStatus, decideRowAction } from "./mediaCleanupReconciliation.mjs";
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -60,13 +78,6 @@ if (!URL_ || !SERVICE) {
 }
 
 const svc = createClient(URL_, SERVICE, { auth: { persistSession: false } });
-
-async function pathExists(path) {
-  // No direct "does this object exist" call in the Storage API; a signed-URL
-  // attempt is the cheapest real check (no bytes transferred either way).
-  const { error } = await svc.storage.from(BUCKET).createSignedUrl(path, 60);
-  return !error;
-}
 
 async function main() {
   const { data: rows, error } = await svc
@@ -85,18 +96,33 @@ async function main() {
 
   console.log(`${rows.length} unresolved entr${rows.length === 1 ? "y" : "ies"}${APPLY ? " (--apply: will delete and resolve)" : " (report only; pass --apply to act)"}.\n`);
 
-  let resolvedNoop = 0, resolvedDeleted = 0, stillPresent = 0, deleteFailed = 0;
+  let resolvedNoop = 0, resolvedDeleted = 0, stillPresent = 0, deleteFailed = 0, skippedSpeculative = 0, skippedUnknown = 0;
 
   for (const row of rows) {
     const ageDays = ((Date.now() - new Date(row.queued_at).getTime()) / 86_400_000).toFixed(1);
     const paths = row.storage_paths || [];
-    const existing = [];
-    for (const p of paths) {
-      if (await pathExists(p)) existing.push(p);
+    const pathStatuses = await Promise.all(paths.map((p) => checkPathStatus(svc, BUCKET, p)));
+    const decision = decideRowAction(row, pathStatuses);
+
+    if (decision.action === "skip_speculative") {
+      // Never auto-deleted, unconditionally, regardless of --apply or of
+      // whether the object is confirmed still present: see
+      // mediaCleanupReconciliation.mjs's own header for why. Left
+      // unresolved on purpose; only a human (or a future, separately
+      // designed and reviewed mechanism) may act on this class.
+      console.log(`[skip, speculative candidate -- never auto-deleted, review manually] queue#${row.id} (${row.reason}, ${ageDays}d old): ${paths.join(", ")}`);
+      skippedSpeculative++;
+      continue;
     }
 
-    if (existing.length === 0) {
-      console.log(`[resolve, nothing to delete] queue#${row.id} (${row.reason}, ${ageDays}d old): all ${paths.length} path(s) already gone.`);
+    if (decision.action === "skip_unknown") {
+      console.log(`[skip, could not confirm existence for at least one path -- left unresolved for a retry] queue#${row.id} (${row.reason}, ${ageDays}d old): ${paths.join(", ")}`);
+      skippedUnknown++;
+      continue;
+    }
+
+    if (decision.action === "resolve_noop") {
+      console.log(`[resolve, nothing to delete] queue#${row.id} (${row.reason}, ${ageDays}d old): all ${paths.length} path(s) confirmed already gone.`);
       resolvedNoop++;
       if (APPLY) {
         await svc.from("media_cleanup_queue").update({ resolved_at: new Date().toISOString(), resolved_by: RESOLVED_BY }).eq("id", row.id);
@@ -104,6 +130,8 @@ async function main() {
       continue;
     }
 
+    // decision.action === "delete"
+    const existing = decision.paths;
     const ageFlag = Number(ageDays) > 30 ? " ⚠ past the 30-day retention window" : "";
     console.log(`[${APPLY ? "deleting" : "would delete"}] queue#${row.id} (${row.reason}, ${ageDays}d old${ageFlag}): ${existing.join(", ")}`);
     stillPresent++;
@@ -119,7 +147,10 @@ async function main() {
     resolvedDeleted++;
   }
 
-  console.log(`\n${resolvedNoop} resolved (already gone), ${resolvedDeleted} resolved (deleted), ${stillPresent} with objects still present${APPLY ? "" : " (not deleted: pass --apply)"}, ${deleteFailed} delete failures left unresolved.`);
+  console.log(
+    `\n${resolvedNoop} resolved (already gone), ${resolvedDeleted} resolved (deleted), ${stillPresent} with objects still present${APPLY ? "" : " (not deleted: pass --apply)"}, ` +
+      `${deleteFailed} delete failures left unresolved, ${skippedSpeculative} speculative candidate(s) skipped (never auto-deleted), ${skippedUnknown} left unresolved (existence could not be confirmed).`,
+  );
 }
 
 main();

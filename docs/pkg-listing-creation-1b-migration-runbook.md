@@ -1229,7 +1229,7 @@ establish; option 3 is named here precisely so it is a deliberate,
 visible choice if it is ever made, not a default reached by process of
 elimination.
 
-## 11b. The rejected-upload storage-object gap, and why the fence's own deploy window is a real deployment dependency, not only a rollback scenario (ninth adversarial review, item 2)
+## 11b. The rejected-upload storage-object gap, and why the fence's own deploy window is a real deployment dependency, not only a rollback scenario (ninth adversarial review, item 2; corrected in place by the tenth adversarial review, items 1 and 2, below -- not a new section, per instruction)
 
 **The gap.** `main`'s own currently-deployed upload route (`src/app/api/
 listings/[id]/media/route.ts` as it stands outside this branch) uploads
@@ -1262,23 +1262,50 @@ happens first in both routes.
 **Two real mitigations, not mutually exclusive:**
 
 1. **A prepared, independent compatibility patch for the OLD route,
-   `docs/pkg-listing-creation-1b-precompat-route-patch.diff`.** A minimal,
-   self-contained diff against `main`'s own current
+   `docs/pkg-listing-creation-1b-precompat-route-patch.diff`.** A
+   self-contained, two-file diff against `main`'s own current
    `src/app/api/listings/[id]/media/route.ts` (verified this round to
    apply cleanly to real `main` at `6713366` via `git apply --check` in a
-   disposable worktree, and to be syntactically valid) that adds a
-   best-effort `storage.remove([objectKey])` to the existing `insErr`
-   branch. It has **no dependency on any of this package's schema or
-   files**: it fixes the underlying bug on `main` as `main` stands today,
-   which is exactly why it can be deployed on its own schedule, ahead of
-   and independent from this PR. **This is the named deployment
-   dependency**: if closing this gap completely is required before the
-   fence goes live, this patch (or an equivalent fix) needs its own
-   review and deployment to `main` BEFORE migration `20260912e` is
-   applied to production. Applying the fence without it does not corrupt
-   anything and does not reopen any trust/provenance boundary; it leaves
-   this one, narrower, already-latent storage-hygiene gap running for the
-   width of the deploy window instead of closing it in advance.
+   disposable worktree, and to be syntactically valid): a new
+   `src/lib/precompatRouteCleanup.ts`, plus one added line at the
+   existing `insErr` branch's own call site. **Corrected, tenth
+   adversarial review, item 2**: the prior round's own patch wrapped
+   `storage.remove()` in a bare `try/catch` with no check of the returned
+   `.error` and no check of how many objects were actually removed,
+   reproducing exactly the defect class `src/lib/mediaCleanup.ts`'s own
+   `removeStorageObjects()` already exists to prevent on this branch
+   (verified against this project's own vendored `@supabase/storage-js`
+   source, 2.114.0: `.remove()` can resolve `{ data: null, error }`
+   without throwing, and can resolve `{ data: [], error: null }`, a 200
+   "success" that silently removed nothing). The corrected function
+   checks both shapes explicitly and logs a distinct, structured,
+   greppable `console.error` line for each of the three failure shapes
+   (a returned error, a zero-length removal, a thrown exception),
+   the only observable fallback available to `main` as it stands (it has
+   no `media_cleanup_queue` to write to). The tested source lives at
+   `scripts/precompatRouteCleanup.ts` (with its own real test file,
+   `scripts/precompatRouteCleanup.test.ts`, covering all five named
+   scenarios: successful cleanup, a returned error, a thrown error, a
+   zero-removal response, and an independent retry, plus a direct
+   assertion that the user-facing response stays a fixed literal
+   regardless of cleanup outcome); the patch embeds a verbatim copy of
+   that same tested module (only its own leading header comment differs,
+   since it is written for a different audience once it is real code on
+   `main`), kept in sync mechanically, not only by manual discipline,
+   by the isolated harness's own new Step 11. It has **no dependency on
+   any of this package's schema or other files**: it fixes the
+   underlying bug on `main` as `main` stands today, which is exactly why
+   it can be deployed on its own schedule, ahead of and independent from
+   this PR. **This is the named deployment dependency, prepared and
+   verified, not deployed**: if closing this gap completely is required
+   before the fence goes live, this patch (or an equivalent fix) needs
+   its own review and deployment to `main` BEFORE migration `20260912e`
+   is applied to production; nothing in this package treats that
+   deployment as having already happened. Applying the fence without it
+   does not corrupt anything and does not reopen any trust/provenance
+   boundary; it leaves this one, narrower, already-latent
+   storage-hygiene gap running for the width of the deploy window
+   instead of closing it in advance.
 2. **`scripts/sweep-unreferenced-media-objects.mjs`, the safety net
    either way.** Walks the `listing-media` bucket, finds objects no
    `listing_media` row references via EITHER `path` OR `original_path`,
@@ -1292,19 +1319,58 @@ happens first in both routes.
    convention**: there is no `storage.remove()` call anywhere in the
    script; a confirmed candidate is only ever durably recorded in
    `media_cleanup_queue` (reason `storage_object_unreferenced`) for a
-   human to review, and actual deletion remains entirely
-   `reconcile-media-cleanup-queue.mjs`'s own, separately-reviewed
-   `--apply` path. It protects legitimate pending uploads and referenced
-   originals by construction: any row's `path` OR `original_path`
-   protects the object regardless of that row's own visibility,
-   moderation state, or trust; the age gate protects a genuinely in-flight
-   upload whose two requests have not both landed yet. Its query logic
-   (the referenced/tracked-set computation) is verified against a real
-   Postgres schema in the isolated harness's own Step 10; its Storage-API
-   walk is not independently exercised in this environment, the same
-   disclosed boundary `reconcile-media-cleanup-queue.mjs` itself already
-   carries ("not yet run against a real Supabase project from this
-   environment").
+   human to review.
+
+   **Corrected, tenth adversarial review, item 1: the claim immediately
+   above (in an earlier round of this section) that actual deletion
+   "remains entirely `reconcile-media-cleanup-queue.mjs`'s own,
+   separately-reviewed `--apply` path" was wrong, and reproduced as a
+   real defect before being fixed.** That reconciler applied one uniform
+   rule (still present in storage? delete it) to EVERY unresolved queue
+   row regardless of reason, with no re-check of whether a `listing_media`
+   row had since come to reference the exact path a sweep candidate
+   named. The sweep and the reconciler are two independent script
+   invocations, run at arbitrary, unrelated times; a genuinely slow
+   request (not a failed one) can still commit and reference that exact
+   path in the window between the sweep's own scan and the reconciler's
+   own later run, and the reconciler would delete it anyway. Fixed with
+   the smallest available change, not an approval system:
+   `reconcile-media-cleanup-queue.mjs` now refuses, unconditionally, to
+   ever schedule a `storage_object_unreferenced` row for deletion,
+   regardless of `--apply` and regardless of what its own existence check
+   finds (`scripts/mediaCleanupReconciliation.mjs`'s own
+   `decideRowAction()`, extracted specifically so this exact boundary is
+   independently regression-tested, not only reachable by running the
+   whole script). A row this sweep records is now a durable, reviewable
+   signal only; this repository ships no automated path from "the sweep
+   recorded a candidate" to "the object was deleted". The same round also
+   corrected a second, real gap in the reconciler's own pre-existing
+   logic (not introduced by the sweep): its prior `pathExists()` treated
+   ANY lookup failure (network, rate-limit, a transient 5xx), not only a
+   confirmed "not found", as proof the object was already gone, which
+   could wrongly resolve a row it had never actually confirmed. Replaced
+   with `checkPathStatus()`, built on the Storage SDK's own dedicated
+   `exists()` method (present in the vendored `@supabase/storage-js`
+   version this project actually uses, 2.114.0), which itself
+   distinguishes a genuine HTTP 400/404 from every other failure; a
+   lookup that cannot be confirmed either way now leaves the row
+   unresolved for a retry, never treated as absence.
+
+   It protects legitimate pending uploads and referenced
+   originals by construction, in two independent, now-verified layers:
+   any row's `path` OR `original_path` protects the object regardless of
+   that row's own visibility, moderation state, or trust, AND the
+   reconciler's own categorical refusal to auto-delete this reason class
+   means even a still-unreferenced-when-swept object is never removed by
+   these scripts without a human independently acting on it. Its query
+   logic (the referenced/tracked-set computation, and the row-disposal
+   decision) is verified against a real Postgres schema and, for
+   `decideRowAction()`, as a pure function directly, in the isolated
+   harness's own Step 10 and `scripts/mediaCleanupReconciliation.test.mjs`
+   respectively; the sweep's own Storage-API walk is not independently
+   exercised in this environment, the same disclosed boundary
+   `reconcile-media-cleanup-queue.mjs` itself already carries ("not yet
+   run against a real Supabase project from this environment").
 
 **Do not claim the new route's own cleanup (`handleUploadInsertFailure`,
 `src/lib/mediaCleanup.ts`) retroactively fixes this.** It only ever runs
@@ -3771,7 +3837,7 @@ clean, `lint-gate` held at 49, `npm run build` clean. Nothing applied to
 production; PR #22 remains draft. The GitHub Actions required check
 remains a confirmed account billing lock, unresolved, not retried.
 
-## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed; eighth adversarial review, same day: the false scan-based completion condition replaced with a permanent structural fence, the role model corrected against real, verified production grants and established before the rehearsal, not only after it; ninth adversarial review, same day: the fence's own rollback made executable and mechanically kept in sync with what is actually tested, the rejected-upload storage-object gap tested and the deploy-window dependency named and prepared
+## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed; eighth adversarial review, same day: the false scan-based completion condition replaced with a permanent structural fence, the role model corrected against real, verified production grants and established before the rehearsal, not only after it; ninth adversarial review, same day: the fence's own rollback made executable and mechanically kept in sync with what is actually tested, the rejected-upload storage-object gap tested and the deploy-window dependency named and prepared; tenth adversarial review, same day: the sweep-to-reconciler boundary closed against a reproduced deletion-of-a-newly-referenced-object defect, lookup failures no longer treated as proof of absence, and the prepared compatibility patch corrected to actually check removal results and kept in sync mechanically
 
 Kept short per instruction: updating this existing section, not adding a
 new one. Full technical detail lives in the migration file's and script's
@@ -3795,6 +3861,8 @@ what independently ran, not as "all items closed."
 | 13 (eighth review) | The harness's own `migrations_role` (modelling the real, non-superuser `postgres` function owner) was granted `select, update` on `storage.objects` only because that was empirically discovered to be what the function needed, never checked against real production ownership/grants; established only in a late, isolated regression, so every earlier conversion/recovery rehearsal in the file ran against the harness's own superuser-owned function instead. | Checked directly against real production (project-scoped read-only connector): `storage.objects` is owned by `supabase_storage_admin`, NOT `postgres` (unlike `listing_media`/`listings`, which postgres genuinely owns); postgres's real privilege on it is an explicit, direct grant (`SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`, confirmed via `aclexplode`, not inherited via role membership, confirmed false). `migrations_role` now grants `all` on the two owned tables and the exact observed grant set on `storage.objects`; moved to apply immediately after migrations, before any conversion or recovery rehearsal runs. | Harness Step 1c-role (moved from the former, later Step 8h-owner): a positive control asserting `migrations_role`'s own effective privileges on `storage.objects` match the real, observed ACL exactly, not a narrower invented subset; the whole rest of the file, from this point onward, now exercises the realistic ownership model, not only one later regression |
 | 14 (ninth review) | Section 7 still said the new schema is "inert" for the old application and recommended application-only rollback; section 11 still said old uploads after rollback "succeed but untrusted, reconciled afterward". Both false once the fence exists (old uploads now fail outright, `23502`). Separately, section 7's own documented rollback SQL started at `20260912d` and omitted `20260912e` entirely (plus three older comment-wording drifts); the harness's own tested `ROLLBACK_SQL` reverses `20260912e` FIRST. Following the documented SQL as written would leave the fence's own column behind and old uploads still broken. | Section 7 now states plainly which of the twelve migrations are inert (eleven) and which is not (the fence), with split rollback guidance; section 11's stale paragraph corrected to state the real post-fence consequence and defer to a new section 11a (application/schema compatibility matrix; the recovery decision -- maintenance mode, forward repair, or full rollback including the fence, named explicitly as a last resort that reopens a closed risk). Section 7's own rollback SQL block replaced, byte-for-byte, with the harness's real `ROLLBACK_SQL`. Kept in sync mechanically now, not only by manual discipline (which had already failed twice): a new harness check (Step 0) reads the runbook file itself off disk and asserts the two are byte-identical. | Harness Step 0: fails with an exact character-count diff if the two ever drift again (proven by running it against the pre-fix runbook text: documented 5329 chars vs tested 5511); Step 9: two new checks confirm `upload_contract_version` itself is gone after the documented rollback SQL runs, and REHEARSE (not merely claim) that an old-app-shaped insert, exactly matching `main`'s own real route, succeeds again afterward, demonstrating why full rollback is named a real regression and not a formality |
 | 15 (ninth review) | `main`'s own real upload route uploads to Storage, then inserts; on insert failure it returns `attach_failed` with no cleanup at all. The fence's own `23502` rejection triggers exactly this, but the SQL-only regressions never tested the route's own behavior, cleanup, or user recovery. Fixing only the NEW route's insert-failure path (this package's own) cannot retroactively affect requests the OLD, still-deployed route already executed. | `handleUploadInsertFailure` (`src/lib/mediaCleanup.ts`) extracted from the route's own `insErr` branch so it is independently regression-tested against a mocked client, not only reachable through the whole route; `route.ts` now calls it. The fence's own migration comment now states explicitly, prominently, that `upload_contract_version` is a compatibility check, never a provenance or trust signal. The deploy-window gap for the OLD route specifically (out of scope to modify from this branch) is named as an explicit, prepared deployment dependency, not claimed retroactively fixed: `docs/pkg-listing-creation-1b-precompat-route-patch.diff`, a minimal, independent patch against `main`'s own current route, verified this round to apply cleanly to real `main` (`6713366`) in a disposable worktree; and `scripts/sweep-unreferenced-media-objects.mjs`, the safety net either way, which structurally cannot delete anything itself (no `storage.remove()` call exists in it at all) and only ever durably records a candidate, age-gated (required, no default), checked against both `path` and `original_path` so pending uploads and preserved originals are never mistaken for orphans. Full detail: section 11b. | New tests in `src/lib/mediaCleanup.test.ts` (mocked-client evidence, now actually wired into `npm test` via a separate, pre-existing gap fixed this round, see below) for both the clean-removal and removal-also-fails shapes; harness Step 10 proves the sweep script's own referenced/tracked-set query logic against a real schema (SQL-level evidence; its Storage-API walk is not independently exercised here, the same disclosed limit `reconcile-media-cleanup-queue.mjs` already carries) |
+| 16 (tenth review) | Row 15's own claim that actual deletion of a swept candidate "remains entirely `reconcile-media-cleanup-queue.mjs`'s own, separately-reviewed `--apply` path" was itself a real, unaddressed gap: that reconciler applied one uniform rule to every unresolved row regardless of reason, with no re-check of whether a `listing_media` row had since come to reference a sweep candidate's own path. Reproduced as the real sequence the review named: sweep records a candidate; a legitimate listing then references that exact object; the reconciler's own `--apply`, run later and independently, deletes it anyway. Separately, the reconciler's own pre-existing `pathExists()` treated ANY lookup failure (network, rate-limit, a transient 5xx), not only a confirmed "not found", as proof of absence, which could wrongly auto-resolve a row it had never actually confirmed gone. | Both extracted to `scripts/mediaCleanupReconciliation.mjs` so the actual producer/consumer boundary is independently regression-tested, not a large approval system: `decideRowAction()` refuses, unconditionally, to ever schedule a `storage_object_unreferenced` row for deletion, regardless of `--apply` and regardless of what its own existence check finds; `checkPathStatus()` replaces the signed-URL heuristic with the Storage SDK's own dedicated `exists()` method (present in the vendored `@supabase/storage-js` 2.114.0 this project actually uses), which itself distinguishes a genuine HTTP 400/404 from every other failure, reported as a third, distinct "unknown" outcome a row is never resolved on. Section 11b's own prior claim corrected in place, not superseded by a new section. | `scripts/mediaCleanupReconciliation.test.mjs` (11 tests): the exact reviewer scenario (a speculative candidate confirmed still present is never scheduled for deletion), pending-upload and referenced-original protection named explicitly, a confirmed-failure reason with an unresolvable lookup left unresolved rather than resolved, and the ordinary delete/resolve paths for confirmed-failure reasons unchanged |
+| 17 (tenth review) | The prior round's own prepared compatibility patch for `main`'s route wrapped `storage.remove()` in a bare `try/catch`, checking neither a returned `.error` (a real API-level failure that does not throw) nor a zero-length removal (a policy-filtered no-op that resolves as a 200 "success"), both verified this round against the project's own vendored `@supabase/storage-js` source (2.114.0) to be real, silent failure shapes `.remove()` can return. Only the new route's own, separately extracted `handleUploadInsertFailure` had real test coverage; the patch's own logic, destined for a route this package cannot execute in this environment, had none. | `scripts/precompatRouteCleanup.ts`, a new canonical, tested module (not imported by this branch's own application; exists so the patch's logic runs under this repo's real gate before being prepared as a diff) checks both failure shapes explicitly and logs a distinct, structured `console.error` line for each of three outcomes (a returned error, a zero-length removal, a thrown exception), the only observable fallback available to `main` as it stands (no `media_cleanup_queue` to write to). The patch itself is now two files (a verbatim copy of the tested module at `src/lib/precompatRouteCleanup.ts`, plus one added call-site line in `route.ts`, response unchanged), re-verified this round to `git apply --check` cleanly against real `main` (`6713366`) in a fresh disposable worktree. Kept in sync with the tested source mechanically, not only by manual discipline, by a new harness check (Step 11). | `scripts/precompatRouteCleanup.test.ts` (6 tests): all five named scenarios (successful cleanup, a returned error, a thrown error, a zero-removal response, an independent retry) plus a direct assertion that the pinned, real user-facing response literal never changes based on cleanup outcome; harness Step 11 (parses the patch file's own new-file hunk, reconstructs it, and asserts it is byte-identical to the tested source from the shared exported function onward) |
 
 **A separate, pre-existing gap found and fixed in passing this round, not
 caused by this round's own work**: `package.json`'s `"test"` script is a
@@ -3803,15 +3871,19 @@ pre-existing tests) had never been added to it, so it was silently
 excluded from the enforced gate the entire time despite CLAUDE.md's own
 "shipping gate" section treating `npm test`'s count as canonical. Fixed by
 adding it; the honest count moved from 2080 to 2097 (2080 + 17, the file's
-14 pre-existing plus 3 new tests this round).
+14 pre-existing plus 3 new tests that round).
 
 Full local gate re-run on the final integrated code: typecheck clean,
-2097/2097 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
-clean. Isolated harness: **218/218** (up from 214/214, itself up from
-206/206, itself up from 196/196, itself up from 185/185, itself up from
-172/172). Nothing applied to production; PR #22 remains draft. The GitHub
-Actions required check remains a confirmed account billing lock,
-unresolved, not retried, not bypassed. Nine consecutive rounds of
-adversarial review have each found a real, live gap in the round directly
-before it; this is grounds for continued scrutiny before production, not
-evidence the surface is now exhausted.
+**2114/2114 tests** (up from 2097/2097: 11 new
+`scripts/mediaCleanupReconciliation.test.mjs` tests and 6 new
+`scripts/precompatRouteCleanup.test.ts` tests, both wired into
+`package.json`'s own test list from the start this round, not found
+missing afterward), `ar-lint` clean, `lint-gate` held at 49, `npm run
+build` clean. Isolated harness: **219/219** (up from 218/218, itself up
+from 214/214, itself up from 206/206, itself up from 196/196, itself up
+from 185/185, itself up from 172/172). Nothing applied to production;
+PR #22 remains draft. The GitHub Actions required check remains a
+confirmed account billing lock, unresolved, not retried, not bypassed.
+Ten consecutive rounds of adversarial review have each found a real, live
+gap in the round directly before it; this is grounds for continued
+scrutiny before production, not evidence the surface is now exhausted.

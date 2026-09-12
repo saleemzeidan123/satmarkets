@@ -21,7 +21,8 @@
  * docs/pkg-listing-creation-1b-precompat-route-patch.diff; and this
  * script, the safety net either way).
  *
- * THIS SCRIPT NEVER DELETES ANYTHING. There is no call to
+ * THIS SCRIPT NEVER DELETES ANYTHING, AND NOTHING IT RECORDS IS EVER
+ * AUTO-DELETED BY ANY OTHER SCRIPT EITHER. There is no call to
  * `storage.remove()` anywhere in this file, on purpose, not merely by
  * convention or flag-gating: age or absence-from-one-snapshot is never,
  * by itself, sufficient evidence an object is safe to remove (a legitimate
@@ -29,12 +30,25 @@
  * preserved original is referenced by `original_path`, not `path`, and
  * must be checked too). This script's only two possible actions are
  * "report a candidate" (default) and "durably record a candidate in
- * media_cleanup_queue for a human to review" (--apply). Actual deletion,
- * if any candidate is confirmed genuinely orphaned, remains entirely the
- * job of the existing, separately-reviewed
- * scripts/reconcile-media-cleanup-queue.mjs (its own --apply path), which
- * already re-checks existence and verifies the removed count before
- * marking anything resolved.
+ * media_cleanup_queue for a human to review" (--apply).
+ *
+ * CORRECTION, TENTH ADVERSARIAL REVIEW: an earlier version of this
+ * comment claimed `scripts/reconcile-media-cleanup-queue.mjs`'s own
+ * `--apply` path was the eventual, safe home for actually deleting a
+ * confirmed candidate. Reproduced as real: that reconciler processed
+ * every unresolved row uniformly (still present in storage? delete it),
+ * with no re-check of whether a listing_media row had since come to
+ * reference the exact path this script recorded, between this script's own
+ * scan and that reconciler's own later, independent run. A genuine
+ * upload whose second request was merely slow, not failed, could commit
+ * and reference that exact path in that window, and be deleted anyway.
+ * `scripts/reconcile-media-cleanup-queue.mjs` now refuses, unconditionally,
+ * to ever delete a row this script recorded (reason
+ * "storage_object_unreferenced"), regardless of --apply and regardless of
+ * whether the object is confirmed still present. A row this script records
+ * stays a durable, reviewable signal only; actually removing the object,
+ * if a human independently confirms it is truly safe, is not something
+ * either script performs.
  *
  * WHAT COUNTS AS "REFERENCED". An object is protected the moment ANY
  * listing_media row names it, in EITHER its `path` OR its `original_path`
