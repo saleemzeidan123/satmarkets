@@ -1,0 +1,64 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+/**
+ * precompatRouteCleanup.ts: a preparatory compatibility fix for this
+ * route's own upload cleanup, ahead of PKG-LISTING-CREATION-1B (a separate,
+ * not-yet-applied package: see that PR for full context). Deploying this
+ * ahead of that package's own upload_contract_version fence migration
+ * closes a real, pre-existing bug: on an insert failure of any kind, the
+ * object already uploaded to Storage above was left behind with no
+ * cleanup attempt at all. That package's own fence migration will make
+ * this route's own INSERT fail deterministically (it cannot supply a new
+ * NOT NULL column) for as long as this route is still the one deployed
+ * after that migration applies, so closing this ahead of time removes a
+ * real deploy-window risk rather than leaving it for that package's own,
+ * separate new route to discover later (which it cannot retroactively fix
+ * for requests this route already served).
+ *
+ * The exact logic below, including its own reasoning for checking both a
+ * returned `.error` and a zero-length removal (not only a thrown
+ * exception), is developed, tested and kept in sync mechanically against
+ * `scripts/precompatRouteCleanup.ts` and its own test file in the
+ * PKG-LISTING-CREATION-1B branch/PR; see that PR's runbook, section 11b,
+ * for the full account and the real production-database evidence this is
+ * based on. No table this route can write to (no media_cleanup_queue,
+ * not part of this deploy) exists yet; the only observable fallback here
+ * is a structured, greppable `console.error` line.
+ */
+export async function cleanUpOldRouteObjectOnInsertFailure(sb: SupabaseClient, objectKey: string): Promise<void> {
+  try {
+    const { data, error } = await sb.storage.from("listing-media").remove([objectKey]);
+    if (error) {
+      console.error("[precompat-cleanup] storage.remove returned an error; the uploaded object may still be orphaned and is not durably tracked anywhere", {
+        objectKey,
+        error: error.message,
+      });
+      return;
+    }
+    if ((data ?? []).length !== 1) {
+      console.error("[precompat-cleanup] storage.remove reported success but removed nothing (a policy-filtered no-op); the uploaded object is likely still orphaned and is not durably tracked anywhere", {
+        objectKey,
+        removedCount: (data ?? []).length,
+      });
+    }
+  } catch (e) {
+    console.error("[precompat-cleanup] storage.remove threw; the uploaded object may still be orphaned and is not durably tracked anywhere", {
+      objectKey,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
+
+/**
+ * Pinned, literal copy of the real, current response this route already
+ * returns on an insert failure (verified via `git show origin/main:src/
+ * app/api/listings/[id]/media/route.ts`). Not used by the function above,
+ * and not called at this route's own call site either: it exists only so
+ * a test can assert, by direct comparison, that the one added cleanup
+ * line above is a pure side effect, never plumbed into what the caller
+ * returns to the user, regardless of cleanup outcome.
+ */
+export const OLD_ROUTE_ATTACH_FAILED_RESPONSE = {
+  status: 400,
+  body: { error: "Saved the file but could not attach it.", code: "attach_failed" },
+} as const;
