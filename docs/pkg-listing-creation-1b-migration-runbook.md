@@ -1305,6 +1305,18 @@ happens first in both routes.
    does not corrupt anything and does not reopen any trust/provenance
    boundary; it leaves this one, narrower, already-latent
    storage-hygiene gap running for the width of the deploy window
+
+   **Update: prepared as a real, separate, standalone draft PR against
+   `main`, [PR #23](https://github.com/saleemzeidan123/satmarkets/pull/23)
+   (`fix/media-upload-cleanup-precompat`), not only as a static diff
+   file.** Its own regression suite drives the actual, exported `POST`
+   handler end to end (real sharp re-encode, real magic-byte sniff, real
+   rate limiter), covering successful cleanup, a returned error, a thrown
+   error, a zero-removal response, and an independent retry, rather than
+   only the extracted helper and a pinned response literal. PR #23's own
+   full gate is clean (typecheck; existing suite 2028/2028 unchanged; its
+   own new regression, 5/5; ar-lint; lint-gate held at 49; build). Kept
+   draft; not merged; its own required check not bypassed
    instead of closing it in advance.
 2. **`scripts/sweep-unreferenced-media-objects.mjs`, the safety net
    either way.** Walks the `listing-media` bucket, finds objects no
