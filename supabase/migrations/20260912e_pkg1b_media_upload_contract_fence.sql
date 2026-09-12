@@ -2,6 +2,23 @@
 -- permanent closure for the "delayed old-app write" risk, replacing a
 -- completion condition proven false by adversarial review.
 --
+-- STATED EXPLICITLY, NINTH ADVERSARIAL REVIEW: upload_contract_version is
+-- a COMPATIBILITY CHECK, not a provenance or trust signal, and must
+-- never be described, read, or relied upon as one. It proves only that
+-- an INSERT was produced by code that knows the current write contract
+-- (i.e., is not the specific old, unreviewed route this migration exists
+-- to fence out); it proves nothing whatsoever about the uploaded file's
+-- own legitimacy or safety. That is, and remains, entirely
+-- content_sha256/derivation_verified's own job (20260902c's trigger,
+-- service_role-only) and, for historical rows, apply_verified_media_
+-- provenance()'s own operator-manifest guards (20260912b). A row can
+-- have upload_contract_version = 1 and still be exactly as untrusted as
+-- any other unmanifested row: this column changes nothing about who may
+-- read `is_legacy_media`/`derivation_verified`, what grants trust, or
+-- what the storage/table read policies require. Its only effect is
+-- narrower and purely structural: whether the INSERT is even accepted
+-- at all.
+--
 -- WHY THE PRIOR "COMPLETION CONDITION" WAS ACTUALLY FALSE.
 --
 -- The prior rollout procedure treated "two consecutive reconciliation

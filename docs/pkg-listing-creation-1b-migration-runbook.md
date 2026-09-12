@@ -477,25 +477,51 @@ order Codex's second review round raised it in.
 
 ## 7. Rollback or forward-recovery procedure
 
-**The recommended procedure is forward recovery of the application, not
-schema rollback, and this is a deliberate design property of these five
-migrations, not an afterthought.** Every change is additive: a new table
-nothing existing queries, and new nullable-or-defaulted columns nothing
-existing selects. The current, already-deployed application code neither
-knows nor cares that these exist. This means:
+**CORRECTED, NINTH ADVERSARIAL REVIEW: the claim that follows ("the schema
+stays in place, inert, and safe") is no longer true for one specific
+migration, and was found stated as if it still applied to all of them.**
+`20260912e_pkg1b_media_upload_contract_fence.sql` adds a NOT NULL,
+no-default `upload_contract_version` column specifically so an
+unreviewed/older insert CANNOT succeed. "Inert" and "a fence that makes a
+whole class of insert fail on purpose" are opposites. Read the rest of
+this section's own framing with that correction in mind; section 11's own
+rollout plan (specifically its failure/rollback procedure and the
+role/schema compatibility matrix now in section 11a) is the controlling,
+up-to-date recovery procedure for anything touching the fence
+specifically. What follows here still correctly describes the OTHER
+eleven migrations, which remain genuinely additive and inert for the
+currently-deployed application.
 
-- **If a defect is found after the schema is applied but before, or shortly
-  after, the application code that writes to it is deployed:** revert the
-  *application* deployment (the Vercel deployment for this branch/PR) back
-  to the previous one. The schema stays in place, inert, and safe. This is
-  the normal path and should be preferred over any of the SQL below.
-- **Schema rollback (DROP) is a last resort, and is only safe before real
-  listers have used the feature.** Once a real lister has marked a photo
-  unavailable, categorised a shot, or uploaded a photo whose duplicate
-  protection or preserved original now exists only because of these
-  columns, dropping them destroys that data permanently. Do not run the SQL
-  below once any of these columns or the new table holds real production
-  data; at that point the only safe path is fixing forward.
+**The recommended procedure is forward recovery of the application, not
+schema rollback, and this is a deliberate design property of most of these
+twelve migrations.** Eleven of the twelve are additive: a new table
+nothing existing queries, and new nullable-or-defaulted columns nothing
+existing selects. The twelfth, the fence, is deliberately NOT inert by
+design, see the correction above and section 11a. This means:
+
+- **If a defect is found in one of the ELEVEN additive migrations, after
+  the schema is applied but before, or shortly after, the application code
+  that writes to it is deployed:** revert the *application* deployment (the
+  Vercel deployment for this branch/PR) back to the previous one. The
+  schema stays in place, inert, and safe FOR THOSE ELEVEN. This is the
+  normal path for a defect confined to them.
+- **If the defect involves the fence specifically, or the application must
+  run without it for any reason, section 11a's own decision matrix
+  controls, not this bullet.** Reverting only the application deployment
+  while the fence stays applied does not "do nothing": it makes every
+  upload through the reverted (old-contract) code fail outright.
+- **Schema rollback (DROP), for any of the twelve, is a last resort, and is
+  only safe before real listers have used the feature.** Once a real
+  lister has marked a photo unavailable, categorised a shot, or uploaded a
+  photo whose duplicate protection or preserved original now exists only
+  because of these columns, dropping them destroys that data permanently.
+  Do not run the SQL below once any of these columns or the new table
+  holds real production data; at that point the only safe path is fixing
+  forward. **Dropping the fence specifically has a second, independent
+  reason not to be casual about it, beyond data loss: doing so after real
+  usage re-opens the exact old-writer risk this package's own ninth
+  adversarial review closed. See section 11a before ever running the
+  `20260912e` reversal below outside a pre-real-usage rehearsal.**
 - **Migration E's own rollback has a second, narrower failure mode beyond
   data loss.** `20260902_pkg1b_durable_evidence_state.sql`'s table is
   dropped outright below, which is what actually reverses E (see that
@@ -510,19 +536,33 @@ knows nor cares that these exist. This means:
   constraint correctly refusing to silently contradict data already on the
   record.
 
-**Updated, fifth adversarial review (item 4): this block had fallen out of
-sync with the harness's own executable `ROLLBACK_SQL`.** The four
-security-closure migrations (`20260912`/`b`/`c`/`d`) were added across two
-later rounds and never folded into this section, so the "byte-for-byte in
-sync" claim below was false at the time that review ran (a real instance
-of the exact defect class item 4 named: operator-facing rollback text that
-does not match what the harness actually executes and tests). Brought back
-in sync now, verbatim, same order the harness applies it in.
+**Kept in sync with the harness's own executable `ROLLBACK_SQL`, now
+MECHANICALLY, not only by discipline (ninth adversarial review): this
+exact block had fallen out of sync a second time, missing `20260912e`'s
+own reversal entirely (the fifth review's own "kept in sync" fix, above,
+addressed the FIRST time this happened; this is the second, distinct
+instance of the same defect class, now closed differently).** A new
+isolated-harness test (Step 0, `RUNBOOK ROLLBACK SQL MATCHES THE TESTED
+ROLLBACK_SQL EXACTLY`) reads this exact file, extracts this exact fenced
+block, and asserts it is identical to the harness's own `ROLLBACK_SQL`
+constant, every time the suite runs; manual "keeping two copies in sync"
+is no longer the only thing standing between this section and drifting a
+third time.
 
 Rollback SQL, in reverse order, for use only in the narrow pre-real-usage
 window described above:
 
 ```sql
+-- Reverse of migration 20260912e (security closure, upload contract fence)
+drop trigger if exists listing_media_default_contract_version on public.listing_media;
+drop function if exists public.listing_media_default_contract_version_for_trusted_callers();
+alter table public.listing_media drop column if exists upload_contract_version;
+-- listing_media_freeze_object_identity() itself is reversed below, as
+-- part of undoing 20260912b: 20260912e only replaced that function's own
+-- body (extending it to reference upload_contract_version), it never
+-- created a separate function or trigger for the freeze behaviour
+-- itself, so no separate reversal step is needed here for that part.
+
 -- Reverse of migration 20260912d (security closure, row visibility boundary)
 drop policy if exists "public read eligible media of published" on public.listing_media;
 create policy "public read media of published" on public.listing_media for select
@@ -552,6 +592,14 @@ create policy "read media objects of published or own listing" on storage.object
   );
 
 -- Reverse of migration 20260912b (security closure, trusted object binding)
+-- Correction, fourth adversarial review: this block previously omitted
+-- the object-identity freeze trigger and the validated-provenance
+-- function, both added to 20260912b across the two prior correction
+-- rounds. Neither references is_legacy_media/derivation_verified in a
+-- way that would have errored if left behind, so no existing test caught
+-- the omission, but a "rollback" that leaves the freeze trigger attached
+-- (still blocking path/source/listing_id updates on the old, pre-fix
+-- schema) is not a genuine, complete reversal.
 drop function if exists public.apply_verified_media_provenance(jsonb, boolean);
 drop trigger if exists listing_media_freeze_object_identity on public.listing_media;
 drop function if exists public.listing_media_freeze_object_identity();
@@ -570,19 +618,14 @@ grant select on public.listing_media to anon, authenticated;
 drop trigger if exists listing_media_block_new_url_photos on public.listing_media;
 drop function if exists public.listing_media_block_new_url_photos();
 
--- Reverse of migration F. Wholly independent (see section 6): safe to drop
--- first or last. resolved_at/resolved_by are not separately handled: the
--- table drop takes every row with it, which is acceptable pre-real-usage
--- (section 7's own scope) but is exactly the case that makes rollback after
--- real usage unsafe (an unresolved cleanup obligation would be lost, not
--- merely the row format).
+-- Reverse of migration F
 drop table if exists public.media_cleanup_queue;
 
--- Reverse of migration E. Needs no separate constraint reversal: reverse of
--- migration A below drops listing_evidence_marks outright, taking every
--- constraint on it with it. Only the trigger and function, defined on
--- public.listings rather than on the table being dropped, survive a table
--- drop and need an explicit drop of their own.
+-- Reverse of migration E. Its constraint changes need no separate reversal:
+-- "reverse of migration A" below drops listing_evidence_marks outright,
+-- taking every constraint on it with it. Only the trigger and function,
+-- defined on public.listings rather than on the table being dropped,
+-- survive a table drop and need an explicit drop of their own.
 drop trigger if exists invalidate_evidence_marks_on_asset_type_change on public.listings;
 drop function if exists public.invalidate_evidence_marks_on_asset_type_change();
 
@@ -622,10 +665,13 @@ drop table if exists public.listing_evidence_marks;
 
 This is kept byte-for-byte in sync with `docs/pkg-listing-creation-1b-isolated-test.mjs`'s
 own `ROLLBACK_SQL` constant, which is what Step 9's "rollback, then
-forward re-apply" result actually executes (185/185, including this exact
-block, section 23) and reports; a change to one without the other is a
-documentation defect, not merely a style drift, since that evidence is
-only honest if this is the SQL it describes.
+forward re-apply" result actually executes and reports, AND, as of the
+ninth adversarial review, mechanically verified on every harness run
+(Step 0's own "RUNBOOK ROLLBACK SQL MATCHES THE TESTED ROLLBACK_SQL
+EXACTLY" check parses this exact fenced block from this exact file and
+diffs it against that constant): a change to one without the other now
+fails the suite, not only a documentation defect a future reader might
+happen to notice.
 
 ## 8. Expected lock and execution risk
 
@@ -924,16 +970,22 @@ the real order, and it must be decided BEFORE merging, not left implicit:
      N": no manual partial-state cleanup exists to perform, and the pause
      from step 1a remains engaged throughout, since it was never reached.
    - **The deployed application must be rolled back to the OLD app after
-     step 3.** RE-ENGAGE the pause (`REVOKE` again) before rolling back,
-     for the same reason it existed the first time: the old app's own
-     upload route does not write `content_sha256`, so anything it inserts
-     while live against this schema needs the same operator-manifest
-     procedure (step 5b) afterward, covering the WHOLE period the old app
-     was live again, not only the original pause window. This is not a
-     separate, untested emergency path: rehearsed directly in the isolated
-     harness (Step 8i) as a delayed old-app insert that lands successfully
-     and untrusted after the write pause lifts, and is then genuinely
-     surfaced by the same reconciliation query step 5b runs.
+     step 3, CORRECTED (ninth adversarial review): this bullet previously
+     described old uploads succeeding-but-untrusted and being reconciled
+     afterward. That description is now WRONG once `20260912e`'s own
+     fence has applied (which, per this section's own required order, it
+     always has by the time an application rollback is even possible):
+     the old route's own INSERT no longer succeeds at all, ever, it fails
+     outright with `23502`.** See section 11a's own compatibility matrix
+     for the complete picture; in short, an application-only rollback
+     with the schema kept fully migrated means the OLD app's own upload
+     feature is BROKEN (every attempt fails, surfaced to the end user as
+     the old route's own existing, honest "Saved the file but could not
+     attach it" error), not silently degraded-but-working. If uploads
+     must keep working through a rollback, that requires an explicit
+     choice from section 11a's own decision list (maintenance mode or
+     forward repair), never an assumption that this bullet's own old
+     "reconcile afterward" language still applies.
 1b. **The existing-media conversion stage (sixth-round addition: item 1
    named this as a genuine, unaddressed operational gap, not merely a
    wording issue).** Removing automatic backfill (5th round) means
@@ -1125,6 +1177,140 @@ ground with a different migration count. A separate, EARLIER draft of this
 round's own PR body used the phrase "deploy alongside", which read as
 endorsing simultaneity; corrected here to the explicit, ordered sequence
 above, which is what actually holds.
+
+## 11a. Application/schema compatibility matrix, and the recovery decision when they must differ (ninth adversarial review, item 1)
+
+**Added because section 7's and section 11's own prior text each asserted
+a version of "the schema is safe to leave applied, the app is safe to
+roll back" that was true for eleven of these twelve migrations and false
+for the twelfth, `20260912e`'s own fence, without saying so.** State the
+combination explicitly before deciding anything:
+
+| Application code | Schema state | Old-route uploads | New-route uploads | When this combination is valid |
+| --- | --- | --- | --- | --- |
+| OLD (`main`, pre-package) | pre-package (no PKG-1B migrations) | Works | N/A, not deployed | The baseline before this package existed. |
+| OLD (`main`, pre-package) | 1-11 of 12 applied, fence (`20260912e`) NOT yet applied | Works, but lands untrusted (`content_sha256 IS NULL`); needs an operator manifest via section 11 step 5b | N/A, not deployed | ONLY the narrow, ordered migration-application window itself (section 11 step 1). Never a resting state to leave the database in on purpose. |
+| OLD (`main`, pre-package) | all 12 applied, fence live | **BROKEN: every INSERT fails outright, `23502`**, surfaced as the old route's own existing "Saved the file but could not attach it" | N/A, not deployed | The state after ANY application-only rollback once the schema is fully migrated. This is what the fence is FOR, not a side effect to work around. |
+| NEW (this package) | pre-package or partial schema (any column/table this route needs is missing) | N/A, not deployed | **BROKEN: queries against missing columns/tables fail** | Never a valid target. Section 11's own required order (migrate and verify BEFORE merging) exists specifically so this combination is never reached. |
+| NEW (this package) | all 12 applied, fence live | N/A, not deployed | Works (target, steady state) | The only combination this package is designed to run in. |
+
+**If the deployed application must revert to OLD while the schema stays
+fully migrated (fence live), choose explicitly, in this order:**
+
+1. **Maintenance mode (preferred; always available; zero data or security
+   risk).** `REVOKE INSERT ON public.listing_media FROM authenticated;`
+   -- the SAME mechanism section 11 step 1a already uses for the
+   pre-cutover pause, used again here for a POST-cutover application
+   rollback: a different moment, not a different tool. Uploads are
+   unavailable for EVERYONE (old app or new) until resolved; nothing
+   about reads, deletes, or any other feature is affected; nothing
+   insecure happens; no data is at risk.
+2. **Forward repair.** Fix whatever required the rollback and redeploy
+   the NEW app. This is the only path that restores BOTH full upload
+   functionality AND the security boundary at the same time; it is the
+   intended, ordinary resolution, not merely a fallback.
+3. **Full rollback of BOTH the application AND the schema (including
+   `20260912e`'s own reversal) -- LAST RESORT, explicit project-owner
+   decision only, never routine.** This does restore the OLD app's own
+   upload capability, but it genuinely REOPENS the exact old-writer risk
+   this package's own ninth adversarial review closed: an unreviewed
+   route accepting uploads with no content-provenance binding at all,
+   the identical gap `20260912e` exists to close permanently. Per
+   section 7's own standing instruction, this is never acceptable "after
+   real usage" (data loss on the OTHER, additive migrations aside) without
+   an explicit, informed decision by the project owner, because it
+   discards a specific, reviewed security property on purpose, not
+   merely a convenience being undone.
+
+**Do not casually pick option 3 to "just make uploads work again."**
+Options 1 and 2 cover every case where uploads need to keep working
+without giving up the boundary this whole review history exists to
+establish; option 3 is named here precisely so it is a deliberate,
+visible choice if it is ever made, not a default reached by process of
+elimination.
+
+## 11b. The rejected-upload storage-object gap, and why the fence's own deploy window is a real deployment dependency, not only a rollback scenario (ninth adversarial review, item 2)
+
+**The gap.** `main`'s own currently-deployed upload route (`src/app/api/
+listings/[id]/media/route.ts` as it stands outside this branch) uploads
+`objectKey` to Storage, then inserts `listing_media`. Confirmed by reading
+its real source: on `insErr`, it returns `attach_failed` immediately, with
+**no cleanup of the object it just uploaded**, for any insert failure
+whatsoever, not only this package's own. This is a real, pre-existing bug
+independent of this package; the fence does not create it, but it does
+make it deterministic and total for a specific, unavoidable window, not
+merely occasional.
+
+**Why the window is unavoidable, not a scheduling mistake.** Section 11's
+own required order applies all twelve migrations, INCLUDING the fence,
+before the new application code deploys (this is required for every one
+of the twelve, not a fence-specific choice: the new route's own insert
+already names several columns, `upload_contract_version` among them, that
+must exist first). Between "the fence is live" and "the new route is
+serving all traffic," the OLD route is, by construction, still being
+served for some nonzero span. Every upload attempt in that span: succeeds
+at Storage, fails at INSERT (`23502`, the fence's own intended effect),
+and is left behind, unrecorded anywhere, because the old route has no
+`media_cleanup_queue` to write to even if it wanted to (that table is
+itself one of this package's own not-yet-applied migrations). A held
+write-pause (section 11 step 1a / 11a option 1) does not close this
+specific gap: it changes the INSERT failure's own error code (`42501`
+instead of `23502`), not whether the already-uploaded object gets cleaned
+up, since the pause acts on INSERT, not on the Storage upload that always
+happens first in both routes.
+
+**Two real mitigations, not mutually exclusive:**
+
+1. **A prepared, independent compatibility patch for the OLD route,
+   `docs/pkg-listing-creation-1b-precompat-route-patch.diff`.** A minimal,
+   self-contained diff against `main`'s own current
+   `src/app/api/listings/[id]/media/route.ts` (verified this round to
+   apply cleanly to real `main` at `6713366` via `git apply --check` in a
+   disposable worktree, and to be syntactically valid) that adds a
+   best-effort `storage.remove([objectKey])` to the existing `insErr`
+   branch. It has **no dependency on any of this package's schema or
+   files**: it fixes the underlying bug on `main` as `main` stands today,
+   which is exactly why it can be deployed on its own schedule, ahead of
+   and independent from this PR. **This is the named deployment
+   dependency**: if closing this gap completely is required before the
+   fence goes live, this patch (or an equivalent fix) needs its own
+   review and deployment to `main` BEFORE migration `20260912e` is
+   applied to production. Applying the fence without it does not corrupt
+   anything and does not reopen any trust/provenance boundary; it leaves
+   this one, narrower, already-latent storage-hygiene gap running for the
+   width of the deploy window instead of closing it in advance.
+2. **`scripts/sweep-unreferenced-media-objects.mjs`, the safety net
+   either way.** Walks the `listing-media` bucket, finds objects no
+   `listing_media` row references via EITHER `path` OR `original_path`,
+   older than an operator-supplied, required `--older-than-hours`
+   (deliberately no default, for the same reason
+   `reconcile-deployment-window-legacy-gap.mjs`'s own `--from`/`--to` have
+   none: the right threshold depends on what is being swept for, a narrow
+   post-cutover check versus routine hygiene, and this package does not
+   invent an arbitrary "safe" number on the operator's behalf). It
+   **never deletes anything itself, structurally, not only by
+   convention**: there is no `storage.remove()` call anywhere in the
+   script; a confirmed candidate is only ever durably recorded in
+   `media_cleanup_queue` (reason `storage_object_unreferenced`) for a
+   human to review, and actual deletion remains entirely
+   `reconcile-media-cleanup-queue.mjs`'s own, separately-reviewed
+   `--apply` path. It protects legitimate pending uploads and referenced
+   originals by construction: any row's `path` OR `original_path`
+   protects the object regardless of that row's own visibility,
+   moderation state, or trust; the age gate protects a genuinely in-flight
+   upload whose two requests have not both landed yet. Its query logic
+   (the referenced/tracked-set computation) is verified against a real
+   Postgres schema in the isolated harness's own Step 10; its Storage-API
+   walk is not independently exercised in this environment, the same
+   disclosed boundary `reconcile-media-cleanup-queue.mjs` itself already
+   carries ("not yet run against a real Supabase project from this
+   environment").
+
+**Do not claim the new route's own cleanup (`handleUploadInsertFailure`,
+`src/lib/mediaCleanup.ts`) retroactively fixes this.** It only ever runs
+for requests this package's own NEW route serves; it has no effect on any
+request the OLD route already executed, before or after this PR merges,
+for as long as `main`'s own route is what is actually deployed.
 
 ## 12. Fable review: Arabic terminology and Saudi-market practicality
 
@@ -3585,7 +3771,7 @@ clean, `lint-gate` held at 49, `npm run build` clean. Nothing applied to
 production; PR #22 remains draft. The GitHub Actions required check
 remains a confirmed account billing lock, unresolved, not retried.
 
-## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed; eighth adversarial review, same day: the false scan-based completion condition replaced with a permanent structural fence, the role model corrected against real, verified production grants and established before the rehearsal, not only after it
+## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed; eighth adversarial review, same day: the false scan-based completion condition replaced with a permanent structural fence, the role model corrected against real, verified production grants and established before the rehearsal, not only after it; ninth adversarial review, same day: the fence's own rollback made executable and mechanically kept in sync with what is actually tested, the rejected-upload storage-object gap tested and the deploy-window dependency named and prepared
 
 Kept short per instruction: updating this existing section, not adding a
 new one. Full technical detail lives in the migration file's and script's
@@ -3607,14 +3793,25 @@ what independently ran, not as "all items closed."
 | 11 (seventh review) | The delayed-upload rehearsal inserted the late row FIRST, then scanned: proof the scan CAN find a row that already exists, not proof of the more dangerous ordering (scan first, believed complete, THEN a slower request lands after it). No single scan can see a row that does not exist yet, regardless of how it is written. | ~~Reconciliation (step 5b) is now explicitly REPEATABLE with a stated completion condition: run the scan at an operator-chosen interval and treat the window closed only once two consecutive scans agree exactly, not after one scan finds nothing.~~ **Superseded by row 12 below, same day: this "completion condition" was itself false.** | Harness: a new test rehearses the reversed order directly (pause, cutover, resume, scan, THEN the delayed insert) and proves the first scan's own results genuinely exclude it |
 | 12 (eighth review) | Row 11's own fix was itself false: two (or three, or any number of) consecutive agreeing scans prove only that nothing new landed BETWEEN those scans, never that nothing can land afterward. Proven as a real failing regression, written first: resume writes, two scans agree, declare complete per the then-current procedure, THEN release a delayed old-app-shaped insert; it lands successfully and unnoticed. | `20260912e_pkg1b_media_upload_contract_fence.sql`: the live application route (in scope, confirmed by reading its real source) sets a new, required `upload_contract_version` on every insert; `main`'s own currently-deployed route (out of scope to modify, confirmed by reading its real source) cannot supply it, so its INSERT fails outright (`23502`) the instant this migration is live, PERMANENTLY, not for a bounded window. Reconciliation's own remaining, honest purpose is narrowed and kept explicitly open, not claimed closed: a genuine, fence-compliant upload whose phase 2 never completes (a real, ongoing operational concern, unrelated to old-app compatibility). | Harness Step 1c-fence: the identical scenario, bracketing the migration's own application, fails BEFORE the migration and is safely rejected (`23502`, matching `main`'s own existing "Saved the file but could not attach it" error handling) AFTER it, confirmed permanent (retried "much later", still rejected identically), confirmed not to affect a real current-contract insert |
 | 13 (eighth review) | The harness's own `migrations_role` (modelling the real, non-superuser `postgres` function owner) was granted `select, update` on `storage.objects` only because that was empirically discovered to be what the function needed, never checked against real production ownership/grants; established only in a late, isolated regression, so every earlier conversion/recovery rehearsal in the file ran against the harness's own superuser-owned function instead. | Checked directly against real production (project-scoped read-only connector): `storage.objects` is owned by `supabase_storage_admin`, NOT `postgres` (unlike `listing_media`/`listings`, which postgres genuinely owns); postgres's real privilege on it is an explicit, direct grant (`SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`, confirmed via `aclexplode`, not inherited via role membership, confirmed false). `migrations_role` now grants `all` on the two owned tables and the exact observed grant set on `storage.objects`; moved to apply immediately after migrations, before any conversion or recovery rehearsal runs. | Harness Step 1c-role (moved from the former, later Step 8h-owner): a positive control asserting `migrations_role`'s own effective privileges on `storage.objects` match the real, observed ACL exactly, not a narrower invented subset; the whole rest of the file, from this point onward, now exercises the realistic ownership model, not only one later regression |
+| 14 (ninth review) | Section 7 still said the new schema is "inert" for the old application and recommended application-only rollback; section 11 still said old uploads after rollback "succeed but untrusted, reconciled afterward". Both false once the fence exists (old uploads now fail outright, `23502`). Separately, section 7's own documented rollback SQL started at `20260912d` and omitted `20260912e` entirely (plus three older comment-wording drifts); the harness's own tested `ROLLBACK_SQL` reverses `20260912e` FIRST. Following the documented SQL as written would leave the fence's own column behind and old uploads still broken. | Section 7 now states plainly which of the twelve migrations are inert (eleven) and which is not (the fence), with split rollback guidance; section 11's stale paragraph corrected to state the real post-fence consequence and defer to a new section 11a (application/schema compatibility matrix; the recovery decision -- maintenance mode, forward repair, or full rollback including the fence, named explicitly as a last resort that reopens a closed risk). Section 7's own rollback SQL block replaced, byte-for-byte, with the harness's real `ROLLBACK_SQL`. Kept in sync mechanically now, not only by manual discipline (which had already failed twice): a new harness check (Step 0) reads the runbook file itself off disk and asserts the two are byte-identical. | Harness Step 0: fails with an exact character-count diff if the two ever drift again (proven by running it against the pre-fix runbook text: documented 5329 chars vs tested 5511); Step 9: two new checks confirm `upload_contract_version` itself is gone after the documented rollback SQL runs, and REHEARSE (not merely claim) that an old-app-shaped insert, exactly matching `main`'s own real route, succeeds again afterward, demonstrating why full rollback is named a real regression and not a formality |
+| 15 (ninth review) | `main`'s own real upload route uploads to Storage, then inserts; on insert failure it returns `attach_failed` with no cleanup at all. The fence's own `23502` rejection triggers exactly this, but the SQL-only regressions never tested the route's own behavior, cleanup, or user recovery. Fixing only the NEW route's insert-failure path (this package's own) cannot retroactively affect requests the OLD, still-deployed route already executed. | `handleUploadInsertFailure` (`src/lib/mediaCleanup.ts`) extracted from the route's own `insErr` branch so it is independently regression-tested against a mocked client, not only reachable through the whole route; `route.ts` now calls it. The fence's own migration comment now states explicitly, prominently, that `upload_contract_version` is a compatibility check, never a provenance or trust signal. The deploy-window gap for the OLD route specifically (out of scope to modify from this branch) is named as an explicit, prepared deployment dependency, not claimed retroactively fixed: `docs/pkg-listing-creation-1b-precompat-route-patch.diff`, a minimal, independent patch against `main`'s own current route, verified this round to apply cleanly to real `main` (`6713366`) in a disposable worktree; and `scripts/sweep-unreferenced-media-objects.mjs`, the safety net either way, which structurally cannot delete anything itself (no `storage.remove()` call exists in it at all) and only ever durably records a candidate, age-gated (required, no default), checked against both `path` and `original_path` so pending uploads and preserved originals are never mistaken for orphans. Full detail: section 11b. | New tests in `src/lib/mediaCleanup.test.ts` (mocked-client evidence, now actually wired into `npm test` via a separate, pre-existing gap fixed this round, see below) for both the clean-removal and removal-also-fails shapes; harness Step 10 proves the sweep script's own referenced/tracked-set query logic against a real schema (SQL-level evidence; its Storage-API walk is not independently exercised here, the same disclosed limit `reconcile-media-cleanup-queue.mjs` already carries) |
+
+**A separate, pre-existing gap found and fixed in passing this round, not
+caused by this round's own work**: `package.json`'s `"test"` script is a
+hardcoded file list, not a glob; `src/lib/mediaCleanup.test.ts` (14
+pre-existing tests) had never been added to it, so it was silently
+excluded from the enforced gate the entire time despite CLAUDE.md's own
+"shipping gate" section treating `npm test`'s count as canonical. Fixed by
+adding it; the honest count moved from 2080 to 2097 (2080 + 17, the file's
+14 pre-existing plus 3 new tests this round).
 
 Full local gate re-run on the final integrated code: typecheck clean,
-2080/2080 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
-clean. Isolated harness: **214/214** (up from 206/206, itself up from
-196/196, itself up from 185/185, itself up from 172/172). Nothing applied
-to production; PR #22 remains draft. The GitHub Actions required check
-remains a confirmed account billing lock, unresolved, not retried, not
-bypassed. Eight consecutive rounds of adversarial review have each found a
-real, live gap in the round directly before it; this is grounds for
-continued scrutiny
-before production, not evidence the surface is now exhausted.
+2097/2097 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
+clean. Isolated harness: **218/218** (up from 214/214, itself up from
+206/206, itself up from 196/196, itself up from 185/185, itself up from
+172/172). Nothing applied to production; PR #22 remains draft. The GitHub
+Actions required check remains a confirmed account billing lock,
+unresolved, not retried, not bypassed. Nine consecutive rounds of
+adversarial review have each found a real, live gap in the round directly
+before it; this is grounds for continued scrutiny before production, not
+evidence the surface is now exhausted.

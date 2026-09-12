@@ -76,7 +76,8 @@ export type MediaCleanupReason =
   | "upload_trusted_write_failed"
   | "upload_service_role_unavailable"
   | "deletion_storage_remove_failed"
-  | "deletion_row_delete_failed";
+  | "deletion_row_delete_failed"
+  | "storage_object_unreferenced";
 
 /**
  * Durably records that `storagePaths` (and/or the listing_media row named by
@@ -117,4 +118,40 @@ export async function queueMediaCleanup(
     }
   }
   console.error("[media-cleanup-queue] no service-role client available; recording as a log line only", params);
+}
+
+/**
+ * The exact recovery route.ts's own `insErr` branch runs when the
+ * `listing_media` INSERT fails AFTER both storage objects (the derivative
+ * and the preserved original) have already landed successfully. Extracted
+ * to its own, named, exported function (ninth adversarial review, item 2)
+ * specifically so this behaviour is independently testable against a
+ * realistic failure, not only reachable by exercising the whole route.
+ *
+ * WHY THIS MATTERS NOW, SPECIFICALLY. `20260912e_pkg1b_media_upload_
+ * contract_fence.sql`'s own NOT NULL `upload_contract_version` column
+ * means an insert that omits it (this route's OWN insert never does; an
+ * older, unreviewed version of this same route would) fails with a real,
+ * guaranteed `23502`. This route's own current INSERT will not itself
+ * trigger that specific violation (it always supplies the column), but
+ * `insErr` can still occur for any number of other reasons (a constraint
+ * violation, a transient RLS denial, a dropped connection), and the fence
+ * is the clearest, most concrete real example of "the insert can fail
+ * after storage already succeeded" this package has, so it is what the
+ * regression test for this function is built against. The function
+ * itself does not and must not inspect WHY the insert failed: cleanup is
+ * identical regardless.
+ */
+export async function handleUploadInsertFailure(
+  sb: SupabaseClient,
+  serviceRole: SupabaseClient | null,
+  params: { listingId: string; objectKey: string; originalKey: string },
+): Promise<void> {
+  await removeStorageObjects(sb, "listing-media", [params.objectKey, params.originalKey],
+    () => queueMediaCleanup(serviceRole, {
+      listingId: params.listingId,
+      storagePaths: [params.objectKey, params.originalKey],
+      reason: "upload_insert_failed",
+    }),
+  );
 }

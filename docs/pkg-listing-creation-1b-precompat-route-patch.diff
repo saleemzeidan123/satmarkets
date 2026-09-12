@@ -1,0 +1,35 @@
+diff --git a/src/app/api/listings/[id]/media/route.ts b/src/app/api/listings/[id]/media/route.ts
+index 08aeaae..80ccf2e 100644
+--- a/src/app/api/listings/[id]/media/route.ts
++++ b/src/app/api/listings/[id]/media/route.ts
+@@ -104,7 +104,29 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
+     })
+     .select("id")
+     .single();
+-  if (insErr) return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
++  if (insErr) {
++    // Preparatory compatibility release ahead of PKG-LISTING-CREATION-1B's
++    // upload_contract_version fence (see that package's PR, migration
++    // 20260912e). Once that migration is live, this route's own insert
++    // above will start failing on every single request (it does not, and
++    // as the currently-deployed route cannot, supply that new NOT NULL
++    // column), and without this the object just uploaded above would be
++    // left behind, undetected, every time. Independent of that package's
++    // schema or code otherwise: this also fixes a real, pre-existing bug
++    // (any insert failure, for any reason, already orphans the object).
++    // Best-effort only, matching this route's own existing error style: no
++    // durable cleanup-tracking table exists here (media_cleanup_queue is
++    // itself one of that package's own not-yet-applied migrations), so an
++    // object that survives this best-effort attempt is exactly what the
++    // post-migration orphan sweep (see that package's runbook) exists to
++    // catch, not silently lose.
++    try {
++      await sb.storage.from("listing-media").remove([objectKey]);
++    } catch {
++      // best-effort; see comment above
++    }
++    return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
++  }
+
+   const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(objectKey, 3600);
+   return NextResponse.json({ id: (row as { id: string })?.id, url: signed?.signedUrl ?? null });

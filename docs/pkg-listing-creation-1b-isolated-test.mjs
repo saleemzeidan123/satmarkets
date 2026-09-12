@@ -563,6 +563,38 @@ async function main() {
   await admin.connect();
 
   try {
+    console.log("=== Step 0: the documented rollback SQL is MECHANICALLY verified against the tested ROLLBACK_SQL, not only by manual discipline (ninth adversarial review, item 1) ===");
+    // WHY THIS EXISTS. Runbook section 7's own operator-facing rollback
+    // SQL fell out of sync with this file's own ROLLBACK_SQL constant not
+    // once but TWICE across this package's review history: the fifth
+    // review found the FIRST drift (the whole 20260912/b/c/d block
+    // missing), fixed by copying it back in by hand; the ninth review
+    // found a SECOND, independent drift (20260912e's own reversal added
+    // here, in ROLLBACK_SQL, but never copied into the runbook), proving
+    // manual "keep these two in sync" discipline alone was not durable
+    // enough across two more rounds of edits to either file. This check
+    // makes the sync itself part of the suite: it reads the real runbook
+    // file, extracts the real fenced SQL block from its own section 7,
+    // and diffs it against ROLLBACK_SQL directly, so a third drift fails
+    // the suite the moment it happens, rather than waiting for a future
+    // review to notice by reading both files side by side again.
+    await check("RUNBOOK ROLLBACK SQL MATCHES THE TESTED ROLLBACK_SQL EXACTLY", async () => {
+      const runbookPath = path.join(repoRoot, "docs", "pkg-listing-creation-1b-migration-runbook.md");
+      const runbookText = readFileSync(runbookPath, "utf8");
+      const section7Start = runbookText.indexOf("## 7. Rollback or forward-recovery procedure");
+      const section8Start = runbookText.indexOf("## 8. Expected lock and execution risk");
+      assert(section7Start !== -1 && section8Start !== -1 && section8Start > section7Start, "fixture sanity: could not locate section 7's own boundaries in the real runbook file; its headings may have been renamed without updating this check");
+      const section7Text = runbookText.slice(section7Start, section8Start);
+      const fenceMatch = section7Text.match(/```sql\n([\s\S]*?)\n```/);
+      assert(fenceMatch, "fixture sanity: could not find a ```sql fenced block inside section 7; the runbook's own rollback SQL may have been reformatted without updating this check");
+      const documentedSql = fenceMatch[1].trim();
+      const testedSql = ROLLBACK_SQL.trim();
+      assert(
+        documentedSql === testedSql,
+        `runbook section 7's own documented rollback SQL has drifted from the ROLLBACK_SQL this suite actually executes (Step 9). Diff length: documented=${documentedSql.length} chars, tested=${testedSql.length} chars. This is exactly the defect class found twice before: fix by copying ROLLBACK_SQL's own current content back into the runbook's own fenced block verbatim.`,
+      );
+    });
+
     console.log("=== Bootstrap: minimal stand-in schema + RLS stub helpers ===");
     await check("bootstrap schema applies with no error", async () => {
       await admin.query(BOOTSTRAP_SQL);
@@ -4278,6 +4310,40 @@ async function main() {
       const priv = await admin.query("select has_table_privilege('anon', 'public.listing_media', 'SELECT') as can_select");
       assert(priv.rows[0].can_select === true, "anon must have table-wide SELECT on listing_media again after rollback (the old broad grant restored)");
     });
+
+    // NINTH ADVERSARIAL REVIEW, ITEM 1: "rehearse the exact documented
+    // recovery path, including an old-shaped insert afterward. Do not
+    // substitute the harness's different rollback and call that evidence
+    // for the runbook." Step 0's own mechanical check (top of this file)
+    // already proves this IS the exact SQL runbook section 7 documents,
+    // not a different one this file happens to also run; what follows
+    // proves what running it actually restores, specifically the claim
+    // made in the runbook's own new section 11a (option 3, the last-resort
+    // full rollback): old-app-shaped uploads work again afterward, which
+    // is exactly why that option is named a real security regression, not
+    // merely a data-loss risk.
+    await check("upload_contract_version is also gone after rollback (the fence itself, not only the eleven additive migrations' own columns)", async () => {
+      const r = await admin.query(
+        "select 1 from information_schema.columns where table_name = 'listing_media' and column_name = 'upload_contract_version'",
+      );
+      assert(r.rowCount === 0, "the fence column must not survive the documented rollback SQL");
+    });
+    await check("REHEARSED (not merely claimed): after running the EXACT documented rollback SQL, an old-app-shaped insert (no upload_contract_version, matching main's own real route exactly) SUCCEEDS again -- confirming section 11a's own compatibility matrix (option 3 restores old-app uploads) and why that option is named a real security regression, not a formality", async () => {
+      const rbAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const rbUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+      const rbListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [rbAcct])).rows[0].id;
+      const c = await asTestRole(pg, { userId: rbUser, accountId: rbAcct, isSat: false });
+      try {
+        const ins = await c.query(
+          "insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, alt_en, plan_type) values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, null, null) returning id",
+          [rbListing, "post-rollback-test/old-app-shaped-insert.webp"],
+        );
+        assert(ins.rowCount === 1, "after the documented rollback SQL, an old-app-shaped insert (the fence's own required column genuinely gone) must succeed exactly as it did before the fence ever existed; if it still failed, the rollback would not actually be reversing the fence, contradicting what was just asserted above");
+      } finally {
+        await c.end();
+      }
+    });
+
     for (const file of MIGRATION_FILES) {
       await check(`forward re-apply after rollback: ${file}`, async () => {
         await admin.query(migrationText[file]);
@@ -4333,6 +4399,65 @@ async function main() {
       assert(pol.rowCount === 1, "the NEW storage policy must exist again after forward re-apply");
       const priv = await admin.query("select has_column_privilege('anon', 'public.listing_media', 'content_sha256', 'SELECT') as can_select");
       assert(priv.rows[0].can_select === false, "anon must be denied content_sha256 again after forward re-apply");
+    });
+
+    // === Step 10: scripts/sweep-unreferenced-media-objects.mjs's own query
+    // logic (ninth adversarial review, item 2). SQL-LEVEL EVIDENCE ONLY:
+    // this proves the exact SELECT shape the script issues (referenced-by-
+    // path, referenced-by-original_path, already-tracked-in-queue) computes
+    // the right orphan set against a real schema. It cannot and does not
+    // exercise the script's own Storage-API walk (embedded-postgres has no
+    // Storage service at all), matching the same, already-accepted
+    // evidence boundary as reconcile-media-cleanup-queue.mjs, "not yet run
+    // against a real Supabase project from this environment."
+    await check("orphan-sweep query logic: an object named by a row's own path is treated as referenced, never a candidate", async () => {
+      const acct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const usr = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+      const listing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [acct])).rows[0].id;
+      const pathA = `${acct}/${listing}/objA.webp`;
+      const pathB = `${acct}/${listing}/objB.webp`;
+      const pathBOrig = `${acct}/${listing}/originals/objB-orig.jpg`;
+      const pathTracked = `${acct}/${listing}/objTracked.webp`;
+      const pathOrphan = `${acct}/${listing}/objOrphan.webp`;
+
+      await admin.query(
+        `insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, upload_contract_version)
+         values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, 1)`,
+        [listing, pathA],
+      );
+      await admin.query(
+        `insert into public.listing_media
+           (listing_id, path, kind, source, mime, bytes, sort_order, upload_contract_version,
+            content_sha256, original_path, derived_by, derived_at)
+         values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 1, 1,
+                 'deadbeef', $3, 'sharp', now())`,
+        [listing, pathB, pathBOrig],
+      );
+      await admin.query(
+        `insert into public.media_cleanup_queue (listing_id, storage_paths, reason)
+         values ($1, $2, 'upload_insert_failed')`,
+        [listing, [pathTracked]],
+      );
+
+      const candidates = [pathA, pathB, pathBOrig, pathTracked, pathOrphan];
+      const byPath = await admin.query("select path from public.listing_media where path = any($1)", [candidates]);
+      const byOriginal = await admin.query("select original_path from public.listing_media where original_path = any($1)", [candidates]);
+      const trackedRows = await admin.query(
+        "select storage_paths from public.media_cleanup_queue where resolved_at is null",
+      );
+
+      const referenced = new Set([...byPath.rows.map((r) => r.path), ...byOriginal.rows.map((r) => r.original_path).filter(Boolean)]);
+      const tracked = new Set(trackedRows.rows.flatMap((r) => r.storage_paths));
+      const orphans = candidates.filter((p) => !referenced.has(p) && !tracked.has(p));
+
+      assert(referenced.has(pathA), "a row's own path must be counted as referenced");
+      assert(referenced.has(pathB), "the derivative's own path must be counted as referenced even though the row also has an original_path");
+      assert(referenced.has(pathBOrig), "a preserved original must be counted as referenced via original_path, protecting it from ever being swept");
+      assert(tracked.has(pathTracked), "an object already recorded in an unresolved media_cleanup_queue row must not be re-flagged as a new candidate");
+      assert(
+        orphans.length === 1 && orphans[0] === pathOrphan,
+        `only the genuinely unreferenced, untracked object should ever be identified as a sweep candidate, got: ${JSON.stringify(orphans)}`,
+      );
     });
   } finally {
     await admin.end();

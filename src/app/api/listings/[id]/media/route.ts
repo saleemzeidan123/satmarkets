@@ -8,7 +8,7 @@ import { randomUUID, createHash } from "crypto";
 import { isPlanType } from "@/lib/planTypes";
 import { MAX_IMAGE_BYTES, MEDIA_CAPS, isAcceptedImageType, sniffImageType, mimeForSniffedType } from "@/lib/uploadQuality";
 import { mediaPublishable, type MediaDerivation } from "@/lib/mediaStandard";
-import { bestEffortWithFallback, queueMediaCleanup, removeStorageObjects } from "@/lib/mediaCleanup";
+import { bestEffortWithFallback, queueMediaCleanup, removeStorageObjects, handleUploadInsertFailure } from "@/lib/mediaCleanup";
 
 // PKG-LISTING-CREATION-1B, outcomes C and D. What every upload through this
 // route now also does, beyond PKG-LISTING-CREATION-1A's original re-encode:
@@ -233,10 +233,14 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     .single();
   if (insErr) {
     // Both objects just landed in storage; an insert failure of any kind
-    // must not leave them as undisclosed orphans.
-    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
-      () => queueMediaCleanup(serviceRole, { listingId, storagePaths: [objectKey, originalKey], reason: "upload_insert_failed" }),
-    );
+    // (including 20260912e's own upload_contract_version fence, though
+    // this route's own insert above always supplies it and so never
+    // triggers that specific one) must not leave them as undisclosed
+    // orphans. Extracted to mediaCleanup.ts's own handleUploadInsertFailure
+    // so this exact recovery is independently regression-tested (ninth
+    // adversarial review, item 2), not only reachable by exercising the
+    // whole route.
+    await handleUploadInsertFailure(sb, serviceRole, { listingId, objectKey, originalKey });
     return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
   }
   const mediaId = (row as { id: string }).id;
