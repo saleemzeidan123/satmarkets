@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { randomUUID } from "crypto";
 import { isPlanType } from "@/lib/planTypes";
 import { MAX_IMAGE_BYTES, MEDIA_CAPS, isAcceptedImageType } from "@/lib/uploadQuality";
+import { cleanUpOldRouteObjectOnInsertFailure } from "@/lib/precompatRouteCleanup";
 
 export const runtime = "nodejs";
 
@@ -104,7 +105,13 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     })
     .select("id")
     .single();
-  if (insErr) return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  if (insErr) {
+    // Preparatory compatibility fix ahead of PKG-LISTING-CREATION-1B: see
+    // src/lib/precompatRouteCleanup.ts for the full reasoning. The response
+    // below is unchanged; only the cleanup attempt is new.
+    await cleanUpOldRouteObjectOnInsertFailure(sb, objectKey);
+    return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
+  }
 
   const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(objectKey, 3600);
   return NextResponse.json({ id: (row as { id: string })?.id, url: signed?.signedUrl ?? null });
