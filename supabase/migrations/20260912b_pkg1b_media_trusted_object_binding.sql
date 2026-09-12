@@ -476,12 +476,85 @@ revoke all on public.listing_media_legacy_backfill_done from public, anon, authe
 -- "this row is legacy" for a row it just created, which would trivially
 -- defeat the whole point (a forged row claiming legacy status to bypass
 -- the storage policy's own eligibility gate below).
+--
+-- CORRECTION, SEVENTH ADVERSARIAL REVIEW (two passes: the first attempt,
+-- below, was itself wrong, caught by actually running the harness
+-- rather than by reasoning alone; see the second correction further
+-- down): `current_user` is the WRONG primitive for THIS trigger's own
+-- exemption as it originally stood, and the bug is real, not
+-- theoretical. `apply_verified_media_provenance()` is SECURITY DEFINER:
+-- its own UPDATE (which fires THIS trigger) executes with the IDENTITY
+-- OF THE FUNCTION'S OWNER, not the calling role, for as long as
+-- execution stays inside that function. Real production evidence
+-- (checked directly this round, project-scoped read-only connector):
+-- every function this project's own migrations create, without
+-- exception, is owned by `postgres`, and `postgres` has `rolsuper =
+-- false` in this project (confirmed against pg_roles; only the separate,
+-- more restricted `supabase_admin` role is a true superuser here). So
+-- once this migration is applied for real and `apply_verified_media_
+-- provenance()` is owned by `postgres` (the normal CLI/dashboard
+-- migration-runner identity), `current_user` INSIDE this trigger, fired
+-- from THAT function's own UPDATE, would be `postgres`, NOT
+-- `service_role`, and `postgres`'s own `rolsuper` is false: NEITHER half
+-- of the ORIGINAL exemption would match, this trigger would raise its
+-- own 42501 exception, and the function's own legitimate grant would
+-- fail, every single time, in real production. Reproduced for real (not
+-- merely reasoned) in the isolated harness: a `NOSUPERUSER` role
+-- modelling the real `postgres` owner, granted ONLY the privileges its
+-- own function body needs, made `apply_verified_media_provenance`'s
+-- OWNER via `alter function ... owner to`, then called as service_role:
+-- confirmed to fail with exactly this trigger's own exception before any
+-- fix.
+--
+-- FIRST ATTEMPTED FIX (WRONG, caught by the isolated harness itself, not
+-- by inspection): `session_user` instead of `current_user`. This is
+-- correct in the abstract (SECURITY DEFINER changes `current_user`, never
+-- `session_user`) but wrong for THIS platform specifically: checked
+-- directly against real production (`pg_roles`/`pg_auth_members`), a
+-- real PostgREST/Supabase connection authenticates as a SINGLE login
+-- role, `authenticator`, which holds MEMBERSHIP in anon/authenticated/
+-- service_role (all three themselves NOLOGIN) and reaches each one via
+-- an ordinary `SET ROLE` per request. `session_user` for EVERY such
+-- connection, regardless of which effective role a given request
+-- represents, is therefore ALWAYS `authenticator`; `session_user =
+-- 'service_role'` would never be true for a real service_role RPC call
+-- either. The isolated harness's own `asServiceRole`/`asTestRole`/
+-- `asAnonRole` helpers model the identical SET-ROLE-on-a-shared-
+-- connection pattern (all `pg.getPgClient()` connections authenticate as
+-- this harness's own bootstrapping identity, then `SET ROLE`), which is
+-- exactly why the harness's own freeze-trigger regression tests caught
+-- this attempt failing immediately: `session_user` there is ALWAYS the
+-- harness's own superuser bootstrapping role, so the OLD `rolsuper`
+-- half of a session_user-based check would incorrectly exempt EVERY
+-- simulated role, not just the intended ones, defeating the trigger
+-- entirely, the opposite failure from the one being fixed.
+--
+-- THE ACTUAL FIX: keep `current_user`, and add an explicit, DYNAMIC
+-- check for the real, current owner of `apply_verified_media_provenance`
+-- specifically (via `pg_proc`/`pg_get_userbyid`, not a hardcoded role
+-- name, so this stays correct if that function is ever reassigned, e.g.
+-- across Step 9's own rollback/reapply, which resets ownership to
+-- whoever recreates it). This is safe, not a broadened exemption:
+-- confirmed directly against real production that NONE of anon,
+-- authenticated, service_role, or authenticator hold membership in
+-- `postgres` (`pg_has_role(..., 'postgres', 'member')` is false for all
+-- four), so no ordinary caller can ever cause `current_user` to become
+-- that function's own owner by any means except genuinely executing
+-- inside a SECURITY DEFINER function owned by it, which is exactly, and
+-- only, the trust this exemption is meant to extend.
 create or replace function public.listing_media_protect_legacy_flag()
 returns trigger
 language plpgsql
 as $$
+declare
+  trusted_fn_owner text;
 begin
-  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+  select pg_get_userbyid(p.proowner) into trusted_fn_owner
+    from pg_proc p
+    where p.proname = 'apply_verified_media_provenance' and p.pronamespace = 'public'::regnamespace;
+  if current_user = 'service_role'
+     or current_user = trusted_fn_owner
+     or (select rolsuper from pg_roles where rolname = current_user) then
     return new;
   end if;
   if TG_OP = 'INSERT' then
@@ -550,12 +623,32 @@ grant select (is_legacy_media, derivation_verified) on public.listing_media to a
 -- real capability. Captions (alt_en/alt_ar), categorization, ordering
 -- and the owner's own visibility choice are all untouched by this
 -- trigger and remain exactly as writable as before.
+--
+-- CORRECTION, SEVENTH ADVERSARIAL REVIEW: the same dynamic function-owner
+-- check as `listing_media_protect_legacy_flag()` above, for the identical
+-- reason (this exact function does not currently get invoked from inside
+-- a SECURITY DEFINER function's own UPDATE, since apply_verified_media_
+-- provenance never changes path/source/listing_id, but the exemption is
+-- written the same way on purpose: the bug class is about the CHECK, not
+-- about whether today's one caller happens to avoid it, and a future
+-- SECURITY DEFINER caller needing to touch these columns would hit the
+-- exact same failure otherwise). `session_user` was tried and rejected
+-- for this trigger too, for the same reason: real Supabase connections
+-- all authenticate as `authenticator` regardless of effective role, so
+-- session_user never equals service_role for a genuine RPC call either.
 create or replace function public.listing_media_freeze_object_identity()
 returns trigger
 language plpgsql
 as $$
+declare
+  trusted_fn_owner text;
 begin
-  if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+  select pg_get_userbyid(p.proowner) into trusted_fn_owner
+    from pg_proc p
+    where p.proname = 'apply_verified_media_provenance' and p.pronamespace = 'public'::regnamespace;
+  if current_user = 'service_role'
+     or current_user = trusted_fn_owner
+     or (select rolsuper from pg_roles where rolname = current_user) then
     return new;
   end if;
   if TG_OP = 'UPDATE' then

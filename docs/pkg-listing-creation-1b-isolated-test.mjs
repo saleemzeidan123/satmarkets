@@ -609,6 +609,96 @@ async function main() {
       });
     }
 
+    console.log("\n=== Step 0c: the pre-migration existing-media enumeration query, run against the REAL pre-package schema, not the already-migrated one (seventh adversarial review, item 1) ===");
+    // CORRECTION: runbook section 11's own step 1b previously told the
+    // operator to enumerate the existing corpus by querying
+    // content_sha256 and is_legacy_media BEFORE the migrations that
+    // CREATE those columns have applied. Run for real against a real
+    // pre-migration schema, that query does not merely give a wrong
+    // answer, it FAILS OUTRIGHT (42703, undefined_column): those columns
+    // do not exist yet at the point in the rollout the runbook told the
+    // operator to run it. Proven below, not merely asserted, at the ONE
+    // point in this harness's own run where the schema genuinely has not
+    // seen any of this package's eleven migrations: right after
+    // BOOTSTRAP_SQL, before Step 1a's own loop begins.
+    //
+    // THE CORRECTED QUERY uses only columns confirmed to exist in the
+    // real, pre-package schema (this harness's own BOOTSTRAP_SQL
+    // reconstructs them from real information_schema.columns evidence,
+    // section 4.1/18 of the runbook): id, listing_id, path, created_at.
+    // This is the operator's own RAW candidate list, nothing more: no
+    // trust decision is made or even possible here, since the columns
+    // that record trust do not exist yet. The SEPARATE, POST-migration
+    // eligibility check (does a candidate's path genuinely resolve to a
+    // real, same-account object with no conflicting reference) is
+    // exactly what apply_verified_media_provenance's own preview mode
+    // already does, run later, after Step 1a applies the schema that
+    // check depends on: the two stages are kept genuinely separate here,
+    // not merely described as separate in prose.
+    //
+    // The 3 rows created here (2 an operator could honestly attest to,
+    // 1 they could not) are carried forward, by id and path, to Step
+    // 1c-1c below, which reuses these SAME pre-migration rows for the
+    // post-migration conversion rehearsal, so the whole sequence this
+    // item asks for (enumerate pre-migration, migrate, convert via
+    // manifest) runs against ONE consistent fixture, not two disconnected
+    // ones.
+    let preMigrationCorpusListing, preMigrationCorpusIds, preMigrationCorpusPaths;
+    {
+      const corpusAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const corpusListing = (
+        await admin.query(
+          `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+           values ($1, 'published', '7200000099', now() + interval '30 days') returning id`,
+          [corpusAcct],
+        )
+      ).rows[0].id;
+      preMigrationCorpusListing = corpusListing;
+      preMigrationCorpusPaths = [
+        `${corpusAcct}/${corpusListing}/existing-photo-1.webp`,
+        `${corpusAcct}/${corpusListing}/existing-photo-2.webp`,
+        `${corpusAcct}/${corpusListing}/existing-photo-3-unverifiable.webp`,
+      ];
+      preMigrationCorpusIds = [];
+      for (const p of preMigrationCorpusPaths) {
+        // Only pre-migration columns: id (default), listing_id, path.
+        // content_sha256/is_legacy_media are not referenced because they
+        // do not exist as columns yet, which is the entire point.
+        const id = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [corpusListing, p])).rows[0].id;
+        preMigrationCorpusIds.push(id);
+        // The real object each row will eventually need to resolve to,
+        // post-migration; storage.objects itself is base schema too
+        // (predates this package), so populating it here is equally
+        // legitimate pre-migration activity, not a jump ahead.
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [p]);
+      }
+
+      await check("THE CORRECTED preparation query (id, listing_id, path, created_at only) succeeds against the REAL pre-migration schema and returns the full existing corpus", async () => {
+        const r = await admin.query(
+          "select id, listing_id, path, created_at from public.listing_media where listing_id = $1 order by path",
+          [corpusListing],
+        );
+        assert(r.rowCount === 3, `expected all 3 pre-migration rows back, got ${r.rowCount}`);
+        const gotIds = r.rows.map((row) => row.id).sort();
+        assert(JSON.stringify(gotIds) === JSON.stringify([...preMigrationCorpusIds].sort()), "the query must return exactly the corpus rows just created, by id");
+      });
+
+      await check("REGRESSION, PROVEN NOT MERELY ASSERTED: the runbook's own PRIOR (buggy) preparation query, referencing content_sha256, fails outright against the real pre-migration schema with undefined_column, not merely a wrong answer", async () => {
+        let failed = false;
+        let code = null;
+        try {
+          await admin.query(
+            "select id, listing_id, path, created_at from public.listing_media where content_sha256 is null and is_legacy_media = false and listing_id = $1",
+            [corpusListing],
+          );
+        } catch (e) {
+          failed = true;
+          code = e.code;
+        }
+        assert(failed && code === "42703", `the prior runbook query must fail with undefined_column (42703) at this point in a real rollout, not merely be semantically wrong; got failed=${failed} code=${code}`);
+      });
+    }
+
     console.log("\n=== Step 1a: apply the seven base migrations verbatim, in order ===");
     const migrationText = {};
     for (const file of BASE_MIGRATION_FILES) {
@@ -780,13 +870,15 @@ async function main() {
     // answer against several rows at once, not one, and states the three
     // things item 1 named precisely:
     //
-    // WHEN VERIFICATION HAPPENS: before the write pause even begins.
-    // Provenance assessment is a READ-ONLY exercise against the CURRENT
-    // production database (the operator enumerates every content_sha256
-    // IS NULL row and decides, by real means outside this schema, which
-    // ones they can personally attest to), and can run at any time,
-    // independent of the migration/pause/deploy sequence, since it writes
-    // nothing.
+    // WHEN VERIFICATION HAPPENS: before the write pause even begins, and
+    // (seventh adversarial review correction) before the migrations that
+    // create content_sha256/is_legacy_media even apply: Step 0c above
+    // enumerates the SAME corpus this step now converts, using only
+    // columns confirmed to exist pre-migration (id, listing_id, path,
+    // created_at). The operator decides, by real means outside this
+    // schema, which enumerated rows they can personally attest to; that
+    // decision can happen at any time, independent of the migration/
+    // pause/deploy sequence, since enumeration writes nothing.
     //
     // WHEN THE APPROVED MANIFEST IS APPLIED, RELATIVE TO THE PUBLIC-
     // POLICY CUTOVER: immediately after the migrations apply (runbook
@@ -808,33 +900,17 @@ async function main() {
     // hidden, exactly like every other manifest rejection reason in this
     // harness.
     {
-      const corpusAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-      const corpusListing = (
-        await admin.query(
-          `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
-           values ($1, 'published', '7200000099', now() + interval '30 days') returning id`,
-          [corpusAcct],
-        )
-      ).rows[0].id;
-      // A representative existing corpus: three pre-existing rows (not
-      // one), matching what a real, small production listing might
-      // already hold before this package's migrations ever ran. All
-      // three are structurally identical (content_sha256 IS NULL, real
-      // objects, correct account folder): the difference between them is
-      // entirely about what the OPERATOR can attest to, which is the
-      // actual, real-world gating factor this stage exists to rehearse.
-      const corpusPaths = [
-        `${corpusAcct}/${corpusListing}/existing-photo-1.webp`,
-        `${corpusAcct}/${corpusListing}/existing-photo-2.webp`,
-        `${corpusAcct}/${corpusListing}/existing-photo-3-unverifiable.webp`,
-      ];
-      const corpusIds = [];
-      for (const p of corpusPaths) {
-        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [p]);
-        const id = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [corpusListing, p])).rows[0].id;
-        corpusIds.push(id);
-      }
-      const [corpusGood1, corpusGood2, corpusUnverifiable] = corpusIds;
+      // CORRECTION, seventh adversarial review, item 1: this section
+      // previously created its OWN, fresh corpus rows here, AFTER the
+      // migrations had already applied, which meant the row-creation
+      // itself never actually exercised the pre-migration schema, only
+      // the enumeration query in prose claimed to. Reusing Step 0c's own
+      // corpus (created before ANY migration applied, enumerated there
+      // with the corrected, pre-migration-only query) makes the WHOLE
+      // sequence -- enumerate pre-migration, migrate, convert via
+      // manifest -- run against one real, continuous fixture.
+      const corpusPaths = preMigrationCorpusPaths;
+      const [corpusGood1, corpusGood2, corpusUnverifiable] = preMigrationCorpusIds;
 
       await check("BEFORE conversion: the entire representative corpus is invisible under the new policies, exactly the mass-outage risk this stage exists to close quickly", async () => {
         const c = await asAnonRole(pg);
@@ -3069,6 +3145,181 @@ async function main() {
       });
     }
 
+    console.log("\n=== Step 8h-owner: the SECURITY DEFINER function-owner permission mismatch, reproduced against a real, non-superuser owner, then fixed (seventh adversarial review, item 2) ===");
+    // WHY THIS EXISTS. apply_verified_media_provenance is SECURITY
+    // DEFINER: its own UPDATE (and the trigger it fires) executes as the
+    // FUNCTION'S OWNER, not the calling role. Every test above this point
+    // in the file exercises that function while it is still owned by
+    // THIS HARNESS's OWN bootstrapping connection, which is a genuine
+    // Postgres superuser (embedded-postgres's own default local
+    // superuser) -- a stand-in that happens to mask this exact bug,
+    // since the trigger's own (now-corrected) exemption already treats
+    // any superuser as trusted, superuser or not being irrelevant to the
+    // real question. Real production evidence (project-scoped read-only
+    // connector, checked this round): every function this project's
+    // migrations create is owned by `postgres`, and `postgres` has
+    // `rolsuper = false` in real production (only the separate,
+    // unrelated `supabase_admin` role is a true superuser); confirmed
+    // too that none of anon/authenticated/service_role/authenticator can
+    // ever become `postgres` by any ordinary means (`pg_has_role(...,
+    // 'postgres', 'member')` is false for all four). `migrations_role`
+    // below reproduces that real ownership model directly: NOSUPERUSER,
+    // granted ONLY the specific privileges the function's own body
+    // needs, nothing broader.
+    {
+      await admin.query(`create role migrations_role login nosuperuser createrole createdb bypassrls password 'x'`);
+      await admin.query(`grant usage on schema public, storage to migrations_role`);
+      // In REAL production, postgres owns the TABLES too (the same
+      // migration-running identity that owns every function), so no
+      // explicit grants would be needed there: table ownership already
+      // implies full privilege. This harness only reassigns ownership of
+      // the ONE function under test, so these explicit grants exist to
+      // give migrations_role exactly what that function's OWN body
+      // needs, nothing broader; `update` (not merely `select`/
+      // `references`) on both tables was confirmed empirically required
+      // for `lock table ... in share row exclusive mode` to succeed, not
+      // assumed from the Postgres docs alone.
+      await admin.query(`grant select, update on public.listing_media to migrations_role`);
+      await admin.query(`grant select on public.listings to migrations_role`);
+      await admin.query(`grant select, update on storage.objects to migrations_role`);
+
+      await check("positive control: migrations_role genuinely models the real production `postgres` owner (NOSUPERUSER), not this harness's own bootstrapping superuser", async () => {
+        const r = await admin.query("select rolsuper from pg_roles where rolname = 'migrations_role'");
+        assert(r.rows[0].rolsuper === false, "fixture sanity: migrations_role must NOT be a superuser, or this section does not model real production and proves nothing");
+      });
+
+      await admin.query("alter function public.apply_verified_media_provenance(jsonb, boolean) owner to migrations_role");
+
+      await check("EXECUTE grants survive the OWNER reassignment: ALTER FUNCTION ... OWNER TO changes ownership only, never the separately-tracked ACL", async () => {
+        for (const role of ["anon", "authenticated"]) {
+          const r = await admin.query("select has_function_privilege($1, 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec", [role]);
+          assert(r.rows[0].has_exec === false, `${role} must still have NO EXECUTE after the owner reassignment`);
+        }
+        const svc = await admin.query("select has_function_privilege('service_role', 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec");
+        assert(svc.rows[0].has_exec === true, "service_role must still have EXECUTE after the owner reassignment");
+      });
+
+      const bugAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const bugListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [bugAcct])).rows[0].id;
+      const bugPath = `${bugAcct}/${bugListing}/owner-bug-repro.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [bugPath]);
+      const bugMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [bugListing, bugPath])).rows[0].id;
+
+      // ESTABLISH THE ACTUAL RESULT BEFORE CHANGING ANYTHING: temporarily
+      // install the ORIGINAL, pre-this-round trigger body (current_user
+      // = service_role OR rolsuper, byte-identical to what shipped before
+      // this round's own fix) against the NOW non-superuser-owned
+      // function, and call the RPC as a genuine service_role session.
+      const OLD_BUGGY_TRIGGER = `
+        create or replace function public.listing_media_protect_legacy_flag()
+        returns trigger
+        language plpgsql
+        as $$
+        begin
+          if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+            return new;
+          end if;
+          if TG_OP = 'INSERT' then
+            if new.is_legacy_media is true then
+              raise exception 'only public.apply_verified_media_provenance() may set is_legacy_media' using errcode = '42501';
+            end if;
+          elsif TG_OP = 'UPDATE' then
+            if new.is_legacy_media is distinct from old.is_legacy_media then
+              raise exception 'is_legacy_media is a permanent historical fact and may not be changed' using errcode = '42501';
+            end if;
+          end if;
+          return new;
+        end;
+        $$;
+      `;
+      await admin.query(OLD_BUGGY_TRIGGER);
+
+      await check("REPRODUCED (before the fix, against a real non-superuser owner): a genuine service_role RPC call fails with the trigger's own 42501, because current_user inside the SECURITY DEFINER function is the function owner (migrations_role), which the OLD check does not recognize as trusted", async () => {
+        const svc = await asServiceRole(pg);
+        try {
+          let failed = false;
+          let code = null;
+          try {
+            await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+              JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
+            ]);
+          } catch (e) {
+            failed = true;
+            code = e.code;
+          }
+          assert(failed && code === "42501", `expected the OLD trigger to raise 42501 against a real non-superuser owner, got failed=${failed} code=${code}`);
+        } finally {
+          await svc.end();
+        }
+        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
+        assert(row.rows[0].is_legacy_media === false, "the row must remain untrusted: the OLD trigger blocked the grant, for the wrong, production-breaking reason");
+      });
+
+      // NOW apply the REAL fix: the actual migration file's own,
+      // corrected trigger definitions (dynamic function-owner lookup).
+      await admin.query(readFileSync(REPO_MIGRATIONS + "20260912b_pkg1b_media_trusted_object_binding.sql", "utf8"));
+
+      await check("FIXED: the IDENTICAL service_role RPC call, against the SAME non-superuser-owned function, now succeeds", async () => {
+        const svc = await asServiceRole(pg);
+        try {
+          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
+          ]);
+          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected the fixed trigger to allow the grant through, got ${JSON.stringify(r.rows)}`);
+        } finally {
+          await svc.end();
+        }
+        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
+        assert(row.rows[0].is_legacy_media === true, "the row must now be trusted");
+      });
+
+      await check("negative coverage RETAINED under the real, non-superuser ownership model: anon and authenticated are still denied with 42501 calling the function directly, in both p_apply modes", async () => {
+        const negAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        for (const [label, roleFn] of [
+          ["anonymous", () => asAnonRole(pg)],
+          ["authenticated", () => asTestRole(pg, { userId: null, accountId: negAcct, isSat: false })],
+        ]) {
+          for (const applyFlag of [false, true]) {
+            const c = await roleFn();
+            try {
+              let denied = false;
+              try {
+                await c.query("select * from public.apply_verified_media_provenance($1::jsonb, $2)", ["[]", applyFlag]);
+              } catch (e) {
+                denied = e.code === "42501";
+              }
+              assert(denied, `${label} (p_apply=${applyFlag}) must still be denied EXECUTE, ownership model notwithstanding`);
+            } finally {
+              await c.end();
+            }
+          }
+        }
+      });
+
+      await check("positive coverage RETAINED under the real, non-superuser ownership model: a second, independent genuine service_role grant still succeeds end to end", async () => {
+        const posAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const posListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [posAcct])).rows[0].id;
+        const posPath = `${posAcct}/${posListing}/owner-fix-second-grant.webp`;
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [posPath]);
+        const posMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [posListing, posPath])).rows[0].id;
+        const svc = await asServiceRole(pg);
+        try {
+          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: posMediaId, path: posPath, expected_status: "would_grant" }]),
+          ]);
+          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected a second, independent grant to succeed, got ${JSON.stringify(r.rows)}`);
+        } finally {
+          await svc.end();
+        }
+      });
+
+      // Every test from this point onward in the file exercises
+      // apply_verified_media_provenance while it is owned by
+      // migrations_role (NOSUPERUSER), not this harness's own
+      // bootstrapping superuser: the realistic ownership model, not a
+      // special case confined to this one section.
+    }
+
     console.log("\n=== Step 8h: provenance is MANIFEST-BOUND, never inferred from row/object shape (fifth adversarial review, item 1) ===");
     // CORRECTION, FIFTH ADVERSARIAL REVIEW: the fourth review's own fix
     // (existence + same-account folder-prefix + public visibility + never
@@ -3716,6 +3967,100 @@ async function main() {
         );
         const surfacedIds = surfaced.rows.map((r) => r.id);
         assert(surfacedIds.includes(delayedId), "the reconciliation scan must surface the delayed row so an operator can review and manifest it; if it does not, this row would be permanently, silently lost, which is exactly the 'succeeding unnoticed' outcome the review named");
+      });
+
+      // SEVENTH ADVERSARIAL REVIEW, ITEM 3: the test above inserts the
+      // delayed row FIRST, then scans. That proves the scan CAN find a
+      // row that already exists by the time it runs; it proves NOTHING
+      // about the more dangerous ordering: an operator who runs the
+      // REQUIRED scan, sees nothing, and reasonably concludes the window
+      // is closed, while a genuinely slower old-app request is STILL
+      // in flight and lands only afterward. A single scan cannot
+      // possibly see a row that does not exist yet, no matter how the
+      // scan itself is written; that is not a bug to fix in the query,
+      // it is why reconciliation must be REPEATABLE with an EXPLICIT
+      // completion condition, not a one-time step.
+      await check("REVERSED ORDERING, REHEARSED: pause, cutover, resume, THEN a reconciliation scan (finds nothing, correctly, since the delayed row does not exist yet), THEN the delayed old-app insert lands. The first scan's own results do not and cannot include it", async () => {
+        const revAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const revUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const revListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [revAcct])).rows[0].id;
+
+        const revokeCommitTime2 = new Date().toISOString();
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        await admin.query("grant insert on public.listing_media to authenticated");
+        // Resume has happened. The operator now runs the REQUIRED scan,
+        // believing the rollout window is over.
+        const firstScan = await admin.query(
+          `select id from public.listing_media
+             where content_sha256 is null and is_legacy_media = false
+               and created_at >= $1`,
+          [revokeCommitTime2],
+        );
+        const firstScanIds = new Set(firstScan.rows.map((r) => r.id));
+
+        // ONLY NOW does the genuinely slow old-app request finally reach
+        // its own INSERT statement, after the operator's first scan
+        // already ran and (correctly, given what existed at the time)
+        // found nothing new for this listing.
+        const revSession = await asTestRole(pg, { userId: revUser, accountId: revAcct, isSat: false });
+        let revDelayedId;
+        try {
+          const ins = await revSession.query(
+            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+            [revListing, "delayed-upload-test/arrives-after-the-scan.webp"],
+          );
+          revDelayedId = ins.rows[0].id;
+        } finally {
+          await revSession.end();
+        }
+
+        assert(!firstScanIds.has(revDelayedId), "fixture/logic sanity: the row did not exist when the first scan ran, so it CANNOT be in that scan's own results; this is the gap itself, demonstrated, not a test bug");
+
+        // THE EXPLICIT COMPLETION CONDITION, IMPLEMENTED AND REHEARSED:
+        // reconciliation is a REPEATABLE query, not a single step. A
+        // second scan, run any time after the delayed row actually
+        // lands, DOES surface it; a third scan, run after that, finds
+        // NOTHING NEW relative to the second: two consecutive scans
+        // agreeing on the candidate set is the concrete, checkable
+        // condition an operator uses to call the window closed (repeated
+        // across an interval THEY choose, informed by how long a client
+        // request can plausibly still be in flight; this repository
+        // configures no platform-level maximum to cite, so that interval
+        // is deliberately left as an operator decision, not invented
+        // here, matching the honest limit already established for the
+        // drain condition above).
+        const secondScan = await admin.query(
+          `select id from public.listing_media
+             where content_sha256 is null and is_legacy_media = false
+               and created_at >= $1`,
+          [revokeCommitTime2],
+        );
+        const secondScanIds = new Set(secondScan.rows.map((r) => r.id));
+        assert(secondScanIds.has(revDelayedId), "a second, later scan (the REPEATABLE mechanism) must surface the delayed row the first scan could not have seen");
+
+        const newSinceFirst = [...secondScanIds].filter((id) => !firstScanIds.has(id));
+        assert(newSinceFirst.includes(revDelayedId), "the delayed row must show up as NEW relative to the first scan, not silently blended in as if it had always been there");
+
+        const thirdScan = await admin.query(
+          `select id from public.listing_media
+             where content_sha256 is null and is_legacy_media = false
+               and created_at >= $1`,
+          [revokeCommitTime2],
+        );
+        const thirdScanIds = new Set(thirdScan.rows.map((r) => r.id));
+        const newSinceSecond = [...thirdScanIds].filter((id) => !secondScanIds.has(id));
+        assert(newSinceSecond.length === 0, "a THIRD scan, once nothing further has landed, must agree exactly with the second: this two-consecutive-scans-agree condition is the explicit, checkable signal the window can be treated as closed, never a single scan alone");
+      });
+
+      await check("NOT AUTOMATICALLY GRANTED: the delayed row from either rehearsal above remains untrusted purely by existing/aging/matching a window; only an explicit, reviewed manifest entry can ever grant it (database-level simulation, not HTTP: no application route is invoked anywhere in this file)", async () => {
+        const r = await admin.query(
+          `select is_legacy_media from public.listing_media
+             where path in ('delayed-upload-test/old-app-arrives-late.webp', 'delayed-upload-test/arrives-after-the-scan.webp')`,
+        );
+        assert(r.rowCount === 2, "fixture sanity: both delayed-upload rows from this file's own two rehearsals must exist");
+        for (const row of r.rows) {
+          assert(row.is_legacy_media === false, "age, path shape, account ownership, or having matched a reconciliation window must never, by themselves, grant trust; only an explicit apply_verified_media_provenance manifest call does, and none was made for these rows");
+        }
       });
     }
     {
