@@ -88,9 +88,29 @@ const SECURITY_MIGRATION_FILES = [
   "20260912c_pkg1b_storage_originals_read_boundary.sql",
   "20260912d_pkg1b_media_row_visibility_boundary.sql",
 ];
-const MIGRATION_FILES = [...BASE_MIGRATION_FILES, ...SECURITY_MIGRATION_FILES];
+// Applied separately, after the four above (Step 1c-fence), bracketed by
+// its own dedicated before/after demonstration: replaces the false
+// "two agreeing scans" completion condition with a permanent, structural
+// fence. Must apply after 20260912b specifically (it extends that
+// migration's own freeze-trigger function); listed on its own, not
+// folded into SECURITY_MIGRATION_FILES, purely so Step 1c can apply the
+// other four, run the BEFORE demonstration, then apply this one and run
+// the AFTER demonstration, rather than proving nothing by applying all
+// five in one motion.
+const FENCE_MIGRATION_FILE = "20260912e_pkg1b_media_upload_contract_fence.sql";
+const MIGRATION_FILES = [...BASE_MIGRATION_FILES, ...SECURITY_MIGRATION_FILES, FENCE_MIGRATION_FILE];
 
 const ROLLBACK_SQL = `
+-- Reverse of migration 20260912e (security closure, upload contract fence)
+drop trigger if exists listing_media_default_contract_version on public.listing_media;
+drop function if exists public.listing_media_default_contract_version_for_trusted_callers();
+alter table public.listing_media drop column if exists upload_contract_version;
+-- listing_media_freeze_object_identity() itself is reversed below, as
+-- part of undoing 20260912b: 20260912e only replaced that function's own
+-- body (extending it to reference upload_contract_version), it never
+-- created a separate function or trigger for the freeze behaviour
+-- itself, so no separate reversal step is needed here for that part.
+
 -- Reverse of migration 20260912d (security closure, row visibility boundary)
 drop policy if exists "public read eligible media of published" on public.listing_media;
 create policy "public read media of published" on public.listing_media for select
@@ -796,6 +816,150 @@ async function main() {
       });
     }
 
+    console.log("\n=== Step 1c-fence: the false 'two agreeing scans' completion condition, reproduced as a real failing regression, then replaced with a permanent structural fence (eighth adversarial review, item 1) ===");
+    // WRITE THE FAILING REGRESSION FIRST, per instruction. The EXACT
+    // ordering the review specified: resume writes, run two scans that
+    // agree, follow the (still, at this point in the file) current
+    // procedure and declare reconciliation complete, and ONLY THEN
+    // release a delayed old-app-shaped insert. Proves the prior design
+    // permits that row to arrive unnoticed AFTER declared completion,
+    // which no amount of scanning, waiting, or an invented maximum
+    // request lifetime could ever rule out: a scan can only report what
+    // already exists at the moment it runs.
+    {
+      const fenceAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const fenceUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+      const fenceListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [fenceAcct])).rows[0].id;
+
+      await check("BEFORE THE FENCE MIGRATION: reproduced as a real failing regression. Resume writes, two scans agree, declare complete per the (still) current procedure, THEN a delayed old-app-shaped insert lands successfully and unnoticed", async () => {
+        const fenceRevokeTime = new Date().toISOString();
+        // Resume writes (the pause from runbook step 1a is, at this exact
+        // point, not engaged at all in this harness run; INSERT has been
+        // available to authenticated since BOOTSTRAP_SQL, which is itself
+        // the correct baseline state for "writes resumed").
+        const scanQuery = () =>
+          admin.query(
+            `select id from public.listing_media
+               where content_sha256 is null and is_legacy_media = false
+                 and created_at >= $1`,
+            [fenceRevokeTime],
+          );
+        const scan1 = await scanQuery();
+        const scan2 = await scanQuery();
+        assert(JSON.stringify(scan1.rows.map((r) => r.id).sort()) === JSON.stringify(scan2.rows.map((r) => r.id).sort()), "fixture sanity: the two scans must genuinely agree (nothing else concurrently changing) before 'declaring complete'");
+        // "Follow the current procedure and declare reconciliation
+        // complete": under the procedure this replaces, nothing further
+        // happens here. That is the defect.
+
+        // ONLY THEN, release the delayed old-app-shaped insert: the
+        // EXACT column set main's own real, currently-deployed route
+        // supplies (confirmed by reading its real source this round),
+        // via a genuine owner-scoped RLS session, never admin.
+        const delayed = await asTestRole(pg, { userId: fenceUser, accountId: fenceAcct, isSat: false });
+        let delayedId;
+        try {
+          const ins = await delayed.query(
+            "insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, alt_en, plan_type) values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, null, null) returning id",
+            [fenceListing, "fence-regression/arrives-after-declared-complete.webp"],
+          );
+          delayedId = ins.rows[0].id;
+        } finally {
+          await delayed.end();
+        }
+        const landed = await admin.query("select 1 from public.listing_media where id = $1", [delayedId]);
+        assert(landed.rowCount === 1, "REGRESSION CONFIRMED: before the fence migration, the delayed old-app-shaped insert lands successfully, silently, after reconciliation was already declared complete; no scan run after this point would be guaranteed to run again, ever, which is exactly the false completion condition this migration replaces");
+      });
+    }
+
+    await check(`apply ${FENCE_MIGRATION_FILE}`, async () => {
+      const sql = readFileSync(REPO_MIGRATIONS + FENCE_MIGRATION_FILE, "utf8");
+      migrationText[FENCE_MIGRATION_FILE] = sql;
+      await admin.query(sql);
+    });
+
+    {
+      const fenceAcct2 = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const fenceUser2 = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+      const fenceListing2 = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [fenceAcct2])).rows[0].id;
+
+      await check("AFTER THE FENCE MIGRATION: the IDENTICAL scenario (resume, two agreeing scans, declare complete, THEN the identical delayed old-app-shaped insert) now ends differently: the insert is SAFELY REJECTED, permanently, not merely until the next scan", async () => {
+        const fenceRevokeTime2 = new Date().toISOString();
+        const scanQuery = () =>
+          admin.query(
+            `select id from public.listing_media
+               where content_sha256 is null and is_legacy_media = false
+                 and created_at >= $1`,
+            [fenceRevokeTime2],
+          );
+        const scan1 = await scanQuery();
+        const scan2 = await scanQuery();
+        assert(JSON.stringify(scan1.rows.map((r) => r.id).sort()) === JSON.stringify(scan2.rows.map((r) => r.id).sort()), "fixture sanity: the two scans must still genuinely agree");
+        // Declare complete, exactly as before. This time, that
+        // declaration is actually TRUE, because nothing un-fenced can
+        // land afterward, not because of anything the scans themselves
+        // proved.
+
+        const delayed = await asTestRole(pg, { userId: fenceUser2, accountId: fenceAcct2, isSat: false });
+        try {
+          let rejected = false;
+          let code = null;
+          try {
+            await delayed.query(
+              "insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, alt_en, plan_type) values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, null, null)",
+              [fenceListing2, "fence-regression/rejected-after-the-fence.webp"],
+            );
+          } catch (e) {
+            rejected = true;
+            code = e.code;
+          }
+          assert(rejected && code === "23502", `expected the old-app-shaped insert (no upload_contract_version) to be SAFELY REJECTED with not_null_violation (23502), the SAME error class this codebase's own upload route (main's "Saved the file but could not attach it") already treats as an honest, actionable failure; got rejected=${rejected} code=${code}`);
+        } finally {
+          await delayed.end();
+        }
+      });
+
+      await check("the fence does not affect a real, CURRENT-contract insert: the NEW route's own exact column set (including upload_contract_version) still succeeds normally", async () => {
+        const c = await asTestRole(pg, { userId: fenceUser2, accountId: fenceAcct2, isSat: false });
+        try {
+          const ins = await c.query(
+            "insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, alt_en, plan_type, visibility, upload_contract_version) values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, null, null, 'private', 1) returning id",
+            [fenceListing2, "fence-regression/current-contract-succeeds.webp"],
+          );
+          assert(ins.rowCount === 1, "a real, current-contract insert (matching the NEW route's own exact shape) must succeed exactly as before the fence");
+        } finally {
+          await c.end();
+        }
+      });
+
+      await check("the fence is PERMANENT, not a bounded window: the identical old-app-shaped insert attempt, tried again as if arbitrarily more time had passed, is STILL rejected, exactly the same way, with no expiry and no residual scanning obligation", async () => {
+        const c = await asTestRole(pg, { userId: fenceUser2, accountId: fenceAcct2, isSat: false });
+        try {
+          let rejected = false;
+          let code = null;
+          try {
+            await c.query(
+              "insert into public.listing_media (listing_id, path, kind, source, mime, bytes, sort_order, alt_en, plan_type) values ($1, $2, 'photo', 'upload', 'image/webp', 1000, 0, null, null)",
+              [fenceListing2, "fence-regression/still-rejected-much-later.webp"],
+            );
+          } catch (e) {
+            rejected = true;
+            code = e.code;
+          }
+          assert(rejected && code === "23502", "the fence must never expire or weaken with elapsed time: this is what makes it a genuine closure, not another scan with a longer interval");
+        } finally {
+          await c.end();
+        }
+      });
+
+      await check("NO AUTOMATIC TRUST: the rejected attempts above never created any granted row, by timestamp, path, ownership, or scan membership; is_legacy_media stays false for anything that DID land, and the rejected ones never landed at all", async () => {
+        const r = await admin.query(
+          `select is_legacy_media from public.listing_media
+             where path in ('fence-regression/rejected-after-the-fence.webp', 'fence-regression/still-rejected-much-later.webp')`,
+        );
+        assert(r.rowCount === 0, "the rejected inserts must not exist as rows at all (a real constraint violation aborts the whole statement), let alone be trusted");
+      });
+    }
+
     await check("FIFTH ADVERSARIAL REVIEW: applying the migration grants is_legacy_media to NOTHING automatically, even to a row shaped exactly like a genuine pre-migration upload (real object, same account, public, never removed)", async () => {
       const r = await admin.query(
         "select is_legacy_media, derivation_verified from public.listing_media where id = $1",
@@ -804,6 +968,201 @@ async function main() {
       assert(r.rows[0].is_legacy_media === false, "no row may be granted trust merely by existing before this migration ran; the fourth review's own shape-based backfill is exactly what this round removed");
       assert(r.rows[0].derivation_verified === false, "derivation_verified must stay false too: this row never went through the trusted pipeline");
     });
+
+    console.log("\n=== Step 1c-role: establish the REAL production role model BEFORE rehearsing conversion or recovery, not only in a later, isolated regression (eighth adversarial review, item 2) ===");
+    // WHY THIS MOVED HERE. apply_verified_media_provenance is SECURITY
+    // DEFINER: its own UPDATE (and the trigger it fires) executes as the
+    // FUNCTION'S OWNER, not the calling role. A prior version of this
+    // section ran this reassignment much later in the file (after Step
+    // 1c-1b/1c-1c/1c-1d, the operator's own first grant, the existing-
+    // corpus conversion, and partial-failure recovery had ALL already
+    // run against this harness's own bootstrapping superuser as the
+    // function's owner), so none of those earlier rehearsals were ever
+    // actually exercised under the realistic ownership model, only this
+    // one, later, isolated regression was. Moved here, immediately after
+    // migrations apply and before ANY conversion or recovery rehearsal
+    // begins, so everything from this point onward in the file runs
+    // under the same ownership model real production actually has.
+    //
+    // THE GRANTS BELOW ARE READ FROM REAL PRODUCTION, NOT REVERSE-
+    // ENGINEERED FROM WHATEVER MAKES THE FUNCTION RUN. Checked directly
+    // this round (project-scoped read-only connector), not assumed:
+    // `public.listing_media` and `public.listings` are owned by
+    // `postgres` (table ownership implies full privilege, modelled here
+    // as `grant all`, not only the narrower subset the function's own
+    // body happens to touch). `storage.objects`, by contrast, is owned
+    // by a DIFFERENT role, `supabase_storage_admin` -- postgres does NOT
+    // own it, and a prior version of this section's own comment wrongly
+    // assumed postgres owns every table its functions touch. postgres's
+    // real privilege on storage.objects instead comes from an EXPLICIT,
+    // DIRECT grant (confirmed via aclexplode against the real table,
+    // not information_schema, which under-reports for this connector's
+    // own restricted role, a discrepancy noted earlier in this package's
+    // own history too): SELECT, INSERT, UPDATE, DELETE, TRUNCATE,
+    // REFERENCES, TRIGGER (MAINTAIN also appears in the real ACL but is
+    // a PostgreSQL 17+ privilege type with no equivalent grantable form
+    // on the PostgreSQL 16 this harness targets, so it is necessarily
+    // omitted here, not silently assumed unnecessary). Confirmed too
+    // that postgres is NOT a member of supabase_storage_admin (`pg_has_
+    // role('postgres', 'supabase_storage_admin', 'member')` is false):
+    // this really is a direct grant, not inherited privilege via a role
+    // membership this harness would also need to model. `migrations_role`
+    // below reproduces this exact, observed shape: NOSUPERUSER (real
+    // production: `postgres`.`rolsuper` = false), full privilege on the
+    // two tables it genuinely owns, and the real, explicit grant set on
+    // the one table it does not.
+    {
+      await admin.query(`create role migrations_role login nosuperuser createrole createdb bypassrls password 'x'`);
+      await admin.query(`grant usage on schema public, storage to migrations_role`);
+      await admin.query(`grant all on public.listing_media, public.listings to migrations_role`);
+      await admin.query(`grant select, insert, update, delete, truncate, references, trigger on storage.objects to migrations_role`);
+
+      await check("positive control: migrations_role genuinely models the real production `postgres` owner (NOSUPERUSER), not this harness's own bootstrapping superuser", async () => {
+        const r = await admin.query("select rolsuper from pg_roles where rolname = 'migrations_role'");
+        assert(r.rows[0].rolsuper === false, "fixture sanity: migrations_role must NOT be a superuser, or this section does not model real production and proves nothing");
+      });
+
+      await check("positive control: migrations_role's own effective privileges on storage.objects match the REAL, observed production ACL exactly (not a narrower subset invented to make the function pass)", async () => {
+        for (const priv of ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"]) {
+          const r = await admin.query("select has_table_privilege('migrations_role', 'storage.objects', $1) as has_priv", [priv]);
+          assert(r.rows[0].has_priv === true, `migrations_role must have ${priv} on storage.objects, matching the real, confirmed production grant to postgres`);
+        }
+      });
+
+      await admin.query("alter function public.apply_verified_media_provenance(jsonb, boolean) owner to migrations_role");
+
+      await check("EXECUTE grants survive the OWNER reassignment: ALTER FUNCTION ... OWNER TO changes ownership only, never the separately-tracked ACL", async () => {
+        for (const role of ["anon", "authenticated"]) {
+          const r = await admin.query("select has_function_privilege($1, 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec", [role]);
+          assert(r.rows[0].has_exec === false, `${role} must still have NO EXECUTE after the owner reassignment`);
+        }
+        const svc = await admin.query("select has_function_privilege('service_role', 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec");
+        assert(svc.rows[0].has_exec === true, "service_role must still have EXECUTE after the owner reassignment");
+      });
+
+      const bugAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const bugListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [bugAcct])).rows[0].id;
+      const bugPath = `${bugAcct}/${bugListing}/owner-bug-repro.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [bugPath]);
+      const bugMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [bugListing, bugPath])).rows[0].id;
+
+      // ESTABLISH THE ACTUAL RESULT BEFORE CHANGING ANYTHING: temporarily
+      // install the ORIGINAL, pre-this-round trigger body (current_user
+      // = service_role OR rolsuper, byte-identical to what shipped before
+      // this round's own fix) against the NOW non-superuser-owned
+      // function, and call the RPC as a genuine service_role session.
+      const OLD_BUGGY_TRIGGER = `
+        create or replace function public.listing_media_protect_legacy_flag()
+        returns trigger
+        language plpgsql
+        as $$
+        begin
+          if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
+            return new;
+          end if;
+          if TG_OP = 'INSERT' then
+            if new.is_legacy_media is true then
+              raise exception 'only public.apply_verified_media_provenance() may set is_legacy_media' using errcode = '42501';
+            end if;
+          elsif TG_OP = 'UPDATE' then
+            if new.is_legacy_media is distinct from old.is_legacy_media then
+              raise exception 'is_legacy_media is a permanent historical fact and may not be changed' using errcode = '42501';
+            end if;
+          end if;
+          return new;
+        end;
+        $$;
+      `;
+      await admin.query(OLD_BUGGY_TRIGGER);
+
+      await check("REPRODUCED (before the fix, against a real non-superuser owner with the real, observed production grant set): a genuine service_role RPC call fails with the trigger's own 42501, because current_user inside the SECURITY DEFINER function is the function owner (migrations_role), which the OLD check does not recognize as trusted", async () => {
+        const svc = await asServiceRole(pg);
+        try {
+          let failed = false;
+          let code = null;
+          try {
+            await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+              JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
+            ]);
+          } catch (e) {
+            failed = true;
+            code = e.code;
+          }
+          assert(failed && code === "42501", `expected the OLD trigger to raise 42501 against a real non-superuser owner, got failed=${failed} code=${code}`);
+        } finally {
+          await svc.end();
+        }
+        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
+        assert(row.rows[0].is_legacy_media === false, "the row must remain untrusted: the OLD trigger blocked the grant, for the wrong, production-breaking reason");
+      });
+
+      // NOW apply the REAL fix: the actual migration file's own,
+      // corrected trigger definitions (dynamic function-owner lookup).
+      await admin.query(readFileSync(REPO_MIGRATIONS + "20260912b_pkg1b_media_trusted_object_binding.sql", "utf8"));
+
+      await check("FIXED: the IDENTICAL service_role RPC call, against the SAME non-superuser-owned function with the real production grant set, now succeeds", async () => {
+        const svc = await asServiceRole(pg);
+        try {
+          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
+          ]);
+          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected the fixed trigger to allow the grant through, got ${JSON.stringify(r.rows)}`);
+        } finally {
+          await svc.end();
+        }
+        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
+        assert(row.rows[0].is_legacy_media === true, "the row must now be trusted");
+      });
+
+      await check("negative coverage RETAINED under the real, non-superuser ownership model: anon and authenticated are still denied with 42501 calling the function directly, in both p_apply modes", async () => {
+        const negAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        for (const [label, roleFn] of [
+          ["anonymous", () => asAnonRole(pg)],
+          ["authenticated", () => asTestRole(pg, { userId: null, accountId: negAcct, isSat: false })],
+        ]) {
+          for (const applyFlag of [false, true]) {
+            const c = await roleFn();
+            try {
+              let denied = false;
+              try {
+                await c.query("select * from public.apply_verified_media_provenance($1::jsonb, $2)", ["[]", applyFlag]);
+              } catch (e) {
+                denied = e.code === "42501";
+              }
+              assert(denied, `${label} (p_apply=${applyFlag}) must still be denied EXECUTE, ownership model notwithstanding`);
+            } finally {
+              await c.end();
+            }
+          }
+        }
+      });
+
+      await check("positive coverage RETAINED under the real, non-superuser ownership model: a second, independent genuine service_role grant still succeeds end to end", async () => {
+        const posAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const posListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [posAcct])).rows[0].id;
+        const posPath = `${posAcct}/${posListing}/owner-fix-second-grant.webp`;
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [posPath]);
+        const posMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [posListing, posPath])).rows[0].id;
+        const svc = await asServiceRole(pg);
+        try {
+          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: posMediaId, path: posPath, expected_status: "would_grant" }]),
+          ]);
+          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected a second, independent grant to succeed, got ${JSON.stringify(r.rows)}`);
+        } finally {
+          await svc.end();
+        }
+      });
+
+      // Every test from this point onward in the file -- Step 1c-1b's own
+      // operator grant, Step 1c-1c's own existing-corpus conversion, Step
+      // 1c-1d's own partial-failure recovery, and everything in Step 8h
+      // onward -- exercises apply_verified_media_provenance while it is
+      // owned by migrations_role (NOSUPERUSER, the real, observed grant
+      // set), not this harness's own bootstrapping superuser: the
+      // realistic ownership model throughout the REST of this file, not a
+      // special case confined to one, later, isolated section.
+    }
 
     console.log("\n=== Step 1c-1b: the operator's own first, manifest-driven grant call trusts the genuine historical row (the NEW 'initial backfill': operator-attested, not automatic) ===");
     // "Initial backfill" is no longer a migration-time action at all (see
@@ -1947,7 +2306,7 @@ async function main() {
       const c = await asTestRole(pg, { userId: userU, accountId: acctU, isSat: false });
       try {
         await c.query(
-          "insert into public.listing_media (listing_id, path, kind, source) values ($1, 'https://cdn.example/plan.pdf', 'floorplan', 'url')",
+          "insert into public.listing_media (listing_id, path, kind, source, upload_contract_version) values ($1, 'https://cdn.example/plan.pdf', 'floorplan', 'url', 1)",
           [listingU],
         );
       } finally {
@@ -1961,7 +2320,7 @@ async function main() {
       const c = await asTestRole(pg, { userId: userU, accountId: acctU, isSat: false });
       try {
         await c.query(
-          "insert into public.listing_media (listing_id, path, kind, source) values ($1, 'acct/listing/real.webp', 'photo', 'upload')",
+          "insert into public.listing_media (listing_id, path, kind, source, upload_contract_version) values ($1, 'acct/listing/real.webp', 'photo', 'upload', 1)",
           [listingU],
         );
       } finally {
@@ -2019,7 +2378,7 @@ async function main() {
       try {
         const mediaId = (
           await c.query(
-            "insert into public.listing_media (listing_id, path, kind, source, visibility) values ($1, 'acct/listing/new.webp', 'photo', 'upload', 'private') returning id",
+            "insert into public.listing_media (listing_id, path, kind, source, visibility, upload_contract_version) values ($1, 'acct/listing/new.webp', 'photo', 'upload', 'private', 1) returning id",
             [listingW],
           )
         ).rows[0].id;
@@ -2622,7 +2981,7 @@ async function main() {
         const forger = await asTestRole(pg, { userId: forgerUser, accountId: forgerAcct, isSat: false });
         try {
           const ins = await forger.query(
-            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')",
+            "insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1)",
             [forgerListing, gOrigEligiblePath],
           );
           assert(ins.rowCount === 1, "the forged INSERT itself must succeed under the real, unmodified owner-insert RLS policy; this is the precondition the fix must still close despite, not by preventing the insert");
@@ -2656,7 +3015,7 @@ async function main() {
         const owner = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
         try {
           const ins = await owner.query(
-            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')",
+            "insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1)",
             [secondListing, gPath(gListingPub, "removed.webp")],
           );
           assert(ins.rowCount === 1, "the resurrection INSERT itself must succeed under the real, unmodified owner-insert RLS policy");
@@ -3145,181 +3504,6 @@ async function main() {
       });
     }
 
-    console.log("\n=== Step 8h-owner: the SECURITY DEFINER function-owner permission mismatch, reproduced against a real, non-superuser owner, then fixed (seventh adversarial review, item 2) ===");
-    // WHY THIS EXISTS. apply_verified_media_provenance is SECURITY
-    // DEFINER: its own UPDATE (and the trigger it fires) executes as the
-    // FUNCTION'S OWNER, not the calling role. Every test above this point
-    // in the file exercises that function while it is still owned by
-    // THIS HARNESS's OWN bootstrapping connection, which is a genuine
-    // Postgres superuser (embedded-postgres's own default local
-    // superuser) -- a stand-in that happens to mask this exact bug,
-    // since the trigger's own (now-corrected) exemption already treats
-    // any superuser as trusted, superuser or not being irrelevant to the
-    // real question. Real production evidence (project-scoped read-only
-    // connector, checked this round): every function this project's
-    // migrations create is owned by `postgres`, and `postgres` has
-    // `rolsuper = false` in real production (only the separate,
-    // unrelated `supabase_admin` role is a true superuser); confirmed
-    // too that none of anon/authenticated/service_role/authenticator can
-    // ever become `postgres` by any ordinary means (`pg_has_role(...,
-    // 'postgres', 'member')` is false for all four). `migrations_role`
-    // below reproduces that real ownership model directly: NOSUPERUSER,
-    // granted ONLY the specific privileges the function's own body
-    // needs, nothing broader.
-    {
-      await admin.query(`create role migrations_role login nosuperuser createrole createdb bypassrls password 'x'`);
-      await admin.query(`grant usage on schema public, storage to migrations_role`);
-      // In REAL production, postgres owns the TABLES too (the same
-      // migration-running identity that owns every function), so no
-      // explicit grants would be needed there: table ownership already
-      // implies full privilege. This harness only reassigns ownership of
-      // the ONE function under test, so these explicit grants exist to
-      // give migrations_role exactly what that function's OWN body
-      // needs, nothing broader; `update` (not merely `select`/
-      // `references`) on both tables was confirmed empirically required
-      // for `lock table ... in share row exclusive mode` to succeed, not
-      // assumed from the Postgres docs alone.
-      await admin.query(`grant select, update on public.listing_media to migrations_role`);
-      await admin.query(`grant select on public.listings to migrations_role`);
-      await admin.query(`grant select, update on storage.objects to migrations_role`);
-
-      await check("positive control: migrations_role genuinely models the real production `postgres` owner (NOSUPERUSER), not this harness's own bootstrapping superuser", async () => {
-        const r = await admin.query("select rolsuper from pg_roles where rolname = 'migrations_role'");
-        assert(r.rows[0].rolsuper === false, "fixture sanity: migrations_role must NOT be a superuser, or this section does not model real production and proves nothing");
-      });
-
-      await admin.query("alter function public.apply_verified_media_provenance(jsonb, boolean) owner to migrations_role");
-
-      await check("EXECUTE grants survive the OWNER reassignment: ALTER FUNCTION ... OWNER TO changes ownership only, never the separately-tracked ACL", async () => {
-        for (const role of ["anon", "authenticated"]) {
-          const r = await admin.query("select has_function_privilege($1, 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec", [role]);
-          assert(r.rows[0].has_exec === false, `${role} must still have NO EXECUTE after the owner reassignment`);
-        }
-        const svc = await admin.query("select has_function_privilege('service_role', 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec");
-        assert(svc.rows[0].has_exec === true, "service_role must still have EXECUTE after the owner reassignment");
-      });
-
-      const bugAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-      const bugListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [bugAcct])).rows[0].id;
-      const bugPath = `${bugAcct}/${bugListing}/owner-bug-repro.webp`;
-      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [bugPath]);
-      const bugMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [bugListing, bugPath])).rows[0].id;
-
-      // ESTABLISH THE ACTUAL RESULT BEFORE CHANGING ANYTHING: temporarily
-      // install the ORIGINAL, pre-this-round trigger body (current_user
-      // = service_role OR rolsuper, byte-identical to what shipped before
-      // this round's own fix) against the NOW non-superuser-owned
-      // function, and call the RPC as a genuine service_role session.
-      const OLD_BUGGY_TRIGGER = `
-        create or replace function public.listing_media_protect_legacy_flag()
-        returns trigger
-        language plpgsql
-        as $$
-        begin
-          if current_user = 'service_role' or (select rolsuper from pg_roles where rolname = current_user) then
-            return new;
-          end if;
-          if TG_OP = 'INSERT' then
-            if new.is_legacy_media is true then
-              raise exception 'only public.apply_verified_media_provenance() may set is_legacy_media' using errcode = '42501';
-            end if;
-          elsif TG_OP = 'UPDATE' then
-            if new.is_legacy_media is distinct from old.is_legacy_media then
-              raise exception 'is_legacy_media is a permanent historical fact and may not be changed' using errcode = '42501';
-            end if;
-          end if;
-          return new;
-        end;
-        $$;
-      `;
-      await admin.query(OLD_BUGGY_TRIGGER);
-
-      await check("REPRODUCED (before the fix, against a real non-superuser owner): a genuine service_role RPC call fails with the trigger's own 42501, because current_user inside the SECURITY DEFINER function is the function owner (migrations_role), which the OLD check does not recognize as trusted", async () => {
-        const svc = await asServiceRole(pg);
-        try {
-          let failed = false;
-          let code = null;
-          try {
-            await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
-              JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
-            ]);
-          } catch (e) {
-            failed = true;
-            code = e.code;
-          }
-          assert(failed && code === "42501", `expected the OLD trigger to raise 42501 against a real non-superuser owner, got failed=${failed} code=${code}`);
-        } finally {
-          await svc.end();
-        }
-        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
-        assert(row.rows[0].is_legacy_media === false, "the row must remain untrusted: the OLD trigger blocked the grant, for the wrong, production-breaking reason");
-      });
-
-      // NOW apply the REAL fix: the actual migration file's own,
-      // corrected trigger definitions (dynamic function-owner lookup).
-      await admin.query(readFileSync(REPO_MIGRATIONS + "20260912b_pkg1b_media_trusted_object_binding.sql", "utf8"));
-
-      await check("FIXED: the IDENTICAL service_role RPC call, against the SAME non-superuser-owned function, now succeeds", async () => {
-        const svc = await asServiceRole(pg);
-        try {
-          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
-            JSON.stringify([{ id: bugMediaId, path: bugPath, expected_status: "would_grant" }]),
-          ]);
-          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected the fixed trigger to allow the grant through, got ${JSON.stringify(r.rows)}`);
-        } finally {
-          await svc.end();
-        }
-        const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [bugMediaId]);
-        assert(row.rows[0].is_legacy_media === true, "the row must now be trusted");
-      });
-
-      await check("negative coverage RETAINED under the real, non-superuser ownership model: anon and authenticated are still denied with 42501 calling the function directly, in both p_apply modes", async () => {
-        const negAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-        for (const [label, roleFn] of [
-          ["anonymous", () => asAnonRole(pg)],
-          ["authenticated", () => asTestRole(pg, { userId: null, accountId: negAcct, isSat: false })],
-        ]) {
-          for (const applyFlag of [false, true]) {
-            const c = await roleFn();
-            try {
-              let denied = false;
-              try {
-                await c.query("select * from public.apply_verified_media_provenance($1::jsonb, $2)", ["[]", applyFlag]);
-              } catch (e) {
-                denied = e.code === "42501";
-              }
-              assert(denied, `${label} (p_apply=${applyFlag}) must still be denied EXECUTE, ownership model notwithstanding`);
-            } finally {
-              await c.end();
-            }
-          }
-        }
-      });
-
-      await check("positive coverage RETAINED under the real, non-superuser ownership model: a second, independent genuine service_role grant still succeeds end to end", async () => {
-        const posAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-        const posListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [posAcct])).rows[0].id;
-        const posPath = `${posAcct}/${posListing}/owner-fix-second-grant.webp`;
-        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [posPath]);
-        const posMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [posListing, posPath])).rows[0].id;
-        const svc = await asServiceRole(pg);
-        try {
-          const r = await svc.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
-            JSON.stringify([{ id: posMediaId, path: posPath, expected_status: "would_grant" }]),
-          ]);
-          assert(r.rowCount === 1 && r.rows[0].status === "granted", `expected a second, independent grant to succeed, got ${JSON.stringify(r.rows)}`);
-        } finally {
-          await svc.end();
-        }
-      });
-
-      // Every test from this point onward in the file exercises
-      // apply_verified_media_provenance while it is owned by
-      // migrations_role (NOSUPERUSER), not this harness's own
-      // bootstrapping superuser: the realistic ownership model, not a
-      // special case confined to this one section.
-    }
-
     console.log("\n=== Step 8h: provenance is MANIFEST-BOUND, never inferred from row/object shape (fifth adversarial review, item 1) ===");
     // CORRECTION, FIFTH ADVERSARIAL REVIEW: the fourth review's own fix
     // (existence + same-account folder-prefix + public visibility + never
@@ -3392,7 +3576,7 @@ async function main() {
       let forgedId;
       {
         const ins = await gapOwnerSession.query(
-          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          "insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1) returning id",
           [gapListing, gapVictimPath],
         );
         forgedId = ins.rows[0].id;
@@ -3419,7 +3603,7 @@ async function main() {
       let originalRefForgeryId;
       {
         const ins = await gapOwnerSession.query(
-          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          "insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1) returning id",
           [gapListing, preservedOriginalPath],
         );
         originalRefForgeryId = ins.rows[0].id;
@@ -3436,13 +3620,13 @@ async function main() {
       const sameAcctPrivatePath = `${gapAcctOwner}/${gapListing2}/gap-same-acct-private.webp`;
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [sameAcctPrivatePath]);
       await gapOwnerSession.query(
-        "insert into public.listing_media (listing_id, path, source, visibility) values ($1, $2, 'upload', 'private')",
+        "insert into public.listing_media (listing_id, path, source, visibility, upload_contract_version) values ($1, $2, 'upload', 'private', 1)",
         [gapListing2, sameAcctPrivatePath],
       );
       let crossListingPrivateForgeryId;
       {
         const ins = await gapOwnerSession.query(
-          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          "insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1) returning id",
           [gapListing, sameAcctPrivatePath],
         );
         crossListingPrivateForgeryId = ins.rows[0].id;
@@ -3469,7 +3653,7 @@ async function main() {
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [pendingPath]);
       const pendingId = (
         await gapOwnerSession.query(
-          "insert into public.listing_media (listing_id, path, source, visibility) values ($1, $2, 'upload', 'private') returning id",
+          "insert into public.listing_media (listing_id, path, source, visibility, upload_contract_version) values ($1, $2, 'upload', 'private', 1) returning id",
           [gapListing, pendingPath],
         )
       ).rows[0].id;
@@ -3852,7 +4036,7 @@ async function main() {
           await c.query("begin");
           // Privilege is checked at this statement's own start, while
           // authenticated still holds INSERT.
-          const ins = await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [drainListing, "drain-test/started-before-revoke.webp"]);
+          const ins = await c.query("insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1) returning id", [drainListing, "drain-test/started-before-revoke.webp"]);
           await admin.query("revoke insert on public.listing_media from authenticated");
           try {
             await c.query("commit");
@@ -3902,164 +4086,77 @@ async function main() {
         }
       });
 
-      await check("REHEARSED, NOT MERELY ASSERTED: a delayed old-app upload spanning pause, cutover and resume lands successfully and untrusted, invisible to the drain check, and IS surfaced by the required reconciliation scan afterward", async () => {
-        const delayedAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-        const delayedUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
-        const delayedListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [delayedAcct])).rows[0].id;
+      // EIGHTH ADVERSARIAL REVIEW, ITEM 1: the two tests this comment
+      // replaces ("a delayed old-app upload... lands successfully" and
+      // "REVERSED ORDERING") each inserted an OLD-APP-SHAPED row (no
+      // upload_contract_version) to model the risk reconciliation was
+      // meant to close. That risk is now closed STRUCTURALLY, by
+      // 20260912e_pkg1b_media_upload_contract_fence.sql (Step 1c-fence,
+      // above, including the identical reversed-ordering scenario this
+      // section used to rehearse, now proving REJECTION, not detection).
+      // An old-app-shaped insert run here would simply fail (23502),
+      // proving the same thing twice; that is not this section's own
+      // job any more.
+      //
+      // WHAT RECONCILIATION IS STILL HONESTLY FOR: reconciliation was
+      // never solely about old-app compatibility, only presented that
+      // way before this review. A genuine, CURRENT-contract upload
+      // (fence-compliant, upload_contract_version correctly set) can
+      // still complete its own phase 1 (the private, not-yet-trusted
+      // INSERT) and never reach phase 2 (the trusted content_sha256
+      // UPDATE) -- a crashed request, a lost connection, a client that
+      // gave up -- for reasons the fence does not and cannot address,
+      // since the fence only checks INSERT-time column shape, never
+      // whether a later, separate UPDATE ever arrives. This remains a
+      // REAL, ONGOING, explicitly open operational concern: reconciling
+      // abandoned phase-1-only rows is not "complete" in any final
+      // sense, and is not described as such below.
+      await check("RECONCILIATION'S REMAINING, HONEST PURPOSE: a genuine, fence-compliant upload whose phase 2 never completed (abandoned mid-write, not an old-app compatibility issue) is still surfaced by the scan and stays untrusted until manifested; this is an ongoing operational practice, not a one-time rollout gate", async () => {
+        const abandonedAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const abandonedUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const abandonedListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [abandonedAcct])).rows[0].id;
 
-        const revokeCommitTime = new Date().toISOString();
-        // 1a. Pause.
-        await admin.query("revoke insert on public.listing_media from authenticated");
+        const scanFrom = new Date().toISOString();
+        // Phase 1 only: a real, CURRENT-contract, fence-compliant insert
+        // (upload_contract_version correctly set, exactly like the live
+        // route's own phase 1), via a genuine owner-scoped RLS session.
+        // Phase 2 (the trusted content_sha256 UPDATE) never happens here,
+        // modelling a request that was abandoned between the two.
+        const abandonedSession = await asTestRole(pg, { userId: abandonedUser, accountId: abandonedAcct, isSat: false });
+        let abandonedId;
         try {
-          // The drain check, run right after the pause: correctly 0
-          // (nothing was ever in flight in this rehearsal), matching a
-          // real operator who would now proceed.
-          const drainNow = await admin.query(
-            `select count(*) from pg_stat_activity
-               where state in ('active', 'idle in transaction')
-                 and query ilike '%insert into%listing_media%'
-                 and xact_start < $1`,
-            [revokeCommitTime],
+          const ins = await abandonedSession.query(
+            "insert into public.listing_media (listing_id, path, source, visibility, upload_contract_version) values ($1, $2, 'upload', 'private', 1) returning id",
+            [abandonedListing, "reconciliation-test/abandoned-phase-two.webp"],
           );
-          assert(Number(drainNow.rows[0].count) === 0, "fixture sanity: nothing genuinely in flight, so the drain check correctly reads 0 and an operator would proceed");
-
-          // 1..5. Migrations apply, verification, merge: no schema/app
-          // action needed in this rehearsal beyond what Step 1a-1c
-          // already applied earlier in this same harness run.
-          // 6. Resume.
+          abandonedId = ins.rows[0].id;
         } finally {
-          await admin.query("grant insert on public.listing_media to authenticated");
+          await abandonedSession.end();
         }
 
-        // THE DELAYED REQUEST: an old-app upload that, from a real
-        // person's point of view, "started" before or during the pause
-        // (they clicked upload), but whose actual DATABASE statement only
-        // executes now, AFTER resume, because the old app spent time on
-        // work before its own INSERT (file processing, network latency).
-        // Nothing about this statement is special: INSERT is granted
-        // again, so it succeeds completely ordinarily.
-        const delayedSession = await asTestRole(pg, { userId: delayedUser, accountId: delayedAcct, isSat: false });
-        let delayedId;
-        try {
-          const ins = await delayedSession.query(
-            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
-            [delayedListing, "delayed-upload-test/old-app-arrives-late.webp"],
-          );
-          delayedId = ins.rows[0].id;
-        } finally {
-          await delayedSession.end();
-        }
+        const landed = await admin.query("select content_sha256, is_legacy_media, upload_contract_version from public.listing_media where id = $1", [abandonedId]);
+        assert(landed.rows[0].upload_contract_version === 1, "fixture sanity: this row genuinely passed the fence (real, current contract version)");
+        assert(landed.rows[0].content_sha256 === null, "fixture sanity: phase 2 genuinely never ran");
+        assert(landed.rows[0].is_legacy_media === false, "correctly untrusted: passing the fence is not the same as being trusted");
 
-        const landed = await admin.query("select content_sha256, is_legacy_media from public.listing_media where id = $1", [delayedId]);
-        assert(landed.rows[0].content_sha256 === null, "fixture sanity: the delayed row genuinely landed exactly like a real old-app upload, no content_sha256");
-        assert(landed.rows[0].is_legacy_media === false, "fixture sanity: correctly untrusted, same as any other unmanifested row");
-
-        // THE CONTROL: the required, wide-windowed reconciliation query
-        // (step 8) must surface this row. This is the actual completeness
-        // guarantee, not an improved drain check (which cannot see this
-        // row at all, by construction: the transaction that produced it
-        // never existed until after resume).
         const surfaced = await admin.query(
           `select id from public.listing_media
              where content_sha256 is null and is_legacy_media = false
                and created_at >= $1`,
-          [revokeCommitTime],
+          [scanFrom],
         );
         const surfacedIds = surfaced.rows.map((r) => r.id);
-        assert(surfacedIds.includes(delayedId), "the reconciliation scan must surface the delayed row so an operator can review and manifest it; if it does not, this row would be permanently, silently lost, which is exactly the 'succeeding unnoticed' outcome the review named");
+        assert(surfacedIds.includes(abandonedId), "the scan must still surface a genuinely abandoned phase-1-only row: reconciliation's own remaining purpose, distinct from the now-closed old-app-compatibility question");
       });
 
-      // SEVENTH ADVERSARIAL REVIEW, ITEM 3: the test above inserts the
-      // delayed row FIRST, then scans. That proves the scan CAN find a
-      // row that already exists by the time it runs; it proves NOTHING
-      // about the more dangerous ordering: an operator who runs the
-      // REQUIRED scan, sees nothing, and reasonably concludes the window
-      // is closed, while a genuinely slower old-app request is STILL
-      // in flight and lands only afterward. A single scan cannot
-      // possibly see a row that does not exist yet, no matter how the
-      // scan itself is written; that is not a bug to fix in the query,
-      // it is why reconciliation must be REPEATABLE with an EXPLICIT
-      // completion condition, not a one-time step.
-      await check("REVERSED ORDERING, REHEARSED: pause, cutover, resume, THEN a reconciliation scan (finds nothing, correctly, since the delayed row does not exist yet), THEN the delayed old-app insert lands. The first scan's own results do not and cannot include it", async () => {
-        const revAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
-        const revUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
-        const revListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [revAcct])).rows[0].id;
-
-        const revokeCommitTime2 = new Date().toISOString();
-        await admin.query("revoke insert on public.listing_media from authenticated");
-        await admin.query("grant insert on public.listing_media to authenticated");
-        // Resume has happened. The operator now runs the REQUIRED scan,
-        // believing the rollout window is over.
-        const firstScan = await admin.query(
-          `select id from public.listing_media
-             where content_sha256 is null and is_legacy_media = false
-               and created_at >= $1`,
-          [revokeCommitTime2],
-        );
-        const firstScanIds = new Set(firstScan.rows.map((r) => r.id));
-
-        // ONLY NOW does the genuinely slow old-app request finally reach
-        // its own INSERT statement, after the operator's first scan
-        // already ran and (correctly, given what existed at the time)
-        // found nothing new for this listing.
-        const revSession = await asTestRole(pg, { userId: revUser, accountId: revAcct, isSat: false });
-        let revDelayedId;
-        try {
-          const ins = await revSession.query(
-            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
-            [revListing, "delayed-upload-test/arrives-after-the-scan.webp"],
-          );
-          revDelayedId = ins.rows[0].id;
-        } finally {
-          await revSession.end();
-        }
-
-        assert(!firstScanIds.has(revDelayedId), "fixture/logic sanity: the row did not exist when the first scan ran, so it CANNOT be in that scan's own results; this is the gap itself, demonstrated, not a test bug");
-
-        // THE EXPLICIT COMPLETION CONDITION, IMPLEMENTED AND REHEARSED:
-        // reconciliation is a REPEATABLE query, not a single step. A
-        // second scan, run any time after the delayed row actually
-        // lands, DOES surface it; a third scan, run after that, finds
-        // NOTHING NEW relative to the second: two consecutive scans
-        // agreeing on the candidate set is the concrete, checkable
-        // condition an operator uses to call the window closed (repeated
-        // across an interval THEY choose, informed by how long a client
-        // request can plausibly still be in flight; this repository
-        // configures no platform-level maximum to cite, so that interval
-        // is deliberately left as an operator decision, not invented
-        // here, matching the honest limit already established for the
-        // drain condition above).
-        const secondScan = await admin.query(
-          `select id from public.listing_media
-             where content_sha256 is null and is_legacy_media = false
-               and created_at >= $1`,
-          [revokeCommitTime2],
-        );
-        const secondScanIds = new Set(secondScan.rows.map((r) => r.id));
-        assert(secondScanIds.has(revDelayedId), "a second, later scan (the REPEATABLE mechanism) must surface the delayed row the first scan could not have seen");
-
-        const newSinceFirst = [...secondScanIds].filter((id) => !firstScanIds.has(id));
-        assert(newSinceFirst.includes(revDelayedId), "the delayed row must show up as NEW relative to the first scan, not silently blended in as if it had always been there");
-
-        const thirdScan = await admin.query(
-          `select id from public.listing_media
-             where content_sha256 is null and is_legacy_media = false
-               and created_at >= $1`,
-          [revokeCommitTime2],
-        );
-        const thirdScanIds = new Set(thirdScan.rows.map((r) => r.id));
-        const newSinceSecond = [...thirdScanIds].filter((id) => !secondScanIds.has(id));
-        assert(newSinceSecond.length === 0, "a THIRD scan, once nothing further has landed, must agree exactly with the second: this two-consecutive-scans-agree condition is the explicit, checkable signal the window can be treated as closed, never a single scan alone");
-      });
-
-      await check("NOT AUTOMATICALLY GRANTED: the delayed row from either rehearsal above remains untrusted purely by existing/aging/matching a window; only an explicit, reviewed manifest entry can ever grant it (database-level simulation, not HTTP: no application route is invoked anywhere in this file)", async () => {
+      await check("NOT AUTOMATICALLY GRANTED: an abandoned phase-1-only row remains untrusted purely by existing/aging/matching a window; only an explicit, reviewed manifest entry can ever grant it (database-level simulation, not HTTP: no application route is invoked anywhere in this file)", async () => {
         const r = await admin.query(
           `select is_legacy_media from public.listing_media
-             where path in ('delayed-upload-test/old-app-arrives-late.webp', 'delayed-upload-test/arrives-after-the-scan.webp')`,
+             where path = 'reconciliation-test/abandoned-phase-two.webp'`,
         );
-        assert(r.rowCount === 2, "fixture sanity: both delayed-upload rows from this file's own two rehearsals must exist");
+        assert(r.rowCount === 1, "fixture sanity: the abandoned row from the rehearsal above must exist");
         for (const row of r.rows) {
-          assert(row.is_legacy_media === false, "age, path shape, account ownership, or having matched a reconciliation window must never, by themselves, grant trust; only an explicit apply_verified_media_provenance manifest call does, and none was made for these rows");
+          assert(row.is_legacy_media === false, "age, path shape, account ownership, or having matched a reconciliation window must never, by themselves, grant trust; only an explicit apply_verified_media_provenance manifest call does, and none was made for this row");
         }
       });
     }
@@ -4074,7 +4171,7 @@ async function main() {
           try {
             let denied = false;
             try {
-              await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')", [pauseListing, "pause-test/should-not-land.webp"]);
+              await c.query("insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1)", [pauseListing, "pause-test/should-not-land.webp"]);
             } catch (e) {
               denied = e.code === "42501";
             }
@@ -4095,7 +4192,7 @@ async function main() {
         await admin.query("grant insert on public.listing_media to authenticated");
         const c = await asTestRole(pg, { userId: pauseUser, accountId: pauseAcct, isSat: false });
         try {
-          const ins = await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [pauseListing, "pause-test/resumed.webp"]);
+          const ins = await c.query("insert into public.listing_media (listing_id, path, source, upload_contract_version) values ($1, $2, 'upload', 1) returning id", [pauseListing, "pause-test/resumed.webp"]);
           assert(ins.rowCount === 1, "after re-granting INSERT, a real owner's own upload must succeed exactly as before the pause");
         } finally {
           await c.end();

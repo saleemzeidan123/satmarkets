@@ -991,16 +991,18 @@ the real order, and it must be decided BEFORE merging, not left implicit:
      provable rows convert and become readable again in one call; the
      deliberately unmanifested row stays dark, on purpose, disclosed in the
      operator's own conversion notes, not hidden.
-1. **Apply all eleven migrations to production, in this exact order**, via
+1. **Apply all twelve migrations to production, in this exact order**, via
    the Supabase CLI or dashboard SQL editor, WHILE PR #22 IS STILL OPEN
    (not yet merged, application code not yet deployed):
    `20260902`, `20260902b`, `20260902c`, `20260902d`, `20260905`,
    `20260905b`, `20260905c` (the original seven), then
-   `20260912`, `20260912b`, `20260912c`, `20260912d` (the security
-   closure: column grants, trusted object binding, storage originals
-   boundary, row visibility boundary, in that order; `20260912b` must
-   apply before `20260912c`, since that migration's own policy now
-   references the columns `20260912b` adds). Apply step 1b's own approved
+   `20260912`, `20260912b`, `20260912c`, `20260912d`, `20260912e` (the
+   security closure: column grants, trusted object binding, storage
+   originals boundary, row visibility boundary, upload contract fence, in
+   that order; `20260912b` must apply before `20260912c`, since that
+   migration's own policy now references the columns `20260912b` adds;
+   `20260912e` must apply after `20260912b`, since it extends that
+   migration's own freeze-trigger function). Apply step 1b's own approved
    manifest immediately afterward, in the same window.
 2. Run section 10's verification queries against production, including the
    new query 8/9 block above; do not proceed if any fails.
@@ -1048,37 +1050,55 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    until step 5 runs).** Now that INSERT is re-granted: upload a photo
    (confirm no regression) and attempt the same photo twice (confirm the
    honest "already uploaded" refusal).
-5b. **Required, REPEATABLE reconciliation with an explicit completion
-   condition, not a one-time step (sixth-round correction, then seventh-
-   round correction of THAT correction).** The pg_stat_activity drain
-   check in step 1a is a partial signal by its own documented nature
-   (PostgreSQL's own docs describe `pg_stat_activity.query` as the most
-   recent statement's text, not a full in-flight-request registry), so
-   this step is REQUIRED every rollout regardless of how cleanly step 1a's
-   own drain appeared to go. **But a single scan, run once, does not
-   guarantee completeness either**, for a reason no scan query can fix by
-   being written more cleverly: if an old-app request is still slower than
-   even the operator expects and its own INSERT executes AFTER this scan
-   has already run, that row did not exist yet at scan time and cannot
-   possibly appear in that scan's own results, no matter how the query is
-   phrased. Rehearsed directly in the isolated harness, in exactly this
-   reversed order (pause, cutover, resume, scan, THEN the delayed
-   insert): the first scan's own results genuinely do not include it.
-   **The completion condition, concretely:** run the scan (`select id,
+5b. **The old-app-write risk is now closed by a permanent, structural
+   fence, not by scanning (eighth-round correction: the sixth round's own
+   "REQUIRED reconciliation" and the seventh round's own "two consecutive
+   scans agree" completion condition are BOTH replaced here; neither was
+   ever actually a completion condition).** Two consecutive agreeing
+   scans, three scans, a longer operator-chosen interval, or an invented
+   maximum request lifetime: NONE of these prove no later write can still
+   arrive, for a reason no scan query can fix by being written more
+   cleverly: a scan can only report what already exists at the moment it
+   runs, never bound what might still arrive afterward. Proven as a real,
+   failing regression in the isolated harness BEFORE being fixed, exactly
+   in this order: resume writes, run two scans that agree, declare
+   reconciliation complete per the then-current procedure, and ONLY THEN
+   release a delayed old-app-shaped insert; under the design this
+   replaces, that insert lands successfully and silently, after
+   completion was already declared.
+   `20260912e_pkg1b_media_upload_contract_fence.sql` closes this
+   PERMANENTLY: the live application route (this package's own, in
+   scope, confirmed by reading its real source) sets a new, required
+   `upload_contract_version` on every insert; the currently-deployed
+   `main` route (confirmed by reading its real source, out of scope to
+   modify) does not know this column exists and cannot supply it, so its
+   own INSERT fails outright (`23502 not_null_violation`) the instant
+   this migration is live, forever, regardless of how long that insert
+   takes to finally execute or how much time has passed since. This is
+   not a time-bounded window an operator must keep re-checking: once
+   applied, there is no residual scanning obligation for THIS risk
+   specifically, and no expiry to track. Rehearsed directly in the
+   isolated harness (Step 1c-fence), bracketing the migration's own
+   application: the identical scenario that succeeded silently before the
+   migration is safely rejected after it, with the same
+   already-shipped, honest application error ("Saved the file but could
+   not attach it") the old route's own error handling already surfaces,
+   and stays rejected no matter how much later it is retried.
+   **What reconciliation is still honestly for, and remains open-ended
+   (do not treat this as complete either):** a genuine, CURRENT-contract
+   upload (fence-compliant, `upload_contract_version` correctly set) can
+   still complete its own phase 1 (the private, not-yet-trusted INSERT)
+   and never reach phase 2 (the trusted `content_sha256` UPDATE) for
+   reasons the fence does not and cannot address (a crashed request, a
+   lost connection, a client that gave up) -- this is a real, ONGOING
+   operational concern, not a rollout-specific one, and is not resolved
+   by anything in this section. When reviewing such rows: `select id,
    listing_id, path, created_at from public.listing_media where
-   content_sha256 is null and is_legacy_media = false and created_at >=
-   <step 1a's revoke time>`) REPEATEDLY, at an interval the operator
-   chooses (informed by how long a client request can plausibly still be
-   in flight; this repository configures no platform-level maximum
-   duration to cite, so that interval is an operator decision, not
-   invented here, matching the same honest limit already stated for the
-   drain condition itself), and treat the window as closed only once TWO
-   CONSECUTIVE scans agree exactly (the later one finds nothing new
-   relative to the one before it), not after a single scan finds nothing.
-   Build a manifest for whatever any scan turns up, then `node
-   scripts/apply-verified-media-provenance.mjs --manifest=<path>` (report
-   first; `--approved=<path>.reviewed.json --apply` once reviewed). Every
-   rejected entry reports its own specific reason
+   content_sha256 is null and is_legacy_media = false`, build a manifest
+   from what genuinely needs it, then `node scripts/apply-verified-media-
+   provenance.mjs --manifest=<path>` (report first; `--approved=
+   <path>.reviewed.json --apply` once reviewed). Every rejected entry
+   reports its own specific reason
    (`path_drifted_since_manifest_was_prepared`,
    `object_outside_candidate_account_folder`,
    `path_is_a_recorded_preserved_original`,
@@ -1086,11 +1106,9 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    `refused_not_approved_for_grant`, among others), so a real,
    still-unproven row is never silently skipped, only ever silently
    granted. **Age, path shape, account ownership, or merely having
-   matched a scan window never by themselves grant trust**: only an
-   explicit, reviewed manifest entry does, verified directly in the
-   isolated harness against both delayed-upload rehearsals on this page.
-   Re-run the whole repeat-until-quiescent procedure (fresh manifest,
-   fresh window) after any later rollback-then-forward-roll cycle.
+   matched a scan never by themselves grant trust**: only an explicit,
+   reviewed manifest entry does, verified directly in the isolated
+   harness.
 6. Record the live evidence, split honestly between what was checked
    authenticated-live, what was checked anonymously-live, and what was
    checked by a deterministic test, matching this package's own
@@ -3567,7 +3585,7 @@ clean, `lint-gate` held at 49, `npm run build` clean. Nothing applied to
 production; PR #22 remains draft. The GitHub Actions required check
 remains a confirmed account billing lock, unresolved, not retried.
 
-## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed
+## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed; seventh adversarial review, same day: pre-migration enumeration fixed, a real SECURITY DEFINER ownership bug reproduced and closed, reversed-ordering reconciliation closed; eighth adversarial review, same day: the false scan-based completion condition replaced with a permanent structural fence, the role model corrected against real, verified production grants and established before the rehearsal, not only after it
 
 Kept short per instruction: updating this existing section, not adding a
 new one. Full technical detail lives in the migration file's and script's
@@ -3586,14 +3604,17 @@ what independently ran, not as "all items closed."
 | 8 (sixth review) | A prior test/claim said the "pending flipped to public" row was refused "even when deliberately included" in a manifest; the actual fixture excluded it from both manifests entirely, so the claim was never demonstrated. Separately, the drain condition's own real limits (documented PostgreSQL behavior: `pg_stat_activity.query` is the most recent statement's text, not a full in-flight-request registry) were understated. | Withdrawn: the harness test now states plainly that the row was simply never manifested, and a SEPARATE, new test shows what actually happens if it IS manifested (it previews as `would_grant`, since it is structurally clean) with an explicit comment distinguishing the function's structural guards from the operator's own content-legitimacy judgment, which the function cannot and does not make. Section 11's drain-condition text now states its documented limits and cites the PostgreSQL docs directly; reconciliation (step 5b) is now REQUIRED every rollout, not a safety net conditional on the pause. | Harness: an honest-boundary test proving manifest inclusion of a structurally-clean-but-unverified row previews as would_grant (not silently rejected, not overclaimed); a filter-gap test proving `pg_stat_activity`'s own query column misses a still-open transaction once it runs a later statement; a delayed-upload rehearsal spanning pause/cutover/resume proving the reconciliation scan (not the drain check) is the real, complete control |
 | 9 (seventh review) | Section 11's own step 1b told the operator to enumerate the existing corpus by `content_sha256 IS NULL AND is_legacy_media = false`, referencing two columns THIS PACKAGE'S OWN MIGRATIONS CREATE, run BEFORE those migrations apply. Against the real pre-migration schema this does not give a wrong answer, it fails outright (`42703 undefined_column`). | The preparation query now uses only columns confirmed to exist in the base, pre-package schema (`id, listing_id, path, created_at`, no trust-column reference). Post-migration eligibility is explicitly, separately, `apply_verified_media_provenance`'s own preview mode, run only after step 1 applies. Section 10's own stale query 9 (asserting against the automatic backfill mechanism removed two rounds ago) corrected to an informational count, not a hardcoded pass/fail. | Harness Step 0c: the corrected query executed for real against the genuine pre-migration schema (the one point in the harness's own run where these columns do not yet exist), plus a regression proving the PRIOR query fails with exactly 42703 at that point, not merely differently |
 | 10 (seventh review) | `apply_verified_media_provenance` is SECURITY DEFINER: its own `UPDATE` (and the trigger it fires) executes as the FUNCTION'S OWNER, not the caller. Real production evidence (checked this round): every function this project's migrations create is owned by `postgres`, and `postgres` has `rolsuper = false` in real production; the trigger's own exemption (`current_user = service_role OR rolsuper`) matches NEITHER once owned by a real, non-superuser `postgres`, so the function's own legitimate grant would fail in production, every time. A first attempted fix (`session_user` instead of `current_user`) was ALSO wrong, caught by the harness itself: real Supabase connections all authenticate as a single `authenticator` login role and reach anon/authenticated/service_role via `SET ROLE`, so `session_user` is never `service_role` for any genuine RPC call either, and the harness's own role-simulation helpers use the identical pattern. | `current_user` kept, with an added, DYNAMIC check against the actual current owner of `apply_verified_media_provenance` (`pg_proc`/`pg_get_userbyid`, not a hardcoded name). Confirmed safe against real production: none of anon/authenticated/service_role/authenticator hold membership in `postgres`, so no ordinary caller can ever cause `current_user` to become that owner except by genuinely executing inside a SECURITY DEFINER function it owns. | Harness Step 8h-owner: a `NOSUPERUSER` `migrations_role`, granted only the privileges the function's own body needs, made the function's real owner via `alter function ... owner to`; the OLD trigger body reproduced the failure for real against it BEFORE any fix, the corrected trigger reproduced success AFTER; positive/negative coverage re-run and held under this realistic ownership model, not only the harness's own superuser-owned default |
-| 11 (seventh review) | The delayed-upload rehearsal inserted the late row FIRST, then scanned: proof the scan CAN find a row that already exists, not proof of the more dangerous ordering (scan first, believed complete, THEN a slower request lands after it). No single scan can see a row that does not exist yet, regardless of how it is written. | Reconciliation (step 5b) is now explicitly REPEATABLE with a stated completion condition: run the scan at an operator-chosen interval and treat the window closed only once two consecutive scans agree exactly, not after one scan finds nothing. Age, path, ownership, or matching a scan window never by themselves grant trust. | Harness: a new test rehearses the reversed order directly (pause, cutover, resume, scan, THEN the delayed insert) and proves the first scan's own results genuinely exclude it, then that a second scan surfaces it as NEW and a third agrees with the second (quiescent); a separate assertion confirms neither delayed-upload rehearsal's own row was ever automatically granted |
+| 11 (seventh review) | The delayed-upload rehearsal inserted the late row FIRST, then scanned: proof the scan CAN find a row that already exists, not proof of the more dangerous ordering (scan first, believed complete, THEN a slower request lands after it). No single scan can see a row that does not exist yet, regardless of how it is written. | ~~Reconciliation (step 5b) is now explicitly REPEATABLE with a stated completion condition: run the scan at an operator-chosen interval and treat the window closed only once two consecutive scans agree exactly, not after one scan finds nothing.~~ **Superseded by row 12 below, same day: this "completion condition" was itself false.** | Harness: a new test rehearses the reversed order directly (pause, cutover, resume, scan, THEN the delayed insert) and proves the first scan's own results genuinely exclude it |
+| 12 (eighth review) | Row 11's own fix was itself false: two (or three, or any number of) consecutive agreeing scans prove only that nothing new landed BETWEEN those scans, never that nothing can land afterward. Proven as a real failing regression, written first: resume writes, two scans agree, declare complete per the then-current procedure, THEN release a delayed old-app-shaped insert; it lands successfully and unnoticed. | `20260912e_pkg1b_media_upload_contract_fence.sql`: the live application route (in scope, confirmed by reading its real source) sets a new, required `upload_contract_version` on every insert; `main`'s own currently-deployed route (out of scope to modify, confirmed by reading its real source) cannot supply it, so its INSERT fails outright (`23502`) the instant this migration is live, PERMANENTLY, not for a bounded window. Reconciliation's own remaining, honest purpose is narrowed and kept explicitly open, not claimed closed: a genuine, fence-compliant upload whose phase 2 never completes (a real, ongoing operational concern, unrelated to old-app compatibility). | Harness Step 1c-fence: the identical scenario, bracketing the migration's own application, fails BEFORE the migration and is safely rejected (`23502`, matching `main`'s own existing "Saved the file but could not attach it" error handling) AFTER it, confirmed permanent (retried "much later", still rejected identically), confirmed not to affect a real current-contract insert |
+| 13 (eighth review) | The harness's own `migrations_role` (modelling the real, non-superuser `postgres` function owner) was granted `select, update` on `storage.objects` only because that was empirically discovered to be what the function needed, never checked against real production ownership/grants; established only in a late, isolated regression, so every earlier conversion/recovery rehearsal in the file ran against the harness's own superuser-owned function instead. | Checked directly against real production (project-scoped read-only connector): `storage.objects` is owned by `supabase_storage_admin`, NOT `postgres` (unlike `listing_media`/`listings`, which postgres genuinely owns); postgres's real privilege on it is an explicit, direct grant (`SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER`, confirmed via `aclexplode`, not inherited via role membership, confirmed false). `migrations_role` now grants `all` on the two owned tables and the exact observed grant set on `storage.objects`; moved to apply immediately after migrations, before any conversion or recovery rehearsal runs. | Harness Step 1c-role (moved from the former, later Step 8h-owner): a positive control asserting `migrations_role`'s own effective privileges on `storage.objects` match the real, observed ACL exactly, not a narrower invented subset; the whole rest of the file, from this point onward, now exercises the realistic ownership model, not only one later regression |
 
 Full local gate re-run on the final integrated code: typecheck clean,
 2080/2080 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
-clean. Isolated harness: **206/206** (up from 196/196, itself up from
-185/185, itself up from 172/172). Nothing applied to production; PR #22
-remains draft. The GitHub Actions required check remains a confirmed
-account billing lock, unresolved, not retried, not bypassed. Seven
-consecutive rounds of adversarial review have each found a real, live gap
-in the round directly before it; this is grounds for continued scrutiny
+clean. Isolated harness: **214/214** (up from 206/206, itself up from
+196/196, itself up from 185/185, itself up from 172/172). Nothing applied
+to production; PR #22 remains draft. The GitHub Actions required check
+remains a confirmed account billing lock, unresolved, not retried, not
+bypassed. Eight consecutive rounds of adversarial review have each found a
+real, live gap in the round directly before it; this is grounds for
+continued scrutiny
 before production, not evidence the surface is now exhausted.

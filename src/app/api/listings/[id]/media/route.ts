@@ -223,6 +223,11 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       // trigger deliberately leaves visibility to the owner, see section 6
       // of the runbook), so the session client may legitimately set it.
       visibility: "private",
+      // 20260912e_pkg1b_media_upload_contract_fence.sql: NOT NULL, no
+      // default. The column's entire purpose is that an older, unreviewed
+      // version of this insert (one that does not know to set it) fails
+      // outright rather than landing untrusted and unnoticed.
+      upload_contract_version: 1,
     })
     .select("id")
     .single();
