@@ -174,20 +174,17 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message, code: "save_failed" }, { status: 400 });
   const id = data?.id as string | undefined;
 
-  // Attach photo URLs as listing_media rows (best effort; the listing is already
-  // created). source='url' stores the external link in `path`. Uploaded files
-  // (source='upload') are added by the media upload route in a later slice.
-  if (id && Array.isArray(body.photos)) {
-    const rows = (body.photos as unknown[])
-      .map((u) => String(u).trim())
-      .filter((u) => /^https?:\/\/.+/i.test(u))
-      .slice(0, 20)
-      .map((u, i) => ({ listing_id: id, path: u, kind: "photo", source: "url", sort_order: i }));
-    if (rows.length) {
-      const { error: mErr } = await supabase.from("listing_media").insert(rows);
-      if (mErr) return NextResponse.json({ id, warning: "Listing saved, but photos could not be attached." });
-    }
-  }
+  // Codex review, item 8: this used to attach any body.photos URL as a
+  // listing_media row with source='url', with none of the hashing, duplicate
+  // protection, type/size validation, EXIF handling or controlled storage a
+  // real upload gets through api/listings/[id]/media/route.ts, so an arbitrary
+  // third-party-hosted link could stand in as "verified" evidence. New photo
+  // evidence goes through the media upload route only now; body.photos is
+  // intentionally no longer read here. Pre-existing source='url' rows (mock
+  // listings, anything attached before this change) still display: this is a
+  // client-intake change, not a read-path or data change, and
+  // getPublicListingMedia() (src/lib/queries/publicMedia.ts) does not
+  // distinguish source when deciding what is publicly visible.
 
   // Reconcile the floor-plan URL into listing_media so it has a single render path
   // (listings.floorplan_url is no longer read by the detail page).

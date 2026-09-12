@@ -35,6 +35,13 @@ const config = [
       "coverage/**",
       "playwright-report/**",
       "test-results/**",
+      // A background agent's own worktree (a full nested checkout of this
+      // repo, under .claude/worktrees/ via the Agent tool's own isolation
+      // feature) is not this checkout's code. Found unignored during
+      // PKG-LISTING-CREATION-1B: every ratchet count roughly doubled while
+      // an agent's worktree sat here mid-run, from a second copy of src/
+      // being scanned alongside the real one.
+      ".claude/**",
     ],
   },
   ...coreWebVitals,

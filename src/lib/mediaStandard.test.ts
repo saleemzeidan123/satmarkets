@@ -72,6 +72,41 @@ test("media standard: every shot is bilingual and states its reason in both lang
   }
 });
 
+// Codex review round 2, item 12 (Fable evidence review). Of the eleven
+// shots this package added, three (fire_protection, service_block,
+// fire_safety) have a real, checked regulatory citation
+// (docs/pkg-listing-creation-1b-migration-runbook.md section 14); the other
+// eight are market convention or SAT's own standard, and must never claim
+// otherwise. This test exists because one of the eight, compound_perimeter,
+// was found doing exactly that (calling itself a "licensing question" with
+// no citation anywhere) by this same review round; it is the regression
+// guard for that specific class of bug, not a general style check, which is
+// why it is scoped to this package's own eleven additions rather than to
+// every shot mediaStandard.ts has ever defined (an older shot, unrelated to
+// this package, was found carrying the same pattern during the same
+// review and is tracked separately, not fixed or asserted on here).
+const REGULATION_DERIVED_SHOTS = new Set(["fire_protection", "service_block", "fire_safety"]);
+const PKG_1B_ADDED_SHOTS = new Set([
+  "fnb_services", "outdoor_seating", "mezzanine",
+  "fire_protection", "service_block", "ancillary_units",
+  "sections_separate", "bride_suite",
+  "fire_safety", "compound_perimeter", "utilities_provision",
+]);
+const REGULATION_LANGUAGE = [/licens/i, /regulation/i, /mandat/i, /required by/i, /statut/i, /ترخيص/, /نظام/, /لائحة/, /قانون/, /إلزام/];
+
+test("media standard: the eight market-convention shots added this package never claim a regulatory basis", () => {
+  const seen = new Map<string, MediaShot>();
+  for (const t of KNOWN) for (const s of mediaStandardFor(t).shots) if (PKG_1B_ADDED_SHOTS.has(s.key)) seen.set(s.key, s);
+  assert.equal(seen.size, PKG_1B_ADDED_SHOTS.size, `expected to find all ${PKG_1B_ADDED_SHOTS.size} shots; found ${seen.size} (${[...seen.keys()].join(", ")}). A renamed or removed key means this test's own list is stale.`);
+  for (const [key, s] of seen) {
+    if (REGULATION_DERIVED_SHOTS.has(key)) continue; // these three ARE regulation-derived and may say so
+    for (const re of REGULATION_LANGUAGE) {
+      assert.doesNotMatch(s.why_en, re, `${key}'s why_en matches ${re}: a market-convention shot must not claim a regulatory/legal basis it has no citation for`);
+      assert.doesNotMatch(s.why_ar, re, `${key}'s why_ar matches ${re}: a market-convention shot must not claim a regulatory/legal basis it has no citation for`);
+    }
+  }
+});
+
 test("media standard: the brief raises the photograph minimum and never lowers it", () => {
   for (const t of KNOWN) {
     const std = mediaStandardFor(t);
@@ -297,4 +332,22 @@ test("law 8: every fault is reported, not only the first", () => {
 test("law 8: a fully traced, permitted derivation is publishable", () => {
   assert.deepEqual(mediaIntegrityFaults(TRACED), []);
   assert.equal(mediaPublishable(TRACED), true);
+});
+
+// PKG-LISTING-CREATION-1B outcome D. media/route.ts's own unconditional
+// pipeline (rotate to apply EXIF orientation, resize, re-encode to webp)
+// writes exactly this literal transform pair as every upload's
+// derived_transforms. This is the first real call site for the machinery
+// above; if a future change to that pipeline adds a transform not on
+// mediaStandard.ts's allow list, this is the test that catches it, rather
+// than the defect surfacing as a suddenly-unpublishable photo in production.
+test("law 8: the upload route's own derivation record is publishable by construction", () => {
+  const uploadPipelineDerivation: MediaDerivation = {
+    originalRef: "acct/listing/originals/file.jpg",
+    transforms: ["downscale", "format_convert"],
+    appliedBy: "system:upload-pipeline",
+    appliedAt: "2026-09-04T00:00:00Z",
+  };
+  assert.deepEqual(mediaIntegrityFaults(uploadPipelineDerivation), []);
+  assert.equal(mediaPublishable(uploadPipelineDerivation), true);
 });

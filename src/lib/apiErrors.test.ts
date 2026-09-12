@@ -29,6 +29,7 @@ const ROUTES_IN_SCOPE = [
   "src/app/api/listings/[id]/media/route.ts",
   "src/app/api/listings/[id]/media/[mediaId]/route.ts",
   "src/app/api/listings/[id]/docs/route.ts",
+  "src/app/api/listings/[id]/evidence-marks/route.ts",
   "src/app/api/listings/[id]/status/route.ts",
   "src/app/api/listings/[id]/review/route.ts",
   "src/app/api/account/route.ts",
@@ -48,6 +49,7 @@ const ROUTES_IN_SCOPE = [
 const CLIENTS_IN_SCOPE = [
   "src/components/ListingMediaManager.tsx",
   "src/components/ListingDocsManager.tsx",
+  "src/components/ListingStudio.tsx",
   "src/components/ListingStatusToggle.tsx",
   "src/components/ReviewActions.tsx",
   "src/components/ProfileForm.tsx",

@@ -1,0 +1,123 @@
+Starting embedded Postgres 16...
+Postgres up on port 55432, database satmarkets_test created.
+
+=== Bootstrap: minimal stand-in schema + RLS stub helpers ===
+  PASS  bootstrap schema applies with no error
+
+=== Step 1: apply all four migrations verbatim, in order ===
+  PASS  apply 20260902_pkg1b_durable_evidence_state.sql
+  PASS  apply 20260902b_pkg1b_media_categorization.sql
+  PASS  apply 20260902c_pkg1b_media_content_fingerprint.sql
+  PASS  apply 20260902d_pkg1b_media_derivation_integrity.sql
+  PASS  apply 20260905_pkg1b_evidence_mark_invalidation.sql
+  PASS  apply 20260905b_pkg1b_media_cleanup_queue.sql
+  PASS  apply 20260905c_pkg1b_media_url_photo_block.sql
+
+=== Step 2: reapplication idempotency (rerun all four, expect zero errors) ===
+  PASS  reapply 20260902_pkg1b_durable_evidence_state.sql is a no-op
+  PASS  reapply 20260902b_pkg1b_media_categorization.sql is a no-op
+  PASS  reapply 20260902c_pkg1b_media_content_fingerprint.sql is a no-op
+  PASS  reapply 20260902d_pkg1b_media_derivation_integrity.sql is a no-op
+  PASS  reapply 20260905_pkg1b_evidence_mark_invalidation.sql is a no-op
+  PASS  reapply 20260905b_pkg1b_media_cleanup_queue.sql is a no-op
+  PASS  reapply 20260905c_pkg1b_media_url_photo_block.sql is a no-op
+
+=== Step 3: schema shape sanity ===
+  PASS  listing_evidence_marks table exists
+  PASS  listing_media has all 12 new columns (is_cover removed, Codex review)
+  PASS  is_cover genuinely does not exist (removed, not merely unused)
+  PASS  RLS is enabled on listing_evidence_marks
+  PASS  exactly two policies exist (select, insert only)
+
+=== Step 4: RLS policy logic (as authenticated, stubbed identity) ===
+  PASS  visibility defaults to 'public', matching actual current behaviour, not 'private'
+  PASS  owner (U1/A1) can insert a valid mark on their own listing
+  PASS  owner cannot forge actor_user_id to someone else
+  PASS  a different account cannot insert a mark on a listing they do not own
+  PASS  a different account sees zero marks on a listing they do not own
+  PASS  SAT sees marks on a listing it does not own
+  PASS  SAT can insert a mark on a listing it does not own, as its own actor
+  PASS  SAT cannot masquerade as the listing's own account in actor_account_id
+  PASS  no UPDATE policy exists: an owner's UPDATE on their own row affects zero rows
+  PASS  no DELETE policy exists: an owner's DELETE on their own row affects zero rows
+  PASS  reason shape: marked_unavailable with a short reason is rejected by the DB constraint
+  PASS  reason shape: cleared with a non-null reason is rejected by the DB constraint
+
+=== Step 4b: deterministic total order on the evidence ledger (Codex review) ===
+  PASS  seq is a real database-generated identity: monotonic, unique, not settable by the caller
+  PASS  two events sharing an identical created_at are still ordered correctly, by seq
+  PASS  concurrent mark and clear on the same item: both are recorded (append-only), seq decides which is current
+
+=== Step 5: content_sha256 uniqueness and NULL-safety (outcome C) ===
+  PASS  two concurrent inserts of the same hash: exactly one succeeds
+  PASS  multiple NULL content_sha256 rows on the same listing do not conflict
+
+=== Step 7: asset_type-change trigger clears shot_key (outcome B) ===
+  PASS  changing asset_type clears shot_key on the listing's media
+  PASS  an UPDATE that does not change asset_type leaves shot_key untouched
+
+=== Step 7b: evidence-mark invalidation on asset-type change (migration E) ===
+  PASS  owner marks 'frontage' unavailable while the listing is retail
+  PASS  changing asset_type to showroom invalidates the retail-meaning 'frontage' mark
+  PASS  the invalidated mark reads as ineffective (currentEvidenceMarks-equivalent query)
+  PASS  a currently-effective mark of any item_key is invalidated too (conservative by design, matching migration B's own shot_key trigger)
+  PASS  an already-cleared (not currently effective) mark gets no spurious invalidation row
+  PASS  reverting to the original asset type does not resurrect the invalidated mark
+
+=== Step 8: derivation-shape constraint (outcome D) ===
+  PASS  fully-null derivation fields are accepted (legacy / not-yet-derived row)
+  PASS  fully-populated derivation fields are accepted
+  PASS  a half-populated derivation (original set, derived_by null) is rejected
+
+=== Step 8b: database-enforced trusted-write boundary (Codex review) ===
+  PASS  authenticated cannot UPDATE listing_media.content_sha256 directly, even on its own account's row
+  PASS  authenticated cannot UPDATE listing_media.original_path directly, even on its own account's row
+  PASS  authenticated cannot UPDATE listing_media.derived_by directly, even on its own account's row
+  PASS  authenticated cannot UPDATE listing_media.moderation_state directly, even on its own account's row
+  PASS  authenticated cannot UPDATE listing_media.rights_acknowledged_by directly, even on its own account's row
+  PASS  authenticated cannot INSERT a row that sets content_sha256/original_path/derived_* directly
+  PASS  authenticated CAN still write the columns it legitimately owns (shot_key), unaffected by the REVOKE
+  PASS  service_role (the trusted path getSupabaseServiceRole() uses) CAN write every sensitive column
+
+=== Step 8c: the actual public-media filter query, run against real rows (Codex review, item 3) ===
+  PASS  private and removed media never come back from the real public-media filter, only public+non-removed does
+
+=== Step 8d: media_cleanup_queue exists, is service_role/superuser-only, and durably records what it is told (Codex review, item 7) ===
+  PASS  media_cleanup_queue table exists with its expected columns
+  PASS  RLS is enabled on media_cleanup_queue with zero policies (complete default-deny)
+  PASS  authenticated cannot read media_cleanup_queue, even a row that genuinely exists
+  PASS  authenticated cannot insert into media_cleanup_queue
+  PASS  service_role can insert into and read from media_cleanup_queue (the positive case the block above depends on)
+  PASS  listing_media_id has no foreign key: a queue row survives its referenced listing_media row being deleted
+
+=== Step 8e: the database-level url-photo block, for every role, no exemption (Codex review round 2, item 12) ===
+  PASS  authenticated cannot INSERT a new kind='photo' + source='url' row
+  PASS  service_role ALSO cannot INSERT a new kind='photo' + source='url' row (no exemption, unlike the trusted-column triggers)
+  PASS  authenticated CAN still insert kind='floorplan' + source='url' (deliberately out of this rule's scope)
+  PASS  authenticated CAN still insert kind='photo' + source='upload' (the real upload path, unaffected)
+  PASS  an EXISTING legacy kind='photo' + source='url' row can still be updated on an unrelated column (categorization is not blocked)
+
+=== Step 8f: newly inserted media is not publicly eligible before the trusted integrity write completes (Codex review round 3, item 1) ===
+  PASS  a row inserted visibility='private' does not appear in the public-media filter until the trusted UPDATE flips it to 'public'
+
+=== Step 9: rollback, then forward re-apply ===
+  PASS  rollback SQL runs with no error
+  PASS  listing_evidence_marks is gone after rollback
+  PASS  the asset-type-change invalidation trigger and function are gone after rollback
+  PASS  all 12 new listing_media columns are gone after rollback
+  PASS  existing listing_media rows survive rollback (additive drop, not a table drop)
+  PASS  forward re-apply after rollback: 20260902_pkg1b_durable_evidence_state.sql
+  PASS  forward re-apply after rollback: 20260902b_pkg1b_media_categorization.sql
+  PASS  forward re-apply after rollback: 20260902c_pkg1b_media_content_fingerprint.sql
+  PASS  forward re-apply after rollback: 20260902d_pkg1b_media_derivation_integrity.sql
+  PASS  forward re-apply after rollback: 20260905_pkg1b_evidence_mark_invalidation.sql
+  PASS  forward re-apply after rollback: 20260905b_pkg1b_media_cleanup_queue.sql
+  PASS  forward re-apply after rollback: 20260905c_pkg1b_media_url_photo_block.sql
+  PASS  post-re-apply: listing_evidence_marks exists again
+  PASS  post-re-apply: the invalidation trigger works again on a fresh listing
+
+Stopping embedded Postgres (persistent:false, data directory will be removed)...
+
+============================================================
+RESULT: 83 passed, 0 failed (of 83)
+============================================================

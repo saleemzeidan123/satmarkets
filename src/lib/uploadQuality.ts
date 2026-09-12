@@ -39,6 +39,24 @@ export function isAcceptedImageType(bytes: Uint8Array): boolean {
   return sniffImageType(bytes) !== null;
 }
 
+// PKG-LISTING-CREATION-1B, Codex review item 7: the preserved original
+// (outcome D) used to be stored with the BROWSER-supplied file.type as its
+// content type, which is caller-asserted and already known to be untrusted
+// (isAcceptedImageType exists precisely because a client can send any
+// Content-Type it likes on a file that is not really that type). The
+// original must carry the type this server actually verified by reading the
+// bytes, the same sniff that decided whether to accept the upload at all,
+// not a repeat of the trust the sniff was added to remove.
+const MIME_BY_SNIFFED_TYPE: Record<Exclude<SniffedImageType, null>, string> = {
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+export function mimeForSniffedType(type: SniffedImageType): string {
+  return type ? MIME_BY_SNIFFED_TYPE[type] : "application/octet-stream";
+}
+
 // ---------------------------------------------------------------------------
 // Browser-only checks below. Each takes a File and resolves to a small,
 // explainable result; none of them throws for an ordinary bad file, because a
