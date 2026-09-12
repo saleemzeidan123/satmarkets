@@ -162,21 +162,94 @@ comment on table public.listing_media_legacy_backfill_done is
 -- place, never a substitute for it. A row named nowhere in p_manifest
 -- fails every single time, regardless of how cleanly it would pass 3-6.
 --
--- ATOMICITY, CORRECTED (fourth review's own finding, closed here for
--- real). The prior version computed a candidate array once, then updated
--- by that array alone, with no re-check between "selected" and "granted":
--- a concurrent transaction changing a candidate row's relevant facts and
--- committing in that window would not be caught, because a function call's
--- own transactional wrapping guarantees only that its OWN writes commit or
--- roll back together, never that facts read early in the function stay
--- true later in the same function. FOR UPDATE, above, blocks a
--- concurrent writer to the SAME row until this function's own transaction
--- finishes, and every check re-reads the LOCKED row's current state, not
--- an earlier snapshot; the UPDATE below additionally re-asserts the
--- manifest's own path in its WHERE clause and reports only rows the
--- UPDATE itself actually touched (via RETURNING, not a separately
--- recomputed SELECT), so the returned set can never silently diverge from
--- what was actually granted.
+-- ATOMICITY, CORRECTED TWICE (fourth review's finding, then the sixth
+-- review's own correction of that fix).
+--
+-- The fourth review's own finding: a candidate array computed once, then
+-- updated by that array alone, with no re-check between "selected" and
+-- "granted", lets a concurrent transaction changing a candidate row's
+-- facts in that window go uncaught.
+--
+-- The fifth/sixth review's own fix (FOR UPDATE on the candidate row,
+-- re-checking its state, re-asserting its path in the UPDATE's own WHERE
+-- clause) closed that for the CANDIDATE ROW's own facts, but the function
+-- also depends on facts that live elsewhere: whether the referenced
+-- object exists in storage.objects, and whether some OTHER listing_media
+-- row currently claims the same path as its own original_path, or as a
+-- private/removed reference. Those were read by separate, earlier
+-- SELECT statements, never re-verified atomically with the write, and
+-- never locked against a concurrent writer: a transaction that commits a
+-- change to one of those OTHER facts in the gap between this function's
+-- own read and its own write would not be caught, because re-checking
+-- only the candidate row's own state (its path) does not protect facts
+-- that live on a different row or a different table entirely.
+--
+-- THE FIX, THIS ROUND: exactly one thing decides every grant: a single
+-- UPDATE statement (below) whose WHERE clause encodes every guard,
+-- including the cross-row and cross-table ones, evaluated together
+-- against one consistent read as of that ONE statement's own start, with
+-- the candidate row locked for the statement's duration exactly as any
+-- UPDATE locks the row it targets. There is no separate "check, then
+-- write" step for the grant decision itself: a diagnostic re-check runs
+-- ONLY afterward, ONLY to explain a refusal, and never decides anything.
+--
+-- This alone is not sufficient for the cross-row facts, because the
+-- UPDATE's own WHERE-clause subqueries against storage.objects and other
+-- listing_media rows are ordinary reads, not locks: a concurrent writer
+-- to THOSE rows is not blocked by this statement the way a concurrent
+-- writer to the CANDIDATE row is. `lock table ... in share row exclusive
+-- mode` below, taken once per apply-mode call (never in report mode,
+-- which writes nothing and accepts a preview may be marginally stale),
+-- blocks every ordinary INSERT/UPDATE/DELETE against listing_media for
+-- the duration of this call, closing the listing-media-to-listing-media
+-- race completely; the matching lock on storage.objects closes the
+-- object-existence race the same way. This is a real, stated operating
+-- precondition, not merely a comment: apply-mode calls serialize against
+-- every other write to either table while they run, which is why they
+-- are expected to run briefly and during the write-pause window
+-- described in the runbook, not as a background job competing with live
+-- traffic.
+--
+-- LOCK MODE, CORRECTED TWICE DURING THIS ROUND'S OWN TESTING. Plain
+-- `share mode` (tried first) does not conflict with itself: two
+-- concurrent apply-mode calls both acquire it, then each independently
+-- tries to escalate for its own per-entry UPDATE, which needs a
+-- conflicting row-exclusive lock the OTHER session's own share lock is
+-- blocking; both wait on each other, and Postgres's own deadlock detector
+-- (correctly) aborted one, caught by this round's own deterministic
+-- two-concurrent-apply-calls test as a genuine "deadlock detected", not a
+-- timeout or an assumption. `share update exclusive` (tried second, to
+-- fix that) turned out not to conflict with plain row exclusive at all
+-- (it exists for VACUUM/ANALYZE/CREATE INDEX CONCURRENTLY specifically
+-- because those must NOT block ordinary DML); a dedicated test using two
+-- DIFFERENT rows (one the apply call's own candidate, one a concurrent
+-- writer touches) rather than two calls racing the SAME row caught this:
+-- the concurrent writer's plain UPDATE on the unrelated row was never
+-- blocked at all, so the apply call proceeded on a stale read and would
+-- have granted a row it should have refused. `share row exclusive` is
+-- both self-exclusive (only one session at a time, so a second concurrent
+-- apply-mode call blocks cleanly at the LOCK TABLE statement itself,
+-- fully serialized before it ever reaches its own UPDATE) and conflicts
+-- with row exclusive (so it genuinely blocks ordinary INSERT/UPDATE/
+-- DELETE from any other session against ANY row in the table, not merely
+-- the one row an apply call happens to also be targeting).
+--
+-- APPROVAL DRIFT, CLOSED (sixth adversarial review; the fifth review's
+-- own preview-then-apply-then-compare pattern, in the reconciliation
+-- script, reported drift only AFTER granting on it, which detects, but
+-- does not prevent). Every apply-mode
+-- entry now carries expected_status, taken verbatim from a PRIOR
+-- p_apply=false call the caller actually ran: this function no longer
+-- accepts an apply call it cannot verify was reviewed first. The grant
+-- UPDATE's own WHERE clause requires expected_status = 'would_grant' as
+-- ONE of its conditions, alongside every structural guard: an entry that
+-- FAILED preview can never be granted merely because something changed
+-- to make it newly eligible before apply ran (the exact gap named this
+-- round), and an entry that PASSED preview but no longer does by the time
+-- apply runs is refused by the same mechanism, symmetrically. Nothing is
+-- granted unless it was both previously reviewed as grantable AND is
+-- still, right now, in the one atomic statement that matters, exactly
+-- that.
 create or replace function public.apply_verified_media_provenance(
   p_manifest jsonb,
   p_apply boolean default false
@@ -195,26 +268,84 @@ as $$
 declare
   entry record;
   candidate record;
-  updated_id uuid;
+  updated record;
   s text;
 begin
   if p_manifest is null or jsonb_typeof(p_manifest) <> 'array' then
-    raise exception 'p_manifest must be a JSON array of {"id": ..., "path": ...} objects, each independently verified by the caller before this function is ever invoked' using errcode = '22023';
+    raise exception 'p_manifest must be a JSON array of {"id": ..., "path": ..., "expected_status": ...} objects, each independently verified by the caller before this function is ever invoked' using errcode = '22023';
+  end if;
+
+  if p_apply then
+    -- Serializes this whole call against every other write to either
+    -- table for its duration (see the comment above): the operating
+    -- precondition that makes the single-statement grant below correct
+    -- for facts that live outside the candidate row itself.
+    lock table public.listing_media in share row exclusive mode;
+    lock table storage.objects in share row exclusive mode;
   end if;
 
   for entry in
-    select (elem->>'id')::uuid as m_id, (elem->>'path') as m_path
+    select (elem->>'id')::uuid as m_id, (elem->>'path') as m_path, (elem->>'expected_status') as m_expected
     from jsonb_array_elements(p_manifest) as elem
   loop
-    -- Re-read and lock the EXACT candidate row fresh, every iteration:
-    -- never a value computed before this loop, and never reused across
-    -- iterations, so one entry's own check can never be satisfied by
-    -- another entry's stale data.
+    if p_apply and entry.m_expected is null then
+      raise exception 'p_apply=true requires expected_status on every manifest entry (entry id %); run a p_apply=false preview first and pass its own reported status back verbatim, never call apply against an unreviewed manifest', entry.m_id using errcode = '22023';
+    end if;
+
+    updated := null;
+    if p_apply then
+      -- THE GRANT DECISION. One statement, one snapshot, every guard
+      -- (approval, row state, path match, object existence + account
+      -- folder, preserved-original reuse, private/removed-reference
+      -- sharing) in its own WHERE clause; the row lock this UPDATE takes
+      -- is what makes a concurrent grant attempt on the SAME row block
+      -- and then correctly re-evaluate against post-commit state (proven
+      -- in the isolated harness), and the table locks above make the
+      -- cross-row/cross-table subqueries here safe against a concurrent
+      -- writer changing what they'd see.
+      update public.listing_media lm
+        set is_legacy_media = true
+        where lm.id = entry.m_id
+          and lm.path = entry.m_path
+          and entry.m_expected = 'would_grant'
+          and lm.content_sha256 is null
+          and lm.is_legacy_media = false
+          and exists (
+            select 1
+            from storage.objects o
+            join public.listings l on l.id = lm.listing_id
+            where o.bucket_id = 'listing-media'
+              and o.name = lm.path
+              and (storage.foldername(o.name))[1] = l.account_id::text
+          )
+          and not exists (
+            select 1 from public.listing_media other
+            where other.original_path = lm.path
+          )
+          and not exists (
+            select 1 from public.listing_media other
+            where other.id <> lm.id
+              and other.path = lm.path
+              and (other.visibility = 'private' or other.moderation_state = 'removed')
+          )
+        returning lm.id, lm.listing_id, lm.path, lm.created_at into updated;
+
+      if updated.id is not null then
+        id := updated.id; listing_id := updated.listing_id; path := updated.path; created_at := updated.created_at;
+        status := 'granted';
+        return next;
+        continue;
+      end if;
+    end if;
+
+    -- Diagnostic chain: in report mode, this computes what WOULD happen.
+    -- In apply mode, we only reach here when the atomic UPDATE above
+    -- affected zero rows; this explains why, but decides nothing (the
+    -- decision already happened, and was refused, above).
     select lm.id, lm.listing_id, lm.path, lm.created_at, lm.content_sha256, lm.is_legacy_media
       into candidate
       from public.listing_media lm
-      where lm.id = entry.m_id
-      for update;
+      where lm.id = entry.m_id;
 
     if not found then
       s := 'row_not_found';
@@ -248,18 +379,27 @@ begin
         and (other.visibility = 'private' or other.moderation_state = 'removed')
     ) then
       s := 'path_shared_with_a_private_or_removed_reference';
-    elsif not p_apply then
-      s := 'would_grant';
     else
-      updated_id := null;
-      update public.listing_media lm
-        set is_legacy_media = true
-        where lm.id = candidate.id and lm.path = entry.m_path
-        returning lm.id into updated_id;
-      if updated_id is null then
-        s := 'path_drifted_since_manifest_was_prepared';
-      else
-        s := 'granted';
+      s := 'would_grant';
+    end if;
+
+    if p_apply then
+      if entry.m_expected is distinct from 'would_grant' then
+        -- This entry was never approved for a grant in the first place
+        -- (its own prior preview reported something other than
+        -- would_grant); report that precisely, regardless of how it
+        -- happens to evaluate right now.
+        s := 'refused_not_approved_for_grant';
+      elsif s = 'would_grant' then
+        -- expected_status WAS 'would_grant' (approved), the diagnostic
+        -- chain here, run fresh, ALSO says would_grant right now, yet the
+        -- atomic UPDATE above still affected zero rows a moment earlier.
+        -- The only honest read is that something changed in the (small,
+        -- but non-zero) gap between that UPDATE and this diagnostic
+        -- SELECT; reporting a false 'would_grant' here, as if this entry
+        -- were still simply pending, would misstate that nothing was
+        -- ever granted for a reason.
+        s := 'refused_state_changed_since_approval';
       end if;
     end if;
 
@@ -295,7 +435,7 @@ revoke execute on function public.apply_verified_media_provenance(jsonb, boolean
 grant execute on function public.apply_verified_media_provenance(jsonb, boolean) to service_role;
 
 comment on function public.apply_verified_media_provenance(jsonb, boolean) is
-  'The ONE place is_legacy_media is ever granted. Trust never ORIGINATES from row/object shape (path, folder, visibility, timestamps, existence): every grant traces to an explicit, operator-supplied manifest entry (id + expected path) established by a real process outside this database. That entry is then still re-validated fresh against the locked row''s current state: drift, preserved-original reuse, private/removed-reference sharing, and cross-account folder mismatch are all refused regardless of manifest inclusion. service_role-only; revoked from anon/authenticated explicitly, not only from PUBLIC (see comment above).';
+  'The ONE place is_legacy_media is ever granted. Trust never ORIGINATES from row/object shape (path, folder, visibility, timestamps, existence): every grant traces to an explicit, operator-supplied manifest entry (id + expected path) established by a real process outside this database. p_apply=true additionally requires expected_status on every entry, taken from a prior p_apply=false call: an entry that failed preview is never granted merely because something later made it newly eligible, and an entry that passed preview is refused if anything changed by the time apply runs. The grant decision is one atomic UPDATE whose WHERE clause encodes every guard (path match, object existence + account folder, preserved-original reuse, private/removed-reference sharing), table-locked for its duration so those cross-row/cross-table facts cannot change mid-decision. service_role-only; revoked from anon/authenticated explicitly, not only from PUBLIC (see comment above). Structural guards only: this function verifies a manifest entry is not internally contradictory (drift, cross-account, reused/shared paths), never that the underlying file is actually the operator''s legitimate content; that judgment is the operator''s own, made before the entry ever reaches this function.';
 
 -- No automatic backfill runs here (fifth adversarial review): there is no
 -- manifest this migration file can safely embed sight-unseen, and

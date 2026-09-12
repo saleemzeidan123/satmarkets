@@ -898,18 +898,70 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    transaction commits, and a transaction already in flight when the
    REVOKE commits completes successfully, unaffected by it (this is WHY
    draining, not merely revoking, matters).
-   **Failure/rollback procedure (fifth-round correction: none was named
-   before).** If step 1 below fails partway (a migration errors), the
-   pause from this step is still engaged; do not lift it until the
-   failure is resolved and step 1 is retried or reversed. If the deployed
-   application must be rolled back to the OLD app after step 3, RE-ENGAGE
-   this same pause (`REVOKE` again) before rolling back, for the same
-   reason it existed the first time: the old app's own upload route does
-   not write `content_sha256`, so anything it inserts while live against
-   this schema needs the same operator-manifest procedure in step 5a
-   afterward. This is not a separate, untested emergency path: rollback
-   is "the pause was never lifted, or must be re-engaged," the same steps
-   either way.
+   **Failure/rollback procedure, corrected (sixth-round correction: the
+   fifth round named that the pause must be re-engaged, but not what a
+   PARTIAL migration failure actually leaves behind, nor how rollback's
+   own database-level effect relates to step 5b below).**
+   - **A migration in step 1 fails partway.** Every migration file in
+     `supabase/migrations/` contains no explicit `BEGIN`/`COMMIT` of its
+     own, so the CLI/dashboard SQL runner wraps each FILE's statements in
+     one implicit transaction: if any statement in file N fails, every
+     OTHER statement in that SAME file rolls back with it, and files
+     1..N-1 (already committed, in their own separate transactions) are
+     completely unaffected. This is not an assumption: rehearsed directly
+     in the isolated harness (a synthetic multi-statement block, a real
+     first statement followed by a deliberately broken second one,
+     confirms the first statement's own effect does not survive). Recovery
+     is exactly "fix the problem named in the error, then re-run from file
+     N": no manual partial-state cleanup exists to perform, and the pause
+     from step 1a remains engaged throughout, since it was never reached.
+   - **The deployed application must be rolled back to the OLD app after
+     step 3.** RE-ENGAGE the pause (`REVOKE` again) before rolling back,
+     for the same reason it existed the first time: the old app's own
+     upload route does not write `content_sha256`, so anything it inserts
+     while live against this schema needs the same operator-manifest
+     procedure (step 5b) afterward, covering the WHOLE period the old app
+     was live again, not only the original pause window. This is not a
+     separate, untested emergency path: rehearsed directly in the isolated
+     harness (Step 8i) as a delayed old-app insert that lands successfully
+     and untrusted after the write pause lifts, and is then genuinely
+     surfaced by the same reconciliation query step 5b runs.
+1b. **The existing-media conversion stage (sixth-round addition: item 1
+   named this as a genuine, unaddressed operational gap, not merely a
+   wording issue).** Removing automatic backfill (5th round) means
+   20260912c/d's own read policies hide EVERY row with `content_sha256 IS
+   NULL AND is_legacy_media = false` the instant they apply, all at once:
+   on a real production database, that is every pre-existing photo,
+   simultaneously, until an operator's manifest grants them back. This is
+   a disclosed, real mass-outage risk that must be planned for explicitly,
+   not discovered live.
+   - **When verification happens:** before the pause even begins, and
+     independent of it. It is a read-only exercise against the CURRENT
+     production database: enumerate every `content_sha256 IS NULL` row
+     (`select id, listing_id, path, created_at from public.listing_media
+     where content_sha256 is null and is_legacy_media = false`) and decide,
+     by real evidence outside this schema (surviving application/server
+     logs, direct knowledge of what this team itself uploaded, or asking
+     the listing's own owner), which rows can be honestly attested to.
+     Build the manifest from that list ahead of time.
+   - **When the approved manifest is applied, relative to the public-policy
+     cutover:** immediately after step 1 (migrations) and before step 2
+     (verification), inside the SAME maintenance window the pause already
+     covers: `node scripts/apply-verified-media-provenance.mjs
+     --manifest=<path>` (report), review, then `--approved=<path>.reviewed.json
+     --apply`. The gap between "the new policy is live" and "the existing
+     corpus is readable again" is the time this one call takes, not an
+     open-ended follow-up project.
+   - **How unprovable files are handled:** left out of the manifest,
+     explicitly, and consequently left unreadable. Never silently treated
+     as verified and never given a fallback exemption; the disclosed
+     remediation is a real re-upload through the live app (which needs no
+     manifest at all) or gathering genuine evidence for that specific row
+     later. Rehearsed directly in the isolated harness (Step 1c-1c) against
+     a representative, multi-row corpus, not a single fixture row: the
+     provable rows convert and become readable again in one call; the
+     deliberately unmanifested row stays dark, on purpose, disclosed in the
+     operator's own conversion notes, not hidden.
 1. **Apply all eleven migrations to production, in this exact order**, via
    the Supabase CLI or dashboard SQL editor, WHILE PR #22 IS STILL OPEN
    (not yet merged, application code not yet deployed):
@@ -919,7 +971,8 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    closure: column grants, trusted object binding, storage originals
    boundary, row visibility boundary, in that order; `20260912b` must
    apply before `20260912c`, since that migration's own policy now
-   references the columns `20260912b` adds).
+   references the columns `20260912b` adds). Apply step 1b's own approved
+   manifest immediately afterward, in the same window.
 2. Run section 10's verification queries against production, including the
    new query 8/9 block above; do not proceed if any fails.
 3. Only now merge PR #22 (Vercel deploys the application code). This
@@ -938,54 +991,63 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    grant restriction has applied yet, so THAT half is actually order-
    independent; it is the SCHEMA-existence dependency, not a grant-
    restriction dependency, that forces migrations-then-code specifically.
-4. Smoke test live, EN and AR: upload a photo (confirm no regression),
-   attempt the same photo twice (confirm the honest "already uploaded"
-   refusal), delete a photo (confirm this round's own DELETE-handler fix:
-   the request succeeds, not a false "Media not found"), mark a
-   guided-evidence photo item unavailable with a real reason, reload the
-   Studio (confirm it survives), open the draft preview (confirm the mark
-   is visible there too), change a listing's asset type and confirm a
-   previously-set evidence mark that no longer applies is no longer shown
-   as effective, and confirm the public listing page still renders every
-   existing photo (visibility defaults to 'public', so an existing
-   listing's photos must look exactly as they did before this deploy).
-   Additionally, confirm anonymously (a fresh, unauthenticated browser
-   context, not signed in) that a published listing's photo IS visible on
-   the public page (the fix must not have overcorrected into hiding
-   legitimate, legacy media) and that a direct attempt to fetch a signed
-   URL for a KNOWN preserved-original path (if one can be identified from
-   this session's own test fixtures, never a real customer's) is refused.
+4a. **Smoke test live, EN and AR, the parts that need no INSERT on
+   listing_media (the pause is still engaged; do not attempt an upload
+   yet, see step 4b's own correction below):** delete a photo (confirm
+   this round's own DELETE-handler fix: the request succeeds, not a false
+   "Media not found"), mark a guided-evidence photo item unavailable with
+   a real reason, reload the Studio (confirm it survives), open the draft
+   preview (confirm the mark is visible there too), change a listing's
+   asset type and confirm a previously-set evidence mark that no longer
+   applies is no longer shown as effective, and confirm the public listing
+   page still renders every existing photo (visibility defaults to
+   'public', so an existing listing's photos must look exactly as they did
+   before this deploy, and step 1b's own conversion has already made them
+   readable again). Additionally, confirm anonymously (a fresh,
+   unauthenticated browser context, not signed in) that a published
+   listing's photo IS visible on the public page (the fix must not have
+   overcorrected into hiding legitimate, legacy media) and that a direct
+   attempt to fetch a signed URL for a KNOWN preserved-original path (if
+   one can be identified from this session's own test fixtures, never a
+   real customer's) is refused.
 5. **Resume: `GRANT INSERT ON public.listing_media TO authenticated;`**
    (this round's own migrations only ever touch the SELECT grant, never
-   INSERT, so this is not automatic and must be explicit), then confirm a
-   real upload through the new app succeeds.
-5a. **Safety net, not the primary control now that step 1a exists
-   (section 21, fourth-round correction), and manifest-bound, not
-   time-window-bound (fifth-round correction).** If step 1a's own drain
-   condition was genuinely observed before merging, this should have
-   nothing to do. `public.apply_verified_media_provenance()` (replacing
-   `grant_validated_legacy_media_trust`, section 23) grants trust to
-   NOTHING it discovers itself: it requires an explicit manifest naming
-   the exact row ids an operator has independently confirmed legitimate
-   (by real out-of-band evidence, e.g. surviving server logs from the
-   drain window showing which row/path pair a genuine in-flight request
-   produced; a named human's own recorded review; or, preferred where
-   practical, simply asking the affected owner to re-upload through the
-   live app, which needs no manifest or script at all). Build that
-   manifest as a small JSON file (`[{"id": "...", "path": "..."}, ...]`),
-   then:
+   INSERT, so this is not automatic and must be explicit).
+4b. **Upload smoke test, moved here (sixth-round correction: this
+   previously sat inside step 4, BEFORE step 5's own re-grant, where an
+   upload attempt cannot possibly succeed; INSERT is revoked from step 1a
+   until step 5 runs).** Now that INSERT is re-granted: upload a photo
+   (confirm no regression) and attempt the same photo twice (confirm the
+   honest "already uploaded" refusal).
+5b. **Required reconciliation, not merely a safety net (sixth-round
+   correction: the pg_stat_activity drain check in step 1a is a partial
+   signal by its own documented nature, PostgreSQL's own docs describe
+   `pg_stat_activity.query` as the most recent statement's text, not a
+   full in-flight-request registry, so it can miss a transaction whose
+   own later statement isn't the insert, and it cannot see a request that
+   has not reached the database yet at all).** This step is REQUIRED
+   every rollout, regardless of how cleanly step 1a's own drain appeared
+   to go, because it is the actual completeness guarantee for what the
+   drain check structurally cannot observe: `public.apply_verified_media_
+   provenance()` grants trust to NOTHING it discovers itself; build a
+   manifest for whatever a WIDE window (step 1a's own revoke-commit time
+   through well after step 5's own resume, on purpose wider than "just the
+   pause": rehearsed directly in the isolated harness as a delayed old-app
+   upload whose own INSERT statement executes only after resume, landing
+   completely ordinarily) turns up via `select id, listing_id, path,
+   created_at from public.listing_media where content_sha256 is null and
+   is_legacy_media = false and created_at >= <step 1a's revoke time>`, then
    `node scripts/apply-verified-media-provenance.mjs --manifest=<path>`
-   (report only first; add `--apply` once the report looks right). The
-   script pins the exact manifest across its own preview and apply calls
-   and loudly reports any drift between them rather than silently
-   accepting a changed set; every rejected entry reports its own specific
-   reason (`path_drifted_since_manifest_was_prepared`,
+   (report first; `--approved=<path>.reviewed.json --apply` once reviewed).
+   Every rejected entry reports its own specific reason
+   (`path_drifted_since_manifest_was_prepared`,
    `object_outside_candidate_account_folder`,
    `path_is_a_recorded_preserved_original`,
-   `path_shared_with_a_private_or_removed_reference`, among others), so a
-   real, still-unproven row is never silently skipped, only ever silently
-   granted. Re-run (with a fresh manifest) after any later
-   rollback-then-forward-roll cycle that re-engaged step 1a's pause.
+   `path_shared_with_a_private_or_removed_reference`,
+   `refused_not_approved_for_grant`, among others), so a real,
+   still-unproven row is never silently skipped, only ever silently
+   granted. Re-run (with a fresh manifest, a fresh window) after any later
+   rollback-then-forward-roll cycle.
 6. Record the live evidence, split honestly between what was checked
    authenticated-live, what was checked anonymously-live, and what was
    checked by a deterministic test, matching this package's own
@@ -3462,11 +3524,12 @@ clean, `lint-gate` held at 49, `npm run build` clean. Nothing applied to
 production; PR #22 remains draft. The GitHub Actions required check
 remains a confirmed account billing lock, unresolved, not retried.
 
-## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections
+## 23. Fifth adversarial review, same day: the P1 genuinely closed (manifest-bound provenance), plus three narrower corrections; sixth adversarial review, same day: made genuinely executable, drift genuinely rejected, cross-row concurrency closed
 
-Kept short per instruction. Full technical detail lives in the migration
-file's and script's own comments. **Not a closure declaration**: reported
-as what changed and what independently ran, not as "all items closed."
+Kept short per instruction: updating this existing section, not adding a
+new one. Full technical detail lives in the migration file's and script's
+own comments. **Not a closure declaration**: reported as what changed and
+what independently ran, not as "all items closed."
 
 | # | Finding | Fix | Evidence |
 | --- | --- | --- | --- |
@@ -3474,10 +3537,17 @@ as what changed and what independently ran, not as "all items closed."
 | 2 | `revoke all ... from public` does not revoke from `anon`/`authenticated` if either ever held a direct grant. Real production evidence, checked this round against `pg_default_acl`: this project's own default-ACL configuration grants EXECUTE on new functions to anon/authenticated/service_role EXPLICITLY, by role name, not only via PUBLIC. | Every function in `20260912b` now `revoke execute ... from public, anon, authenticated` by name, `grant ... to service_role` explicitly, on the RPC and both trigger functions. | Harness: new function-default-privilege statement in `BOOTSTRAP_SQL` (separate from the table-default one, matching `pg_default_acl`'s own `defaclobjtype` distinction), a positive control proving it's real, effective-privilege assertions for anon/authenticated/PUBLIC/service_role, actual invocation denial (42501) in both p_apply modes, a genuine `service_role`-scoped invocation (not only `admin.query`), and a grant-survives-`CREATE OR REPLACE` check |
 | 3 | The function computed its candidate set once (a plain `SELECT`), then updated by that array alone: a concurrent transaction changing a candidate row's facts and committing in that window would not be caught. `RETURN QUERY` re-selected by the same array rather than reporting what the `UPDATE` actually touched. | Every manifest entry is locked `FOR UPDATE` and re-checked against its current, locked state; the `UPDATE` re-asserts the manifest's own path in its `WHERE` clause and the result comes from that `UPDATE`'s own effect, not a separate re-select. `scripts/apply-verified-media-provenance.mjs` pins one manifest file, calls preview then apply against the identical entries, and loudly reports any drift between the two rather than silently accepting whatever the second call returns. | Harness: two deterministic two-connection tests (lock-polling via `pg_stat_activity`, not a timing guess) proving a concurrent trusted-pipeline commit is seen post-commit, never a stale pre-lock snapshot, and that two simultaneous apply calls for the same row never both grant it |
 | 4 | The write-pause runbook step said "wait a short, bounded period" with no checkable condition, and no failure/rollback procedure was named. One harness test was titled "REAL API BOUNDARY, NOT ONLY DATABASE POLICY", which executes database queries, not HTTP. | Section 11 below now names an explicit, pollable drain condition (`pg_stat_activity`, filtered to backends whose own transaction started before the REVOKE's commit time) with an operator-supplied ceiling, and a failure/rollback procedure stating the pause must be re-engaged, not replaced by a different procedure. The mislabeled test renamed to "DATABASE POLICY EVIDENCE, NOT HTTP". | Harness: two new Step 8i checks proving the drain query reads 0 with nothing in flight, correctly detects a real open transaction, and clears again once it commits; and that an already-in-flight transaction completes unaffected by the REVOKE |
+| 5 (sixth review) | Removing automatic backfill (row 1 above) has a real, unaddressed operational consequence: every pre-existing row goes dark the instant the new policies apply, until manifested. Section 11 named no explicit stage for converting the existing corpus, and its own step 4 (smoke test, including "upload a photo") ran BEFORE step 5 (`GRANT INSERT`), so the upload smoke test could not have succeeded as written. | Section 11 now has an explicit step 1b (the existing-media conversion stage: when verification happens, when the manifest applies relative to cutover, how unprovable files are handled: left out, disclosed, not silently exempted), and the smoke test is split into 4a (non-upload, before resume) and 4b (upload, moved to after step 5's own `GRANT INSERT`). Partial migration failure and application rollback are both named explicitly in step 1a's own failure/rollback procedure. | Harness Step 1c-1c: a representative 3-row corpus (not one fixture row), converted via one manifest call, one row deliberately left unmanifested and confirmed to stay dark; Step 1c-1d: a synthetic multi-statement migration proves a failed statement rolls back the whole file, not just itself, and recovery is a clean re-run |
+| 6 (sixth review) | The reconciliation script called apply AFTER preview and compared results, reporting drift only after a possibly-unapproved grant had already happened: detection, not prevention. An entry that failed preview could be silently granted if something changed to make it newly eligible before apply ran. | `apply_verified_media_provenance` now requires `expected_status` on every apply-mode manifest entry (taken from a real prior preview call; missing it raises an exception). The grant is one atomic `UPDATE` whose `WHERE` clause requires `expected_status = 'would_grant'` alongside every structural guard: an entry never approved, or no longer valid by apply time, is refused symmetrically, in either direction, never silently granted. The script now writes a `*.reviewed.json` file (the pinned, reviewable artifact) and requires `--approved=` for the apply step. | Harness: a deterministic regression named exactly by the review (a row rejected at preview, its blocking condition changes, apply attempted with the stale expected_status) asserts no grant occurs, with the precise refusal reason `refused_not_approved_for_grant`, not merely a nonzero exit code |
+| 7 (sixth review) | `FOR UPDATE` on the candidate row (row 3 above) does not protect facts the function ALSO depends on that live on OTHER rows or tables: `storage.objects` existence, another row's own `original_path`/`visibility`/`moderation_state`. A concurrent write to one of those, committing mid-decision, was not caught. | The grant `UPDATE`'s cross-row/cross-table subqueries are now protected by `lock table ... in share row exclusive mode` (both `listing_media` and `storage.objects`), taken once per apply-mode call: this serializes apply-mode calls against every other write to either table for the call's duration, a stated operating precondition (run during the write-pause window), not merely a comment. Two other lock modes were tried and rejected during this round's own testing (`share mode` self-deadlocks; `share update exclusive` does not actually block ordinary writes, since it exists for VACUUM/ANALYZE specifically). | Harness: a new "poisoning" test (a concurrent write to a DIFFERENT row's `original_path`, committing while an apply call for an unrelated candidate is blocked) proves the candidate is correctly refused, not granted; the two lock-mode mistakes were each caught by a real, reproducible harness failure (a genuine Postgres "deadlock detected", then a genuinely unblocked concurrent write), not found by inspection |
+| 8 (sixth review) | A prior test/claim said the "pending flipped to public" row was refused "even when deliberately included" in a manifest; the actual fixture excluded it from both manifests entirely, so the claim was never demonstrated. Separately, the drain condition's own real limits (documented PostgreSQL behavior: `pg_stat_activity.query` is the most recent statement's text, not a full in-flight-request registry) were understated. | Withdrawn: the harness test now states plainly that the row was simply never manifested, and a SEPARATE, new test shows what actually happens if it IS manifested (it previews as `would_grant`, since it is structurally clean) with an explicit comment distinguishing the function's structural guards from the operator's own content-legitimacy judgment, which the function cannot and does not make. Section 11's drain-condition text now states its documented limits and cites the PostgreSQL docs directly; reconciliation (step 5b) is now REQUIRED every rollout, not a safety net conditional on the pause. | Harness: an honest-boundary test proving manifest inclusion of a structurally-clean-but-unverified row previews as would_grant (not silently rejected, not overclaimed); a filter-gap test proving `pg_stat_activity`'s own query column misses a still-open transaction once it runs a later statement; a delayed-upload rehearsal spanning pause/cutover/resume proving the reconciliation scan (not the drain check) is the real, complete control |
 
 Full local gate re-run on the final integrated code: typecheck clean,
 2080/2080 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
-clean. Isolated harness: **185/185** (up from 172/172). Nothing applied
-to production; PR #22 remains draft. The GitHub Actions required check
-remains a confirmed account billing lock, unresolved, not retried, not
-bypassed.
+clean. Isolated harness: **196/196** (up from 185/185, itself up from
+172/172). Nothing applied to production; PR #22 remains draft. The GitHub
+Actions required check remains a confirmed account billing lock,
+unresolved, not retried, not bypassed. Six consecutive rounds of
+adversarial review have each found a real, live gap in the round directly
+before it; this is grounds for continued scrutiny before production, not
+evidence the surface is now exhausted.

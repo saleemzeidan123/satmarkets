@@ -728,10 +728,31 @@ async function main() {
     // 8g's storage-readability proof) depend on this row actually being
     // trusted by this point, exactly as an operator's real first
     // reconciliation run would leave it.
-    await check("apply_verified_media_provenance grants the genuine historical row when named in an operator-supplied manifest, and refuses everything else", async () => {
+    await check("apply-mode call with NO expected_status on an entry is rejected outright (sixth adversarial review, item 2): apply must never run against an unreviewed manifest, not even once", async () => {
+      let rejected = false;
+      try {
+        await admin.query(
+          "select id, status from public.apply_verified_media_provenance($1::jsonb, true)",
+          [JSON.stringify([{ id: preMigrationLegacyMediaId, path: preMigrationLegacyPath }])],
+        );
+      } catch (e) {
+        rejected = e.code === "22023";
+      }
+      assert(rejected, "an apply-mode call whose manifest entry has no expected_status must be rejected (22023), not silently treated as approved");
+      const stillUntrusted = await admin.query("select is_legacy_media from public.listing_media where id = $1", [preMigrationLegacyMediaId]);
+      assert(stillUntrusted.rows[0].is_legacy_media === false, "the row must remain untrusted after the rejected call");
+    });
+
+    await check("apply_verified_media_provenance: real two-step workflow. Preview first, then apply with the preview's own reported status, grants the genuine historical row and refuses everything else", async () => {
+      const preview = await admin.query(
+        "select id, status from public.apply_verified_media_provenance($1::jsonb, false)",
+        [JSON.stringify([{ id: preMigrationLegacyMediaId, path: preMigrationLegacyPath }])],
+      );
+      assert(preview.rows[0].status === "would_grant", `expected the preview to report would_grant for a genuine, structurally clean historical row, got '${preview.rows[0].status}'`);
+
       const r = await admin.query(
         "select id, status from public.apply_verified_media_provenance($1::jsonb, true)",
-        [JSON.stringify([{ id: preMigrationLegacyMediaId, path: preMigrationLegacyPath }])],
+        [JSON.stringify([{ id: preMigrationLegacyMediaId, path: preMigrationLegacyPath, expected_status: preview.rows[0].status }])],
       );
       assert(r.rowCount === 1, `expected exactly one manifest entry reported back, got ${r.rowCount}`);
       assert(r.rows[0].id === preMigrationLegacyMediaId, "the reported row must be the exact manifest entry");
@@ -744,6 +765,174 @@ async function main() {
       assert(after.rows[0].is_legacy_media === true, "the manifest-named row must now be trusted");
       assert(after.rows[0].derivation_verified === false, "derivation_verified stays false: this is legacy-by-manifest, not a genuine finalized upload");
     });
+
+    console.log("\n=== Step 1c-1c: the EXISTING-MEDIA CONVERSION STAGE, rehearsed against a representative multi-row corpus, not an empty database (sixth adversarial review, item 1) ===");
+    // WHY THIS EXISTS. Removing the automatic backfill (this round's own
+    // item 1 fix, above) has a real, disclosed operational consequence:
+    // 20260912c/d's own read policies require (derivation_verified OR
+    // is_legacy_media). The instant those policies apply, EVERY row that
+    // predates this package (content_sha256 IS NULL, is_legacy_media
+    // still false) becomes invisible to public reads, all at once, until
+    // an operator's manifest grants it. On a real production database
+    // holding more than the one fixture row Step 1b/1c-1b above exercise,
+    // that is a real, customer-visible mass-outage risk if the rollout
+    // does not explicitly account for it. This step rehearses the actual
+    // answer against several rows at once, not one, and states the three
+    // things item 1 named precisely:
+    //
+    // WHEN VERIFICATION HAPPENS: before the write pause even begins.
+    // Provenance assessment is a READ-ONLY exercise against the CURRENT
+    // production database (the operator enumerates every content_sha256
+    // IS NULL row and decides, by real means outside this schema, which
+    // ones they can personally attest to), and can run at any time,
+    // independent of the migration/pause/deploy sequence, since it writes
+    // nothing.
+    //
+    // WHEN THE APPROVED MANIFEST IS APPLIED, RELATIVE TO THE PUBLIC-
+    // POLICY CUTOVER: immediately after the migrations apply (runbook
+    // section 11's own step 1, before step 2's verification queries),
+    // inside the SAME maintenance window the write pause already covers,
+    // specifically BEFORE any real anonymous traffic is expected to hit
+    // the new policies. This is not a separate, looser window: it is the
+    // one place converting the existing corpus belongs, so the gap
+    // between "the new policy is live" and "the existing corpus is
+    // readable again" is the time this ONE apply call takes, not an
+    // open-ended, unscheduled cleanup project.
+    //
+    // HOW UNPROVABLE FILES ARE HANDLED: explicitly, consciously left out
+    // of the manifest, and consequently left dark. Never silently treated
+    // as verified, never given a fallback exemption, and never blocking
+    // the OTHER, provable rows in the same batch. The remediation is the
+    // same re-upload path any new listing already uses, or gathering real
+    // evidence for that specific row later; both are DISCLOSED, not
+    // hidden, exactly like every other manifest rejection reason in this
+    // harness.
+    {
+      const corpusAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const corpusListing = (
+        await admin.query(
+          `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+           values ($1, 'published', '7200000099', now() + interval '30 days') returning id`,
+          [corpusAcct],
+        )
+      ).rows[0].id;
+      // A representative existing corpus: three pre-existing rows (not
+      // one), matching what a real, small production listing might
+      // already hold before this package's migrations ever ran. All
+      // three are structurally identical (content_sha256 IS NULL, real
+      // objects, correct account folder): the difference between them is
+      // entirely about what the OPERATOR can attest to, which is the
+      // actual, real-world gating factor this stage exists to rehearse.
+      const corpusPaths = [
+        `${corpusAcct}/${corpusListing}/existing-photo-1.webp`,
+        `${corpusAcct}/${corpusListing}/existing-photo-2.webp`,
+        `${corpusAcct}/${corpusListing}/existing-photo-3-unverifiable.webp`,
+      ];
+      const corpusIds = [];
+      for (const p of corpusPaths) {
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [p]);
+        const id = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [corpusListing, p])).rows[0].id;
+        corpusIds.push(id);
+      }
+      const [corpusGood1, corpusGood2, corpusUnverifiable] = corpusIds;
+
+      await check("BEFORE conversion: the entire representative corpus is invisible under the new policies, exactly the mass-outage risk this stage exists to close quickly", async () => {
+        const c = await asAnonRole(pg);
+        try {
+          for (const p of corpusPaths) {
+            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [p]);
+            assert(r.rowCount === 0, `${p} must be unreadable before the conversion stage runs, or this fixture does not represent the real risk`);
+          }
+        } finally {
+          await c.end();
+        }
+      });
+
+      await check("the operator's own manifest, prepared in advance and DELIBERATELY excluding the one unverifiable row, converts exactly the provable rows and leaves the unprovable one dark, not silently exempted", async () => {
+        // The manifest an operator would actually build: only the rows
+        // they can personally attest to. corpusUnverifiable is real,
+        // exists, is structurally identical to the other two, and is
+        // still never included: this is the "how unprovable files are
+        // handled" answer, enacted, not merely described.
+        const corpusManifest = [
+          { id: corpusGood1, path: corpusPaths[0] },
+          { id: corpusGood2, path: corpusPaths[1] },
+        ];
+        const preview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [JSON.stringify(corpusManifest)]);
+        const previewById = Object.fromEntries(preview.rows.map((r) => [r.id, r.status]));
+        assert(previewById[corpusGood1] === "would_grant" && previewById[corpusGood2] === "would_grant", "both manifested rows must preview cleanly");
+
+        const approved = corpusManifest.map((e) => ({ ...e, expected_status: previewById[e.id] }));
+        const applied = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(approved)]);
+        const appliedById = Object.fromEntries(applied.rows.map((r) => [r.id, r.status]));
+        assert(appliedById[corpusGood1] === "granted" && appliedById[corpusGood2] === "granted", "both manifested rows must be granted");
+
+        const unverifiable = await admin.query("select is_legacy_media from public.listing_media where id = $1", [corpusUnverifiable]);
+        assert(unverifiable.rows[0].is_legacy_media === false, "the unmanifested row must remain untrusted: never silently swept in alongside the provable rows in the same batch");
+      });
+
+      await check("AFTER conversion: the provable rows are readable again, in the same maintenance window; the unprovable row stays dark until a real re-upload or fresh evidence, disclosed, not hidden", async () => {
+        const c = await asAnonRole(pg);
+        try {
+          for (const p of [corpusPaths[0], corpusPaths[1]]) {
+            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [p]);
+            assert(r.rowCount === 1, `${p} must be readable again immediately after its manifest entry is applied`);
+          }
+          const stillDark = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [corpusPaths[2]]);
+          assert(stillDark.rowCount === 0, "the unverifiable row must remain dark: this is the disclosed, accepted product tradeoff, not a bug to silently paper over");
+        } finally {
+          await c.end();
+        }
+      });
+    }
+
+    console.log("\n=== Step 1c-1d: PARTIAL MIGRATION FAILURE leaves a well-defined, resumable state, not a half-applied mess (sixth adversarial review, item 1) ===");
+    // Every migration file in this package contains no explicit BEGIN/
+    // COMMIT of its own, so Postgres's own default behaviour applies: the
+    // CLI/dashboard SQL runner wraps each file's statements in one
+    // implicit transaction. If any statement in migration N fails, every
+    // OTHER statement in that SAME file rolls back with it; migrations
+    // 1..N-1 (already committed, in their own separate transactions) are
+    // completely unaffected. Recovery is exactly "fix the problem, re-run
+    // from migration N": no manual partial-state cleanup, because there
+    // is no partial state to clean up. Proven with a synthetic two-
+    // statement block (a real, observable first statement, then a
+    // deliberately broken second one referencing a table that does not
+    // exist) rather than by trying to break one of this package's own
+    // migration files directly: every real file's own idempotent `if not
+    // exists` guards (needed for Step 2's own reapplication tests) would
+    // silently SKIP a broken statement inserted into an already-applied
+    // file rather than erroring, since the guarded condition is already
+    // true by the time this step runs, which would prove nothing about
+    // real partial-failure behaviour.
+    {
+      const marker = "partial_failure_marker_" + Date.now();
+      const SYNTHETIC_MIGRATION = `
+        create table public.${marker} (id int primary key);
+        alter table public.${marker} add column bad_col int references public.this_table_does_not_exist(id);
+      `;
+
+      await check("a multi-statement migration that fails partway is fully rolled back: the FIRST statement's own effect (already run, in the same implicit transaction) does not survive the LATER statement's failure", async () => {
+        let failed = false;
+        try {
+          await admin.query(SYNTHETIC_MIGRATION);
+        } catch (e) {
+          failed = true;
+        }
+        assert(failed, "fixture sanity: the intentionally broken second statement must actually fail, or this test proves nothing");
+
+        const exists = await admin.query("select 1 from information_schema.tables where table_name = $1", [marker]);
+        assert(exists.rowCount === 0, "the table created by the FIRST statement must not exist after the SECOND statement's failure: Postgres's own implicit per-file transaction rolled the whole file back, not just the failing line");
+      });
+
+      await check("recovery from a partial-failure state is simply re-running the CORRECTED file from the top: no special repair procedure, no manual cleanup of a half-applied table", async () => {
+        const FIXED_MIGRATION = `create table public.${marker} (id int primary key); alter table public.${marker} add column ok_col int;`;
+        await admin.query(FIXED_MIGRATION);
+        const r = await admin.query("select 1 from information_schema.columns where table_name = $1 and column_name = 'ok_col'", [marker]);
+        assert(r.rowCount === 1, "the corrected file must apply cleanly from the top, exactly as if the broken attempt had never happened");
+        await admin.query(`drop table public.${marker}`);
+      });
+    }
 
     console.log("\n=== Step 1c-2: the legacy-backfill marker table is locked down (third adversarial review, item 3) ===");
     // The default-privileges statement in BOOTSTRAP_SQL means a table
@@ -2691,7 +2880,7 @@ async function main() {
         const c = await asServiceRole(pg);
         try {
           const r = await c.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
-            JSON.stringify([{ id: svcMediaId, path: svcPath }]),
+            JSON.stringify([{ id: svcMediaId, path: svcPath, expected_status: "would_grant" }]),
           ]);
           assert(r.rowCount === 1 && r.rows[0].status === "granted", `a real service_role-scoped session must be able to invoke and successfully grant via this function, got ${JSON.stringify(r.rows)}`);
         } finally {
@@ -2714,17 +2903,29 @@ async function main() {
       });
     }
 
-    console.log("\n=== Step 8h-race: concurrency safety (fifth adversarial review, item 3) -- FOR UPDATE genuinely serializes, no stale-fact grant, no double-grant ===");
+    console.log("\n=== Step 8h-race: concurrency safety (fifth then sixth adversarial review, item 3) -- table-locked atomic grant, no stale-fact grant, no double-grant, cross-row facts protected too ===");
     // The fourth review's own version computed a candidate array ONCE
     // (a plain SELECT), then updated by that array alone: a concurrent
     // transaction changing a candidate row's relevant facts and committing
     // in the window between that SELECT and the later UPDATE would not be
     // caught, because a function's OWN transactional wrapping guarantees
     // only that ITS OWN writes commit/roll back together, never that facts
-    // it read early stay true later in the same call. These two tests use
-    // real, separate pg connections, deterministically interleaved (not
-    // relying on Promise.all timing alone), matching this harness's own
-    // established concurrency-testing pattern elsewhere in this file.
+    // it read early stay true later in the same call. The fifth review's
+    // own fix (FOR UPDATE on the candidate row) closed this for the
+    // CANDIDATE row's own facts only. The sixth review named the real gap
+    // that left open: the function also depends on storage.objects and on
+    // OTHER listing_media rows (a preserved-original owner, a private or
+    // removed-reference sharer), none of which were locked, only read by
+    // earlier, separate statements. The current function closes this with
+    // `lock table ... in share mode` (both tables) taken once per
+    // apply-mode call, before the per-entry loop, plus folding every
+    // guard into ONE atomic UPDATE statement: the tests below now prove
+    // blocking happens (and happens EARLIER, at the table lock itself,
+    // stronger than the row lock alone used to provide) and that a
+    // cross-row fact change is correctly picked up, not raced past. These
+    // use real, separate pg connections, deterministically interleaved
+    // (not relying on Promise.all timing alone), matching this harness's
+    // own established concurrency-testing pattern elsewhere in this file.
     {
       const raceAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
       const raceListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [raceAcct])).rows[0].id;
@@ -2732,24 +2933,26 @@ async function main() {
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [racePath]);
       const raceMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [raceListing, racePath])).rows[0].id;
 
-      await check("a concurrent trusted-pipeline write that COMMITS while a manifest grant is blocked on the row lock is correctly seen as already_trusted, never granted against a stale pre-lock snapshot", async () => {
+      await check("a concurrent trusted-pipeline write that COMMITS while a manifest grant is blocked on the table lock is correctly seen as already_trusted, never granted against a stale pre-lock snapshot", async () => {
         const connA = await asServiceRole(pg); // simulates the real upload pipeline's own trusted finalization
-        const connB = await asServiceRole(pg); // simulates an operator's own reconciliation call
+        const connB = await asServiceRole(pg); // simulates an operator's own apply call
         try {
           await connA.query("begin");
           await connA.query("update public.listing_media set content_sha256 = 'racehash' where id = $1", [raceMediaId]);
-          // connA now holds the row lock, uncommitted. Fire connB's call
-          // without awaiting it yet: it must block inside the function's
-          // own FOR UPDATE, not read a pre-lock snapshot and proceed.
+          // connA now holds a write lock on listing_media, uncommitted.
+          // Fire connB's call without awaiting it yet: its own
+          // `lock table listing_media in share mode` must block on
+          // connA's still-open write, not read a pre-lock snapshot and
+          // proceed.
           const bPromise = connB.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
-            JSON.stringify([{ id: raceMediaId, path: racePath }]),
+            JSON.stringify([{ id: raceMediaId, path: racePath, expected_status: "would_grant" }]),
           ]);
           // Deterministic wait for connB to actually be blocked ON THE
-          // LOCK (not a fixed sleep guessing at timing): poll pg_locks
-          // via the admin connection until a lock wait attributable to
-          // connB's own backend appears, with a hard ceiling so a real
-          // failure to block (the bug this test exists to catch) fails
-          // fast and loudly instead of hanging.
+          // LOCK (not a fixed sleep guessing at timing): poll
+          // pg_stat_activity via the admin connection until a lock wait
+          // attributable to connB's own backend appears, with a hard
+          // ceiling so a real failure to block (the bug this test exists
+          // to catch) fails fast and loudly instead of hanging.
           let blocked = false;
           for (let i = 0; i < 50; i++) {
             const waiting = await admin.query(
@@ -2760,7 +2963,7 @@ async function main() {
             if (waiting.rowCount > 0) { blocked = true; break; }
             await new Promise((res) => setTimeout(res, 20));
           }
-          assert(blocked, "connB's own call must genuinely block on the row lock connA holds; if it never shows as lock-waiting, FOR UPDATE is not serializing access to this row");
+          assert(blocked, "connB's own call must genuinely block; if it never shows as lock-waiting, the table lock is not serializing access");
 
           await connA.query("commit");
           const bResult = await bPromise;
@@ -2782,7 +2985,7 @@ async function main() {
         const connA = await asServiceRole(pg);
         const connB = await asServiceRole(pg);
         try {
-          const manifest = JSON.stringify([{ id: raceMediaId2, path: racePath2 }]);
+          const manifest = JSON.stringify([{ id: raceMediaId2, path: racePath2, expected_status: "would_grant" }]);
           const [rA, rB] = await Promise.all([
             connA.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [manifest]),
             connB.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [manifest]),
@@ -2792,6 +2995,74 @@ async function main() {
           const final = await admin.query("select is_legacy_media from public.listing_media where id = $1", [raceMediaId2]);
           assert(final.rows[0].is_legacy_media === true, "the row must end up trusted exactly once, regardless of which concurrent call won the race");
         } finally {
+          await connA.end();
+          await connB.end();
+        }
+      });
+
+      // SIXTH ADVERSARIAL REVIEW: a cross-row fact, not the candidate's
+      // own row, changes mid-decision. The fifth review's own FOR UPDATE
+      // fix protected only the candidate row itself; it could not have
+      // caught this, since original_path lives on a DIFFERENT row.
+      const raceAcct3 = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const raceListing3 = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [raceAcct3])).rows[0].id;
+      const racePath3 = `${raceAcct3}/${raceListing3}/race-object-3.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [racePath3]);
+      const raceMediaId3 = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [raceListing3, racePath3])).rows[0].id;
+      // The "poisoner": a second, currently-unrelated row that a
+      // concurrent transaction is about to repoint so its own
+      // original_path equals race-object-3's own path, exactly the
+      // preserved-original-reuse forgery Step 8h tests elsewhere, but
+      // timed as a RACE against an in-progress apply call instead of
+      // already being in place beforehand.
+      const raceAcct3b = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const raceListing3b = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [raceAcct3b])).rows[0].id;
+      const poisonerPath = `${raceAcct3b}/${raceListing3b}/poisoner.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [poisonerPath]);
+      const poisonerId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path) values ($1, $2) returning id",
+          [raceListing3b, poisonerPath],
+        )
+      ).rows[0].id;
+
+      await check("a concurrent write to a DIFFERENT row's original_path (poisoning the candidate's own path retroactively) that commits while an apply call is blocked on the table lock is correctly picked up, not raced past: the candidate is refused, not granted", async () => {
+        const connA = await asServiceRole(pg); // simulates a real trusted-pipeline write to the POISONER row, not the candidate
+        const connB = await asServiceRole(pg); // simulates the apply call for the candidate row
+        try {
+          await connA.query("begin");
+          // Sets the poisoner's own original_path to the CANDIDATE's own
+          // path: if granted, this would mean a row genuinely trusted at
+          // this moment claims race-object-3 as ITS OWN preserved
+          // original, which the "not a recorded preserved original"
+          // guard must then refuse for the candidate.
+          await connA.query(
+            "update public.listing_media set content_sha256 = 'poison-hash', original_path = $2, derived_by = 'system:upload-pipeline', derived_at = now() where id = $1",
+            [poisonerId, racePath3],
+          );
+          const bPromise = connB.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: raceMediaId3, path: racePath3, expected_status: "would_grant" }]),
+          ]);
+          let blocked = false;
+          for (let i = 0; i < 50; i++) {
+            const waiting = await admin.query(
+              `select 1 from pg_stat_activity
+                 where state = 'active' and wait_event_type = 'Lock'
+                   and query ilike '%apply_verified_media_provenance%'`,
+            );
+            if (waiting.rowCount > 0) { blocked = true; break; }
+            await new Promise((res) => setTimeout(res, 20));
+          }
+          assert(blocked, "connB's own call must block on connA's still-open write to the UNRELATED poisoner row too, proving the table lock (not only a row lock on the candidate) is what protects cross-row facts");
+
+          await connA.query("commit");
+          const bResult = await bPromise;
+          assert(bResult.rows[0].status !== "granted", `the candidate must NOT be granted once the poisoner's own original_path (committed concurrently) makes it a reused preserved original; got '${bResult.rows[0].status}'`);
+
+          const finalCandidate = await admin.query("select is_legacy_media from public.listing_media where id = $1", [raceMediaId3]);
+          assert(finalCandidate.rows[0].is_legacy_media === false, "the candidate must remain untrusted after the poisoning commit was correctly observed");
+        } finally {
+          await connA.query("rollback").catch(() => {});
           await connA.end();
           await connB.end();
         }
@@ -3004,8 +3275,12 @@ async function main() {
         }
       });
 
-      await check("apply_verified_media_provenance (apply mode): grants trust to ONLY the legitimate manifest entry; every forged/unproven entry, even though NAMED IN THE MANIFEST, remains permanently untrusted", async () => {
-        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(initialManifest)]);
+      await check("apply_verified_media_provenance (apply mode): real two-step workflow (preview, then apply with the preview's own statuses) grants trust to ONLY the legitimate manifest entry; every forged/unproven entry, even though NAMED IN THE MANIFEST, remains permanently untrusted", async () => {
+        const initialPreview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [JSON.stringify(initialManifest)]);
+        const previewStatusById = Object.fromEntries(initialPreview.rows.map((row) => [row.id, row.status]));
+        const approvedInitialManifest = initialManifest.map((entry) => ({ ...entry, expected_status: previewStatusById[entry.id] }));
+
+        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(approvedInitialManifest)]);
         const byId = Object.fromEntries(r.rows.map((row) => [row.id, row.status]));
         assert(byId[legitimateId] === "granted", `legitimate row: expected granted, got ${byId[legitimateId]}`);
         for (const [label, id] of [
@@ -3023,19 +3298,28 @@ async function main() {
         assert(legit.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-manifest, not a genuine finalized upload");
       });
 
-      await check("CASE 6 (pending flipped to public before reconciliation): never named in any manifest, so visibility manipulation alone achieves nothing; the object stays unreadable regardless of the owner's own flip", async () => {
+      await check("CASE 6 (pending flipped to public before reconciliation): NOT included in the initial manifest above, so it was never granted and stays unreadable; visibility manipulation alone achieves nothing while a row is unlisted", async () => {
         const trust = await admin.query("select is_legacy_media, derivation_verified, visibility from public.listing_media where id = $1", [pendingId]);
-        assert(trust.rows[0].is_legacy_media === false, "never manifested, so never granted, regardless of the visibility flip");
+        assert(trust.rows[0].is_legacy_media === false, "not named in the manifest above, so never granted, regardless of the visibility flip");
         assert(trust.rows[0].derivation_verified === false, "never went through the trusted pipeline either");
         assert(trust.rows[0].visibility === "public", "fixture sanity: the flip itself must have genuinely succeeded (visibility is not trust-gated, only readability is)");
         const gapStrangerAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
         const c = await asTestRole(pg, { userId: null, accountId: gapStrangerAcct, isSat: false });
         try {
           const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [pendingPath]);
-          assert(r.rowCount === 0, "a stranger must still be unable to read this object: public visibility alone, with no trust grant, must never be sufficient");
+          assert(r.rowCount === 0, "a stranger must still be unable to read this object: an unlisted row, however its visibility column reads, must never be sufficient");
         } finally {
           await c.end();
         }
+      });
+
+      await check("HONEST BOUNDARY (sixth adversarial review, item 4): if an operator's own manifest DOES include a structurally-clean-but-unverified row (case 6's own object, real, same-account, no conflicting reference), the function grants it. This is not a gap: the function's guards are structural integrity checks (drift, cross-account, reused/shared paths), never a judgment that the underlying file is actually the operator's legitimate content. That judgment belongs entirely to whatever real process the operator used before adding this id to the manifest in the first place", async () => {
+        const wouldBeManifest = [{ id: pendingId, path: pendingPath }];
+        const preview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [JSON.stringify(wouldBeManifest)]);
+        assert(preview.rows[0].status === "would_grant", `a structurally clean row must preview as would_grant regardless of how thin the operator's real verification behind it was, got '${preview.rows[0].status}'`);
+        // Deliberately not applied: this test exists to state the
+        // boundary honestly, not to actually grant case 6's own row (the
+        // rest of this suite depends on it staying untrusted).
       });
 
       // SECOND MANIFEST: a later, narrower, deployment-window-style
@@ -3055,10 +3339,64 @@ async function main() {
       ];
 
       await check("a SECOND, later, narrower manifest call (representing ongoing/deployment-window reconciliation) applies the SAME validation rigor: grants the new genuine row, still refuses the same cross-account forgery", async () => {
-        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(laterManifest)]);
+        const laterPreview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [JSON.stringify(laterManifest)]);
+        const laterStatusById = Object.fromEntries(laterPreview.rows.map((row) => [row.id, row.status]));
+        const approvedLaterManifest = laterManifest.map((entry) => ({ ...entry, expected_status: laterStatusById[entry.id] }));
+
+        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(approvedLaterManifest)]);
         const byId = Object.fromEntries(r.rows.map((row) => [row.id, row.status]));
         assert(byId[laterId] === "granted", `the new genuine row must be granted on this second, independent call, got ${byId[laterId]}`);
         assert(byId[forgedId] !== "granted", `the cross-account forgery must still be refused on a second attempt, got ${byId[forgedId]}`);
+      });
+
+      // SIXTH ADVERSARIAL REVIEW, ITEM 2: the deterministic drift
+      // regression the review explicitly asked for. An entry is rejected
+      // during preview (real object does not exist yet); its blocking
+      // condition then changes (the object is created); apply is
+      // attempted using the STALE, pre-change expected_status from the
+      // first preview. The prior design (preview, apply, compare results,
+      // report a mismatch) would have GRANTED this: the object now
+      // exists, so a fresh, unconditional apply call would see
+      // would_grant and write it. The current design must not, because
+      // the manifest entry passed to apply still carries the OLD,
+      // rejecting status, and the grant's own WHERE clause requires that
+      // exact value to equal 'would_grant'.
+      const driftAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const driftListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [driftAcct])).rows[0].id;
+      const driftPath = `${driftAcct}/${driftListing}/drift-regression.webp`;
+      const driftId = (
+        await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [driftListing, driftPath])
+      ).rows[0].id;
+
+      await check("DETERMINISTIC DRIFT REGRESSION: a row rejected at preview time (object not yet in storage), later made eligible, is STILL refused when apply runs with the preview's own stale (rejecting) expected_status: no unapproved grant occurs", async () => {
+        const stalePreview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [
+          JSON.stringify([{ id: driftId, path: driftPath }]),
+        ]);
+        assert(stalePreview.rows[0].status === "object_missing_from_storage", `fixture sanity: the object must not exist yet at preview time, got '${stalePreview.rows[0].status}'`);
+        const staleExpectedStatus = stalePreview.rows[0].status;
+
+        // THE BLOCKING CONDITION CHANGES: the object is created after
+        // preview ran, exactly the drift scenario named by the review.
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [driftPath]);
+
+        // Sanity check only, not the decision path: a FRESH preview run
+        // right now would indeed report would_grant, confirming the row
+        // really did become eligible in the gap.
+        const freshPreview = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [
+          JSON.stringify([{ id: driftId, path: driftPath }]),
+        ]);
+        assert(freshPreview.rows[0].status === "would_grant", `fixture sanity: the object existing now must make a FRESH preview report would_grant, or this test does not exercise real drift, got '${freshPreview.rows[0].status}'`);
+
+        // THE ACTUAL TEST: apply using the STALE expected_status from
+        // BEFORE the object existed, not the fresh one.
+        const applyResult = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+          JSON.stringify([{ id: driftId, path: driftPath, expected_status: staleExpectedStatus }]),
+        ]);
+        assert(applyResult.rows[0].status !== "granted", `an entry must never be granted merely because it became eligible after preview; it was approved (if at all) against a status that no longer applies, got '${applyResult.rows[0].status}'`);
+        assert(applyResult.rows[0].status === "refused_not_approved_for_grant", `expected the precise refusal reason 'refused_not_approved_for_grant', got '${applyResult.rows[0].status}'`);
+
+        const finalRow = await admin.query("select is_legacy_media from public.listing_media where id = $1", [driftId]);
+        assert(finalRow.rows[0].is_legacy_media === false, "no unapproved grant occurred: the row must remain untrusted, not merely 'the call exited nonzero'");
       });
 
       await check("DATABASE POLICY EVIDENCE, NOT HTTP: the real storage.objects RLS policy admits the legitimate/granted objects to anonymous and an unrelated authenticated stranger, and refuses the forged, private-reference, removed-reference, and never-granted-pending objects, matching its own EXISTS clause exactly", async () => {
@@ -3127,6 +3465,37 @@ async function main() {
     // stuck or unusually long transaction requiring investigation, not
     // something to proceed past silently.
     //
+    // THE HONEST LIMIT OF THIS SIGNAL (sixth adversarial review, item 3):
+    // this is NOT a complete in-flight-request registry, and the prior
+    // version of this comment overstated it by omission. pg_stat_activity
+    // .query is documented as "the text of [the] most recent query", not
+    // a log of every statement a transaction has run:
+    // https://www.postgresql.org/docs/16/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW
+    // Two real gaps follow directly: (1) a transaction that started with
+    // an INSERT but has since run a LATER statement (an app doing a
+    // follow-up SELECT/UPDATE in the same transaction, say) shows that
+    // LATER statement's text, not the INSERT, so this filter can miss a
+    // genuinely still-open, uncommitted transaction that DID insert a
+    // row (proven below, not merely asserted); (2) an application request
+    // still uploading a file to storage, or doing any work BEFORE it
+    // issues its own INSERT, has no backend/session visible to Postgres
+    // at all yet, so nothing here can see it either. Neither gap is a
+    // reason to abandon this check (it still catches the common,
+    // narrower case: a transaction whose OWN most recent statement really
+    // is the insert), but the real, complete control against BOTH gaps is
+    // NOT a smarter query: it is that once the REVOKE genuinely commits,
+    // every NEW insert statement (from any request, however long it has
+    // been "in flight" from the application's own point of view before
+    // that statement runs) fails outright with 42501, and step 8 below
+    // (the reconciliation safety net) is REQUIRED, not merely offered, to
+    // catch the narrow, legitimate case that DOES still land: a request
+    // whose actual INSERT statement executes AFTER resume (step 6), by
+    // which point it succeeds completely ordinarily, with no error and no
+    // marker distinguishing it from any other pre-migration row. Rehearsed
+    // below, not merely asserted: a delayed old-app upload spanning
+    // pause, cutover and resume lands successfully and untrusted, and the
+    // reconciliation scan genuinely surfaces it afterward.
+    //
     // THE FULL PROCEDURE, updated:
     //   1. Before applying migrations: REVOKE INSERT ON public.listing_
     //      media FROM authenticated; note the commit time.
@@ -3145,11 +3514,17 @@ async function main() {
     //      INSERT grant, only SELECT, so this step is not automatic and
     //      must be explicit).
     //   7. Smoke test a real upload through the new app.
-    //   8. Run scripts/apply-verified-media-provenance.mjs as a SAFETY
-    //      NET against an operator-prepared manifest, not a required step
-    //      when the pause was actually used and drained cleanly: any row
-    //      it grants represents a request that was genuinely already
-    //      in-flight at the moment of step 1's own REVOKE.
+    //   8. Query listing_media for content_sha256 IS NULL AND is_legacy_
+    //      media = false AND created_at BETWEEN step-1's-revoke-time AND
+    //      well after step 6's own resume (wide on purpose: the drain
+    //      signal is a partial one, per the honest limit above, so this
+    //      window is not narrowed to "just the pause"). REQUIRED, not
+    //      optional or conditional on "the pause was actually used": this
+    //      is the actual, complete control for the case pg_stat_activity
+    //      cannot see, not merely a safety net for when something else
+    //      was skipped. Any row found needs a real operator manifest
+    //      (scripts/apply-verified-media-provenance.mjs) before it is
+    //      readable again.
     //
     // FAILURE/ROLLBACK PROCEDURE (the prior version of this file named no
     // such procedure at all): if step 2 fails partway (a migration
@@ -3238,6 +3613,109 @@ async function main() {
         } finally {
           await c.end();
         }
+      });
+
+      await check("HONEST LIMIT, PROVEN NOT MERELY ASSERTED: a genuinely open, uncommitted transaction that DID insert a row is MISSED by the drain filter once its own most-recent statement is something other than the insert (sixth adversarial review, item 3)", async () => {
+        const gapAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const gapListingForGap = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapAcct])).rows[0].id;
+        const c = await asServiceRole(pg);
+        try {
+          await c.query("begin");
+          const ins = await c.query(
+            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+            [gapListingForGap, "drain-gap-test/still-open.webp"],
+          );
+          // The transaction is still open (uncommitted): it genuinely did
+          // insert a row into listing_media a moment ago. Now run a
+          // DIFFERENT statement in the SAME transaction, matching a real
+          // app doing follow-up work (a read-back, a second write) before
+          // committing.
+          await c.query("select 1");
+          const missed = await admin.query(
+            `select count(*) from pg_stat_activity
+               where state in ('active', 'idle in transaction')
+                 and query ilike '%insert into%listing_media%'
+                 and xact_start < now()`,
+          );
+          assert(Number(missed.rows[0].count) === 0, "the filter must (wrongly) show 0 here: this transaction's own most recent statement is no longer the insert, exactly the documented pg_stat_activity.query limitation, proving the drain check alone cannot be trusted as a complete in-flight-request registry");
+          // Same connection (c), not admin: this row is still uncommitted,
+          // so only the transaction that wrote it can see it (ordinary
+          // MVCC visibility). Checking via a DIFFERENT session here would
+          // correctly find nothing, which would not be evidence of
+          // anything about the drain filter.
+          const stillThere = await c.query("select 1 from public.listing_media where id = $1", [ins.rows[0].id]);
+          assert(stillThere.rowCount === 1, "fixture sanity: the row genuinely exists (uncommitted, visible to this same session) even though the drain filter above missed the transaction that inserted it");
+        } finally {
+          await c.query("rollback").catch(() => {});
+          await c.end();
+        }
+      });
+
+      await check("REHEARSED, NOT MERELY ASSERTED: a delayed old-app upload spanning pause, cutover and resume lands successfully and untrusted, invisible to the drain check, and IS surfaced by the required reconciliation scan afterward", async () => {
+        const delayedAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const delayedUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const delayedListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [delayedAcct])).rows[0].id;
+
+        const revokeCommitTime = new Date().toISOString();
+        // 1a. Pause.
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        try {
+          // The drain check, run right after the pause: correctly 0
+          // (nothing was ever in flight in this rehearsal), matching a
+          // real operator who would now proceed.
+          const drainNow = await admin.query(
+            `select count(*) from pg_stat_activity
+               where state in ('active', 'idle in transaction')
+                 and query ilike '%insert into%listing_media%'
+                 and xact_start < $1`,
+            [revokeCommitTime],
+          );
+          assert(Number(drainNow.rows[0].count) === 0, "fixture sanity: nothing genuinely in flight, so the drain check correctly reads 0 and an operator would proceed");
+
+          // 1..5. Migrations apply, verification, merge: no schema/app
+          // action needed in this rehearsal beyond what Step 1a-1c
+          // already applied earlier in this same harness run.
+          // 6. Resume.
+        } finally {
+          await admin.query("grant insert on public.listing_media to authenticated");
+        }
+
+        // THE DELAYED REQUEST: an old-app upload that, from a real
+        // person's point of view, "started" before or during the pause
+        // (they clicked upload), but whose actual DATABASE statement only
+        // executes now, AFTER resume, because the old app spent time on
+        // work before its own INSERT (file processing, network latency).
+        // Nothing about this statement is special: INSERT is granted
+        // again, so it succeeds completely ordinarily.
+        const delayedSession = await asTestRole(pg, { userId: delayedUser, accountId: delayedAcct, isSat: false });
+        let delayedId;
+        try {
+          const ins = await delayedSession.query(
+            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+            [delayedListing, "delayed-upload-test/old-app-arrives-late.webp"],
+          );
+          delayedId = ins.rows[0].id;
+        } finally {
+          await delayedSession.end();
+        }
+
+        const landed = await admin.query("select content_sha256, is_legacy_media from public.listing_media where id = $1", [delayedId]);
+        assert(landed.rows[0].content_sha256 === null, "fixture sanity: the delayed row genuinely landed exactly like a real old-app upload, no content_sha256");
+        assert(landed.rows[0].is_legacy_media === false, "fixture sanity: correctly untrusted, same as any other unmanifested row");
+
+        // THE CONTROL: the required, wide-windowed reconciliation query
+        // (step 8) must surface this row. This is the actual completeness
+        // guarantee, not an improved drain check (which cannot see this
+        // row at all, by construction: the transaction that produced it
+        // never existed until after resume).
+        const surfaced = await admin.query(
+          `select id from public.listing_media
+             where content_sha256 is null and is_legacy_media = false
+               and created_at >= $1`,
+          [revokeCommitTime],
+        );
+        const surfacedIds = surfaced.rows.map((r) => r.id);
+        assert(surfacedIds.includes(delayedId), "the reconciliation scan must surface the delayed row so an operator can review and manifest it; if it does not, this row would be permanently, silently lost, which is exactly the 'succeeding unnoticed' outcome the review named");
       });
     }
     {
