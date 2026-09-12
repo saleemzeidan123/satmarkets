@@ -16,14 +16,7 @@
 -- their own eligible published listings with `path` set to an ARBITRARY
 -- string, `visibility = 'public'` (or take the column default), and
 -- `moderation_state` left at its own default ('unreviewed', the only value
--- INSERT ever permits for a non-trusted caller). If that arbitrary path
--- happens to match a real object anywhere in the bucket, whether another
--- account's own private or preserved-original object, or an object whose
--- own real media row was removed by moderation, the storage policy's own
--- EXISTS clause would admit it: the forged row IS eligible by every check
--- that clause makes, because none of those checks establish that THIS
--- row's own path was ever legitimately produced by the upload pipeline at
--- all, only that some eligible-looking row happens to reference it.
+-- INSERT ever permits for a non-trusted caller).
 --
 -- THE FIX: A SIGNAL THAT CANNOT BE FORGED, WHICH ALSO PRESERVES LEGACY.
 --
@@ -50,15 +43,13 @@
 -- pipeline", never the hash itself.
 --
 -- is_legacy_media is the explicit, migration-safe distinction for rows
--- that predate this fix entirely: backfilled ONCE, below, capturing
--- exactly the set of rows that already existed (content_sha256 IS NULL,
--- the honest state of every row before this package's outcome C ever
--- existed) at the moment this migration runs. No later INSERT can ever
--- receive true here (the column defaults to false, and is trusted-column
--- protected like content_sha256/original_path), so this is a permanent,
--- one-time historical fact, never confused with "recently inserted,
--- still unhashed", which is exactly the gap "do not treat every newly
--- inserted null-hash row as legacy" names.
+-- that predate this fix entirely, and that a real, out-of-band process has
+-- independently confirmed are legitimate (see the fifth adversarial review
+-- correction below). No later INSERT can ever receive true here (the
+-- column defaults to false, and is trusted-column protected like
+-- content_sha256/original_path), so once granted it is a permanent,
+-- one-time historical fact, never confused with "recently inserted, still
+-- unhashed".
 
 alter table public.listing_media
   add column if not exists is_legacy_media boolean not null default false;
@@ -72,142 +63,250 @@ create table if not exists public.listing_media_legacy_backfill_done (
 );
 
 comment on table public.listing_media_legacy_backfill_done is
-  'Existence of any row records that the one-time is_legacy_media backfill (20260912b_pkg1b_media_trusted_object_binding.sql) has already run; stops a later reapplication of that migration from re-marking rows created since. Never written to by application code.';
+  'Existence of any row records that this migration (20260912b_pkg1b_media_trusted_object_binding.sql) has already applied once. No automatic grant runs at migration time (fifth adversarial review); this is now purely a historical marker so reapplication stays idempotent. Never written to by application code.';
 
--- CORRECTION, third adversarial review: a plain "content_sha256 IS NULL"
--- backfill (this migration's own original version) grants is_legacy_media
--- to ANY row shaped that way, with no check that the row's own `path`
--- genuinely, verifiably belongs to its own account. An authenticated
--- owner could INSERT a forged row on their own eligible listing, `path`
--- naming a KNOWN object belonging to a DIFFERENT account (another
--- lister's own private or preserved-original file), with source='upload'
--- and no content_sha256; that row is shaped identically to a genuine
--- historical row this migration is meant to grandfather in. Dates,
--- source='upload', object existence, and listing ownership ALONE are not
--- sufficient evidence: the SAME problem applies identically to
--- scripts/reconcile-deployment-window-legacy-gap.mjs's own, separate
--- trust-granting path (a real upload gap between this migration applying
--- and the new application code going live), so both are addressed here,
--- together, through the ONE function below, rather than two independently
--- maintained copies of the same logic that could drift apart.
+-- CORRECTION, FIFTH ADVERSARIAL REVIEW (the same-day round after the
+-- fourth): the fourth round's own fix ("VALIDATED PROVENANCE, PRECISELY",
+-- below this comment in the prior version of this file) granted
+-- is_legacy_media whenever an object existed at the row's own path, that
+-- path's folder-prefix matched the row's own account, visibility was
+-- 'public', and no row anywhere recorded that path as moderation-removed.
+-- The review's own framing corrected the threat model this rested on:
+-- "the owner already holds full, legitimate access... so this check is
+-- about strangers gaining access" is the WRONG boundary. The harm is not
+-- what the owner can already reach; it is what becomes PUBLICLY TRUSTED,
+-- which is then reachable by every stranger, not just the owner. Under
+-- that corrected framing, folder-prefix matching does not help: an owner
+-- can, within their OWN account's folder prefix, INSERT a row whose path
+-- names:
+--   - a DIFFERENT row's own preserved original (originals/... or
+--     whatever path a genuinely-trusted row's own original_path records),
+--   - a DIFFERENT listing's own private object, still within the same
+--     account,
+--   - an object that was never validated by anything at all, same
+--     account, freshly placed in storage by any means the owner has
+--     (the owner can write directly to their own storage folder; nothing
+--     about that write goes through the application's own pipeline).
+-- Folder location, visibility, timestamps, and object existence are
+-- exactly the facts an owner's own session already controls or can
+-- satisfy trivially; none of them are independent evidence that a
+-- specific row's specific path was ever produced by the real trusted
+-- pipeline. No query over listing_media/storage.objects alone can
+-- manufacture that evidence retroactively for data the old application
+-- never recorded a binding for: the pre-PKG-1B upload route wrote no
+-- hash, no manifest, no audit log entry tying a row to proof its object
+-- passed processing. That is a genuine, permanent absence of evidence,
+-- not a query this migration failed to write.
 --
--- VALIDATED PROVENANCE, PRECISELY.
+-- THE CORRECTED MECHANISM: OPERATOR-ATTESTED, DRIFT-CHECKED, NEVER
+-- SHAPE-INFERRED.
 --
--- A candidate row may be granted is_legacy_media = true only when ALL of:
---   1. visibility = 'public'. A row from THIS package's own two-phase
---      upload write is NEVER 'private' unless it is still genuinely
---      pending (phase 1 only); a truly pre-existing row was defaulted to
---      'public' the instant this column was added, never explicitly set.
---      Excluding 'private' rows here closes a real, separate risk: if a
---      still-in-flight pending upload were granted legacy trust while its
---      own trusted finalization has not yet completed, an owner's later
---      visibility flip (already proven closed for the derivation_verified
---      path, 20260912c's own adversarial tests) would reopen an
---      equivalent bypass through the is_legacy_media path instead.
---   2. The referenced object genuinely exists in storage.objects for the
---      listing-media bucket at this exact path.
---   3. That object's own folder-prefix (storage.foldername(name)[1])
---      equals the ROW'S OWN listing's account_id: the object is
---      demonstrably within the uploading account's own namespace, not
---      merely a path string the row's own INSERT happened to assert.
---      This is what an INSERT-time RLS check cannot express (it verifies
---      listing ownership, never what the free-text path column contains)
---      and what closes the cross-account forgery scenario completely.
---   4. No row, of any id, anywhere, currently records this SAME path with
---      moderation_state = 'removed': an object that was ever the subject
---      of a real moderation decision may never be re-admitted to public
---      trust merely because a fresh row happens to reference the same
---      path.
--- Same-account self-reference (an owner pointing a second row at their
--- OWN already-private or already-removed object) is not treated as a
--- distinct forgery case: the owner already holds full, legitimate access
--- to every object under their own account prefix regardless of this
--- table (the storage policy's own owner-folder branch, unconditional),
--- so this check is about STRANGERS gaining access, not about what an
--- owner may already reach through their own account.
+-- public.apply_verified_media_provenance(p_manifest, p_apply) replaces
+-- public.grant_validated_legacy_media_trust(p_from, p_to, p_apply)
+-- entirely (not merely renamed: the OLD function inferred candidates by
+-- querying listing_media/storage.objects for a shape; the NEW one accepts
+-- no such query at all). Trust originates OUTSIDE the database: an
+-- operator independently establishes, by some real, out-of-band means
+-- this migration does not and cannot specify in general (surviving old
+-- application/server logs cross-referencing which object path a specific
+-- row id's own upload request produced; a real re-upload of the actual
+-- file through this package's own live, trusted pipeline, which then
+-- supersedes the historical row entirely; or, at minimum, a named human's
+-- own manual review, recorded outside this database, of the specific
+-- row+object pair) which EXACT (row id, current path) pairs are
+-- legitimate, and supplies them as p_manifest, a JSON array of
+-- {"id": ..., "path": ...} objects. A row named nowhere in any manifest
+-- is never granted trust by this function, ever, no matter how long it
+-- has existed or how ordinary its shape looks; per instruction, it stays
+-- untrusted, and the only remediation is the SAME real re-upload path a
+-- brand new listing already uses (delete the untrusted row, or its
+-- underlying file, and re-upload through the live Studio; the two-phase
+-- write then computes a real content_sha256 itself, and this function is
+-- never involved at all).
 --
--- ATOMIC BY CONSTRUCTION. The candidate set is computed once, into a
--- plain array, inside this one function call; the same array both drives
--- the UPDATE (when p_apply) and the returned report, so there is no
--- window between "checked eligible" and "granted trust" for the
--- underlying facts to change, and no way for the two to silently diverge.
+-- The function does not trust the manifest blindly either: for each
+-- entry, it locks the exact candidate row (FOR UPDATE, so a concurrent
+-- change cannot race this function's own decision, closing the fourth
+-- review's own atomicity finding at the same time, see below) and
+-- re-verifies, fresh, at the moment of the check, never from any
+-- pre-computed snapshot:
+--   1. The row still exists and is not already trusted some other way.
+--   2. Its CURRENT path is EXACTLY the manifest's path. If it has
+--      changed since the operator prepared the manifest, the entry is
+--      stale and is refused, not silently applied to whatever the row
+--      now happens to point at.
+--   3. The object genuinely exists in storage at that exact path.
+--   4. No row, of any id, anywhere, records this SAME path as its own
+--      original_path: a manifest entry can never launder a path that is
+--      actually another row's own preserved original into public trust.
+--      original_path is itself trusted-column-protected (service_role
+--      only), so this check is evidence an owner cannot forge.
+--   5. No OTHER row currently references this SAME path with
+--      visibility = 'private' or moderation_state = 'removed': a path
+--      still recorded elsewhere as private or removed can never be
+--      admitted to public trust through a different row's manifest entry.
+--   6. The object's own folder-prefix (storage.foldername(name)[1])
+--      equals the CANDIDATE ROW's own listing's account_id. This is the
+--      same check the fourth review's own version of this function used,
+--      kept, not dropped: the fifth review's own correction is that
+--      folder-prefix matching (plus visibility/existence) must never be
+--      treated as SUFFICIENT evidence to originate trust on its own, not
+--      that it stops being a real, necessary integrity check once trust
+--      is otherwise established by the manifest. An operator's manifest
+--      can name the wrong row by mistake; this still refuses to let that
+--      mistake grant a cross-account object, exactly as before.
+-- None of checks 3 through 6 are, individually or together, ever treated
+-- as ORIGINATING trust (that is what the fourth review's own version of
+-- this function got wrong): they are integrity checks a manifest entry
+-- must ALSO clear, on top of being named by the operator in the first
+-- place, never a substitute for it. A row named nowhere in p_manifest
+-- fails every single time, regardless of how cleanly it would pass 3-6.
 --
--- p_from/p_to are optional: null on both (this migration's own call,
--- below) means "no time window, validate every remaining null-hash
--- candidate"; scripts/reconcile-deployment-window-legacy-gap.mjs supplies
--- both, narrowing the candidate set to its own explicit, operator-
--- supplied deployment window, on top of the SAME provenance checks, not
--- instead of them.
-create or replace function public.grant_validated_legacy_media_trust(
-  p_from timestamptz default null,
-  p_to timestamptz default null,
+-- ATOMICITY, CORRECTED (fourth review's own finding, closed here for
+-- real). The prior version computed a candidate array once, then updated
+-- by that array alone, with no re-check between "selected" and "granted":
+-- a concurrent transaction changing a candidate row's relevant facts and
+-- committing in that window would not be caught, because a function call's
+-- own transactional wrapping guarantees only that its OWN writes commit or
+-- roll back together, never that facts read early in the function stay
+-- true later in the same function. FOR UPDATE, above, blocks a
+-- concurrent writer to the SAME row until this function's own transaction
+-- finishes, and every check re-reads the LOCKED row's current state, not
+-- an earlier snapshot; the UPDATE below additionally re-asserts the
+-- manifest's own path in its WHERE clause and reports only rows the
+-- UPDATE itself actually touched (via RETURNING, not a separately
+-- recomputed SELECT), so the returned set can never silently diverge from
+-- what was actually granted.
+create or replace function public.apply_verified_media_provenance(
+  p_manifest jsonb,
   p_apply boolean default false
 )
 returns table (
   id uuid,
   listing_id uuid,
   path text,
-  created_at timestamptz
+  created_at timestamptz,
+  status text
 )
 language plpgsql
 security definer
 set search_path = public, storage
 as $$
 declare
-  matched_ids uuid[];
+  entry record;
+  candidate record;
+  updated_id uuid;
+  s text;
 begin
-  select coalesce(array_agg(c.id), array[]::uuid[]) into matched_ids
-  from (
-    select lm.id, lm.path, l.account_id
-    from public.listing_media lm
-    join public.listings l on l.id = lm.listing_id
-    where lm.content_sha256 is null
-      and lm.is_legacy_media = false
-      and lm.visibility = 'public'
-      and (p_from is null or lm.created_at >= p_from)
-      and (p_to is null or lm.created_at < p_to)
-  ) c
-  where exists (
-    select 1 from storage.objects o
-    where o.bucket_id = 'listing-media'
-      and o.name = c.path
-      and (storage.foldername(o.name))[1] = c.account_id::text
-  )
-  and not exists (
-    select 1 from public.listing_media removed_check
-    where removed_check.path = c.path
-      and removed_check.moderation_state = 'removed'
-  );
-
-  if p_apply and array_length(matched_ids, 1) > 0 then
-    update public.listing_media lm set is_legacy_media = true where lm.id = any(matched_ids);
+  if p_manifest is null or jsonb_typeof(p_manifest) <> 'array' then
+    raise exception 'p_manifest must be a JSON array of {"id": ..., "path": ...} objects, each independently verified by the caller before this function is ever invoked' using errcode = '22023';
   end if;
 
-  return query
-    select lm.id, lm.listing_id, lm.path, lm.created_at
-    from public.listing_media lm
-    where lm.id = any(matched_ids)
-    order by lm.created_at;
+  for entry in
+    select (elem->>'id')::uuid as m_id, (elem->>'path') as m_path
+    from jsonb_array_elements(p_manifest) as elem
+  loop
+    -- Re-read and lock the EXACT candidate row fresh, every iteration:
+    -- never a value computed before this loop, and never reused across
+    -- iterations, so one entry's own check can never be satisfied by
+    -- another entry's stale data.
+    select lm.id, lm.listing_id, lm.path, lm.created_at, lm.content_sha256, lm.is_legacy_media
+      into candidate
+      from public.listing_media lm
+      where lm.id = entry.m_id
+      for update;
+
+    if not found then
+      s := 'row_not_found';
+    elsif candidate.content_sha256 is not null or candidate.is_legacy_media then
+      s := 'already_trusted';
+    elsif candidate.path is distinct from entry.m_path then
+      s := 'path_drifted_since_manifest_was_prepared';
+    elsif not exists (
+      select 1 from storage.objects o
+      where o.bucket_id = 'listing-media' and o.name = entry.m_path
+    ) then
+      s := 'object_missing_from_storage';
+    elsif not exists (
+      select 1
+      from storage.objects o
+      join public.listings l on l.id = candidate.listing_id
+      where o.bucket_id = 'listing-media'
+        and o.name = entry.m_path
+        and (storage.foldername(o.name))[1] = l.account_id::text
+    ) then
+      s := 'object_outside_candidate_account_folder';
+    elsif exists (
+      select 1 from public.listing_media other
+      where other.original_path = entry.m_path
+    ) then
+      s := 'path_is_a_recorded_preserved_original';
+    elsif exists (
+      select 1 from public.listing_media other
+      where other.id <> candidate.id
+        and other.path = entry.m_path
+        and (other.visibility = 'private' or other.moderation_state = 'removed')
+    ) then
+      s := 'path_shared_with_a_private_or_removed_reference';
+    elsif not p_apply then
+      s := 'would_grant';
+    else
+      updated_id := null;
+      update public.listing_media lm
+        set is_legacy_media = true
+        where lm.id = candidate.id and lm.path = entry.m_path
+        returning lm.id into updated_id;
+      if updated_id is null then
+        s := 'path_drifted_since_manifest_was_prepared';
+      else
+        s := 'granted';
+      end if;
+    end if;
+
+    id := coalesce(candidate.id, entry.m_id);
+    listing_id := candidate.listing_id;
+    path := coalesce(candidate.path, entry.m_path);
+    created_at := candidate.created_at;
+    status := s;
+    return next;
+  end loop;
 end;
 $$;
 
-revoke all on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) from public;
-grant execute on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) to service_role;
+-- CORRECTION, FIFTH ADVERSARIAL REVIEW, item 2: revoking from PUBLIC alone
+-- is not sufficient. Real production evidence (checked directly against
+-- pg_default_acl this round): this project's own default-privilege
+-- configuration grants EXECUTE on newly created functions to anon,
+-- authenticated and service_role EXPLICITLY, by name, not only via the
+-- PUBLIC pseudo-role (confirmed against every existing public-schema
+-- function, both supabase_admin-owned and postgres-owned). A
+-- `revoke ... from public` does not touch a direct, per-role grant, so it
+-- would have left this SECURITY DEFINER function callable by anon and
+-- authenticated in production despite the earlier version of this
+-- migration's own intent. Every relevant role is now named explicitly,
+-- and this is done for the trigger functions below too, even though
+-- Postgres does not require trigger-firing itself to check the firing
+-- role's own EXECUTE privilege (only CREATE TRIGGER, already gated by
+-- table ownership, does): a trigger function remains directly callable as
+-- an ordinary function by anyone holding EXECUTE on it, and there is no
+-- legitimate reason for any role but service_role to ever call any
+-- function in this migration directly.
+revoke execute on function public.apply_verified_media_provenance(jsonb, boolean) from public, anon, authenticated;
+grant execute on function public.apply_verified_media_provenance(jsonb, boolean) to service_role;
 
-comment on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) is
-  'The ONE place is_legacy_media is ever granted, for both this migration''s own one-time backfill and scripts/reconcile-deployment-window-legacy-gap.mjs''s own later, windowed calls. Validates real object existence, same-account folder provenance, and no prior moderation removal before granting; service_role-only.';
+comment on function public.apply_verified_media_provenance(jsonb, boolean) is
+  'The ONE place is_legacy_media is ever granted. Trust never ORIGINATES from row/object shape (path, folder, visibility, timestamps, existence): every grant traces to an explicit, operator-supplied manifest entry (id + expected path) established by a real process outside this database. That entry is then still re-validated fresh against the locked row''s current state: drift, preserved-original reuse, private/removed-reference sharing, and cross-account folder mismatch are all refused regardless of manifest inclusion. service_role-only; revoked from anon/authenticated explicitly, not only from PUBLIC (see comment above).';
 
--- One-time backfill, itself now provenance-validated, not blanket: every
--- row with no content_sha256 that ALSO independently proves real,
--- same-account, never-removed provenance at the moment this migration
--- first runs. A row that fails validation (a dangling path, a
--- cross-account reference, or a path that was moderation-removed) is left
--- untrusted, on purpose, and surfaced by the reporting query in the
--- runbook (section 21) rather than silently granted.
+-- No automatic backfill runs here (fifth adversarial review): there is no
+-- manifest this migration file can safely embed sight-unseen, and
+-- granting trust from anything OTHER than a real, reviewed manifest is
+-- exactly what this correction removes. The marker row below exists only
+-- so a later reapplication of this migration file stays idempotent and
+-- so the table's own lockdown tests (below) remain meaningful; it grants
+-- nothing.
 do $$
 begin
   if not exists (select 1 from public.listing_media_legacy_backfill_done) then
-    perform public.grant_validated_legacy_media_trust(null, null, true);
     insert into public.listing_media_legacy_backfill_done default values;
   end if;
 end $$;
@@ -220,21 +319,15 @@ end $$;
 -- section 18) is that anon/authenticated hold broad, unrestricted
 -- SELECT/INSERT/UPDATE/DELETE/TRUNCATE by default on every table checked
 -- so far; there is no reason to assume this ONE new table is different,
--- and its own safety must not rest on that unverified assumption. If a
--- client could TRUNCATE or DELETE this table's one row, a later
--- reapplication of this same migration (already required to be safe,
--- see above) would treat the backfill as never having run and mark
--- EVERY currently-null-hash row (including a genuinely pending, not-yet-
--- finalized upload, or a forged row) as legacy, defeating the entire
--- point. RLS enabled with zero policies (matching 20260905b's own
--- media_cleanup_queue pattern exactly: complete default-deny for
--- SELECT/INSERT/UPDATE/DELETE regardless of any table-level grant) plus
--- an explicit REVOKE (RLS does not govern TRUNCATE at all, confirmed
--- earlier this package's own history with a real, disposable local
--- reproduction; only an explicit revoke closes that specific gap) is
--- belt-and-suspenders on purpose: this table's own safety must be
--- provably true, not incidentally true because of how RLS happens to
--- interact with an assumed grant baseline.
+-- and its own safety must not rest on that unverified assumption. RLS
+-- enabled with zero policies (matching 20260905b's own media_cleanup_queue
+-- pattern exactly: complete default-deny for SELECT/INSERT/UPDATE/DELETE
+-- regardless of any table-level grant) plus an explicit REVOKE (RLS does
+-- not govern TRUNCATE at all, confirmed earlier this package's own
+-- history with a real, disposable local reproduction; only an explicit
+-- revoke closes that specific gap) is belt-and-suspenders on purpose:
+-- this table's own safety must be provably true, not incidentally true
+-- because of how RLS happens to interact with an assumed grant baseline.
 alter table public.listing_media_legacy_backfill_done enable row level security;
 revoke all on public.listing_media_legacy_backfill_done from public, anon, authenticated;
 
@@ -253,7 +346,7 @@ begin
   end if;
   if TG_OP = 'INSERT' then
     if new.is_legacy_media is true then
-      raise exception 'only the one-time migration backfill may set is_legacy_media' using errcode = '42501';
+      raise exception 'only public.apply_verified_media_provenance() may set is_legacy_media' using errcode = '42501';
     end if;
   elsif TG_OP = 'UPDATE' then
     if new.is_legacy_media is distinct from old.is_legacy_media then
@@ -269,6 +362,8 @@ create trigger listing_media_protect_legacy_flag
   before insert or update on public.listing_media
   for each row
   execute function public.listing_media_protect_legacy_flag();
+
+revoke execute on function public.listing_media_protect_legacy_flag() from public, anon, authenticated;
 
 -- derivation_verified needs no trigger of its own: it is a stored
 -- generated column, and Postgres itself rejects any attempt to write to a
@@ -340,10 +435,12 @@ create trigger listing_media_freeze_object_identity
   for each row
   execute function public.listing_media_freeze_object_identity();
 
+revoke execute on function public.listing_media_freeze_object_identity() from public, anon, authenticated;
+
 comment on function public.listing_media_freeze_object_identity() is
   'Closes the object-identity-substitution gap found by adversarial review of this migration''s own first version: derivation_verified/is_legacy_media alone proved a row was TRUSTED AT SOME POINT, never that its CURRENT path is what was trusted. INSERT remains free (the real two-phase upload write needs this); no non-trusted UPDATE may ever change path/source/listing_id again, closing the post-trust substitution, the legacy-row substitution, and the pre-finalization race uniformly.';
 
 comment on column public.listing_media.is_legacy_media is
-  'True only for rows that both predate this migration (no content_sha256 when it first ran) AND independently passed public.grant_validated_legacy_media_trust()''s own real-object/same-account/never-removed provenance check; never granted on shape (dates, source=upload, listing ownership) alone. Never true for any row inserted afterward. Trusted-column protected: only that function''s own service_role-only call may ever set it.';
+  'True only for rows granted trust by public.apply_verified_media_provenance(), itself driven entirely by an operator-supplied, out-of-band-verified manifest, never by row/object shape (path, folder, visibility, timestamps, existence) alone. Never true for any row inserted afterward. Trusted-column protected: only that function''s own service_role-only call may ever set it.';
 comment on column public.listing_media.derivation_verified is
   'Stored generated column: true exactly when content_sha256 is not null. Lets anon/authenticated (and the storage policy''s own EXISTS clause) confirm a row went through the trusted upload pipeline without ever granting read access to content_sha256 itself.';

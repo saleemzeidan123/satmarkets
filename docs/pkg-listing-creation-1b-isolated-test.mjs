@@ -128,7 +128,7 @@ create policy "read media objects of published or own listing" on storage.object
 -- the omission, but a "rollback" that leaves the freeze trigger attached
 -- (still blocking path/source/listing_id updates on the old, pre-fix
 -- schema) is not a genuine, complete reversal.
-drop function if exists public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean);
+drop function if exists public.apply_verified_media_provenance(jsonb, boolean);
 drop trigger if exists listing_media_freeze_object_identity on public.listing_media;
 drop function if exists public.listing_media_freeze_object_identity();
 drop trigger if exists listing_media_protect_legacy_flag on public.listing_media;
@@ -302,6 +302,26 @@ grant select, insert, update, delete on all tables in schema public to service_r
 -- overriding a real default, not a vacuous pass against a harness that
 -- never granted anything by default in the first place.
 alter default privileges in schema public grant select, insert, update, delete, truncate on tables to anon, authenticated;
+
+-- Fifth adversarial review, item 2: FUNCTION default privileges are a
+-- SEPARATE default-ACL object type from table defaults (pg_default_acl's
+-- own defaclobjtype: 'r' for relations, 'f' for functions), and Postgres
+-- does not extend one to the other; a harness that only modelled the
+-- table default (above) would let any test of a function's own EXECUTE
+-- lockdown pass vacuously, for the wrong reason (never having had access
+-- to begin with) rather than proving an explicit REVOKE actually closes
+-- real access. Real production evidence (checked directly against
+-- pg_default_acl this round, 2026-09-12): this project's own
+-- default-privilege configuration grants EXECUTE on new functions to
+-- anon, authenticated AND service_role explicitly, by role name, not only
+-- to the PUBLIC pseudo-role (confirmed against every existing
+-- public-schema function). Modelled verbatim here so this harness's own
+-- positive-control test (Step 1c-2 below) and every function-lockdown
+-- test in Step 8h prove something real, against the same default this
+-- project's own database actually has, not an idealized "functions are
+-- private by default" assumption Postgres itself does not make and this
+-- project does not configure.
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
 
 -- Base-schema gap (docs/pkg-listing-creation-1b-migration-runbook.md
 -- section 4.1 / 18): everything below this line is NOT in any local
@@ -686,13 +706,43 @@ async function main() {
       });
     }
 
-    await check("the one-time backfill genuinely marked the pre-migration row is_legacy_media, not merely a simulated end state", async () => {
+    await check("FIFTH ADVERSARIAL REVIEW: applying the migration grants is_legacy_media to NOTHING automatically, even to a row shaped exactly like a genuine pre-migration upload (real object, same account, public, never removed)", async () => {
       const r = await admin.query(
         "select is_legacy_media, derivation_verified from public.listing_media where id = $1",
         [preMigrationLegacyMediaId],
       );
-      assert(r.rows[0].is_legacy_media === true, "a row with no content_sha256 that existed before this migration first ran must be marked legacy");
-      assert(r.rows[0].derivation_verified === false, "derivation_verified must stay false: this row never went through the trusted pipeline, it is only legacy");
+      assert(r.rows[0].is_legacy_media === false, "no row may be granted trust merely by existing before this migration ran; the fourth review's own shape-based backfill is exactly what this round removed");
+      assert(r.rows[0].derivation_verified === false, "derivation_verified must stay false too: this row never went through the trusted pipeline");
+    });
+
+    console.log("\n=== Step 1c-1b: the operator's own first, manifest-driven grant call trusts the genuine historical row (the NEW 'initial backfill': operator-attested, not automatic) ===");
+    // "Initial backfill" is no longer a migration-time action at all (see
+    // above): it is now the SAME public.apply_verified_media_provenance()
+    // call any later reconciliation uses, run once, manually, by an
+    // operator who has independently confirmed (by whatever real,
+    // out-of-band means, see the migration's own comment) that this
+    // SPECIFIC row's SPECIFIC path is legitimate. Exercised here with a
+    // real owner-scoped manifest entry for preMigrationLegacyMediaId, the
+    // one genuinely pre-migration row this harness's own Step 1b fixture
+    // created; downstream tests (Step 2's tampering-survival check, Step
+    // 8g's storage-readability proof) depend on this row actually being
+    // trusted by this point, exactly as an operator's real first
+    // reconciliation run would leave it.
+    await check("apply_verified_media_provenance grants the genuine historical row when named in an operator-supplied manifest, and refuses everything else", async () => {
+      const r = await admin.query(
+        "select id, status from public.apply_verified_media_provenance($1::jsonb, true)",
+        [JSON.stringify([{ id: preMigrationLegacyMediaId, path: preMigrationLegacyPath }])],
+      );
+      assert(r.rowCount === 1, `expected exactly one manifest entry reported back, got ${r.rowCount}`);
+      assert(r.rows[0].id === preMigrationLegacyMediaId, "the reported row must be the exact manifest entry");
+      assert(r.rows[0].status === "granted", `expected status 'granted', got '${r.rows[0].status}'`);
+
+      const after = await admin.query(
+        "select is_legacy_media, derivation_verified from public.listing_media where id = $1",
+        [preMigrationLegacyMediaId],
+      );
+      assert(after.rows[0].is_legacy_media === true, "the manifest-named row must now be trusted");
+      assert(after.rows[0].derivation_verified === false, "derivation_verified stays false: this is legacy-by-manifest, not a genuine finalized upload");
     });
 
     console.log("\n=== Step 1c-2: the legacy-backfill marker table is locked down (third adversarial review, item 3) ===");
@@ -763,7 +813,7 @@ async function main() {
       }
     });
 
-    await check("client tampering cannot suppress the initial backfill or reset its one-time guarantee: the marker row itself, and every already-backfilled row, survive an anon TRUNCATE/DELETE attempt unchanged", async () => {
+    await check("client tampering cannot reset the marker table's own idempotency guard or revoke an already-granted row's trust: the marker row itself, and the row granted by the operator's manifest call above, survive an anon TRUNCATE/DELETE attempt unchanged", async () => {
       const before = await admin.query("select count(*) from public.listing_media_legacy_backfill_done");
       assert(Number(before.rows[0].count) === 1, "fixture sanity: exactly one marker row should exist at this point");
       const c = await asAnonRole(pg);
@@ -1844,7 +1894,8 @@ async function main() {
       // the listing's own eligibility), which is expected and correct;
       // what changed is the STORAGE-level expectation below, which must
       // now DENY it. preMigrationLegacyMediaId (Step 1b) is the real
-      // legacy fixture, backfilled by the actual migration, used below for
+      // legacy fixture, granted trust by the operator's own manifest call
+      // in Step 1c-1b, used below for
       // the genuine "legacy media stays readable" storage proof instead.
       gMediaForged = (
         await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gListingPub, gPath(gListingPub, "forged-no-upload.webp")])
@@ -2187,11 +2238,11 @@ async function main() {
           }
         });
 
-        await check(`AFTER FIX: ${label} can still read the GENUINE legacy media object (backfilled by the real migration in Step 1c, not simulated)`, async () => {
+        await check(`AFTER FIX: ${label} can still read the GENUINE legacy media object (granted trust by a real operator manifest call in Step 1c-1b, not simulated)`, async () => {
           const c = await roleFn();
           try {
             const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [preMigrationLegacyPath]);
-            assert(r.rowCount === 1, `${label}: a genuinely pre-migration, is_legacy_media=true row's object must remain readable, matching every pre-existing production row`);
+            assert(r.rowCount === 1, `${label}: a genuinely manifest-granted, is_legacy_media=true row's object must remain readable, matching every legitimately trusted row`);
           } finally {
             await c.end();
           }
@@ -2551,37 +2602,235 @@ async function main() {
       await gSvc.end();
     }
 
-    console.log("\n=== Step 8h: the deployment-window reconciliation is PROVENANCE-VALIDATED, not time-based alone (fourth adversarial review) ===");
-    // CORRECTION: an earlier version of both this harness section and
-    // scripts/reconcile-deployment-window-legacy-gap.mjs granted trust to
-    // ANY row matching the time window and a null content_sha256 alone.
-    // That is a real, distinct vulnerability: an authenticated owner can
-    // INSERT A FORGED ROW on their own eligible listing, inside the SAME
-    // window, with path naming a DIFFERENT account's real private/
-    // original object; that row is shaped identically (dates, source=
-    // 'upload', real listing ownership) to a genuine old-app upload. This
-    // section first proves the OLD, naive time+hash-null query WOULD have
-    // caught the forged and pending rows below (the regression the
-    // review asked for, using the real owner-scoped RLS INSERT, not an
-    // admin bypass, so the INSERT itself is proven reachable by a real
-    // attacker), THEN proves public.grant_validated_legacy_media_trust()
-    // (20260912b's own function, which scripts/reconcile-deployment-
-    // window-legacy-gap.mjs now calls instead of querying directly)
-    // correctly excludes them while still granting the genuine row.
+    console.log("\n=== Step 8h-priv: the function privilege boundary is genuinely enforced, not merely revoked from PUBLIC (fifth adversarial review, item 2) ===");
+    // Real production evidence (pg_default_acl, checked directly this
+    // round against the real project): this project's own default-ACL
+    // configuration grants EXECUTE on new functions to anon, authenticated
+    // AND service_role EXPLICITLY, by role name, not only via the PUBLIC
+    // pseudo-role. A `revoke ... from public` alone does not touch that
+    // direct grant. Modelled in BOOTSTRAP_SQL's own function-default
+    // statement (separate from the table-default one); tested here for
+    // real, against the actual migration's own explicit per-role REVOKE,
+    // both for effective privilege (has_function_privilege) and for an
+    // actual invocation attempt (not merely a privilege-catalog read),
+    // for anon and authenticated, in both p_apply modes, plus a genuine
+    // service_role-scoped invocation (not only admin.query, which runs as
+    // the bootstrapping superuser and would never reveal a privilege gap).
+    {
+      await check("positive control: a function with no explicit revoke of its own DOES inherit the function-default-privilege baseline (proves the harness's own function-default modelling is real, not vacuous)", async () => {
+        await admin.query(`create or replace function public.unprotected_control_function() returns boolean language sql as $$ select true $$`);
+        const r = await admin.query("select has_function_privilege('anon', 'public.unprotected_control_function()', 'EXECUTE') as anon_exec");
+        assert(r.rows[0].anon_exec === true, "a function with no explicit revoke must inherit the function-default EXECUTE grant; if this is false, the harness's own baseline does not model production and the lockdown tests below would be meaningless");
+      });
+
+      await check("effective privileges: anon, authenticated and PUBLIC all have ZERO EXECUTE on apply_verified_media_provenance and both trigger functions; service_role has EXECUTE", async () => {
+        for (const fn of [
+          "public.apply_verified_media_provenance(jsonb, boolean)",
+          "public.listing_media_protect_legacy_flag()",
+          "public.listing_media_freeze_object_identity()",
+        ]) {
+          for (const role of ["anon", "authenticated", "public"]) {
+            const r = await admin.query("select has_function_privilege($1, $2, 'EXECUTE') as has_exec", [role, fn]);
+            assert(r.rows[0].has_exec === false, `${role} must have NO EXECUTE on ${fn}, got true`);
+          }
+          const svc = await admin.query("select has_function_privilege('service_role', $1, 'EXECUTE') as has_exec", [fn]);
+          assert(svc.rows[0].has_exec === true, `service_role must have EXECUTE on ${fn}`);
+        }
+      });
+
+      await check("actual invocation denial: anon and authenticated both get a real 42501 calling apply_verified_media_provenance directly, in BOTH p_apply modes, not merely a catalog-level privilege gap", async () => {
+        const acct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const user = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        for (const [label, roleFn] of [
+          ["anonymous", () => asAnonRole(pg)],
+          ["authenticated", () => asTestRole(pg, { userId: user, accountId: acct, isSat: false })],
+        ]) {
+          for (const applyFlag of [false, true]) {
+            const c = await roleFn();
+            try {
+              let denied = false;
+              try {
+                await c.query("select * from public.apply_verified_media_provenance($1::jsonb, $2)", ["[]", applyFlag]);
+              } catch (e) {
+                denied = e.code === "42501";
+              }
+              assert(denied, `${label} (p_apply=${applyFlag}) must be denied with insufficient_privilege (42501) calling this SECURITY DEFINER function directly`);
+            } finally {
+              await c.end();
+            }
+          }
+        }
+      });
+
+      await check("actual invocation denial: anon and authenticated cannot call the trigger functions directly either (defense in depth; Postgres does not require EXECUTE to fire them as triggers, but nothing should be able to call them as ordinary functions)", async () => {
+        for (const [label, roleFn] of [["anonymous", () => asAnonRole(pg)], ["authenticated (no identity)", () => asTestRole(pg, { userId: null, accountId: null, isSat: false })]]) {
+          const c = await roleFn();
+          try {
+            for (const fn of ["public.listing_media_protect_legacy_flag()", "public.listing_media_freeze_object_identity()"]) {
+              let denied = false;
+              try {
+                await c.query(`select ${fn}`);
+              } catch (e) {
+                denied = e.code === "42501";
+              }
+              assert(denied, `${label} must be denied EXECUTE calling ${fn} directly, got no 42501`);
+            }
+          } finally {
+            await c.end();
+          }
+        }
+      });
+
+      await check("a genuine service_role-SCOPED invocation succeeds (not only admin.query, which runs as the bootstrapping superuser and would mask a real privilege gap)", async () => {
+        const svcAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const svcListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [svcAcct])).rows[0].id;
+        const svcPath = `${svcAcct}/${svcListing}/priv-test-service-role.webp`;
+        await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [svcPath]);
+        const svcMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [svcListing, svcPath])).rows[0].id;
+
+        const c = await asServiceRole(pg);
+        try {
+          const r = await c.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: svcMediaId, path: svcPath }]),
+          ]);
+          assert(r.rowCount === 1 && r.rows[0].status === "granted", `a real service_role-scoped session must be able to invoke and successfully grant via this function, got ${JSON.stringify(r.rows)}`);
+        } finally {
+          await c.end();
+        }
+      });
+
+      await check("EXECUTE grants survive CREATE OR REPLACE: reapplying the function definition does not reopen anon/authenticated access that was explicitly revoked", async () => {
+        // Mirrors exactly what Step 2's own reapplication loop does to the
+        // whole migration file, isolated here so a privilege regression on
+        // replace specifically is unambiguous, not mixed in with every
+        // other reapplication assertion.
+        await admin.query(readFileSync(REPO_MIGRATIONS + "20260912b_pkg1b_media_trusted_object_binding.sql", "utf8"));
+        for (const role of ["anon", "authenticated"]) {
+          const r = await admin.query("select has_function_privilege($1, 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec", [role]);
+          assert(r.rows[0].has_exec === false, `${role} must still have NO EXECUTE after CREATE OR REPLACE reran this migration's own function definition`);
+        }
+        const svc = await admin.query("select has_function_privilege('service_role', 'public.apply_verified_media_provenance(jsonb, boolean)', 'EXECUTE') as has_exec");
+        assert(svc.rows[0].has_exec === true, "service_role must still have EXECUTE after the replace");
+      });
+    }
+
+    console.log("\n=== Step 8h-race: concurrency safety (fifth adversarial review, item 3) -- FOR UPDATE genuinely serializes, no stale-fact grant, no double-grant ===");
+    // The fourth review's own version computed a candidate array ONCE
+    // (a plain SELECT), then updated by that array alone: a concurrent
+    // transaction changing a candidate row's relevant facts and committing
+    // in the window between that SELECT and the later UPDATE would not be
+    // caught, because a function's OWN transactional wrapping guarantees
+    // only that ITS OWN writes commit/roll back together, never that facts
+    // it read early stay true later in the same call. These two tests use
+    // real, separate pg connections, deterministically interleaved (not
+    // relying on Promise.all timing alone), matching this harness's own
+    // established concurrency-testing pattern elsewhere in this file.
+    {
+      const raceAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const raceListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [raceAcct])).rows[0].id;
+      const racePath = `${raceAcct}/${raceListing}/race-object.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [racePath]);
+      const raceMediaId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [raceListing, racePath])).rows[0].id;
+
+      await check("a concurrent trusted-pipeline write that COMMITS while a manifest grant is blocked on the row lock is correctly seen as already_trusted, never granted against a stale pre-lock snapshot", async () => {
+        const connA = await asServiceRole(pg); // simulates the real upload pipeline's own trusted finalization
+        const connB = await asServiceRole(pg); // simulates an operator's own reconciliation call
+        try {
+          await connA.query("begin");
+          await connA.query("update public.listing_media set content_sha256 = 'racehash' where id = $1", [raceMediaId]);
+          // connA now holds the row lock, uncommitted. Fire connB's call
+          // without awaiting it yet: it must block inside the function's
+          // own FOR UPDATE, not read a pre-lock snapshot and proceed.
+          const bPromise = connB.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [
+            JSON.stringify([{ id: raceMediaId, path: racePath }]),
+          ]);
+          // Deterministic wait for connB to actually be blocked ON THE
+          // LOCK (not a fixed sleep guessing at timing): poll pg_locks
+          // via the admin connection until a lock wait attributable to
+          // connB's own backend appears, with a hard ceiling so a real
+          // failure to block (the bug this test exists to catch) fails
+          // fast and loudly instead of hanging.
+          let blocked = false;
+          for (let i = 0; i < 50; i++) {
+            const waiting = await admin.query(
+              `select 1 from pg_stat_activity
+                 where state = 'active' and wait_event_type = 'Lock'
+                   and query ilike '%apply_verified_media_provenance%'`,
+            );
+            if (waiting.rowCount > 0) { blocked = true; break; }
+            await new Promise((res) => setTimeout(res, 20));
+          }
+          assert(blocked, "connB's own call must genuinely block on the row lock connA holds; if it never shows as lock-waiting, FOR UPDATE is not serializing access to this row");
+
+          await connA.query("commit");
+          const bResult = await bPromise;
+          assert(bResult.rows[0].status === "already_trusted", `after connA's concurrent write commits, connB's own grant call must see the POST-commit state (already_trusted), got '${bResult.rows[0].status}'`);
+        } finally {
+          await connA.query("rollback").catch(() => {});
+          await connA.end();
+          await connB.end();
+        }
+      });
+
+      const raceAcct2 = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const raceListing2 = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [raceAcct2])).rows[0].id;
+      const racePath2 = `${raceAcct2}/${raceListing2}/race-object-2.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [racePath2]);
+      const raceMediaId2 = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [raceListing2, racePath2])).rows[0].id;
+
+      await check("two concurrent manifest-apply calls for the SAME row never both grant it: exactly one reports granted, the other already_trusted, and the row ends up trusted exactly once", async () => {
+        const connA = await asServiceRole(pg);
+        const connB = await asServiceRole(pg);
+        try {
+          const manifest = JSON.stringify([{ id: raceMediaId2, path: racePath2 }]);
+          const [rA, rB] = await Promise.all([
+            connA.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [manifest]),
+            connB.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [manifest]),
+          ]);
+          const statuses = [rA.rows[0].status, rB.rows[0].status].sort();
+          assert(JSON.stringify(statuses) === JSON.stringify(["already_trusted", "granted"]), `expected exactly one 'granted' and one 'already_trusted' across the two concurrent calls, got ${JSON.stringify(statuses)}`);
+          const final = await admin.query("select is_legacy_media from public.listing_media where id = $1", [raceMediaId2]);
+          assert(final.rows[0].is_legacy_media === true, "the row must end up trusted exactly once, regardless of which concurrent call won the race");
+        } finally {
+          await connA.end();
+          await connB.end();
+        }
+      });
+    }
+
+    console.log("\n=== Step 8h: provenance is MANIFEST-BOUND, never inferred from row/object shape (fifth adversarial review, item 1) ===");
+    // CORRECTION, FIFTH ADVERSARIAL REVIEW: the fourth review's own fix
+    // (existence + same-account folder-prefix + public visibility + never
+    // moderation-removed) was itself found insufficient. Its own framing
+    // ("the owner already holds full, legitimate access... so this check
+    // is about strangers gaining access") was the wrong boundary: the harm
+    // is what becomes PUBLICLY TRUSTED, which is then reachable by every
+    // stranger, not what the owner could already reach. An owner's own
+    // session, entirely within their own account's folder prefix, can
+    // still: reference a DIFFERENT row's own preserved original; reference
+    // a DIFFERENT listing's own private object, same account; flip a
+    // still-unverified row's own visibility to public; or simply leave an
+    // object with zero processing evidence sitting there. None of those
+    // are caught by folder location, visibility, timestamps, or object
+    // existence, because an owner's own session already satisfies all four
+    // trivially. Every scenario below is constructed via a REAL
+    // owner-scoped RLS session (not an admin bypass), proving the
+    // INSERT/UPDATE itself is genuinely reachable, then tested against
+    // public.apply_verified_media_provenance() across BOTH an initial,
+    // broader manifest (simulating an operator's first historical cleanup
+    // pass, run once after migrating) and a second, later, narrower
+    // manifest (simulating an ongoing/deployment-window reconciliation
+    // run) to prove the SAME validation rigor applies to both, not only
+    // the first.
     //
-    // WHAT "THE OLD APP RAN" MEANS HERE, PRECISELY. The "legitimate" row
-    // below is inserted via a plain admin.query INSERT, matching the
-    // ROW SHAPE the old (pre-PKG-1B) application's own upload route would
-    // produce (no content_sha256, a real object already placed in
-    // storage). This is a database-shape simulation, proving what the
-    // RECONCILIATION LOGIC does with a row of that shape; it is NOT
-    // evidence that the old application's own route handler code
-    // actually executed, which this harness has no way to invoke (that
-    // code lives on `main`, unmerged with this branch, and this harness
-    // never starts a Next.js server or issues a real HTTP request). Every
+    // EVIDENCE TYPE, STATED PRECISELY (renamed per instruction: the
+    // earlier version of this file's own evidence-label test named itself
+    // "REAL API BOUNDARY", which is inaccurate -- nothing in this harness
+    // executes an HTTP request or invokes an application route; every
     // assertion below is real Postgres RLS/function-execution evidence
-    // against a real engine; none of it is HTTP or application-route
-    // evidence, and it is not described as such anywhere in this file.
+    // against a real engine, exercising the real, captured storage policy
+    // text. That code lives on `main`, unmerged with this branch, and this
+    // harness never starts a Next.js server or issues a real HTTP request.
     {
       const gapAcctOwner = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
       const gapUserOwner = (await admin.query("insert into public.users default values returning id")).rows[0].id;
@@ -2592,9 +2841,12 @@ async function main() {
           [gapAcctOwner],
         )
       ).rows[0].id;
+      const gapOwnerSession = await asTestRole(pg, { userId: gapUserOwner, accountId: gapAcctOwner, isSat: false });
+
       // The victim: a DIFFERENT account, with a real private object the
-      // attacker below will attempt to reference. Distinct from every
-      // other fixture in this file.
+      // cross-account forgery below will attempt to reference. Preserved
+      // from the fourth review's own test, unchanged: this protection
+      // must keep working exactly as before.
       const gapVictimAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
       const gapVictimListing = (
         await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapVictimAcct])
@@ -2602,51 +2854,80 @@ async function main() {
       const gapVictimPath = `${gapVictimAcct}/${gapVictimListing}/deployment-gap-victim-object.webp`;
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [gapVictimPath]);
 
-      const windowFrom = "2026-09-15T10:00:00Z";
-      const windowTo = "2026-09-15T10:07:00Z";
-
-      // 1. Legitimate: shaped like a real old-app upload. Real object,
-      // same account, inside the window.
+      // 1. Legitimate: a real, same-account object, shaped like a genuine
+      // old-app upload (no content_sha256).
       const legitimatePath = `${gapAcctOwner}/${gapListing}/gap-legitimate.webp`;
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [legitimatePath]);
       const legitimateId = (
         await admin.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, legitimatePath, "2026-09-15T10:03:00Z"],
+          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          [gapListing, legitimatePath],
         )
       ).rows[0].id;
 
-      // 2. Forged: inserted via the REAL owner-scoped RLS session (not
-      // admin), path naming the VICTIM's real object, same window.
-      const gapOwnerSession = await asTestRole(pg, { userId: gapUserOwner, accountId: gapAcctOwner, isSat: false });
+      // 2. CROSS-ACCOUNT FORGERY (preserved). Real owner-scoped RLS
+      // INSERT, path naming the VICTIM's real object.
       let forgedId;
-      try {
+      {
         const ins = await gapOwnerSession.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, gapVictimPath, "2026-09-15T10:04:00Z"],
+          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          [gapListing, gapVictimPath],
         );
         forgedId = ins.rows[0].id;
-      } finally {
-        await gapOwnerSession.end();
       }
 
-      // 3. Pending: a genuinely in-flight upload (visibility='private',
-      // matching the real two-phase write's own phase 1), real object,
-      // same window. Must never be promoted while still pending, or an
-      // owner's later visibility flip (already closed for the
-      // derivation_verified path) would reopen an equivalent bypass
-      // through is_legacy_media instead.
-      const pendingPath = `${gapAcctOwner}/${gapListing}/gap-pending.webp`;
-      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [pendingPath]);
-      const pendingId = (
-        await admin.query(
-          "insert into public.listing_media (listing_id, path, source, visibility, created_at) values ($1, $2, 'upload', 'private', $3) returning id",
-          [gapListing, pendingPath, "2026-09-15T10:05:00Z"],
-        )
+      // 3. NEW: SAME-ACCOUNT PRESERVED-ORIGINAL SELF-REFERENCE. A
+      // genuinely trusted row's own recorded original_path (set the only
+      // way it legitimately can be, via service_role), then a SECOND,
+      // real owner-scoped RLS INSERT on the SAME account pointing its own
+      // `path` at that exact original.
+      const trustedOwnerRowPath = `${gapAcctOwner}/${gapListing}/gap-trusted-with-original.webp`;
+      const preservedOriginalPath = `${gapAcctOwner}/${gapListing}/originals/gap-preserved-original.jpg`;
+      await admin.query(
+        "insert into storage.objects (bucket_id, name) values ('listing-media', $1), ('listing-media', $2)",
+        [trustedOwnerRowPath, preservedOriginalPath],
+      );
+      const trustedOwnerRowId = (
+        await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gapListing, trustedOwnerRowPath])
       ).rows[0].id;
+      await admin.query(
+        "update public.listing_media set content_sha256 = 'realhash-trusted-owner-row', original_path = $2, derived_by = 'system:upload-pipeline', derived_at = now() where id = $1",
+        [trustedOwnerRowId, preservedOriginalPath],
+      );
+      let originalRefForgeryId;
+      {
+        const ins = await gapOwnerSession.query(
+          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          [gapListing, preservedOriginalPath],
+        );
+        originalRefForgeryId = ins.rows[0].id;
+      }
 
-      // 4. Moderation-removed reference: a real, same-account object, but
-      // SOME row (any row) already recorded this exact path as removed.
+      // 4. NEW: SAME-ACCOUNT, DIFFERENT-LISTING PRIVATE-OBJECT REFERENCE.
+      // A second, real listing under the SAME account, with a real,
+      // legitimately private media row; then a real owner-scoped RLS
+      // INSERT on the FIRST listing pointing at that private object's
+      // path.
+      const gapListing2 = (
+        await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapAcctOwner])
+      ).rows[0].id;
+      const sameAcctPrivatePath = `${gapAcctOwner}/${gapListing2}/gap-same-acct-private.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [sameAcctPrivatePath]);
+      await gapOwnerSession.query(
+        "insert into public.listing_media (listing_id, path, source, visibility) values ($1, $2, 'upload', 'private')",
+        [gapListing2, sameAcctPrivatePath],
+      );
+      let crossListingPrivateForgeryId;
+      {
+        const ins = await gapOwnerSession.query(
+          "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id",
+          [gapListing, sameAcctPrivatePath],
+        );
+        crossListingPrivateForgeryId = ins.rows[0].id;
+      }
+
+      // 5. Moderation-removed reference (preserved): a real, same-account
+      // object, but SOME row already recorded this exact path as removed.
       const removedRefPath = `${gapAcctOwner}/${gapListing}/gap-removed-ref.webp`;
       await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [removedRefPath]);
       const alreadyRemovedId = (
@@ -2654,86 +2935,157 @@ async function main() {
       ).rows[0].id;
       await admin.query("update public.listing_media set moderation_state = 'removed' where id = $1", [alreadyRemovedId]);
       const freshRefToRemovedId = (
-        await admin.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, removedRefPath, "2026-09-15T10:06:00Z"],
-        )
+        await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gapListing, removedRefPath])
       ).rows[0].id;
 
-      const beforeWindowId = (
-        await admin.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, "gap/before-window.webp", "2026-09-15T09:55:00Z"],
+      // 6. NEW: PENDING FLIPPED TO PUBLIC BEFORE RECONCILIATION. A real
+      // owner-scoped RLS INSERT, visibility='private' (genuinely pending,
+      // matching the real two-phase write's own phase 1), later flipped
+      // to 'public' by the SAME owner session, entirely legitimately as
+      // far as visibility itself goes. NEVER named in any manifest.
+      const pendingPath = `${gapAcctOwner}/${gapListing}/gap-pending.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [pendingPath]);
+      const pendingId = (
+        await gapOwnerSession.query(
+          "insert into public.listing_media (listing_id, path, source, visibility) values ($1, $2, 'upload', 'private') returning id",
+          [gapListing, pendingPath],
         )
       ).rows[0].id;
+      await gapOwnerSession.query("update public.listing_media set visibility = 'public' where id = $1", [pendingId]);
 
-      await check("REGRESSION (fails against the naive time+hash-null-only condition, matching this fix's own earlier version): the forged and pending rows are BOTH caught by a query that checks only the time window and content_sha256, proving that condition alone is not sufficient evidence", async () => {
+      await gapOwnerSession.end();
+
+      await check("REGRESSION: the naive time/shape-only condition (content_sha256 IS NULL, not yet legacy) matches EVERY forged/unproven row above, including all three NEW same-account cases, proving shape alone is never sufficient evidence", async () => {
         const naive = await admin.query(
-          `select id from public.listing_media
-             where content_sha256 is null and is_legacy_media = false
-               and created_at >= $1 and created_at < $2`,
-          [windowFrom, windowTo],
+          "select id from public.listing_media where content_sha256 is null and is_legacy_media = false and listing_id in ($1, $2)",
+          [gapListing, gapListing2],
         );
         const ids = naive.rows.map((r) => r.id);
-        assert(ids.includes(forgedId), "the naive condition must (incorrectly) match the forged row: this is the exact gap the review found");
-        assert(ids.includes(pendingId), "the naive condition must (incorrectly) match the still-pending row too");
-        assert(ids.includes(freshRefToRemovedId), "the naive condition must (incorrectly) match a fresh reference to an already-removed object's path");
-        assert(ids.includes(legitimateId), "sanity: the legitimate row must also match the naive condition, or this fixture proves nothing");
-      });
-
-      await check("public.grant_validated_legacy_media_trust() (report mode, p_apply=false): validates exactly the legitimate row, excluding the forged, pending, and removed-reference rows", async () => {
-        const r = await admin.query("select id from public.grant_validated_legacy_media_trust($1, $2, false)", [windowFrom, windowTo]);
-        const ids = r.rows.map((row) => row.id);
-        assert(ids.includes(legitimateId), "the genuine row must validate");
-        assert(!ids.includes(forgedId), "the forged row (real object, WRONG account) must fail same-account provenance");
-        assert(!ids.includes(pendingId), "the still-pending row (visibility=private) must fail the public-visibility precondition");
-        assert(!ids.includes(freshRefToRemovedId), "a fresh reference to an already-removed object's path must fail the never-removed check");
-        assert(!ids.includes(beforeWindowId), "a row outside the window must not appear at all");
-      });
-
-      await check("public.grant_validated_legacy_media_trust() is read-only when p_apply=false: none of the candidate rows are actually mutated by the report call above", async () => {
-        for (const id of [legitimateId, forgedId, pendingId, freshRefToRemovedId]) {
-          const r = await admin.query("select is_legacy_media from public.listing_media where id = $1", [id]);
-          assert(r.rows[0].is_legacy_media === false, `${id} must remain unmarked after a report-only (p_apply=false) call`);
+        for (const [label, id] of [
+          ["cross-account forgery", forgedId],
+          ["same-account preserved-original self-reference", originalRefForgeryId],
+          ["same-account cross-listing private reference", crossListingPrivateForgeryId],
+          ["removed-reference", freshRefToRemovedId],
+          ["pending-flipped-to-public", pendingId],
+          ["legitimate (sanity)", legitimateId],
+        ]) {
+          assert(ids.includes(id), `the naive condition must (incorrectly) match the ${label} row, or this fixture proves nothing`);
         }
       });
 
-      await check("public.grant_validated_legacy_media_trust() (apply mode, p_apply=true): grants trust ONLY to the legitimate row; the forged, pending, and removed-reference rows remain permanently untrusted", async () => {
-        const r = await admin.query("select id from public.grant_validated_legacy_media_trust($1, $2, true)", [windowFrom, windowTo]);
-        const grantedIds = r.rows.map((row) => row.id);
-        assert(JSON.stringify(grantedIds.sort()) === JSON.stringify([legitimateId].sort()), `expected exactly [${legitimateId}] granted, got ${JSON.stringify(grantedIds)}`);
+      // FIRST MANIFEST: the operator's own initial historical-cleanup
+      // pass. Deliberately includes the legitimate row ALONGSIDE every
+      // forged/unproven row above except the still-pending one (which is
+      // never named in any manifest at all, by design: see case 6's own
+      // test below), modelling a realistic imperfect manifest an operator
+      // might assemble, not a hand-picked-clean one.
+      const initialManifest = [
+        { id: legitimateId, path: legitimatePath },
+        { id: forgedId, path: gapVictimPath },
+        { id: originalRefForgeryId, path: preservedOriginalPath },
+        { id: crossListingPrivateForgeryId, path: sameAcctPrivatePath },
+        { id: freshRefToRemovedId, path: removedRefPath },
+      ];
 
+      await check("apply_verified_media_provenance (report mode): validates exactly the legitimate entry as would_grant; every forged/unproven entry reports its own specific, real reason, not a generic denial", async () => {
+        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, false)", [JSON.stringify(initialManifest)]);
+        const byId = Object.fromEntries(r.rows.map((row) => [row.id, row.status]));
+        assert(byId[legitimateId] === "would_grant", `legitimate row: expected would_grant, got ${byId[legitimateId]}`);
+        assert(byId[forgedId] === "object_outside_candidate_account_folder", `cross-account forgery must fail the account-folder check, got ${byId[forgedId]}`);
+        assert(byId[originalRefForgeryId] === "path_is_a_recorded_preserved_original", `preserved-original self-reference must be refused as such, got ${byId[originalRefForgeryId]}`);
+        assert(byId[crossListingPrivateForgeryId] === "path_shared_with_a_private_or_removed_reference", `same-account cross-listing private reference must be refused as such, got ${byId[crossListingPrivateForgeryId]}`);
+        assert(byId[freshRefToRemovedId] === "path_shared_with_a_private_or_removed_reference", `removed-reference must be refused as such, got ${byId[freshRefToRemovedId]}`);
+      });
+
+      await check("apply_verified_media_provenance is read-only when p_apply=false: none of the manifest rows are actually mutated by the report call above", async () => {
+        for (const entry of initialManifest) {
+          const r = await admin.query("select is_legacy_media from public.listing_media where id = $1", [entry.id]);
+          assert(r.rows[0].is_legacy_media === false, `${entry.id} must remain unmarked after a report-only (p_apply=false) call`);
+        }
+      });
+
+      await check("apply_verified_media_provenance (apply mode): grants trust to ONLY the legitimate manifest entry; every forged/unproven entry, even though NAMED IN THE MANIFEST, remains permanently untrusted", async () => {
+        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(initialManifest)]);
+        const byId = Object.fromEntries(r.rows.map((row) => [row.id, row.status]));
+        assert(byId[legitimateId] === "granted", `legitimate row: expected granted, got ${byId[legitimateId]}`);
+        for (const [label, id] of [
+          ["cross-account forgery", forgedId],
+          ["same-account preserved-original self-reference", originalRefForgeryId],
+          ["same-account cross-listing private reference", crossListingPrivateForgeryId],
+          ["removed-reference", freshRefToRemovedId],
+        ]) {
+          assert(byId[id] !== "granted", `the ${label} row must NOT be granted even though an operator's own manifest named it, got status '${byId[id]}'`);
+          const row = await admin.query("select is_legacy_media from public.listing_media where id = $1", [id]);
+          assert(row.rows[0].is_legacy_media === false, `the ${label} row's own is_legacy_media must remain false after apply`);
+        }
         const legit = await admin.query("select is_legacy_media, derivation_verified from public.listing_media where id = $1", [legitimateId]);
         assert(legit.rows[0].is_legacy_media === true, "the legitimate row must now be granted");
-        assert(legit.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-reconciliation, not a genuine finalized upload");
+        assert(legit.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-manifest, not a genuine finalized upload");
+      });
 
-        for (const [label, id] of [["forged", forgedId], ["pending", pendingId], ["removed-reference", freshRefToRemovedId], ["before-window", beforeWindowId]]) {
-          const r2 = await admin.query("select is_legacy_media from public.listing_media where id = $1", [id]);
-          assert(r2.rows[0].is_legacy_media === false, `the ${label} row must remain unmarked after apply`);
+      await check("CASE 6 (pending flipped to public before reconciliation): never named in any manifest, so visibility manipulation alone achieves nothing; the object stays unreadable regardless of the owner's own flip", async () => {
+        const trust = await admin.query("select is_legacy_media, derivation_verified, visibility from public.listing_media where id = $1", [pendingId]);
+        assert(trust.rows[0].is_legacy_media === false, "never manifested, so never granted, regardless of the visibility flip");
+        assert(trust.rows[0].derivation_verified === false, "never went through the trusted pipeline either");
+        assert(trust.rows[0].visibility === "public", "fixture sanity: the flip itself must have genuinely succeeded (visibility is not trust-gated, only readability is)");
+        const gapStrangerAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const c = await asTestRole(pg, { userId: null, accountId: gapStrangerAcct, isSat: false });
+        try {
+          const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [pendingPath]);
+          assert(r.rowCount === 0, "a stranger must still be unable to read this object: public visibility alone, with no trust grant, must never be sufficient");
+        } finally {
+          await c.end();
         }
       });
 
-      await check("REAL API BOUNDARY, NOT ONLY DATABASE POLICY: after the grant above, anonymous and an unrelated authenticated stranger can read the legitimate row's own storage object, and cannot read the forged, pending, or removed-referenced objects, matching the real storage policy's own EXISTS clause exactly", async () => {
+      // SECOND MANIFEST: a later, narrower, deployment-window-style
+      // reconciliation run, representative rather than exhaustive (the
+      // guards exercised are the identical code path already proven
+      // above): one new genuine row, plus a second attempt at the SAME
+      // cross-account forgery already refused once, proving the guard
+      // holds on a second, independent call too, not only the first.
+      const laterPath = `${gapAcctOwner}/${gapListing}/gap-later-reconciliation.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [laterPath]);
+      const laterId = (
+        await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gapListing, laterPath])
+      ).rows[0].id;
+      const laterManifest = [
+        { id: laterId, path: laterPath },
+        { id: forgedId, path: gapVictimPath },
+      ];
+
+      await check("a SECOND, later, narrower manifest call (representing ongoing/deployment-window reconciliation) applies the SAME validation rigor: grants the new genuine row, still refuses the same cross-account forgery", async () => {
+        const r = await admin.query("select id, status from public.apply_verified_media_provenance($1::jsonb, true)", [JSON.stringify(laterManifest)]);
+        const byId = Object.fromEntries(r.rows.map((row) => [row.id, row.status]));
+        assert(byId[laterId] === "granted", `the new genuine row must be granted on this second, independent call, got ${byId[laterId]}`);
+        assert(byId[forgedId] !== "granted", `the cross-account forgery must still be refused on a second attempt, got ${byId[forgedId]}`);
+      });
+
+      await check("DATABASE POLICY EVIDENCE, NOT HTTP: the real storage.objects RLS policy admits the legitimate/granted objects to anonymous and an unrelated authenticated stranger, and refuses the forged, private-reference, removed-reference, and never-granted-pending objects, matching its own EXISTS clause exactly", async () => {
         // Distinguishing evidence types precisely, per instruction: this
         // check exercises the REAL storage.objects RLS policy
         // (20260912c_pkg1b_storage_originals_read_boundary.sql) against a
         // real Postgres engine -- database-policy evidence, proving what
-        // the database itself would decide for these exact rows/objects.
-        // It is NOT a live HTTP call against a running Supabase Storage
-        // API or a real browser fetch; no such call is made anywhere in
-        // this harness, and this assertion is not evidence of one.
+        // the database itself decides for these exact rows/objects. It is
+        // NOT a live HTTP call against a running Supabase Storage API or a
+        // real browser fetch; no such call is made anywhere in this
+        // harness, and this assertion is not evidence of one.
         const gapStrangerAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
         for (const [label, roleFn] of [["anonymous", () => asAnonRole(pg)], ["unrelated authenticated stranger", () => asTestRole(pg, { userId: null, accountId: gapStrangerAcct, isSat: false })]]) {
           const c = await roleFn();
           try {
-            const legit = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [legitimatePath]);
-            assert(legit.rowCount === 1, `${label}: the legitimate, now-validated derivative must be readable`);
-            const forged = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gapVictimPath]);
-            assert(forged.rowCount === 0, `${label}: the forged reference must not grant read access to the victim's real object`);
-            const pending = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [pendingPath]);
-            assert(pending.rowCount === 0, `${label}: the still-pending object must remain unreadable`);
-            const removedRef = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [removedRefPath]);
-            assert(removedRef.rowCount === 0, `${label}: the removed-referenced object must remain unreadable`);
+            for (const [readable, path] of [
+              [true, legitimatePath],
+              [true, laterPath],
+              [false, gapVictimPath],
+              [false, preservedOriginalPath],
+              [false, sameAcctPrivatePath],
+              [false, removedRefPath],
+              [false, pendingPath],
+            ]) {
+              const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [path]);
+              assert((r.rowCount === 1) === readable, `${label}: expected ${path} to be ${readable ? "readable" : "unreadable"}, rowCount=${r.rowCount}`);
+            }
           } finally {
             await c.end();
           }
@@ -2741,50 +3093,153 @@ async function main() {
       });
     }
 
-    console.log("\n=== Step 8i: the write-pause/drain procedure (item 2, fourth adversarial review) ===");
+    console.log("\n=== Step 8i: the write-pause/drain procedure, with an explicit drain condition (fifth adversarial review, item 4) ===");
     // Provenance validation (Step 8h) closes the SECURITY question: a
-    // forged or pending row can never pass grant_validated_legacy_media_
-    // trust(), regardless of timing. This section is the separate,
-    // OPERATIONAL question item 2 asks for: a safe rollout approach that
-    // avoids producing untrusted-but-legitimate rows in the first place,
-    // rather than relying on reconciliation after the fact every time.
+    // forged or unproven row can never pass apply_verified_media_
+    // provenance(), regardless of timing. This section is the separate,
+    // OPERATIONAL question item 2 (fourth review) asked for, corrected by
+    // item 4 (fifth review): the drain step previously read "wait a
+    // short, bounded period... for any request already in-flight to
+    // complete or fail", which names no actual condition an operator can
+    // check, and nothing this repository configures a specific duration
+    // for (no maxDuration is set on the upload route or in vercel.json;
+    // the operative ceiling is whichever platform default applies to this
+    // Vercel project, not independently confirmed from this environment).
     //
-    // WHY THIS, NOT A "BRIDGE" PATCH TO main's OWN OLD UPLOAD ROUTE. A
-    // compatible-upload bridge would require modifying and deploying code
-    // that lives on `main`, unmerged with this branch, as its own,
-    // separate, earlier change; doing that from here would be a
-    // production change to a different, live branch, outside this PR's
-    // own scope and this session's own authorization. A pure
-    // DATABASE-level pause needs no application code anywhere, in either
-    // the old or new app, and is fully preparable and testable within
-    // this migration set alone:
+    // THE CORRECTED, EXPLICIT DRAIN CONDITION. Postgres privilege checks
+    // apply at the start of a statement, not continuously through its
+    // execution: once REVOKE INSERT commits, no NEW insert statement can
+    // succeed, but a statement that had already begun executing under the
+    // OLD privilege state completes or fails on its own terms, unaffected
+    // by the REVOKE. That makes "any backend that started before the
+    // REVOKE and is still active" a real, mechanically checkable fact,
+    // not a time guess:
     //
+    //   select count(*) from pg_stat_activity
+    //     where state in ('active', 'idle in transaction')
+    //       and query ilike '%insert into%listing_media%'
+    //       and xact_start < '<the REVOKE's own commit time>';
+    //
+    // The drain condition is: poll this query until it returns 0, with a
+    // hard ceiling (this repo has no configured maxDuration to cite, so
+    // the ceiling is deliberately operator-supplied per rollout, not a
+    // number invented here) after which a still-nonzero count means a
+    // stuck or unusually long transaction requiring investigation, not
+    // something to proceed past silently.
+    //
+    // THE FULL PROCEDURE, updated:
     //   1. Before applying migrations: REVOKE INSERT ON public.listing_
-    //      media FROM authenticated; (a single operator-run SQL
-    //      statement, not a migration file: temporary and reversible by
-    //      design, not a permanent schema change).
+    //      media FROM authenticated; note the commit time.
     //   2. Apply all eleven migrations (unaffected: migrations run as the
     //      superuser/table-owner role, which bypasses ordinary grants).
     //   3. Run section 10's verification queries.
-    //   4. Drain: wait a short, bounded period (serverless function
-    //      execution is itself time-bounded) for any request already
-    //      in-flight when the revoke took effect to complete or fail.
+    //   4. Drain: poll the query above until it returns 0. If it has not
+    //      reached 0 by the operator's own chosen ceiling, STOP: do not
+    //      proceed to step 5. Either wait longer with a deliberately
+    //      raised ceiling, or investigate the specific long-running
+    //      backend directly (it is individually identifiable via
+    //      pg_stat_activity's own pid/query columns) before deciding.
     //   5. Merge PR #22 (deploys the new application code).
     //   6. Re-grant: GRANT INSERT ON public.listing_media TO
     //      authenticated; (this round's own migrations never touch the
     //      INSERT grant, only SELECT, so this step is not automatic and
     //      must be explicit).
     //   7. Smoke test a real upload through the new app.
-    //   8. Run scripts/reconcile-deployment-window-legacy-gap.mjs as a
-    //      SAFETY NET, not a required step when the pause was actually
-    //      used: any row it finds represents either a request that was
-    //      genuinely already in-flight at the moment of step 1's own
-    //      REVOKE (should be rare and short-lived, given step 4's drain)
-    //      or a pause that was skipped/forgotten. Deployment failure
-    //      (any migration in step 2 fails) and rollback (reverting to the
-    //      old app while keeping this schema) both reduce to "the pause
-    //      from step 1 was never lifted, or must be re-engaged": no new
-    //      code path, no new procedure, the same eight steps either way.
+    //   8. Run scripts/apply-verified-media-provenance.mjs as a SAFETY
+    //      NET against an operator-prepared manifest, not a required step
+    //      when the pause was actually used and drained cleanly: any row
+    //      it grants represents a request that was genuinely already
+    //      in-flight at the moment of step 1's own REVOKE.
+    //
+    // FAILURE/ROLLBACK PROCEDURE (the prior version of this file named no
+    // such procedure at all): if step 2 fails partway (a migration
+    // errors) or the deployed application must be rolled back to the OLD
+    // app after step 5, the pause from step 1 is either still engaged (if
+    // failure happened before step 6) or must be RE-ENGAGED (REVOKE
+    // INSERT again) before reverting application code, for the identical
+    // reason step 1 existed in the first place: the old app's own upload
+    // route does not write content_sha256, so anything it inserts while
+    // live against this package's own schema needs the SAME operator
+    // manifest-and-grant procedure afterward, not a different one. No new
+    // code path: rollback is "the pause was never lifted, or must be
+    // re-engaged", the same nine steps either way, never an untested,
+    // separate emergency procedure.
+    {
+      await check("the drain condition is genuinely checkable and correctly distinguishes a real in-flight transaction from a drained state: 0 while a transaction is open, still 0 immediately after REVOKE with nothing in flight, and the polling query itself returns real backend rows when something IS in flight", async () => {
+        const drainAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const drainListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [drainAcct])).rows[0].id;
+
+        const beforeRevoke = new Date().toISOString();
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        try {
+          // Baseline: nothing in flight immediately after the revoke.
+          const idle = await admin.query(
+            `select count(*) from pg_stat_activity
+               where state in ('active', 'idle in transaction')
+                 and query ilike '%insert into%listing_media%'
+                 and xact_start < $1`,
+            [beforeRevoke],
+          );
+          assert(Number(idle.rows[0].count) === 0, "with nothing in flight, the drain condition must already read 0");
+
+          // A real in-flight transaction: BEGIN + INSERT via a role that
+          // still held the privilege at statement-start time (service_role
+          // is never revoked, standing in for a request whose own
+          // statement began executing before the REVOKE's own commit).
+          const inFlight = await asServiceRole(pg);
+          try {
+            await inFlight.query("begin");
+            await inFlight.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')", [drainListing, "drain-test/in-flight.webp"]);
+            const busy = await admin.query(
+              `select count(*) from pg_stat_activity
+                 where state in ('active', 'idle in transaction')
+                   and query ilike '%insert into%listing_media%'
+                   and xact_start < now()`,
+            );
+            assert(Number(busy.rows[0].count) >= 1, "the drain condition must detect a genuinely open, uncommitted INSERT transaction as still in flight");
+          } finally {
+            await inFlight.query("commit");
+            await inFlight.end();
+          }
+
+          // After the in-flight transaction completes, the drain
+          // condition must clear back to 0: this is the actual condition
+          // an operator polls to know the drain step is done.
+          const drained = await admin.query(
+            `select count(*) from pg_stat_activity
+               where state in ('active', 'idle in transaction')
+                 and query ilike '%insert into%listing_media%'
+                 and xact_start < now()`,
+          );
+          assert(Number(drained.rows[0].count) === 0, "once the in-flight transaction commits, the drain condition must read 0 again, giving the operator a real, checkable 'safe to proceed' signal");
+        } finally {
+          await admin.query("grant insert on public.listing_media to authenticated");
+        }
+      });
+
+      await check("the already-in-flight transaction itself is UNAFFECTED by the REVOKE (proves why draining, not merely revoking, is necessary): a statement that began under the old privilege completes normally even though INSERT is now revoked", async () => {
+        const drainAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const drainUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const drainListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [drainAcct])).rows[0].id;
+        const c = await asTestRole(pg, { userId: drainUser, accountId: drainAcct, isSat: false });
+        try {
+          await c.query("begin");
+          // Privilege is checked at this statement's own start, while
+          // authenticated still holds INSERT.
+          const ins = await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [drainListing, "drain-test/started-before-revoke.webp"]);
+          await admin.query("revoke insert on public.listing_media from authenticated");
+          try {
+            await c.query("commit");
+            const r = await admin.query("select 1 from public.listing_media where id = $1", [ins.rows[0].id]);
+            assert(r.rowCount === 1, "a transaction already in flight when the REVOKE commits must still complete successfully; the pause protects against NEW writes, not against draining the ones already underway");
+          } finally {
+            await admin.query("grant insert on public.listing_media to authenticated");
+          }
+        } finally {
+          await c.end();
+        }
+      });
+    }
     {
       await check("REVOKE INSERT on listing_media from authenticated makes a real owner's own upload INSERT fail cleanly (the mechanism the pause procedure depends on)", async () => {
         const pauseAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
