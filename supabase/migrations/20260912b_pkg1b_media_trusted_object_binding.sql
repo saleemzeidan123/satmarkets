@@ -67,33 +67,150 @@ alter table public.listing_media
   add column if not exists derivation_verified boolean
     generated always as (content_sha256 is not null) stored;
 
--- One-time backfill: every row with no content_sha256 AT THE MOMENT THIS
--- MIGRATION FIRST RUNS is, by definition, a row this package's own upload
--- pipeline never processed (outcome C did not exist before it). Must not
--- rerun on a later reapplication (this migration's own required
--- idempotency): a genuine new row created AFTER the first run (a pending
--- upload mid-pipeline, or a document row whose own content_sha256 has not
--- landed yet) would otherwise be wrongly swept up as "legacy" too, exactly
--- the gap this migration exists to avoid. Guarded the same way migration
--- D guards its own one-time constraint add (`do $$ if not exists ... $$`):
--- a real, queryable fact (the marker table's own existence) decides
--- whether the backfill has already happened, not a WHERE clause on
--- `listing_media` itself, which data changes over time could make
--- ambiguous.
 create table if not exists public.listing_media_legacy_backfill_done (
   backfilled_at timestamptz not null default now()
 );
 
+comment on table public.listing_media_legacy_backfill_done is
+  'Existence of any row records that the one-time is_legacy_media backfill (20260912b_pkg1b_media_trusted_object_binding.sql) has already run; stops a later reapplication of that migration from re-marking rows created since. Never written to by application code.';
+
+-- CORRECTION, third adversarial review: a plain "content_sha256 IS NULL"
+-- backfill (this migration's own original version) grants is_legacy_media
+-- to ANY row shaped that way, with no check that the row's own `path`
+-- genuinely, verifiably belongs to its own account. An authenticated
+-- owner could INSERT a forged row on their own eligible listing, `path`
+-- naming a KNOWN object belonging to a DIFFERENT account (another
+-- lister's own private or preserved-original file), with source='upload'
+-- and no content_sha256; that row is shaped identically to a genuine
+-- historical row this migration is meant to grandfather in. Dates,
+-- source='upload', object existence, and listing ownership ALONE are not
+-- sufficient evidence: the SAME problem applies identically to
+-- scripts/reconcile-deployment-window-legacy-gap.mjs's own, separate
+-- trust-granting path (a real upload gap between this migration applying
+-- and the new application code going live), so both are addressed here,
+-- together, through the ONE function below, rather than two independently
+-- maintained copies of the same logic that could drift apart.
+--
+-- VALIDATED PROVENANCE, PRECISELY.
+--
+-- A candidate row may be granted is_legacy_media = true only when ALL of:
+--   1. visibility = 'public'. A row from THIS package's own two-phase
+--      upload write is NEVER 'private' unless it is still genuinely
+--      pending (phase 1 only); a truly pre-existing row was defaulted to
+--      'public' the instant this column was added, never explicitly set.
+--      Excluding 'private' rows here closes a real, separate risk: if a
+--      still-in-flight pending upload were granted legacy trust while its
+--      own trusted finalization has not yet completed, an owner's later
+--      visibility flip (already proven closed for the derivation_verified
+--      path, 20260912c's own adversarial tests) would reopen an
+--      equivalent bypass through the is_legacy_media path instead.
+--   2. The referenced object genuinely exists in storage.objects for the
+--      listing-media bucket at this exact path.
+--   3. That object's own folder-prefix (storage.foldername(name)[1])
+--      equals the ROW'S OWN listing's account_id: the object is
+--      demonstrably within the uploading account's own namespace, not
+--      merely a path string the row's own INSERT happened to assert.
+--      This is what an INSERT-time RLS check cannot express (it verifies
+--      listing ownership, never what the free-text path column contains)
+--      and what closes the cross-account forgery scenario completely.
+--   4. No row, of any id, anywhere, currently records this SAME path with
+--      moderation_state = 'removed': an object that was ever the subject
+--      of a real moderation decision may never be re-admitted to public
+--      trust merely because a fresh row happens to reference the same
+--      path.
+-- Same-account self-reference (an owner pointing a second row at their
+-- OWN already-private or already-removed object) is not treated as a
+-- distinct forgery case: the owner already holds full, legitimate access
+-- to every object under their own account prefix regardless of this
+-- table (the storage policy's own owner-folder branch, unconditional),
+-- so this check is about STRANGERS gaining access, not about what an
+-- owner may already reach through their own account.
+--
+-- ATOMIC BY CONSTRUCTION. The candidate set is computed once, into a
+-- plain array, inside this one function call; the same array both drives
+-- the UPDATE (when p_apply) and the returned report, so there is no
+-- window between "checked eligible" and "granted trust" for the
+-- underlying facts to change, and no way for the two to silently diverge.
+--
+-- p_from/p_to are optional: null on both (this migration's own call,
+-- below) means "no time window, validate every remaining null-hash
+-- candidate"; scripts/reconcile-deployment-window-legacy-gap.mjs supplies
+-- both, narrowing the candidate set to its own explicit, operator-
+-- supplied deployment window, on top of the SAME provenance checks, not
+-- instead of them.
+create or replace function public.grant_validated_legacy_media_trust(
+  p_from timestamptz default null,
+  p_to timestamptz default null,
+  p_apply boolean default false
+)
+returns table (
+  id uuid,
+  listing_id uuid,
+  path text,
+  created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, storage
+as $$
+declare
+  matched_ids uuid[];
+begin
+  select coalesce(array_agg(c.id), array[]::uuid[]) into matched_ids
+  from (
+    select lm.id, lm.path, l.account_id
+    from public.listing_media lm
+    join public.listings l on l.id = lm.listing_id
+    where lm.content_sha256 is null
+      and lm.is_legacy_media = false
+      and lm.visibility = 'public'
+      and (p_from is null or lm.created_at >= p_from)
+      and (p_to is null or lm.created_at < p_to)
+  ) c
+  where exists (
+    select 1 from storage.objects o
+    where o.bucket_id = 'listing-media'
+      and o.name = c.path
+      and (storage.foldername(o.name))[1] = c.account_id::text
+  )
+  and not exists (
+    select 1 from public.listing_media removed_check
+    where removed_check.path = c.path
+      and removed_check.moderation_state = 'removed'
+  );
+
+  if p_apply and array_length(matched_ids, 1) > 0 then
+    update public.listing_media lm set is_legacy_media = true where lm.id = any(matched_ids);
+  end if;
+
+  return query
+    select lm.id, lm.listing_id, lm.path, lm.created_at
+    from public.listing_media lm
+    where lm.id = any(matched_ids)
+    order by lm.created_at;
+end;
+$$;
+
+revoke all on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) from public;
+grant execute on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) to service_role;
+
+comment on function public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean) is
+  'The ONE place is_legacy_media is ever granted, for both this migration''s own one-time backfill and scripts/reconcile-deployment-window-legacy-gap.mjs''s own later, windowed calls. Validates real object existence, same-account folder provenance, and no prior moderation removal before granting; service_role-only.';
+
+-- One-time backfill, itself now provenance-validated, not blanket: every
+-- row with no content_sha256 that ALSO independently proves real,
+-- same-account, never-removed provenance at the moment this migration
+-- first runs. A row that fails validation (a dangling path, a
+-- cross-account reference, or a path that was moderation-removed) is left
+-- untrusted, on purpose, and surfaced by the reporting query in the
+-- runbook (section 21) rather than silently granted.
 do $$
 begin
   if not exists (select 1 from public.listing_media_legacy_backfill_done) then
-    update public.listing_media set is_legacy_media = true where content_sha256 is null;
+    perform public.grant_validated_legacy_media_trust(null, null, true);
     insert into public.listing_media_legacy_backfill_done default values;
   end if;
 end $$;
-
-comment on table public.listing_media_legacy_backfill_done is
-  'Existence of any row records that the one-time is_legacy_media backfill (20260912b_pkg1b_media_trusted_object_binding.sql) has already run; stops a later reapplication of that migration from re-marking rows created since. Never written to by application code.';
 
 -- CORRECTION, same-day second adversarial review: this table was created
 -- above with no explicit grant or RLS, relying implicitly on whatever
@@ -227,6 +344,6 @@ comment on function public.listing_media_freeze_object_identity() is
   'Closes the object-identity-substitution gap found by adversarial review of this migration''s own first version: derivation_verified/is_legacy_media alone proved a row was TRUSTED AT SOME POINT, never that its CURRENT path is what was trusted. INSERT remains free (the real two-phase upload write needs this); no non-trusted UPDATE may ever change path/source/listing_id again, closing the post-trust substitution, the legacy-row substitution, and the pre-finalization race uniformly.';
 
 comment on column public.listing_media.is_legacy_media is
-  'True for exactly the rows that already existed, with no content_sha256, when this migration first ran (a one-time backfill). Never true for any row inserted afterward. Trusted-column protected: only the migration''s own backfill may ever set it.';
+  'True only for rows that both predate this migration (no content_sha256 when it first ran) AND independently passed public.grant_validated_legacy_media_trust()''s own real-object/same-account/never-removed provenance check; never granted on shape (dates, source=upload, listing ownership) alone. Never true for any row inserted afterward. Trusted-column protected: only that function''s own service_role-only call may ever set it.';
 comment on column public.listing_media.derivation_verified is
   'Stored generated column: true exactly when content_sha256 is not null. Lets anon/authenticated (and the storage policy''s own EXISTS clause) confirm a row went through the trusted upload pipeline without ever granting read access to content_sha256 itself.';

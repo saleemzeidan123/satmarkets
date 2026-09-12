@@ -120,6 +120,17 @@ create policy "read media objects of published or own listing" on storage.object
   );
 
 -- Reverse of migration 20260912b (security closure, trusted object binding)
+-- Correction, fourth adversarial review: this block previously omitted
+-- the object-identity freeze trigger and the validated-provenance
+-- function, both added to 20260912b across the two prior correction
+-- rounds. Neither references is_legacy_media/derivation_verified in a
+-- way that would have errored if left behind, so no existing test caught
+-- the omission, but a "rollback" that leaves the freeze trigger attached
+-- (still blocking path/source/listing_id updates on the old, pre-fix
+-- schema) is not a genuine, complete reversal.
+drop function if exists public.grant_validated_legacy_media_trust(timestamptz, timestamptz, boolean);
+drop trigger if exists listing_media_freeze_object_identity on public.listing_media;
+drop function if exists public.listing_media_freeze_object_identity();
 drop trigger if exists listing_media_protect_legacy_flag on public.listing_media;
 drop function if exists public.listing_media_protect_legacy_flag();
 drop table if exists public.listing_media_legacy_backfill_done;
@@ -2540,85 +2551,300 @@ async function main() {
       await gSvc.end();
     }
 
-    console.log("\n=== Step 8h: the deployment-window reconciliation query (third adversarial review, item 4) ===");
-    // scripts/reconcile-deployment-window-legacy-gap.mjs's own core SELECT,
-    // reproduced verbatim: content_sha256 is null, is_legacy_media is
-    // false, created_at within an explicit [from, to) window. Proves the
-    // query correctly includes a row created BY THE OLD APPLICATION CODE
-    // inside the real deployment gap, and correctly excludes rows outside
-    // that window or already trusted/legacy, using REAL created_at values
-    // on a real Postgres engine, not merely reasoned about.
+    console.log("\n=== Step 8h: the deployment-window reconciliation is PROVENANCE-VALIDATED, not time-based alone (fourth adversarial review) ===");
+    // CORRECTION: an earlier version of both this harness section and
+    // scripts/reconcile-deployment-window-legacy-gap.mjs granted trust to
+    // ANY row matching the time window and a null content_sha256 alone.
+    // That is a real, distinct vulnerability: an authenticated owner can
+    // INSERT A FORGED ROW on their own eligible listing, inside the SAME
+    // window, with path naming a DIFFERENT account's real private/
+    // original object; that row is shaped identically (dates, source=
+    // 'upload', real listing ownership) to a genuine old-app upload. This
+    // section first proves the OLD, naive time+hash-null query WOULD have
+    // caught the forged and pending rows below (the regression the
+    // review asked for, using the real owner-scoped RLS INSERT, not an
+    // admin bypass, so the INSERT itself is proven reachable by a real
+    // attacker), THEN proves public.grant_validated_legacy_media_trust()
+    // (20260912b's own function, which scripts/reconcile-deployment-
+    // window-legacy-gap.mjs now calls instead of querying directly)
+    // correctly excludes them while still granting the genuine row.
+    //
+    // WHAT "THE OLD APP RAN" MEANS HERE, PRECISELY. The "legitimate" row
+    // below is inserted via a plain admin.query INSERT, matching the
+    // ROW SHAPE the old (pre-PKG-1B) application's own upload route would
+    // produce (no content_sha256, a real object already placed in
+    // storage). This is a database-shape simulation, proving what the
+    // RECONCILIATION LOGIC does with a row of that shape; it is NOT
+    // evidence that the old application's own route handler code
+    // actually executed, which this harness has no way to invoke (that
+    // code lives on `main`, unmerged with this branch, and this harness
+    // never starts a Next.js server or issues a real HTTP request). Every
+    // assertion below is real Postgres RLS/function-execution evidence
+    // against a real engine; none of it is HTTP or application-route
+    // evidence, and it is not described as such anywhere in this file.
     {
-      const gapAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const gapAcctOwner = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const gapUserOwner = (await admin.query("insert into public.users default values returning id")).rows[0].id;
       const gapListing = (
-        await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapAcct])
+        await admin.query(
+          `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+           values ($1, 'published', '7200000009', now() + interval '30 days') returning id`,
+          [gapAcctOwner],
+        )
       ).rows[0].id;
+      // The victim: a DIFFERENT account, with a real private object the
+      // attacker below will attempt to reference. Distinct from every
+      // other fixture in this file.
+      const gapVictimAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+      const gapVictimListing = (
+        await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [gapVictimAcct])
+      ).rows[0].id;
+      const gapVictimPath = `${gapVictimAcct}/${gapVictimListing}/deployment-gap-victim-object.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [gapVictimPath]);
+
       const windowFrom = "2026-09-15T10:00:00Z";
       const windowTo = "2026-09-15T10:07:00Z";
 
-      const insideWindowId = (
+      // 1. Legitimate: shaped like a real old-app upload. Real object,
+      // same account, inside the window.
+      const legitimatePath = `${gapAcctOwner}/${gapListing}/gap-legitimate.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [legitimatePath]);
+      const legitimateId = (
         await admin.query(
           "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, "gap/inside-window.webp", "2026-09-15T10:03:00Z"],
+          [gapListing, legitimatePath, "2026-09-15T10:03:00Z"],
         )
       ).rows[0].id;
+
+      // 2. Forged: inserted via the REAL owner-scoped RLS session (not
+      // admin), path naming the VICTIM's real object, same window.
+      const gapOwnerSession = await asTestRole(pg, { userId: gapUserOwner, accountId: gapAcctOwner, isSat: false });
+      let forgedId;
+      try {
+        const ins = await gapOwnerSession.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, gapVictimPath, "2026-09-15T10:04:00Z"],
+        );
+        forgedId = ins.rows[0].id;
+      } finally {
+        await gapOwnerSession.end();
+      }
+
+      // 3. Pending: a genuinely in-flight upload (visibility='private',
+      // matching the real two-phase write's own phase 1), real object,
+      // same window. Must never be promoted while still pending, or an
+      // owner's later visibility flip (already closed for the
+      // derivation_verified path) would reopen an equivalent bypass
+      // through is_legacy_media instead.
+      const pendingPath = `${gapAcctOwner}/${gapListing}/gap-pending.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [pendingPath]);
+      const pendingId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, visibility, created_at) values ($1, $2, 'upload', 'private', $3) returning id",
+          [gapListing, pendingPath, "2026-09-15T10:05:00Z"],
+        )
+      ).rows[0].id;
+
+      // 4. Moderation-removed reference: a real, same-account object, but
+      // SOME row (any row) already recorded this exact path as removed.
+      const removedRefPath = `${gapAcctOwner}/${gapListing}/gap-removed-ref.webp`;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [removedRefPath]);
+      const alreadyRemovedId = (
+        await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gapListing, removedRefPath])
+      ).rows[0].id;
+      await admin.query("update public.listing_media set moderation_state = 'removed' where id = $1", [alreadyRemovedId]);
+      const freshRefToRemovedId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
+          [gapListing, removedRefPath, "2026-09-15T10:06:00Z"],
+        )
+      ).rows[0].id;
+
       const beforeWindowId = (
         await admin.query(
           "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
           [gapListing, "gap/before-window.webp", "2026-09-15T09:55:00Z"],
         )
       ).rows[0].id;
-      const afterWindowId = (
-        await admin.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, "gap/after-window.webp", "2026-09-15T11:00:00Z"],
-        )
-      ).rows[0].id;
-      const insideWindowButTrustedId = (
-        await admin.query(
-          "insert into public.listing_media (listing_id, path, source, created_at) values ($1, $2, 'upload', $3) returning id",
-          [gapListing, "gap/inside-window-but-trusted.webp", "2026-09-15T10:04:00Z"],
-        )
-      ).rows[0].id;
-      await admin.query("update public.listing_media set content_sha256 = 'gaptesthash' where id = $1", [insideWindowButTrustedId]);
 
-      async function gapQuery() {
-        return admin.query(
+      await check("REGRESSION (fails against the naive time+hash-null-only condition, matching this fix's own earlier version): the forged and pending rows are BOTH caught by a query that checks only the time window and content_sha256, proving that condition alone is not sufficient evidence", async () => {
+        const naive = await admin.query(
           `select id from public.listing_media
              where content_sha256 is null and is_legacy_media = false
-               and created_at >= $1 and created_at < $2
-             order by created_at`,
+               and created_at >= $1 and created_at < $2`,
           [windowFrom, windowTo],
         );
-      }
+        const ids = naive.rows.map((r) => r.id);
+        assert(ids.includes(forgedId), "the naive condition must (incorrectly) match the forged row: this is the exact gap the review found");
+        assert(ids.includes(pendingId), "the naive condition must (incorrectly) match the still-pending row too");
+        assert(ids.includes(freshRefToRemovedId), "the naive condition must (incorrectly) match a fresh reference to an already-removed object's path");
+        assert(ids.includes(legitimateId), "sanity: the legitimate row must also match the naive condition, or this fixture proves nothing");
+      });
 
-      await check("the deployment-window query catches a row created by the old app inside the exact window", async () => {
-        const r = await gapQuery();
+      await check("public.grant_validated_legacy_media_trust() (report mode, p_apply=false): validates exactly the legitimate row, excluding the forged, pending, and removed-reference rows", async () => {
+        const r = await admin.query("select id from public.grant_validated_legacy_media_trust($1, $2, false)", [windowFrom, windowTo]);
         const ids = r.rows.map((row) => row.id);
-        assert(ids.includes(insideWindowId), "a row created inside [from, to) with no content_sha256 must be caught");
+        assert(ids.includes(legitimateId), "the genuine row must validate");
+        assert(!ids.includes(forgedId), "the forged row (real object, WRONG account) must fail same-account provenance");
+        assert(!ids.includes(pendingId), "the still-pending row (visibility=private) must fail the public-visibility precondition");
+        assert(!ids.includes(freshRefToRemovedId), "a fresh reference to an already-removed object's path must fail the never-removed check");
+        assert(!ids.includes(beforeWindowId), "a row outside the window must not appear at all");
       });
-      await check("the deployment-window query excludes rows outside the window", async () => {
-        const r = await gapQuery();
-        const ids = r.rows.map((row) => row.id);
-        assert(!ids.includes(beforeWindowId), "a row created before the window must not be caught (it is either genuinely legacy, already backfilled, or someone else's concern)");
-        assert(!ids.includes(afterWindowId), "a row created after the window must not be caught: this is the exact boundary that keeps this script from ever legalizing a forged row inserted later");
+
+      await check("public.grant_validated_legacy_media_trust() is read-only when p_apply=false: none of the candidate rows are actually mutated by the report call above", async () => {
+        for (const id of [legitimateId, forgedId, pendingId, freshRefToRemovedId]) {
+          const r = await admin.query("select is_legacy_media from public.listing_media where id = $1", [id]);
+          assert(r.rows[0].is_legacy_media === false, `${id} must remain unmarked after a report-only (p_apply=false) call`);
+        }
       });
-      await check("the deployment-window query excludes a row that already has content_sha256, even inside the window", async () => {
-        const r = await gapQuery();
-        const ids = r.rows.map((row) => row.id);
-        assert(!ids.includes(insideWindowButTrustedId), "a row that genuinely completed trusted finalization must never be touched by this reconciliation, window or not");
+
+      await check("public.grant_validated_legacy_media_trust() (apply mode, p_apply=true): grants trust ONLY to the legitimate row; the forged, pending, and removed-reference rows remain permanently untrusted", async () => {
+        const r = await admin.query("select id from public.grant_validated_legacy_media_trust($1, $2, true)", [windowFrom, windowTo]);
+        const grantedIds = r.rows.map((row) => row.id);
+        assert(JSON.stringify(grantedIds.sort()) === JSON.stringify([legitimateId].sort()), `expected exactly [${legitimateId}] granted, got ${JSON.stringify(grantedIds)}`);
+
+        const legit = await admin.query("select is_legacy_media, derivation_verified from public.listing_media where id = $1", [legitimateId]);
+        assert(legit.rows[0].is_legacy_media === true, "the legitimate row must now be granted");
+        assert(legit.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-reconciliation, not a genuine finalized upload");
+
+        for (const [label, id] of [["forged", forgedId], ["pending", pendingId], ["removed-reference", freshRefToRemovedId], ["before-window", beforeWindowId]]) {
+          const r2 = await admin.query("select is_legacy_media from public.listing_media where id = $1", [id]);
+          assert(r2.rows[0].is_legacy_media === false, `the ${label} row must remain unmarked after apply`);
+        }
       });
-      await check("applying the reconciliation (matching the script's own UPDATE) marks exactly the caught row, and it becomes storage/table eligible afterward", async () => {
-        const before = await admin.query("select is_legacy_media from public.listing_media where id = $1", [insideWindowId]);
-        assert(before.rows[0].is_legacy_media === false, "fixture sanity: not yet marked");
-        const r = await gapQuery();
-        const ids = r.rows.map((row) => row.id);
-        await admin.query("update public.listing_media set is_legacy_media = true where id = any($1::uuid[])", [ids]);
-        const after = await admin.query("select is_legacy_media, derivation_verified from public.listing_media where id = $1", [insideWindowId]);
-        assert(after.rows[0].is_legacy_media === true, "the caught row must now be marked legacy, restoring its own public eligibility");
-        assert(after.rows[0].derivation_verified === false, "derivation_verified correctly stays false: this row is legacy-by-reconciliation, not a genuine finalized upload, and the two signals must never be conflated");
-        const stillExcluded = await admin.query("select is_legacy_media from public.listing_media where id = $1", [afterWindowId]);
-        assert(stillExcluded.rows[0].is_legacy_media === false, "a row outside the window must remain untouched by this same apply");
+
+      await check("REAL API BOUNDARY, NOT ONLY DATABASE POLICY: after the grant above, anonymous and an unrelated authenticated stranger can read the legitimate row's own storage object, and cannot read the forged, pending, or removed-referenced objects, matching the real storage policy's own EXISTS clause exactly", async () => {
+        // Distinguishing evidence types precisely, per instruction: this
+        // check exercises the REAL storage.objects RLS policy
+        // (20260912c_pkg1b_storage_originals_read_boundary.sql) against a
+        // real Postgres engine -- database-policy evidence, proving what
+        // the database itself would decide for these exact rows/objects.
+        // It is NOT a live HTTP call against a running Supabase Storage
+        // API or a real browser fetch; no such call is made anywhere in
+        // this harness, and this assertion is not evidence of one.
+        const gapStrangerAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        for (const [label, roleFn] of [["anonymous", () => asAnonRole(pg)], ["unrelated authenticated stranger", () => asTestRole(pg, { userId: null, accountId: gapStrangerAcct, isSat: false })]]) {
+          const c = await roleFn();
+          try {
+            const legit = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [legitimatePath]);
+            assert(legit.rowCount === 1, `${label}: the legitimate, now-validated derivative must be readable`);
+            const forged = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gapVictimPath]);
+            assert(forged.rowCount === 0, `${label}: the forged reference must not grant read access to the victim's real object`);
+            const pending = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [pendingPath]);
+            assert(pending.rowCount === 0, `${label}: the still-pending object must remain unreadable`);
+            const removedRef = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [removedRefPath]);
+            assert(removedRef.rowCount === 0, `${label}: the removed-referenced object must remain unreadable`);
+          } finally {
+            await c.end();
+          }
+        }
+      });
+    }
+
+    console.log("\n=== Step 8i: the write-pause/drain procedure (item 2, fourth adversarial review) ===");
+    // Provenance validation (Step 8h) closes the SECURITY question: a
+    // forged or pending row can never pass grant_validated_legacy_media_
+    // trust(), regardless of timing. This section is the separate,
+    // OPERATIONAL question item 2 asks for: a safe rollout approach that
+    // avoids producing untrusted-but-legitimate rows in the first place,
+    // rather than relying on reconciliation after the fact every time.
+    //
+    // WHY THIS, NOT A "BRIDGE" PATCH TO main's OWN OLD UPLOAD ROUTE. A
+    // compatible-upload bridge would require modifying and deploying code
+    // that lives on `main`, unmerged with this branch, as its own,
+    // separate, earlier change; doing that from here would be a
+    // production change to a different, live branch, outside this PR's
+    // own scope and this session's own authorization. A pure
+    // DATABASE-level pause needs no application code anywhere, in either
+    // the old or new app, and is fully preparable and testable within
+    // this migration set alone:
+    //
+    //   1. Before applying migrations: REVOKE INSERT ON public.listing_
+    //      media FROM authenticated; (a single operator-run SQL
+    //      statement, not a migration file: temporary and reversible by
+    //      design, not a permanent schema change).
+    //   2. Apply all eleven migrations (unaffected: migrations run as the
+    //      superuser/table-owner role, which bypasses ordinary grants).
+    //   3. Run section 10's verification queries.
+    //   4. Drain: wait a short, bounded period (serverless function
+    //      execution is itself time-bounded) for any request already
+    //      in-flight when the revoke took effect to complete or fail.
+    //   5. Merge PR #22 (deploys the new application code).
+    //   6. Re-grant: GRANT INSERT ON public.listing_media TO
+    //      authenticated; (this round's own migrations never touch the
+    //      INSERT grant, only SELECT, so this step is not automatic and
+    //      must be explicit).
+    //   7. Smoke test a real upload through the new app.
+    //   8. Run scripts/reconcile-deployment-window-legacy-gap.mjs as a
+    //      SAFETY NET, not a required step when the pause was actually
+    //      used: any row it finds represents either a request that was
+    //      genuinely already in-flight at the moment of step 1's own
+    //      REVOKE (should be rare and short-lived, given step 4's drain)
+    //      or a pause that was skipped/forgotten. Deployment failure
+    //      (any migration in step 2 fails) and rollback (reverting to the
+    //      old app while keeping this schema) both reduce to "the pause
+    //      from step 1 was never lifted, or must be re-engaged": no new
+    //      code path, no new procedure, the same eight steps either way.
+    {
+      await check("REVOKE INSERT on listing_media from authenticated makes a real owner's own upload INSERT fail cleanly (the mechanism the pause procedure depends on)", async () => {
+        const pauseAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const pauseUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const pauseListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [pauseAcct])).rows[0].id;
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        try {
+          const c = await asTestRole(pg, { userId: pauseUser, accountId: pauseAcct, isSat: false });
+          try {
+            let denied = false;
+            try {
+              await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')", [pauseListing, "pause-test/should-not-land.webp"]);
+            } catch (e) {
+              denied = e.code === "42501";
+            }
+            assert(denied, "with the pause engaged, a real owner's own upload INSERT must fail with insufficient_privilege (42501), the same error shape this codebase's own upload routes already handle as a normal, honest failure");
+          } finally {
+            await c.end();
+          }
+        } finally {
+          await admin.query("grant insert on public.listing_media to authenticated");
+        }
+      });
+
+      await check("re-granting INSERT (step 6) genuinely restores the owner's own ability to upload; the pause is fully reversible, not a one-way lockout", async () => {
+        const pauseAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const pauseUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const pauseListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [pauseAcct])).rows[0].id;
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        await admin.query("grant insert on public.listing_media to authenticated");
+        const c = await asTestRole(pg, { userId: pauseUser, accountId: pauseAcct, isSat: false });
+        try {
+          const ins = await c.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [pauseListing, "pause-test/resumed.webp"]);
+          assert(ins.rowCount === 1, "after re-granting INSERT, a real owner's own upload must succeed exactly as before the pause");
+        } finally {
+          await c.end();
+        }
+      });
+
+      await check("the pause is scoped to INSERT only: an owner's own SELECT/UPDATE/DELETE on their existing media remain unaffected while paused (the Studio's own read/edit/delete controls keep working during the window)", async () => {
+        const pauseAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const pauseUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const pauseListing = (await admin.query("insert into public.listings (account_id, status) values ($1, 'draft') returning id", [pauseAcct])).rows[0].id;
+        const existingId = (await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [pauseListing, "pause-test/pre-existing.webp"])).rows[0].id;
+        await admin.query("revoke insert on public.listing_media from authenticated");
+        try {
+          const c = await asTestRole(pg, { userId: pauseUser, accountId: pauseAcct, isSat: false });
+          try {
+            const sel = await c.query("select id from public.listing_media where id = $1", [existingId]);
+            assert(sel.rowCount === 1, "SELECT on the owner's own existing media must be unaffected by an INSERT-only pause");
+            const upd = await c.query("update public.listing_media set shot_key = 'entrance' where id = $1", [existingId]);
+            assert(upd.rowCount === 1, "UPDATE (categorization/ordering/visibility) on existing media must be unaffected");
+            const del = await c.query("delete from public.listing_media where id = $1", [existingId]);
+            assert(del.rowCount === 1, "DELETE of existing media must be unaffected");
+          } finally {
+            await c.end();
+          }
+        } finally {
+          await admin.query("grant insert on public.listing_media to authenticated");
+        }
       });
     }
 

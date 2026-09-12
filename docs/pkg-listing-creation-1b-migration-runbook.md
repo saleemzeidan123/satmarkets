@@ -803,6 +803,16 @@ side effect of that same merge (a separate, manual `supabase db push` or
 dashboard/CLI action). This means the operator, not the platform, decides
 the real order, and it must be decided BEFORE merging, not left implicit:
 
+1a. **Pause new uploads before touching anything else** (section 21's own
+   fourth-round correction: replaces relying on reconciliation alone).
+   `REVOKE INSERT ON public.listing_media FROM authenticated;` — a single,
+   operator-run SQL statement, not a migration file (temporary and
+   reversible by design). This needs no change to the currently-deployed
+   application code in either direction: it blocks any upload attempt,
+   old app or new, at the database grant level, which the old app's own
+   existing error handling already surfaces as a normal, honest failure,
+   not a crash. Wait a short, bounded period for any already-in-flight
+   request to complete or fail (drain), before proceeding.
 1. **Apply all eleven migrations to production, in this exact order**, via
    the Supabase CLI or dashboard SQL editor, WHILE PR #22 IS STILL OPEN
    (not yet merged, application code not yet deployed):
@@ -848,19 +858,26 @@ the real order, and it must be decided BEFORE merging, not left implicit:
    legitimate, legacy media) and that a direct attempt to fetch a signed
    URL for a KNOWN preserved-original path (if one can be identified from
    this session's own test fixtures, never a real customer's) is refused.
-5. **Required, not optional (section 21, item 4): run the deployment-window
-   reconciliation.** Record the exact timestamp migrations were applied
-   (step 1) and the exact timestamp the new application code was confirmed
-   live (after step 4). Any real upload made through the OLD application
-   code in that window (or during any later period it runs again, e.g. an
-   application rollback that keeps this schema) lands with
-   `is_legacy_media=false, derivation_verified=false`: correctly untrusted
-   for a forged row, wrongly excluded for this legitimate one. Run
-   `node scripts/reconcile-deployment-window-legacy-gap.mjs --from=<applied> --to=<live>`
-   (report only), review the listed rows are genuinely real uploads by
-   their own account owner, then re-run with `--apply`. Re-run after any
-   later rollback-then-forward-roll cycle, with that period's own real
-   timestamps; never with a guessed or unbounded window.
+5. **Resume: `GRANT INSERT ON public.listing_media TO authenticated;`**
+   (this round's own migrations only ever touch the SELECT grant, never
+   INSERT, so this is not automatic and must be explicit), then confirm a
+   real upload through the new app succeeds.
+5a. **Safety net, not the primary control now that step 1a exists
+   (section 21, fourth-round correction): the deployment-window
+   reconciliation.** If step 1a's pause was genuinely observed for the
+   whole gap, this should find nothing. Record the exact timestamps of
+   steps 1a and 5 anyway, and run
+   `node scripts/reconcile-deployment-window-legacy-gap.mjs --from=<paused> --to=<resumed>`
+   (report only first). Any row found is now PROVENANCE-VALIDATED before
+   being granted (real object, same-account folder ownership, never
+   moderation-removed; `public.grant_validated_legacy_media_trust()`,
+   20260912b), not merely time-windowed: review the (also reported)
+   UNVALIDATED rows too, since those need manual attention (confirm the
+   real object, ask the owner to re-upload through the new app, or leave
+   untrusted) rather than being silently skipped. Re-run after any later
+   rollback-then-forward-roll cycle (re-engage step 1a's pause for that
+   period first), with that period's own real timestamps; never with a
+   guessed or unbounded window.
 6. Record the live evidence, split honestly between what was checked
    authenticated-live, what was checked anonymously-live, and what was
    checked by a deterministic test, matching this package's own
@@ -3258,3 +3275,81 @@ Full local gate re-run on the final integrated code: typecheck clean,
 2080/2080 tests, `ar-lint` clean, `lint-gate` held at 49, `npm run build`
 clean. Isolated harness: 168/168 (up from 152/152). Nothing applied to
 production; PR #22 remains draft.
+
+## 22. Fourth adversarial review, same day: legacy trust granted without provenance (P1)
+
+Kept short per instruction; full detail lives in the migration/script
+comments. **Not closed by claiming "all items closed"** — reported here as
+what changed and what remains, not as a completion declaration.
+
+**The finding.** `scripts/reconcile-deployment-window-legacy-gap.mjs`
+(item 4, section 21) and `20260912b`'s own one-time backfill both granted
+`is_legacy_media = true` on shape alone: `content_sha256 IS NULL`, not yet
+legacy, (for the script) inside an explicit time window. Neither verified
+that the row's own `path` actually, demonstrably belongs to the inserting
+account. An authenticated owner can INSERT a forged row on their own
+eligible listing, `path` naming a known object belonging to a DIFFERENT
+account (or one already moderation-removed); dates, `source='upload'`,
+real object existence, and real listing ownership are all satisfied by
+that forged row too. The object-identity freeze (section 20, item 1)
+stops a LATER mutation of an already-trusted row's path; it does not
+authenticate the path at the moment trust is first granted. Confirmed
+live: the harness's own "before" regression (Step 8h) proves a naive
+time+hash-null query catches a forged row inserted via the real
+owner-scoped RLS session, not an admin bypass.
+
+**The fix, covering both trust-granting paths through one function.**
+`public.grant_validated_legacy_media_trust(p_from, p_to, p_apply)`
+(`20260912b_pkg1b_media_trusted_object_binding.sql`, service_role-only)
+computes its candidate set once, atomically, and grants trust only when
+ALL of: `visibility = 'public'` (excludes any still-pending row, closing
+a reopened variant of the already-closed pre-finalization race); the
+referenced object genuinely exists in `storage.objects`; that object's
+own folder-prefix equals the row's own listing's `account_id` (same-
+account provenance, the real cross-account-forgery close); no row
+anywhere records that same path as `moderation_state = 'removed'`. The
+migration's own backfill and the reconciliation script now both call
+this one function; a row that fails validation is left untrusted and
+reported (the script's own new "UNVALIDATED" output), never silently
+granted or silently dropped.
+
+**Rollout, replaced, not merely supplemented.** Runbook section 11 now
+opens with a database-only write pause (`REVOKE INSERT ... FROM
+authenticated` before migrations, `GRANT` back after the new app is
+confirmed live), needing no change to any application code, old or new;
+the reconciliation script is now the safety net for whatever the pause
+did not catch, not the primary control. A "trusted-upload bridge" patch
+to `main`'s own currently-deployed upload route was considered and
+rejected as the primary answer: it would require preparing and deploying
+a separate change to a different, live branch outside this PR's own
+scope, which this session is not authorized to do; the database-only
+pause achieves the same operational goal (no new untrusted-but-
+legitimate rows produced during the window) using only this migration
+set, fully testable locally, which the bridge could not be.
+
+**Evidence.** Isolated harness: 172/172 (up from 168/168), including: the
+naive-query regression proving the forged/pending/removed-reference rows
+WOULD have been wrongly caught; the validated function's report mode
+(read-only, correctly excludes all three) and apply mode (grants only the
+genuine row); a real storage-policy read-boundary check for anonymous and
+an unrelated authenticated stranger confirming the forged reference,
+the pending object, and the removed-referenced object all stay
+unreadable after the grant runs; three checks proving the write-pause's
+own REVOKE/GRANT mechanism works, is fully reversible, and is scoped to
+INSERT only (SELECT/UPDATE/DELETE on existing media are unaffected while
+paused). **Evidence type, stated precisely per instruction**: every check
+above is real Postgres RLS/function-execution evidence against a real
+engine. None of it is a live HTTP call or a real application-route
+execution; the harness has no way to invoke `main`'s own old upload
+route, and an admin/owner-role SQL INSERT matching that route's row shape
+is a simulation of its output, not proof the route itself ran. This
+distinction is stated in the harness's own comments at this section, not
+only here. A genuinely un-provable historical row (no matching object,
+wrong-account object, or a moderation-removed reference) is now left
+untrusted and reported for manual remediation, per instruction, rather
+than guessed into trust.
+
+Full local gate re-run: typecheck clean, 2080/2080 tests, `ar-lint`
+clean, `lint-gate` held at 49, `npm run build` clean. Nothing applied to
+production; PR #22 remains draft. The GitHub Actions required check
+remains a confirmed account billing lock, unresolved, not retried.
