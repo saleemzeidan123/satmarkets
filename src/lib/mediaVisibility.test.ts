@@ -246,3 +246,52 @@ test("every listing_media query chain referencing content_sha256 or original_pat
   assert.ok(sensitiveChainsFound >= 5, `expected at least 5 sensitive-column query chains across ${SENSITIVE_COLUMN_ROUTES.join(", ")}, found ${sensitiveChainsFound}; the scan itself may have stopped matching`);
   assert.deepEqual(violations, [], violations.join("\n"));
 });
+
+// Security closure, 2026-09-12, Codex review: the DELETE handler's own
+// original_path lookup (added by the fix above) once discarded its own
+// query error and treated a failed/unavailable lookup identically to
+// "confirmed, this row has no original", then deleted the row's own
+// listing_media record anyway, permanently losing the only durable
+// reference to a real preserved-original object. This is the source-level
+// discipline that must never regress: no mocked-client test exists
+// anywhere in this repo for API route handlers (only real Postgres RLS
+// proof, in the isolated harness, and structural source scans, here), so
+// this is deliberately a scan of the actual control flow, not a
+// description of it.
+test("media/[mediaId]/route.ts's DELETE handler refuses (does not proceed to delete) when serviceRole is unavailable or the original_path lookup itself errors, and scopes that lookup by both media id and listing id", () => {
+  const src = readFileSync(join(ROOT, "app/api/listings/[id]/media/[mediaId]/route.ts"), "utf8");
+  const del = src.slice(src.indexOf("export async function DELETE"), src.indexOf("export async function PATCH"));
+  assert.ok(del.length > 0, "could not isolate the DELETE handler's own source; the scan itself may need updating");
+
+  assert.match(
+    del,
+    /if\s*\(\s*!serviceRole\s*\)\s*\{\s*\n?\s*return NextResponse\.json/,
+    "the DELETE handler must return early when getSupabaseServiceRole() is null, before attempting the original_path lookup or the row delete",
+  );
+
+  const serviceRoleIdx = del.indexOf("if (!serviceRole)");
+  const deleteCallIdx = del.indexOf('.from("listing_media").delete()');
+  assert.ok(serviceRoleIdx >= 0 && deleteCallIdx > serviceRoleIdx, "the !serviceRole check must appear before the row is deleted");
+
+  assert.match(
+    del,
+    /error:\s*originalLookupErr\s*\}[\s\S]{0,20}=\s*await\s+serviceRole/,
+    "the original_path lookup must actually capture its own error (not discard it via a bare `{ data }` destructure)",
+  );
+  assert.match(
+    del,
+    /if\s*\(\s*originalLookupErr\s*\)\s*\{\s*\n?\s*return NextResponse\.json/,
+    "a real originalLookupErr must refuse the request (return early), not fall through to deleting the row with an unconfirmed original_path",
+  );
+
+  const lookupChainStart = del.indexOf('.select("original_path")');
+  assert.ok(lookupChainStart >= 0, "could not find the original_path select; the scan itself may need updating");
+  const lookupChain = del.slice(lookupChainStart, del.indexOf(".maybeSingle()", lookupChainStart));
+  assert.match(lookupChain, /\.eq\("id",\s*params\.mediaId\)/, "the privileged original_path lookup must scope by media id");
+  assert.match(lookupChain, /\.eq\("listing_id",\s*params\.id\)/, "the privileged original_path lookup must ALSO scope by listing id, not id alone");
+
+  assert.ok(
+    deleteCallIdx > del.indexOf("originalLookupErr"),
+    "the row delete must happen strictly after the original_path lookup and its own error check, never before",
+  );
+});

@@ -737,6 +737,46 @@ select count(*) from public.media_cleanup_queue;
 -- Expect 0: this table starts empty and only ever gains a row from a real
 -- upload or deletion failure (section 16), neither of which the migration
 -- itself causes.
+
+-- 8. Security closure (2026-09-12, sections 18/19): the four new
+--    migrations' own objects exist and are correctly shaped.
+select column_name, is_generated, generation_expression from information_schema.columns
+  where table_schema = 'public' and table_name = 'listing_media'
+    and column_name in ('is_legacy_media', 'derivation_verified');
+-- Expect 2 rows; derivation_verified's is_generated = 'ALWAYS'.
+
+select policyname from pg_policies
+  where (schemaname = 'public' and tablename = 'listing_media' and policyname = 'public read eligible media of published')
+     or (schemaname = 'storage' and tablename = 'objects' and policyname = 'read eligible media objects or own listing');
+-- Expect exactly 2 rows. Their OLD names ("public read media of published",
+-- "read media objects of published or own listing") must NOT appear.
+
+select tgname, tgenabled from pg_trigger where tgname = 'listing_media_protect_legacy_flag';
+-- Expect 1 row, tgenabled = 'O'.
+
+select grantee, column_name, privilege_type from information_schema.column_privileges
+  where table_name = 'listing_media' and grantee in ('anon', 'authenticated')
+    and column_name in ('content_sha256', 'original_path', 'derived_transforms', 'derived_by', 'derived_at')
+  order by grantee, column_name;
+-- Expect ZERO rows (unlike query 6 above, this IS a real finding if any
+-- appear: 20260912_pkg1b_sensitive_media_column_grants.sql's whole purpose
+-- is a genuine, working REVOKE for SELECT specifically, verified this round
+-- to actually work, unlike the column-level REVOKE attempted and found not
+-- to work for INSERT/UPDATE in the round-2 history query 6's own note
+-- describes).
+
+select has_table_privilege('anon', 'public.listing_media', 'SELECT') as anon_table_select;
+-- Expect false: the table-wide grant was revoked, not merely narrowed
+-- alongside.
+
+-- 9. The one-time legacy backfill ran exactly once and covered exactly the
+--    pre-migration rows: every row with content_sha256 IS NULL immediately
+--    after migration (before any new upload) must also be is_legacy_media
+--    = true. A row failing this predicate means the backfill missed rows
+--    that existed before it ran, not a new post-migration row (there
+--    should be none of those yet at this point in the rollout).
+select count(*) from public.listing_media where content_sha256 is null and is_legacy_media is not true;
+-- Expect 0, run immediately after migration, before any new upload.
 ```
 
 Idempotent reapplication, both concurrency tests, RLS authorization as
@@ -754,34 +794,76 @@ a finding).
 
 ## 11. Application deployment plan
 
-**Schema first, application code second, activation last** (Codex's own
-required ordering).
+**Reconciled, 2026-09-12 (both this round's own security-closure and the
+original 2026-09-05 plan this section used to describe alone): eleven
+migrations now, not five, and the correct sequence is EXPLICITLY ORDERED,
+not "alongside" or simultaneous.** Vercel deploys application code the
+moment a merge to `main` lands; Supabase does not apply migrations as a
+side effect of that same merge (a separate, manual `supabase db push` or
+dashboard/CLI action). This means the operator, not the platform, decides
+the real order, and it must be decided BEFORE merging, not left implicit:
 
-1. Apply the five migrations to production (this runbook, once section 4 is
-   complete).
-2. Run section 10's verification queries; do not proceed if any fails.
-3. Merge and deploy this branch's application code. Ordering matters in this
-   direction specifically: every new or changed route in this package
-   (`evidence-marks`, the enhanced `media`/`docs` upload routes) queries
-   columns and a table that must already exist, so deploying the
-   application before the schema would fail every one of those requests
-   with a real "column/relation does not exist" error, not a graceful
-   degradation.
+1. **Apply all eleven migrations to production, in this exact order**, via
+   the Supabase CLI or dashboard SQL editor, WHILE PR #22 IS STILL OPEN
+   (not yet merged, application code not yet deployed):
+   `20260902`, `20260902b`, `20260902c`, `20260902d`, `20260905`,
+   `20260905b`, `20260905c` (the original seven), then
+   `20260912`, `20260912b`, `20260912c`, `20260912d` (the security
+   closure: column grants, trusted object binding, storage originals
+   boundary, row visibility boundary, in that order; `20260912b` must
+   apply before `20260912c`, since that migration's own policy now
+   references the columns `20260912b` adds).
+2. Run section 10's verification queries against production, including the
+   new query 8/9 block above; do not proceed if any fails.
+3. Only now merge PR #22 (Vercel deploys the application code). This
+   direction, and only this direction, is safe to leave as "whatever Vercel
+   does automatically on merge": every new or changed route in this package
+   queries columns and tables that, after step 1, already exist, so there
+   is no window where deployed application code queries a schema element
+   that is not yet there. The REVERSE order (application code deployed
+   before the migrations) is unsafe in two independent ways, not one: the
+   ORIGINAL seven migrations' own missing columns/tables would 500 every
+   request touching them (documented since this section's first draft),
+   AND, newly relevant this round, this round's OWN application-code fixes
+   (media/route.ts's and docs/route.ts's own content_sha256 prechecks,
+   media/[mediaId]/route.ts's DELETE handler) already read the restricted
+   columns through `getSupabaseServiceRole()` regardless of whether the
+   grant restriction has applied yet, so THAT half is actually order-
+   independent; it is the SCHEMA-existence dependency, not a grant-
+   restriction dependency, that forces migrations-then-code specifically.
 4. Smoke test live, EN and AR: upload a photo (confirm no regression),
    attempt the same photo twice (confirm the honest "already uploaded"
-   refusal), mark a guided-evidence photo item unavailable with a real
-   reason, reload the Studio (confirm it survives), open the draft preview
-   (confirm the mark is visible there too, not only in the Studio, per
-   outcome A's own extension into the preview route), change a listing's
-   asset type and confirm a previously-set evidence mark that no longer
-   applies is no longer shown as effective (section 13, finding 1), and
-   confirm the public listing page still renders every existing photo
-   (section 13, finding 2's fix reads `visibility = 'public'` by default,
-   so an existing listing's photos must look exactly as they did before
-   this deploy, not vanish).
+   refusal), delete a photo (confirm this round's own DELETE-handler fix:
+   the request succeeds, not a false "Media not found"), mark a
+   guided-evidence photo item unavailable with a real reason, reload the
+   Studio (confirm it survives), open the draft preview (confirm the mark
+   is visible there too), change a listing's asset type and confirm a
+   previously-set evidence mark that no longer applies is no longer shown
+   as effective, and confirm the public listing page still renders every
+   existing photo (visibility defaults to 'public', so an existing
+   listing's photos must look exactly as they did before this deploy).
+   Additionally, confirm anonymously (a fresh, unauthenticated browser
+   context, not signed in) that a published listing's photo IS visible on
+   the public page (the fix must not have overcorrected into hiding
+   legitimate, legacy media) and that a direct attempt to fetch a signed
+   URL for a KNOWN preserved-original path (if one can be identified from
+   this session's own test fixtures, never a real customer's) is refused.
 5. Record the live evidence, split honestly between what was checked
-   authenticated-live and what was checked by a deterministic test, matching
-   this package's own established practice from PR #16.
+   authenticated-live, what was checked anonymously-live, and what was
+   checked by a deterministic test, matching this package's own
+   established practice from PR #16.
+
+**What this corrects from this section's own earlier draft**: "Apply the
+five migrations" (stale: seven existed by the time this round started, now
+eleven) and step 3's own prior wording ("deploying the application before
+the schema would fail... the application after is fine either way," which
+never actually stated a required ORDER between merge and migration-apply,
+only warned against the reverse) are both replaced here, in place, rather
+than left standing beside a second, later section repeating the same
+ground with a different migration count. A separate, EARLIER draft of this
+round's own PR body used the phrase "deploy alongside", which read as
+endorsing simultaneity; corrected here to the explicit, ordered sequence
+above, which is what actually holds.
 
 ## 12. Fable review: Arabic terminology and Saudi-market practicality
 
@@ -2878,3 +2960,269 @@ change); no merge of PR #22, which remains draft.
 **Status: this security-closure batch is ready for a production decision,
 not for another research round.** Every independently-completable
 preparation and test step named in this batch's own six items is done.
+
+## 20. Adversarial correction round, same day (2026-09-12): a real gap in section 19's own fix, plus four process corrections
+
+An independent review of commit `9089561` (section 19's own head) found a
+genuine, unaddressed gap in the storage-boundary migration itself, not a
+documentation or test-coverage issue. Closed below, along with four
+narrower corrections to claims made in section 19 and the PR body.
+
+### 1. The untrusted-path binding: `lm.path = objects.name` was never proof of legitimate upload
+
+**The gap.** `20260912c_pkg1b_storage_originals_read_boundary.sql` (renamed
+from `20260912b`, see below) treats a `listing_media` row whose `path`
+matches an object, and which is otherwise eligible (public, not removed,
+published listing), as proof the object is that row's own legitimate
+public derivative. But `path`, `source` and `visibility` are NOT
+trusted-column-protected: only `content_sha256`/`original_path`/
+`derived_*`/`moderation_state`/`rights_acknowledged_*` are (by design; the
+real two-phase upload write needs the owner's own session to set `path`
+and `visibility` at INSERT time, before trusted finalization). An owner's
+own session, calling PostgREST directly, could therefore INSERT a new row
+on any of their own eligible published listings with `path` set to an
+ARBITRARY string and reach the storage policy's own EXISTS branch for an
+object they never uploaded through the real pipeline at all.
+
+**Verified live in the isolated harness (Step 1b, before Step 1c's own
+migrations apply) and closed (Step 8g, after):** four adversarial
+scenarios, matching the review's own naming exactly:
+
+1. An owner inserts a new public `source='upload'` row directly, no
+   upload route involved, no integrity fields set.
+2. An owner flips a genuinely pending (not-yet-finalized) row's own
+   `visibility` to `'public'` directly (no process crash needed to attempt
+   this; `visibility` is owner-writable by design).
+3. An owner inserts a row on their OWN eligible published listing whose
+   `path` targets a DIFFERENT account's real private or preserved-original
+   object.
+4. An owner inserts a fresh row whose `path` targets an object whose
+   EXISTING media row was removed by moderation, attempting to resurrect
+   it under a new row identity with a fresh `'unreviewed'` state.
+
+**The fix, a new migration inserted ahead of the storage-policy one (not
+a documentation-only patch):** `20260912b_pkg1b_media_trusted_object_
+binding.sql` adds two columns to `listing_media`:
+
+- `derivation_verified`, a Postgres STORED GENERATED column
+  (`generated always as (content_sha256 is not null) stored`). Because a
+  stored generated column's value is materialized at WRITE time, a reader
+  needs SELECT only on the generated column itself, never on
+  `content_sha256`, to use it; this is what lets the storage policy's own
+  EXISTS clause reference it without breaking for `anon`/`authenticated`
+  (who still, correctly, have no access to `content_sha256` itself,
+  20260912's own restriction, unchanged). Since `content_sha256` can only
+  ever be set by `service_role` (20260902c's own existing trigger), and
+  the real upload pipeline is the only caller of that path, a row with
+  `derivation_verified = true` is provably the row that legitimately
+  produced the object at its own `path`, regardless of account or path
+  string.
+- `is_legacy_media`, an ordinary boolean, backfilled EXACTLY ONCE (guarded
+  by a real, queryable marker table, not a `WHERE` clause on
+  `listing_media` itself, which changes over time): every row with
+  `content_sha256 IS NULL` at the moment this migration FIRST runs is, by
+  definition, a row this package's own upload pipeline never processed.
+  No later INSERT can ever receive `true` here (the column defaults to
+  `false` and is trusted-column protected by a new trigger,
+  `listing_media_protect_legacy_flag`, matching the existing pattern
+  exactly), so a freshly forged row can never claim legacy status to
+  bypass the gate below. This is the "explicit, migration-safe
+  distinction" the review asked for, verified mechanically, not simulated:
+  the isolated harness inserts a real null-hash row in Step 1b, BEFORE
+  Step 1c's own migrations apply, and directly checks, right after they
+  do, that the real backfill marked it `is_legacy_media = true` and left
+  `derivation_verified = false`.
+
+The storage policy's own EXISTS clause now additionally requires
+`(lm.derivation_verified or lm.is_legacy_media)`. All four scenarios
+above are closed by this alone; no separate cross-account folder check
+was needed, since a forged row (inserted directly, bypassing the real
+pipeline) can never have `derivation_verified = true` regardless of whose
+account's object path it targets.
+
+**Renumbering, since nothing was ever applied anywhere.** The new
+migration needed to apply before the storage-boundary one, so
+`20260912b_pkg1b_storage_originals_read_boundary.sql` is renamed
+`20260912c_...`, and `20260912c_pkg1b_media_row_visibility_boundary.sql`
+is renamed `20260912d_...`. This is a rename, not a new corrective layer
+on top, because none of section 19's own migrations had been applied to
+anything real between that round and this one; renaming an unmerged,
+unapplied migration is the correct move specifically because it is still
+possible, not something to be repeated once any of these apply for real.
+
+**Also fixed, caught by the harness's own reapplication check, same
+class of bug as before:** `20260912c`'s (formerly `b`'s) own `DROP POLICY
+IF EXISTS` only dropped the OLD policy name it was replacing, not its own
+new name, so a reapplication collided with itself. Fixed the same way
+`20260912b`'s (formerly `c`'s) row-visibility migration already needed to
+be fixed in section 19: drop both names.
+
+### 2. `media/[mediaId]/route.ts`'s DELETE handler: a failed lookup must not lose the only durable record of a preserved original
+
+**The gap.** The service-role `original_path` lookup added in section 19
+discarded its own query error, collapsing "serviceRole unavailable",
+"the query itself failed" and "confirmed, this row genuinely has no
+original" into the identical `originalPath = null` outcome, then deleted
+the row regardless. Since the row was the ONLY durable record of
+`original_path` (outcome D never wrote it anywhere else), a genuine
+lookup failure at exactly the wrong moment would silently and permanently
+lose the ability to ever clean up a real preserved original, an orphan
+`media_cleanup_queue` would never even learn existed.
+
+**The fix**, matching `serviceRole.ts`'s own already-stated discipline
+("fail loudly, not silently degrade") and `media/route.ts`'s own
+upload-side precedent (refuses the request before any write if
+`serviceRole` is unavailable): the DELETE handler now returns a
+retryable 503 (`storage_unavailable`), WITHOUT deleting the row, both
+when `getSupabaseServiceRole()` itself is null and when the
+`original_path` lookup's own query errors. A "confirmed null" result (no
+error, a document row or a legacy photo that genuinely never had an
+original recorded) is unaffected and proceeds normally, since that is a
+real, common, correct case, not a failure. The privileged lookup is now
+also scoped by both `id` AND `listing_id` (previously `id` alone),
+defence in depth matching the same two-column scope the row's own
+existence check already used.
+
+**What was, and was not, mechanically testable, stated precisely rather
+than uniformly claimed.** This codebase has no mocked-Supabase-client
+test for any API route anywhere (confirmed by `mediaVisibility.test.ts`'s
+own header comment, predating this round); route-level behaviour is
+either proven live or via structural source scanning. Of the five named
+scenarios:
+
+- *Missing service client* and *query failure*: application-layer
+  conditions (`getSupabaseServiceRole()` returning null; the SDK call
+  itself erroring) this environment cannot fault-inject into a real
+  Next.js route handler. Verified by a new structural test
+  (`mediaVisibility.test.ts`) scanning the actual control flow: the
+  `!serviceRole` check and the `originalLookupErr` check both exist, both
+  return before the delete, and the delete statement is strictly after
+  both in the source. Not claimed as a live-fault-injection proof, because
+  it is not one.
+- *Confirmed null original*, *concurrent disappearance* and *successful
+  cleanup*: real Postgres behaviour (a `.maybeSingle()`-shaped query
+  against a row with no original, and against a row already deleted by a
+  concurrent statement) that the isolated harness's own real Postgres
+  engine legitimately exercises as ordinary SQL semantics, already
+  implicitly covered by the harness's own concurrent-request patterns
+  elsewhere in this file (e.g. Step 5's concurrent-insert test); not
+  singled out as a new, separate check here, since they are not a new
+  claim this round introduces, only a route-code discipline (checking the
+  error) sitting on top of already-proven Postgres behaviour.
+
+### 3. Removed an invented permission from the "production-equivalence" test claim
+
+An earlier version of the isolated harness's `BOOTSTRAP_SQL` added a
+SIXTH `listing_media` policy, `"sat reads all listing media (unconfirmed,
+reconstructed)"`, not present in the real, captured five, so that a
+positive "SAT sees everything" table-level test would pass. Labelling it
+"unconfirmed, reconstructed" in a comment did not change what it was: a
+test-only permission shaping a green result, exactly what this package's
+own honesty protocol exists to catch, and it made the suite's own
+"141/141 against the real captured policy text" claim overstated for the
+SAT-role assertions specifically.
+
+**Removed outright.** The real, intended SAT authorization path for
+`listing_media`, established by reading `src/app/api/listings/[id]/
+review/route.ts` (the one real reviewer-facing write this codebase has
+today) rather than assumed: a SESSION-GATED APPLICATION ROUTE
+(`su.isSat`, checked in code) using `getSupabaseServiceRole()` to perform
+the actual write, NOT a database RLS policy granting `app_is_sat()` broad
+table access. This is the same pattern the trusted-column triggers
+already single `service_role` out for. The harness now tests THIS real
+path explicitly (`service_role` sees everything, already covered
+elsewhere and unaffected by this correction) and separately proves the
+NEGATIVE claim the real, captured five policies actually support: an
+authenticated session with `isSat = true` and no other real privilege
+sees only the same eligible rows any other stranger does, since nothing
+in the real, captured policy set gives `app_is_sat()` a `listing_media`
+table policy of its own.
+
+### 4. Deployment/recovery claims corrected against the real deployed baseline
+
+**The citation was imprecise; the substance was real.** The review
+named `main` at `6713366`; `main`'s actual current tip, verified directly
+(`git log --oneline -1 main`), is `524f18820b4511d576920c3bb9bbfbe7995b0dff`
+(PR #16's own merge commit; `6713366` is an ancestor of it, PR #16's own
+merge-base marker, not the tip). Checked against the REAL tip, not the
+cited SHA: `git show 524f188:"src/app/api/listings/[id]/media/[mediaId]/
+route.ts"` confirms its DELETE handler selects `id, path, source`, with
+no `original_path` reference at all, and no service-role lookup of any
+kind. The substance of the review's own point stands regardless of the
+SHA: **the `original_path`-selecting bug section 19 fixed was introduced
+and resolved ENTIRELY WITHIN this branch's own, still-unmerged commit
+history** (by a later PKG-1B round adding original preservation, within
+this same PR), and was never at risk of reaching, and never did reach,
+actually-deployed production. Section 19's own hedged wording ("would
+have started reporting... once this round's own fix applied") was not
+technically false, but the PR body's own framing risked being read as a
+production-compatibility claim without ever stating the real baseline it
+was implicitly contrasted against. Corrected here explicitly, with the
+real SHA and the real diff checked, not asserted.
+
+**The rollout sequence.** Section 11 above is rewritten in place (not
+appended beside as a second, later, partially-contradictory version):
+the real constraint is a strict ORDER (all eleven migrations applied and
+verified against production BEFORE merging PR #22, which is what
+triggers Vercel's own automatic application-code deployment), not
+"alongside" or simultaneous, because Supabase migration application is a
+separate, manual action Vercel's own merge-triggered deploy does not
+perform for you. Section 10's verification-query block is extended (not
+duplicated) with a new query group for this round's own four migrations'
+objects. The rollback SQL (the isolated harness's own `ROLLBACK_SQL`,
+the executable record of what a real rollback would need to do) already
+correctly reflects the final, renumbered migration set, including the
+new trusted-object-binding migration's own reversal (drop the trigger and
+function, drop the marker table, drop both new columns), proven, same as
+every other migration's reversal, to be safely reversible AND safely
+re-appliable (Step 9, unchanged in structure from section 19, now
+covering eleven migrations instead of ten).
+
+### 5. The CI blocker and the `map_anchors` evidence type, both corrected precisely
+
+**GitHub Actions.** The exact run the review cited
+(`34696853307`) was fetched directly and its own raw payload (not
+surfaced by the check-runs/jobs/timing REST endpoints this session had
+already queried in section 19, only by the run page's own client-side
+hydration data) reads, verbatim: **"account is locked due to a billing
+issue."** This is confirmed, not inferred: section 19's own "runner-
+acquisition/quota" framing, reasoned from `runner_id: 0` and zero
+billable milliseconds, was a reasonable inference from the signals this
+session could see through the endpoints it checked, but was less precise
+than the real, available answer. Corrected here and in `CLAUDE.md`. No
+retry was attempted, no payment setting was touched, and no required
+check was weakened; this session's own independent work (this entire
+correction round) continued exactly as instructed while this is
+Saleem's own action to take with GitHub directly.
+
+**`map_anchors` evidence wording.** Section 19's own phrasing ("a
+genuinely unauthenticated caller... CAN read, insert, update or delete...
+directly") stated a REST-API-level conclusion with the same certainty as
+the DATABASE-level facts it was reasoned from, without the same
+"real Postgres evidence, not real HTTP evidence" hedge this session
+applied carefully everywhere else in sections 18-19 for `listing_media`.
+Corrected: **confirmed, directly, by this session's own read-only
+connection**: RLS is disabled entirely on `public.map_anchors`, and
+`has_table_privilege()` returns true for `anon`/`authenticated` on
+`SELECT`/`INSERT`/`UPDATE`/`DELETE`/`TRUNCATE`, every combination.
+**Not independently demonstrated**: an actual HTTP call against the real
+PostgREST endpoint for this table. The inference from confirmed grants
+plus confirmed-disabled RLS to real exploitability remains HIGH
+confidence for `SELECT`/`INSERT`/`UPDATE`/`DELETE` specifically (Postgrest
+maps these four, and only these four, to real REST verbs on every
+table's standard endpoint, a documented, structural fact about
+PostgREST's own routing, not itself a claim requiring a live HTTP call to
+support), clearly distinguished from `TRUNCATE`, which remains
+architecturally unreachable via PostgREST's own REST surface regardless
+of any grant, exactly as this runbook has stated throughout for
+`listing_media`'s own, separate TRUNCATE finding. `map_anchors` is not
+modified; this correction is wording only.
+
+### Status
+
+All five items closed. Full local gate, real API/policy claims corrected
+and reconciled with the real baseline (not appended beside it), one
+consolidated commit and handback follow. `map_anchors` and the CI billing
+lock remain Saleem's own actions; nothing else changed about the
+production-decision boundary section 19 already established: still
+prepared, tested, and unapplied.

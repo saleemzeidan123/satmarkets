@@ -35,7 +35,8 @@
 -- bucket's public/private flag, and this policy explicitly lists anon as
 -- an allowed role.
 --
--- THE FIX: CORRESPOND TO AN ELIGIBLE MEDIA RECORD, NOT A FOLDER.
+-- THE FIX: CORRESPOND TO AN ELIGIBLE, TRUSTED MEDIA RECORD, NOT MERELY A
+-- MATCHING PATH STRING.
 --
 -- Parsing path segments more carefully (e.g. also checking segment [3] for
 -- literal 'originals') would be a second, independent copy of the storage
@@ -45,9 +46,32 @@
 -- an eligible listing_media row: lm.path = objects.name. original_path is
 -- never compared, so no original object can ever satisfy this branch, for
 -- any row, published or not, regardless of what path convention is used
--- now or later. "Eligible" mirrors the real "public read media of
--- published" table policy's own qual exactly (status, demo/permit rules)
--- AND this package's own visibility/moderation rule (mediaVisibility.ts's
+-- now or later.
+--
+-- CORRECTION, same day, adversarial review: lm.path = objects.name alone
+-- is NOT proof the row's own path was ever legitimately produced by the
+-- upload pipeline. `path`, `source` and `visibility` are owner-writable
+-- (the trusted-column triggers protect content_sha256/original_path/
+-- derived_*/moderation_state, never these three, because the real
+-- two-phase upload write needs the owner's own session to set path and
+-- visibility at INSERT time). An owner's own session could otherwise
+-- INSERT a brand-new row on any of their own eligible listings with path
+-- set to an arbitrary string and reach this branch for an object they
+-- never uploaded: another account's private or preserved-original object
+-- if its path is known by any means, or an object whose own real media
+-- row was removed by moderation. The clause below now also requires
+-- `lm.derivation_verified or lm.is_legacy_media`
+-- (20260912b_pkg1b_media_trusted_object_binding.sql): a forged row,
+-- inserted directly rather than through the real upload pipeline, can
+-- satisfy neither (derivation_verified only ever becomes true as a side
+-- effect of the trusted content_sha256 write; is_legacy_media is a
+-- permanent, migration-time-only historical fact no later INSERT can ever
+-- acquire), so it is not eligible under any account, published listing,
+-- or path string it might claim.
+--
+-- "Eligible" otherwise mirrors the real "public read media of published"
+-- table policy's own qual exactly (status, demo/permit rules) AND this
+-- package's own visibility/moderation rule (mediaVisibility.ts's
 -- isPubliclyVisibleMedia: visibility = 'public' AND moderation_state <>
 -- 'removed'), so a private, removed, or not-yet-finalized row's object is
 -- not reachable this way either, and an orphan object with no matching
@@ -94,6 +118,7 @@ create policy "read eligible media objects or own listing"
         from public.listing_media lm
         join public.listings l on l.id = lm.listing_id
         where lm.path = objects.name
+          and (lm.derivation_verified or lm.is_legacy_media)
           and lm.visibility = 'public'
           and lm.moderation_state <> 'removed'
           and l.status = 'published'
@@ -105,4 +130,4 @@ create policy "read eligible media objects or own listing"
   );
 
 comment on policy "read eligible media objects or own listing" on storage.objects is
-  'Replaces "read media objects of published or own listing" (folder-membership only, matched both derivatives and preserved originals identically). The published-listing branch now requires the object to be the recorded derivative (lm.path, never lm.original_path) of an eligible, publicly-visible listing_media row, mirroring the real "public read media of published" table policy''s own qual plus mediaVisibility.ts''s visibility/moderation rule. Owner-own-folder and app_is_sat() branches are unchanged.';
+  'Replaces "read media objects of published or own listing" (folder-membership only, matched both derivatives and preserved originals identically). The published-listing branch now requires the object to be the recorded derivative (lm.path, never lm.original_path) of an eligible, publicly-visible, TRUSTED listing_media row (derivation_verified or is_legacy_media: not merely any row an account asserts, since path/source/visibility are owner-writable and not otherwise proof of legitimate upload), mirroring the real "public read media of published" table policy''s own qual plus mediaVisibility.ts''s visibility/moderation rule. Owner-own-folder and app_is_sat() branches are unchanged.';

@@ -56,14 +56,44 @@ export async function DELETE(
   // against the listing above, so this does not widen access, only reads a
   // column the ordinary client is no longer privileged to see. Must happen
   // before the row is gone, or this read finds nothing.
+  //
+  // Codex review: the row about to be deleted is the ONLY durable record
+  // of original_path (outcome D never wrote it anywhere else). A prior
+  // version of this read discarded its own error and treated a failed
+  // lookup identically to "confirmed, this row genuinely has no original",
+  // then deleted the row anyway: a real lookup failure (serviceRole
+  // unavailable, a transient query error) would silently lose the only
+  // reference needed to ever clean up the preserved original, an orphan
+  // object media_cleanup_queue would never even learn about. Matching
+  // serviceRole.ts's own stated discipline ("fail loudly, not silently
+  // degrade"), and media/route.ts's own upload-side precedent (refuses
+  // the request, before any write, if serviceRole is unavailable): a
+  // failed or unavailable lookup here refuses the DELETE entirely (503,
+  // retryable), rather than proceeding without the information needed to
+  // account for every object this row might reference. `.eq("listing_id",
+  // ...)` is added to this privileged read too (Codex review): ownership
+  // of this exact (mediaId, listingId) pair was already confirmed above
+  // with the ordinary client, so this is defence in depth, not a
+  // widening, matching the same two-column scope that check already used.
   const serviceRole = getSupabaseServiceRole();
+  if (!serviceRole) {
+    return NextResponse.json({ error: "This could not be removed right now. Try again in a moment.", code: "storage_unavailable" }, { status: 503 });
+  }
   let originalPath: string | null = null;
-  if (m.source === "upload" && serviceRole) {
-    const { data: withOriginal } = await serviceRole
+  if (m.source === "upload") {
+    const { data: withOriginal, error: originalLookupErr } = await serviceRole
       .from("listing_media")
       .select("original_path")
       .eq("id", params.mediaId)
+      .eq("listing_id", params.id)
       .maybeSingle();
+    if (originalLookupErr) {
+      return NextResponse.json({ error: "This could not be removed right now. Try again in a moment.", code: "storage_unavailable" }, { status: 503 });
+    }
+    // withOriginal === null here (no error) means the row already vanished
+    // (a concurrent delete) between the existence check above and this
+    // lookup: nothing left to account for under a path that no longer
+    // exists either, so the DELETE below simply affects zero rows.
     originalPath = (withOriginal as { original_path: string | null } | null)?.original_path ?? null;
   }
 
@@ -85,9 +115,10 @@ export async function DELETE(
   // delete: that resolves with a 200 `{ data: [], error: null }`, no error
   // at all, which only a returned-count check can catch. Either failure
   // shape is queued durably rather than lost the moment this request ends.
-  // serviceRole may be null (an outage at the exact moment of an
-  // otherwise-successful deletion); queueMediaCleanup degrades to a log
-  // line rather than failing this already-decided response over it.
+  // serviceRole is guaranteed non-null here (checked above, before the
+  // original_path lookup); queueMediaCleanup still takes it as a plain
+  // argument rather than being hardcoded to it, matching its own general
+  // signature.
   if (m.source === "upload" && m.path) {
     const toRemove = originalPath ? [m.path, originalPath] : [m.path];
     await removeStorageObjects(sb, "listing-media", toRemove,

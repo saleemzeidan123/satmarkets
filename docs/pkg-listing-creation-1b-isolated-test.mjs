@@ -1,7 +1,11 @@
-// Isolated-environment test harness for PKG-LISTING-CREATION-1B's nine
-// migrations (seven from 2026-09-05, plus the 2026-09-12 security-closure
-// pair), recorded as evidence in
-// docs/pkg-listing-creation-1b-migration-runbook.md sections 4 and 18/19.
+// Isolated-environment test harness for PKG-LISTING-CREATION-1B's eleven
+// migrations (seven from 2026-09-05, plus four from the 2026-09-12
+// security-closure round, one of which, the trusted-object-binding
+// migration, was added the SAME day by a second, adversarial correction
+// pass after the first pass's own storage-policy fix was found to trust
+// an owner-writable column as proof of legitimate upload), recorded as
+// evidence in docs/pkg-listing-creation-1b-migration-runbook.md sections
+// 4 and 18/19.
 // Not wired into this repo's own package.json/gate: it depends on the
 // `embedded-postgres` and `pg` packages, which are deliberately not repo
 // devDependencies (this is a diagnostic, not ongoing tooling). To re-run it:
@@ -33,9 +37,9 @@
 // call-compatible STUBS, not real bodies (never obtained, real identity
 // resolution is out of this session's scope). Step 0b below proves the real,
 // pre-fix policy text is genuinely vulnerable BEFORE any migration applies;
-// Step 8g proves this round's two new migrations close it, across anon,
+// Step 8g proves this round's four new migrations close it, across anon,
 // unrelated authenticated, owning-account, SAT, and service_role, and Step 9
-// proves both are safely reversible and safely re-appliable.
+// proves all four are safely reversible and safely re-appliable.
 //
 // This proves the migration SQL itself (idempotency, constraints, and now,
 // for the first time, REAL RLS POLICY TEXT enforcing real row-level and
@@ -77,13 +81,17 @@ const BASE_MIGRATION_FILES = [
 // not as a separate, less-rigorous side path.
 const SECURITY_MIGRATION_FILES = [
   "20260912_pkg1b_sensitive_media_column_grants.sql",
-  "20260912b_pkg1b_storage_originals_read_boundary.sql",
-  "20260912c_pkg1b_media_row_visibility_boundary.sql",
+  // Correction, same day, adversarial review: inserted ahead of the
+  // storage-boundary migration (renamed b -> c to make room), since that
+  // migration's own EXISTS clause now depends on the columns this one adds.
+  "20260912b_pkg1b_media_trusted_object_binding.sql",
+  "20260912c_pkg1b_storage_originals_read_boundary.sql",
+  "20260912d_pkg1b_media_row_visibility_boundary.sql",
 ];
 const MIGRATION_FILES = [...BASE_MIGRATION_FILES, ...SECURITY_MIGRATION_FILES];
 
 const ROLLBACK_SQL = `
--- Reverse of migration 20260912c (security closure, row visibility boundary)
+-- Reverse of migration 20260912d (security closure, row visibility boundary)
 drop policy if exists "public read eligible media of published" on public.listing_media;
 create policy "public read media of published" on public.listing_media for select
   using (exists (
@@ -95,7 +103,7 @@ create policy "public read media of published" on public.listing_media for selec
       and l.ad_permit_expires_at > now()
   ));
 
--- Reverse of migration 20260912b (security closure, storage read boundary)
+-- Reverse of migration 20260912c (security closure, storage read boundary)
 drop policy if exists "read eligible media objects or own listing" on storage.objects;
 create policy "read media objects of published or own listing" on storage.objects for select
   using (
@@ -110,6 +118,14 @@ create policy "read media objects of published or own listing" on storage.object
       )
     )
   );
+
+-- Reverse of migration 20260912b (security closure, trusted object binding)
+drop trigger if exists listing_media_protect_legacy_flag on public.listing_media;
+drop function if exists public.listing_media_protect_legacy_flag();
+drop table if exists public.listing_media_legacy_backfill_done;
+alter table public.listing_media
+  drop column if exists derivation_verified,
+  drop column if exists is_legacy_media;
 
 -- Reverse of migration 20260912 (security closure, column grants)
 revoke select on public.listing_media from anon, authenticated;
@@ -315,15 +331,29 @@ create policy "public read media of published" on public.listing_media for selec
       and coalesce(l.ad_permit_number, l.ad_permit_no) is not null
       and l.ad_permit_expires_at > now()
   ));
--- NOT part of the real, captured five: reconstructed conservatively so
--- this harness's own SAT-role tests have a real row-level policy to
--- exercise (every migration trigger in this package already treats
--- app_is_sat() as trusted well beyond owner scope, so SAT lacking any
--- table-level read of listing_media at all would be inconsistent with
--- everything else this codebase does). Flagged here, and in the runbook,
--- as unconfirmed against the real project, not asserted as production fact.
-create policy "sat reads all listing media (unconfirmed, reconstructed)" on public.listing_media for select
-  using (app_is_sat());
+-- Correction, same-day adversarial review: an earlier version of this
+-- harness added a SIXTH policy here, "sat reads all listing media", not
+-- present in the real, captured five, to make this harness's own SAT-role
+-- table-SELECT tests pass. That is exactly the "test-only permission to
+-- obtain green results" this package's own honesty protocol exists to
+-- catch: a disclosed invention is still an invention, and it made the
+-- suite's own "141/141 against the real captured policy text" claim
+-- overstated for the SAT-role assertions specifically. Removed outright,
+-- not merely relabeled. The real, intended SAT authorization path for
+-- listing_media, confirmed by reading src/app/api/listings/[id]/review/
+-- route.ts (the one real reviewer-facing write this codebase has today),
+-- is a SESSION-GATED APPLICATION ROUTE using getSupabaseServiceRole()
+-- after checking su.isSat in code, the same pattern this package's own
+-- trusted-column triggers already single out service_role for, NOT a
+-- database RLS policy granting app_is_sat() broad table access. Step 8g
+-- below tests THAT real path explicitly (service_role, already exempted
+-- by every trigger and by 20260912's own grant restriction) instead of
+-- asserting an RLS-level SAT capability nothing in the real schema
+-- confirms exists. If a future package gives SAT a genuine RLS-level read
+-- of listing_media (rather than routing every reviewer action through a
+-- service-role-backed route, as every other privileged action in this
+-- codebase already does), that is a real, deliberate schema change to
+-- make and test then, not a gap to paper over here.
 
 create schema storage;
 create table storage.buckets (
@@ -480,6 +510,12 @@ async function main() {
     // C/B add first, so their own "before fix" proofs run later, in Step
     // 1b, after the base migrations but before this round's own three.
     let step0bDerivPath, step0bOrigPath, step0bListingV;
+    // Populated in Step 1b, below: a row inserted with no content_sha256
+    // BEFORE 20260912b_pkg1b_media_trusted_object_binding.sql's own
+    // one-time backfill runs, so it becomes genuinely, mechanically
+    // is_legacy_media = true, not merely simulated as such. Referenced by
+    // Step 8g's own "legacy media stays readable" storage test.
+    let preMigrationLegacyPath, preMigrationLegacyMediaId;
     {
       const acctV = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
       const acctStranger = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
@@ -568,6 +604,23 @@ async function main() {
         )
       ).rows[0].id;
 
+      // A genuine pre-migration legacy row: no content_sha256 (this
+      // package's own outcome C did not exist for it), visibility at its
+      // column default 'public', inserted HERE, before
+      // 20260912b_pkg1b_media_trusted_object_binding.sql's own one-time
+      // backfill runs in Step 1c below. This is the one place in this
+      // harness that can produce a row the real backfill will mechanically
+      // mark is_legacy_media = true, rather than a fixture that merely
+      // asserts the same end state.
+      preMigrationLegacyPath = `${step0bDerivPath}-legacy-sibling`;
+      preMigrationLegacyMediaId = (
+        await admin.query(
+          "insert into public.listing_media (listing_id, path) values ($1, $2) returning id",
+          [step0bListingV, preMigrationLegacyPath],
+        )
+      ).rows[0].id;
+      await admin.query("insert into storage.objects (bucket_id, name) values ('listing-media', $1)", [preMigrationLegacyPath]);
+
       await check("BEFORE FIX: anon can SELECT content_sha256 and original_path directly for a published listing's media (the real Fable-threat-model finding, proven against the real policy, not assumed)", async () => {
         // Table-wide SELECT, no column list (the real, confirmed production
         // grant): RLS lets the ROW through (public read media of
@@ -597,7 +650,7 @@ async function main() {
       });
     }
 
-    console.log("\n=== Step 1c: apply this round's three security-closure migrations verbatim, in order ===");
+    console.log("\n=== Step 1c: apply this round's four security-closure migrations verbatim, in order ===");
     for (const file of SECURITY_MIGRATION_FILES) {
       const sql = readFileSync(REPO_MIGRATIONS + file, "utf8");
       migrationText[file] = sql;
@@ -605,6 +658,15 @@ async function main() {
         await admin.query(sql);
       });
     }
+
+    await check("the one-time backfill genuinely marked the pre-migration row is_legacy_media, not merely a simulated end state", async () => {
+      const r = await admin.query(
+        "select is_legacy_media, derivation_verified from public.listing_media where id = $1",
+        [preMigrationLegacyMediaId],
+      );
+      assert(r.rows[0].is_legacy_media === true, "a row with no content_sha256 that existed before this migration first ran must be marked legacy");
+      assert(r.rows[0].derivation_verified === false, "derivation_verified must stay false: this row never went through the trusted pipeline, it is only legacy");
+    });
 
     console.log("\n=== Step 2: reapplication idempotency (rerun all ten, expect zero errors) ===");
     for (const file of MIGRATION_FILES) {
@@ -1609,7 +1671,7 @@ async function main() {
     ).rows[0].id;
 
     const gSvc = await asServiceRole(pg);
-    let gMediaEligible, gMediaPrivate, gMediaRemoved, gMediaFlagged, gMediaPending, gMediaLegacy, gMediaExpired, gMediaDraft, gMediaDemo;
+    let gMediaEligible, gMediaPrivate, gMediaRemoved, gMediaFlagged, gMediaPending, gMediaForged, gMediaExpired, gMediaDraft, gMediaDemo;
     const gPath = (listingId, name) => `${gAcctOwner}/${listingId}/${name}`;
     try {
       // Eligible public derivative: fully finalized, exactly as the real
@@ -1636,10 +1698,19 @@ async function main() {
       await gSvc.query("update public.listing_media set moderation_state = 'removed' where id = $1", [gMediaRemoved]);
 
       // Flagged: a pending concern, established rule says it STAYS visible.
+      // Realistically finalized first (content_sha256 set via service_role,
+      // matching a genuine upload), THEN flagged: SAT flags existing,
+      // already-legitimate content, it never creates a new row of its own.
+      // An earlier version of this fixture skipped finalization entirely,
+      // which is not a state moderation_state='flagged' can actually reach
+      // in production (a row cannot be flagged before it exists as either
+      // a real upload or a legacy row), and made this test fail once the
+      // trusted-object-binding gate (item 1's own fix) applied, correctly:
+      // the fixture was unrealistic, not the fix.
       gMediaFlagged = (
         await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gListingPub, gPath(gListingPub, "flagged.webp")])
       ).rows[0].id;
-      await gSvc.query("update public.listing_media set moderation_state = 'flagged' where id = $1", [gMediaFlagged]);
+      await gSvc.query("update public.listing_media set content_sha256 = 'flaggedhash', moderation_state = 'flagged' where id = $1", [gMediaFlagged]);
 
       // Pending upload: phase 1 of the real two-phase write only (private,
       // no integrity record yet). Never reached trusted finalization.
@@ -1647,12 +1718,25 @@ async function main() {
         await admin.query("insert into public.listing_media (listing_id, path, visibility) values ($1, $2, 'private') returning id", [gListingPub, gPath(gListingPub, "pending.webp")])
       ).rows[0].id;
 
-      // Valid legacy media: a default-only insert, exactly what every
-      // existing production row looks like the moment this column set
-      // first applies (content_sha256/original_path null, visibility at
-      // its column default 'public', never explicitly touched).
-      gMediaLegacy = (
-        await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gListingPub, gPath(gListingPub, "legacy.webp")])
+      // Correction, same-day adversarial review: this row is NOT "valid
+      // legacy media" (an earlier version of this fixture labelled it
+      // that way, then asserted it stayed storage-readable, before this
+      // round's own trusted-object-binding gap was found). It is created
+      // fresh, right now, AFTER 20260912b_pkg1b_media_trusted_object_
+      // binding.sql's own one-time backfill already ran in Step 1c above,
+      // via a direct INSERT with no content_sha256 and no upload route
+      // involved: exactly item 1's own first adversarial scenario ("an
+      // owner inserts a new public source='upload' row directly, without
+      // calling the upload route or setting integrity fields"). It IS
+      // still table-visible (the row-visibility policy has no opinion on
+      // content_sha256/is_legacy_media, only visibility/moderation_state/
+      // the listing's own eligibility), which is expected and correct;
+      // what changed is the STORAGE-level expectation below, which must
+      // now DENY it. preMigrationLegacyMediaId (Step 1b) is the real
+      // legacy fixture, backfilled by the actual migration, used below for
+      // the genuine "legacy media stays readable" storage proof instead.
+      gMediaForged = (
+        await admin.query("insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload') returning id", [gListingPub, gPath(gListingPub, "forged-no-upload.webp")])
       ).rows[0].id;
 
       gMediaExpired = (
@@ -1673,7 +1757,7 @@ async function main() {
         gPath(gListingPub, "eligible.webp"), gOrigEligiblePath,
         gPath(gListingPub, "private.webp"), gPath(gListingPub, "removed.webp"),
         gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "pending.webp"),
-        gPath(gListingPub, "legacy.webp"), gOrphanPath,
+        gPath(gListingPub, "forged-no-upload.webp"), gOrphanPath,
         gPath(gListingExpired, "expired.webp"), gPath(gListingDraft, "draft.webp"), gPath(gListingDemo, "demo.webp"),
       ];
       for (const p of gObjectPaths) {
@@ -1699,7 +1783,7 @@ async function main() {
             const r = await c.query("select path from public.listing_media where listing_id = $1 order by path", [gListingPub]);
             const paths = r.rows.map((row) => row.path).sort();
             assert(
-              JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "legacy.webp")].sort()),
+              JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
               `${label}: expected exactly the 3 eligible rows, got ${JSON.stringify(paths)}`,
             );
           } finally {
@@ -1749,20 +1833,38 @@ async function main() {
         });
       }
 
-      await check("SAT sees every state on a listing it does not own (private, removed, pending, eligible)", async () => {
+      await check("the real, captured listing_media policies grant app_is_sat() no table-level access at all: an authenticated-but-SAT session sees only the same eligible rows any other stranger does (negative evidence for the finding above: SAT's real access path is elsewhere)", async () => {
+        // Correction, same-day adversarial review: an earlier version of
+        // this harness added a sixth, invented "sat reads all" policy to
+        // make a positive version of this assertion pass. Removed (see
+        // BOOTSTRAP_SQL's own comment at its removal site). This is now
+        // the honest claim the real, captured five policies actually
+        // support: app_is_sat() has no listing_media table policy of its
+        // own in what this session obtained, so an authenticated session
+        // with isSat=true, and no other privilege, is bound by the same
+        // owner/public-eligible policies as anyone else.
         const c = await asTestRole(pg, { userId: gUserSat, accountId: gAcctSat, isSat: true });
         try {
-          const r = await c.query("select id from public.listing_media where listing_id = $1", [gListingPub]);
-          assert(r.rowCount === 6, `SAT should see all 6 rows, saw ${r.rowCount}`);
+          const r = await c.query("select path from public.listing_media where listing_id = $1 order by path", [gListingPub]);
+          const paths = r.rows.map((row) => row.path).sort();
+          assert(
+            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
+            `an authenticated session with isSat=true and no other real privilege should see exactly the 3 eligible rows, same as any stranger, got ${JSON.stringify(paths)}`,
+          );
         } finally {
           await c.end();
         }
       });
 
+      await check("the REAL intended SAT authorization path (service_role, the same pattern review/route.ts's own reviewer actions already use, gated on su.isSat in application code, not by an RLS policy) sees every state on a listing it does not own", async () => {
+        const r = await gSvc.query("select id from public.listing_media where listing_id = $1", [gListingPub]);
+        assert(r.rowCount === 6, `service_role should see all 6 rows, saw ${r.rowCount}`);
+      });
+
       await check("legitimate owner editing: owner updates their own media row (shot_key)", async () => {
         const c = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
         try {
-          const r = await c.query("update public.listing_media set shot_key = 'entrance' where id = $1", [gMediaLegacy]);
+          const r = await c.query("update public.listing_media set shot_key = 'entrance' where id = $1", [gMediaForged]);
           assert(r.rowCount === 1, "owner must be able to edit their own row now that RLS is actually enabled");
         } finally {
           await c.end();
@@ -1770,9 +1872,19 @@ async function main() {
       });
 
       await check("legitimate owner deletion: owner deletes their own media row", async () => {
+        // A dedicated, disposable row, not one of the named fixtures
+        // (gMediaPending in particular is still needed, unmutated, by a
+        // later storage test proving an owner-flipped-public pending row
+        // stays storage-ineligible): deleting a shared fixture here would
+        // make that later test's own result depend on THIS test having
+        // run first, rather than on the security boundary it claims to
+        // check.
+        const disposableId = (
+          await admin.query("insert into public.listing_media (listing_id, path) values ($1, $2) returning id", [gListingPub, gPath(gListingPub, "disposable-for-deletion-test.webp")])
+        ).rows[0].id;
         const c = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
         try {
-          const r = await c.query("delete from public.listing_media where id = $1", [gMediaPending]);
+          const r = await c.query("delete from public.listing_media where id = $1", [disposableId]);
           assert(r.rowCount === 1, "owner must be able to delete their own row");
         } finally {
           await c.end();
@@ -1852,7 +1964,7 @@ async function main() {
           );
           const paths = r.rows.map((row) => row.path).sort();
           assert(
-            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "legacy.webp")].sort()),
+            JSON.stringify(paths) === JSON.stringify([gPath(gListingPub, "eligible.webp"), gPath(gListingPub, "flagged.webp"), gPath(gListingPub, "forged-no-upload.webp")].sort()),
             `getPublicListingMedia()'s own query shape must keep working and returning the right rows for anon, got ${JSON.stringify(paths)}`,
           );
         } finally {
@@ -1896,11 +2008,21 @@ async function main() {
           }
         });
 
-        await check(`AFTER FIX: ${label} can still read valid LEGACY media's object`, async () => {
+        await check(`AFTER FIX: ${label} can still read the GENUINE legacy media object (backfilled by the real migration in Step 1c, not simulated)`, async () => {
           const c = await roleFn();
           try {
-            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gPath(gListingPub, "legacy.webp")]);
-            assert(r.rowCount === 1, `${label}: legacy media's object must remain readable, matching every pre-existing production row`);
+            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [preMigrationLegacyPath]);
+            assert(r.rowCount === 1, `${label}: a genuinely pre-migration, is_legacy_media=true row's object must remain readable, matching every pre-existing production row`);
+          } finally {
+            await c.end();
+          }
+        });
+
+        await check(`AFTER FIX (item 1, scenario 1): ${label} CANNOT read a row an owner inserted directly with source='upload' and no content_sha256, bypassing the real upload route entirely (the untrusted-path-binding gap)`, async () => {
+          const c = await roleFn();
+          try {
+            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gPath(gListingPub, "forged-no-upload.webp")]);
+            assert(r.rowCount === 0, `${label}: a row with no content_sha256 and not backfilled as legacy must not grant storage eligibility merely because path/visibility/source were self-asserted`);
           } finally {
             await c.end();
           }
@@ -1936,6 +2058,31 @@ async function main() {
           }
         });
 
+        await check(`AFTER FIX (item 1, scenario 2): ${label} still cannot read a pending row's object even after its OWNER flips visibility to 'public' before trusted finalization (no process crash needed to attempt this; visibility is owner-writable, content_sha256 is not)`, async () => {
+          // The owner's own account, using the real, unmodified "owner
+          // updates own listing media" RLS policy (no column restriction
+          // on visibility, by design: round 2's own decision, unchanged
+          // by this batch), flips gMediaPending public. Table-level
+          // eligibility now genuinely matches (visibility=public,
+          // moderation=unreviewed); storage eligibility must still be
+          // denied, because content_sha256 remains null and this row was
+          // never backfilled as legacy (it did not exist before Step 1c).
+          const owner = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+          try {
+            const upd = await owner.query("update public.listing_media set visibility = 'public' where id = $1", [gMediaPending]);
+            assert(upd.rowCount === 1, "the owner must be able to flip their own row's visibility; if this fails the fixture itself is wrong, not the security boundary");
+          } finally {
+            await owner.end();
+          }
+          const c = await roleFn();
+          try {
+            const r = await c.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gPath(gListingPub, "pending.webp")]);
+            assert(r.rowCount === 0, `${label}: an owner-flipped-public pending row must still be denied storage eligibility; only content_sha256/is_legacy_media decide this, not visibility`);
+          } finally {
+            await c.end();
+          }
+        });
+
         await check(`AFTER FIX: ${label} cannot read an ORPHAN object with no matching listing_media row at all`, async () => {
           const c = await roleFn();
           try {
@@ -1958,6 +2105,77 @@ async function main() {
           }
         });
       }
+
+      await check("AFTER FIX (item 1, scenario 3, cross-account denial): an owner cannot forge a row on their OWN eligible listing pointing at ANOTHER account's private/original object to gain public read access to it", async () => {
+        // A second, entirely separate account/listing, unrelated to
+        // gAcctOwner, with its own eligible published listing: the
+        // forger's INSERT is legitimate by every check RLS itself makes
+        // (they own the listing they are inserting on), which is exactly
+        // why this cannot be closed by RLS on listing_media alone. The
+        // forged row's own `path` targets gOrigEligiblePath, gAcctOwner's
+        // real preserved original, unrelated to the forger's own account
+        // prefix entirely.
+        const forgerAcct = (await admin.query("insert into public.accounts default values returning id")).rows[0].id;
+        const forgerUser = (await admin.query("insert into public.users default values returning id")).rows[0].id;
+        const forgerListing = (
+          await admin.query(
+            `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+             values ($1, 'published', '7200000006', now() + interval '30 days') returning id`,
+            [forgerAcct],
+          )
+        ).rows[0].id;
+        const forger = await asTestRole(pg, { userId: forgerUser, accountId: forgerAcct, isSat: false });
+        try {
+          const ins = await forger.query(
+            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')",
+            [forgerListing, gOrigEligiblePath],
+          );
+          assert(ins.rowCount === 1, "the forged INSERT itself must succeed under the real, unmodified owner-insert RLS policy; this is the precondition the fix must still close despite, not by preventing the insert");
+        } finally {
+          await forger.end();
+        }
+        const strangerCheck = await asAnonRole(pg);
+        try {
+          const r = await strangerCheck.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gOrigEligiblePath]);
+          assert(r.rowCount === 0, "a cross-account forged row must not grant anon read access to another account's real object, regardless of the forger's own listing being published and eligible");
+        } finally {
+          await strangerCheck.end();
+        }
+      });
+
+      await check("AFTER FIX (item 1, scenario 4): an owner cannot resurrect moderation-removed media by inserting a fresh row pointing at the same object path", async () => {
+        // Same account as the removed row (gMediaRemoved), a fresh
+        // second listing, same object path: the owner is not trying to
+        // steal someone else's content here, they are trying to defeat
+        // SAT's own moderation decision on THEIR OWN content by
+        // re-registering the same bytes under a new row identity, whose
+        // own moderation_state starts at the default 'unreviewed' (the
+        // only value a non-trusted INSERT may ever set it to).
+        const secondListing = (
+          await admin.query(
+            `insert into public.listings (account_id, status, ad_permit_number, ad_permit_expires_at)
+             values ($1, 'published', '7200000007', now() + interval '30 days') returning id`,
+            [gAcctOwner],
+          )
+        ).rows[0].id;
+        const owner = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
+        try {
+          const ins = await owner.query(
+            "insert into public.listing_media (listing_id, path, source) values ($1, $2, 'upload')",
+            [secondListing, gPath(gListingPub, "removed.webp")],
+          );
+          assert(ins.rowCount === 1, "the resurrection INSERT itself must succeed under the real, unmodified owner-insert RLS policy");
+        } finally {
+          await owner.end();
+        }
+        const strangerCheck = await asTestRole(pg, { userId: gUserStranger, accountId: gAcctStranger, isSat: false });
+        try {
+          const r = await strangerCheck.query("select 1 from storage.objects where bucket_id = 'listing-media' and name = $1", [gPath(gListingPub, "removed.webp")]);
+          assert(r.rowCount === 0, "a fresh row referencing a moderation-removed object's own path must not restore its public storage eligibility; the new row has no content_sha256 and was never backfilled as legacy");
+        } finally {
+          await strangerCheck.end();
+        }
+      });
 
       await check("AFTER FIX: the owner can still read/sign EVERY object under their own account prefix, unaffected by eligibility (own-folder branch unchanged)", async () => {
         const c = await asTestRole(pg, { userId: gUserOwner, accountId: gAcctOwner, isSat: false });
