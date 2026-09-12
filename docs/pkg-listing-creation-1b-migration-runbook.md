@@ -2327,3 +2327,153 @@ through a structured database tool rather than a browser keystroke, a
 meaningfully different action the classifier has not evaluated and may
 treat differently. Both were already offered in `CLAUDE.md`'s own
 blocked-evidence queue; this round did not find a third path.
+
+## 18. Item 3 closed, 2026-09-12: the real `pg_policies` and storage policy text
+
+**A second, project-scoped, read-only Supabase MCP connector was
+connected** (distinct from the earlier account-wide one that kept
+resolving to the wrong organization; this one exposes no `project_id`
+parameter at all, confirming it is bound to one project already), and
+confirmed, before trusting anything it returned, to be the real target:
+`list_tables` returned `public.listings` (94 rows), `public.listing_media`
+(7 rows), `public.accounts`, `public.users`, `public.verification_events`
+(carrying the exact audit-trail comment text this codebase's own
+migrations write), and `public.market_comps`/`public.research_metrics`
+(carrying this project's own Law 3 gating language) — unmistakably the
+real `sat-market` database, not a stand-in. `select current_user,
+session_user` returned `supabase_read_only_user`, confirming the
+connector is genuinely restricted, matching exactly what was asked for.
+
+**`listing_media`'s real RLS policies (5 total), read directly:**
+
+```
+owner deletes/inserts/selects/updates own listing media  -- account_id = app_account_id(), each of the four commands
+public read media of published                            -- SELECT, roles {public}:
+  listing.status = 'published'
+  AND (NOT listing.is_demo OR app.demo_visible())
+  AND listing.ad_permit_number/ad_permit_no IS NOT NULL
+  AND listing.ad_permit_expires_at > now()
+```
+
+No reference to `visibility`/`moderation_state` anywhere, because those
+columns do not exist in production yet (confirmed separately: `listing_media`
+currently has exactly 13 columns, none from this package). This is
+expected and correct for today. The point this closes: RLS is a ROW
+filter, never a column filter. The "public read media of published"
+policy, applied as-is to a row that also carries this package's own new
+`content_sha256`/`original_path`/`derived_*` columns once they exist,
+grants no special protection to those columns at all; whatever row it
+lets through, it lets through completely. Combined with the confirmed
+grants below, this is what makes Fable's finding real, not merely
+plausible.
+
+**Grants, confirmed by a role-independent method after a real
+discrepancy was caught and explained, not silently trusted.** A first
+query, `information_schema.role_table_grants`, returned zero rows for
+`anon`/`authenticated` on `listing_media`, apparently contradicting the
+2026-09-05 finding. Before recording that as a reversal, the connector's
+own `current_user` was checked (`supabase_read_only_user`, above): that
+view only shows grants where the grantor or grantee is a role the
+CURRENT connection has enabled, and `supabase_read_only_user` is neither
+`anon` nor `authenticated` nor their grantor, so the view legitimately
+shows nothing for them from this role, independent of whether the grants
+exist. Re-checked with `has_table_privilege('anon'|'authenticated',
+'public.listing_media', privilege)`, which answers the question directly
+regardless of the calling role: **both `anon` and `authenticated` hold
+`SELECT`, `INSERT`, `UPDATE`, `DELETE` AND `TRUNCATE`, table-wide, no
+column restriction.** Matches the 2026-09-05 browser-session finding
+exactly; this is now confirmed twice, through two different tools, not
+resting on one observation.
+
+**The storage policy: a real finding, and a materially different, larger
+one than what the prepared fix (section 15 item 12) covers.** The real
+policy governing reads of the `listing-media` bucket:
+
+```sql
+-- "read media objects of published or own listing", SELECT, roles {anon,authenticated}
+(bucket_id = 'listing-media') AND (
+  (storage.foldername(name))[1] = app_account_id()::text   -- owner's own account folder
+  OR app_is_sat()
+  OR EXISTS (
+    SELECT 1 FROM listings l
+    WHERE l.id::text = (storage.foldername(objects.name))[2]
+      AND l.status = 'published'
+  )
+)
+```
+
+`storage.foldername()` returns every directory segment of the object
+path. For the derivative (`{account}/{listing}/{uuid}.webp`), segment [2]
+is the listing id. For the preserved original
+(`{account}/{listing}/originals/{uuid}.{ext}`, outcome D's own path
+shape), segment [2] is STILL the listing id; the `originals/` segment is
+simply segment [3], which this policy never inspects. **The third
+`EXISTS` branch does not, and structurally cannot, distinguish a
+derivative object from its preserved original**: it matches on the
+listing id alone. This means that once a path under `originals/` is
+known by any means, this exact, already-live policy will let `anon` sign
+or read it for any published listing, with no per-object visibility
+concept at all; it predates this package and was never written with an
+"original" object in mind.
+
+**What this changes about the prepared fix.** Section 15 item 12's
+candidate migration (a column-scoped `REVOKE`/`GRANT` on `listing_media`)
+closes the DATABASE half: without it, `original_path` itself is
+directly readable, which is what would disclose the original's exact
+path in the first place. It does **not** close the STORAGE half: even
+with that column restricted, if an original's path were learned any
+other way (a log, a debug endpoint, brute-forcing a UUID, a future bug),
+this storage policy would still serve it to `anon` for a published
+listing. **A second prepared fix is needed, not yet drafted**: a storage
+policy that distinguishes `originals/` as its own path segment and
+denies `anon`/public read on it outright (owner and SAT should still be
+able to reach it, matching the derivative policy's own first two
+branches). Until both fixes ship, "the original is private by design" is
+correct at the application level (the app itself never signs a URL for
+the original path; there is no `getOriginalMedia()` reader anywhere in
+this codebase, confirmed by the same structural scan `mediaVisibility.test.ts`
+already runs) but not yet correct at the infrastructure level. Neither
+fix is applied; both remain prepared, pending review, same as before.
+
+**A second, genuinely unrelated finding, surfaced automatically by the
+connector's own advisory, not sought out.** RLS is fully disabled on
+`public.map_anchors` (104 rows, a real, non-empty application table, not
+the PostGIS `spatial_ref_sys` system table also flagged alongside it),
+meaning `anon`/`authenticated` can read AND WRITE every row with no
+row-level restriction of any kind. This predates and is entirely
+unrelated to PKG-LISTING-CREATION-1B. Not investigated further and not
+remediated (out of this package's own scope, and remediation SQL was
+explicitly withheld from auto-application by the tool's own instructions,
+which this runbook follows): `alter table public.map_anchors enable row
+level security;` needs at least one real policy alongside it or every
+access to the table breaks, so this needs its own scoped decision, not a
+one-line fix bundled into this package. Recorded in `CLAUDE.md`'s own
+blocked-evidence queue as a new, separate item.
+
+**A likely exact root cause for the separate, long-standing native-branching
+blocker, noticed in passing while reading the (already-authorized,
+read-only) migration list.** The real production migration history
+starts at `20260615200502_init_satmarkets_schema` and has 27 migrations
+before this repository's own earliest local file
+(`20260712182943_add_requirement_interest_audit_columns.sql`). Those 27
+are not merely referenced by later migrations, as earlier sessions'
+`grep`-based corroboration already showed; they are OUTRIGHT ABSENT as
+files, including the one that almost certainly creates the base
+`listings`/`accounts`/`users` tables and the `app_*()` helper functions.
+This alone would make any local-history replay fail immediately, matching
+the exact `MIGRATIONS_FAILED` symptom on record. Not pursued further:
+fetching the actual SQL text of those 27 migrations and reconciling the
+local folder is real, separate work, and "migrations" were explicitly
+named as out of this round's own authorized scope; recorded here as a
+lead for whoever next works that specific blocked-evidence item, not
+acted on.
+
+**Status: item 3 is closed.** The database exposure is confirmed real
+(not merely plausible) with the exact policy and grant text now on
+record; the storage exposure is confirmed real and is a materially
+different, larger finding than what was prepared for; a second storage
+policy fix is now a named, pending requirement, not yet drafted. Nothing
+was applied to production; every query above was a plain `SELECT` against
+system catalogs or `information_schema`, run through a connector whose
+own connected role (`supabase_read_only_user`) cannot write in the first
+place.
