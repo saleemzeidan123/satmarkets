@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   sniffImageType,
   isAcceptedImageType,
+  mimeForSniffedType,
   checkFileType,
   checkFileSize,
   checkMinDimensions,
@@ -63,6 +64,29 @@ test("a file renamed to .jpg but not actually a JPEG is rejected on content, not
 test("too few bytes to identify never crashes and never accepts", () => {
   assert.equal(sniffImageType(new Uint8Array([0xff, 0xd8])), null);
   assert.equal(sniffImageType(new Uint8Array(0)), null);
+});
+
+// Codex review, item 7: the preserved original (outcome D) must be stored
+// under the type this server actually verified by reading the bytes, not
+// whatever Content-Type the browser happened to assert on the File object.
+test("mimeForSniffedType maps every real sniff result to its true MIME type", () => {
+  assert.equal(mimeForSniffedType(sniffImageType(JPEG_MAGIC)), "image/jpeg");
+  assert.equal(mimeForSniffedType(sniffImageType(PNG_MAGIC)), "image/png");
+  assert.equal(mimeForSniffedType(sniffImageType(WEBP_MAGIC)), "image/webp");
+});
+
+test("mimeForSniffedType never invents a specific type for content that was not recognised", () => {
+  assert.equal(mimeForSniffedType(sniffImageType(NOT_AN_IMAGE)), "application/octet-stream");
+  assert.equal(mimeForSniffedType(null), "application/octet-stream");
+});
+
+test("mimeForSniffedType disagrees with a mismatched browser-supplied type, on purpose", () => {
+  // The exact scenario the fix closes: a file sniffed as PNG (so this is what
+  // gets stored) whose File object claims to be a JPEG (what the old code
+  // would have stored it as).
+  const claimedJpegActuallyPng = fileOf(PNG_MAGIC, "x.jpg", "image/jpeg");
+  assert.equal(claimedJpegActuallyPng.type, "image/jpeg");
+  assert.equal(mimeForSniffedType(sniffImageType(PNG_MAGIC)), "image/png");
 });
 
 test("checkFileType reads only the file's own content and agrees with sniffImageType", async () => {

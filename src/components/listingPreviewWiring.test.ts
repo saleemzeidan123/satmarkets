@@ -200,6 +200,35 @@ test("regression (c) and (d) / item 4: photo inventory is driven by the raw row 
   assert.match(PREVIEW_ROUTE, /photoInventory/, "the real tri-state signal should be threaded to evidenceMission");
 });
 
+test("PKG-LISTING-CREATION-1B outcome A: the preview route now reads durable evidence marks, not an always-empty unavailable map", () => {
+  // Deferred-contracts item 2's own words: this route "has no session to
+  // read state from" and "cannot show this promotion at all". The durable
+  // listing_evidence_marks ledger closed that; a caller that stopped
+  // reading the table, or stopped threading its result into evidenceMission,
+  // would silently regress the preview route back to that exact gap.
+  assert.match(PREVIEW_ROUTE, /listing_evidence_marks/, "the preview route should read the durable evidence-marks ledger");
+  assert.match(PREVIEW_ROUTE, /currentEvidenceMarks/, "the preview route should reduce the ledger with the shared helper, not its own copy of the reduction");
+  assert.match(
+    PREVIEW_ROUTE,
+    /unavailable:\s*unavailableMarks/,
+    "the reduced marks must actually be threaded into evidenceMission's unavailable parameter",
+  );
+});
+
+test("Codex review, item 2: the Studio's own asset-type lock explains evidence-mark reconfirmation, in both languages", () => {
+  // The asset_type <select> is disabled once a listing is saved (a
+  // different asset type is a different listing), which is also the
+  // reason 20260905's own trigger currently has no reachable path through
+  // this app's real UI: nothing lets a saved listing's asset_type change
+  // today. The trigger is deliberate, real defense in depth for a future
+  // admin/correction capability regardless, and this is the one place a
+  // lister reads why the field is locked, so the evidence-mark
+  // consequence belongs in that same sentence, in both languages, rather
+  // than a separate notice for a screen that does not otherwise exist.
+  assert.match(STUDIO, /asked for again under the new one/, "the English lock message should name the evidence-mark consequence");
+  assert.match(STUDIO, /يُطلب مجدداً/, "the Arabic lock message should name the evidence-mark consequence");
+});
+
 test("regression (g) / item 6: the terms section actually attaches evidence now, the exact-preview claim is no longer contradicted", () => {
   assert.match(
     DRAFT_PREVIEW,

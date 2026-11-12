@@ -15,3 +15,19 @@ playwright-report/
 # compiled copy of it was committed by accident in 1014b48.
 __pycache__/
 *.pyc
+
+# Claude Code agent worktrees: a full checkout of this repo per background
+# agent, nested under .claude/worktrees/ by the Agent tool's own isolation
+# feature. Found unignored during PKG-LISTING-CREATION-1B: a running agent's
+# worktree was being scanned by `eslint-gate.mjs` alongside the real tree
+# (every violation count roughly doubled, from a second copy of src/ sitting
+# under .claude/), and nothing here stopped a stray `git add -A` from staging
+# a worktree's own contents as if they belonged to this checkout.
+.claude/worktrees/
+
+# Supabase CLI's own local cache (e.g. cli-latest, its own update check).
+# Standard upstream convention; created the moment the CLI is invoked at all,
+# including a bare --version, so it appeared during PKG-LISTING-CREATION-1B's
+# own isolated-testing investigation without any project file ever asking
+# for it.
+supabase/.temp/

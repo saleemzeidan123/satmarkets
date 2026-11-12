@@ -4,7 +4,7 @@ import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getDictionary } from "@/i18n/getDictionary";
 import { buildListingPresentation, type DraftListingInput } from "@/lib/listingPresentation";
-import { evidenceMission } from "@/lib/guidedEvidence";
+import { evidenceMission, currentEvidenceMarks } from "@/lib/guidedEvidence";
 import { filingAccountOf } from "@/lib/listingVerification";
 import { listingEvidenceByField } from "@/lib/listingEvidence";
 import { getLister } from "@/lib/queries/listings";
@@ -209,6 +209,19 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
   const enPresentation = buildListingPresentation(draftInput, "en", { account });
   const arPresentation = buildListingPresentation(draftInput, "ar", { account });
 
+  // PKG-LISTING-CREATION-1B outcome A. Under PKG-LISTING-CREATION-1A this
+  // route had no session to read a lister's "marked unavailable" answers
+  // from at all (deferred-contracts item 2's own words: "cannot show this
+  // promotion at all"). The durable listing_evidence_marks ledger closes
+  // that: this owner-only route can now show the same unavailable marks the
+  // Studio itself shows, reduced the same way currentEvidenceMarks() reduces
+  // them for the Studio's own resume path.
+  const { data: evidenceMarkRows } = await sb
+    .from("listing_evidence_marks")
+    .select("item_kind, item_key, action, reason, created_at, seq")
+    .eq("listing_id", params.id);
+  const unavailableMarks = new Map(currentEvidenceMarks(evidenceMarkRows ?? []).map((m) => [m.item_key, m.reason]));
+
   // The mission needs per-shot photo coverage, which this route does not have
   // (listing_media carries no shot key), so photo-kind items resolve on
   // whether any photo exists at all rather than per-category coverage.
@@ -216,6 +229,7 @@ export default async function DraftPreviewPage(props: { params: Promise<{ locale
     assetType: String(L.asset_type ?? ""),
     photoInventory,
     attributes: (L.attributes as Record<string, unknown> | null) ?? {},
+    unavailable: unavailableMarks,
   });
 
   // Real Evidence Passports, built the same way the public listing page

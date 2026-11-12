@@ -94,22 +94,32 @@ export default async function ManageListingPage(props: { params: Promise<{ local
 
   // The listing's photos, in display order, each signed for the owner (RLS lets an
   // owner read their own media on any status; the URLs are short-lived).
+  //
+  // PKG-LISTING-CREATION-1B outcome B. shot_key, media_scope and media_condition
+  // are read alongside the existing columns, explicitly named like every other
+  // read of this table in this codebase (never select("*")). This is the
+  // owner's own dashboard view, so exposing them here is the whole point; they
+  // are never added to any PUBLIC-facing listing_media read.
   const { data: mediaRows } = await sb
     .from("listing_media")
-    .select("id,path,source,sort_order")
+    .select("id,path,source,sort_order,shot_key,media_scope,media_condition,visibility")
     .eq("listing_id", params.id)
     .eq("kind", "photo")
     .order("sort_order");
-  const photos: { id: string; url: string | null }[] = [];
-  for (const m of (mediaRows ?? []) as { id: string; path: string; source: string }[]) {
-    if (!m.path) { photos.push({ id: m.id, url: null }); continue; }
+  const photos: { id: string; url: string | null; shot_key: string | null; media_scope: string | null; media_condition: string | null; visibility: string }[] = [];
+  for (const m of (mediaRows ?? []) as {
+    id: string; path: string; source: string;
+    shot_key: string | null; media_scope: string | null; media_condition: string | null; visibility: string;
+  }[]) {
+    const cats = { shot_key: m.shot_key, media_scope: m.media_scope, media_condition: m.media_condition, visibility: m.visibility };
+    if (!m.path) { photos.push({ id: m.id, url: null, ...cats }); continue; }
     // Same rule as the public page: an uploaded photo is a private object that must
     // be signed; a source=url photo already IS an external URL, so use it directly.
     if (m.source === "upload") {
       const { data: signed } = await sb.storage.from("listing-media").createSignedUrl(String(m.path), 3600);
-      photos.push({ id: m.id, url: signed?.signedUrl ?? null });
+      photos.push({ id: m.id, url: signed?.signedUrl ?? null, ...cats });
     } else {
-      photos.push({ id: m.id, url: String(m.path) });
+      photos.push({ id: m.id, url: String(m.path), ...cats });
     }
   }
 
@@ -329,7 +339,7 @@ export default async function ManageListingPage(props: { params: Promise<{ local
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>
-        <ListingMediaManager id={L.id} locale={lp} photos={photos} />
+        <ListingMediaManager id={L.id} locale={lp} photos={photos} assetType={L.asset_type} />
       </div>
 
       <div className="dpanel" style={{ padding: 20, marginTop: 18 }}>

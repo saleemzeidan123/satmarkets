@@ -250,34 +250,16 @@ export async function PATCH(req: NextRequest, props: { params: Promise<{ id: str
     if (error) return NextResponse.json({ error: error.message, code: "save_failed" }, { status: 400 });
   }
 
-  // Photo links added after the first save. The create path attaches them as
-  // listing_media rows and the Studio can now save more than once, so the second
-  // save has to reach the same place or a link typed on a return visit would be
-  // silently discarded. Uploaded files go through the media route, which is why
-  // only URLs are handled here.
-  //
-  // Sent links are the ones typed since the last save; the Studio clears the box
-  // after each one. A link that is already attached is skipped anyway, so a
-  // client that resends the whole box cannot create duplicate rows.
-  const urls = Array.isArray(body.photos)
-    ? (body.photos as unknown[]).map((u) => String(u).trim()).filter((u) => /^https?:\/\/.+/i.test(u)).slice(0, 20)
-    : [];
-  if (urls.length) {
-    const { data: existingMedia, count } = await sb
-      .from("listing_media")
-      .select("path", { count: "exact" })
-      .eq("listing_id", params.id)
-      .eq("kind", "photo");
-    const held = new Set(((existingMedia ?? []) as { path: string }[]).map((m) => m.path));
-    const base = count ?? held.size;
-    const rows = urls
-      .filter((u) => !held.has(u))
-      .map((u, i) => ({ listing_id: params.id, path: u, kind: "photo", source: "url", sort_order: base + i }));
-    if (rows.length) {
-      const { error: mErr } = await sb.from("listing_media").insert(rows);
-      if (mErr) return NextResponse.json({ ok: true, warning: "Saved, but the photo links could not be attached." });
-    }
-  }
+  // Codex review, item 8: this used to attach any body.photos URL as a new
+  // listing_media row with source='url' on every save, with none of the
+  // hashing, duplicate protection, type/size validation, EXIF handling or
+  // controlled storage a real upload gets through
+  // api/listings/[id]/media/route.ts, so an arbitrary third-party-hosted link
+  // could stand in as "verified" evidence, and could do so repeatedly across
+  // saves. New photo evidence goes through the media upload route only now;
+  // body.photos is intentionally no longer read here. Pre-existing
+  // source='url' rows still display unchanged (see the same note in
+  // api/listings/route.ts).
 
   // The same reconciliation the create path performs: a floor-plan link becomes a
   // listing_media row, because the detail page renders plans from media and not

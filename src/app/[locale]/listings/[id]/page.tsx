@@ -12,6 +12,7 @@ import { localeMeta } from "@/lib/meta";
 import { fill, fillProse, formatArea, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Icon } from "@/components/satkit";
 import { photoFor } from "@/lib/photos";
+import { getPublicListingMedia } from "@/lib/queries/publicMedia";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
 import SaveButton from "@/components/SaveButton";
@@ -196,11 +197,21 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
   const mediaPhotos: string[] = [];
   const floorPlans: { url: string; isPdf: boolean; label: string | null; planType: string | null }[] = [];
   const brochures: { url: string; label: string | null }[] = [];
+  // Codex review round 3, item 2: genuinely distinct from "this listing has
+  // no photos" (mediaDataOk stays true, mediaPhotos stays empty). Only
+  // false when the media read itself could not be trusted, so the page
+  // below can say so honestly instead of silently showing a generic
+  // placeholder as if nothing were wrong.
+  let mediaDataOk = true;
   if (sb) {
-    const { data: media } = await sb.from("listing_media")
-      .select("path,source,kind,mime,alt_en,alt_ar,plan_type,sort_order")
-      .eq("listing_id", l.id).in("kind", ["photo", "floorplan", "brochure"]).order("sort_order");
-    for (const m of (media ?? []) as { path: string; source: string; kind: string; mime: string | null; alt_en: string | null; alt_ar: string | null; plan_type: string | null }[]) {
+    // PKG-LISTING-CREATION-1B, Codex finding: the only place in this
+    // codebase that ever serves real, uploaded listing_media to an
+    // anonymous reader (mediaVisibility.test.ts enumerates and enforces
+    // this). getPublicListingMedia() is the one canonical reader, so the
+    // public-media rule lives in one query, not one per public page.
+    const { dataOk, media } = await getPublicListingMedia(l.id);
+    mediaDataOk = dataOk;
+    for (const m of media) {
       if (!m.path) continue;
       const label = ar ? (m.alt_ar || m.alt_en) : (m.alt_en || m.alt_ar);
       let url = String(m.path);
@@ -300,7 +311,16 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
               <Gallery images={mediaPhotos} title={`${type}, ${dn}`} locale={ar ? "ar" : "en"} />
             </div>
           ) : (
-            <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...verifiedBadges(l as any, filingAccountOf(lister), ar), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+            <div>
+              <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...verifiedBadges(l as any, filingAccountOf(lister), ar), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
+              {/* Codex review round 3, item 2: shown only when the media
+                  read itself failed (mediaDataOk), never for a listing that
+                  genuinely just has no photos yet, so a transient Supabase
+                  hiccup is never silently indistinguishable from that. */}
+              {!mediaDataOk && (
+                <p className="muted" style={{ fontSize: "0.75rem", marginTop: 6 }}>{dict.ld.mediaUnavailable}</p>
+              )}
+            </div>
           )}
           <div className="row gap10 wrap" style={{ marginTop: 18 }}>
             <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>

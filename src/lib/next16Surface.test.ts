@@ -184,7 +184,8 @@ const API_METHODS: Record<string, string[]> = {
   "src/app/api/leads/route.ts": ["POST"],
   "src/app/api/listings/[id]/docs/route.ts": ["POST"],
   "src/app/api/listings/[id]/documents/route.ts": ["POST"],
-  "src/app/api/listings/[id]/media/[mediaId]/route.ts": ["DELETE"],
+  "src/app/api/listings/[id]/evidence-marks/route.ts": ["POST"],
+  "src/app/api/listings/[id]/media/[mediaId]/route.ts": ["DELETE", "PATCH"],
   "src/app/api/listings/[id]/media/route.ts": ["PATCH", "POST"],
   "src/app/api/listings/[id]/review/route.ts": ["POST"],
   "src/app/api/listings/[id]/route.ts": ["PATCH"],
@@ -231,12 +232,12 @@ test("every API route's method set is the one written down here", () => {
       `${rel} no longer exports the methods recorded here; a method that disappears answers 405 rather than failing the build`
     );
   }
-  // 14 GET, 26 POST, 5 PATCH, 3 DELETE, and no PUT, HEAD or OPTIONS anywhere.
+  // 14 GET, 27 POST, 6 PATCH, 3 DELETE, and no PUT, HEAD or OPTIONS anywhere.
   // The totals are asserted separately because a pair of offsetting edits, one
   // method moved from one file to another, would satisfy every per-file check.
   const totals: Record<string, number> = {};
   for (const methods of Object.values(API_METHODS)) for (const m of methods) totals[m] = (totals[m] ?? 0) + 1;
-  assert.deepEqual(totals, { DELETE: 3, GET: 14, PATCH: 5, POST: 26 });
+  assert.deepEqual(totals, { DELETE: 3, GET: 14, PATCH: 6, POST: 27 });
 });
 
 test("the middleware file convention is whole, whichever one it is", () => {
