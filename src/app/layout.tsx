@@ -62,11 +62,15 @@ const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500"
 // the locale the middleware resolved, the same one <html lang> uses below, and
 // takes its words from the dictionaries like every other public surface.
 export async function generateMetadata() {
-  const d = getDictionary((await headers()).get("x-locale") === "ar" ? "ar" : "en").appMeta;
+  const ar = (await headers()).get("x-locale") === "ar";
+  const d = getDictionary(ar ? "ar" : "en").appMeta;
   return {
     title: d.title,
     description: d.description,
-    manifest: "/manifest.webmanifest",
+    // PKG-PWA-2. Two manifests with one `id`, so they are one app: the same
+    // entry, scope, icons and shortcuts, with the name, description and shortcut
+    // labels in the language the reader installed from.
+    manifest: ar ? "/manifest-ar.webmanifest" : "/manifest.webmanifest",
     applicationName: d.appName,
     appleWebApp: { capable: true, statusBarStyle: "default" as const, title: d.appName },
     icons: {
