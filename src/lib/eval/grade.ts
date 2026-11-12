@@ -2,6 +2,7 @@ import type { ParsedQuery } from "@/lib/search/queryParse";
 import { figuresIn, unvouchedFigures } from "@/lib/agents/agents";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 import type { GoldCase, GoldLocale, ProseExpect, QueryExpect, TranslationExpect } from "./gold";
+import { OPERATOR } from "@/lib/operator";
 
 // ADV-3B. The graders.
 //
@@ -43,7 +44,7 @@ const NON_WESTERN_DIGIT = /[٠-٩۰-۹]/;
 const ARABIC_SCRIPT = /[؀-ۿ]/;
 
 /** The only licence number this platform may state. */
-export const FAL_NUMBER = "1200025510";
+export const FAL_NUMBER = OPERATOR.licence;
 
 /** A licence-shaped figure: ten digits standing alone, not part of a longer number. */
 const LICENCE_SHAPED = /(?<![\d,.])\d{10}(?![\d,.])/g;

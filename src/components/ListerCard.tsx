@@ -5,6 +5,7 @@ import { verificationStateLabel } from "@/lib/evidence";
 import { formatCounted, type Loc } from "@/lib/format";
 import type { ListerRow } from "@/lib/queries/listers";
 import { Icon } from "@/components/satkit";
+import { rebrand } from "@/lib/operator";
 
 // PKG-DISCOVERY-1, item 6. The directory's one card. It shows exactly what
 // `listers_public` records (plus the one honestly-computed aggregate,
@@ -70,7 +71,7 @@ export default function ListerCard({
           <div style={{ fontSize: "1rem", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}><bdi>{name}</bdi></div>
           <div className="row gap6 wrap" style={{ alignItems: "center", marginTop: 4 }}>
             <span className="tag row gap6" style={{ alignItems: "center", display: "inline-flex" }}><RoleIcon size={12} /> {roleLabel}</span>
-            {lister.is_operator && <span className="tag">{ar ? "سات العقارية" : "SAT Real Estate"}</span>}
+            {lister.is_operator && <span className="tag">{rebrand(ar ? "سات العقارية" : "SAT Real Estate")}</span>}
           </div>
         </div>
       </div>

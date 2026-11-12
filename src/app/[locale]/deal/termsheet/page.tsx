@@ -5,6 +5,7 @@ import PrintButton from "@/components/PrintButton";
 
 import SampleBanner from "@/components/SampleBanner";
 import { getDictionary } from "@/i18n/getDictionary";
+import { rebrand } from "@/lib/operator";
 export default async function TermSheetPage(props: { params: Promise<{ locale: string }> }) {
   const params = await props.params;
   if (!isLocale(params.locale)) notFound();
@@ -84,9 +85,9 @@ export default async function TermSheetPage(props: { params: Promise<{ locale: s
           </div>
         </div>
         <p className="muted" style={{ fontSize: "0.65625rem", lineHeight: 1.6, marginTop: 24, paddingTop: 12, borderTop: "1px solid var(--silver)" }}>
-          {ar
+          {rebrand(ar
             ? "هذه الورقة تلخيص للشروط المتفق عليها وليست عقداً. يُوقّع عقد إيجار مباشرة بين الطرفين، ولا توقّع SAT ولا تحتفظ بالأموال. سات ماركتس منصّة تابعة لـ SAT العقارية، رخصة فال 1200025510."
-            : "This sheet summarises the agreed terms and is not a contract. The Ejar lease is signed directly between the parties; SAT does not sign or hold funds. SAT Markets is a SAT Real Estate platform, FAL licence 1200025510."}
+            : "This sheet summarises the agreed terms and is not a contract. The Ejar lease is signed directly between the parties; SAT does not sign or hold funds. SAT Markets is a SAT Real Estate platform, FAL licence 1200025510.")}
         </p>
       </div>
     </div>

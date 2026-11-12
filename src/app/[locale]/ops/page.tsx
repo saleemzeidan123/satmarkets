@@ -11,6 +11,7 @@ import { Fragment, useMemo, useState, use } from "react";
 import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 import { formatRange } from "@/lib/format";
 import ScrollRegion from "@/components/ScrollRegion";
+import { rebrand } from "@/lib/operator";
 
 type Seg = "blended" | "grade_a" | "grade_b" | "modern";
 type Row = {
@@ -395,7 +396,7 @@ export default function OpsPage(props: { params: Promise<{ locale: string }> }) 
         <p className="mt-3 text-xs text-slate">{t("Next: in-page reason drawer (replacing prompts), URL-persisted filters and saved views, per-cell and per-source drill-down drawers, scenario regression suite. Then auth + append-only audit table + synthetic Supabase branch. Needs SUPABASE_SERVICE_ROLE_KEY.", "التالي: لوحة سبب داخل الصفحة بدل النوافذ، مرشّحات محفوظة في الرابط وعروض محفوظة، أدراج تفصيل لكل خلية ومصدر، مجموعة اختبار انحدار للسيناريوهات. ثم مصادقة وجدول تدقيق للإضافة فقط وفرع Supabase اصطناعي.")}</p>
       </section>
 
-      <footer className="border-t border-silver pt-4 text-xs text-slate">{t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510.")}</footer>
+      <footer className="border-t border-silver pt-4 text-xs text-slate">{rebrand(t("SAT Markets data operations. Synthetic simulation. FAL 1200025510.", "عمليات بيانات سات ماركتس. محاكاة اصطناعية. رخصة فال 1200025510."))}</footer>
     </main>
   );
 }

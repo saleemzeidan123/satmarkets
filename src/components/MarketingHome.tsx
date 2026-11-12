@@ -43,6 +43,7 @@ import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
 // or, worse, pointed at a route this component's own tests must confirm is
 // held or private.
 import { releaseLabel } from "@/lib/releaseState";
+import { rebrandDeep } from "@/lib/operator";
 
 // PKG-CARD1. This used to flatten and pre-format every figure a card needs
 // (price, title, district, area, badge text) into its own literal shape, which
@@ -168,7 +169,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
  };
  const L = (p: string) => `/${locale}${p}`;
 
- const T = ar ? {
+ const T = rebrandDeep(ar ? {
   eyebrow: "منصّة للعقار التجاري",
   h1a: "حيث تجد الأعمال السعودية ",
   h1b: "مساحات تجارية يمكن التحقق منها",
@@ -276,7 +277,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   ctaH: "List your space, or find your next one",
   ctaP: "Join the exchange built for Riyadh's commercial market.",
   ctaList: "List your space", ctaBrowse: "Browse listings",
- };
+ });
 
  // Home prototype-link ruling. /area, /invest, /pricing, /deal and /compare
  // are not available product features today: /area's own route-policy entry

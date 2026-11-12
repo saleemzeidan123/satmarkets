@@ -1,6 +1,7 @@
 import Link from "next/link";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import { releaseLabel } from "@/lib/releaseState";
+import { rebrand, rebrandDeep } from "@/lib/operator";
 
 const HARBOR = "#3A6EA5", INK = "#14181B", COOL = "#F6F8FB";
 
@@ -66,7 +67,7 @@ const FIcon = {
 // removed rather than mislabeled "planned," since none of them is a future
 // feature -- they are present functionality with no anonymous-visitor
 // destination, which "planned" would misdescribe.
-const FOOT_COLS: [string, string[]][] = [
+const FOOT_COLS: [string, string[]][] = rebrandDeep([
   ["Platform", ["Listings", "Requirements", "Rent Index", "Compare spaces", "Investment underwriting", "Location Intelligence", "For owners", "Membership"]],
   ["AI and deals", ["AI Advisor", "Deal room"]],
   ["Solutions", ["Occupiers", "Owners and landlords", "Brokers", "Listers directory", "Investors"]],
@@ -76,20 +77,20 @@ const FOOT_COLS: [string, string[]][] = [
   // from the gate itself, and the two records beside it are published for the
   // same reason: a rule nobody can read is a rule nobody can hold us to.
   ["Trust and legal", ["How we verify", "Data sources", "Bilingual standards", "Terms of Service", "Privacy and PDPL", "Contact"]],
-];
+]);
 // Claims register: only the FAL advertising licence is evidenced today. Ejar,
 // ZATCA and Nafath are not integrated and PDPL compliance has not been
 // certified, so those four badges asserted capabilities the platform does not
 // have. Do not re-add a badge here without a source, date and scope.
-const FOOT_TRUST = ["FAL 1200025510"];
+const FOOT_TRUST = rebrandDeep(["FAL 1200025510"]);
 // Labels rendered as a disclosed, non-clickable "Planned" item instead of a
 // link -- the footer half of the same ruling MarketingHome.tsx's feat grid
 // already enforces for the identical concepts (see comment above FOOT_COLS).
 const PLANNED_LABELS = new Set(["Compare spaces", "Investment underwriting", "Location Intelligence", "Membership", "Investors", "Deal room"]);
-const ROUTES: Record<string, string> = { "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "For owners": "/list", "AI Advisor": "/advisor", "About SAT Real Estate": "/about", "Help center": "/contact", "Brokers": "/brokers", "Listers directory": "/listers", "Occupiers": "/listings", "Owners and landlords": "/list", "Our neutrality": "/neutrality", "How we verify": "/verification", "Data sources": "/sources", "Bilingual standards": "/bilingual", "Terms of Service": "/terms", "Privacy and PDPL": "/privacy", "Contact": "/contact" };
+const ROUTES: Record<string, string> = rebrandDeep({ "Listings": "/listings", "Requirements": "/requirements", "Rent Index": "/rent-index", "For owners": "/list", "AI Advisor": "/advisor", "About SAT Real Estate": "/about", "Help center": "/contact", "Brokers": "/brokers", "Listers directory": "/listers", "Occupiers": "/listings", "Owners and landlords": "/list", "Our neutrality": "/neutrality", "How we verify": "/verification", "Data sources": "/sources", "Bilingual standards": "/bilingual", "Terms of Service": "/terms", "Privacy and PDPL": "/privacy", "Contact": "/contact" });
 
 export default function SatFooter({ locale = "en" }: { locale?: string }) {
-  const __T: Record<string, string> = {"FAL 1200025510":"فال 1200025510","Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملّاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملّاك والمؤجرون","Brokers":"الوسطاء","Listers directory":"دليل الملّاك والوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","Data sources":"مصادر البيانات","Bilingual standards":"المعايير ثنائية اللغة","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on the record.":"أدرج، أجّر، أو استثمر، استناداً إلى السجل.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملّاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's commercial leasing and sales exchange. Listings that show their verification state, published rent bands attributed to source, deals end to end.":"منصة سعودية للتأجير والبيع التجاري. عروض تُظهر حالة توثيقها، ونطاقات إيجار منشورة منسوبة إلى مصادرها، وصفقات متكاملة."};
+  const __T: Record<string, string> = rebrandDeep({"FAL 1200025510":"فال 1200025510","Platform":"المنصة","AI and deals":"الذكاء والصفقات","Solutions":"الحلول","Company":"الشركة","Trust and legal":"الثقة والامتثال","Listings":"العروض","Requirements":"الطلبات","Rent Index":"مؤشر الإيجارات","Compare spaces":"قارن المساحات","Investment underwriting":"تحليل الاستثمار","Location Intelligence":"ذكاء الموقع","For owners":"للملّاك","Membership":"العضوية","AI Advisor":"المستشار الذكي","Deal room":"غرفة الصفقة","Messages":"الرسائل","Notifications":"الإشعارات","Floor plans":"المخططات","About SAT Real Estate":"عن سات العقارية","Help center":"مركز المساعدة","Occupiers":"المستأجرون","Owners and landlords":"الملّاك والمؤجرون","Brokers":"الوسطاء","Listers directory":"دليل الملّاك والوسطاء","Investors":"المستثمرون","Setting up an RHQ":"تأسيس مقر إقليمي","Our neutrality":"حيادنا","Newsroom":"غرفة الأخبار","Careers":"الوظائف","Contact":"تواصل","How we verify":"كيف نتحقق","Data sources":"مصادر البيانات","Bilingual standards":"المعايير ثنائية اللغة","Terms of Service":"شروط الخدمة","Privacy and PDPL":"الخصوصية وحماية البيانات","Security":"الأمان","List your space":"أدرج مساحتك","Browse listings":"تصفّح العروض","POWERED BY SAT REAL ESTATE":"مدعومة من سات العقارية","List, lease or invest, on the record.":"أدرج، أجّر، أو استثمر، استناداً إلى السجل.","Join owners, occupiers and licensed brokers across the Kingdom.":"انضم إلى الملّاك والمستأجرين والوسطاء المرخّصين في أنحاء المملكة.","Saudi Arabia's commercial leasing and sales exchange. Listings that show their verification state, published rent bands attributed to source, deals end to end.":"منصة سعودية للتأجير والبيع التجاري. عروض تُظهر حالة توثيقها، ونطاقات إيجار منشورة منسوبة إلى مصادرها، وصفقات متكاملة."});
   const ar = locale === "ar";
   const t = (x: string): string => (ar ? (__T[x] ?? x) : x);
   const L = (p: string) => `/${locale}${p}`;
@@ -153,8 +154,8 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
         {/* Brand name only, no domain: the production domain is not yet acquired
             and the preview must not claim it (PKG-0A, Codex rank 34). Reintroduce
             it here only after acquisition and launch configuration. */}
-        <span>© 2026 {locale === "ar" ? "سات ماركتس" : "SAT MARKETS"} · {locale === "ar" ? "الرياض، السعودية" : "RIYADH, KSA"} · SAT REAL ESTATE FAL 1200025510</span>
-        <span>{t("POWERED BY SAT REAL ESTATE")}</span>
+        <span>© 2026 {locale === "ar" ? "سات ماركتس" : "SAT MARKETS"} · {locale === "ar" ? "الرياض، السعودية" : "RIYADH, KSA"} · {rebrand("SAT REAL ESTATE FAL 1200025510")}</span>
+        <span>{t(rebrand("POWERED BY SAT REAL ESTATE"))}</span>
       </div>
     </footer>
   );

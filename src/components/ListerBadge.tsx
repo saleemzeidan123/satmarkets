@@ -3,6 +3,7 @@ import { Icon } from "@/components/satkit";
 import type { Lister } from "@/lib/queries/listings";
 import { filingAccountOf, listerIdentityVerified } from "@/lib/listingVerification";
 import { entityName } from "@/lib/displayName";
+import { rebrand } from "@/lib/operator";
 
 // WHO IS LISTING THIS, AND ARE THEY US.
 //
@@ -81,9 +82,9 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
         >
           <span style={{ color: "var(--slate)", marginTop: 1, flex: "none" }}><Icon.info size={13} /></span>
           <span style={{ fontSize: "0.71875rem", lineHeight: 1.6, color: "var(--slate)" }}>
-            {ar
+            {rebrand(ar
               ? "شركة سات العقارية هي مشغّلة هذه المنصة، وتُدرج إعلاناتها هنا كأي وسيط مرخّص. لا تحصل إعلاناتها على أي أفضلية في الترتيب أو العرض، وتخضع لذات قواعد التحقق ورخصة الإعلان."
-              : "SAT Real Estate operates this exchange and lists here as any licensed broker does. Its listings get no ranking or placement advantage, and clear the same verification and advertising-licence rules as everyone else's."}
+              : "SAT Real Estate operates this exchange and lists here as any licensed broker does. Its listings get no ranking or placement advantage, and clear the same verification and advertising-licence rules as everyone else's.")}
           </span>
         </div>
       )}

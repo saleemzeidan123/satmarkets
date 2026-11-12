@@ -10,9 +10,10 @@ export default function JsonLd({ data }: { data: Record<string, unknown> }) {
 }
 
 import { SITE } from "@/lib/site";
+import { rebrandDeep } from "@/lib/operator";
 export { SITE };
 
-export const ORG = {
+export const ORG = rebrandDeep({
   "@type": "Organization",
   "@id": `${SITE}#org`,
   name: "SAT Markets",
@@ -29,7 +30,7 @@ export const ORG = {
     identifier: "REGA FAL 1200025510",
   },
   knowsLanguage: ["ar", "en"],
-};
+});
 
 /**
  * The site itself, and the one query the site can actually answer.
