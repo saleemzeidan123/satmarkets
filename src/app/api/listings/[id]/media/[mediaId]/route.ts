@@ -4,7 +4,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { getSessionUser } from "@/lib/auth/session";
 import { isValidShotKey, isValidMediaScope, isValidMediaCondition } from "@/lib/mediaCategorization";
-import { queueMediaCleanup, removeStorageObjects } from "@/lib/mediaCleanup";
+import { queueMediaCleanup, removeStorageObjects, pathsWithinListing } from "@/lib/mediaCleanup";
 
 export const runtime = "nodejs";
 
@@ -121,9 +121,27 @@ export async function DELETE(
   // signature.
   if (m.source === "upload" && m.path) {
     const toRemove = originalPath ? [m.path, originalPath] : [m.path];
-    await removeStorageObjects(sb, "listing-media", toRemove,
-      () => queueMediaCleanup(serviceRole, { listingId: params.id, listingMediaId: params.mediaId, storagePaths: toRemove, reason: "deletion_storage_remove_failed" }),
-    );
+    // Live finding, 2026-11-12 (first authenticated smoke test after the
+    // PKG-LISTING-CREATION-1B rollout). This removal used to go through the
+    // caller's own client. storage.objects has never carried a DELETE policy
+    // for listers, so every removal was filtered to nothing, every deletion
+    // left both files behind, and every one of them landed in
+    // media_cleanup_queue as deletion_storage_remove_failed. The queue did
+    // its job; the removal never did. It now goes through the service-role
+    // client, which is safe here for two reasons checked above and below:
+    // the caller's ownership of this listing is already established
+    // (account_id match), and only paths inside this account's own folder
+    // for this listing are removed. A path outside that folder is never
+    // deleted on a lister's say-so: it is queued for a person to look at.
+    const { inside, outside } = pathsWithinListing(su.accountId, params.id, toRemove);
+    if (outside.length > 0) {
+      await queueMediaCleanup(serviceRole, { listingId: params.id, listingMediaId: params.mediaId, storagePaths: outside, reason: "deletion_storage_remove_failed" });
+    }
+    if (inside.length > 0) {
+      await removeStorageObjects(serviceRole, "listing-media", inside,
+        () => queueMediaCleanup(serviceRole, { listingId: params.id, listingMediaId: params.mediaId, storagePaths: inside, reason: "deletion_storage_remove_failed" }),
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });

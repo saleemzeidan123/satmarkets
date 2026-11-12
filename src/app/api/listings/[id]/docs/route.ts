@@ -139,7 +139,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     .select("id")
     .single();
   if (insErr) {
-    await removeStorageObjects(sb, "listing-media", [objectKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey],
       () => queueMediaCleanup(serviceRole, { listingId, storagePaths: [objectKey], reason: "upload_insert_failed" }),
     );
     return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // otherwise fall through to a success response for a media id that no
   // longer exists.
   if (!trustedErr && (trustedRows ?? []).length === 0) {
-    await removeStorageObjects(sb, "listing-media", [objectKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey],
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey], reason: "upload_trusted_write_failed" }),
     );
     return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
@@ -168,7 +168,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       () => sb.from("listing_media").delete().eq("id", mediaId),
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey], reason: "upload_trusted_write_failed" }),
     );
-    await removeStorageObjects(sb, "listing-media", [objectKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey],
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey], reason: "upload_trusted_write_failed" }),
     );
     if (trustedErr.code === "23505") {
