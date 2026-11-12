@@ -1,0 +1,74 @@
+{
+  "id": "/",
+  "name": "سات ماركتس",
+  "short_name": "سات ماركتس",
+  "description": "منصة تأجير وبيع للعقارات التجارية تبدأ من الرياض. مساحات تجارية يعرضها الملّاك والوسطاء المرخّصون، ومؤشر إيجارات منسوب إلى مصادره، وبحث ذكي. منصة محايدة لمعلومات العقار التجاري.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFFFFF",
+  "theme_color": "#3A6EA5",
+  "dir": "rtl",
+  "lang": "ar",
+  "categories": [
+    "business",
+    "finance",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "القوائم",
+      "url": "/listings",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "انشر طلبك",
+      "url": "/post-requirement",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "أدرج عقارك",
+      "url": "/list",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

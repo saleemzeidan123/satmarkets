@@ -1,5 +1,7 @@
 import Link from "next/link";
 import LanguageSwitch from "@/components/LanguageSwitch";
+import InstallApp from "@/components/InstallApp";
+import { getDictionary } from "@/i18n/getDictionary";
 import { releaseLabel } from "@/lib/releaseState";
 import { rebrand, rebrandDeep } from "@/lib/operator";
 
@@ -150,6 +152,7 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
           <Link className="soc" href={L("/contact")} aria-label={t("Contact")}>{FIcon.mail(16)}</Link>
         </div>
       </div>
+      <InstallApp label={getDictionary(ar ? "ar" : "en").install.button} iosHint={getDictionary(ar ? "ar" : "en").install.iosHint} />
       <div className="bottom">
         {/* Brand name only, no domain: the production domain is not yet acquired
             and the preview must not claim it (PKG-0A, Codex rank 34). Reintroduce
