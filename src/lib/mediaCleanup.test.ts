@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { bestEffortWithFallback, queueMediaCleanup, removeStorageObjects, handleUploadInsertFailure } from "./mediaCleanup";
+import { bestEffortWithFallback, queueMediaCleanup, removeStorageObjects, handleUploadInsertFailure, pathsWithinListing } from "./mediaCleanup";
+import { readFileSync } from "node:fs";
 
 // Codex review, item 7. bestEffortWithFallback's whole reason to exist is a
 // verified fact about the real SDKs (see mediaCleanup.ts's own header): a
@@ -213,6 +214,9 @@ test("handleUploadInsertFailure: REGRESSION for the fence's own 23502 scenario -
   };
   const queueCalls: unknown[] = [];
   const serviceRole = {
+    // Removal goes through the service-role client (live finding, 2026-11-12), so the
+    // modelled storage behaviour above is reached through it.
+    storage: sb.storage,
     from(table: string) {
       assert.equal(table, "media_cleanup_queue");
       return { insert(row: unknown) { queueCalls.push(row); return Promise.resolve({ error: null }); } };
@@ -237,6 +241,9 @@ test("handleUploadInsertFailure: REGRESSION for the fence's own 23502 scenario, 
   };
   const queueCalls: unknown[] = [];
   const serviceRole = {
+    // Removal goes through the service-role client (live finding, 2026-11-12), so the
+    // modelled storage behaviour above is reached through it.
+    storage: sb.storage,
     from(table: string) {
       assert.equal(table, "media_cleanup_queue");
       return { insert(row: unknown) { queueCalls.push(row); return Promise.resolve({ error: null }); } };
@@ -265,8 +272,68 @@ test("handleUploadInsertFailure: retry behaviour is a database-level, not a JS-l
   // must not error or interfere with either call.
   const queueCalls: unknown[] = [];
   const sb = { storage: { from() { return { remove() { return Promise.resolve({ data: null, error: { message: "denied" } }); } }; } } };
-  const serviceRole = { from() { return { insert(row: unknown) { queueCalls.push(row); return Promise.resolve({ error: null }); } }; } };
+  const serviceRole = { storage: sb.storage, from() { return { insert(row: unknown) { queueCalls.push(row); return Promise.resolve({ error: null }); } }; } };
   await handleUploadInsertFailure(sb as never, serviceRole as never, { listingId: "l1", objectKey: "a", originalKey: "a-orig" });
   await handleUploadInsertFailure(sb as never, serviceRole as never, { listingId: "l1", objectKey: "b", originalKey: "b-orig" });
   assert.equal(queueCalls.length, 2, "two independent failed attempts must each be recorded on their own, neither suppressed nor merged by the other");
+});
+
+// Live finding, 2026-11-12: the first authenticated smoke test after the
+// PKG-LISTING-CREATION-1B rollout deleted a photo and found both of its files
+// still in storage, with a deletion_storage_remove_failed row in
+// media_cleanup_queue. Cause: every removal went through the caller's own
+// client, and storage.objects has never carried a DELETE policy for listers,
+// so every removal was a filtered no-op. The mocks above could not see this:
+// they model what a client returns, never which client a real policy lets through.
+test("handleUploadInsertFailure: removes through the service-role client, never the caller's own", async () => {
+  let callerRemoves = 0;
+  const removed: string[][] = [];
+  const sb = { storage: { from() { return { remove() { callerRemoves++; return Promise.resolve({ data: [], error: null }); } }; } } };
+  const serviceRole = {
+    storage: { from(bucket: string) { assert.equal(bucket, "listing-media"); return { remove(paths: string[]) { removed.push(paths); return Promise.resolve({ data: paths, error: null }); } }; } },
+    from() { return { insert() { throw new Error("nothing should be queued when the removal succeeds"); } }; },
+  };
+  await handleUploadInsertFailure(sb as never, serviceRole as never, { listingId: "l1", objectKey: "acct/l1/a.webp", originalKey: "acct/l1/originals/a.jpg" });
+  assert.equal(callerRemoves, 0, "the caller's client holds no DELETE policy on storage.objects; routing the removal through it is the defect");
+  assert.deepEqual(removed, [["acct/l1/a.webp", "acct/l1/originals/a.jpg"]]);
+});
+
+test("handleUploadInsertFailure: with no service-role client it still attempts the removal through the caller's client", async () => {
+  let callerRemoves = 0;
+  const sb = { storage: { from() { return { remove(paths: string[]) { callerRemoves++; return Promise.resolve({ data: paths, error: null }); } }; } } };
+  await handleUploadInsertFailure(sb as never, null, { listingId: "l1", objectKey: "a", originalKey: "b" });
+  assert.equal(callerRemoves, 1);
+});
+
+test("pathsWithinListing: only paths inside this account's folder for this listing count as inside", () => {
+  const r = pathsWithinListing("acct", "list", [
+    "acct/list/a.webp",
+    "acct/list/originals/a.jpg",
+    "acct/other-listing/a.webp",
+    "other-acct/list/a.webp",
+    "acct/list/../other/a.webp",
+    "acct/list/",
+    "acct/list//a.webp",
+    "/acct/list/a.webp",
+    "acct/listing-with-longer-name/a.webp",
+  ]);
+  assert.deepEqual(r.inside, ["acct/list/a.webp", "acct/list/originals/a.jpg"]);
+  assert.equal(r.outside.length, 7);
+});
+
+test("pathsWithinListing: an empty account or listing id matches nothing", () => {
+  assert.deepEqual(pathsWithinListing("", "list", ["/list/a.webp"]).inside, []);
+  assert.deepEqual(pathsWithinListing("acct", "", ["acct//a.webp"]).inside, []);
+});
+
+test("no media or document route removes storage objects through the caller's own client", () => {
+  for (const f of [
+    "src/app/api/listings/[id]/media/route.ts",
+    "src/app/api/listings/[id]/media/[mediaId]/route.ts",
+    "src/app/api/listings/[id]/docs/route.ts",
+  ]) {
+    const src = readFileSync(f, "utf8");
+    assert.ok(/removeStorageObjects\(/.test(src), `${f} no longer calls removeStorageObjects; update this guard`);
+    assert.ok(!/removeStorageObjects\(\s*sb\s*,/.test(src), `${f} removes storage objects through the caller's client, which holds no DELETE policy`);
+  }
 });

@@ -186,7 +186,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
     .from("listing-media")
     .upload(originalKey, input, { contentType: mimeForSniffedType(sniffImageType(input)), upsert: false });
   if (origUpErr) {
-    await removeStorageObjects(sb, "listing-media", [objectKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey],
       () => queueMediaCleanup(serviceRole, { listingId, storagePaths: [objectKey], reason: "upload_original_failed" }),
     );
     return NextResponse.json({ error: "Upload failed.", code: "upload_failed" }, { status: 400 });
@@ -267,7 +267,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
   // code would fall through to the success response below for a media id
   // that no longer exists. .select("id") makes "matched nothing" visible.
   if (!trustedErr && (trustedRows ?? []).length === 0) {
-    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey, originalKey],
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
     );
     return NextResponse.json({ error: "Saved the file but could not attach it.", code: "attach_failed" }, { status: 400 });
@@ -282,7 +282,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
       () => sb.from("listing_media").delete().eq("id", mediaId),
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
     );
-    await removeStorageObjects(sb, "listing-media", [objectKey, originalKey],
+    await removeStorageObjects(serviceRole, "listing-media", [objectKey, originalKey],
       () => queueMediaCleanup(serviceRole, { listingId, listingMediaId: mediaId, storagePaths: [objectKey, originalKey], reason: "upload_trusted_write_failed" }),
     );
     if (trustedErr.code === "23505") {
