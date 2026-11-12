@@ -60,6 +60,17 @@ Vercel builds every PR automatically; the preview deployment doubles as a produc
 - Supabase: production database for this app is NOT the "SAT Website" project (`gwyeserfgxcxhwfdjfav`, that is satestate.com's intake DB). Confirm you are pointed at the real satmarkets project before any migration or audit work.
 - The site intentionally shows a preview-environment banner and demo-flagged sample listings. That is a tested feature (`publicFacts.test.ts`), not a bug.
 
+## State as of 2026-11-12
+
+- **PKG-LISTING-CREATION-1B is merged and its twelve migrations are applied to production.** PR #22 squash-merged as `40316e5`. The full account, step by step with evidence, is `docs/pkg-listing-creation-1b-rollout-record.md`. Read it before touching media, evidence marks or the upload route.
+- **Uploads are on in production.** The pause used for the rollout was lifted the same day, after an authenticated smoke test. That test found one defect: deleting a photo left its files in storage, because removals went through the caller's client and listers hold no DELETE policy on `storage.objects`. PR #25 fixes it. Check whether #25 is merged before touching the media routes.
+- **`public.map_anchors` is locked down** (RLS on, public read policy, write grants removed). Recorded as `supabase/migrations/20261112_map_anchors_rls_lockdown.sql`. This closes the `map_anchors` finding reported in the PR #22 description.
+- **Production host: `markets.satestate.com`**, added to the Vercel project on 2026-11-12 and allowed in Supabase Auth redirect URLs. The site is still noindexed and still shows the preview banner. `satmarkets-sat-markets.vercel.app` keeps working.
+- **Production holds no real data**: 94 listings, all demo-flagged; 9 test accounts; 7 test media rows. Plan rollouts accordingly, and re-check these figures before relying on them.
+- **PR #23 is superseded.** PR #22 replaced the upload route it patched. The rollout record states why it was not merged first.
+- **The GitHub Actions `gate` check is still locked for billing.** Run the gate by hand on every package, as before.
+- The "State as of 2026-09-12" section below is kept as history. Where the two disagree, this section and `git log` win.
+
 ## State as of 2026-09-12
 
 - **`main` HEAD: `524f18820b4511d576920c3bb9bbfbe7995b0dff`** (PR #16, PKG-LISTING-CREATION-1A, squash-merged). Full gate clean at merge (typecheck, 2028/2028 tests, ar-lint, prose scan, ESLint ratchet held at 49, production build); confirmed on GitHub's own `gate` Actions check-run, not only the legacy commit-status API, a distinction that mattered this round (see below).
