@@ -173,7 +173,7 @@ const PAIR_EXEMPT: Record<string, string> = {
     "narrow. The inline value is the wide-screen case only.",
   "src/app/[locale]/bilingual/page.tsx:140":
     "internal bilingual comparison page, a development surface and not a product journey.",
-  "src/app/[locale]/deal/termsheet/page.tsx:66":
+  "src/app/[locale]/deal/termsheet/page.tsx:67":
     "the term sheet preview is outside the four critical journeys of PKG-A11Y-1. Recorded " +
     "as out of scope rather than fixed blind, because it is a print-shaped document surface " +
     "and the right answer there is a layout decision, not this substitution.",

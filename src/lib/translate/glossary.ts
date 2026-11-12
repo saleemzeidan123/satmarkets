@@ -1,3 +1,4 @@
+import { rebrandDeep } from "@/lib/operator";
 // src/lib/translate/glossary.ts
 //
 // Domain term base + do-not-translate list for SAT Markets Arabic translation.
@@ -7,7 +8,7 @@
 // they read naturally in Arabic. Only the FAL number and URLs are hard-protected.
 
 /** English to Arabic term base for commercial real estate (matched case-insensitively). */
-export const RE_GLOSSARY: Record<string, string> = {
+export const RE_GLOSSARY: Record<string, string> = rebrandDeep({
   // asset types
   "office": "مكتب",
   "office space": "مساحة مكتبية",
@@ -130,17 +131,17 @@ export const RE_GLOSSARY: Record<string, string> = {
   "king abdulaziz road": "طريق الملك عبدالعزيز",
   "olaya street": "شارع العليا",
   "tahlia street": "شارع التحلية",
-};
+});
 
 /**
  * Hard do-not-translate literals. Masked before translation, restored exactly
  * after. Only the FAL licence number and product URLs qualify.
  */
-export const DNT_LITERALS: string[] = [
+export const DNT_LITERALS: string[] = rebrandDeep([
   "1200025510",
   "satmarkets.sa",
   "satestate.com",
-];
+]);
 
 /**
  * Proper nouns to keep in Latin form on purpose (acronyms with no common Arabic

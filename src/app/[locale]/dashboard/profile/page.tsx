@@ -6,6 +6,7 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 import { Icon } from "@/components/satkit";
 import ProfileForm from "@/components/ProfileForm";
 import { entityName } from "@/lib/displayName";
+import { rebrand } from "@/lib/operator";
 
 // The owner's profile editor. Their public identity and verification are shown
 // read-only (SAT owns those); the about text, website, public contact and logo are
@@ -42,7 +43,7 @@ export default async function ProfilePage(props: { params: Promise<{ locale: str
     viewPublic: "View public profile", name: "Name", type: "Type", verification: "Verification",
     verified: "Verified", pending: "Pending verification", identityNote: "Name, type, and verification are managed by SAT and are not edited here.",
     edit: "Profile details",
-    typeLabels: { sat: "SAT Real Estate (licensed broker)", broker: "Licensed broker", owner: "Owner", investor: "Investor" } as Record<string, string>,
+    typeLabels: { sat: rebrand("SAT Real Estate (licensed broker)"), broker: "Licensed broker", owner: "Owner", investor: "Investor" } as Record<string, string>,
   };
 
   const name = entityName(a, ar ? "ar" : "en");
