@@ -244,7 +244,7 @@
     "approved": "Approved",
     "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed on SAT Markets with ownership verified, with published Rent Index context where available. Indicative, not advice.",
     "crumbAria": "Breadcrumb",
-    "noPhotos": "The lister has not added photographs of this space.",
+    "noPhotos": "No photographs of this space are published yet.",
     "drawTitle": "Drawn to scale",
     "drawAlt": "A rectangle drawn to scale. {frontageLabel}: {frontage}. {depthLabel}: {depth}.",
     "drawNote": "Drawn as a rectangle from the frontage and depth the lister recorded: {frontage} by {depth} is {product}, and the stated area is {area}. The real outline may differ. A drawing appears only when the two areas are within 10 percent of each other.",

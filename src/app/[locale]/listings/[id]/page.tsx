@@ -334,9 +334,12 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
           </div>
 
           {/* THE PICTURE. Owner ruling, 2026-11-13: a listing's own photographs
-              lead when it has them. When it has none the page shows no
+              lead when it has them. When none is published the page shows no
               photograph at all, and says so in one line, rather than a picture
-              of some other building. The to-scale drawing below stands on its
+              of some other building. "Published" is the word because this page
+              reads only media that passes the public-media rule: photographs
+              that are uploaded and not yet public land here too, and saying
+              the lister had added none would be untrue of them. The to-scale drawing below stands on its
               own rule and does not depend on this. */}
           {mediaPhotos.length > 1 ? (
             <div className="ld-pic">
