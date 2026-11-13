@@ -42,6 +42,7 @@ import { RENT_INDEX_SOURCE } from "@/lib/market/attribution";
 export type SourceCopyKey =
   | "Gastat"
   | "Rega"
+  | "RegaOpen"
   | "Broker"
   | "Fsq"
   | "Mapbox"
@@ -78,6 +79,19 @@ export const SOURCE_CATALOGUE: readonly SourceCatalogueEntry[] = [
     // end. The passport row is headed "Source", so the canonical clause is also
     // the right thing to print there.
     owner: [RENT_INDEX_SOURCE.en, RENT_INDEX_SOURCE.ar],
+  },
+  {
+    // PKG-DATA-1. A second REGA source, and deliberately a separate row from the
+    // Rental Index above. This one is a named dataset on the National Open Data
+    // Platform, whose licence was read and is quoted in the register; the row
+    // above is an index whose terms are still the open question O10. Keeping
+    // them apart means recording a right for one cannot widen the other.
+    id: "rega_open_rental_indicators",
+    copyKey: "RegaOpen",
+    owner: [
+      "Real Estate General Authority, on the National Open Data Platform",
+      "الهيئة العامة للعقار، عبر المنصة الوطنية للبيانات المفتوحة",
+    ],
   },
   {
     id: "broker_overlay",
@@ -125,6 +139,14 @@ export const SOURCE_CATALOGUE: readonly SourceCatalogueEntry[] = [
  * canonical path; this constant plus `catalogue.test.ts` is that path.
  */
 export const REGA_RENT_INDEX_SOURCE_ID = "rega_ejar";
+
+/**
+ * The REGA rental indicators dataset on the National Open Data Platform, as one
+ * exported constant, for the same reason as the id above: the leasing activity
+ * section asks the register about this row, and it must ask by the catalogue's
+ * spelling.
+ */
+export const REGA_OPEN_RENTAL_INDICATORS_SOURCE_ID = "rega_open_rental_indicators";
 
 /** Declared reading order for the source register. */
 export const DECLARED_SOURCES: readonly string[] = SOURCE_CATALOGUE.map((e) => e.id);
