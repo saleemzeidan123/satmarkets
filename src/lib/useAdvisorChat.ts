@@ -1,12 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import { addWatch } from "@/lib/watches";
-import { formatPeriod } from "@/lib/market/period";
+import { getDictionary } from "@/i18n/getDictionary";
 import { searchNote } from "@/lib/search/searchNote";
 import type { PublicEvidenceView } from "@/lib/evidenceView";
 
 export interface R { id: string; reference_code: string; asset_type: string; title_en: string | null; title_ar: string | null; area_sqm: number | null; deal_type: string | null; asking_rent_sqm: number | null; sale_price: number | null; ownership_verified?: boolean | null; districts?: { name_en: string | null; name_ar: string | null; city: string | null } | null; }
 export interface Msg { role: "u" | "a"; text: string; results?: R[]; note?: string; band?: { low: number; average: number; high: number; unit?: string }; quoted?: number | null; handoffDistrict?: string | null; handoffAsset?: string | null; handoffLabel?: string | null; retry?: string;
+ /**
+  * PKG-ADV-5. A next step the answer points at, named rather than spelled, so
+  * the renderer builds the link in its own locale. "list" is the listing form,
+  * offered when a person asks for a listing to be written and none can be.
+  */
+ cta?: "list";
  /**
   * ADV-1D. The Evidence Passports for the figures this answer displayed, built
   * server-side from the same published row the answer was rendered from, and
@@ -65,6 +71,7 @@ const STATE_VERSION = "v2";
  */
 export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultCap?: number) {
  const ar = locale === "ar";
+ const copy = getDictionary(locale).advisor;
  const key = storageKey ? `${storageKey}:${STATE_VERSION}:${locale}` : undefined;
  const [msgs, setMsgs] = useState<Msg[]>([]);
  const [busy, setBusy] = useState(false);
@@ -101,7 +108,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
     role: "a",
     text: timedOut
      ? (ar ? "استغرق هذا وقتاً أطول من المتوقع، فأوقفت الانتظار. يمكنك المحاولة مرة أخرى." : "That took longer than expected, so I stopped waiting. You can try again.")
-     : (ar ? "حدث ما قاطع البحث. حاول مرة أخرى." : "Something interrupted the search. Please try again."),
+     : (ar ? "تعذّر إكمال البحث. حاول مرة أخرى." : "The search did not complete. Try again."),
     retry: q,
    }]);
    setBusy(false);
@@ -109,6 +116,16 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
   try {
    const hist = msgs.slice(-6).map((mm) => ({ role: mm.role === "u" ? "user" : "assistant", text: mm.text })).filter((h) => h.text);
    const ar1 = await fetchBounded("/api/advisor", { query: q, history: hist }, REQUEST_TIMEOUT_MS);
+   // PKG-ADV-5. A rate-limited request is not a search. The route answers 429
+   // with `{ mode: "search" }`, which this hook read as "fall through to the
+   // listing search", so a person who asked too quickly was shown listings in
+   // answer to whatever they had asked. They are told what happened instead,
+   // and the question comes back as a retry.
+   if (ar1.status === 429) {
+    setMsgs((m) => [...m, { role: "a", text: copy.rateLimited, retry: q }]);
+    setBusy(false);
+    return;
+   }
    const aj = await ar1.json();
    if (aj?.mode && aj.mode !== "search" && aj.message) {
     if (aj.mode === "watch" && aj.band && aj.band.average != null) {
@@ -135,6 +152,7 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
       if (ps.length) extra.passports = ps;
      }
     }
+    if (aj.cta === "list") extra.cta = "list";
     setMsgs((m) => [...m, { role: "a", text: aj.message, ...extra }]);
     setBusy(false);
     return;
@@ -163,7 +181,11 @@ export function useAdvisorChat(locale: "en" | "ar", storageKey?: string, resultC
    // `ownership_verified`, so the badge has to be counted off the returned rows;
    // it is not a property the query selected for.
    const note = searchNote(j, results.length, locale, all.length, results.filter((r) => r.ownership_verified === true).length);
-   setMsgs((m) => [...m, { role: "a", text: note, results, note: ar ? `مؤشر الإيجارات ${formatPeriod("2026-Q2", true)} · معايير منشورة منسوبة إلى مصادرها` : `Rent Index ${formatPeriod("2026-Q2", false)} · published benchmarks, attributed to source` }]);
+   // PKG-ADV-5. The line under the results used to name the Rent Index, a
+   // quarter and a source. The quarter was a literal in this file, the results
+   // are listings and not index figures, and no row anywhere had been read to
+   // support any of it. It now says what the rows above it are.
+   setMsgs((m) => [...m, { role: "a", text: note, results, note: copy.resultsNote }]);
   } catch (e) {
    failed(isAbort(e));
    return;
