@@ -45,6 +45,7 @@ const CITIES = data.cities as unknown as Record<string, RawRow[]>;
 /** The dataset, its publisher and its licence, for the notice the licence requires. */
 export const LEASING_DATASET = {
   title: data.dataset.title,
+  titleAr: data.dataset.titleAr,
   url: data.dataset.url,
   licenceUrl: data.licence.url,
   period: data.period,
@@ -60,6 +61,12 @@ export const LEASING_DATASET = {
 const CITY_IN_FILE: Record<string, string> = {
   Riyadh: /* i18n-exempt */ "الرياض",
 };
+
+/** The region and city of the bundled file, as the file writes them, for the reader of loaded quarters. */
+export const BUNDLED_PLACE = { region: data.region, city: /* i18n-exempt */ "الرياض" } as const;
+
+/** One file's districts for one city: district, office, shop, showroom. */
+export type CityRows = readonly (readonly [string, number | null, number | null, number | null])[];
 
 /**
  * A district name reduced to what two honest spellings of it share.
@@ -81,9 +88,9 @@ export function normaliseDistrictName(name: string): string {
 }
 
 /** The file's districts for one of its cities, keyed by normalised name. */
-function indexCity(cityInFile: string): Map<string, LeasingCounts> {
+function indexCity(cityInFile: string, loaded?: Record<string, CityRows>): Map<string, LeasingCounts> {
   const out = new Map<string, LeasingCounts>();
-  for (const [district, office, shop, showroom] of CITIES[cityInFile] ?? []) {
+  for (const [district, office, shop, showroom] of (loaded ?? CITIES)[cityInFile] ?? []) {
     out.set(normaliseDistrictName(district), { office, shop, showroom });
   }
   return out;
@@ -95,8 +102,12 @@ function indexCity(cityInFile: string): Map<string, LeasingCounts> {
  * A district the file does not name is left out. The caller decides the order
  * of what comes back; this function does not sort, because the order a reader
  * sees is a presentation choice and belongs beside the presentation.
+ *
+ * `loaded` is a later quarter the weekly job stored, keyed by the file's city
+ * name. When it is given, it is the whole answer: the bundled quarter is not
+ * mixed in, so a row can never come from two files.
  */
-export function leasingActivityFor(districts: readonly PlatformDistrict[]): LeasingRow[] {
+export function leasingActivityFor(districts: readonly PlatformDistrict[], loaded?: Record<string, CityRows>): LeasingRow[] {
   const byCity = new Map<string, Map<string, LeasingCounts>>();
   const rows: LeasingRow[] = [];
   const seen = new Set<string>();
@@ -104,7 +115,7 @@ export function leasingActivityFor(districts: readonly PlatformDistrict[]): Leas
     const cityInFile = CITY_IN_FILE[d.city];
     if (!cityInFile || !d.name_ar) continue;
     let index = byCity.get(cityInFile);
-    if (!index) { index = indexCity(cityInFile); byCity.set(cityInFile, index); }
+    if (!index) { index = indexCity(cityInFile, loaded); byCity.set(cityInFile, index); }
     const key = normaliseDistrictName(d.name_ar);
     const counts = index.get(key);
     if (!counts || seen.has(cityInFile + "|" + key)) continue;

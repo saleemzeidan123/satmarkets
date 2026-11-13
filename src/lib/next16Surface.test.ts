@@ -174,6 +174,7 @@ const API_METHODS: Record<string, string[]> = {
   "src/app/api/advisor/shortlist/route.ts": ["POST"],
   "src/app/api/conversations/route.ts": ["POST"],
   "src/app/api/cron/expire-permits/route.ts": ["GET", "POST"],
+  "src/app/api/cron/ingest-leasing/route.ts": ["GET", "POST"],
   "src/app/api/cron/ingest-rega/route.ts": ["GET", "POST"],
   "src/app/api/documents/[id]/download/route.ts": ["GET"],
   "src/app/api/favorites/route.ts": ["DELETE", "GET", "PATCH", "POST"],
@@ -237,7 +238,7 @@ test("every API route's method set is the one written down here", () => {
   // method moved from one file to another, would satisfy every per-file check.
   const totals: Record<string, number> = {};
   for (const methods of Object.values(API_METHODS)) for (const m of methods) totals[m] = (totals[m] ?? 0) + 1;
-  assert.deepEqual(totals, { DELETE: 3, GET: 14, PATCH: 6, POST: 27 });
+  assert.deepEqual(totals, { DELETE: 3, GET: 15, PATCH: 6, POST: 28 });
 });
 
 test("the middleware file convention is whole, whichever one it is", () => {
