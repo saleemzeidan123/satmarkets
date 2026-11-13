@@ -1,0 +1,31 @@
+{
+  "dataset": {
+    "id": "2dde7e8c-db79-4aec-be4e-37cef64c1d4d",
+    "title": "Rental indicators in Riyadh region 1st Q 2026",
+    "url": "https://open.data.gov.sa/en/datasets/view/2dde7e8c-db79-4aec-be4e-37cef64c1d4d",
+    "publisher": "Real Estate General Authority",
+    "platform": "National Open Data Platform (open.data.gov.sa)"
+  },
+  "licence": {
+    "name": "Open Data License, version 2.0, March 2023",
+    "issuer": "Saudi Data and AI Authority",
+    "url": "https://open.data.gov.sa/odp-public/static/en/assets/Open_Data_License_En.pdf"
+  },
+  "period": "2026-Q1",
+  "region": "الرياض",
+  "official": {
+    "file": "Rental indicators in Riyadh region 1st Q 2026.csv",
+    "bytes": 296033,
+    "sha256": "465e34ff949a1ee139d931374aa1910026c686f6e149777abe6a42e077812fb0",
+    "rows": 3534,
+    "retrieved": "2026-11-13"
+  },
+  "extract": {
+    "file": "riyadh-2026-q1.commercial.csv",
+    "rule": "The header row and every row whose classification column reads تجاري, in the file's own order, columns unchanged. The byte order mark is dropped and line endings are LF.",
+    "bytes": 85533,
+    "sha256": "8b8d746b99544d9f9a419d19056e754a08887da62828a3e58063a648de5a0a5e",
+    "rows": 1083,
+    "rowsWithARent": 0
+  }
+}
