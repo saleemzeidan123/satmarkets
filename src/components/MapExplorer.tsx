@@ -6,6 +6,7 @@
 // sourced from ONE named place, src/theme/palette.ts, which mirrors the CSS tokens,
 // rather than scattered inline hex (PKG-1B).
 import { useEffect, useRef, useState } from "react";
+import { popupNode } from "@/lib/mapPopup";
 import "maplibre-gl/dist/maplibre-gl.css";
 import TypeGlyph from "@/components/TypeGlyph";
 import { getDictionary } from "@/i18n/getDictionary";
@@ -238,7 +239,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
      if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false });
      hoverId = f.id; map.setFeatureState({ source: "b", id: hoverId }, { hover: true });
      const p = f.properties;
-     tip.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12px Inter,sans-serif;color:${BRAND.inkWarm}">${esc(p.name)}</div><div style="font:11px Inter,sans-serif;color:${BRAND.clusterNeutral}">${esc(p.assetLabel)}${p.priceLabel ? " · " + esc(p.priceLabel) : ""}</div>`).addTo(map);
+     tip.setLngLat(f.geometry.coordinates).setDOMContent(popupNode([{ text: String(p.name), style: `font:600 12px Inter,sans-serif;color:${BRAND.inkWarm}` }, { text: `${p.assetLabel}${p.priceLabel ? " · " + p.priceLabel : ""}`, style: `font:11px Inter,sans-serif;color:${BRAND.clusterNeutral}` }])).addTo(map);
     });
     map.on("mouseleave", "pt-hit", () => { map.getCanvas().style.cursor = ""; if (hoverId !== null) map.setFeatureState({ source: "b", id: hoverId }, { hover: false }); hoverId = null; tip.remove(); });
     map.on("click", "pt-hit", (e: any) => {
@@ -431,4 +432,3 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
   </div>
  );
 }
-function esc(s: string) { return String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;"); }

@@ -19,10 +19,19 @@
 // docs/security-baseline.md.
 //
 // The reasoning for every individual directive is in docs/security-baseline.md.
-import { buildCsp, CSP_HEADER } from "./src/lib/csp.mjs";
+import { buildCsp, CSP_HEADER, ENFORCED_CSP_HEADER, ENFORCED_BASELINE_CSP } from "./src/lib/csp.mjs";
 
 const securityHeaders = [
   { key: CSP_HEADER, value: buildCsp() },
+  // Enforced, not report-only: the four directives that cannot break a page.
+  { key: ENFORCED_CSP_HEADER, value: ENFORCED_BASELINE_CSP },
+  // A window this site opens, or that opens this site, shares no browsing
+  // context with it, so another origin cannot reach in through window.opener.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // The platform already sends HSTS on the production host. Stating it here
+  // means a preview or a future host carries it too, and that the two-year
+  // lifetime is this repository's decision and not a default.
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   // Content sniffing turns an uploaded document into whatever the browser guesses
   // it is, which is the wrong end of the decision to be guessing at.
   { key: "X-Content-Type-Options", value: "nosniff" },

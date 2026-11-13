@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { allow } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
+import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { isTimelineToken, REQUIREMENT_ASSET_TYPES, REQUIREMENT_DEAL_TYPES } from "@/lib/requirementIntake";
 import { cityKey } from "@/lib/labels";
@@ -182,7 +183,18 @@ export async function POST(req: NextRequest) {
 
  // create_requirement() inserts the brief AND its notification rows in one
  // transaction, and the ref code comes from a database sequence.
- const { data, error } = await sb.rpc("create_requirement", {
+ //
+ // Security hardening 1. The function is SECURITY DEFINER, and while the public
+ // key may execute it, anyone holding that key (it is in every browser) can call
+ // it directly and skip this route's rate limit and every check above. The
+ // write therefore goes through the service client when one is configured, so
+ // that EXECUTE can be taken away from the public roles
+ // (supabase/migrations/20261113_security_hardening_1.sql) and this route
+ // becomes the gate it was written to be. Reads stay on the caller's own client,
+ // so nothing here sees more than a visitor may. Where no service client exists
+ // the caller's client is used, which is today's behaviour.
+ const writer = getSupabaseServiceRole() ?? sb;
+ const { data, error } = await writer.rpc("create_requirement", {
   payload: {
    title: title || `${b.asset_type} requirement`,
    asset_type: b.asset_type,

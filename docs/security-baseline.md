@@ -1318,3 +1318,110 @@ failing across instances, or real abuse observed in production. Any one of them
 reopens it. None of them is true today, and the thirty one route files calling
 the per instance `allow` remain the known weakness that the WAF rule above does
 not fix and does not claim to fix.
+
+## Security hardening 1, 2026-11-13
+
+The owner asked for the platform's security to be raised as far as it can be.
+This section is what was found that day, what was changed, what is prepared and
+waiting, and what nobody can truthfully promise. No system is protected against
+every attack; what follows closes the specific ones that were found and names
+the ones that are still open.
+
+### How it was looked at
+
+`npm audit` on the production dependency tree. The production response headers,
+read from a browser on the live host. Every route under `src/app/api` read for
+its session check, its rate limit and its use of the service client. The
+production database catalogue read through the read-only connector: tables with
+row security off, tables with row security on and no policy, views that run
+with their owner's rights, SECURITY DEFINER functions the public roles may
+execute, and the write privileges the public roles hold. Not available that
+day: the Supabase advisor (the connector's permission was refused) and the
+Vercel firewall configuration (the connection has no firewall access), so
+neither the platform's own lint nor the edge rules were read.
+
+### Found and fixed in the application
+
+- **The framework.** Next.js 16.2.12 carried eleven published advisories,
+  several critical (remote code execution in the image optimiser and in
+  `next/og`, cache poisoning, a Server Actions denial of service). It is now
+  16.4.6. `sharp` is 0.35.5 and `source-map-js` 1.2.2. The source-level
+  reachability reasoning earlier in this file is superseded for those entries
+  by the upgrade.
+- **Map popups.** Three popups were assembled as HTML strings and given to
+  `setHTML`. Two escaped their values by hand; the district tooltip on the
+  results map did not escape the district name at all. All three are now built
+  from nodes with `textContent` (`src/lib/mapPopup.ts`), and the listing link
+  is built from a checked locale and identifier.
+- **Four policy directives are enforced.** A second header,
+  `Content-Security-Policy`, now enforces `object-src 'none'`,
+  `base-uri 'self'`, `frame-ancestors 'none'` and `form-action 'self'`. The
+  full policy stays report-only for the reason this file already gives: it
+  needs a browser pass that includes Safari. These four do not govern what a
+  page loads, so they cannot blank a map.
+- **Two response headers.** `Cross-Origin-Opener-Policy: same-origin`, and
+  `Strict-Transport-Security` stated by the repository instead of left to the
+  platform default.
+- **One origin removed.** The stock photograph host is gone from `img-src`;
+  nothing has loaded from it since PKG-DESIGN-6.
+- **The requirement write.** `POST /api/requirements` now calls
+  `create_requirement` through the service client when one is configured, so
+  the function's EXECUTE grant to the public roles can be removed (part B
+  below) and the route's rate limit and validation stop being optional.
+
+### Found in the database: prepared, not applied
+
+Two migration files, `20261113_security_hardening_1.sql` and
+`20261113b_security_hardening_1_requirement_gate.sql`. Each statement removes a
+permission nothing in this repository uses, and each has its reverse written
+beside it. They are the owner's to apply.
+
+| Finding | Evidence | Risk | In |
+| --- | --- | --- | --- |
+| `sat_publish_index_cell(uuid)` is SECURITY DEFINER, has no pinned search path, checks nothing about its caller and is executable by `anon` | `pg_proc`, `has_function_privilege` | Anyone with the public key can run the index publish path for a cell whose id they hold. Published cell ids are readable; the one unpublished cell's id is not, so today this re-publishes what is already published. It is still a privileged write open to the public | part A |
+| `rent_index_cells` is readable by `anon` and aggregates the private `rent_index_closures` with no minimum group size | view definition, `has_table_privilege` | A district with one recorded deal exposes that deal's achieved rent and lease term. 22 rows today, all sample data; a real leak the day real closures arrive | part A |
+| `demo_census()` is executable by `anon` | `has_function_privilege` | Tells anyone how many sample rows each table holds | part A |
+| `anon` and `authenticated` hold TRUNCATE, REFERENCES, TRIGGER (and MAINTAIN) on every table | `has_table_privilege`, `aclexplode` | Row security does not govern TRUNCATE. Not reachable through the API today; removed so a function written later cannot make it reachable | part A |
+| `create_requirement(jsonb)` is executable by `anon` and neither validates nor limits | function body | Calling it directly skips the route: unlimited briefs of any size, three notification rows each | part B, after the application change is live |
+
+Confirmed at the database level through the catalogue. None was exercised over
+HTTP: the only way to demonstrate most of them is to write to production.
+
+### Found and not fixable from here
+
+`public.spatial_ref_sys`, PostGIS's table of coordinate systems, is owned by
+`supabase_admin`, has row security off, and `supabase_admin` has granted
+INSERT, UPDATE, DELETE and TRUNCATE on it to `anon` and `authenticated`. The
+`postgres` role, which is what migrations and the SQL editor run as, can
+neither enable row security on a table it does not own nor revoke another
+role's grants. A caller with the public key could alter or delete rows in it,
+which would break coordinate transforms and distance functions that look a
+system up. It needs Supabase support to revoke the grants, or PostGIS moved out
+of the exposed schema, which is a migration of its own.
+
+### Still open, in order of weight
+
+1. **Rate limiting is not durable.** Unchanged from the section above: every
+   limiter is per-instance because no shared store is configured. This is the
+   largest remaining gap. It needs one of the two options already written up
+   (a WAF rule, a Redis store) or a counter table in the existing database,
+   which adds no vendor.
+2. **The full policy is report-only.** It needs the browser pass, with Safari.
+3. **`maplibre-gl` 4.7.1 has one critical advisory** (GHSA-jrc7-96c5-q579, a
+   sanitiser bypass in the library's HTML path). The fixed line is 6.x, which
+   is a different package shape (ES modules, a separate worker file) and
+   touches the vendored right-to-left plugin, the locale table and the motion
+   guard, each pinned to 4.7.1 internals. It was tried, it did not typecheck,
+   and it is not a change to make without the maps in front of a person. The
+   application no longer hands data to that path. What remains is the
+   attribution text a map style supplies, from the two tile hosts on the
+   policy's list; an enforced script policy would close that too.
+4. **Account security settings were not read**: leaked-password protection,
+   password strength, one-time-code lifetime and multi-factor sign-in live in
+   the Supabase dashboard, and neither connector could read them.
+5. **Edge protection was not read**: the firewall, bot protection and attack
+   challenge mode live in the Vercel dashboard.
+6. `create_requirement` on production still carries the `'Riyadh'` default
+   that `20260801_requirement_city_is_never_assumed.sql` removes, which
+   suggests that migration has not been applied. The route refuses an empty
+   city, so nothing reaches the default through the application.

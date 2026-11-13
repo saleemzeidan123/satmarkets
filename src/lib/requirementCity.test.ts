@@ -33,8 +33,11 @@ function latestDefinition(fn: string): { file: string; body: string } {
   let found: { file: string; body: string } | null = null;
   for (const f of files) {
     const sql = readFileSync(join(DIR, f), "utf8");
-    const at = sql.indexOf(`function public.${fn}(`);
-    if (at < 0) continue;
+    // A definition, not a mention: a later migration that only grants or
+    // revokes on the function names it too, and is not the body that stands.
+    const def = new RegExp(`create\\s+(or\\s+replace\\s+)?function\\s+public\\.${fn}\\(`, "i").exec(sql);
+    if (!def) continue;
+    const at = def.index;
     // A plpgsql body is dollar quoted, and the tag is the author's choice: these
     // migrations use both `$$` and `$function$`. Read the tag rather than assume
     // one, or a file written the other way is silently skipped and the guard
@@ -97,12 +100,13 @@ test("everything else about the write is unchanged", () => {
 });
 
 test("the route cannot send a requirement with no city", () => {
-  // The live half. `create_requirement` is SECURITY DEFINER and callable by anon,
-  // so this route is one caller and not a gate; it is still the only caller that
-  // exists, and the guard is that its refusal stays a refusal.
+  // The live half. `create_requirement` is SECURITY DEFINER. While the public
+  // roles may execute it this route is one caller and not a gate; security
+  // hardening 1 moves the write to the service client so that grant can be
+  // removed. Either way the guard is that the route's refusal stays a refusal.
   const src = readFileSync(join("src", "app", "api", "requirements", "route.ts"), "utf8");
   const post = src.slice(src.indexOf("export async function POST"));
-  const rpc = post.indexOf('sb.rpc("create_requirement"');
+  const rpc = post.indexOf('.rpc("create_requirement"');
   assert.ok(rpc > 0, "the route no longer calls create_requirement");
 
   const before = post.slice(0, rpc);
