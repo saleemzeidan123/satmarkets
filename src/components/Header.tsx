@@ -4,13 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import LanguageSwitch from "@/components/LanguageSwitch";
 import { Logo } from "@/components/satkit";
-import { releaseLabel } from "@/lib/releaseState";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
 
 export default function Header({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const pathname = usePathname();
-  const [scrolled, setScrolled] = useState(false);
   // The account menu used to offer "Sign in" to people who were already signed in.
   // Resolve the real session and show them where their account actually is.
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
@@ -52,13 +50,8 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
   const menuRef = useRef<HTMLDivElement>(null);
   /* ELITE-4 J3-37: Escape closed the panel and left focus on nothing. */
   const menuBtnRef = useRef<HTMLButtonElement>(null);
-  const MENU_ID = "hdr-account-menu";
+  const MENU_ID = "hdr-site-menu";
 
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 6);
-    on(); window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
-  }, []);
   useEffect(() => {
     const read = () => { try { const s = JSON.parse(localStorage.getItem("satm_saved") || "[]"); setSaved(Array.isArray(s) ? s.length : 0); } catch {} };
     read();
@@ -74,130 +67,164 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
     return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
   }, [open]);
 
-  const ar = locale === "ar";
+  // PKG-DESIGN-9. The owner's complaint was that the header did not carry the
+  // sections the site has, and three independent critics found the same thing
+  // from three directions: Market pulse, Map, Locations, Post a requirement,
+  // Verification, Sources and Neutrality were in neither the bar nor the menu,
+  // and on a phone Advisor and Requirements were reachable from nowhere.
+  //
+  // So there is now one list of sections, in four groups, and both the bar and
+  // the menu are drawn from it. The bar carries the five places people go to
+  // most. The menu carries every section, the bar's five included, because the
+  // bar is hidden below the large breakpoint and a section that lives only in
+  // a hidden bar is a section a phone cannot reach.
+  //
+  // Pricing is not here. Its tier cards have no working purchase behind them
+  // (see /pricing), and a planned page offered beside working ones read as a
+  // destination. It stays in the footer until the offer is real.
+  const at = (path: string) => `/${locale}${path}`;
   const primaryNav = [
-    { href: `/${locale}/listings`, label: dict.nav.explore },
-    { href: `/${locale}/rent-index`, label: dict.nav.rentIndex },
-    { href: `/${locale}/advisor`, label: dict.nav.advisor },
-    { href: `/${locale}/requirements`, label: dict.nav.requirements },
+    { href: at("/listings"), label: dict.nav.explore },
+    { href: at("/requirements"), label: dict.nav.requirements },
+    { href: at("/rent-index"), label: dict.nav.rentIndex },
+    { href: at("/market"), label: dict.nav.market },
+    { href: at("/advisor"), label: dict.nav.advisor },
   ];
-  // Item 3, route truth. /pricing's own tier cards render their call-to-action
-  // as a plain <span>, not a link or button (src/app/[locale]/pricing/page.tsx)
-  // -- there is no working purchase flow behind this page yet, which is why
-  // MarketingHome.tsx's own feature grid already carries "Membership plans" as
-  // a disclosed-planned tile rather than a link (PLANNED_FEATS, index 7). This
-  // menu offered the same held page as an ordinary destination.
-  const nav = [
-    { href: `/${locale}/about`, label: dict.nav.about },
-    { href: `/${locale}/pricing`, label: dict.nav.pricing, planned: true },
-    { href: `/${locale}/brokers`, label: dict.nav.brokers },
-    { href: `/${locale}/listers`, label: dict.nav.listers },
+  // /list is the real, working, public listing intake. The session-gated owner
+  // shell is reached from the account group, by people who have a session.
+  const groups = [
+    { id: "find", title: dict.nav.gFind, items: [
+      { href: at("/listings"), label: dict.nav.explore },
+      { href: at("/map"), label: dict.nav.map },
+      { href: at("/locations"), label: dict.nav.locations },
+      { href: at("/post-requirement"), label: dict.nav.postRequirement },
+    ] },
+    { id: "market", title: dict.nav.gMarket, items: [
+      { href: at("/rent-index"), label: dict.nav.rentIndex },
+      { href: at("/market"), label: dict.nav.market },
+      { href: at("/advisor"), label: dict.nav.advisor },
+      { href: at("/sources"), label: dict.nav.sources },
+    ] },
+    { id: "owners", title: dict.nav.gOwners, items: [
+      { href: at("/list"), label: dict.nav.listSpace },
+      { href: at("/requirements"), label: dict.nav.requirementsBoard },
+      { href: at("/brokers"), label: dict.nav.brokers },
+      { href: at("/listers"), label: dict.nav.listers },
+    ] },
+    { id: "how", title: dict.nav.gHow, items: [
+      { href: at("/verification"), label: dict.nav.verification },
+      { href: at("/neutrality"), label: dict.nav.neutrality },
+      { href: at("/about"), label: dict.nav.about },
+    ] },
   ];
   const active = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const signInLabel = dict.nav.signIn;
   const menuLabel = dict.nav.menu;
-  const browseLabel = dict.nav.browse;
   const accountLabel = dict.nav.account;
   const savedLabel = dict.nav.saved;
-  const dashLabel = dict.nav.dashboard;
-  const welcomeTitle = dict.nav.welcomeTitle;
-  const welcomeSub = dict.nav.welcomeSub;
+  const row = "flex min-h-11 items-center justify-between gap-3 text-[0.9375rem] text-charcoal hover:text-harbor lg:min-h-9";
 
   return (
-    <header className={`site-header sticky top-0 z-40 ${scrolled ? "scrolled" : ""}`}>
-      <div className="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-        <Link href={`/${locale}`} className="flex items-center" aria-label={locale === "ar" ? "سات ماركتس، الرئيسية" : "SAT Markets, home"}><Logo size={34} /></Link>
+    <header className="site-header sticky top-0 z-40" style={{ borderBottomColor: "var(--silver-2)", boxShadow: "none" }}>
+      <div className="mx-auto flex h-[52px] max-w-7xl items-center justify-between gap-4 px-5 sm:px-6 lg:h-14">
+        <div className="flex items-center gap-10">
+          <Link href={`/${locale}`} className="flex items-center" aria-label={locale === "ar" ? "سات ماركتس، الرئيسية" : "SAT Markets, home"}><Logo size={30} /></Link>
 
-        <nav className="hidden md:flex items-center gap-0.5" aria-label={dict.nav.primaryNav}>
-          {primaryNav.map((n) => (
-            <Link key={n.href} href={n.href} className={`rounded-lg px-3 py-2 text-[0.84375rem] transition-colors ${active(n.href) ? "bg-ivory-2 text-charcoal font-semibold" : "text-charcoal/70 font-medium hover:bg-ivory-2 hover:text-charcoal"}`}>
-              {n.label}
-            </Link>
-          ))}
-        </nav>
+          {/* The bar's links sit beside the logo and read as the navigation they
+              are: full ink, medium weight, no pill. The page a reader is on is
+              marked on the bar's own rule with a measuring line, a hairline
+              with a tick at each end, the same mark the search form uses for
+              area. It is symmetrical, so it reads the same in Arabic. */}
+          <nav className="hidden items-stretch gap-7 lg:flex" aria-label={dict.nav.primaryNav}>
+            {primaryNav.map((n) => (
+              <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined} className={`relative flex h-14 items-center text-[0.875rem] font-medium transition-colors hover:text-harbor ${active(n.href) ? "text-harbor" : "text-charcoal"}`}>
+                {n.label}
+                {active(n.href) ? <span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-[5px] border-x border-b border-harbor" /> : null}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
           <span className="sm:hidden"><LanguageSwitch locale={locale} compact /></span>
-          {/* Item 3, route truth. This button rendered on every public page and
-              sent every reader, signed in or not, straight to the session-gated
-              owner shell -- the same defect the Home ruling already fixed on
-              MarketingHome's own CTA (see MarketingHome.homeRuling.test.ts),
-              left standing in the one piece of chrome every page shares. /list
-              is the real, working, public listing intake. */}
-          <Link href={`/${locale}/list`} className="btn-line px-3.5 py-2 text-[0.8125rem] font-semibold">
+          {signedIn ? (
+            <Link href={at("/dashboard")} className="hidden text-[0.8125rem] text-charcoal/80 hover:text-harbor xl:inline">{dict.dashboard.navOverview}</Link>
+          ) : (
+            <Link href={at("/login")} className="hidden text-[0.8125rem] text-charcoal/80 hover:text-harbor xl:inline">{signInLabel}</Link>
+          )}
+          {/* The one button in the bar. */}
+          <Link href={at("/list")} className="inline-flex h-9 items-center rounded-[4px] border border-harbor px-3 text-[0.8125rem] font-medium text-harbor transition-colors hover:bg-ivory-2">
             <span className="sm:hidden">{dict.nav.list}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>
 
-          <div className="relative" ref={menuRef}>
+          {/* The wrapper holds the trigger and the sheet, so that focus leaving
+              the pair closes the sheet. It used to close on an outside click
+              only, and a keyboard reader who tabbed past the last link left it
+              open over the page. */}
+          <div ref={menuRef} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false); }}>
             <button
               type="button"
               ref={menuBtnRef}
               /* ELITE-4 J3-38: aria-label replaces the button's contents, so the saved
-                 count in the badge was not in the name at all. It is folded in here,
-                 and the badge itself is hidden from the name to avoid saying it twice. */
+                 count is folded into the name. */
               aria-label={saved > 0 ? `${menuLabel}, ${savedLabel} ${saved}` : menuLabel}
+              /* A disclosure, not a menu: the sheet is a list of links, so the
+                 trigger says expanded and names what it controls, and does not
+                 promise the arrow-key behaviour `aria-haspopup` would. */
               aria-expanded={open}
-              /* ELITE-4 J3-37: the trigger never said it opens a popup, nor which one. */
-              aria-haspopup="true"
               aria-controls={open ? MENU_ID : undefined}
               onClick={() => setOpen((v) => !v)}
-              className={`inline-flex h-9 items-center gap-2 rounded-lg border border-line px-2.5 text-charcoal/80 transition-colors hover:border-charcoal/25 hover:bg-ivory-2 ${open ? "border-charcoal/25 bg-ivory-2" : ""}`}
+              className="inline-flex h-9 items-center gap-2 px-1.5 text-charcoal transition-colors hover:text-harbor"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                {open ? <><path d="M6 6l12 12"/><path d="M18 6l-12 12"/></> : <><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></>}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+                {open ? <><path d="M6 6l12 12"/><path d="M18 6l-12 12"/></> : <><path d="M3 8h18"/><path d="M3 16h18"/></>}
               </svg>
               <span className="hidden text-[0.8125rem] font-medium sm:inline">{menuLabel}</span>
-              {saved > 0 ? <span aria-hidden="true" className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[0.5625rem] font-medium text-white fig">{saved}</span> : null}
             </button>
 
             {open && (
-              /* ELITE-4 J3-37: the popup itself was an anonymous div. */
-              <div id={MENU_ID} role="group" aria-label={menuLabel} className="absolute end-0 top-full z-50 mt-2 w-[270px] overflow-hidden rounded-xl border border-line bg-ivory shadow-[0_18px_44px_rgba(20,24,28,0.20)]">
-                <div className="border-b border-line bg-ivory-2 px-4 py-3">
-                  <p className="text-[0.875rem] font-semibold text-charcoal">{welcomeTitle}</p>
-                  <p className="mt-0.5 text-[0.71875rem] text-charcoal/65">{welcomeSub}</p>
-                </div>
-
-                <div className="px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[0.75rem] font-semibold text-charcoal/65">{browseLabel}</p>
-                  {/* palette.test.ts's contrast floor: no text-charcoal/NN step below
-                      /65 may carry text anywhere in the product (findings 140/150).
-                      /70 and /65 here match the same de-emphasis this dropdown
-                      already uses a few lines up (browseLabel/accountLabel at /65,
-                      the unselected nav items at /80), not a new pair. */}
-                  {nav.map((n) => n.planned ? (
-                    <span key={n.href} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/70" style={{ cursor: "default" }}>
-                      {n.label}
-                      <span className="text-[0.6875rem] text-charcoal/65">{releaseLabel("planned", ar)}</span>
-                    </span>
-                  ) : (
-                    <Link key={n.href} href={n.href} className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] hover:bg-ivory-2 ${active(n.href) ? "bg-ivory-2 font-medium text-charcoal" : "text-charcoal/80"}`}>
-                      {n.label}
-                    </Link>
+              /* A sheet the width of the page, attached to the bar. It is the
+                 whole site in four groups and an account group. Plain text:
+                 no icons, no descriptions, no welcome. `tabIndex` lets a click
+                 on its padding keep focus inside, so that click does not read
+                 as focus leaving. */
+              <nav id={MENU_ID} aria-label={menuLabel} tabIndex={-1} className="absolute inset-x-0 top-full z-50 max-h-[calc(100dvh-52px)] overflow-y-auto border-b border-t border-line bg-ivory outline-none lg:max-h-[calc(100dvh-56px)]">
+                <div className="mx-auto grid max-w-7xl gap-x-8 px-5 pb-24 pt-2 sm:grid-cols-2 sm:px-6 lg:grid-cols-5 lg:pb-8 lg:pt-6">
+                  {groups.map((g) => (
+                    <div key={g.id} role="group" aria-labelledby={`hdr-g-${g.id}`} className="border-b border-line py-3 lg:border-0 lg:py-0">
+                      <p id={`hdr-g-${g.id}`} className="pb-1 text-[0.75rem] font-medium text-charcoal/65">{g.title}</p>
+                      <ul className="m-0 list-none p-0">
+                        {g.items.map((n) => (
+                          <li key={n.href}>
+                            <Link href={n.href} aria-current={active(n.href) ? "page" : undefined} className={`${row} ${active(n.href) ? "font-medium text-harbor" : ""}`}>{n.label}</Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   ))}
+                  <div role="group" aria-labelledby="hdr-g-account" className="py-3 lg:py-0">
+                    <p id="hdr-g-account" className="pb-1 text-[0.75rem] font-medium text-charcoal/65">{accountLabel}</p>
+                    <ul className="m-0 list-none p-0">
+                      <li>
+                        {signedIn ? (
+                          <Link href={at("/dashboard")} className={row}>{dict.dashboard.navOverview}</Link>
+                        ) : (
+                          <Link href={at("/login")} className={row}>{signInLabel}</Link>
+                        )}
+                      </li>
+                      <li>
+                        {/* ELITE-4 J3-38: the count is a bare number beside the link text. */}
+                        <Link href={at("/saved")} aria-label={saved > 0 ? `${savedLabel} ${saved}` : undefined} className={row}>
+                          <span>{savedLabel}</span>
+                          {saved > 0 ? <span className="fig text-[0.8125rem] text-charcoal/65">{saved}</span> : null}
+                        </Link>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
-
-                <div className="border-t border-line px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[0.75rem] font-semibold text-charcoal/65">{accountLabel}</p>
-                  {/* ELITE-4 J3-38: the badge is a bare number beside the link text. */}
-                  <Link href={`/${locale}/saved`} aria-label={saved > 0 ? `${savedLabel} ${saved}` : undefined} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/80 hover:bg-ivory-2">
-                    <span>{savedLabel}</span>
-                    {saved > 0 ? <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-signal px-1 text-[0.5625rem] font-medium text-white fig">{saved}</span> : null}
-                  </Link>
-                  {signedIn ? (
-                    <Link href={`/${locale}/dashboard`} className="block rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/80 hover:bg-ivory-2">{dict.dashboard.navOverview}</Link>
-                  ) : (
-                    <Link href={`/${locale}/login`} className="block rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/80 hover:bg-ivory-2">{signInLabel}</Link>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between border-t border-line px-4 py-3 sm:hidden">
-                  <span className="text-[0.75rem] text-charcoal/65">{dict.nav.language}</span>
-                  <LanguageSwitch locale={locale} />
-                </div>
-              </div>
+              </nav>
             )}
           </div>
         </div>
