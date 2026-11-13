@@ -43,7 +43,7 @@ export const APP_ROUTES: Record<string, string> = {
   admin:
     "The SAT operations shell, session and role gated. Its pages link out to the listings and account records they are about, so the route is never a dead end.",
   advisor:
-    "The assistant carries `.advisor-rail-l` and `.advisor-rail-r`, and the rails are hidden below 820 and 1100 pixels respectively (sat-platform.css:536-537), so the persistent way out is the back-to-home link in `.dtopbar` (advisor/page.tsx:170), which is present at every width.",
+    "The assistant is one column with one rail, `.avp-rail`, which is hidden below 1100 pixels (globals.css, the PKG-ADV-5 block), so the persistent way out is the back-to-home link in `.avp-top` (advisor/page.tsx, `avp-back`), which is present at every width and is 44 pixels square.",
   messages:
     "The inbox is a conversation rail beside a thread. Session gated, and every conversation row links to the listing it is about.",
   docs:
