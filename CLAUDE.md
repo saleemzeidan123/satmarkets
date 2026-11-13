@@ -60,6 +60,18 @@ Vercel builds every PR automatically; the preview deployment doubles as a produc
 - Supabase: production database for this app is NOT the "SAT Website" project (`gwyeserfgxcxhwfdjfav`, that is satestate.com's intake DB). Confirm you are pointed at the real satmarkets project before any migration or audit work.
 - The site intentionally shows a preview-environment banner and demo-flagged sample listings. That is a tested feature (`publicFacts.test.ts`), not a bug.
 
+## State as of 2026-11-13
+
+- **The redesign has an approved design and is being built in packages.** The owner signed off the "Drawn to scale" direction on 2026-11-13 (home, search results, map view, listing page and interaction states, phone and desktop, Arabic and English). It answers `docs/design-audit-2026-11-12.md`. One pull request per package, merged only on the owner's word:
+  1. **PKG-DESIGN-1, palette, type and chrome** (this package): Harbor #2265C4, navy #10233F, sky #7CC0F5, the Arabic display face, the release-state strip, header and footer.
+  2. Home page.
+  3. Search results and the map view.
+  4. Listing page.
+  5. Paid spaces and the neutrality wording.
+  6. Photo-first cards (an owner test, once real photographs exist).
+- **Owner decisions on record, 2026-11-13.** SAT Markets sells advertising and never sells ranking: a paid space is always labelled and always sits outside the ranked list. The to-scale drawing of a space is shown only when the lister has entered every size it needs and the sizes agree with the stated area; where a listing has photographs the photograph leads the card and the drawing lives on the listing page; with no photograph the drawing is the card image. Both need a claims-ledger entry and the neutrality page reworded in the package that ships them, not before.
+- **Not yet regenerated:** the four PNG app icons and the two share cards still carry the previous blue in a 2 percent underline. Their generators already point at the new value; `scripts/og-cards.mjs` needs the brand fonts supplied to run.
+
 ## State as of 2026-11-12
 
 - **PKG-LISTING-CREATION-1B is merged and its twelve migrations are applied to production.** PR #22 squash-merged as `40316e5`. The full account, step by step with evidence, is `docs/pkg-listing-creation-1b-rollout-record.md`. Read it before touching media, evidence marks or the upload route.

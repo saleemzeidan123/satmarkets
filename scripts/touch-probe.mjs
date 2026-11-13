@@ -58,7 +58,7 @@ const footer = readFileSync(join(ROOT, "src", "styles", "footer.css"), "utf8");
 const HEADER = `
 <header class="site-header sticky top-0 z-40">
   <div class="relative mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
-    <a href="#" class="flex items-center" data-t="logo" aria-label="home"><span style="display:block;width:34px;height:34px;background:#3A6EA5"></span></a>
+    <a href="#" class="flex items-center" data-t="logo" aria-label="home"><span style="display:block;width:34px;height:34px;background:#2265C4"></span></a>
     <nav class="hidden md:flex items-center gap-0.5" aria-label="Primary">
       <a href="#" data-t="nav" class="rounded-lg px-3 py-2 text-[0.84375rem] transition-colors text-charcoal/70 font-medium">LBL</a>
       <a href="#" data-t="nav" class="rounded-lg px-3 py-2 text-[0.84375rem] transition-colors bg-ivory-2 text-charcoal font-semibold">LBL</a>

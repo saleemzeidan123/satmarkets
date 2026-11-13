@@ -60,14 +60,14 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
       // soft area circle so a district centroid is never mistaken for a precise address.
       if (exact) {
         m.addSource("origin", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: {} } });
-        m.addLayer({ id: "origin-c", type: "circle", source: "origin", paint: { "circle-color": "#3A6EA5", "circle-radius": 7, "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+        m.addLayer({ id: "origin-c", type: "circle", source: "origin", paint: { "circle-color": "#2265C4", "circle-radius": 7, "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
       } else {
         m.addSource("origin", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [lng, lat] }, properties: {} } });
-        m.addLayer({ id: "origin-area", type: "circle", source: "origin", paint: { "circle-color": "rgba(58,110,165,0.14)", "circle-radius": 46, "circle-stroke-width": 2, "circle-stroke-color": "#3A6EA5", "circle-stroke-opacity": 0.55 } });
+        m.addLayer({ id: "origin-area", type: "circle", source: "origin", paint: { "circle-color": "rgba(34,101,196,0.14)", "circle-radius": 46, "circle-stroke-width": 2, "circle-stroke-color": "#2265C4", "circle-stroke-opacity": 0.55 } });
       }
       if (metro) {
         m.addSource("metro", { type: "geojson", data: { type: "Feature", geometry: { type: "Point", coordinates: [metro.lng, metro.lat] }, properties: {} } });
-        m.addLayer({ id: "metro-c", type: "circle", source: "metro", paint: { "circle-color": "#3A6EA5", "circle-radius": 5.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff" } });
+        m.addLayer({ id: "metro-c", type: "circle", source: "metro", paint: { "circle-color": "#2265C4", "circle-radius": 5.5, "circle-stroke-width": 1.5, "circle-stroke-color": "#ffffff" } });
       }
     };
     const fit = (m: any) => {
@@ -200,8 +200,8 @@ export default function LocationFacts({ locale, lat, lng, exact, metro, airport,
         )}
       </div>
       <div className="row" style={{ gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-        <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.thisSpace}</span>
-        {metro ? <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#3A6EA5", display: "inline-block" }} />{t.metroDot}</span> : null}
+        <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#2265C4", display: "inline-block" }} />{t.thisSpace}</span>
+        {metro ? <span className="row gap6" style={{ fontSize: "0.71875rem", color: "var(--slate)" }}><span style={{ width: 9, height: 9, borderRadius: 9, background: "#2265C4", display: "inline-block" }} />{t.metroDot}</span> : null}
       </div>
       <div style={{ fontSize: "0.78125rem", color: "var(--slate)", marginTop: 10 }}>
         {exact ? t.exact : t.district}

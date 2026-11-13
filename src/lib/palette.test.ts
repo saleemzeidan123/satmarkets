@@ -119,6 +119,7 @@ export function contrastRatio(a: string, b: string): number {
 const PAPER = "#FFFFFF";
 const COOL = "#F6F8FB";
 const INK = "#14181B";
+const NAVY = "#10233F";
 const AMBER_WASH = "#FBF3E3";
 
 test("every token that carries text passes 4.5 to 1 on every surface it is used on", () => {
@@ -130,11 +131,25 @@ test("every token that carries text passes 4.5 to 1 on every surface it is used 
     { token: "amber-d", hex: "#8A5A12", on: AMBER_WASH, surface: "amber-wash" },
     { token: "red", hex: "#C8412E", on: PAPER, surface: "paper" },
     { token: "green", hex: "#1B7A50", on: PAPER, surface: "paper" },
-    { token: "harbor", hex: "#3A6EA5", on: PAPER, surface: "paper" },
+    { token: "harbor", hex: "#2265C4", on: PAPER, surface: "paper" },
     // The dashboard rail. Finding 154 recorded #6B7480 on the ink rail at 3.77
     // to 1; #8A93A0 is the existing `slate-2` token and reaches 5.75 to 1, so
     // the repair reuses a token rather than inventing a colour.
     { token: "slate-2", hex: "#8A93A0", on: INK, surface: "the dashboard rail" },
+    // PKG-DESIGN-1. Harbor moved to #2265C4 and navy became the product's one
+    // dark surface (the footer, the release-state strip). Harbor is listed on the
+    // two light surfaces it labels as well as on paper, and every text colour
+    // the footer uses is listed on navy, because a value tuned for ink does not
+    // carry over: #808488, the old "Planned" word, is 4.2 to 1 on navy.
+    { token: "harbor", hex: "#2265C4", on: COOL, surface: "cool" },
+    { token: "harbor", hex: "#2265C4", on: "#ECF2F8", surface: "the Harbor wash" },
+    { token: "harbor-d", hex: "#1C56A9", on: PAPER, surface: "paper" },
+    { token: "paper", hex: "#FFFFFF", on: "#2265C4", surface: "a Harbor fill" },
+    { token: "paper", hex: "#FFFFFF", on: NAVY, surface: "navy" },
+    { token: "sky", hex: "#7CC0F5", on: NAVY, surface: "navy" },
+    { token: "footer body", hex: "#AEB6C0", on: NAVY, surface: "navy" },
+    { token: "footer muted", hex: "#9AA3AF", on: NAVY, surface: "navy" },
+    { token: "footer status word", hex: "#8A93A0", on: NAVY, surface: "navy" },
   ];
 
   for (const c of cases) {

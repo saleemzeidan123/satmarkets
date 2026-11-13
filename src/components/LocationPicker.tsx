@@ -106,7 +106,7 @@ export default function LocationPicker({ locale, districts, value, onChange }: {
       m.addControl(new maplibregl.AttributionControl({ compact: true }));
       mapRef.current = m;
       map = m;
-      const marker = new maplibregl.Marker({ draggable: true, color: "#3A6EA5" }).setLngLat(start).addTo(m);
+      const marker = new maplibregl.Marker({ draggable: true, color: "#2265C4" }).setLngLat(start).addTo(m);
       markerRef.current = marker;
       marker.on("dragend", () => { const p = marker.getLngLat(); place(p.lat, p.lng, false); });
       m.on("click", (e: { lngLat: { lat: number; lng: number } }) => place(e.lngLat.lat, e.lngLat.lng, false));

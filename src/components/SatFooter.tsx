@@ -5,7 +5,10 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { releaseLabel } from "@/lib/releaseState";
 import { rebrand, rebrandDeep } from "@/lib/operator";
 
-const HARBOR = "#3A6EA5", INK = "#14181B", COOL = "#F6F8FB";
+// PKG-DESIGN-1. SKY is the lit lot and the word SAT when the logo sits on navy.
+// Harbor on navy is 2.8 to 1, which is neither a readable word nor a visible
+// lot; sky is 8.0 to 1. On a light surface the logo is Harbor, as everywhere.
+const HARBOR = "#2265C4", SKY = "#7CC0F5", INK = "#14181B", COOL = "#F6F8FB";
 
 function SatMark({ size = 30, base = INK, lit = HARBOR }: { size?: number; base?: string; lit?: string }) {
   const f = (v: number) => Math.round(v * 1000) / 1000;
@@ -33,9 +36,9 @@ function SatLogo({ size = 30, rev = true }: { size?: number; rev?: boolean }) {
   const fontPx = size * 0.48;
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: Math.round(size * 0.2) }}>
-      <SatMark size={size} base={rev ? COOL : INK} lit={HARBOR} />
+      <SatMark size={size} base={rev ? COOL : INK} lit={rev ? SKY : HARBOR} />
       <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1 }}>
-        <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", color: HARBOR }}>SAT</span>
+        <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", color: rev ? SKY : HARBOR }}>SAT</span>
         <span style={{ fontFamily: "var(--font-serif),Georgia,serif", fontWeight: 800, fontSize: fontPx, letterSpacing: ".01em", textTransform: "uppercase", color: rev ? COOL : INK }}>MARKETS</span>
       </span>
     </span>
@@ -98,7 +101,6 @@ export default function SatFooter({ locale = "en" }: { locale?: string }) {
   const L = (p: string) => `/${locale}${p}`;
   return (
     <footer className="foot">
-      <div className="foot-mark"><SatMark size={300} base="#fff" lit={HARBOR} /></div>
       <div className="cta">
         <div className="cta-copy">
           <div className="cta-title">{t("List, lease or invest, on the record.")}</div>

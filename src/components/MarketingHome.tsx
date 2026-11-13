@@ -330,7 +330,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
          {ASSETS.map((a) => {
           const on = assetType === a.v;
           return (
-           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(58,110,165,.24)" : "rgba(255,255,255,.045)", color: "var(--on-brand)", boxShadow: on ? "0 0 0 1px rgba(58,110,165,.35), 0 6px 16px -8px rgba(58,110,165,.5)" : "none", transition: "background .15s, border-color .15s" }}>
+           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(34,101,196,.24)" : "rgba(255,255,255,.045)", color: "var(--on-brand)", boxShadow: on ? "0 0 0 1px rgba(34,101,196,.35), 0 6px 16px -8px rgba(34,101,196,.5)" : "none", transition: "background .15s, border-color .15s" }}>
             <span style={{ opacity: on ? 1 : .82 }}>{a.icon}</span>
             <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, whiteSpace: "nowrap", color: on ? "var(--on-brand)" : "rgba(255,255,255,.82)" }}>{ar ? a.ar : a.en}</span>
            </button>
