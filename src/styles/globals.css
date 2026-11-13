@@ -1065,3 +1065,7 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
      line below, between the zoom control and the far edge. */
   .lst-map-panel.open > button.btn:not(.lst-map-close):not(.lst-map-toggle){top:64px !important;}
 }
+
+/* PKG-DESIGN-5A. The ranking commitment on the results count line. */
+.rs-ranknote{color:var(--slate);text-decoration:underline;text-decoration-color:var(--silver-2);text-underline-offset:3px;}
+.rs-ranknote:hover{color:var(--ink);text-decoration-color:var(--ink);}

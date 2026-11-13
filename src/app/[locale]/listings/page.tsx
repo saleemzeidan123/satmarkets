@@ -560,7 +560,10 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             it cannot back up. `capped` names the other silent overstatement this
             count could make: `.limit(300)` above can end a page-worthy match set
             without saying so, and this is the one place capable of saying so. */}
-        <div role="status" aria-live="polite" className="rs-count-line"><strong>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</strong>{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
+        <div role="status" aria-live="polite" className="rs-count-line"><strong>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</strong>{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}{/* PKG-DESIGN-5A. The count line is where a reader decides whether to trust the
+            order under it, so the rule about the order is stated here and links to
+            the commitment that spells it out. Every order this page can run is one
+            of the sorts above, and none of them reads a payment. */} {"·"} <Link href={`/${locale}/neutrality`} className="rs-ranknote">{dl.rankNote}</Link></div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are

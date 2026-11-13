@@ -352,7 +352,8 @@
     "colPrice": "Asking price",
     "colVerification": "Verification",
     "rowVerified": "{n} of {m} checks verified",
-    "thumbNote": "The small drawing beside each result shows the type of space. It is not a picture of the property and it is not to scale."
+    "thumbNote": "The small drawing beside each result shows the type of space. It is not a picture of the property and it is not to scale.",
+    "rankNote": "Ranking is never sold."
   },
   "pricing": {
     "na": "n/a",
@@ -1740,6 +1741,8 @@
     "cta": "Contact us",
     "cRankT": "No ranking preference",
     "cRankB": "SAT Real Estate publishes its own listings here, as any licensed broker does. They are marked as ours, they sit in the same ranking, and they get no placement, badge or feature another broker cannot get.",
+    "cPaidT": "Ranking is never sold",
+    "cPaidB": "Ranking on SAT Markets cannot be bought. When advertising is sold here, a paid space is labelled as paid and sits outside the ranked list, and the same spaces are offered to every lister on the same terms, SAT Real Estate included. No paid space is on sale during this preview.",
     "cActT": "We do not act for anyone",
     "cActB": "SAT Markets does not represent tenants, buyers, owners or brokers. There is one path off a listing and it goes to the lister. We removed the representation service entirely rather than run an exchange that competes with the people listing on it.",
     "cDataT": "No data advantage",
