@@ -161,7 +161,7 @@ export default async function MarketPage(props: { params: Promise<{ locale: stri
                 <div key={i} className="row gap10" style={{ alignItems: "center", padding: "7px 0" }}>
                   <span style={{ width: 150, flex: "none", fontSize: "0.78125rem", fontWeight: 600 }}>{r.label}</span>
                   <div style={{ position: "relative", flex: 1, height: 14, background: "var(--cool)", borderRadius: 7 }}>
-                    <span style={{ position: "absolute", insetInlineStart: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: "rgba(34,101,196,.28)", borderRadius: 7 }} />
+                    <span style={{ position: "absolute", insetInlineStart: `${left}%`, width: `${width}%`, top: 0, bottom: 0, background: "rgba(43,71,130,.28)", borderRadius: 7 }} />
                     <span style={{ position: "absolute", insetInlineStart: `calc(${medPos}% - 4px)`, top: 2, width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)" }} />
                   </div>
                   <span className="mono" style={{ width: 118, flex: "none", fontSize: "0.71875rem", color: "var(--slate)", textAlign: ar ? "left" : "right" }}>{/* PKG-FIG1, finding 127. This line branched the separator itself, one of
@@ -200,7 +200,7 @@ export default async function MarketPage(props: { params: Promise<{ locale: stri
             <span className="muted" style={{ fontSize: "0.78125rem", flex: "none" }}>{t.dealsLabel}</span>
             <div style={{ flex: 1, height: 10, borderRadius: 5, overflow: "hidden", display: "flex" }}>
               <span style={{ width: `${listings.length ? (leaseN / listings.length) * 100 : 50}%`, background: "var(--harbor)" }} />
-              <span style={{ flex: 1, background: "rgba(34,101,196,.25)" }} />
+              <span style={{ flex: 1, background: "rgba(43,71,130,.25)" }} />
             </div>
             <span className="mono" style={{ fontSize: "0.71875rem", color: "var(--slate)", flex: "none" }}>{fill(t.leaseSaleSplit, { lease: nf(leaseN), sale: nf(saleN) })}</span>
           </div>

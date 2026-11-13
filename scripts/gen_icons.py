@@ -16,9 +16,9 @@
 # Run from the repository root:  python3 scripts/gen_icons.py
 from PIL import Image, ImageDraw
 
-NAVY = "#10233F"
+NAVY = "#111A33"
 WHITE = "#FFFFFF"
-SKY = "#7CC0F5"
+SKY = "#A9BEEA"
 
 # (x, y, width, height, lit) in the favicon's 100-unit viewBox.
 LOTS = [

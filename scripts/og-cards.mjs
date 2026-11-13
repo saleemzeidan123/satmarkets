@@ -34,7 +34,7 @@ const CHROME = flag("--chromium", process.env.CHROMIUM_PATH || "");
 // white and the lit lot and "SAT" in sky. It used to be ink with two blue
 // glows and a faint grid behind the text, which is a look and not this
 // product's. Harbor is kept off navy because the pair is only 2.8 to 1.
-const NAVY = "#10233F", SKY = "#7CC0F5", COOL = "#F6F8FB", WHITE = "#FFFFFF";
+const NAVY = "#111A33", SKY = "#A9BEEA", COOL = "#F6F8FB", WHITE = "#FFFFFF";
 
 const face = (file) => {
   const p = join(FONTS, file);

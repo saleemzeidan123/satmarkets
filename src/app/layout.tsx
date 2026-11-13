@@ -120,7 +120,7 @@ export const viewport = {
   // Harbor-consistent chrome, matching the PWA manifest theme_color. Replaces the
   // retired warm near-black #1C1A15 (gold-family, off the Harbor palette). Both the
   // installed app and the browser tab now carry the single Harbor identity colour.
-  themeColor: "#2265C4"
+  themeColor: "#2B4782"
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {

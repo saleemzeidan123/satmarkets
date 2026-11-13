@@ -38,7 +38,7 @@ export default async function ProtoPage(props: { params: Promise<{ locale: strin
 
       <Section title={t("Color roles", "أدوار الألوان")}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 140px), 1fr))", gap: "var(--space-4)" }}>
-          {swatch(t("Harbor (interaction)", "هاربر (تفاعل)"), "#2265C4")}
+          {swatch(t("Harbor (interaction)", "هاربر (تفاعل)"), "#2B4782")}
           {swatch(t("Ink (authority)", "الحبر"), "#14181B")}
           {swatch(t("Slate (secondary)", "الأردوازي"), "#5B6470")}
           {swatch(t("Verified (confirmed)", "موثّق"), "#1B7A50")}

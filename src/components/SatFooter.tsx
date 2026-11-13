@@ -8,7 +8,7 @@ import { rebrand, rebrandDeep } from "@/lib/operator";
 // PKG-DESIGN-1. SKY is the lit lot and the word SAT when the logo sits on navy.
 // Harbor on navy is 2.8 to 1, which is neither a readable word nor a visible
 // lot; sky is 8.0 to 1. On a light surface the logo is Harbor, as everywhere.
-const HARBOR = "#2265C4", SKY = "#7CC0F5", INK = "#14181B", COOL = "#F6F8FB";
+const HARBOR = "#2B4782", SKY = "#A9BEEA", INK = "#14181B", COOL = "#F6F8FB";
 
 function SatMark({ size = 30, base = INK, lit = HARBOR }: { size?: number; base?: string; lit?: string }) {
   const f = (v: number) => Math.round(v * 1000) / 1000;

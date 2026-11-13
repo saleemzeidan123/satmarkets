@@ -191,7 +191,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
      "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 9, 22, 14, 50],
      "heatmap-opacity": 0.8,
      "heatmap-color": ["interpolate", ["linear"], ["heatmap-density"],
-      0, "rgba(34,101,196,0)", 0.2, HEAT_RAMP[0], 0.4, HEAT_RAMP[1], 0.6, HEAT_RAMP[2], 0.8, HEAT_RAMP[3], 1, HEAT_RAMP[4]],
+      0, "rgba(43,71,130,0)", 0.2, HEAT_RAMP[0], 0.4, HEAT_RAMP[1], 0.6, HEAT_RAMP[2], 0.8, HEAT_RAMP[3], 1, HEAT_RAMP[4]],
     }});
 
     // zone polygon
@@ -213,7 +213,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
 
     // selected building ring
     map.addLayer({ id: "pt-sel", type: "circle", source: "sel", paint: {
-     "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 17, 16, 24], "circle-color": "rgba(34,101,196,0.14)",
+     "circle-radius": ["interpolate", ["linear"], ["zoom"], 9, 12, 13, 17, 16, 24], "circle-color": "rgba(43,71,130,0.14)",
      "circle-stroke-width": 3, "circle-stroke-color": MAP.pin }});
 
     map.addLayer({ id: "pt-glow", type: "circle", source: "b", filter: ["!", ["has", "point_count"]], paint: {

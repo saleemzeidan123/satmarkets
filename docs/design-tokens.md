@@ -9,7 +9,7 @@ reported by `scripts/raw-color-scan.mjs`).
 
 ## Colour, semantic (role, not hue)
 
-`--brand` (Harbor #2265C4), `--brand-strong` (#1C56A9), `--brand-wash`,
+`--brand` (Harbor #2B4782), `--brand-strong` (#233A6B), `--brand-wash`,
 `--on-brand` (#FFFFFF). Status roles, each with a wash: `--status-verified`
 (#1B7A50, WCAG AA, reserved for evidence-backed verification), `--status-info`
 (Harbor, for available/informational), `--status-attention` (amber #B7791F),
@@ -19,9 +19,9 @@ reported by `scripts/raw-color-scan.mjs`).
 ## Surfaces and borders
 
 Surfaces: `--surface-canvas`, `--surface-raised`, `--surface-sunken`,
-`--surface-inverse`, `--surface-band` (navy #10233F, the one dark surface:
+`--surface-inverse`, `--surface-band` (navy #111A33, the one dark surface:
 footer, release-state strip, selected controls) with `--on-band-accent` (sky
-#7CC0F5). Borders: `--border`, `--border-strong`, `--border-brand`,
+#A9BEEA). Borders: `--border`, `--border-strong`, `--border-brand`,
 `--border-w` (1px), `--border-w-strong` (1.5px).
 
 ## Typography

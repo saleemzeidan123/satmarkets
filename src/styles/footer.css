@@ -1,11 +1,11 @@
-/* PKG-DESIGN-1. The footer paints on navy (#10233F), the product's one dark
+/* PKG-DESIGN-1. The footer paints on navy (#111A33), the product's one dark
    surface, where it used to paint on ink. Three things changed with it and each
    is a finding from docs/design-audit-2026-11-12.md rather than a taste: the
    call to action is no longer a second rounded dark panel inside a dark footer
    (finding 7), the column heads and the closing line are no longer letter-spaced
    capitals in the figure face (findings 4 and 11), and the 300px watermark that
    sat behind the last column is gone. Every pair below was re-measured on navy:
-   #AEB6C0 is 8.1 to 1, #9AA3AF 6.5, #8A93A0 5.3, sky #7CC0F5 8.0. Hairlines are
+   #AEB6C0 is 8.1 to 1, #9AA3AF 6.5, #8A93A0 5.3, sky #A9BEEA 8.0. Hairlines are
    white at 16 percent, because the ink-2 rule this file used disappears on navy.
 
    The footer carries its own scoped copy of the tokens it
@@ -13,7 +13,7 @@
    is an evidence-backed verification (a held, published licence number), so it keeps
    confirmed green under D24. Nothing else in the footer may use it. */
 .foot{
-  --ink:#14181B; --navy:#10233F; --sky:#7CC0F5; --harbor:#2265C4; --green:#1B7A50;
+  --ink:#14181B; --navy:#111A33; --sky:#A9BEEA; --harbor:#2B4782; --green:#1B7A50;
   --slate:#9AA3AF; --slate-2:#8A93A0; --rule:rgba(255,255,255,.16);
   position:relative; overflow:hidden;
   background:var(--navy); color:var(--slate-2);

@@ -8,9 +8,9 @@
 // Brand + neutral anchors (mirror --harbor, --harbor-d, --azure-l, --ink, --paper,
 // --slate). inkWarm is the warm label ink used for map symbols over tiles.
 export const BRAND = {
-  harbor: "#2265C4",
-  harborDark: "#1C56A9",
-  azureLight: "#9BBBE6",
+  harbor: "#2B4782",
+  harborDark: "#233A6B",
+  azureLight: "#A8B5D6",
   ink: "#14181B",
   inkWarm: "#1C1A15",
   paper: "#FFFFFF",
@@ -21,7 +21,7 @@ export const BRAND = {
 } as const;
 
 // Sequential Harbor density ramp for the heatmap (low to high).
-export const HEAT_RAMP = ["#D3E1F5", "#9BBBE6", "#5B8FD8", "#2265C4", "#1C56A9"] as const;
+export const HEAT_RAMP = ["#DADFEE", "#A8B5D6", "#6B80B5", "#2B4782", "#233A6B"] as const;
 
 // Asset-type CATEGORY palette (map pins + legend swatches). A categorical scale that
 // encodes WHAT a space is; it never encodes verification or status. Keys match the
@@ -84,5 +84,5 @@ export const MAP = {
   // read MAP.pin and MAP.pinStroke, while `--map-area-wash` declared the same
   // rgba() in sat-platform.css. A named role closes the gap: this mirrors that
   // token so the two cannot drift again.
-  hoverWash: "rgba(34,101,196,0.14)",
+  hoverWash: "rgba(43,71,130,0.14)",
 } as const;
