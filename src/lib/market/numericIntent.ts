@@ -61,7 +61,7 @@ const UNIT_END = "(?![0-9A-Za-z])";
 // to accept both from the same person in the same query. The authorship rule
 // below reads Arabic-plus-English in one literal as a defect, which everywhere
 // that renders a unit it is; here it is the requirement.
-const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|م²|م2)${UNIT_END}`, "i"); // unit-law
+const AREA_AFTER = new RegExp(`^[\\s,]*(?:m2|m²|sqm|sq\\.?\\s?m|square\\s+met(?:er|re)s?|متر\\s*مربع|متر|م²|م2)${UNIT_END}`, "i"); // unit-law
 const AREA_BEFORE = /(?:size|area|floorplate|مساحة|بمساحة)\s*(?:of\s*)?\D{0,4}$/i;
 
 // Rent: an explicit per-area rent unit. "1,600 SAR/m2", "1600 per square metre",
