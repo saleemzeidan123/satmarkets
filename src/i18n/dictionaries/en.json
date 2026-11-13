@@ -458,7 +458,13 @@
     "boardReadyOne": "1 open requirement loaded",
     "boardFailed": "The requirements board could not be loaded. This is a connection problem, not an empty market.",
     "boardRetry": "Try again",
-    "timeline": "Move-in"
+    "timeline": "Move-in",
+    "colSize": "Size",
+    "colBudget": "Budget ceiling",
+    "interestedN": "{n} interested",
+    "interestedOne": "1 interested",
+    "boardCount": "{n} open",
+    "boardCountOne": "1 open"
   },
   "about": {
     "acronyms": "Nafath = national digital ID · REGA = Real Estate General Authority · Ejar = government tenancy registry · FAL = real-estate brokerage licence",
