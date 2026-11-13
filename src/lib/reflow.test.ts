@@ -161,16 +161,10 @@ const JOURNEYS = [
 
 /** path:line -> why that fixed pair is allowed to stay. */
 const PAIR_EXEMPT: Record<string, string> = {
-  /* RC12, finding 164 moved this site three lines down when the advisor page
-     took the scrollBehavior() import, and the Next.js 16 async request API
-     codemod moved it one further. PKG-DISCOVERY-1 item 7 moved it five lines
-     further still, adding the JsonLd import and the page's first breadcrumb
-     structured data. The exemption is re-pointed rather than widened, which
-     is the whole reason it carries a line number. */
-  "src/app/[locale]/advisor/page.tsx:191":
-    ".adv-jobs-grid is overridden to a single column at max-width:820px by " +
-    "globals.css:412, which fires well above every width at which the pair would be too " +
-    "narrow. The inline value is the wide-screen case only.",
+  /* PKG-ADV-5. The advisor page's two-column jobs grid held an exemption here,
+     re-pointed three times as the file moved. The grid is gone: the page opens
+     on a ledger of rows, laid out in the stylesheet, so there is no inline pair
+     left to excuse. */
   "src/app/[locale]/bilingual/page.tsx:140":
     "internal bilingual comparison page, a development surface and not a product journey.",
   "src/app/[locale]/deal/termsheet/page.tsx:67":
