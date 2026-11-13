@@ -63,8 +63,8 @@ Vercel builds every PR automatically; the preview deployment doubles as a produc
 ## State as of 2026-11-13
 
 - **The redesign has an approved design and is being built in packages.** The owner signed off the "Drawn to scale" direction on 2026-11-13 (home, search results, map view, listing page and interaction states, phone and desktop, Arabic and English). It answers `docs/design-audit-2026-11-12.md`. One pull request per package, merged only on the owner's word:
-  1. **PKG-DESIGN-1, palette, type and chrome** (this package): Harbor #2265C4, navy #10233F, sky #7CC0F5, the Arabic display face, the release-state strip, header and footer.
-  2. Home page.
+  1. **PKG-DESIGN-1, palette, type and chrome** (PR #29): Harbor #2265C4, navy #10233F, sky #7CC0F5, the Arabic display face, the release-state strip, header and footer.
+  2. **PKG-DESIGN-2, home page**: `MarketingHome.tsx` rebuilt on the real data it already had (search and place suggestions, featured listings through `ListingCard`, the published Rent Index band). Its prose now lives in the `home` dictionary. The example rents the drawings show are deliberately not shipped (claims ledger C42). Ledger entries C41 to C44. Stacked on PKG-DESIGN-1.
   3. Search results and the map view.
   4. Listing page.
   5. Paid spaces and the neutrality wording.

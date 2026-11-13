@@ -902,10 +902,27 @@ test("ruling 3: the hero trust chips are scoped to launch and are not verificati
   const mh = code(readFileSync(join(ROOT, "components/MarketingHome.tsx"), "utf8"));
   assert.doesNotMatch(mh, /Owners verified before/i, "the hero chip claims owners have been verified");
   assert.doesNotMatch(mh, /توثيق ال[^ ]{2,6}ك قبل/, "the Arabic hero chip claims owners have been verified");
-  assert.match(mh, /At launch, owners checked before listing/, "the English hero chip must scope the check to launch");
-  assert.match(mh, /عند الإطلاق، يُفحص المُلّاك قبل الإدراج/, "the Arabic hero chip must scope the check to launch");
+  // PKG-DESIGN-2, claims ledger C43. The home page was rebuilt and the three hero
+  // chips went with the hero that carried them, so there is no chip left to scope.
+  // The two prohibitions above stay exactly as they were. What used to be asserted
+  // here, that the chip is present and launch-scoped, becomes conditional: if a
+  // sentence about owners being checked before listing ever returns to this file or
+  // to the `home` dictionary, it must carry the launch scope it had.
+  const homeEn = JSON.stringify((JSON.parse(readFileSync(join(ROOT, "i18n/dictionaries/en.json"), "utf8")) as { home: unknown }).home);
+  const homeAr = JSON.stringify((JSON.parse(readFileSync(join(ROOT, "i18n/dictionaries/ar.json"), "utf8")) as { home: unknown }).home);
+  for (const [name, text] of [["MarketingHome.tsx", mh], ["home (en)", homeEn], ["home (ar)", homeAr]] as const) {
+    assert.doesNotMatch(text, /Owners verified before/i, `${name} claims owners have been verified`);
+    if (/owners checked before listing/i.test(text)) {
+      assert.match(text, /At launch, owners checked before listing/, `${name}: the English chip must scope the check to launch`);
+    }
+    if (/يُفحص المُلّاك قبل الإدراج/.test(text)) {
+      assert.match(text, /عند الإطلاق، يُفحص المُلّاك قبل الإدراج/, `${name}: the Arabic chip must scope the check to launch`);
+    }
+  }
+  // The eyebrow dot that kept one use of #3ECF8E is gone with the eyebrow. The
+  // home page now carries no green outside the verified family at all.
   const ticks = mh.split(/#3ECF8E/).length - 1;
-  assert.equal(ticks, 1, `MarketingHome carries ${ticks} uses of the unguarded green #3ECF8E; only the hero eyebrow dot may keep it`);
+  assert.equal(ticks, 0, `MarketingHome carries ${ticks} uses of the unguarded green #3ECF8E; the rebuilt home page may not carry any`);
 });
 
 // ---------------------------------------------------------------------------

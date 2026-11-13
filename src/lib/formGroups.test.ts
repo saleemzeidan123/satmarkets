@@ -1504,9 +1504,6 @@ test("the wrapper class owns overflow at every width, not only on a phone", () =
 
 /** path -> why a horizontal scroller in that file is allowed to stay a bare element. */
 const BARE_SCROLLER_EXEMPT: Record<string, string> = {
-  "src/components/MarketingHome.tsx":
-    "The hero asset rail is a row of buttons with explicit previous and next controls beside " +
-    "it, so every item is reachable by Tab and the rail is pannable without a pointer.",
   "src/components/MapExplorer.tsx":
     "Both rails hold only focusable children, a chip row of buttons and a card row of links, " +
     "so focus movement reaches every item and pans the rail as a consequence.",

@@ -2,145 +2,133 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Mark, Logo, Icon, HARBOR, COOL } from "@/components/satkit";
-import Reveal from "@/components/Reveal";
-// PKG-CARD1. This file used to hand-roll its own lead and grid card markup,
-// which is how its price caption came to run the lease unit ("SAR/m²/yr")
-// under a listing whose deal_type is sale: the four figures shown here never
-// passed through `priceParts`, so nothing here could know the unit disagreed
-// with the deal. Finding 173's decorative-heart defect (no handler on the
-// heart icon) was an earlier symptom of the same private markup. `ListingCard`
-// is now the one place a listing becomes a card; this file only decides which
-// listing goes in the lead slot and which go in the row beside it.
+import { Icon } from "@/components/satkit";
+// PKG-CARD1. `ListingCard` is the one place a listing becomes a card; this file
+// only decides which listing goes in the lead slot and which go in the row
+// beside it. PKG-DESIGN-2 keeps that: the redesign of the card itself belongs
+// to the search-results package, so the home page cannot drift from it.
 import ListingCard, { type IndexPosition } from "@/components/ListingCard";
 import type { Listing } from "@/lib/types";
 import { getDictionary } from "@/i18n/getDictionary";
 import { formatPeriod } from "@/lib/market/period";
 // Slice B, item 8. The one shared, RTL-safe pattern the rest of the platform
-// already uses for a section that has nothing to show, so Home's featured
-// inventory and Rent Index panel fail the same honest way Listings Search
-// does, instead of a bare gap nobody explained.
+// uses for a section that has nothing to show, so the featured inventory and
+// the Rent Index panel fail the same honest way Listings Search does.
 import DataState from "@/components/DataState";
-// Slice B, item 6. The one component that already renders a real link to
-// `/lister/[id]`, on Listing Detail. Reused here rather than re-implemented,
-// so Home's one lister-discovery entry point is the platform's existing
-// pattern, not a second one.
+// Slice B, item 6. The one component that renders a real link to `/lister/[id]`.
 import ListerBadge from "@/components/ListerBadge";
 import type { Lister } from "@/lib/queries/listings";
-// RC12, finding 164. The asset rail pages by animating a scroll, which the CSS
-// reduced-motion block cannot reach while the behaviour is stated explicitly.
-import { scrollBehavior } from "@/lib/motion";
 // PKG-FIG2 closure, finding 132. Type only, so nothing server-side is pulled
-// into the client bundle. The prop used to restate this shape by hand, which
-// is how it came to say `stat: "average" | "median" | null` over a producer
-// that can also answer "single", "count", "range", "rate" or "index". A second
-// copy of a type is the same defect as a second copy of a unit table.
+// into the client bundle.
 import type { PublishedKpis } from "@/lib/market/published";
 import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
-// Home prototype-link ruling. A feature tile that has no live public
-// destination behind it yet is labelled with the platform's one approved
-// "not live yet" word, in both languages, rather than left silently unlinked
-// or, worse, pointed at a route this component's own tests must confirm is
-// held or private.
-import { releaseLabel } from "@/lib/releaseState";
-import { rebrandDeep } from "@/lib/operator";
+import { assetLabel } from "@/lib/labels";
+import { fieldsFor } from "@/lib/assetFields";
 
-// PKG-CARD1. This used to flatten and pre-format every figure a card needs
-// (price, title, district, area, badge text) into its own literal shape, which
-// is the second place those figures were ever computed: `page.tsx` built them
-// from the raw row, and this file trusted whatever it was handed rather than
-// reading the row itself. That is exactly how the lease unit ended up under a
-// sale price. The wrapper now carries the row `ListingCard` already knows how
-// to read, plus the one fact that is genuinely this page's own decision and
-// not the card's: where this listing's rent sits in the published band.
+// PKG-DESIGN-2. The home page, rebuilt to the design the owner approved on
+// 2026-11-13. It answers docs/design-audit-2026-11-12.md finding by finding:
+// no photograph hero, no pill eyebrow, no frosted search panel, no persona
+// cards, no numbered cards on content that is not a sequence, no feature grid
+// with planned tiles, one call to action instead of two back to back, and no
+// scroll reveal. What it keeps is every piece of real data the old page had:
+// the search and its place suggestions, the featured listings through
+// `ListingCard`, and the published Rent Index band with its statistic, period,
+// source and notes. All prose now lives in the `home` dictionary; the 136
+// strings this file used to carry inline are gone.
+//
+// Two things the approved drawings show are deliberately NOT here, and both
+// for the same reason. The drawings label three example listings with rents
+// and label the hero building with rents per floor. On a canvas those are
+// examples. On the site they would be figures nobody recorded, which Law 3 and
+// owner ruling 4 (claims ledger C15) both forbid. So the cards below are the
+// real featured rows, and the hero drawing carries no figure at all.
+
 export type FeaturedListing = { listing: Listing; indexPosition: IndexPosition | null };
 // PKG-FIG2 closure, finding 130. `stat` is the statistic the row itself records,
-// already resolved into the reader's language by the server, for the same reason
-// `bandNotes` is a prop: the decision is a server one and a client that could
-// re-derive it could also re-derive it wrongly. It is not optional and it has no
-// default, so a caller cannot obtain a band without saying what the figure is.
+// already resolved into the reader's language by the server. It is not optional
+// and it has no default, so a caller cannot obtain a band without saying what
+// the figure is.
 export type HeroBand = { en: string; ar: string; low: number; high: number; median: number; period: string; stat: string };
 type Stats = { listings: string | null; buildings: string | null; districts: string | null; verifiedPct: string | null };
 
-const ASSETS = [
- { v: "office", en: "Office", ar: "مكاتب", icon: <Icon.building size={22} /> },
- { v: "retail", en: "Retail", ar: "تجزئة", icon: <Icon.store size={22} /> },
- { v: "warehouse", en: "Warehouse", ar: "مستودعات", icon: <Icon.layers size={22} /> },
- { v: "medical", en: "Medical", ar: "طبي", icon: <Icon.activity size={22} /> },
- { v: "land", en: "Land", ar: "أراضٍ", icon: <Icon.ruler size={22} /> },
- { v: "showroom", en: "Showroom", ar: "معارض", icon: <Icon.grid size={22} /> },
- { v: "serviced", en: "Serviced", ar: "مكاتب مخدومة", icon: <Icon.clock size={22} /> },
- { v: "mixed_use", en: "Mixed use", ar: "متعدد الاستخدامات", icon: <Icon.target size={22} /> },
- { v: "hospitality", en: "Hospitality", ar: "ضيافة", icon: <Icon.star size={22} /> },
- { v: "education", en: "Education", ar: "تعليم", icon: <Icon.doc size={22} /> },
- { v: "gas_station", en: "Gas station", ar: "محطة وقود", icon: <Icon.bolt size={22} /> },
- { v: "entertainment", en: "Entertainment", ar: "ترفيه", icon: <Icon.spark size={22} /> },
- { v: "wedding_hall", en: "Events & halls", ar: "قاعات ومناسبات", icon: <Icon.cal size={22} /> },
- { v: "worker_housing", en: "Worker housing", ar: "سكن عمالة", icon: <Icon.user size={22} /> },
- { v: "self_storage", en: "Self storage", ar: "تخزين ذاتي", icon: <Icon.inbox size={22} /> },
-];
+// The fifteen asset types, in the order the search offers them, each with the
+// key of the field the directory names beside it. The key is looked up in
+// `ASSET_FIELDS`, the registry the listing form and the listing page are both
+// built from, so the directory can only name a measure a listing of that type
+// actually records. MarketingHome.homeRuling.test.ts fails if a key here stops
+// existing in the registry.
+const ASSET_TYPES = ["office", "retail", "warehouse", "medical", "land", "showroom", "serviced", "mixed_use", "hospitality", "education", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"] as const;
+const LEAD_MEASURE: Record<string, string> = {
+ office: "floor_plate_sqm", retail: "frontage_m", warehouse: "clear_height_m", medical: "clinic_rooms", land: "street_width_m",
+ showroom: "frontage_m", serviced: "workstations", mixed_use: "retail_gla_sqm", hospitality: "keys", education: "classrooms",
+ gas_station: "dispensers", entertainment: "screens_count", wedding_hall: "guest_capacity", worker_housing: "bed_capacity", self_storage: "unit_count",
+};
+
+// The hero drawing: the top seven floors of a building as a stack, three of
+// them lit. It is the product's signature form and it is decoration here, so
+// it is hidden from assistive technology and it carries no number. A stack
+// that states areas and rents belongs to a listing that recorded them.
+function Stack({ rtl }: { rtl: boolean }) {
+ const tw = 96, fh = 12, gap = 2, x0 = 10, top = 6;
+ const lit: Record<number, number> = { 1: 53.3, 3: 51.7, 4: 100 };
+ const rows = [];
+ for (let i = 0; i < 7; i++) {
+  const y = top + i * (fh + gap);
+  const pct = lit[i];
+  if (pct === undefined) {
+   rows.push(i === 0
+    ? <path key={i} d={`M${x0} ${y + fh}V${y + 7}a7 7 0 0 1 7 -7H${x0 + tw - 7}a7 7 0 0 1 7 7V${y + fh}Z`} fill="rgba(255,255,255,.3)" />
+    : <rect key={i} x={x0} y={y} width={tw} height={fh} rx="2" fill="rgba(255,255,255,.3)" />);
+   continue;
+  }
+  const lw = tw * pct / 100;
+  const lx = rtl ? x0 + tw - lw : x0;
+  if (pct < 100) rows.push(<rect key={`r${i}`} x={rtl ? x0 : x0 + lw + gap} y={y} width={tw - lw - gap} height={fh} rx="2" fill="rgba(255,255,255,.3)" />);
+  rows.push(<rect key={i} x={lx} y={y} width={lw} height={fh} rx="2" fill="#FFFFFF" />);
+ }
+ const gy = top + 7 * (fh + gap) + 1.5;
+ return (
+  <svg className="hm-stack" aria-hidden="true" viewBox={`0 0 116 ${top + 7 * (fh + gap) + 6}`}>
+   {rows}
+   {/* The lower floors are not drawn: a broken line, not a ground line. */}
+   <line x1={x0} y1={gy} x2={x0 + tw} y2={gy} stroke="rgba(255,255,255,.75)" strokeWidth="2" strokeDasharray="5 5" />
+  </svg>
+ );
+}
 
 // ADV-1E. `bandNotes` carries the sentences the server's quote decision attached
 // to the figures in `bands`. It is a prop rather than a lookup because this
-// component is a client component and the decision is a server one: a client
-// that could re-derive the sentence could also re-derive it wrongly, and the
-// figure and its sentence must come from the same place.
-export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], jobs, kpis, dataOk = true, leadLister = null }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: PublishedKpis; /** False only when the server could not reach the database at all, never when it reached it and found nothing. Distinguishes an honest "temporarily unavailable" from an honest "nothing published yet". */ dataOk?: boolean; /** The lead featured listing's public lister, when one loaded. Home's one lister-discovery entry point (item 6): a real link to `/lister/[id]`, never a fabricated directory. */ leadLister?: Lister | null }) {
+// component is a client component and the decision is a server one.
+//
+// `stats` and `jobs` stay in the props type because `page.tsx` still supplies
+// them. Only `stats.districts` is read: the four-figure strip and the job
+// counts they fed are gone with the sections that showed them.
+export default function MarketingHome({ locale = "en", featured = [], stats, bands = [], bandNotes = [], kpis, dataOk = true, leadLister = null }: { locale?: string; featured?: FeaturedListing[]; stats: Stats; bands?: HeroBand[]; bandNotes?: readonly string[]; jobs?: { reqs: number | null; segs: number | null }; kpis: PublishedKpis; /** False only when the server could not reach the database at all, never when it reached it and found nothing. Distinguishes an honest "temporarily unavailable" from an honest "nothing published yet". */ dataOk?: boolean; /** The lead featured listing's public lister, when one loaded. Home's one lister-discovery entry point (item 6): a real link to `/lister/[id]`, never a fabricated directory. */ leadLister?: Lister | null }) {
  const router = useRouter();
  const ar = locale === "ar";
- // PKG-FIG1, finding 125. These three figures are the published Rent Index band,
- // and they were rendered with a bare `toLocaleString()`, which resolves the
- // DEVICE locale in a client component. On a phone set to Arabic the front door
- // of the site printed the attributed published band in Arabic-Indic digits,
- // against the standing law that both languages use Western numerals. Same
- // defect as finding 123, on the one page every visitor sees first.
- const fig = (n: number) => formatInteger(Math.round(n), ar ? "ar" : "en");
- const H = getDictionary(ar ? "ar" : "en").home;
- // PKG-FIG2 closure, finding 132. The pattern that puts a quantity word beside
- // a unit is one sentence shape used by the front door, the Rent Index and the
- // listings index cut. A second copy under `home` would be the second table this
- // package exists to remove.
- const C = getDictionary(ar ? "ar" : "en").common;
- // PKG-FIG2, finding 129. The lease unit was spelled twice in this file's own
- // copy objects, once per language. The Arabic spelling happened to match the
- // table; the English one, " SAR/m²·yr", did not, and it was live on the front
- // door six times: on the band panel, on the band caption and on three featured
- // price cards. It is the first screen of the site, so it was the most-read
- // wrong spelling of the platform's most-used unit.
- //
- // The leading space each literal carried was structural rather than
- // typographic, which is why the band caption had to strip it back off with
- // `.replace(/^[\s/]+/, "")`. The space belongs to the JSX that needs it.
- const unitShort = formatUnit("sar_sqm_year", ar ? "ar" : "en", "short");
- const [deal, setDeal] = useState<"lease" | "buy" | "req">("lease");
- const [bi, setBi] = useState(0);
- const band = bands[bi] || bands[0] || null;
- const [q, setQ] = useState("");
+ const loc = ar ? "ar" : "en";
+ // PKG-FIG1, finding 125. A bare `toLocaleString()` resolves the DEVICE locale
+ // in a client component, which printed the published band in Arabic-Indic
+ // digits on a phone set to Arabic. Both languages use Western numerals.
+ const fig = (n: number) => formatInteger(Math.round(n), loc);
+ const H = getDictionary(loc).home;
+ const C = getDictionary(loc).common;
+ const UI = getDictionary(loc).ui;
+ // PKG-FIG2, finding 129. The unit is spelled in one table and nowhere else.
+ const unitShort = formatUnit("sar_sqm_year", loc, "short");
+
+ const [door, setDoor] = useState<"find" | "list">("find");
+ const [deal, setDeal] = useState<"lease" | "buy">("lease");
  const [assetType, setAssetType] = useState("");
+ const [q, setQ] = useState("");
+ const [smin, setSmin] = useState("");
+ const [smax, setSmax] = useState("");
  const [sug, setSug] = useState<{ label: string; sub: string; did?: string; indexed?: boolean }[]>([]);
  const [sopen, setSopen] = useState(false);
  const sref = useRef<HTMLDivElement>(null);
- const assetRef = useRef<HTMLDivElement>(null);
- const [atStart, setAtStart] = useState(true);
- const [atEnd, setAtEnd] = useState(false);
- useEffect(() => {
-  const el = assetRef.current; if (!el) return;
-  const update = () => {
-   const max = el.scrollWidth - el.clientWidth;
-   if (max <= 1) { setAtStart(true); setAtEnd(true); return; }
-   const pos = Math.abs(el.scrollLeft);
-   setAtStart(pos <= 4); setAtEnd(pos >= max - 4);
-  };
-  const onWheel = (e: WheelEvent) => { if (el.scrollWidth <= el.clientWidth) return; if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; el.scrollBy({ left: (ar ? -1 : 1) * e.deltaY * 1.4 }); e.preventDefault(); };
-  update();
-  el.addEventListener("scroll", update, { passive: true });
-  el.addEventListener("wheel", onWheel, { passive: false });
-  const ro = new ResizeObserver(update); ro.observe(el);
-  return () => { el.removeEventListener("scroll", update); el.removeEventListener("wheel", onWheel); ro.disconnect(); };
- }, [deal, ar]);
- const page = (d: number) => { const el = assetRef.current; if (!el) return; const amount = Math.round(el.clientWidth * 0.7); el.scrollBy({ left: (ar ? -d : d) * amount, behavior: scrollBehavior() }); };
- const fadeLogical = !atStart && !atEnd ? "both" : atStart && !atEnd ? "end" : atEnd && !atStart ? "start" : "none";
- const fadePhysical = !ar ? fadeLogical : fadeLogical === "end" ? "start" : fadeLogical === "start" ? "end" : fadeLogical;
+ const [bi, setBi] = useState(0);
+ const band = bands[bi] || bands[0] || null;
+
  useEffect(() => {
   const onDoc = (e: MouseEvent) => { if (sref.current && !sref.current.contains(e.target as Node)) setSopen(false); };
   document.addEventListener("mousedown", onDoc);
@@ -157,319 +145,145 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
     .catch(() => {});
   }, 220);
   return () => { clearTimeout(t); ctl.abort(); };
- }, [q]);
+ }, [q, locale]);
+
+ const dealParam = deal === "buy" ? "sale" : "lease";
+ // `smin` and `smax` are the size parameters /listings already reads. A value
+ // that is not a positive whole number is dropped rather than sent, so a
+ // stray character narrows nothing instead of producing an empty result.
+ const whole = (v: string) => { const n = Number(v.replace(/[,\s]/g, "")); return Number.isInteger(n) && n > 0 ? String(n) : ""; };
  const go = (e?: React.FormEvent) => {
   if (e) e.preventDefault();
-  if (deal === "req") { router.push(`/${locale}/post-requirement${q.trim() ? `?q=${encodeURIComponent(q.trim())}` : ""}`); return; }
   const sp = new URLSearchParams();
-  sp.set("deal", deal === "buy" ? "sale" : "lease");
+  sp.set("deal", dealParam);
   if (assetType) sp.set("asset", assetType);
   if (q.trim()) sp.set("q", q.trim());
+  if (whole(smin)) sp.set("smin", whole(smin));
+  if (whole(smax)) sp.set("smax", whole(smax));
   router.push(`/${locale}/listings?${sp.toString()}`);
  };
  const L = (p: string) => `/${locale}${p}`;
+ const measure = (t: string) => { const f = fieldsFor(t).find((x) => x.key === LEAD_MEASURE[t]); return f ? (ar ? f.label_ar : f.label_en) : ""; };
 
- const T = rebrandDeep(ar ? {
-  eyebrow: "منصّة للعقار التجاري",
-  h1a: "حيث تجد الأعمال السعودية ",
-  h1b: "مساحات تجارية يمكن التحقق منها",
-  sub: "مكاتب ومتاجر وعيادات ومستودعات في الرياض. لكل عرض حالة توثيقه، ونطاقات إيجار منشورة منسوبة إلى مصادرها، في منصّة محايدة واحدة.",
-  tabs: [["lease","إيجار"],["buy","شراء"]] as const,
-  phReq: "ما المساحة التي تبحث عنها؟",
-  phStd: "الحي أو المشروع أو المبنى",
-  btnReq: "أدرج",
-  btnStd: "بحث",
-  popular: "الأكثر طلباً:",
-  chip1: "مكاتب، كافد", chip2: "تجزئة، التحلية", chip3: "مستودعات، الصناعية الثانية",
-  micro1: "عند الإطلاق، يُفحص المُلّاك قبل الإدراج", micro2: "لا عمولة مفترضة", micro3: "فال 1200025510",
-  stat: [[stats.listings, "عروض منشورة"], [stats.verifiedPct, "موثّقة من المالك"], [stats.districts, "أحياء مفهرسة"], [stats.buildings, "مبانٍ"]] as [string | null, string][],
-  exEye: "المنصّة",
-  exH: "أربع وظائف، في مكان محايد واحد",
-  exP: "الاكتشاف، والطلبات، والأسعار المنشورة، ومستشار يذكر مصدره، في مكان محايد واحد.",
-  cards: [
-   ["العروض", "مباشرة من المالك أو من وسيط مرخّص. لكل عرض حالة توثيقه ظاهرة عليه.", "/listings"],
-   ["الطلبات", "يدرج المستأجرون ما يحتاجونه، فيأتيهم العرض المناسب.", "/post-requirement"],
-   ["مؤشر الإيجارات", "نطاقات إيجار منشورة من المؤشر الإيجاري للهيئة العامة للعقار (إيجار)، مع الفترة والمصدر على كل رقم.", "/rent-index"],
-   ["المستشار الذكي", "بحث وتقييم بالمحادثة، مستند إلى مؤشر الإيجارات.", "/advisor"],
-  ] as [string,string,string][],
-  ftEye: "مختارة، الرياض",
-  ftH: "مساحات معروضة، مقارنة بالنطاق المنشور",
-  ftBrowse: "تصفّح كل العروض",
-  bandEye: "مؤشر الإيجارات",
-  bandH: "طبقة التسعير خلف كل قرار",
-  bandP1: "المعايير المنشورة، منسوبة إلى مصادرها، عبر ", bandP2: " موقعاً بالرياض. قِس إيجاراً، أو قارن عقداً بالنطاق. كل رقم يحمل فترته ومصدره.",
-  bandBtn: "استكشف مؤشر الإيجارات",
-  flowEye: "كيف تسير الصفقة",
-  flowH: "مسار واحد. تتعامل مع المعلن مباشرة.",
-  flowBody: "تواصل مع المعلن مباشرة. مجاناً، ودون تفويض، ودون عمولة. سات ماركتس ليست طرفاً في الصفقة ولا تأخذ منها أي نسبة.",
-  flowNote: "شركة سات العقارية مرخّصة للوساطة بشكل منفصل، وتنشر إعلاناتها هنا كأي وسيط آخر. وحين يكون الإعلان لها، يُذكر ذلك بوضوح.",
-  oneEye: "منصّة واحدة",
-  oneH: "كل ما يحتاجه السوق، في مكان واحد",
-  oneP: "الاكتشاف، والبيانات المنشورة، والذكاء الاصطناعي، والصفقة كاملة، للمستأجرين والمُلّاك والوسطاء والمستثمرين.",
-  feats: [
-   ["عروض وخريطة", "عروض مباشرة من الملّاك على خريطة حيّة للرياض، ولكل عرض حالة توثيقه ظاهرة عليه."],
-   ["مؤشر الإيجارات", "نطاقات إيجار منشورة، مع تمييز العقود المسقوفة والمفتوحة."],
-   ["ذكاء الموقع", "الجوار التجاري والمحيط من سجل المنصّة. بيانات الحركة والزيارات غير مفعّلة."],
-   ["تحليل الاستثمار", "العائد وصافي الدخل التشغيلي والسيناريوهات على مقارنات توضيحية."],
-   ["المستشار الذكي", "بحث وتقييم حواري، مبني على المؤشر."],
-   ["أدرج طلباً", "أخبر السوق بما تحتاجه، فيستجيب المُلّاك والوسطاء."],
-   ["دليل الملّاك والوسطاء", "تصفّح من يُدرج حالياً على المنصّة، مع إظهار الدور وحالة التحقق من الهوية كما هي مسجّلة."],
-   ["باقات العضوية", "فئات بحدود واضحة للحصص."],
-   ["تتبّع الصفقة", "من الاستفسار إلى المعاينة إلى العرض إلى التسليم، مسجّلة في مسار واحد."],
-   ["قارن المساحات", "قائمة مختصرة جنباً إلى جنب على الحقائق المسجّلة والإيجار مقابل المؤشر."],
-   ["الثقة والامتثال", "فال 1200025510، مع إظهار حالة التوثيق على كل عرض."],
-   ["نبض السوق", "لوحة السوق الحيّة: نطاقات الإيجار حسب الموقع، والمعروض، وانضباط التسعير مقابل المؤشر."],
-  ] as [string,string][],
-  ctaH: "أدرج مساحتك، أو اعثر على التالية",
-  ctaP: "انضمّ إلى المنصّة المبنية للسوق التجاري في الرياض.",
-  ctaList: "أدرج مساحتك", ctaBrowse: "تصفّح العروض",
- } : {
-  eyebrow: "Commercial real estate exchange",
-  h1a: "Where Saudi business finds ",
-  h1b: "commercial space it can check",
-  sub: "Offices, retail, medical and warehouses across Riyadh. Each listing carries its own verification state, published rent bands attributed to source, one neutral exchange.",
-  tabs: [["lease","Lease"],["buy","Buy"]] as const,
-  phReq: "What space are you looking for?",
-  phStd: "District, project or building",
-  btnReq: "Post",
-  btnStd: "Search",
-  popular: "Popular:",
-  chip1: "Office, KAFD", chip2: "Retail, Tahlia", chip3: "Warehouse, 2nd Industrial",
-  micro1: "At launch, owners checked before listing", micro2: "No assumed commission", micro3: "FAL 1200025510",
-  stat: [[stats.listings, "Published listings"], [stats.verifiedPct, "Owner-verified"], [stats.districts, "Districts indexed"], [stats.buildings, "Buildings"]] as [string | null, string][],
-  exEye: "The exchange",
-  exH: "Four jobs, one neutral place",
-  exP: "Discovery, requirements, published pricing and an advisor that names its source, in one neutral place.",
-  cards: [
-   ["Listings", "Direct from the owner or a licensed broker. Each listing shows its own verification state.", "/listings"],
-   ["Requirements", "Occupiers post what they need; the right supply comes to them.", "/post-requirement"],
-   ["Rent Index", "Published rent bands from the REGA Rental Index (Ejar), with the period and the source on every figure.", "/rent-index"],
-   ["AI Advisor", "Conversational search and valuation, grounded in the Rent Index.", "/advisor"],
-  ] as [string,string,string][],
-  ftEye: "Featured, Riyadh",
-  ftH: "Listed spaces, priced against the published band",
-  ftBrowse: "Browse all listings",
-  bandEye: "Rent Index",
-  bandH: "The pricing layer behind every decision",
-  bandP1: "Published benchmarks, attributed to source, across ", bandP2: " Riyadh locations. Benchmark a rent or check a lease against the band. Every figure carries its period and its source.",
-  bandBtn: "Explore the Rent Index",
-  flowEye: "How a deal flows",
-  flowH: "One path. You deal with the lister.",
-  flowBody: "Contact the lister directly. It is free, there is no mandate and no commission. SAT Markets is not a party to the transaction and takes no cut of it.",
-  flowNote: "SAT Real Estate is separately licensed as a brokerage and lists here like any other broker. Where a listing is ours, it says so.",
-  oneEye: "One exchange",
-  oneH: "Everything the market needs, in one place",
-  oneP: "Discovery, published data, AI and the full deal, for occupiers, owners, brokers and investors.",
-  feats: [
-   ["Listings + map", "Owner-direct stock on a live Riyadh map, each listing showing its own verification state."],
-   ["Rent Index", "Published rent bands with the capped/open freeze lens."],
-   ["Location Intelligence", "Co-tenancy and surroundings from the platform record. Mobility and visitation data are not enabled."],
-   ["Investment underwriting", "Yield, NOI and scenarios on illustrative comparables."],
-   ["AI Advisor", "Conversational search and valuation, grounded in the Index."],
-   ["Post a requirement", "Tell the market what you need; owners and brokers respond."],
-   ["Owners and brokers directory", "Browse who is currently listing on the exchange, with role and identity-verification state shown as recorded."],
-   ["Membership plans", "Grades with clear quota caps."],
-   ["Deal tracking", "Enquiry to viewing to offer to handover, recorded on one thread."],
-   ["Compare spaces", "Shortlist side by side on the recorded facts and rent vs index."],
-   ["Trust and compliance", "FAL 1200025510, with each listing's verification state shown on it."],
-   ["Market pulse", "The live market board: rent bands by location, supply and pricing discipline vs the index."],
-  ] as [string,string][],
-  ctaH: "List your space, or find your next one",
-  ctaP: "Join the exchange built for Riyadh's commercial market.",
-  ctaList: "List your space", ctaBrowse: "Browse listings",
- });
-
- // Home prototype-link ruling. /area, /invest, /pricing, /deal and /compare
- // are not available product features today: /area's own route-policy entry
- // says the live page there is "a sample trade-area page", /invest and /deal
- // each render their own on-page SampleBanner, /compare is a private
- // prototype that does not function without an `?ids=` list handed to it
- // from elsewhere, and /pricing is explicitly held per owner decision O1.
- // Their entries here are blank on purpose: `PLANNED_FEATS` below is what
- // actually gates the render, but an empty string means a stray render path
- // can never accidentally turn one into a working link. /dashboard is real
- // and auth-gated, not a prototype, so index 6 is not held back: its tile now
- // describes and links to the Listers directory (item 6) instead, a real
- // public destination that was not represented on this grid at all before.
- const featLinks = ["/map","/rent-index","","","/advisor","/post-requirement","/listers","","","","/about","/market"];
- const PLANNED_FEATS = new Set([2, 3, 7, 8, 9]);
- const featKeys = ["h","a","","h","a","","h","a","","h","","a"];
- const featIcons = [Icon.building, Icon.chart, Icon.target, Icon.coins, Icon.spark, Icon.msg, Icon.grid, Icon.coins, Icon.cal, Icon.bolt, Icon.shield, Icon.activity];
- const cardIcons = [Icon.building, Icon.doc, Icon.chart, Icon.user];
  const f0 = featured[0];
  const rest = featured.slice(1);
- // ListingCard reads `view`, `onRequest` and `verificationIncomplete` off this
- // slice; `H` and `C` above are Home's own copy, not a second one of these.
- const UI = getDictionary(ar ? "ar" : "en").ui;
- const cardLocale = ar ? "ar" : "en";
+ // Where the recorded statistic sits inside the published band, as a share of
+ // its width. Clamped, because a statistic is not obliged to sit inside the
+ // band a different column records.
+ const bandPos = band && band.high > band.low ? Math.min(1, Math.max(0, (band.median - band.low) / (band.high - band.low))) : null;
 
  return (
-  <div style={{ fontFamily: "var(--sans)", color: "var(--ink)", background: "var(--paper)" }}>
-   <div className="satmkt-hero" style={{ position: "relative", padding: "clamp(44px,10vw,70px) 20px clamp(50px,10vw,84px)", overflow: "hidden", backgroundImage: "linear-gradient(180deg, rgba(9,13,19,.9) 0%, rgba(9,13,19,.74) 42%, rgba(9,13,19,.94) 100%), url('/hero-kafd.jpg')", backgroundSize: "cover", backgroundPosition: "center" }}>
-    <div style={{ position: "relative", maxWidth: 920, margin: "0 auto", textAlign: "center" }}>
-     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.22)", borderRadius: 20, padding: "6px 13px", backdropFilter: "blur(4px)" }}>
-      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#3ECF8E" }} />
-      <span className="mono" style={{ fontSize: "var(--fs-2xs)", letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.92)" }}>{T.eyebrow}</span>
+  <div className="hm">
+   <section className="hm-hero">
+    <div className="hm-wrap">
+     <div className="hm-hero-grid">
+      <h1 className="serif hm-h1">{H.h1a}<br />{H.h1b}</h1>
+      <p className="hm-sub">{H.sub}</p>
+      <div className="hm-stackbox"><Stack rtl={ar} /></div>
      </div>
-     <h1 className="serif" style={{ fontSize: "clamp(2.125rem,5.2vw,3.625rem)", fontWeight: 500, lineHeight: 1.08, letterSpacing: "-.02em", margin: "20px auto 0", color: "var(--on-brand)", maxWidth: 820, textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>
-      {T.h1a}<span style={{ color: "#C4DAF2", textShadow: "0 2px 28px rgba(0,0,0,.45)" }}>{T.h1b}</span>
-     </h1>
-     <p style={{ fontSize: "var(--fs-lg)", lineHeight: 1.6, color: "rgba(255,255,255,.82)", margin: "18px auto 0", maxWidth: 600 }}>{T.sub}</p>
-     <div style={{ margin: "30px auto 0", maxWidth: 860, background: "rgba(13,18,26,.55)", border: "1px solid rgba(255,255,255,.16)", borderRadius: 20, backdropFilter: "blur(10px)", padding: "18px 18px 16px", boxShadow: "0 24px 60px rgba(0,0,0,.35)" }}>
-      <div style={{ display: "inline-flex", gap: 4, background: "rgba(255,255,255,.08)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 10, padding: 3, marginBottom: 16 }}>
-       {T.tabs.map(([v, l]) => (
-        <button key={v} type="button" onClick={() => setDeal(v as "lease" | "buy" | "req")} style={{ border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 16px", borderRadius: 7, background: deal === v ? "var(--paper)" : "transparent", color: deal === v ? "var(--ink)" : "rgba(255,255,255,.78)" }}>{l}</button>
-       ))}
-      </div>
-      {deal !== "req" && (
-       <div className="asset-slider" style={{ marginBottom: 16 }}>
-        <button type="button" aria-label="Previous asset types" onClick={() => page(-1)} className="asset-arrow" data-hidden={atStart} tabIndex={atStart ? -1 : 0}>
-         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
-        </button>
-        <div ref={assetRef} className="hero-assets" data-fade={fadePhysical} style={{ display: "flex", flexWrap: "nowrap", gap: 8, overflowX: "auto", paddingBottom: 4, scrollSnapType: "x proximity" }}>
-         {ASSETS.map((a) => {
-          const on = assetType === a.v;
-          return (
-           <button key={a.v} type="button" onClick={() => setAssetType(on ? "" : a.v)} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flex: "0 0 auto", minWidth: 88, scrollSnapAlign: "start", padding: "11px 12px 10px", borderRadius: 12, cursor: "pointer", border: "1px solid " + (on ? "rgba(127,168,212,.85)" : "rgba(255,255,255,.1)"), background: on ? "rgba(34,101,196,.24)" : "rgba(255,255,255,.045)", color: "var(--on-brand)", boxShadow: on ? "0 0 0 1px rgba(34,101,196,.35), 0 6px 16px -8px rgba(34,101,196,.5)" : "none", transition: "background .15s, border-color .15s" }}>
-            <span style={{ opacity: on ? 1 : .82 }}>{a.icon}</span>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 500, whiteSpace: "nowrap", color: on ? "var(--on-brand)" : "rgba(255,255,255,.82)" }}>{ar ? a.ar : a.en}</span>
-           </button>
-          );
-         })}
-        </div>
-        <button type="button" aria-label="Next asset types" onClick={() => page(1)} className="asset-arrow" data-hidden={atEnd} tabIndex={atEnd ? -1 : 0}>
-         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
-        </button>
-       </div>
-      )}
-      <div ref={sref} style={{ position: "relative" }}>
-      <form onSubmit={go} style={{ display: "flex", alignItems: "stretch", border: "1px solid var(--silver-2)", borderRadius: 13, overflow: "hidden", background: "var(--paper)", boxShadow: "0 6px 20px rgba(0,0,0,.18)" }}>
-       <div style={{ display: "flex", alignItems: "center", gap: 11, flex: 1, padding: "0 18px", minWidth: 0 }}>
-        <span style={{ color: "var(--azure)", flex: "none" }}><Icon.pin size={20} /></span>
-        <input className="q" value={q} onChange={(e) => setQ(e.target.value)} placeholder={deal === "req" ? T.phReq : T.phStd} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: "var(--fs-md)", height: 58, color: "var(--ink)", fontFamily: "var(--sans)", minWidth: 0, textAlign: ar ? "right" : "left" }} />
-       </div>
-       <button type="submit" className="btn primary" style={{ borderRadius: 0, padding: "0 30px", fontSize: "var(--fs-md)", fontWeight: 600, flex: "none" }}>{deal === "req" ? T.btnReq : T.btnStd}</button>
-      </form>
-      {sopen && sug.length > 0 && (
-       <div style={{ position: "absolute", top: "calc(100% + 6px)", insetInlineStart: 0, insetInlineEnd: 0, background: "var(--paper)", border: "1px solid var(--silver)", borderRadius: 12, boxShadow: "0 14px 36px rgba(20,24,27,.22)", zIndex: 50, overflow: "hidden", textAlign: ar ? "right" : "left" }}>
-        {sug.map((o, i) => (
-         <button key={i} type="button" onClick={() => { setSopen(false); if (o.did) { const sp = new URLSearchParams(); sp.set("deal", deal === "buy" ? "sale" : "lease"); sp.set("district", o.did); router.push(`/${locale}/listings?${sp.toString()}`); } else { setQ(o.label); } }}
-          style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "11px 15px", border: "none", borderTop: i === 0 ? "none" : "1px solid var(--paper)", cursor: "pointer", background: "var(--paper)", color: "var(--ink)", fontSize: "var(--fs-base)", fontFamily: "var(--sans)", textAlign: "inherit" }}>
-          <span style={{ color: "var(--harbor)", flex: "none" }}><Icon.pin size={15} /></span>
-          <span style={{ fontWeight: 600 }}>{o.label}</span>
-          {/* ADV-1, and D24 in the direction that is easier to miss. This chip was
-              green and read "verified" for any place found in our own districts
-              table, which means only that we hold a record of the place: nothing
-              about it had been checked by anyone. It now says the thing that is
-              true, in a colour that claims nothing. */}
-          {o.indexed ? <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--slate)", border: "1px solid var(--silver-2)", background: "var(--paper)", borderRadius: 4, padding: "1px 5px", flex: "none" }}>{H.indexedShort}</span> : null}
-          {o.sub ? <span className="muted" style={{ fontSize: "var(--fs-xs)" }}>{o.sub}</span> : null}
-         </button>
-        ))}
-       </div>
-      )}
-      </div>
-      <div style={{ textAlign: "center", marginTop: 12 }}>
-       {/* Sole content of its row, so it is a standalone control rather than a
-           link inside a sentence, and it carries the touch floor. */}
-       <Link href={L("/post-requirement")} className="touch-target" style={{ color: "rgba(255,255,255,.82)", fontSize: "var(--fs-sm)", textDecoration: "underline", textUnderlineOffset: 3 }}>{H.postReqPrompt}</Link>
-      </div>
-      <div className="row gap8 wrap" style={{ marginTop: 14, justifyContent: "center" }}>
-       <span className="tag" style={{ color: "rgba(255,255,255,.6)", background: "transparent", border: "none" }}>{T.popular}</span>
-       <Link href={L("/listings?q=KAFD")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip1}</Link>
-       <Link href={L("/listings?q=Tahlia")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip2}</Link>
-       <Link href={L("/listings?q=Industrial")} className="chip" style={{ textDecoration: "none", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)", color: "var(--on-brand)" }}>{T.chip3}</Link>
-      </div>
-     </div>
-     <div className="row gap20 wrap" style={{ marginTop: 22, fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.85)", justifyContent: "center" }}>
-      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro1}</span>
-      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro2}</span>
-      <span className="row gap8"><span style={{ color: "#C4DAF2" }}><Icon.check size={16} /></span> {T.micro3}</span>
-     </div>
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))", gap: 12, marginTop: 26, maxWidth: 760, marginInline: "auto" }}>
-      {/* Item 6 follow-up, Home visible polish. These four persona cards were
-          text-only, one weight and one size, with nothing to help a scanning
-          eye tell them apart before reading every word. Each now carries the
-          same icon-chip language `.jc-ic` already established on the "Four
-          jobs" cards below, sized down for this denser row, so a returning
-          visitor can recognise "I invest" by its chart glyph as fast as by
-          its label. The icon is decorative (aria-hidden): the link's name is
-          still the label text alone, unchanged from before this pass.
 
-          Item 4 (PKG-DISCOVERY-1 UX closure). "I am a licensed broker" sent a
-          broker into /requirements, the tenant-requirement board occupiers
-          post to and brokers browse -- a real page, but not a broker's own
-          journey onto the platform. /brokers is that journey: FAL/ID/
-          performance requirements, a sample of what a broker's own listings
-          look like once live, and its own primary CTA (`b.signupCta`) into
-          /signup. That is the actual broker onboarding route. */}
-      {([
-        [H.personaNeed, L("/listings"), Icon.search],
-        [H.personaHave, L("/list"), Icon.building],
-        [H.personaBroker, L("/brokers"), Icon.shield],
-        [H.personaInvest, L("/listings?deal=sale"), Icon.chart],
-      ] as [string, string, (p: { size?: number }) => React.JSX.Element][]).map(([label, href, I], i) => (
-       <Link key={i} href={href} className="card persona-card" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "16px 14px", textAlign: "center", textDecoration: "none", color: "var(--ink)", fontWeight: 600, fontSize: "var(--fs-sm)" }}>
-        <span className="persona-ic" aria-hidden="true"><I size={18} /></span>
-        {label}
-       </Link>
-      ))}
+     <div className="hm-doors" id="doors">
+      {/* Findings 182, 197 and 198. Find or list is one choice of two, so it
+          is a pair of native radios bound by a name, not two toggle buttons
+          and not a rebuilt radiogroup. The radio itself is .sronly; the label
+          draws the face and the focus ring. */}
+      <fieldset className="hm-seg">
+       <legend className="sronly">{H.doorsLabel}</legend>
+       <label className={door === "find" ? "on" : undefined}><input type="radio" name="hm-door" className="sronly" checked={door === "find"} onChange={() => setDoor("find")} /><span>{H.doorFind}</span></label>
+       <label className={door === "list" ? "on" : undefined}><input type="radio" name="hm-door" className="sronly" checked={door === "list"} onChange={() => setDoor("list")} /><span>{H.doorList}</span></label>
+      </fieldset>
+      {door === "find" ? (
+       <form className="hm-form" onSubmit={go}>
+        <div className="hm-where" ref={sref}>
+         <input className="hm-field" value={q} onChange={(e) => setQ(e.target.value)} aria-label={H.whereLabel} placeholder={H.whereLabel} autoComplete="off" />
+         {sopen && sug.length > 0 && (
+          <div className="hm-sug">
+           {sug.map((o, i) => (
+            <button key={i} type="button" onClick={() => { setSopen(false); if (o.did) { const sp = new URLSearchParams(); sp.set("deal", dealParam); sp.set("district", o.did); router.push(`/${locale}/listings?${sp.toString()}`); } else { setQ(o.label); } }}>
+             <span className="hm-sug-pin"><Icon.pin size={15} /></span>
+             <span className="hm-sug-name">{o.label}</span>
+             {/* ADV-1, and D24 in the direction that is easier to miss. This chip
+                 says a place is in our index, which is all that is true of it,
+                 in a colour that claims nothing. */}
+             {o.indexed ? <span className="hm-sug-chip">{H.indexedShort}</span> : null}
+             {o.sub ? <span className="hm-sug-sub">{o.sub}</span> : null}
+            </button>
+           ))}
+          </div>
+         )}
+        </div>
+        <select className="hm-field" aria-label={H.typeLabel} value={assetType} onChange={(e) => setAssetType(e.target.value)}>
+         <option value="">{H.allTypes}</option>
+         {ASSET_TYPES.map((t) => <option key={t} value={t}>{assetLabel(t, loc)}</option>)}
+        </select>
+        <select className="hm-field" aria-label={H.dealLabel} value={deal} onChange={(e) => setDeal(e.target.value === "buy" ? "buy" : "lease")}>
+         <option value="lease">{H.dealLease}</option>
+         <option value="buy">{H.dealBuy}</option>
+        </select>
+        <div className="hm-area">
+         <input className="hm-field" inputMode="numeric" value={smin} onChange={(e) => setSmin(e.target.value)} aria-label={H.areaFromLabel} placeholder={H.areaFrom} />
+         {/* A dimension line between the two ends of the range, with the unit
+             on it. Drawn, not typed, and hidden from a screen reader because
+             both fields already say square metres in their own names. */}
+         <span className="hm-dim" aria-hidden="true">
+          <span>{formatUnit("sqm", loc, "short")}</span>
+          <svg width="52" height="10" viewBox="0 0 52 10"><path d="M0 5H52M4 8L8 2M44 8L48 2" fill="none" stroke="currentColor" strokeWidth="1.2" /></svg>
+         </span>
+         <input className="hm-field" inputMode="numeric" value={smax} onChange={(e) => setSmax(e.target.value)} aria-label={H.areaToLabel} placeholder={H.areaTo} />
+        </div>
+        <button type="submit" className="hm-btn">{H.searchBtn}</button>
+        <div className="hm-form-foot">
+         <Link href={L("/map")} className="btn-line hm-btn-line">{H.mapLink}</Link>
+         <Link href={L("/post-requirement")} className="touch-target hm-textlink">{H.postReqPrompt}</Link>
+        </div>
+       </form>
+      ) : (
+       <div className="hm-list">
+        <p>{H.listBody}</p>
+        {/* Home prototype-link ruling. /list is the real, public intake. It
+            says plainly that signing in comes first, which an authenticated
+            route presented as a public feature cannot. */}
+        <Link href={L("/list")} className="hm-btn">{H.listBtn}</Link>
+       </div>
+      )}
      </div>
     </div>
-   </div>
+   </section>
 
-   {(() => {
-     // A stat is either a counted value or it is absent (Law 3): the strip
-     // itself follows the same rule and does not render an empty bordered bar
-     // when every tile it would have carried is null.
-     const shownStats = T.stat.filter((x) => x[0]);
-     return shownStats.length > 0 ? (
-      <div className="row" style={{ borderTop: "1px solid var(--silver)", borderBottom: "1px solid var(--silver)", background: "var(--paper)", flexWrap: "wrap" }}>
-       {shownStats.map((x, i) => (
-        <div key={i} className="grow sstat-cell" style={{ padding: "22px 24px", borderRight: "1px solid var(--silver)", textAlign: "center", minWidth: 140 }}>
-         <div className="mono tnum" style={{ fontSize: "1.75rem", fontWeight: 500, color: "var(--ink)" }}>{x[0]}</div>
-         <div className="muted" style={{ fontSize: "var(--fs-sm)", marginTop: 4 }}>{x[1]}</div>
-        </div>
-       ))}
+   {/* PKG-DISCOVERY-1 slice B, item 8. The heading and the browse path are
+       unconditional, and the one part that depends on data resolves to one of
+       three honest states: the cards, or a `DataState` that names which of the
+       two failures actually happened. */}
+   <section className="hm-sec">
+    <div className="hm-wrap">
+     <div className="hm-head">
+      <h2 className="serif hm-h2">{H.featuredH}</h2>
+      <div className="hm-head-links">
+       <Link href={L("/listings")} className="touch-target hm-arrowlink">{H.browseAll} <Icon.arrow size={16} /></Link>
+       <Link href={L("/listers")} className="touch-target hm-arrowlink">{H.listersLink} <Icon.arrow size={16} /></Link>
       </div>
-     ) : null;
-   })()}
-
-   <div style={{ maxWidth: 1360, margin: "0 auto" }}>
-
-    {/* PKG-DISCOVERY-1 slice B, item 8. This section used to render nothing at
-        all, heading included, whenever `featured` was empty: a visitor with an
-        unreachable database and a visitor on a corpus with genuinely nothing
-        published saw the identical silent gap, on the site's first screen.
-        The heading and the browse path are now unconditional, and the one part
-        that depends on data resolves to one of three honest states: the cards,
-        or a `DataState` that names which of the two things actually happened. */}
-    <div style={{ padding: "clamp(44px,7vw,72px) 24px 8px" }}>
-     <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
-      <div><div className="eyebrow">{T.ftEye}</div><h2 className="serif" style={{ fontSize: "clamp(1.5rem,5vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{T.ftH}</h2></div>
-      <Link href={L("/listings")} className="btn ghost" style={{ gap: 7, textDecoration: "none" }}>{T.ftBrowse} <Icon.arrow size={16} /></Link>
      </div>
      {f0 ? (
       <>
-       <div style={{ marginTop: 28 }}>
-        <ListingCard listing={f0.listing} locale={cardLocale} ui={UI} variant="lead" indexPosition={f0.indexPosition} />
+       <div className="hm-lead">
+        <ListingCard listing={f0.listing} locale={loc} ui={UI} variant="lead" indexPosition={f0.indexPosition} />
         {leadLister && <ListerBadge lister={leadLister} ar={ar} locale={locale} />}
        </div>
-       <div className="snap-row" style={{ marginTop: 18 }}>
+       <div className="snap-row hm-row">
         {rest.map((f) => (
-         <ListingCard key={f.listing.id} listing={f.listing} locale={cardLocale} ui={UI} variant="grid" indexPosition={f.indexPosition} />
+         <ListingCard key={f.listing.id} listing={f.listing} locale={loc} ui={UI} variant="grid" indexPosition={f.indexPosition} />
         ))}
        </div>
       </>
      ) : (
-      <div style={{ marginTop: 28 }}>
+      <div className="hm-lead">
        <DataState
         kind={dataOk ? "empty" : "error"}
         title={dataOk ? H.featuredEmptyTitle : H.featuredErrorTitle}
         body={dataOk ? H.featuredEmptyBody : H.featuredErrorBody}
         action={
          <div className="row gap10 wrap" style={{ justifyContent: "center" }}>
-          <Link href={L("/listings")} className="btn" style={{ textDecoration: "none" }}>{T.ftBrowse}</Link>
+          <Link href={L("/listings")} className="btn" style={{ textDecoration: "none" }}>{H.browseAll}</Link>
           {!dataOk && (
            <button type="button" className="btn ghost" onClick={() => router.refresh()}>{H.retryLabel}</button>
           )}
@@ -479,199 +293,120 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
       </div>
      )}
     </div>
+   </section>
 
-    <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
-     <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-      <div style={{ maxWidth: 560 }}>
-       <div className="eyebrow">{T.exEye}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(1.75rem,4vw,2.75rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{T.exH}</h2>
-       <p className="muted" style={{ fontSize: "var(--fs-lg)", lineHeight: 1.65, marginTop: 16 }}>{T.exP}</p>
-      </div>
-      <div className="job-grid" style={{ marginTop: 36 }}>
-       {T.cards.map((c, i) => {
-        const I = cardIcons[i] as (p: { size?: number }) => React.JSX.Element;
-        const st: [string, string] | null =
-         i === 0 ? (stats.listings ? [stats.listings, H.statSpacesLive] : null)
-         : i === 1 ? (jobs && jobs.reqs != null ? [String(jobs.reqs), H.statOpenReqs] : null)
-         : i === 2 ? (jobs && jobs.segs != null ? [String(jobs.segs), H.statSegments] : null)
-         : null;
-        return (
-         <Reveal key={i} delay={i * 90}>
-          <Link href={L(c[2])} className="job-card">
-           <span className="row between" style={{ alignItems: "center" }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 14 }}>
-             <span className="jc-ic"><I size={22} /></span>
-             <span className="mono" style={{ fontSize: "var(--fs-sm)", color: "var(--harbor)", fontWeight: 500 }}>{"0" + (i + 1)}</span>
-            </span>
-            <span className="jc-arrow"><Icon.arrow size={19} /></span>
-           </span>
-           <span style={{ display: "block", fontSize: "1.25rem", fontWeight: 600, letterSpacing: "-.01em", marginTop: 14 }}>{c[0]}</span>
-           <span className="muted" style={{ display: "block", fontSize: "var(--fs-md)", marginTop: 6, lineHeight: 1.55 }}>{c[1]}</span>
-           {st && (
-            <span className="jc-stat">
-             <span className="mono" style={{ fontSize: i === 3 ? 16 : 26, fontWeight: 500, color: "var(--ink)", letterSpacing: i === 3 ? ".02em" : "0" }}>{st[0]}</span>
-             <span className="muted" style={{ fontSize: "var(--fs-sm)" }}>{st[1]}</span>
-            </span>
-           )}
-          </Link>
-         </Reveal>
-        );
-       })}
-      </div>
+   {/* The directory. Every asset type the platform lists, each with the first
+       thing a listing of that type is measured by, read from the field
+       registry. It replaces the row of icon tiles: a name and a measure say
+       more than a pictogram did, and each row is a real filtered search. */}
+   <section className="hm-types">
+    <div className="hm-wrap">
+     <h2 className="serif hm-h2">{H.typesH}</h2>
+     <p className="hm-types-sub">{H.typesSub}</p>
+     <div className="hm-types-grid">
+      {ASSET_TYPES.map((t) => (
+       <Link key={t} href={L(`/listings?deal=lease&asset=${t}`)} className="hm-type">
+        <span className="hm-type-name">{assetLabel(t, loc)}</span>
+        <span className="hm-type-measure">{measure(t)}</span>
+        <span className="hm-type-arrow"><Icon.arrow size={16} /></span>
+       </Link>
+      ))}
+      <Link href={L("/listings")} className="hm-type hm-type-all">
+       <span className="hm-type-name">{H.allListings}</span>
+       <span className="hm-type-arrow"><Icon.arrow size={16} /></span>
+      </Link>
      </div>
     </div>
+   </section>
 
-    <div className="hero-band" style={{ margin: "0 24px", borderRadius: 18, background: "var(--ink)", color: "var(--on-brand)", padding: "clamp(40px,6vw,56px) clamp(28px,5vw,48px)", position: "relative", overflow: "hidden" }}>
-     <div className="band-mark" style={{ position: "absolute", right: -20, bottom: -40, opacity: .3 }}><Mark size={300} base="#222A31" lit={HARBOR} /></div>
-     <div className="hero-band-grid" style={{ position: "relative", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1.05fr)", gap: 48, alignItems: "center" }}>
-      <div>
-       <div className="eyebrow" style={{ color: "var(--azure-l)" }}>{T.bandEye}{kpis.period ? (ar ? "، " : ", ") + formatPeriod(kpis.period, ar) : ""}</div>
-       <h2 className="serif" style={{ fontSize: "clamp(1.625rem,3.6vw,2.5rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0", color: "var(--on-brand)" }}>{T.bandH}</h2>
-       <p style={{ fontSize: "var(--fs-input)", lineHeight: 1.62, color: "#AEB6C0", margin: "16px 0 22px", maxWidth: 420 }}>{T.bandP1}{stats.districts}{T.bandP2}</p>
-       <div className="row gap8 wrap" style={{ marginBottom: 22 }}>
+   <section className="hm-sec">
+    <div className="hm-wrap hm-band">
+     <div className="hm-band-copy">
+      <h2 className="serif hm-h2">{H.bandH}</h2>
+      <p className="hm-p">{stats.districts ? fill(H.bandP, { n: stats.districts }) : H.bandPPlain}</p>
+      {bands.length > 1 && (
+       <fieldset className="hm-chips">
+        <legend className="sronly">{H.bandPick}</legend>
         {bands.map((b, i) => (
-         <button key={b.en} type="button" onClick={() => setBi(i)} style={{ cursor: "pointer", fontFamily: "var(--sans)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "7px 13px", borderRadius: 20, border: "1px solid rgba(255,255,255,.16)", color: i === bi ? "var(--ink)" : "rgba(255,255,255,.8)", background: i === bi ? "var(--paper)" : "transparent", transition: "all .15s ease" }}>{ar ? b.ar : b.en}</button>
+         <label key={b.en} className={i === bi ? "on" : undefined}><input type="radio" name="hm-band" className="sronly" checked={i === bi} onChange={() => setBi(i)} /><span>{ar ? b.ar : b.en}</span></label>
         ))}
-       </div>
-       <Link href={L("/rent-index")} className="btn primary" style={{ textDecoration: "none" }}>{T.bandBtn}</Link>
-      </div>
-      {!band && (
-       <DataState
-        kind={dataOk ? "empty" : "error"}
-        title={dataOk ? H.bandEmptyTitle : H.bandErrorTitle}
-        body={dataOk ? H.bandEmptyBody : H.bandErrorBody}
-       />
+       </fieldset>
       )}
-      {band && <div style={{ background: "rgba(255,255,255,.04)", border: "1px solid rgba(255,255,255,.12)", borderRadius: 18, padding: 24 }}>
-       <div className="row between" style={{ alignItems: "flex-start" }}>
-        <div><div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{(ar ? band.ar : band.en) + (H.gradeAOfficeSuffix)}</div><div style={{ fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.5)", marginTop: 2 }}>{unitShort}</div></div>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid rgba(255,255,255,.18)", color: "rgba(255,255,255,.75)", fontSize: "var(--fs-2xs)", fontWeight: 600, padding: "4px 10px", borderRadius: 20 }}>{formatPeriod(band.period, ar)}</span>
+      <Link href={L("/rent-index")} className="btn-line hm-btn-line">{H.bandBtn}</Link>
+     </div>
+     {!band && (
+      <DataState
+       kind={dataOk ? "empty" : "error"}
+       title={dataOk ? H.bandEmptyTitle : H.bandErrorTitle}
+       body={dataOk ? H.bandEmptyBody : H.bandErrorBody}
+      />
+     )}
+     {band && (
+      <div className="hm-card">
+       <div className="hm-card-head">
+        <div>
+         <div className="hm-card-title">{(ar ? band.ar : band.en) + H.gradeAOfficeSuffix}</div>
+         <div className="hm-card-unit">{unitShort}</div>
+        </div>
+        <span className="hm-period">{formatPeriod(band.period, ar)}</span>
        </div>
-       <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 16 }}>
-        <span className="mono" style={{ fontSize: "2.75rem", fontWeight: 500, lineHeight: 1 }}>{fig(band.median)}</span>
-        {/* PKG-FIG2 closure, findings 129 and 130. This caption used to be one
-            frozen dictionary string, "average SAR/m²/yr", and it was wrong in
-            two independent ways at once.
-            It spelled the unit, so it was a fifth place the platform's
-            most-used unit was written down, and the live payload showed it: it
-            was the one occurrence of six on this page carrying no word joiner,
-            because the joiner is applied by `formatUnit` and this string never
-            went through it. The ar-lint rule shipped in this package could not
-            see it, because that rule fires on a spelling that differs from the
-            canon and this spelling matched.
-            And it asserted the statistic. The word "average" was fixed in the
-            dictionary above a figure read from a column named `median`, which
-            is the exact confusion Law 6 and ADV-1D exist to prevent, on the
-            first screen of the site. `rentIndexEvidence.ts` states the rule
-            plainly: the statistic comes from the row's own `stat_kind` and from
-            nothing else. It now does here too. */}
-        <span style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.55)" }}>{fill(C.statUnit, { stat: band.stat, unit: unitShort })}</span>
+       <div className="hm-figure">
+        <span className="hm-figure-n tnum">{fig(band.median)}</span>
+        {/* PKG-FIG2 closure, findings 129 and 130. The statistic comes from
+            the row's own `stat_kind` and the unit from `formatUnit`. Neither
+            is a frozen word in a dictionary. */}
+        <span className="hm-figure-stat">{fill(C.statUnit, { stat: band.stat, unit: unitShort })}</span>
        </div>
-       <div style={{ fontSize: "var(--fs-sm)", color: "rgba(255,255,255,.7)", marginTop: 8 }}>{/* PKG-FIG1, finding 127. The connective was spelled here too, in both
-           languages, on the site's front door. `formatRange` is the one place
-           that knows Arabic takes إلى between two figures and that the pair has
-           to be isolated so an RTL line cannot reorder it. */}
-       {ar ? `النطاق المنشور: ${formatRange(band.low, band.high, "ar", 0)}` : `Published band: ${formatRange(band.low, band.high, "en", 0)}`}</div>
-       {/* A year-on-year figure and a rising curve used to sit here. The curve was
-           nine hand-placed coordinates in an SVG path, drawn to look like a trend.
-           Year-on-year needs two periods of the same series and we have one, so
-           neither is shown. */}
-       <div className="row between" style={{ borderTop: "1px solid rgba(255,255,255,.1)", marginTop: 16, paddingTop: 14, fontSize: "var(--fs-xs)", color: "rgba(255,255,255,.6)" }}>
-        <span>{kpis.source || (ar ? "المصدر" : "Source")}</span>
-        <span className="mono" style={{ color: "var(--on-brand)", fontWeight: 500 }}>{kpis.cells > 0 ? `${kpis.cells} ${ar ? "خلية" : "cells"}` : ""}</span>
+       {/* The published band as a dimension line, with the recorded statistic
+           marked on it. Both ends and the mark are the row's own figures. A
+           year-on-year change is not drawn: that needs two periods of the same
+           series and there is one. */}
+       {bandPos !== null && (
+        <div className="hm-range" aria-hidden="true">
+         <div className="hm-range-track"><span style={{ insetInlineStart: `${bandPos * 100}%` }} /></div>
+         <div className="hm-range-ends tnum"><span>{fig(band.low)}</span><span>{fig(band.high)}</span></div>
+        </div>
+       )}
+       {/* PKG-FIG1, finding 127. `formatRange` is the one place that knows
+           Arabic takes إلى between two figures and that the pair has to be
+           isolated so an RTL line cannot reorder it. */}
+       <div className="hm-card-line">{fill(H.bandRange, { range: formatRange(band.low, band.high, loc, 0) })}</div>
+       <div className="hm-card-foot">
+        <span>{kpis.source || H.sourceWord}</span>
+        <span className="tnum">{kpis.cells > 0 ? fill(H.cellsWord, { n: String(kpis.cells) }) : ""}</span>
        </div>
        {bandNotes.map((n) => (
-        <div key={n} style={{ fontSize: "var(--fs-xs)", lineHeight: 1.7, color: "rgba(255,255,255,.6)", marginTop: 8 }}>{n}</div>
+        <div key={n} className="hm-card-note">{n}</div>
        ))}
-      </div>}
-     </div>
-    </div>
-
-    {/* PKG-DISCOVERY-1 slice B, item 7. Honest, grounded in `/verification`
-        itself: this copy names what a check actually is (evidence-backed,
-        per-record, never automatic) and stops short of it, because the page
-        it links to is the one place that engine-generated union is rendered
-        and this section must never restate it in its own, driftable words. */}
-    <div style={{ padding: "clamp(40px,6vw,60px) 24px" }}>
-     <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-      <div className="eyebrow">{H.verifyEyebrow}</div>
-      <h2 className="serif" style={{ fontSize: "clamp(1.5rem,4vw,2rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 0" }}>{H.verifyHeading}</h2>
-      <p className="muted" style={{ fontSize: "var(--fs-md)", lineHeight: 1.65, marginTop: 14 }}>{H.verifyBody}</p>
-      <Link href={L("/verification")} className="btn secondary" style={{ marginTop: 18, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}>{H.verifyLinkLabel} <Icon.arrow size={16} /></Link>
-     </div>
-    </div>
-
-    <div style={{ padding: "clamp(52px,8vw,84px) 24px" }}>
-     <div style={{ textAlign: "center" }}>
-      <div className="eyebrow">{T.oneEye}</div>
-      <h2 className="serif" style={{ fontSize: "clamp(1.625rem,5vw,2.25rem)", fontWeight: 500, letterSpacing: "-.02em", margin: "12px 0 6px" }}>{T.oneH}</h2>
-      <p className="muted" style={{ fontSize: "var(--fs-md)", maxWidth: 600, margin: "0 auto" }}>{T.oneP}</p>
-     </div>
-     <div>
-      {([[H.tabDiscover, [0, 5, 9, 4]], [H.tabDecide, [1, 11, 2]], [H.tabTransact, [6, 7, 10]]] as [string, number[]][]).map(([gt, idxs], gi) => (
-       <div key={gi} style={{ marginTop: gi === 0 ? 36 : 30 }}>
-        <div className="row gap10" style={{ alignItems: "center", marginBottom: 14 }}>
-         <span className="eyebrow">{gt}</span>
-         <span style={{ flex: 1, height: 1, background: "var(--silver)" }} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 232px), 1fr))", gap: 16 }}>
-         {idxs.map((fi) => {
-          const m = T.feats[fi]; const I = featIcons[fi] as (p: { size?: number }) => React.JSX.Element; const k = featKeys[fi];
-          // Home prototype-link ruling. A planned tile is a plain, non-focusable
-          // div, deliberately NOT sharing the `.feat-card` class: `.feat-card`
-          // carries its own `:hover` rule (lift, shadow, corner-mark, icon
-          // colour change), and a class combinator can only match the hover
-          // affordance away with a specificity fight against whichever
-          // stylesheet happens to load last. `.feat-card-planned` is its own
-          // rule instead, so there is no hover affordance to defeat: nothing
-          // here reads as a working action, and the platform's one approved
-          // "not live yet" word sits next to the heading, in both languages.
-          if (PLANNED_FEATS.has(fi)) return (
-           <div key={fi} className="feat-card-planned">
-            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
-            <div className="row gap8 wrap" style={{ alignItems: "center" }}>
-             <div className="feat-h">{m[0]}</div>
-             <span className="tag" style={{ fontSize: "0.65625rem" }}>{releaseLabel("planned", ar)}</span>
-            </div>
-            <div className="feat-p">{m[1]}</div>
-           </div>
-          );
-          return (
-           <Link key={fi} href={L(featLinks[fi])} className="feat-card" style={{ textDecoration: "none", color: "inherit" }}>
-            <span className={"feat-ic" + (k === "a" ? " a" : k === "h" ? "" : " s")}><I size={20} /></span>
-            <div className="feat-h">{m[0]}</div>
-            <div className="feat-p">{m[1]}</div>
-           </Link>
-          );
-         })}
-        </div>
-       </div>
-      ))}
-     </div>
-    </div>
-
-
-    <div style={{ padding: "8px 24px 64px" }}>
-     <div style={{ borderRadius: 18, background: "linear-gradient(120deg,var(--azure) 0%,var(--azure-d) 100%)", color: "var(--on-brand)", padding: "clamp(34px,7vw,52px) clamp(22px,6vw,40px)", textAlign: "center" }}>
-      <h2 className="serif" style={{ fontSize: "clamp(1.5625rem,5.4vw,2.125rem)", fontWeight: 500, letterSpacing: "-.02em", margin: 0, color: "var(--on-brand)" }}>{T.ctaH}</h2>
-      <p style={{ fontSize: "var(--fs-input)", color: "rgba(255,255,255,.85)", margin: "14px auto 26px", maxWidth: 480 }}>{T.ctaP}</p>
-      {/* Home prototype-link ruling. This CTA used to send "List your space" to
-          /dashboard, an authenticated area, and paired it with a "Find your
-          next space" button to /find, a private prototype route explicitly
-          named by the ruling. /list is the real, already-honest public page
-          for the first half (PKG-SUP1: it describes the actual intake and
-          says plainly that signing in comes first, never simulates a form),
-          and the heading above already poses exactly two paths, "list... or
-          find...", which /listings (Browse listings) already answers for the
-          second half. A third, redundant "find" button is dropped rather than
-          repointed to a route it would misdescribe. */}
-      <div className="row gap12 center wrap">
-       <Link href={L("/list")} className="btn lg" style={{ background: "var(--paper)", color: "var(--azure-d)", textDecoration: "none" }}>{T.ctaList}</Link>
-       <Link href={L("/listings")} className="btn lg" style={{ background: "transparent", color: "var(--on-brand)", border: "1px solid rgba(255,255,255,.5)", textDecoration: "none" }}>{T.ctaBrowse}</Link>
       </div>
-     </div>
+     )}
     </div>
-   </div>
+   </section>
+
+   {/* PKG-DISCOVERY-1 slice B, item 7. This copy names what a check actually
+       is and stops short of restating the rules, because /verification is the
+       one place that engine-generated list is rendered and this section must
+       never restate it in its own, driftable words. */}
+   <section className="hm-sec">
+    <div className="hm-wrap hm-verify">
+     <h2 className="serif hm-h2">{H.verifyHeading}</h2>
+     <p className="hm-p">{H.verifyBody}</p>
+     <Link href={L("/verification")} className="btn-line hm-btn-line">{H.verifyLinkLabel} <Icon.arrow size={16} /></Link>
+    </div>
+   </section>
+
+   {/* One closing statement, where the old page had a blue panel followed at
+       once by a dark one carrying the same two buttons (audit finding 14). It
+       has no buttons of its own: the footer that follows it on every page
+       already offers "List your space" and "Browse listings", and repeating
+       them here would rebuild the defect one section lower. */}
+   <section className="hm-close">
+    <div className="hm-wrap">
+     <h2 className="serif hm-h2">{H.closeH}</h2>
+     <p className="hm-close-body">{H.closeBody}</p>
+     <p className="hm-close-note">{H.closeNote}</p>
+    </div>
+   </section>
   </div>
  );
 }
