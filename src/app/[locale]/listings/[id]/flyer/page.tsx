@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getPublishedKpis } from "@/lib/market/published";
-import { assetLabel, gradeLabel, fitoutLabel } from "@/lib/labels";
+import { assetLabel, gradeLabel, fitoutLabel, cityLabel } from "@/lib/labels";
 import { listingTitle, listingPlace, titleMissingIn } from "@/lib/listingTitle";
-import { photoFor } from "@/lib/photos";
+import TypeGlyph from "@/components/TypeGlyph";
 import { fill, formatInteger, formatWithUnit } from "@/lib/format";
 import { netArea, askingPrice } from "@/lib/listingFigures";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
@@ -125,6 +125,8 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
   // document a landlord takes into a meeting. It now prints the badges the record
   // has earned, each naming its own gate, which today is none of them.
   const badges = verifiedBadgeTexts(l as any, null, ar);
+  const hasGrade = !!l.building_grade && l.building_grade !== "n_a";
+  const hasFitout = !!l.fitout_condition && l.fitout_condition !== "n_a";
   const row = lease ? pickIndexRow(idxRows, l.asset_type, l.building_grade) : null;
   const v = lease ? marketVerdict(l.asking_rent_sqm, row, l.districts?.name_en, l.districts?.name_ar) : null;
   const today = new Date().toISOString().slice(0, 10);
@@ -146,7 +148,10 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
             <div className="mono muted" style={{ fontSize: "0.6875rem" }}>{l.reference_code || l.id.slice(0, 8)} · {today}</div>
           </div>
         </div>
-        <img src={photoFor(l.asset_type, l.id)} alt={title} style={{ width: "100%", height: 260, objectFit: "cover", display: "block" }} />
+        {/* PKG-DESIGN-6. A flyer is the page most likely to be printed and handed
+            on, so a library photograph on it travelled furthest. It carries the
+            drawing of the type of space, as the results and the cards do. */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 132, background: "var(--azure-wash)" }}><TypeGlyph type={l.asset_type} size={88} /></div>
         <div style={{ padding: "22px 26px" }}>
           <div className="row gap8 wrap">
             {/* Verified badges only. Each string names the dimension it rests on and
@@ -155,13 +160,16 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
               <span key={`v${i}`} className="tag" style={{ color: "var(--green)", background: "var(--green-wash)", borderColor: "var(--green-line)" }}>{b}</span>
             ))}
             <span className="tag">{type} · {lease ? t.lease : t.sale}</span>
-            <span className="tag">{gradeLabel(l.building_grade, locale)}</span>
-            <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span>
+            {/* PKG-DESIGN-6. A grade or fit-out the record does not state used to
+                print here as "N/A", as a tag and again as a tile below, on the
+                one page that is printed and handed on. An absent value is absent. */}
+            {hasGrade ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
+            {hasFitout ? <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
           </div>
           <h1 className="serif" style={{ fontSize: "1.625rem", fontWeight: 500, margin: "12px 0 4px" }}>{title}</h1>
-          <div className="muted" style={{ fontSize: "0.84375rem" }}>{dn}{l.districts?.city ? `, ${l.districts.city}` : ""}</div>
+          <div className="muted" style={{ fontSize: "0.84375rem" }}>{dn}{l.districts?.city ? `${ar ? "، " : ", "}${cityLabel(l.districts.city, locale)}` : ""}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 128px), 1fr))", gap: 12, marginTop: 18 }}>
-            {([[t.area, areaFig], [t.grade, gradeLabel(l.building_grade, locale)], [t.fitout, fitoutLabel(l.fitout_condition, locale)], [lease ? t.askingRent : t.askingPrice, priceFig ?? t.onRequest]] as [string, string | null][]).filter((s) => s[1]).map((s, i) => (
+            {([[t.area, areaFig], [t.grade, hasGrade ? gradeLabel(l.building_grade, locale) : null], [t.fitout, hasFitout ? fitoutLabel(l.fitout_condition, locale) : null], [lease ? t.askingRent : t.askingPrice, priceFig ?? t.onRequest]] as [string, string | null][]).filter((s) => s[1]).map((s, i) => (
               <div key={i} style={{ border: "1px solid var(--silver)", borderRadius: 9, padding: "10px 12px" }}>
                 <div className="muted" style={{ fontSize: "0.65625rem" }}>{s[0]}</div>
                 <div className="mono" style={{ fontSize: "0.875rem", fontWeight: 500, marginTop: 5 }}>{s[1]}</div>
@@ -183,6 +191,12 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
               ))}
             </div>
           )}
+          {/* PKG-DESIGN-6. The source line used to print on every flyer, including
+              one that quotes no index figure at all, where it named a source for
+              nothing and sat directly under the lister's own asking rent as if it
+              were the source of that. It prints only beside something it sources:
+              the index average below, or the verdict block above. */}
+          {(pub.officeRent != null || (v && v.status !== "na")) && (
           <div className="muted" style={{ fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 16 }}>
             {/* PKG-FIG2 closure, findings 131 and 132. This line read "Office average
                 {rate} SAR/m²/yr", which named a statistic the flyer never read and
@@ -195,6 +209,7 @@ export default async function ListingFlyer(props: { params: Promise<{ locale: st
               <div key={s} style={{ marginTop: 4 }}>{s}</div>
             ))}
           </div>
+          )}
         </div>
         <div className="row between wrap" style={{ padding: "14px 26px", borderTop: "1px solid var(--silver)", background: "var(--cool)", fontSize: "0.71875rem", gap: 14, alignItems: "center" }}>
           <div className="col gap4" style={{ minWidth: 0 }}>

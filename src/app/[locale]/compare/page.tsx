@@ -6,7 +6,7 @@ import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, fitoutLabel, dealLabel, cityLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import { Photo, Icon } from "@/components/satkit";
-import { photoFor } from "@/lib/photos";
+import TypeGlyph from "@/components/TypeGlyph";
 import { pickIndexRow, marketVerdict, type IndexRow } from "@/lib/market/verdict";
 import { getDictionary } from "@/i18n/getDictionary";
 import { verifiedBadges } from "@/components/VerificationState";
@@ -134,7 +134,8 @@ export default async function ComparePage(props: { params: Promise<{ locale: str
                 {items.map((l, i) => (
                   <div key={l.id} style={{ padding: 16, borderRight: i < items.length - 1 ? "1px solid var(--silver)" : "none", borderBottom: "1px solid var(--silver)" }}>
                     <Link href={L(`/listings/${l.id}`)} style={{ textDecoration: "none", color: "inherit" }}>
-                      <Photo src={photoFor(l.asset_type, l.id)} kind={l.asset_type} alt={`${assetLabel(l.asset_type, locale)}, ${dn(l)}`} h={108} style={{ borderRadius: 9 }} badges={verifiedBadges(l, null, ar)} />
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 84, background: "var(--azure-wash)", borderRadius: 8 }}><TypeGlyph type={l.asset_type} size={48} /></div>
+                      {verifiedBadges(l, null, ar).length > 0 ? <div className="row gap8 wrap" style={{ marginTop: 8 }}>{verifiedBadges(l, null, ar)}</div> : null}
                       <div style={{ fontSize: "0.875rem", fontWeight: 600, marginTop: 12, letterSpacing: "-.01em" }}>{listingTitle(l, ar ? "ar" : "en")}</div>
                       <div className="muted" style={{ fontSize: "0.75rem", marginTop: 3 }}>{dn(l)}{cp.sep}{cty(l)}</div>
                     </Link>

@@ -30,7 +30,11 @@ const FONTS = flag("--fonts", "/tmp/ogbuild/node_modules/@fontsource");
 // download (the CI image pins a build that may not match this package's pin).
 const CHROME = flag("--chromium", process.env.CHROMIUM_PATH || "");
 
-const HARBOR = "#2265C4", HARBOR_DEEP = "#1C56A9", INK = "#14181B", COOL = "#F6F8FB";
+// PKG-DESIGN-6. The card is the footer's surface: flat navy, the plain lots in
+// white and the lit lot and "SAT" in sky. It used to be ink with two blue
+// glows and a faint grid behind the text, which is a look and not this
+// product's. Harbor is kept off navy because the pair is only 2.8 to 1.
+const NAVY = "#10233F", SKY = "#7CC0F5", COOL = "#F6F8FB", WHITE = "#FFFFFF";
 
 const face = (file) => {
   const p = join(FONTS, file);
@@ -71,7 +75,7 @@ function mark(size, base, lit) {
 const COPY = {
   en: {
     dir: "ltr",
-    wordmark: `<span style="color:${HARBOR}">SAT</span><span style="color:${COOL}">MARKETS</span>`,
+    wordmark: `<span style="color:${SKY}">SAT</span><span style="color:${COOL}">MARKETS</span>`,
     headline: "Commercial real estate,<br/>Saudi Arabia",
     sub: "Listings that show their verification state · Published rent index, attributed to source · AI that never invents a figure",
     foot: "SAT REAL ESTATE · REGA FAL 1200025510",
@@ -82,7 +86,7 @@ const COPY = {
   },
   ar: {
     dir: "rtl",
-    wordmark: `<span style="color:${HARBOR}">سات</span><span style="color:${COOL}">ماركتس</span>`,
+    wordmark: `<span style="color:${SKY}">سات</span><span style="color:${COOL}">ماركتس</span>`,
     headline: "العقارات التجارية<br/>في السعودية",
     sub: "عروض تُظهر حالة توثيقها · مؤشر إيجارات منشور منسوب إلى مصادره · ذكاء اصطناعي لا يخترع الأرقام",
     foot: "سات العقارية · رخصة فال 1200025510",
@@ -105,16 +109,10 @@ const html = (loc) => {
 @font-face{font-family:'SatPlexArMed';src:url('${PLEX_AR_500}')format('woff2');font-weight:500}
 @font-face{font-family:'SatPlexLatin';src:url('${PLEX_LAT}')format('woff2');font-weight:600}
 *{margin:0;padding:0;box-sizing:border-box}
-body{width:1200px;height:630px;overflow:hidden;background:${INK};
-  background-image:
-    radial-gradient(1100px 620px at ${c.dir === "rtl" ? "88%" : "12%"} -18%, rgba(34,101,196,.42), rgba(34,101,196,0) 62%),
-    radial-gradient(760px 520px at ${c.dir === "rtl" ? "8%" : "92%"} 118%, rgba(28,86,169,.34), rgba(28,86,169,0) 66%);
+body{width:1200px;height:630px;overflow:hidden;background:${NAVY};
   color:${COOL};display:flex;flex-direction:column;justify-content:space-between;
   padding:74px 84px;position:relative}
-.grid{position:absolute;inset:0;opacity:.05;
-  background-image:linear-gradient(${COOL} 1px,transparent 1px),linear-gradient(90deg,${COOL} 1px,transparent 1px);
-  background-size:88px 88px}
-.rule{height:2px;width:96px;border-radius:2px;background:linear-gradient(${c.dir === "rtl" ? "270deg" : "90deg"},${HARBOR},rgba(34,101,196,0))}
+.rule{height:3px;width:72px;background:${SKY}}
 .brand{display:flex;align-items:center;gap:18px;position:relative}
 .wm{font-family:${c.wmFont};font-weight:700;font-size:${c.wmSize}px;letter-spacing:${c.wmSpace};line-height:1;display:flex;gap:${gap}}
 h1{font-family:${c.headFont};font-weight:700;font-size:${c.headSize}px;line-height:${c.headLh};letter-spacing:${loc === "ar" ? "0" : "-.015em"};position:relative}
@@ -123,8 +121,7 @@ h1{font-family:${c.headFont};font-weight:700;font-size:${c.headSize}px;line-heig
   font-size:15px;letter-spacing:${loc === "ar" ? "0" : ".17em"};color:rgba(246,248,251,.52);position:relative}
 .mid{display:flex;flex-direction:column;gap:26px;position:relative}
 </style></head><body>
-<div class="grid"></div>
-<div class="brand">${mark(58, COOL, HARBOR)}<div class="wm">${c.wordmark}</div></div>
+<div class="brand">${mark(58, WHITE, SKY)}<div class="wm">${c.wordmark}</div></div>
 <div class="mid"><div class="rule"></div><h1>${c.headline}</h1><div class="sub">${c.sub}</div></div>
 <div class="foot">${c.foot}</div>
 </body></html>`;

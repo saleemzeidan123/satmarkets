@@ -126,8 +126,8 @@ a { transition: color .18s ease; }
 .hairline { height:1px; background: linear-gradient(90deg, transparent, rgba(28,33,38,0.12), transparent); }
 .card { background:#fff; border:1px solid rgba(28,33,38,0.08); border-radius:14px; box-shadow:0 1px 2px rgba(20,24,28,0.04), 0 8px 24px -14px rgba(20,24,28,0.10); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .card:hover { transform: translateY(-3px); box-shadow:0 14px 34px -14px rgba(20,24,28,0.20); border-color: rgba(34,101,196,0.35); }
-.btn-gold { background: linear-gradient(180deg, #4C82B8, #2265C4); color:#fff; border-radius:10px; box-shadow:0 1px 0 rgba(255,255,255,0.18) inset, 0 6px 16px -8px rgba(34,101,196,0.5); transition: filter .18s ease, transform .1s ease; }
-.btn-gold:hover { filter: brightness(1.06); }
+.btn-gold { background: #2265C4; color:#fff; border-radius:8px; box-shadow:none; transition: background .18s ease, transform .1s ease; }
+.btn-gold:hover { background: #1C56A9; }
 .btn-gold:active { transform: translateY(1px); }
 .btn-ink { display:inline-flex; align-items:center; justify-content:center; gap:6px; background:#2265C4; color:#fff; border:1px solid #1C56A9; border-radius:10px; box-shadow:0 1px 0 rgba(255,255,255,0.18) inset, 0 10px 22px -12px rgba(28,86,169,0.55); transition: background .18s ease, transform .1s ease; }
 .btn-ink:hover { background:#1C56A9; }
@@ -1069,3 +1069,81 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 /* PKG-DESIGN-5A. The ranking commitment on the results count line. */
 .rs-ranknote{color:var(--slate);text-decoration:underline;text-decoration-color:var(--silver-2);text-underline-offset:3px;}
 .rs-ranknote:hover{color:var(--ink);text-decoration-color:var(--ink);}
+
+/* ==========================================================================
+   PKG-DESIGN-6. Finishing.
+
+   The contact rail on the listing page, drawn to the approved design without
+   touching what it does: a flat card, the price in the text face, plain labels
+   where there were spaced capitals, and 8px controls. Scoped to the rail and
+   the page so the shared classes keep their meaning elsewhere.
+   ========================================================================== */
+.ld-side > .card, .ld-side .card.pad{border-radius:12px;box-shadow:none;border:1px solid var(--silver);}
+.ld-page .tag{font-family:inherit;font-size:0.8125rem;letter-spacing:0;text-transform:none;border-radius:6px;color:var(--ink);background:var(--paper);border:1px solid var(--silver-2);}
+.ld-page .chip{border-radius:8px;}
+.ld-side .btn{border-radius:8px;}
+.ld-side .btn.primary{background:var(--harbor);box-shadow:none;}
+.ld-side .btn.primary:hover{background:var(--harbor-d);}
+.ld-side .muted{font-size:0.8125rem !important;}
+.ld-page .card.pad{border-radius:12px;box-shadow:none;}
+.ld-page .lister-byline{border-radius:12px;}
+.ld-page .tabs .t{font-size:0.9375rem;}
+.ld-page .tabs .t.on{border-bottom-color:var(--harbor);}
+.ld-page .modhead .ttl{font-family:var(--serif);font-weight:500;font-size:1.25rem;letter-spacing:-.01em;}
+[dir="rtl"] .ld-page .modhead .ttl{font-family:var(--font-ar-display),var(--ar);font-weight:700;font-size:1.5rem;letter-spacing:0;}
+.ld-page .modhead > svg{display:none;}
+
+/* The map control on a phone. It was a pill floating over the results, so it
+   always sat on top of some row. It is now the first thing in the results
+   column: one outlined button above the list, opening the same full-screen
+   map. The loading placeholder holds the same 48px line before the map code
+   arrives, so the list does not move when the button appears. Nothing about
+   the button itself changes: same element, same dialog, same focus return. */
+@media (max-width:1080px){
+  .rs .btn.primary.lst-map-toggle{position:static;transform:none;order:-1;display:inline-flex;justify-content:center;width:100%;min-height:48px;background:var(--paper);color:var(--ink);border:1.5px solid var(--ink);border-radius:8px;box-shadow:none;font-weight:600;font-size:0.9375rem;}
+  .rs .btn.primary.lst-map-toggle:hover{background:var(--cool);color:var(--ink);}
+  .rs .lst-split > .mapskel{order:-1;height:48px;min-height:48px;border-radius:8px;}
+  .rs .lst-split{gap:14px;}
+}
+
+/* The flyer takes the listing page's text face: no mono figures, no spaced
+   capitals, plain tags. It is the page that gets printed. */
+.flyer-page .mono{font-family:inherit;letter-spacing:0;font-variant-numeric:tabular-nums;}
+.flyer-page .eyebrow{font-family:inherit;font-size:0.8125rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--slate);}
+.flyer-page .eyebrow::before{content:none;}
+.flyer-page .tag{font-family:inherit;font-size:0.8125rem;letter-spacing:0;text-transform:none;border-radius:6px;}
+
+/* ==========================================================================
+   PKG-DESIGN-6. One voice across the site.
+
+   The pages the redesign has not rebuilt yet still spoke the previous
+   design's dialect in three shared classes: `.eyebrow` (spaced capitals in
+   the mono face, with a small square before it), `.mono` (every figure in a
+   typewriter face) and `.tag` (spaced capitals again), plus cards that
+   lifted on hover whether or not they could be clicked. The approved design
+   sets a label as a plain line, a figure in the text face with tabular
+   numerals, and a card flat. These rules bring every page to that, without
+   touching the forty-five label sites and hundred-odd figure sites one by
+   one. `html` in front is for specificity only: sat-platform.css loads after
+   this file and defines the same classes.
+   ========================================================================== */
+html .eyebrow{font-family:var(--sans);font-size:0.8125rem;font-weight:600;letter-spacing:0;text-transform:none;color:var(--harbor);}
+html[dir="rtl"] .eyebrow{font-family:var(--ar);}
+html .eyebrow::before{content:none;}
+html .mono{font-family:var(--sans);letter-spacing:0;font-variant-numeric:tabular-nums;}
+html[dir="rtl"] .mono{font-family:var(--ar);}
+html .tag{font-family:inherit;font-size:0.8125rem;letter-spacing:0;text-transform:none;border-radius:6px;color:var(--ink);background:var(--paper);border:1px solid var(--silver-2);}
+html .card{border-radius:12px;box-shadow:none;border:1px solid var(--silver);}
+html .card:hover{transform:none;box-shadow:none;border-color:var(--silver);}
+html a.card:hover, html .card.lift:hover, html a.listing:hover{border-color:var(--silver-2);transform:none;box-shadow:none;}
+html .ld-page .eyebrow{color:var(--slate);font-weight:500;}
+html .flyer-page .eyebrow{color:var(--slate);font-weight:500;}
+/* The mono face itself, switched at its source. Every `var(--mono)`, every
+   Tailwind `font-mono` and the `.fig` class resolved to a typewriter face; a
+   figure on this site is set in the text face with tabular numerals. */
+html:root{--mono:var(--font-sans),system-ui,sans-serif;}
+html:root[dir="rtl"]{--mono:var(--font-ar),system-ui,sans-serif;}
+html .font-mono, html .fig{font-family:var(--mono);letter-spacing:0;font-variant-numeric:tabular-nums;}
+html .freeze{font-size:0.75rem;letter-spacing:0;text-transform:none;}
+html .dt th{font-family:var(--sans);font-size:0.8125rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--slate);}
+html[dir="rtl"] .dt th{font-family:var(--ar);}
