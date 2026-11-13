@@ -20,7 +20,7 @@ import { entityName } from "@/lib/displayName";
 import { netArea } from "@/lib/listingFigures";
 import { formatInteger, formatRange, formatUnit } from "@/lib/format";
 
-const TEAL = "#2265C4"; const GOLD = "#2265C4";
+const TEAL = "#2B4782"; const GOLD = "#2B4782";
 
 // ADV-5B. A seeded generator used to live here. It took the building id, hashed
 // it, and produced a weekly visitor curve, an hourly rhythm, three catchment

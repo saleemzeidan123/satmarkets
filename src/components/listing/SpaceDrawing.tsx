@@ -25,7 +25,7 @@ import { scaleBarMetres, type SpacePlan } from "@/lib/spaceDrawing";
 // Hex literals rather than var(): a custom property does not resolve in an SVG
 // presentation attribute. No em dashes (Law 2). Western numerals (Law 4).
 
-const INK = "#14181B", BLUE = "#2265C4", WASH = "#ECF2F8", SLATE = "#5B6470";
+const INK = "#14181B", BLUE = "#2B4782", WASH = "#EEF1F8", SLATE = "#5B6470";
 
 export default function SpaceDrawing({
   plan,

@@ -28,7 +28,7 @@ const FORM: Record<string, Form> = {
   land: "plot", gas_station: "plot",
 };
 
-const INK = "#14181B", BLUE = "#2265C4", BAR = "#C3CCD8";
+const INK = "#14181B", BLUE = "#2B4782", BAR = "#C3CCD8";
 
 export default function TypeGlyph({ type, size = 56 }: { type: string; size?: number }) {
   const form = FORM[type] ?? "stack";

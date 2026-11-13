@@ -81,7 +81,7 @@ export default function WatchBanner({ locale }: { locale: "en" | "ar" }) {
   const stop = (id: string) => { removeWatch(id); setWatches(getWatches()); };
 
   return (
-    <div className="card" role="status" style={{ border: "1px solid var(--azure, #2265C4)", background: "var(--azure-wash, #EEF4FA)", padding: "14px 16px", marginBottom: 18, borderRadius: 12 }}>
+    <div className="card" role="status" style={{ border: "1px solid var(--azure, #2B4782)", background: "var(--azure-wash, #EEF4FA)", padding: "14px 16px", marginBottom: 18, borderRadius: 12 }}>
       <div className="row gap8" style={{ alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div className="row gap8" style={{ alignItems: "center" }}>
           <span aria-hidden style={{ color: "var(--azure-d, #2C5578)", fontSize: "0.9375rem" }}>◔</span>

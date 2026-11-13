@@ -11,8 +11,8 @@ const config: Config = {
         cool: "#F6F8FB", paper: "#FFFFFF",
         silver: "#E9EDF1", "silver-2": "#D7DDE5",
         slate: "#5B6470", "slate-2": "#8A93A0", mid: "#9AA3AE",
-        harbor: "#2265C4", "harbor-d": "#1C56A9",
-        azure: "#2265C4", "azure-d": "#1C56A9", "azure-l": "#9BBBE6", "azure-wash": "#ECF2F8",
+        harbor: "#2B4782", "harbor-d": "#233A6B",
+        azure: "#2B4782", "azure-d": "#233A6B", "azure-l": "#A8B5D6", "azure-wash": "#EEF1F8",
         brass: "#A88B5C", stone: "#EDE7DC",
         green: "#1B7A50", "green-wash": "#E7F4ED", "green-line": "#BFE3CF",
         // `amber` stays the mark colour: it is used for dots, bars and icon fills where
@@ -24,8 +24,8 @@ const config: Config = {
         line: "rgba(28,33,38,0.10)",
         charcoal: "#14181B",
         ivory: "#F6F8FB", "ivory-2": "#E9EDF1",
-        signal: "#2265C4", "signal-soft": "#9BBBE6",
-        gold: "#2265C4", "gold-soft": "#6E92EE", "gold-deep": "#1C56A9"
+        signal: "#2B4782", "signal-soft": "#A8B5D6",
+        gold: "#2B4782", "gold-soft": "#7F93C8", "gold-deep": "#233A6B"
       },
       fontFamily: {
         display: ["var(--font-serif)", "Georgia", "serif"],

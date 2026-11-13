@@ -191,7 +191,7 @@ ${c.pills.map((label) => `    <button type="button" class="chip" data-item="1" s
    <div data-item="1">
     <div class="text-[10px] uppercase tracking-wide text-charcoal/45">${c.label}</div>
     <div class="mt-0.5 flex items-baseline gap-2">
-     <span class="fig text-[26px]" style="color:#2265C4">${c.median}</span>
+     <span class="fig text-[26px]" style="color:#2B4782">${c.median}</span>
      <span class="fig text-[12px] text-charcoal/55">${c.range}${c.per}</span>
     </div>
     <div class="mt-1 text-[11px] text-charcoal/45">${c.attribution}</div>

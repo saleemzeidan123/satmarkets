@@ -21,7 +21,7 @@ export default function SaveButton({ id, locale }: { id: string; locale: string 
   return (
     <button type="button" onClick={toggle} className="chip" aria-pressed={saved}
       style={{ cursor: "pointer", borderColor: saved ? "var(--harbor)" : undefined, color: saved ? "var(--harbor)" : undefined }}>
-      <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? "#2265C4" : "none"} stroke={saved ? "#2265C4" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill={saved ? "#2B4782" : "none"} stroke={saved ? "#2B4782" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
       </svg>
       {saved ? (t.saved) : (t.save)}

@@ -1,6 +1,6 @@
 import React from "react";
 
-export const HARBOR = "#2265C4", AZURE = "#2265C4", INK = "#14181B", COOL = "#F6F8FB";
+export const HARBOR = "#2B4782", AZURE = "#2B4782", INK = "#14181B", COOL = "#F6F8FB";
 
 type Rs = [number, number, number, number];
 function buildParcel(base?: string, lit?: string, litPos?: string) {
