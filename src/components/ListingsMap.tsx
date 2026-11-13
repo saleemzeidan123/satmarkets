@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { popupNode } from "@/lib/mapPopup";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getDictionary } from "@/i18n/getDictionary";
 import { mapLocale } from "@/lib/mapLocale";
@@ -213,11 +214,14 @@ export default function ListingsMap({ locale, bubbles, pins, baseParams, initial
       m.on("click", "p-hit", (e: any) => {
         const f = e.features?.[0]; if (!f) return;
         const p = f.properties;
-        const t = String(p.title).replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const pr = p.price ? String(p.price).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
-        look.setLngLat(f.geometry.coordinates).setHTML(`<div style="font:600 12.5px var(--sans,sans-serif);color:${BRAND.ink};line-height:1.3">${t}</div>${pr ? `<div style="font:12px var(--sans,sans-serif);color:${BRAND.ink};margin-top:3px">${pr}</div>` : ""}<a href="/${locale}/listings/${p.id}" style="display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:${BRAND.harbor};text-decoration:none">${t2.viewListing}</a>`).addTo(m);
+        const t = String(p.title);
+        const pr = p.price ? String(p.price) : "";
+        look.setLngLat(f.geometry.coordinates).setDOMContent(popupNode([
+          { text: t, style: `font:600 12.5px var(--sans,sans-serif);color:${BRAND.ink};line-height:1.3` },
+          { text: pr, style: `font:12px var(--sans,sans-serif);color:${BRAND.ink};margin-top:3px` },
+        ], { locale, listingId: String(p.id), text: t2.viewListing, style: `display:inline-block;margin-top:7px;font:600 12px var(--sans,sans-serif);color:${BRAND.harbor};text-decoration:none` })).addTo(m);
       });
-      m.on("mouseenter", "d-hit", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setHTML(`<div style="font:600 12px var(--sans,sans-serif);color:${BRAND.ink}">${f.properties.name}</div><div style="font:11px var(--sans,sans-serif);color:${BRAND.slate}">${f.properties.count} ${t2.spacesClick}</div>`).addTo(m); });
+      m.on("mouseenter", "d-hit", (e: any) => { m.getCanvas().style.cursor = "pointer"; const f = e.features?.[0]; if (!f) return; tip.setLngLat(e.lngLat).setDOMContent(popupNode([{ text: String(f.properties.name), style: `font:600 12px var(--sans,sans-serif);color:${BRAND.ink}` }, { text: `${f.properties.count} ${t2.spacesClick}`, style: `font:11px var(--sans,sans-serif);color:${BRAND.slate}` }])).addTo(m); });
       m.on("mouseleave", "d-hit", () => { m.getCanvas().style.cursor = ""; tip.remove(); });
       m.on("mouseenter", "p-hit", (e: any) => {
         m.getCanvas().style.cursor = "pointer";

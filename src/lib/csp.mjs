@@ -54,7 +54,7 @@ const staticDirectives = [
   "style-src 'self' 'unsafe-inline'",
   // images.unsplash.com is the demonstration photography, supabase.co is uploaded
   // listing media, cartocdn is the basemap sprite sheet, blob: is the map canvas.
-  "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co https://*.cartocdn.com https://tiles.openfreemap.org",
+  "img-src 'self' data: blob: https://*.supabase.co https://*.cartocdn.com https://tiles.openfreemap.org",
   // next/font self-hosts every face under /_next/static/media.
   "font-src 'self' data:",
   // Supabase REST and realtime, and the primary and fallback basemap tile and
@@ -177,3 +177,26 @@ export const CLIENT_CSP_REQUEST_HEADERS = [
   "content-security-policy",
   "content-security-policy-report-only",
 ];
+
+/**
+ * The part of the policy that IS enforced, from security hardening 1.
+ *
+ * The full policy above stays report-only until a browser pass that includes
+ * Safari has been done (docs/security-baseline.md says exactly what that pass
+ * is). These four directives do not wait for it, because none of them governs
+ * what a page loads, so none of them can blank a map or kill a button:
+ *
+ *   object-src 'none'       no plugin content, anywhere
+ *   base-uri 'self'         an injected <base> cannot repoint relative URLs
+ *   frame-ancestors 'none'  the page cannot be framed (clickjacking); the
+ *                           standards form of X-Frame-Options: DENY
+ *   form-action 'self'      an injected form cannot post a visitor's input to
+ *                           another origin. Every form here submits by fetch
+ *                           or to this origin.
+ *
+ * It is a second header beside the report-only one. A browser applies both: it
+ * enforces this and reports on that. It carries no script-src, so it has no
+ * nonce and can be a build-time header.
+ */
+export const ENFORCED_CSP_HEADER = "Content-Security-Policy";
+export const ENFORCED_BASELINE_CSP = "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'";
