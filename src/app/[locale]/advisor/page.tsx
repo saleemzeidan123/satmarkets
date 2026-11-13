@@ -1,7 +1,7 @@
 "use client";
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, use } from "react";
 import Link from "next/link";
-import { Icon, Logo } from "@/components/satkit";
+import { Icon } from "@/components/satkit";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { assetLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
@@ -9,15 +9,31 @@ import { useAdvisorChat } from "@/lib/useAdvisorChat";
 import { formatPeriod } from "@/lib/market/period";
 import { spaceTypeLabel, rentUnitLabel, rateBasisLabel, pickSegment, validBand, analyseDeal, num, isKnownUnit } from "@/lib/market/analyser";
 import { getDictionary } from "@/i18n/getDictionary";
-import { fill, formatArea, formatInteger, formatRange } from "@/lib/format";
+import { fill, formatDecimal, formatInteger, formatRange } from "@/lib/format";
 import EvidencePassport from "@/components/EvidencePassport";
 // RC12, finding 164. See src/lib/motion.ts: the CSS reduced-motion block sets
 // `html{scroll-behavior:auto}`, which an explicit "smooth" never consults.
 import { scrollBehavior } from "@/lib/motion";
 import { advisorQuoteMessage } from "@/lib/advisor/quote";
+import { rowQuestion, shortPlace } from "@/lib/advisor/examples";
 import { type PublicQuoteKind } from "@/lib/publicQuote";
 import { statisticLabel } from "@/lib/evidence";
 import { netArea, priceParts } from "@/lib/listingFigures";
+
+// PKG-ADV-5. WHAT THIS PAGE IS NOW, AND WHY.
+//
+// It was a chat page: a greeting, four cards, four suggested questions and a
+// box, in three columns. Exercised on production on 13 November 2026, three of
+// the four suggested questions had no answer, two of the four cards promised
+// something the platform does not do, and at the owner's laptop size the box
+// you type into was below the bottom of the screen, because the page grew with
+// the conversation instead of scrolling inside itself.
+//
+// The whole of what this tool can answer about rents is the rows the Rent Index
+// publishes. So the first screen is those rows, read from the index: a ledger,
+// each row a button that asks its own question. Nothing is suggested that has
+// no answer, because nothing is suggested that is not a row. The box stays for
+// questions in a person's own words, and stays on the screen.
 
 // Mirrors PublicIndexSegment from /api/index/segments: the figure arrives as
 // `average` (it is an arithmetic average from the REGA source, never a median).
@@ -51,19 +67,46 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
  const [input, setInput] = useState("");
  const [tool, setTool] = useState<null | "value">(null);
  const [segs, setSegs] = useState<SegRow[] | null>(null);
+ // The sentences the gate attached to the rows, once each. This is where the
+ // sample label comes from: the page states no source and no data class of its
+ // own, because a sentence written here would be true only until the data
+ // changed.
+ const [notes, setNotes] = useState<string[]>([]);
  // No implicit space type on entry: the user must choose one (or a valid page
  // context supplies it). API row order must never become the user's intent.
  const [segKey, setSegKey] = useState("");
  const [segLoc, setSegLoc] = useState("");
  const [rent, setRent] = useState("");
  const [size, setSize] = useState("");
+ const shellRef = useRef<HTMLDivElement>(null);
  const scrollRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLInputElement>(null);
 
+ // The index is read on arrival, not when a tool is opened: the rows are the
+ // first screen.
  useEffect(() => {
-  if (tool !== "value" || segs) return;
-  fetch(`/api/index/segments?locale=${locale}`).then((r) => r.json()).then((d) => setSegs(d.segments || [])).catch(() => setSegs([]));
- }, [tool, segs, locale]);
+  let live = true;
+  fetch(`/api/index/segments?locale=${locale}`)
+   .then((r) => r.json())
+   .then((d) => { if (live) { setSegs(d.segments || []); setNotes(Array.isArray(d.notes) ? d.notes : []); } })
+   .catch(() => { if (live) setSegs([]); });
+  return () => { live = false; };
+ }, [locale]);
+
+ // THE SHELL IS EXACTLY AS TALL AS THE SCREEN BELOW WHATEVER SITS ABOVE IT.
+ //
+ // `.dash` set a minimum height and no height, so the conversation pushed the
+ // page taller, the inner scroller never scrolled, and the composer left the
+ // screen. The notice above this page is one line on a laptop and two on a
+ // phone, so the offset is measured rather than assumed.
+ useLayoutEffect(() => {
+  const el = shellRef.current;
+  if (!el) return;
+  const fit = () => el.style.setProperty("--avp-top", `${Math.max(0, Math.round(el.getBoundingClientRect().top + window.scrollY))}px`);
+  fit();
+  window.addEventListener("resize", fit);
+  return () => window.removeEventListener("resize", fit);
+ }, []);
 
  // Keep a still-valid previous selection, but never auto-pick a segment as
  // implicit intent: if the current choice is not among the loaded options,
@@ -74,28 +117,33 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
   setSegKey((prev) => pickSegment(opts, prev));
  }, [segs, segKey]);
 
- // The four jobs and the four starter chips were each written out twice, once
- // per language, inside this component. Two of the Arabic strings spelled the
- // building grade with a Latin letter, "فئة A", the same drift the Rent Index
- // carried, so the Advisor's own suggestions contradicted the grade wording on
- // every listing they lead to. They read from the dictionaries now and follow
- // gradePhrase, "فئة أ". The Arabic intent parser already accepts both spellings
- // (valueEvidence detectRequestedSegment), so the chips still classify.
- const JOBS = [
-  { icon: <Icon.search size={18} />, label: av.jobFindT, sub: av.jobFindS, prefill: av.jobFindP, tool: null },
-  { icon: <Icon.spark size={18} />, label: av.jobDraftT, sub: av.jobDraftS, prefill: av.jobDraftP, tool: null },
-  { icon: <Icon.chart size={18} />, label: av.jobAnalyseT, sub: av.jobAnalyseS, prefill: "", tool: "value" as const },
-  { icon: <Icon.target size={18} />, label: av.jobWatchT, sub: av.jobWatchS, prefill: av.jobWatchP, tool: null },
- ];
-
- const CHIPS = [av.chipPrice, av.chipBand, av.chipFair, av.chipWatch];
-
  useEffect(() => { scrollRef.current?.scrollTo({ top: 9e9, behavior: scrollBehavior() }); }, [msgs, busy, tool]);
 
- function pickJob(j: (typeof JOBS)[number]) {
-  if (j.tool === "value") { setTool("value"); return; }
+ const started = msgs.length > 0;
+
+ // The rows the ledger can draw: a valid band, in a unit this page can name.
+ const rows = (segs ?? [])
+  .map((s) => ({ s, band: validBand({ band_low: s.band_low, band_high: s.band_high, average: s.average }), unit: rentUnitLabel(s.unit, ar) }))
+  .filter((r): r is { s: SegRow; band: NonNullable<ReturnType<typeof validBand>>; unit: string } => !!r.band && !!r.unit);
+ // One scale for every row, so the rules can be compared down the column. A
+ // rule per row on its own scale would make a warehouse and a shop look alike.
+ const scaleMax = rows.reduce((m, r) => Math.max(m, r.band.high), 0);
+ const pct = (v: number) => `${scaleMax > 0 ? Math.min(100, (v / scaleMax) * 100) : 0}%`;
+ const periods = Array.from(new Set(rows.map((r) => formatPeriod(r.s.period, ar))));
+
+ function ask(text: string | null) {
+  if (!text || busy) return;
   setTool(null);
-  setInput(j.prefill);
+  send(text);
+  // The row that was pressed is about to leave the screen, and focus would go
+  // with it. It moves to the conversation, where the answer will arrive, and
+  // not to the input, which would raise a phone's keyboard over that answer.
+  scrollRef.current?.focus();
+ }
+
+ function prefill(text: string) {
+  setTool(null);
+  setInput(text);
   inputRef.current?.focus();
  }
 
@@ -145,66 +193,96 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
    res.text,
   );
   setMsgs((m) => [...m, { role: "a", text, band: { low: res.band.low, average: res.band.average, high: res.band.high, unit: activeRow.unit }, quoted: res.quoted, handoffDistrict: activeRow.district_id || null, handoffAsset: activeRow.asset_type || null, handoffLabel: locL }]);
+  setTool(null);
  }
 
- const started = msgs.length > 0;
+ const startAgain = () => { reset(); setTool(null); setInput(""); };
 
  return (
-  <div className="dash">
+  <div className="avp" ref={shellRef}>
    <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
      { "@type": "ListItem", position: 1, name: av.crumbHome, item: `${SITE}/${locale}` },
      { "@type": "ListItem", position: 2, name: av.crumbAdvisor, item: `${SITE}/${locale}/advisor` },
    ] }} />
-   <aside className="dside advisor-rail-l" style={{ background: "var(--paper)", color: "var(--ink)", borderRight: "1px solid var(--silver)" }}>
-    <div className="brand" style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-     <Link href={`/${locale}`} aria-label="Home"><Logo size={26} /></Link>
-     <button className="btn primary sm" onClick={() => { reset(); setTool(null); }}><Icon.plus size={14} /> {av.newBadge}</button>
+   <header className="avp-top">
+    <Link href={`/${locale}`} aria-label={av.backHome} className="avp-back"><span style={{ display: "inline-flex", transform: ar ? undefined : "scaleX(-1)" }}><Icon.arrow size={16} /></span></Link>
+    <div className="avp-name">
+     <h1 className="avp-h1">{av.title}</h1>
+     <p className="avp-sub">{av.subtitle}</p>
     </div>
-    <div className="dnav" style={{ gap: 4, marginTop: 10 }}>
-     <div className="eyebrow" style={{ padding: "4px 12px" }}>{av.whatICanDo}</div>
-     {JOBS.map((j, i) => (
-      <button key={i} onClick={() => pickJob(j)} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2, color: "var(--ink)", background: "transparent", border: "none", textAlign: ar ? "right" : "left", padding: "9px 12px", borderRadius: 9, cursor: "pointer", width: "100%" }}>
-       <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "var(--harbor)" }}>{j.icon}</span>{j.label}</span>
-       <span className="mono" style={{ fontSize: "var(--fs-3xs)", color: "var(--slate-2)" }}>{j.sub}</span>
-      </button>
-     ))}
-    </div>
-   </aside>
+    {(started || tool) && <button type="button" className="avp-again" onClick={startAgain}>{av.newBadge}</button>}
+   </header>
 
-   <div className="dmain" style={{ display: "flex", flexDirection: "column" }}>
-    <div className="dtopbar" style={{ gap: 10 }}>
-     <Link href={`/${locale}`} aria-label={av.backHome} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 34, height: 34, borderRadius: 9, border: "1px solid var(--silver)", color: "var(--ink)", background: "var(--paper)", flex: "none", textDecoration: "none" }}><span style={{ display: "inline-flex", transform: ar ? undefined : "scaleX(-1)" }}><Icon.arrow size={16} /></span></Link>
-     <span style={{ color: "var(--harbor)" }}><Icon.spark size={20} /></span>
-     <div style={{ minWidth: 0 }}><h1>{av.title}</h1><div className="sub adv-desk">{av.subtitle}</div></div>
-     <span style={{ flex: 1 }} />
-     <button className="btn ghost sm adv-mob" onClick={() => { reset(); setTool(null); }} style={{ flex: "none" }}><Icon.plus size={14} /> {av.newBadge}</button>
-     <span className="tag adv-desk">{av.beta}</span>
-    </div>
+   <div className="avp-body">
+    <div className="avp-main">
+     <div ref={scrollRef} className="avp-scroll" tabIndex={-1}>
+      <div className="avp-col">
+       {!started && tool !== "value" && (
+        <section aria-labelledby="avp-ledger-h">
+         <div className="eyebrow">{av.welcome}</div>
+         <h2 id="avp-ledger-h" className="serif avp-h2">{av.welcomeTitle}</h2>
+         <p className="avp-lede">{av.welcomeSub}</p>
 
-    <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "26px 24px", background: "var(--cool)" }}>
-     <div style={{ maxWidth: 760, margin: "0 auto" }} className="col gap18">
-      {!started && tool !== "value" && (
-       <div>
-        <div className="eyebrow">{av.welcome}</div>
-        <h2 style={{ fontSize: "1.625rem", fontWeight: 700, letterSpacing: "-.02em", margin: "8px 0 4px" }}>{av.welcomeTitle}</h2>
-        <p className="muted" style={{ fontSize: "var(--fs-base)", margin: "0 0 18px" }}>{av.welcomeSub}</p>
-        <div className="adv-jobs-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-         {JOBS.map((j, i) => (
-          <button key={i} onClick={() => pickJob(j)} className="card pad lift" style={{ textAlign: ar ? "right" : "left", cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }}>
-           <span style={{ color: "var(--harbor)", display: "inline-flex", width: 34, height: 34, borderRadius: 9, background: "var(--azure-wash)", alignItems: "center", justifyContent: "center" }}>{j.icon}</span>
-           <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, margin: "12px 0 3px" }}>{j.label}</div>
-           <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.5 }}>{j.sub}</div>
-          </button>
-         ))}
-        </div>
-       </div>
-      )}
+         {segs === null ? (
+          <p className="avp-state" role="status">{av.ledgerLoading}</p>
+         ) : rows.length === 0 ? (
+          <p className="avp-state">{av.ledgerEmpty}</p>
+         ) : (
+          <>
+           {/* The period is the rows' own, and the sentence beside it is the
+               one the gate attached to them. Neither is written here. It sits
+               above the figures, so it is read before them. */}
+           <p className="avp-note">{[...periods, ...notes].join(" · ")}</p>
+           <div className="avp-cols" aria-hidden="true">
+            <span>{av.colSegment}</span><span>{av.colRange}</span><span>{av.colAverage}</span>
+           </div>
+           <ul className="avp-ledger">
+            {rows.map(({ s, band, unit }) => {
+             const place = shortPlace(ar ? (s.district_label_ar || s.district_label) : s.district_label);
+             const q = rowQuestion("average", s, ar, av);
+             return (
+              <li key={`${s.district_label}|${s.asset_type}|${s.segment}`}>
+               <button type="button" className="avp-row" disabled={busy || !q} onClick={() => ask(q)}>
+                {q && <span className="sronly">{q}. </span>}
+                <span className="avp-seg">
+                 <span className="avp-place">{place}</span>
+                 <span className="avp-type">{assetLabel(s.asset_type, locale)}</span>
+                </span>
+                {/* The rule is a low-to-high measure on one scale for the whole
+                    column, so it is drawn left to right in both languages, like
+                    the band bar inside an answer. */}
+                <span className="avp-rule" aria-hidden="true">
+                 <span className="avp-band" style={{ left: pct(band.low), width: `calc(${pct(band.high)} - ${pct(band.low)})` }} />
+                 <span className="avp-tick" style={{ left: pct(band.average) }} />
+                </span>
+                <bdi className="avp-range">{formatRange(band.low, band.high, locale, 0)}</bdi>
+                <span className="avp-fig">
+                 <bdi className="avp-avg">{formatDecimal(band.average, locale, 2)}</bdi>
+                 <span className="avp-unit">{unit}</span>
+                </span>
+               </button>
+              </li>
+             );
+            })}
+           </ul>
+          </>
+         )}
 
+         <ul className="avp-acts">
+          <li><button type="button" onClick={() => setTool("value")}><span>{av.actCompare}</span><Icon.arrow size={14} /></button></li>
+          <li><button type="button" onClick={() => prefill(av.findP)}><span>{av.actFind}</span><Icon.arrow size={14} /></button></li>
+          <li><button type="button" onClick={() => prefill(av.jobWatchP)}><span>{av.jobWatchT}<small>{av.jobWatchS}</small></span><Icon.arrow size={14} /></button></li>
+          <li><Link href={`/${locale}/list`}><span>{av.actList}</span><Icon.arrow size={14} /></Link></li>
+         </ul>
+        </section>
+       )}
+
+       <div className="avp-log" role="log" aria-live="polite" aria-label={av.logLabel}>
       {msgs.map((m, i) => m.role === "u" ? (
        <div key={i} className="chatmsg u" style={{ alignSelf: "flex-end" }}>{m.text}</div>
       ) : (
        <div key={i} className="chatmsg a">
-        <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0, alignItems: "flex-start" }}><span style={{ color: "var(--harbor)", flex: "none", display: "inline-flex", marginTop: 3 }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500, minWidth: 0 }}>{m.text}</span></div>
+        <p className="avp-say" style={{ marginBottom: m.results?.length ? 10 : 0 }}>{m.text}</p>
         {m.band && (() => {
          // Validate through the shared guard: rejects missing, null, empty, NaN,
          // Infinity and out-of-order (low>average>high) values, and also accepts
@@ -265,10 +343,17 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
          // built it from the row the answer was rendered from and dropped any
          // whose value the licence withheld. A message restored from
          // sessionStorage carries whatever it was given and no more.
-         (<div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+         (<div style={{ marginTop: 12, display: "grid", gap: 2 }}>
           <div className="muted" style={{ fontSize: "0.71875rem", fontWeight: 600 }}>{ri.eviTitle}</div>
           {m.passports.map((v, k) => (
-           <EvidencePassport key={k} view={v} label={statisticLabel(v.statistic, ar)} ar={ar} locale={locale} />
+           // The passport's own label is for a screen reader, because on the
+           // Rent Index it sits beside the figure it belongs to. Here two of
+           // them sit one above the other under a sentence, so each is named
+           // in view as well.
+           (<div key={k} className="avp-evi">
+            <span className="avp-evik" aria-hidden="true">{statisticLabel(v.statistic, ar)}</span>
+            <EvidencePassport view={v} label={statisticLabel(v.statistic, ar)} ar={ar} locale={locale} />
+           </div>)
           ))}
          </div>)
         ) : null}
@@ -278,6 +363,12 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
          (<button className="btn secondary sm" style={{ marginTop: 10 }} disabled={busy} onClick={() => send(m.retry as string)}>
           {av.tryAgain}
          </button>)
+        )}
+        {m.cta === "list" && (
+         // The listing form is the thing on this platform that takes a lister's
+         // details and builds a listing, so an answer that cannot write one
+         // points at it.
+         (<Link href={`/${locale}/list`} className="avp-cta">{av.openList}<Icon.arrow size={14} /></Link>)
         )}
         {m.handoffDistrict && (
          <Link href={`/${locale}/listings?district=${m.handoffDistrict}${m.handoffAsset ? `&asset=${m.handoffAsset}` : ""}`} className="row gap8" style={{ marginTop: 10, textDecoration: "none", color: "var(--harbor)", fontSize: "0.78125rem", fontWeight: 600, alignItems: "flex-start" }}>
@@ -312,10 +403,11 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
         )}
        </div>
       ))}
+       </div>
 
       {tool === "value" && (
-       <div className="chatmsg a" style={{ maxWidth: 640 }}>
-        <div className="row gap8" style={{ marginBottom: 12 }}><span style={{ color: "var(--harbor)", flex: "none", display: "inline-flex" }}><Icon.chart size={16} /></span><span style={{ fontWeight: 600, minWidth: 0 }}>{av.analyserTitle}</span>
+       <div className="chatmsg a avp-tool">
+        <div className="row gap8" style={{ marginBottom: 12 }}><h2 className="avp-toolh">{av.analyserTitle}</h2>
          <span style={{ flex: 1 }} />
          <button onClick={() => setTool(null)} aria-label={av.closeAnalyser} style={{ border: "none", background: "transparent", cursor: "pointer", color: "var(--slate)", display: "inline-flex", padding: 2, flex: "none" }}><XIcon size={15} /></button>
         </div>
@@ -368,50 +460,61 @@ export default function AdvisorPage(props: { params: Promise<{ locale: string }>
        </div>
       )}
 
-      {busy && (
-       <div className="chatmsg a"><div className="row gap8"><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span className="muted">{av.searching}</span></div></div>
-      )}
+       {busy && <div className="chatmsg a" role="status"><span className="muted">{av.searching}</span></div>}
+      </div>
+     </div>
+
+     <div className="avp-foot" data-started={started ? "true" : undefined}>
+      <div className="avp-col">
+       <form onSubmit={(e) => { e.preventDefault(); const t = input; setInput(""); setTool(null); send(t); }} className="avp-ask">
+        <label htmlFor="avp-q" className="sronly">{av.inputLabel}</label>
+        <input id="avp-q" ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.inputPh} autoComplete="off" enterKeyHint="send" />
+        <button type="submit" disabled={busy || !input.trim()} aria-label={av.send}><Icon.send size={16} /></button>
+       </form>
+       <p className="avp-ground">{av.groundedNote}</p>
+      </div>
      </div>
     </div>
 
-    <div style={{ padding: "14px 24px 20px", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
-     <div style={{ maxWidth: 760, margin: "0 auto" }}>
-      {!busy && (
-       <div style={{ marginBottom: 10 }}>
-        <div className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "0 2px 7px" }}>{started ? (av.keepExploring) : (av.tryAsking)}</div>
-        <div className="row gap8 wrap chip-flow">
-         {CHIPS.map((p, i) => <button key={i} className="chip" style={{ cursor: "pointer", border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => { setTool(null); send(p); }}>{p}</button>)}
-        </div>
-       </div>
-      )}
-      <form onSubmit={(e) => { e.preventDefault(); const t = input; setInput(""); send(t); }} className="search focus" style={{ boxShadow: "0 4px 16px rgba(20,24,27,.06)", border: "1px solid var(--azure)", borderRadius: 999, padding: "8px 10px 8px 18px", display: "flex", alignItems: "center", gap: 8 }}>
-       <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-       <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.inputPh} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "var(--fs-base)", color: "var(--ink)", textAlign: ar ? "right" : "left" }} />
-       <button type="submit" className="btn primary sm" disabled={busy} aria-label={av.send}><Icon.send size={15} /></button>
-      </form>
-      <p className="muted" style={{ fontSize: "var(--fs-2xs)", margin: "8px 2px 0" }}>{av.groundedNote}</p>
-     </div>
-    </div>
+    <aside className="avp-rail" aria-label={av.sourcesUsed}>
+     {started && rows.length > 0 && (
+      <section>
+       <h2 className="avp-railh">{av.railCoverage}</h2>
+       <ul className="avp-mini">
+        {rows.map(({ s }) => {
+         const q = rowQuestion("average", s, ar, av);
+         return (
+          <li key={`${s.district_label}|${s.asset_type}|${s.segment}`}>
+           <button type="button" disabled={busy || !q} onClick={() => ask(q)}>
+            <span>{shortPlace(ar ? (s.district_label_ar || s.district_label) : s.district_label)}</span>
+            <span className="avp-type">{assetLabel(s.asset_type, locale)}</span>
+           </button>
+          </li>
+         );
+        })}
+       </ul>
+       {notes.length > 0 && <p className="avp-note">{notes.join(" · ")}</p>}
+      </section>
+     )}
+     <section>
+      <h2 className="avp-railh">{av.sourcesUsed}</h2>
+      <p className="avp-railp">{av.snapshotNote}</p>
+      <ul className="avp-plain">
+       <li>{av.sourceRentIndex}</li>
+       <li>{av.sourceRega}</li>
+       <li>{av.sourceListings}</li>
+      </ul>
+     </section>
+     <section>
+      <h2 className="avp-railh">{av.railNot}</h2>
+      <ul className="avp-plain">
+       <li>{av.railNot1}</li>
+       <li>{av.railNot2}</li>
+       <li>{av.railNot3}</li>
+      </ul>
+     </section>
+    </aside>
    </div>
-
-   <aside className="advisor-rail-r" style={{ background: "var(--paper)", borderLeft: "1px solid var(--silver)", overflowY: "auto" }}>
-    <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--silver)" }}><div className="eyebrow">{av.marketSnapshot}</div></div>
-    <div style={{ padding: 20 }} className="col gap16">
-     <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-      <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.65 }}>
-       {av.snapshotNote}
-      </div>
-     </div>
-     <div className="card pad" style={{ boxShadow: "none", background: "var(--cool)" }}>
-      <div className="eyebrow">{av.sourcesUsed}</div>
-      <div className="col gap8" style={{ marginTop: 10 }}>
-       {[[<Icon.chart key="a" size={14} />, av.sourceRentIndex], [<Icon.shield key="b" size={14} />, av.sourceRega], [<Icon.target key="c" size={14} />, av.sourceListings]].map((s, i) => (
-        <div key={i} className="row gap8" style={{ fontSize: "var(--fs-xs)" }}><span style={{ color: "var(--harbor)" }}>{s[0]}</span>{s[1]}</div>
-       ))}
-      </div>
-     </div>
-    </div>
-   </aside>
   </div>
  );
 }
