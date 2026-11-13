@@ -4,7 +4,6 @@ import Link from "next/link";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { assetLabel, gradeLabel, gradePhrase, cityLabel } from "@/lib/labels";
-import { photoFor } from "@/lib/photos";
 import ListingCard from "@/components/ListingCard";
 import DataState from "@/components/DataState";
 import RetryButton from "@/components/RetryButton";
@@ -125,8 +124,11 @@ export default async function BuildingPage(props: { params: Promise<{ locale: st
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-line bg-white shadow-card">
         <div className="relative h-52 sm:h-60">
-          <img src={photoFor(b.asset_type, b.id)} alt={name} className="h-full w-full object-cover" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(20,24,28,0.80), rgba(20,24,28,0.05))" }} />
+          {/* PKG-DESIGN-6. This band held a library photograph chosen by hashing the
+              building id, with the name laid over it. A picture of some other
+              building under this building's name is a statement nobody recorded
+              (claims ledger C46), so the band is the plain navy the name is set on. */}
+          <div className="absolute inset-0" style={{ background: "var(--navy)" }} />
           <span className="absolute start-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-black/30 px-2.5 py-1 text-[0.6875rem] text-white backdrop-blur"><span className="live-dot" />{T.profile}</span>
           <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6">
             <div className="text-[0.6875rem] uppercase tracking-wide text-white/70">{place}</div>

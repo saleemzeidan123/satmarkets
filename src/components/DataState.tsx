@@ -51,7 +51,7 @@ export default function DataState({
   body,
   action,
   compact = false,
-  note = false,
+  note = true,
 }: {
   kind: DataStateKind;
   title: string;
@@ -59,6 +59,10 @@ export default function DataState({
   action?: ReactNode;
   compact?: boolean;
   /**
+   * PKG-DESIGN-6 made this the default on every surface: the tinted, centred
+   * box it replaces read as an alarm, on states that are mostly "nothing here
+   * yet". Pass `note={false}` for the old block.
+   *
    * PKG-DESIGN-3. The weight of a note rather than of an alert: white, a plain
    * outline, read from the start edge, with the icon beside the words. For a
    * state that sits where a list would have been, which is information about

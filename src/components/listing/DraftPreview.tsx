@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Photo, Icon } from "@/components/satkit";
-import { photoFor } from "@/lib/photos";
+import TypeGlyph from "@/components/TypeGlyph";
 import Gallery from "@/components/Gallery";
 import VerificationSummary from "@/components/VerificationState";
 import AdPermit from "@/components/AdPermit";
@@ -217,12 +217,17 @@ export default function DraftPreview({
           <Gallery images={photos} title={p.title} locale={locale} />
         ) : (
           <div style={{ position: "relative" }}>
-            <Photo
-              src={photos[0] ?? photoFor(listing.asset_type, listing.id)}
-              kind={listing.asset_type}
-              label={p.title}
-              h={280}
-            />
+            {/* PKG-DESIGN-6. With no uploaded photograph this drew a library
+                picture, labelled as a placeholder. The public page now shows no
+                photograph at all in that case, so the preview shows what the
+                public page will: the drawing of the type of space, still labelled. */}
+            {photos[0] ? (
+              <Photo src={photos[0]} kind={listing.asset_type} label={p.title} h={280} />
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 200, background: "var(--azure-wash)", borderRadius: 12 }}>
+                <TypeGlyph type={listing.asset_type} size={96} />
+              </div>
+            )}
             {heroPlaceholder && (
               <span
                 className="tag"

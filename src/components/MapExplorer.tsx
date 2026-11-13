@@ -7,7 +7,7 @@
 // rather than scattered inline hex (PKG-1B).
 import { useEffect, useRef, useState } from "react";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { photoFor } from "@/lib/photos";
+import TypeGlyph from "@/components/TypeGlyph";
 import { getDictionary } from "@/i18n/getDictionary";
 import { mapLocale } from "@/lib/mapLocale";
 import { registerRTLTextPlugin } from "@/lib/rtlTextPlugin";
@@ -372,7 +372,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
          onClick={(e) => { if ((e.target as HTMLElement).closest("a")) return; selectBuilding(b.id, true); scrollRailTo(b.id); }}
          className="w-[82%] max-w-[320px] shrink-0 snap-center cursor-pointer">
          <div className={`flex overflow-hidden rounded-2xl border bg-white shadow-lift transition ${on ? "border-signal ring-2 ring-signal/35" : "border-line"}`}>
-          <img src={photoFor(b.asset, b.id)} alt="" className="h-[96px] w-[96px] shrink-0 object-cover" />
+          <span className="flex h-[96px] w-[96px] shrink-0 items-center justify-center" style={{ background: "var(--azure-wash)" }}><TypeGlyph type={b.asset} size={48} /></span>
           <div className="min-w-0 flex-1 p-2.5">
            <div className="truncate font-display text-[0.875rem] leading-tight text-charcoal">{b.name}</div>
            <div className="mt-0.5 truncate text-[0.71875rem] text-charcoal/65">{b.place}{gradeFmt(b.grade) ? " · " + t.grade + " " + gradeFmt(b.grade) : ""}</div>
@@ -403,7 +403,7 @@ export default function MapExplorer({ buildings, locale, t, assetOrder, assetLab
     <div className={`absolute bottom-3 z-20 hidden w-[330px] sm:block ${side === "right" ? "right-3" : "left-3"}`}>
      <div className="overflow-hidden rounded-2xl border border-line bg-white shadow-lift">
       <div className="relative h-32">
-       <img src={photoFor(sel.asset, sel.id)} alt="" className="h-full w-full object-cover" />
+       <span className="flex h-full w-full items-center justify-center" style={{ background: "var(--azure-wash)" }}><TypeGlyph type={sel.asset} size={72} /></span>
        <button onClick={() => setSel(null)} aria-label={t.close} className="absolute end-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur">×</button>
        <span className="absolute start-2 top-2 rounded-md px-2 py-0.5 text-[0.625rem] text-white" style={{ background: COLORS[sel.asset] || BRAND.clusterNeutral }}>{sel.assetLabel}</span>
       </div>

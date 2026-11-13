@@ -193,3 +193,28 @@ test("the grid card states area and asking price under the same labels the resul
   assert.match(grid, /\{dict\.listings\.colPrice\}/, "the grid card must label the asking price from the listings dictionary");
   assert.match(grid, /areaFig \?\? dict\.listings\.na/, "a grid card with no stated area must say so in words");
 });
+
+// ---------------------------------------------------------------------------
+// PKG-DESIGN-6. The library photographs are gone from the product.
+// ---------------------------------------------------------------------------
+
+test("no surface draws a library photograph in place of a listing's or a building's own", () => {
+  // src/lib/photos.ts hashed a listing or building id into a short list of stock
+  // pictures. It is deleted, and nothing may bring the idea back under another
+  // name. The content security policy still names the image host, because a
+  // lister may have supplied a photograph by address; that is the lister's
+  // picture of the lister's property, which is the opposite of this.
+  assert.equal(fs.existsSync(path.join(__dirname, "../lib/photos.ts")), false, "src/lib/photos.ts must stay deleted");
+  const offenders: string[] = [];
+  const walk = (dir: string) => {
+    for (const name of fs.readdirSync(dir)) {
+      const p = path.join(dir, name);
+      if (fs.statSync(p).isDirectory()) { walk(p); continue; }
+      if (!/\.(tsx?|mjs)$/.test(name) || /\.test\.(tsx?|mjs)$/.test(name) || name === "csp.mjs") continue;
+      const code = fs.readFileSync(p, "utf8").replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+      if (/photoFor|galleryFor|@\/lib\/photos|images\.unsplash\.com/.test(code)) offenders.push(path.relative(path.join(__dirname, ".."), p));
+    }
+  };
+  walk(path.join(__dirname, ".."));
+  assert.deepEqual(offenders, [], `these files still reach for a library photograph: ${offenders.join(", ")}`);
+});
