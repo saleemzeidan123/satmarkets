@@ -3,7 +3,8 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { getSourceRights } from "@/lib/queries/sourceRights";
 import { mayRedisplay } from "@/lib/sourceRights";
 import { REGA_OPEN_RENTAL_INDICATORS_SOURCE_ID } from "@/lib/sources/catalogue";
-import { leasingActivityFor, columnMax, LEASING_DATASET, type LeasingKind, type LeasingRow, type PlatformDistrict } from "@/lib/market/leasingActivity";
+import { leasingActivityFor, columnMax, LEASING_DATASET, BUNDLED_PLACE, type LeasingKind, type LeasingRow, type PlatformDistrict } from "@/lib/market/leasingActivity";
+import { latestLoadedQuarter } from "@/lib/queries/leasingActivity";
 import { formatPeriod } from "@/lib/market/period";
 import { formatInteger, fill } from "@/lib/format";
 
@@ -39,7 +40,16 @@ export default async function LeasingActivity({ locale }: { locale: "en" | "ar" 
   if (!sb) return null;
   const { data } = await sb.from("districts").select("name_en,name_ar,city");
   const districts = (data ?? []) as PlatformDistrict[];
-  const found = leasingActivityFor(districts);
+  // PKG-DATA-2. A quarter the weekly job has loaded and published replaces
+  // the one that ships with the code, when it is the same quarter or a later
+  // one. With no loaded quarter the bundled one stands, so the section does
+  // not depend on the job ever having run.
+  const loaded = await latestLoadedQuarter(sb, BUNDLED_PLACE.region, BUNDLED_PLACE.city);
+  const useLoaded = loaded !== null && loaded.period >= LEASING_DATASET.period;
+  const dataset = useLoaded
+    ? { period: loaded.period, title: loaded.title, titleAr: loaded.titleAr, url: loaded.url }
+    : { period: LEASING_DATASET.period, title: LEASING_DATASET.title, titleAr: LEASING_DATASET.titleAr, url: LEASING_DATASET.url };
+  const found = leasingActivityFor(districts, useLoaded ? { [BUNDLED_PLACE.city]: loaded.rows } : undefined);
   if (found.length === 0) return null;
 
   const ar = locale === "ar";
@@ -60,7 +70,7 @@ export default async function LeasingActivity({ locale }: { locale: "en" | "ar" 
     <section className="card" style={{ marginTop: 18, padding: "22px 24px" }} aria-labelledby="la-title">
       <div className="row between wrap" style={{ alignItems: "baseline", gap: 10 }}>
         <h2 id="la-title" className="serif" style={{ fontSize: "1.3125rem", fontWeight: 500, margin: 0 }}>{t.laTitle}</h2>
-        <span className="mono muted" style={{ fontSize: "0.71875rem" }}>{formatPeriod(LEASING_DATASET.period, ar)}</span>
+        <span className="mono muted" style={{ fontSize: "0.71875rem" }}>{formatPeriod(dataset.period, ar)}</span>
       </div>
       <p className="muted" style={{ fontSize: "0.8125rem", marginTop: 8, lineHeight: 1.65, maxWidth: 720 }}>{t.laIntro}</p>
 
@@ -104,7 +114,7 @@ export default async function LeasingActivity({ locale }: { locale: "en" | "ar" 
       <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 6, lineHeight: 1.7 }}>
         {notice.map((part, i) =>
           part === "{dataset}" ? (
-            <a key={i} href={LEASING_DATASET.url} rel="noopener noreferrer" target="_blank" style={{ color: "var(--harbor)" }}><bdi dir="ltr">{LEASING_DATASET.title}</bdi></a>
+            <a key={i} href={dataset.url} rel="noopener noreferrer" target="_blank" style={{ color: "var(--harbor)" }}><bdi>{ar && dataset.titleAr ? dataset.titleAr : dataset.title}</bdi></a>
           ) : part === "{licence}" ? (
             <a key={i} href={LEASING_DATASET.licenceUrl} rel="noopener noreferrer" target="_blank" style={{ color: "var(--harbor)" }}>{t.laLicenceName}</a>
           ) : (
