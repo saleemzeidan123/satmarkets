@@ -161,7 +161,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 </div>
 
                 <div className="px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[0.65625rem] font-semibold uppercase tracking-wider text-charcoal/65">{browseLabel}</p>
+                  <p className="px-2 pb-1 pt-1 text-[0.75rem] font-semibold text-charcoal/65">{browseLabel}</p>
                   {/* palette.test.ts's contrast floor: no text-charcoal/NN step below
                       /65 may carry text anywhere in the product (findings 140/150).
                       /70 and /65 here match the same de-emphasis this dropdown
@@ -180,7 +180,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
                 </div>
 
                 <div className="border-t border-line px-2 py-2">
-                  <p className="px-2 pb-1 pt-1 text-[0.65625rem] font-semibold uppercase tracking-wider text-charcoal/65">{accountLabel}</p>
+                  <p className="px-2 pb-1 pt-1 text-[0.75rem] font-semibold text-charcoal/65">{accountLabel}</p>
                   {/* ELITE-4 J3-38: the badge is a bare number beside the link text. */}
                   <Link href={`/${locale}/saved`} aria-label={saved > 0 ? `${savedLabel} ${saved}` : undefined} className="flex items-center justify-between rounded-lg px-2.5 py-2 text-[0.875rem] text-charcoal/80 hover:bg-ivory-2">
                     <span>{savedLabel}</span>

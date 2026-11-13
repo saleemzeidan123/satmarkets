@@ -3,6 +3,7 @@ import { getDictionary } from "@/i18n/getDictionary";
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
 import { Icon } from "@/components/satkit";
+import TypeGlyph from "@/components/TypeGlyph";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { assetLabel, cityLabel } from "@/lib/labels";
 import { timelineLabel, mustHaveLabel } from "@/lib/requirementIntake";
@@ -81,87 +82,89 @@ export default function RequirementsBoard(props: { params: Promise<{ locale: str
  useEffect(() => { load(); }, []);
 
  return (
-  <div style={{ background: "var(--cool)" }}>
-   <div style={{ padding: "36px 24px 48px", maxWidth: 1080, margin: "0 auto" }}>
+  <div className="rq">
+   <div className="rq-wrap">
     <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
       { "@type": "ListItem", position: 1, name: dict.req.crumbHome, item: `${SITE}/${locale}` },
       { "@type": "ListItem", position: 2, name: dict.req.crumbReq, item: `${SITE}/${locale}/requirements` },
     ] }} />
-    <div className="row between wrap" style={{ alignItems: "flex-end", gap: 14 }}>
+    {/* PKG-DESIGN-7. The board is drawn like the search results it mirrors: a
+        heading, one line of count, then a ruled list read row by row. The old
+        cards boxed every brief and put a chip on every word, so the one thing a
+        lister scans for (size, budget, move-in) had the same weight as the tags
+        around it. The figures now sit in their own columns under labels. */}
+    <header className="rq-top">
      <div>
       <div className="eyebrow">{dict.req.openReqs}</div>
-      <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, margin: "12px 0 6px" }}>{dict.req.h1}</h1>
-      <p className="muted" style={{ fontSize: "0.9375rem", maxWidth: 580, lineHeight: 1.6 }}>{dict.req.sub}</p>
+      <h1 className="serif rq-h1">{dict.req.h1}</h1>
+      <p className="rq-sub">{dict.req.sub}</p>
      </div>
      <Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link>
-    </div>
+    </header>
 
     <div className="sronly" role="status" aria-live="polite">{status}</div>
 
     <div aria-busy={loading}>
     {loading ? (
-     <div className="muted" style={{ marginTop: 40, fontSize: "0.875rem" }}>{dict.req.loading}</div>
+     <div className="ds-note rq-state">{dict.req.loading}</div>
     ) : failed ? (
-     <div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
-      <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0 }}>{dict.req.boardFailed}</p>
-      <div style={{ marginTop: 14 }}><button type="button" className="btn primary" onClick={load}>{dict.req.boardRetry}</button></div>
+     <div className="ds-note rq-state">
+      <p>{dict.req.boardFailed}</p>
+      <div style={{ marginTop: 12 }}><button type="button" className="btn primary" onClick={load}>{dict.req.boardRetry}</button></div>
      </div>
     ) : reqs.length === 0 ? (
      /* An empty board rendered an empty grid: the header, the loading line gone,
         and then nothing, which reads as a page that failed rather than a market
         with no open demand yet. */
-     (<div className="card pad" style={{ marginTop: 28, boxShadow: "none", background: "var(--paper)" }}>
-      <p className="muted" style={{ fontSize: "0.875rem", lineHeight: 1.7, margin: 0 }}>{dict.req.empty}</p>
-      <div style={{ marginTop: 14 }}><Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link></div>
+     (<div className="ds-note rq-state">
+      <p>{dict.req.empty}</p>
+      <div style={{ marginTop: 12 }}><Link href={`/${locale}/post-requirement`} className="btn primary"><Icon.plus size={15} /> {dict.req.postReq}</Link></div>
      </div>)
     ) : (
-     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%, 320px), 1fr))", gap: 16, marginTop: 28 }}>
+     <>
+     <div className="rq-count">{reqs.length === 1 ? dict.req.boardCountOne : dict.req.boardCount.replace("{n}", String(reqs.length))}</div>
+     <ol className="rq-list">
       {reqs.map((r) => {
        // PKG-DEM2, finding 114. Both are optional on the form and nullable in
        // the column, so both may be absent, and an absent figure is stated by
        // not drawing its line rather than by drawing the line around nothing.
        const size = sizeRange(r.sizeMin, r.sizeMax, locale);
        const budget = budgetCeiling(r.budget, r.deal, locale);
+       const when = timelineLabel(r.timeline, ar);
        const titleAttrs = textLangAttrs((ar && r.titleAr) || r.title);
        return (
-       <Link key={r.id} href={`/${locale}/requirements/${r.id}`} className="card pad lift" style={{ boxShadow: "var(--sh-1)", textDecoration: "none", color: "inherit", display: "block" }}>
-        <div className="row between" style={{ alignItems: "center" }}>
-         <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{assetLabel(r.asset, locale)} · {r.deal === "lease" ? (dict.req.lease) : (dict.req.buy)}</span>
-         <span className="row gap6" style={{ alignItems: "center" }}>
-          {r.sample ? <span className="tag" style={{ color: "#92400E", background: "#FFFBEB", borderColor: "#FCD34D", fontSize: "0.65625rem" }}>{dict.req.sampleTag}</span> : null}
-          <span className="mono muted" style={{ fontSize: "0.6875rem" }}>{r.ref}</span>
-         </span>
-        </div>
-        {/* RC10, finding 171's class on journey 4. A brief's title is prose the
-            occupier typed, and this fallback hands an Arabic reader the English
-            title whenever no Arabic one was written, so the title on this card
-            is regularly not in the language of the page it sits on. The script
-            is read from the text and declared, so a screen reader stops
-            pronouncing English with Arabic phonetics and the bidi algorithm
-            stops resolving the run against the page direction. That the reader
-            is shown the other language's title at all is a separate parity
-            defect and is recorded as finding 202; this states the truth about
-            whatever text the fallback produced. */}
-        <div lang={titleAttrs.lang} dir={titleAttrs.dir} style={{ fontSize: "0.96875rem", fontWeight: 700, margin: "12px 0 8px", lineHeight: 1.3 }}>{(ar && r.titleAr) || r.title}</div>
-        <div className="muted" style={{ fontSize: "0.78125rem", lineHeight: 1.7 }}>
-         <div className="row gap6"><Icon.pin size={14} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</div>
-         {size || budget ? (
-          <div className="row gap6"><Icon.layers size={14} /> {size ? <bdi>{size}</bdi> : null}{size && budget ? " · " : ""}{budget ? <bdi>{budget}</bdi> : null}</div>
-         ) : null}
+       <li key={r.id}>
+       <Link href={`/${locale}/requirements/${r.id}`} className="rq-row">
+        <span className="rq-pic"><TypeGlyph type={r.asset} size={40} /></span>
+        <span className="rq-main">
+         <span className="rq-kind">{assetLabel(r.asset, locale)} · {r.deal === "lease" ? (dict.req.lease) : (dict.req.buy)}</span>
+         {/* RC10, finding 171's class on journey 4. A brief's title is prose the
+             occupier typed, and the fallback can hand an Arabic reader the
+             English title, so the script is read from the text and declared.
+             Finding 202 records the parity defect itself. */}
+         <span className="rq-title" lang={titleAttrs.lang} dir={titleAttrs.dir}>{(ar && r.titleAr) || r.title}</span>
+         <span className="rq-place"><Icon.pin size={13} /> {(ar && r.districtAr) || r.district}{r.city && r.district !== r.city ? (ar ? "، " : ", ") + cityLabel(r.city, locale) : ""}</span>
+         {r.mustHaves?.length ? <span className="rq-needs">{r.mustHaves.slice(0, 4).map((m) => mustHaveLabel(m, ar)).join(" · ")}</span> : null}
+        </span>
+        <span className="rq-figs">
          {/* A brief with no move-in date is a real answer, and the column is
-             nullable, so the clock and its empty line are not drawn at all
-             rather than drawn beside nothing. */}
-         {timelineLabel(r.timeline, ar) ? <div className="row gap6"><Icon.clock size={14} /> {dict.req.timeline}: {timelineLabel(r.timeline, ar)}</div> : null}
-        </div>
-        {r.mustHaves?.length ? <div className="row gap6 wrap" style={{ marginTop: 10 }}>{r.mustHaves.slice(0, 4).map((m, i) => <span key={i} className="chip" style={{ fontSize: "0.6875rem" }}>{mustHaveLabel(m, ar)}</span>)}</div> : null}
-        <div className="row between" style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--silver)", alignItems: "center" }}>
-         <span style={{ fontSize: "0.78125rem", color: r.interest ? "var(--harbor)" : "var(--slate)" }}>{r.interest ? (ar ? `${r.interest} مهتم` : `${r.interest} interested`) : (dict.req.noInterest)}</span>
-         <span style={{ fontSize: "0.78125rem", fontWeight: 600, color: "var(--azure-d)" }}>{dict.req.viewRespond}</span>
-        </div>
+             nullable, so an absent figure is not drawn rather than drawn beside
+             nothing. */}
+         {size ? <span className="rq-fig"><span className="rq-k">{dict.req.colSize}</span><bdi className="rq-v">{size}</bdi></span> : null}
+         {budget ? <span className="rq-fig"><span className="rq-k">{dict.req.colBudget}</span><bdi className="rq-v">{budget}</bdi></span> : null}
+         {when ? <span className="rq-fig"><span className="rq-k">{dict.req.timeline}</span><span className="rq-v">{when}</span></span> : null}
+        </span>
+        <span className="rq-end">
+         <span className={r.interest ? "rq-int on" : "rq-int"}>{r.interest ? (r.interest === 1 ? dict.req.interestedOne : dict.req.interestedN.replace("{n}", String(r.interest))) : (dict.req.noInterest)}</span>
+         <span className="rq-go">{dict.req.viewRespond}</span>
+         <span className="rq-ref"><bdi>{r.ref}</bdi>{r.sample ? <> · {dict.req.sampleTag}</> : null}</span>
+        </span>
        </Link>
+       </li>
        );
       })}
-     </div>
+     </ol>
+     </>
     )}
     </div>
    </div>
