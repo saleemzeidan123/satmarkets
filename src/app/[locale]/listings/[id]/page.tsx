@@ -11,7 +11,6 @@ import JsonLd, { SITE } from "@/components/JsonLd";
 import { localeMeta } from "@/lib/meta";
 import { fill, fillProse, formatArea, formatMoney, formatUnit, formatWithUnit } from "@/lib/format";
 import { Photo, Icon } from "@/components/satkit";
-import { photoFor } from "@/lib/photos";
 import { getPublicListingMedia } from "@/lib/queries/publicMedia";
 import ListingEnquiry from "@/components/ListingEnquiry";
 import ContactBar from "@/components/ContactBar";
@@ -42,6 +41,9 @@ import { priceParts } from "@/lib/listingFigures";
 import { factsGridTiles } from "@/lib/listingFactsGrid";
 import ListingFactsGrid from "@/components/listing/ListingFactsGrid";
 import ListingAttributeSection from "@/components/listing/ListingAttributeSection";
+import SpaceDrawing from "@/components/listing/SpaceDrawing";
+import TypeGlyph from "@/components/TypeGlyph";
+import { spacePlanOf } from "@/lib/spaceDrawing";
 
 export async function generateMetadata(props: { params: Promise<{ locale: string; id: string }> }) {
   const params = await props.params;
@@ -296,44 +298,69 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
       {/* ELITE-4 J3-23: a third "Share" chip used to sit here, styled exactly like the
           two real controls beside it, with no handler, no focus and nothing announced.
           Removed rather than invented: implementing sharing is not an accessibility fix. */}
-      <div className="row between wrap" style={{ padding: "14px 24px", borderBottom: "1px solid var(--silver)", background: "var(--paper)", gap: 10 }}>
-        <Link href={L("/listings")} className="mono muted touch-target" style={{ fontSize: "0.71875rem", letterSpacing: ".06em", textDecoration: "none" }}>{ar ? "→" : "←"} {dict.ld.crumbListingsUpper} / {String(dn).toUpperCase()} / {type.toUpperCase()}</Link>
+      {/* PKG-DESIGN-4. The crumb was one link in capitals in the mono face that
+          went back to every listing. It is now the two things a reader came from,
+          each a link: the asset type and the place. The place link is drawn only
+          when the record names a district, because that is the only place this
+          page can filter by. */}
+      <div className="ld-top">
+        <nav className="ld-crumb" aria-label={dict.ld.crumbAria}>
+          <Link href={L("/listings")} className="touch-target">{dict.ld.crumbListings}</Link>
+          <span aria-hidden="true">·</span>
+          <Link href={L(`/listings?asset=${l.asset_type}`)} className="touch-target">{type}</Link>
+          {l.district_id ? <><span aria-hidden="true">·</span><Link href={L(`/listings?district=${l.district_id}`)} className="touch-target">{dn}</Link></> : null}
+        </nav>
         <div className="row gap10"><Link href={L(`/listings/${l.id}/flyer`)} className="chip" style={{ textDecoration: "none" }}><Icon.doc size={15} /> {dict.ld.flyerPdf}</Link><SaveButton id={l.id} locale={locale} /></div>
       </div>
       <div className="satmkt-2col" style={{ maxWidth: 1280, margin: "0 auto", padding: 24, display: "grid", gridTemplateColumns: "minmax(0,2fr) minmax(0,1fr)", gap: 32 }}>
         <div>
+          {/* PKG-DESIGN-4. The page opens on what the space is, in words, and the
+              picture follows. Before this the picture came first and, where a
+              listing had no photograph of its own, it was a library photograph
+              chosen by hashing the listing id (src/lib/photos.ts). */}
+          <h1 className="serif ld-h1">{title}</h1>
+          <div className="ld-meta">
+            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span aria-hidden="true">·</span><span>{formatArea(l.area_sqm, lp)}</span>
+            {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span aria-hidden="true">·</span><span>{listedLabel(ls.days, ar)}</span></> : null; })()}
+          </div>
+          <div className="ld-tags">
+            <span className="ld-tag">{type} · {dealLabel(l.deal_type, locale)}</span>
+            {l.building_grade && l.building_grade !== "n_a" ? <span className="ld-tag">{gradePhrase(l.building_grade, locale)}</span> : null}
+            {l.fitout_condition && l.fitout_condition !== "n_a" ? <span className="ld-tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
+            <span className="ld-tag">{dict.ld.availableNow}</span>
+            <span className="ld-tag">{dict.ld.openFirstLease}</span>
+            {listedSince((l as any).created_at)?.isNew ? <span className="ld-tag ld-tag-new">{dict.ld.newBadge}</span> : null}
+            {verifiedBadges(l as any, filingAccountOf(lister), ar)}
+          </div>
+
+          {/* THE PICTURE. Owner ruling, 2026-11-13: a listing's own photographs
+              lead when it has them. When it has none the page shows no
+              photograph at all, and says so in one line, rather than a picture
+              of some other building. The to-scale drawing below stands on its
+              own rule and does not depend on this. */}
           {mediaPhotos.length > 1 ? (
-            <div style={{ position: "relative" }}>
-              <div style={{ position: "absolute", top: 12, insetInlineStart: 12, zIndex: 3, display: "flex", gap: 8 }}>
-                {verifiedBadges(l as any, filingAccountOf(lister), ar)}
-                <span className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>
-              </div>
+            <div className="ld-pic">
               <Gallery images={mediaPhotos} title={`${type}, ${dn}`} locale={ar ? "ar" : "en"} />
             </div>
+          ) : mediaPhotos.length === 1 ? (
+            <div className="ld-pic">
+              <Photo src={mediaPhotos[0]} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav />
+            </div>
           ) : (
-            <div>
-              <Photo src={mediaPhotos[0] ?? photoFor(l.asset_type, l.id)} kind={kindFor(l.asset_type)} label={`${type}, ${dn}`} h={360} fav badges={[...verifiedBadges(l as any, filingAccountOf(lister), ar), <span key="f" className="freeze open"><span className="dot" />{dict.ld.openFirstLease}</span>]} />
-              {/* Codex review round 3, item 2: shown only when the media
-                  read itself failed (mediaDataOk), never for a listing that
-                  genuinely just has no photos yet, so a transient Supabase
-                  hiccup is never silently indistinguishable from that. */}
-              {!mediaDataOk && (
-                <p className="muted" style={{ fontSize: "0.75rem", marginTop: 6 }}>{dict.ld.mediaUnavailable}</p>
-              )}
+            <div className="ld-nopic">
+              <TypeGlyph type={l.asset_type} size={44} />
+              {/* Codex review round 3, item 2: the failure sentence is shown only
+                  when the media read itself failed (mediaDataOk), never for a
+                  listing that genuinely has no photographs yet, so a transient
+                  Supabase hiccup is never indistinguishable from that. */}
+              <span>{mediaDataOk ? dict.ld.noPhotos : dict.ld.mediaUnavailable}</span>
             </div>
           )}
-          <div className="row gap10 wrap" style={{ marginTop: 18 }}>
-            <span className="tag" style={{ color: "var(--azure-d)", background: "var(--azure-wash)", borderColor: "var(--azure-l)" }}>{type} · {dealLabel(l.deal_type, locale)}</span>
-            {l.building_grade && l.building_grade !== "n_a" ? <span className="tag">{gradeLabel(l.building_grade, locale)}</span> : null}
-            {l.fitout_condition && l.fitout_condition !== "n_a" ? <span className="tag">{fitoutLabel(l.fitout_condition, locale)}</span> : null}
-            <span className="tag">{dict.ld.availableNow}</span>
-            {listedSince((l as any).created_at)?.isNew ? <span className="tag" style={{ background: "var(--harbor)", color: "var(--on-brand)", borderColor: "transparent" }}>{dict.ld.newBadge}</span> : null}
-          </div>
-          <h1 className="serif" style={{ fontSize: "1.875rem", fontWeight: 500, letterSpacing: "-.02em", margin: "14px 0 0" }}>{title}</h1>
-          <div className="row gap10 wrap" style={{ marginTop: 10, color: "var(--slate)", fontSize: "0.875rem" }}>
-            <span className="row gap6"><Icon.pin size={16} /> {dn}{ar ? "، " : ", "}{city}</span><span>·</span><span>{formatArea(l.area_sqm, lp)}</span>
-            {(() => { const ls = listedSince((l as any).created_at); return ls ? <><span>·</span><span className="mono muted" style={{ fontSize: "0.78125rem" }}>{listedLabel(ls.days, ar)}</span></> : null; })()}
-          </div>
+          {/* THE DRAWING. Owner ruling, same day: drawn only when the lister
+              entered every size the drawing needs and they agree with the stated
+              area. `spacePlanOf` is that rule; a listing it returns null for
+              gets nothing here. */}
+          {(() => { const plan = spacePlanOf(l as any); return plan ? <SpaceDrawing plan={plan} t={dict.ld} ar={ar} /> : null; })()}
           {/* WHO FILED THIS. A byline under the headline, not a footnote at the tail of
               the contact rail. Moving it here also removed the last reason the rail
               carried a second block, which is what let the rail stop being nested-sticky. */}
@@ -430,7 +457,12 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
               are skipped, so a tile never shows a non-answer. These specs are drawn up
               from the detail section below, not duplicated. */}
           <div id="ov" style={{ scrollMarginTop: 80 }}>
-            <ListingFactsGrid tiles={factsGridTiles(l, dict, lp)} evidence={evidence} ar={ar} locale={lp} />
+            {/* PKG-DESIGN-4. `factsGridTiles` reads the asking figure from a field
+                named `price`, which the listing row does not have: the row holds
+                `asking_rent_sqm` or `sale_price`, and this page works out which
+                above. Handed the bare row, the tile printed "On request" beside
+                a rail that printed the figure. It is handed the figure now. */}
+            <ListingFactsGrid tiles={factsGridTiles({ ...(l as any), price }, dict, lp)} evidence={evidence} ar={ar} locale={lp} />
           </div>
           {/* The headline typed-column specs (clear height, docks, power, parking,
               civil defense) are promoted into the at-a-glance facts grid above, so
@@ -595,7 +627,9 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
                   const spp = priceParts(s.deal_type === "sale" ? s.sale_price : s.asking_rent_sqm, s.deal_type, lp);
                   return (
                     <Link key={s.id} href={L(`/listings/${s.id}`)} className="listing" style={{ textDecoration: "none", color: "inherit" }}>
-                      <Photo src={photoFor(s.asset_type, s.id)} kind={s.asset_type} alt={`${assetLabel(s.asset_type, locale)}, ${sdn}`} h={104} />
+                      {/* PKG-DESIGN-4. A drawing of the type of space, as on the
+                          results rows (claims ledger C46), not a library photograph. */}
+                      <span className="ld-sim-thumb"><TypeGlyph type={s.asset_type} size={44} /></span>
                       <div className="body" style={{ padding: "10px 12px 12px" }}>
                         <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 600 }}><bdi>{spp ? spp.value : dict.ld.onRequest}</bdi>{spp && <small style={{ fontWeight: 400, color: "var(--slate)" }}>{" " + spp.unit}</small>}</div>
                         <div style={{ fontSize: "0.78125rem", marginTop: 4, lineHeight: 1.35 }}>{listingTitle(s, ar ? "ar" : "en")}</div>

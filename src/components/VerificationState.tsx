@@ -83,62 +83,34 @@ export default function VerificationSummary({
   const rows = listingVerification(listing, account ?? null);
   const anyVerified = rows.some((r) => r.state === "verified");
 
+  // PKG-DESIGN-4. The same rows and the same words, drawn as a record: one line
+  // per question, the answer beside a small square, and the reasons under it.
+  // The square is filled, in the reserved green, only for a verified answer; a
+  // question that does not apply carries no square at all, because there was
+  // nothing to check. The answer is always written out beside it.
   return (
-    <div
-      className="card pad"
-      style={{ marginTop: 16, boxShadow: "none", background: "var(--paper)" }}
-    >
-      <div className="eyebrow">{verificationHeadingText(ar)}</div>
-
-      <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+    <section className="ev" aria-labelledby="ev-title">
+      <h2 id="ev-title" className="serif ld-h2">{verificationHeadingText(ar)}</h2>
+      <ul className="ev-list">
         {rows.map((r) => {
           const good = r.state === "verified";
-          const tone = good
-            ? "var(--verified)"
-            : r.state === "not_applicable"
-              ? "var(--slate)"
-              : "var(--ink)";
           return (
-            <div
-              key={r.dimension}
-              className="row between gap10 wrap"
-              style={{ alignItems: "flex-start" }}
-            >
-              <span style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--ink)" }}>
-                {verificationDimensionLabel(r.dimension, ar)}
+            <li key={r.dimension} className="ev-row">
+              <span className="ev-name">{verificationDimensionLabel(r.dimension, ar)}</span>
+              <span className="ev-state" data-state={r.state}>
+                {r.state === "not_applicable" ? null : (
+                  <span aria-hidden="true" className={good ? "ev-sq on" : "ev-sq"} style={good ? { background: "var(--verified)" } : undefined} />
+                )}
+                <span style={good ? { color: "var(--verified)", fontWeight: 600 } : undefined}>{verificationStateLabel(r.state, ar)}</span>
               </span>
-              <span style={{ minWidth: 0, textAlign: ar ? "left" : "right" }}>
-                <span style={{ fontSize: "0.8125rem", fontWeight: good ? 600 : 500, color: tone }}>
-                  {verificationStateLabel(r.state, ar)}
-                </span>
-                {r.reasons.length > 0 ? (
-                  <span
-                    className="muted"
-                    style={{ display: "block", fontSize: "0.71875rem", lineHeight: 1.6, marginTop: 2 }}
-                  >
-                    {r.reasons.map((x) => notVerifiedReasonText(x, ar)).join(ar ? "، " : ", ")}
-                  </span>
-                ) : null}
-              </span>
-            </div>
+              {r.reasons.length > 0 ? (
+                <span className="ev-why">{r.reasons.map((x) => notVerifiedReasonText(x, ar)).join(ar ? "، " : ", ")}</span>
+              ) : null}
+            </li>
           );
         })}
-      </div>
-
-      {anyVerified ? null : (
-        <div
-          className="muted"
-          style={{
-            marginTop: 12,
-            paddingTop: 10,
-            borderTop: "1px solid var(--silver)",
-            fontSize: "0.75rem",
-            lineHeight: 1.7,
-          }}
-        >
-          {unverifiedNoticeText(ar)}
-        </div>
-      )}
-    </div>
+      </ul>
+      {anyVerified ? null : <p className="ev-foot">{unverifiedNoticeText(ar)}</p>}
+    </section>
   );
 }

@@ -19,13 +19,17 @@ export default function ListingFactsGrid({
   locale: "en" | "ar";
 }) {
   return (
-    <div style={{ scrollMarginTop: 80, display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 16, marginTop: 22 }}>
+    /* PKG-DESIGN-4. The tiles were bordered cards with the value in the mono
+       face. They are now cells on one hairline grid, label over value, in the
+       text face with tabular figures, which is how the approved drawing sets a
+       fact. The styles are `.fx-*` in globals.css. */
+    <div className="fx-grid" style={{ scrollMarginTop: 80 }}>
       {tiles.map((t, i) => {
         const ev = t.evidenceKey ? evidence?.get(t.evidenceKey) : undefined;
         return (
-          <div key={i} className="card pad" style={{ boxShadow: "none", padding: 16 }}>
-            <div className="muted" style={{ fontSize: "0.71875rem" }}>{t.label}</div>
-            <div className="mono" style={{ fontSize: "1rem", fontWeight: 500, marginTop: 8 }}>{t.value}</div>
+          <div key={i} className="fx-cell">
+            <div className="fx-k">{t.label}</div>
+            <div className="fx-v">{t.value}</div>
             {ev ? <EvidencePassport view={ev} label={t.label} ar={ar} locale={locale} /> : null}
           </div>
         );
