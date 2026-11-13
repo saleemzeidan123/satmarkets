@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
 import { getSessionUser } from "@/lib/auth/session";
@@ -9,7 +9,7 @@ import { hashSource } from "@/lib/translate/translateToArabic";
 const CONTACT_CHANNELS = ["whatsapp", "call", "email", "message"];
 
 export async function GET(req: NextRequest) {
-  if (!allow("listings-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listings-get", req, 60)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const supabase = await getSupabaseServer();
   // Finding 207. This used to answer 200 with an empty array when Supabase was
   // unreachable, which is indistinguishable from "no listings exist" to any
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 // AND the per-asset registry attributes server-side, and writes registry
 // column-backed values to their columns while the rest go to `attributes`.
 export async function POST(req: NextRequest) {
-  if (!allow("listings-create", req, 10)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listings-create", req, 10)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su) return NextResponse.json({ error: "Sign in to list a space.", code: "sign_in_to_list" }, { status: 401 });

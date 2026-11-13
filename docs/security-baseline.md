@@ -1401,11 +1401,10 @@ of the exposed schema, which is a migration of its own.
 
 ### Still open, in order of weight
 
-1. **Rate limiting is not durable.** Unchanged from the section above: every
-   limiter is per-instance because no shared store is configured. This is the
-   largest remaining gap. It needs one of the two options already written up
-   (a WAF rule, a Redis store) or a counter table in the existing database,
-   which adds no vendor.
+1. **Rate limiting was not durable.** Every limiter was per-instance because
+   no shared store was configured. Addressed the same day by a counter in the
+   existing database; see "Rate limiting, the shared store" below. It is
+   durable only once that migration is applied.
 2. **The full policy is report-only.** It needs the browser pass, with Safari.
 3. **`maplibre-gl` 4.7.1 has one critical advisory** (GHSA-jrc7-96c5-q579, a
    sanitiser bypass in the library's HTML path). The fixed line is 6.x, which
@@ -1425,3 +1424,34 @@ of the exposed schema, which is a migration of its own.
    that `20260801_requirement_city_is_never_assumed.sql` removes, which
    suggests that migration has not been applied. The route refuses an empty
    city, so nothing reaches the default through the application.
+
+### Rate limiting, the shared store (same day)
+
+The owner chose the third option: a counter in the platform's own database, no
+new vendor. `supabase/migrations/20261113c_rate_limit_store.sql` creates
+`public.rate_limit_counters` and `public.rate_limit_hit(bucket, window)`, both
+closed to the public roles and usable by `service_role` only. `allowShared()` in
+`src/lib/ratelimit.ts` now tries a configured Redis endpoint, then this
+function, and every limited route (42 call sites in 33 files) calls
+`allowShared()` instead of the per-instance `allow()`.
+
+What is stored is the limiter's name and a keyed hash of the caller's address
+(`bucketKey`, HMAC-SHA256 under the service key, truncated). No address is
+written to the database, so the table holds nothing that identifies a person.
+Rows older than a day are deleted by the function itself.
+
+The order of failure is deliberate. The local window is checked first, so a
+caller one instance has refused costs no round trip. If the store does not
+answer within 1.5 seconds, or the function does not exist yet, the local answer
+stands and the call reports `durable: false`. The application can therefore
+ship before or after the migration.
+
+Checked: the migration was run twice on a local PostgreSQL 16; three hits
+return 1, 2, 3; `anon` is refused the function and the table; `service_role`
+may call the function; an over-long bucket is rejected. Not checked: the
+function under production's own grants, and the limit observed from outside
+across several instances, which needs the migration applied and a deployment.
+
+What this does not do: it limits per address, so a caller with many addresses
+is limited per address and not in total. Volume of that kind is stopped at the
+edge (the firewall), which has still not been read or configured.

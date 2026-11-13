@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { releaseVisibleInventory } from "@/lib/inventory";
@@ -14,7 +14,7 @@ const DEALS = REQUIREMENT_DEAL_TYPES;
 
 // GET: the public requirements board (no contact info)
 export async function GET(req: NextRequest) {
-  if (!allow("requirements-get", req, 60)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("requirements-get", req, 60)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
  const sb = await getSupabaseServer();
  // Sample requirements exist only to exercise the board in the preview build.
  // In production they are never served: an empty board is the honest answer,
@@ -98,7 +98,7 @@ const num = (v: unknown): number | null => {
 };
 
 export async function POST(req: NextRequest) {
- if (!allow("requirements", req, 8)) return NextResponse.json({ error: "Too many requests. Please try again shortly.", code: "rate_limited" }, { status: 429 });
+ if (!(await allowShared("requirements", req, 8)).ok) return NextResponse.json({ error: "Too many requests. Please try again shortly.", code: "rate_limited" }, { status: 429 });
 
  let b: any;
  try { b = await req.json(); } catch { return NextResponse.json({ error: "Invalid request body.", code: "invalid_request_body" }, { status: 400 }); }

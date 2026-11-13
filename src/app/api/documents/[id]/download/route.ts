@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ const TTL_SECONDS = 60;
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("document-download", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("document-download", req, 60)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   // Signed out -> 404, not 401: do not reveal that there is anything here.

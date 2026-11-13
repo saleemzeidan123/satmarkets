@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { releaseVisibleInventory } from "@/lib/inventory";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { llmParse, rulesParse, type Parsed } from "@/lib/search/aiParse";
 import { cityKey } from "@/lib/labels";
 import { resolvePlace } from "@/lib/search/place";
 
 export async function POST(req: NextRequest) {
-  if (!allow("search", req)) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });
+  if (!(await allowShared("search", req)).ok) return NextResponse.json({ results: [], parsed: {}, clarify: false }, { status: 429 });
   const { query } = (await req.json()) as { query?: string };
   const raw = (query || "").slice(0, 2000);
   const supabase = await getSupabaseServer();

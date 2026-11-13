@@ -45,7 +45,7 @@ Parked items that do not block engineering progress elsewhere. Cleared automatic
 
 1. `npm ci` (clean install on the exact branch)
 2. `npm run typecheck`
-3. `npm test` (as of 2026-11-13: 2170 tests, all must pass)
+3. `npm test` (as of 2026-11-13: 2175 tests, all must pass)
 4. `npm run ar-lint`
 5. Prose scan (hardcoded-string check)
 6. `npm run lint-gate` (ESLint ratchet: 49 pinned errors as of 2026-08-17, no new rules; pinned counts live in `scripts/eslint-gate.mjs`)
@@ -62,7 +62,7 @@ Vercel builds every PR automatically; the preview deployment doubles as a produc
 
 ## State as of 2026-11-13
 
-- **Later the same day (read this first).** Redesign packages 1 to 6 are merged (PRs #29 to #35) and so is PR #36: server functions run in Frankfurt (`vercel.json`, the database is in eu-central-1), Home and the results page start their reads together, the phone header carries a one-tap language link, and `PhoneChrome` repairs the iOS 26 bottom-bar fault (unconfirmed on a device). PR #37 moves the brand colour to Ink Indigo #2B4782 (owner's choice; check it on real phones before merging). **Security hardening 1** is `docs/security-baseline.md`, last section: Next.js 16.4.6, map popups built from nodes, four policy directives enforced, and two database migrations (`20261113_security_hardening_1.sql`, `20261113b_...`) that are PREPARED AND NOT APPLIED. Part B must not be applied before the application change is live. Open: durable rate limiting, the full policy's enforcement, the `maplibre-gl` major upgrade, `spatial_ref_sys` (needs Supabase support).
+- **Later the same day (read this first).** Redesign packages 1 to 6 are merged (PRs #29 to #35) and so is PR #36: server functions run in Frankfurt (`vercel.json`, the database is in eu-central-1), Home and the results page start their reads together, the phone header carries a one-tap language link, and `PhoneChrome` repairs the iOS 26 bottom-bar fault (unconfirmed on a device). PR #37 moves the brand colour to Ink Indigo #2B4782 (owner's choice; check it on real phones before merging). **Security hardening 1** is `docs/security-baseline.md`, last section: Next.js 16.4.6, map popups built from nodes, four policy directives enforced, and two database migrations (`20261113_security_hardening_1.sql`, `20261113b_...`) that are PREPARED AND NOT APPLIED. Part B must not be applied before the application change is live. PR #38 is merged; whether its two migrations are applied is the owner's action in the SQL editor (the write connector is refused on this project), so check the catalogue before assuming either way. **Rate limiting**: `allowShared()` now counts in `public.rate_limit_hit` (`20261113c_rate_limit_store.sql`, also to be applied by the owner) and every route uses it; it degrades to the per-instance window until the function exists. Open: the full policy's enforcement, the `maplibre-gl` major upgrade, `spatial_ref_sys` (needs Supabase support), the firewall and account-security settings (not readable from here).
 
 - **The redesign has an approved design and is being built in packages.** The owner signed off the "Drawn to scale" direction on 2026-11-13 (home, search results, map view, listing page and interaction states, phone and desktop, Arabic and English). It answers `docs/design-audit-2026-11-12.md`. One pull request per package, merged only on the owner's word:
   1. **PKG-DESIGN-1, palette, type and chrome** (PR #29): Harbor #2265C4, navy #10233F, sky #7CC0F5, the Arabic display face, the release-state strip, header and footer.

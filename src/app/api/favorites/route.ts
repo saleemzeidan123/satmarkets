@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -36,7 +36,7 @@ function shortlistOf(v: unknown): string | null {
 // because the heart button asks one question (is this saved) and should not have to
 // learn about shortlists to keep answering it.
 export async function GET(req: NextRequest) {
-  if (!allow("fav-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("fav-get", req, 60)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ ids: [], items: [], shortlists: [], signedIn: false });
   const sb = await getSupabaseServer();
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 // POST: save one listing, or merge many (used once on first sign-in to fold in the
 // favourites the visitor collected in the browser while logged out).
 export async function POST(req: NextRequest) {
-  if (!allow("fav-post", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("fav-post", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to save listings." }, { status: 401 });
   const sb = await getSupabaseServer();
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
 // shortlists at all. Unsaving is still DELETE; taking a space off a shortlist does not
 // mean the person stopped wanting it.
 export async function PATCH(req: NextRequest) {
-  if (!allow("fav-patch", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("fav-patch", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage saved listings." }, { status: 401 });
   const sb = await getSupabaseServer();
@@ -114,7 +114,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE: unsave one listing.
 export async function DELETE(req: NextRequest) {
-  if (!allow("fav-del", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("fav-del", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage saved listings." }, { status: 401 });
   const sb = await getSupabaseServer();

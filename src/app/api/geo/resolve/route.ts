@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { parseLatLng, isMapShareUrl } from "@/lib/parseLatLng";
 
 export const runtime = "nodejs";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // recognised map-share host, so this cannot be used to probe arbitrary URLs, and
 // the coordinates come only from the resolved URL/body, nothing else is returned.
 export async function GET(req: Request) {
-  if (!allow("geo-resolve", req, 20)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("geo-resolve", req, 20)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const raw = (new URL(req.url).searchParams.get("url") || "").trim();
   if (!raw || !isMapShareUrl(raw)) return NextResponse.json({ error: "unsupported_url" }, { status: 400 });

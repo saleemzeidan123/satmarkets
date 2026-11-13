@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 // profile columns, so identity and verification (name, type, verification_status,
 // cr_number) can never be changed from here. Those are SAT-owned.
 export async function PATCH(req: NextRequest) {
-  if (!allow("account-edit", req, 20)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("account-edit", req, 20)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit your profile.", code: "sign_in_to_edit_profile" }, { status: 401 });

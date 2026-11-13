@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -28,7 +28,7 @@ import { getSessionUser } from "@/lib/auth/session";
 // sentence for all of them instead. They are stated as codes now, and the words
 // left in `error` are still the log's words rather than a reader's.
 export async function POST(req: NextRequest) {
-  if (!allow("viewings", req, 6)) return NextResponse.json({ ok: false, error: "Rate limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("viewings", req, 6)).ok) return NextResponse.json({ ok: false, error: "Rate limited", code: "rate_limited" }, { status: 429 });
   let body: { listing_id?: string; scheduled_at?: string; contact_name?: string; contact_email?: string; note?: string; qualification?: Record<string, unknown> } = {};
   try { body = await req.json(); } catch {}
   const id = String(body.listing_id ?? "");

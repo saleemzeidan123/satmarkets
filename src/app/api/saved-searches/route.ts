@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -33,7 +33,7 @@ function parse(qs: string): { asset_type: string | null; district_id: string | n
 
 // GET: this user's saved searches, newest first.
 export async function GET(req: NextRequest) {
-  if (!allow("ss-get", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("ss-get", req, 60)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ searches: [], signedIn: false });
   const sb = await getSupabaseServer();
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 // first sign-in). Duplicates (same query string) are skipped, since there is no
 // unique constraint to lean on.
 export async function POST(req: NextRequest) {
-  if (!allow("ss-post", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("ss-post", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to save searches." }, { status: 401 });
   const sb = await getSupabaseServer();
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
 
 // DELETE: remove one saved search by id.
 export async function DELETE(req: NextRequest) {
-  if (!allow("ss-del", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("ss-del", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const su = await me();
   if (!su) return NextResponse.json({ error: "Sign in to manage searches." }, { status: 401 });
   const sb = await getSupabaseServer();
