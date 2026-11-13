@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import {
@@ -43,7 +43,7 @@ const MAX_RESULTS = 25;
 
 export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("req-matches", req, 30)) {
+  if (!(await allowShared("req-matches", req, 30)).ok) {
     return NextResponse.json({ error: "Rate limited" }, { status: 429 });
   }
 

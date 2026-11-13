@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { coerceAndValidateAttributes, editedAttributesJson } from "@/lib/intakeValidation";
@@ -35,7 +35,7 @@ const BASE_OWNED_COLUMNS = new Set(["asking_rent_sqm", "sale_price"]);
 // be replaced by a machine rendering of the English.
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("listing-edit", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listing-edit", req, 30)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit" }, { status: 401 });

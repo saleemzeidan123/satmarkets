@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceClient, ingestRentBase, type RegaRow } from "@/lib/ingest/rentBasePipeline";
 import { authed } from "@/lib/adminauth";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) return NextResponse.json({ ok: false, error: "not_configured" }, { status: 503 });
 
-  if (!allow("cron-ingest-rega", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("cron-ingest-rega", req, 10)).ok) return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   if (!authed(req, secret)) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
 
   const sb = getServiceClient();

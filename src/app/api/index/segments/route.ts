@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { toPublicSegment, type IndexRowLike } from "@/lib/market/segments";
 import { type RentIndexCell, rentIndexQuoteGate } from "@/lib/rentIndexEvidence";
@@ -46,7 +46,7 @@ const COLUMNS =
   "district_label, district_label_ar, district_id, asset_type, segment, band_low, band_high, median, unit, period, source, sufficient, stat_kind, data_class, is_demo";
 
 export async function GET(req: Request) {
-  if (!allow("index-segments", req, 60)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("index-segments", req, 60)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ segments: [], notes: [], withheld: 0 });
 

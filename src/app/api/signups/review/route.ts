@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getSessionUser } from "@/lib/auth/session";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   if (!url || !serviceKey) {
     return NextResponse.json({ ok: false, error: "Review not configured", code: "not_configured" }, { status: 503 });
   }
-  if (!allow("signups-review", req, 10)) return NextResponse.json({ ok: false, error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("signups-review", req, 10)).ok) return NextResponse.json({ ok: false, error: "rate_limited", code: "rate_limited" }, { status: 429 });
   const su = await getSessionUser();
   if (!su?.isSat) return NextResponse.json({ ok: false, error: "not_found", code: "record_not_found" }, { status: 404 });
   let body: { id?: string; status?: string; notes?: string } = {};

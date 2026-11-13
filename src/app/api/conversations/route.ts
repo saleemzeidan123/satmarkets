@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 //   2. The listing must actually be on the market. You cannot open a thread about an
 //      advertisement that is not being advertised.
 export async function POST(req: NextRequest) {
-  if (!allow("conversations", req, 20)) {
+  if (!(await allowShared("conversations", req, 20)).ok) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 

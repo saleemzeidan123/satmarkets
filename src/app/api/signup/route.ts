@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 
 const ROLES = ["occupier", "owner", "broker", "investor"] as const;
@@ -8,7 +8,7 @@ const ROLES = ["occupier", "owner", "broker", "investor"] as const;
 // person (owners against title/permit, brokers against the FAL register), so
 // this endpoint stores a structured request, it does not mint credentials.
 export async function POST(req: NextRequest) {
-  if (!allow("signup", req, 6)) return NextResponse.json({ ok: false, error: "Rate limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("signup", req, 6)).ok) return NextResponse.json({ ok: false, error: "Rate limited", code: "rate_limited" }, { status: 429 });
   // Parsed inside a guard, as the viewings route already does. An unparseable
   // body used to throw out of the handler, which Next answers with a bare 500
   // carrying no code, so the one refusal a reader could not act on was the one

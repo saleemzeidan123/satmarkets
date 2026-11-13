@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { translateToArabic, hashSource, type Tier } from "@/lib/translate/translateToArabic";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
 import { unsourcedFigure } from "@/lib/market/guard";
 
@@ -39,7 +39,7 @@ async function sbServer() {
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("translate", req, 10)) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
+  if (!(await allowShared("translate", req, 10)).ok) return NextResponse.json({ error: "Rate limited" }, { status: 429 });
 
   // YOU MUST BE SIGNED IN, AND IT IS CHECKED BEFORE WE SPEND ANYTHING.
   //

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -17,7 +17,7 @@ import { getSessionUser } from "@/lib/auth/session";
 // And we never report success for something we did not store: if storage is unavailable
 // this fails loudly (503), it does not return ok.
 export async function POST(req: NextRequest) {
-  if (!allow("leads", req, 8)) return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("leads", req, 8)).ok) return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
 
   const body = (await req.json().catch(() => ({}))) as {
     listing_id?: string;

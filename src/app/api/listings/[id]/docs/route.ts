@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { getSessionUser } from "@/lib/auth/session";
@@ -21,7 +21,7 @@ const CAPS: Record<string, number> = { floorplan: 12, brochure: 3 };
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("listing-docs-upload", req, 20)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listing-docs-upload", req, 20)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to upload.", code: "sign_in_to_upload" }, { status: 401 });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSessionUser } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -18,7 +18,7 @@ const ALLOWED = new Set(["new", "contacted", "qualified", "converted", "closed_l
 
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("lead-status", req, 40)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("lead-status", req, 40)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to update." }, { status: 401 });

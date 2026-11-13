@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -11,7 +11,7 @@ import { getSessionUser } from "@/lib/auth/session";
 // unverified is 403, and every row records the acting user and account.
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("interest", req, 8)) {
+  if (!(await allowShared("interest", req, 8)).ok) {
     return NextResponse.json({ error: "Rate limited", code: "rate_limited" }, { status: 429 });
   }
 

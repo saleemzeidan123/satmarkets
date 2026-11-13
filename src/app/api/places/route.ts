@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { cityLabel } from "@/lib/labels";
 import { callGeoSuggest } from "@/lib/location/gateway";
@@ -54,7 +54,7 @@ async function indexedPlaces(q: string, lang: "en" | "ar", withIds: boolean): Pr
 }
 
 export async function GET(req: Request) {
-  if (!allow("places", req, 30)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("places", req, 30)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const url = new URL(req.url);
   const q = (url.searchParams.get("q") || "").trim();
   if (q.length < 2) return NextResponse.json({ items: [] });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth/session";
 import { getSupabaseServer } from "@/lib/supabase/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +30,7 @@ const ALLOWED = ["confirmed", "cancelled", "completed", "no_show"] as const;
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("viewing-decision", req, 20)) {
+  if (!(await allowShared("viewing-decision", req, 20)).ok) {
     return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSupabaseServiceRole } from "@/lib/supabase/serviceRole";
 import { getSessionUser } from "@/lib/auth/session";
@@ -43,7 +43,7 @@ const CAPS = MEDIA_CAPS;
 
 export async function POST(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("listing-media-upload", req, 30)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listing-media-upload", req, 30)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to upload.", code: "sign_in_to_upload" }, { status: 401 });
@@ -302,7 +302,7 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
 // the listing_media RLS update policy.
 export async function PATCH(req: NextRequest, props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  if (!allow("listing-media-reorder", req, 40)) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("listing-media-reorder", req, 40)).ok) return NextResponse.json({ error: "rate_limited", code: "rate_limited" }, { status: 429 });
 
   const su = await getSessionUser();
   if (!su || !su.accountId) return NextResponse.json({ error: "Sign in to edit.", code: "sign_in_to_edit_media" }, { status: 401 });

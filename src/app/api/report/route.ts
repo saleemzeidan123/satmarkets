@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth/session";
 
@@ -12,7 +12,7 @@ const REASONS = new Set(["inaccurate", "unavailable", "duplicate", "suspicious",
 // reporter is stamped so SAT can follow up. The report is a record SAT reviews,
 // not an email pipeline. Rate limited to blunt abuse.
 export async function POST(req: NextRequest) {
-  if (!allow("report", req, 8)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("report", req, 8)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const sb = await getSupabaseServer();
   if (!sb) return NextResponse.json({ error: "Unavailable." }, { status: 503 });
 

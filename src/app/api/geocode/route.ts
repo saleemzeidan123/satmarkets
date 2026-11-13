@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { allow } from "@/lib/ratelimit";
+import { allowShared } from "@/lib/ratelimit";
 import { callGeoGeocode } from "@/lib/location/gateway";
 import { getAllSourceRights } from "@/lib/queries/sourceRights";
 
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 // Maps link, and placing the pin by hand. What is lost is a convenience, not the
 // task.
 export async function GET(req: Request) {
-  if (!allow("geocode", req, 30)) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  if (!(await allowShared("geocode", req, 30)).ok) return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   const q = (new URL(req.url).searchParams.get("q") || "").trim();
   if (q.length < 2) return NextResponse.json({ items: [] });
 
