@@ -131,7 +131,7 @@ The authoritative record is the `source_registry` table, extended on 2026-07-28 
 is the thing the code reads. This section is the human-readable summary and it is not
 the enforcement point; where the two disagree, the table is right and this file is stale.
 
-Nine sources are registered. The columns now answer eight questions per source rather
+Nine sources are registered, and a tenth is prepared (PKG-DATA-1, `20261113d`). The columns now answer eight questions per source rather
 than two: may we store it, may we show the source's own figure, may we show a value we
 derived, may a user export it, may the assistant retrieve it, how much may be sent to an
 external model, what is the evidence status, and what makes all of that stop.
@@ -140,6 +140,7 @@ external model, what is the evidence status, and what makes all of that stop.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `gastat_sama` | full | public | public | public | public | none | evidenced |
 | `rega_ejar` | full | public | internal | none | internal | none | asserted_unverified |
+| `rega_open_rental_indicators` | full | public | internal | none | none | none | evidenced (prepared, not applied) |
 | `rega_permit` | full | public | none | internal | public | none | evidenced |
 | `fsq_os_places` | full | public | public | internal | public | none | evidenced |
 | `spl_address` | full | public | none | none | none | none | asserted_unverified |
@@ -169,6 +170,19 @@ attribution. That is what `/rent-index` shows today. It does not cover deriving 
 from it, exporting it or having the assistant retrieve it in public, so all three are
 denied. **O10** is exactly this gap, and it sits under the highest-value surface in the
 product.
+
+**The open rental indicators are a separate source from the Rent Index, on purpose.**
+`rega_open_rental_indicators` is the Real Estate General Authority's quarterly dataset on
+the National Open Data Platform. Its licence, the platform's Open Data License version
+2.0, was read on 2026-11-13 (section 1 and sections 4 to 12; the introduction and the
+definitions were not) and is quoted in the row. It grants use, including commercial use,
+with a notice naming the dataset and the licence, and `/market` carries that notice. The
+row grants public display of the source's own figure and holds everything else back:
+derived display stays internal because a derived market figure in public is analysis
+whatever the data licence says, which is O13. None of this touches `rega_ejar`, whose
+terms are still O10. The row is prepared and takes effect when the owner applies
+`20261113d`; it reaches a public page only once the register is readable, which is the
+separate decision in `20261113e` (finding 88).
 
 **The maps and POI question is closed harder here than the strategy proposed.** The live
 Foursquare API permits caching nothing but `fsq_place_id`; Mapbox forbids caching
