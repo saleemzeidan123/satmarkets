@@ -174,12 +174,18 @@ product.
 **The open rental indicators are a separate source from the Rent Index, on purpose.**
 `rega_open_rental_indicators` is the Real Estate General Authority's quarterly dataset on
 the National Open Data Platform. Its licence, the platform's Open Data License version
-2.0, was read on 2026-11-13 (section 1 and sections 4 to 12; the introduction and the
-definitions were not) and is quoted in the row. It grants use, including commercial use,
+2.0, was read in full on 2026-11-13 and is quoted in the row. It grants use, including commercial use,
 with a notice naming the dataset and the licence, and `/market` carries that notice. The
 row grants public display of the source's own figure and holds everything else back:
 derived display stays internal because a derived market figure in public is analysis
-whatever the data licence says, which is O13. None of this touches `rega_ejar`, whose
+whatever the data licence says, which is O13. The licence leaves trademarks outside it
+(section 4.3), and the Authority's own regulation on consultations and analyses bars a
+licensee from using its name and logo in an analysis (Article 5(7), as read on the
+Authority's English page, not checked against the Arabic). The section therefore names the
+Authority as the source in words only, uses no logo, and says the Authority has not
+reviewed or endorsed the page. Whether a table of the Authority's published counts is an
+"analysis" at all under that regulation is a question for counsel, with O13. None of this
+touches `rega_ejar`, whose
 terms are still O10. The row is prepared and takes effect when the owner applies
 `20261113d`; it reaches a public page only once the register is readable, which is the
 separate decision in `20261113e` (finding 88).
