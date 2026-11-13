@@ -15,10 +15,12 @@
 -- rega_ejar row would widen a right nobody has evidenced for the index.
 --
 -- WHAT WAS READ. Open Data License, version 2.0, March 2023, Saudi Data and AI
--- Authority, sixteen pages. Read: the summary (section 1) and sections 4 to 12
--- (pages 3 and 7 to 15). Not read: the introduction and the definitions
--- (sections 2 and 3, pages 4 to 6). The rights relied on are stated in the
--- sections that were read.
+-- Authority, sixteen pages, read in full on 2026-11-13 (sections 1 to 12). By
+-- its definitions the section on /market is a "Produced Work", which needs the
+-- notice in section 6.2 and not the duties of section 6.1; the extract kept in
+-- this repository is a "Derivative Dataset" and is not conveyed to anyone.
+-- Section 4.3 leaves trademarks outside the licence, so the Authority is named
+-- as the source in words and its logo is not used.
 --
 -- WHAT IS GRANTED HERE. Only what the section uses: showing the source's own
 -- published figure in public, with the notice the licence requires. The licence
@@ -65,7 +67,7 @@ insert into public.source_registry (
   'Published quarterly, one dataset per region. Each file loaded is recorded beside its extract with the official file hash and the retrieval date.',
   'Section 11.1: "Any breach by you of the terms and conditions of this license automatically terminates this license with immediate effect and without notice to you." Section 11.4 reinstates on cure.',
   now(),
-  'PKG-DATA-1, 2026-11-13. Licence read: section 1 and sections 4 to 12. Sections 2 and 3 (introduction, definitions) not read. Redisplay of the source''s own figure is evidenced and granted. Derived display, export, retrieval and model input are held back for the reasons in the migration header, not because the licence refuses them.'
+  'PKG-DATA-1, 2026-11-13. Licence read in full, sections 1 to 12. The page is a Produced Work under the definitions and carries the section 6.2 notice. Trademarks are outside the licence (section 4.3): the Authority is named as source only, no logo. Redisplay of the source''s own figure is evidenced and granted. Derived display, export, retrieval and model input are held back for the reasons in the migration header, not because the licence refuses them.'
 )
 on conflict (source_id) do update set
   name_en                = excluded.name_en,
