@@ -178,16 +178,6 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
     // expressed as a query: the flag, a real record, a method that names a check and
     // an actor who signed it. It returns nothing today, which is the true answer.
     if (searchParams.verified) query = verifiedOnly(query);
-    const { data } = await query.order("created_at", { ascending: false });
-    listings = (data as Listing[]) ?? [];
-    // PKG-DISCOVERY-1 slice C, item 8. The query above carries `.limit(300)` and
-    // nothing downstream distinguished "300 is every matching row" from "300 is
-    // where we stopped counting". A displayed figure that could silently be a
-    // truncation is the same class of dishonesty as an unattributed one; `capped`
-    // is read once, here, off the raw fetch, before the district/place/bbox/q/
-    // facet filters below narrow `listings` into `shown` for reasons that have
-    // nothing to do with the database cap.
-    capped = listings.length === 300;
     // Booking-style per-option counts: same filters minus the multi-select facets themselves.
     let fq = releaseVisibleInventory(sb.from("listings").select("asset_type,building_grade,fitout_condition").eq("status", "published")).limit(400);
     if (searchParams.deal) fq = fq.eq("deal_type", searchParams.deal);
@@ -198,15 +188,30 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
     // Same predicate as the result query above, for the same reason: a facet count
     // that disagrees with the list it describes is its own small false claim.
     if (searchParams.verified) fq = verifiedOnly(fq);
-    const { data: fdata } = await fq;
+    // Speed. The five reads below do not depend on each other and used to run
+    // one after another. They are started together and awaited together, so the
+    // page waits for the slowest, not for the sum. Each query is as it was.
+    const [{ data }, { data: fdata }, { data: geo }, { data: allLocs }, { data: irows }] = await Promise.all([
+      query.order("created_at", { ascending: false }),
+      fq,
+      sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind"),
+      sb.from("districts").select("id,city,name_en,name_ar,kind"),
+      sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo").eq("sufficient", true),
+    ]);
+    listings = (data as Listing[]) ?? [];
+    // PKG-DISCOVERY-1 slice C, item 8. The query above carries `.limit(300)` and
+    // nothing downstream distinguished "300 is every matching row" from "300 is
+    // where we stopped counting". A displayed figure that could silently be a
+    // truncation is the same class of dishonesty as an unattributed one; `capped`
+    // is read once, here, off the raw fetch, before the district/place/bbox/q/
+    // facet filters below narrow `listings` into `shown` for reasons that have
+    // nothing to do with the database cap.
+    capped = listings.length === 300;
     (fdata ?? []).forEach((r: any) => { if (r.asset_type) assetCounts[r.asset_type] = (assetCounts[r.asset_type] || 0) + 1; if (r.building_grade) gradeCounts[r.building_grade] = (gradeCounts[r.building_grade] || 0) + 1; if (r.fitout_condition) fitCounts[r.fitout_condition] = (fitCounts[r.fitout_condition] || 0) + 1; });
-    const { data: geo } = await sb.from("districts_geo").select("id,name_en,name_ar,lat,lng,kind");
-    const { data: allLocs } = await sb.from("districts").select("id,city,name_en,name_ar,kind");
     // ADV-1E. This map feeds `marketVerdict` on every card in the result list,
     // and that verdict is the third-party figure restated as a percentage. A row
     // the gate withholds never enters the map, so the card says nothing about
     // market position rather than saying it from a figure SAT may not publish.
-    const { data: irows } = await sb.from("rent_index_published").select("district_id,asset_type,segment,unit,band_low,median,band_high,period,sufficient,stat_kind,data_class,is_demo").eq("sufficient", true);
     const quotableIdx = await quotableRentIndexRows((irows ?? []) as any[], locale);
     quotableIdx.rows.forEach(({ row }) => { const r: any = row; const arr = idxByDistrict.get(r.district_id) ?? []; arr.push(r as IndexRow); idxByDistrict.set(r.district_id, arr); });
     const counts = new Map<string, number>();

@@ -38,7 +38,12 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   // database", so Home's async sections can say the true one of those two
   // things instead of rendering the same silent gap for both.
   const dataOk = !!sb;
-  const kpis = await getPublishedKpis(locale);
+  // Speed. Every read this page makes is independent of the others, and they
+  // used to run one after another: nine round trips to the database before the
+  // first byte left the server. They are now started together and awaited
+  // together, so the page waits for the slowest one, not for the sum. Each
+  // query is written exactly as it was; only the waiting changed.
+  const kpisP = getPublishedKpis(locale);
 
   let rows: Listing[] = [];
   let listings = 0, districts = 0, buildings = 0, verified = 0;
@@ -47,10 +52,8 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   let openReqs: number | null = null, idxSegs: number | null = null;
   let idxStatements: readonly string[] = [];
   if (sb) {
-    const { data } = await releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(4);
-    rows = (data as Listing[]) ?? [];
-    const { count: lc } = await releaseVisibleInventory(sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published"));
-    listings = lc ?? 0;
+    const rowsP = releaseVisibleInventory(sb.from("listings").select("*, districts(name_en, name_ar, city)").eq("status", "published")).order("created_at", { ascending: false }).limit(4);
+    const listingsP = releaseVisibleInventory(sb.from("listings").select("*", { count: "exact", head: true }).eq("status", "published"));
     // C4. This counted three different things and called all of them owner-verified:
     // a checked owner, a broker's authorisation to market, and the row simply being
     // our own stock. src/lib/gate.ts is the truth source and says the first of those
@@ -62,7 +65,7 @@ export default async function HomePage(props: { params: Promise<{ locale: string
     // resolved from, so the number on the home page and the badge on the card can
     // never disagree. It reads zero today, which is the true answer and is why the
     // tile drops out below rather than publishing a rate.
-    const { count: vc } = await releaseVisibleInventory(sb
+    const verifiedP = releaseVisibleInventory(sb
       .from("listings")
       .select("*", { count: "exact", head: true })
       .eq("status", "published"))
@@ -70,18 +73,22 @@ export default async function HomePage(props: { params: Promise<{ locale: string
       .eq("is_demo", false)
       .not("verified_by", "is", null)
       .in("verification_method", [...CHECK_METHODS]);
-    verified = vc ?? 0;
-    const { count: dc } = await sb.from("districts").select("*", { count: "exact", head: true });
-    districts = dc ?? 0;
-    const { count: bc } = await sb.from("buildings").select("*", { count: "exact", head: true });
-    buildings = bc ?? 0;
+    const districtsP = sb.from("districts").select("*", { count: "exact", head: true });
+    const buildingsP = sb.from("buildings").select("*", { count: "exact", head: true });
     // ADV-1E. Three separate reads of this table used to sit here: one for the
     // band a featured card positions its asking rent inside, one for the hero
     // strip, and a head count of sufficient segments. Each asked its own
     // question and none asked whether SAT may publish the answer. They are now
     // one read and one decision, and the hero strip, the card position and the
     // segment count are all derived from the rows that survived it.
-    const { data: idxRows } = await sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, unit, period, band_low, band_high, median, sufficient, stat_kind, data_class, is_demo").order("median", { ascending: false });
+    const idxP = sb.from("rent_index_published").select("district_label, district_label_ar, district_id, asset_type, segment, unit, period, band_low, band_high, median, sufficient, stat_kind, data_class, is_demo").order("median", { ascending: false });
+    const reqsP = sb.from("requirements_public").select("*", { count: "exact", head: true });
+    const [{ data }, { count: lc }, { count: vc }, { count: dc }, { count: bc }, { data: idxRows }, { count: rc }] = await Promise.all([rowsP, listingsP, verifiedP, districtsP, buildingsP, idxP, reqsP]);
+    rows = (data as Listing[]) ?? [];
+    listings = lc ?? 0;
+    verified = vc ?? 0;
+    districts = dc ?? 0;
+    buildings = bc ?? 0;
     const quotable = await quotableRentIndexRows((idxRows ?? []) as any[], locale, (r: any) => (ar ? (r.district_label_ar || r.district_label) : r.district_label) ?? null);
     idxStatements = quotable.statements;
     const quotedRows = quotable.rows.map((q) => q.row as any);
@@ -106,7 +113,6 @@ export default async function HomePage(props: { params: Promise<{ locale: string
     // label shown to anyone, so it stays a literal.
     const oi = heroBands.findIndex((b) => b.en === /* i18n-exempt */ "Al Olaya");
     if (oi > -1 && oi < heroBands.length - 1) heroBands.push(heroBands.splice(oi, 1)[0]);
-    const { count: rc } = await sb.from("requirements_public").select("*", { count: "exact", head: true });
     openReqs = rc ?? null;
     // The tile says how many segments the reader can actually see a figure for,
     // so it counts what survived the decision rather than what the table holds.
@@ -130,7 +136,7 @@ export default async function HomePage(props: { params: Promise<{ locale: string
   // the real individual profile route `ListerBadge` already links to on
   // Listing Detail. Only the lead slot carries it, to keep this addition
   // proportionate rather than repeating a byline on every grid card.
-  const leadLister: Lister | null = rows[0] ? await getLister(rows[0].account_id) : null;
+  const [kpis, leadLister] = await Promise.all([kpisP, rows[0] ? getLister(rows[0].account_id) : Promise.resolve<Lister | null>(null)]);
 
   const featured: FeaturedListing[] = rows.map((l) => {
     const dnEn = l.districts ? l.districts.name_en : null;

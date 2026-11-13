@@ -8,6 +8,7 @@ import SatFooter from "@/components/SatFooter";
 import ChromeGate from "@/components/ChromeGate";
 import TabBar from "@/components/TabBar";
 import AdvisorWidget from "@/components/AdvisorWidget";
+import PhoneChrome from "@/components/PhoneChrome";
 import HtmlLangDir from "@/components/HtmlLangDir";
 import JsonLd, { ORG, website } from "@/components/JsonLd";
 import { simulatedRowsAreLabelled } from "@/lib/inventory";
@@ -118,6 +119,7 @@ export default async function LocaleLayout(props: { children: ReactNode; params:
       {children}
       </ChromeGate>
       <AdvisorWidget locale={locale} />
+      <PhoneChrome />
     </>
   );
 }
