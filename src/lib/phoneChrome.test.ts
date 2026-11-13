@@ -49,3 +49,37 @@ test("pinned phone chrome follows the real bottom of the screen and yields to Se
   assert.match(css, /\.tabbar,\.advfab,\.contact-dock\{translate:0 var\(--vv-gap,0px\);\}/);
   assert.match(css, /html\.fab-yield \.advfab\{opacity:0;pointer-events:none;\}/);
 });
+
+test("PKG-DESIGN-9: every section the site has is reachable from the header menu, in both languages", () => {
+  // The owner's complaint: the header did not carry the sections the site has.
+  // The menu is drawn from one list, and this is the list it must hold.
+  const header = strip(read("src/components/Header.tsx"));
+  for (const path of ["/listings", "/map", "/locations", "/post-requirement", "/rent-index", "/market", "/advisor", "/sources", "/list", "/requirements", "/brokers", "/listers", "/verification", "/neutrality", "/about", "/saved", "/login", "/dashboard"]) {
+    assert.ok(header.includes(`at("${path}")`), `the header menu has no link to ${path}`);
+  }
+  // A planned page is not offered beside working ones.
+  assert.ok(!header.includes("/pricing"), "the header links the pricing page, which has no working offer behind it");
+  for (const lang of ["en", "ar"]) {
+    const nav = JSON.parse(read(`src/i18n/dictionaries/${lang}.json`)).nav;
+    for (const key of ["explore", "requirements", "rentIndex", "market", "advisor", "map", "locations", "postRequirement", "sources", "listSpace", "requirementsBoard", "brokers", "listers", "verification", "neutrality", "about", "gFind", "gMarket", "gOwners", "gHow", "account", "saved", "signIn", "menu", "list"]) {
+      assert.ok(typeof nav[key] === "string" && nav[key].trim().length > 0, `${lang}: nav.${key} is missing`);
+    }
+  }
+  const arNav = JSON.parse(read("src/i18n/dictionaries/ar.json")).nav;
+  assert.match(arNav.gFind + arNav.gMarket + arNav.gOwners + arNav.gHow + arNav.market, /^[؀-ۿ\s]+$/, "an Arabic group title carries Latin text");
+});
+
+test("PKG-DESIGN-9: the menu is a disclosure a keyboard can leave, and the current page is named", () => {
+  const header = strip(read("src/components/Header.tsx"));
+  // It is a list of links, not a menu widget, so it must not promise one.
+  assert.ok(!header.includes("aria-haspopup"), "the trigger promises a menu widget the sheet is not");
+  assert.match(header, /aria-expanded=\{open\}/);
+  assert.match(header, /aria-controls=\{open \? MENU_ID : undefined\}/);
+  // Focus leaving the trigger and the sheet closes the sheet.
+  assert.match(header, /onBlur=\{\(e\) => \{ if \(!e\.currentTarget\.contains\(e\.relatedTarget as Node \| null\)\) setOpen\(false\); \}\}/);
+  // The current page is stated, not only coloured, in the bar and in the sheet.
+  assert.equal((header.match(/aria-current=\{active\(n\.href\) \? "page" : undefined\}/g) ?? []).length, 2);
+  // Links sit in lists under a labelled group.
+  assert.match(header, /role="group" aria-labelledby=\{`hdr-g-\$\{g\.id\}`\}/);
+  assert.match(header, /<ul className="m-0 list-none p-0">/);
+});
