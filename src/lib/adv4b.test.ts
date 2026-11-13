@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { SITEMAP_ROUTES, HELD_ROUTES, PRIVATE_PREFIXES } from "./routePolicy";
 import { verificationStateLabel, verificationDimensionLabel } from "./evidence";
@@ -195,9 +195,16 @@ test("ADV-4B: the verification page states the two checks separately", () => {
 test("ADV-4B: the page declares exactly the sources the rights ledger records", () => {
   const inLedger = [...LEDGER.matchAll(/where source_id = '([a-z0-9_]+)'/g)].map((m) => m[1]);
   assert.ok(inLedger.length > 0, "the rights ledger no longer names its rows the way this test reads them");
+  // PKG-DATA-1. A source registered after the ledger arrives as its own
+  // migration, which inserts the row whole, licence and all. Those rows are
+  // recorded rows too, read from every migration that inserts one.
+  const dir = join(ROOT, "supabase/migrations");
+  const registeredLater = readdirSync(dir)
+    .filter((f) => f.endsWith(".sql"))
+    .flatMap((f) => [...readFileSync(join(dir, f), "utf8").matchAll(/insert into public\.source_registry \([\s\S]*?\) values \(\s*'([a-z0-9_]+)'/g)].map((m) => m[1]));
   assert.deepEqual(
     sorted(DECLARED_SOURCES),
-    sorted([...new Set(inLedger)]),
+    sorted([...new Set([...inLedger, ...registeredLater])]),
     "the published register and the recorded register name different sources",
   );
 });
