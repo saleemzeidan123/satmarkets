@@ -1455,3 +1455,11 @@ across several instances, which needs the migration applied and a deployment.
 What this does not do: it limits per address, so a caller with many addresses
 is limited per address and not in total. Volume of that kind is stopped at the
 edge (the firewall), which has still not been read or configured.
+
+### Applied, 2026-11-13
+
+- Both hardening migrations (`20261113_security_hardening_1.sql`, `20261113b_...`) and the rate limit store (`20261113c_rate_limit_store.sql`) were run on production through the SQL editor. Checked afterwards through the read-only connector: `anon` may no longer execute `sat_publish_index_cell`, `demo_census`, `create_requirement` or `rate_limit_hit`, may no longer read `rent_index_cells`, and holds TRUNCATE on one table only (`spatial_ref_sys`); `service_role` may execute `create_requirement` and `rate_limit_hit`. 40 calls to a 30-per-minute route on production: 30 answered, 10 refused.
+- Supabase Auth: leaked-password protection was already on; the minimum password length went from 6 to 8, matching the application's own forms. CAPTCHA stays off: turning it on without the application sending a token would block every sign-up. "Require current password" stays off: the recovery flow sets a new password without one.
+- Vercel firewall: Bot Protection set to Challenge. Verified bots and known AI crawlers still pass; AI Bots is not set to deny, because the site will want to be read by assistants once indexing is allowed.
+- Supabase support was asked to revoke the public grants on `spatial_ref_sys`.
+- Not checked: a live submission of the public requirement form after part B. The permissions read correctly; a real submission has not been made from here.
