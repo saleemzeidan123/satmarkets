@@ -123,6 +123,12 @@ test("PKG-DATA-1: the section asks the register before it shows a figure, and sa
   // The licence notice names the dataset and the licence, each as a link.
   assert.match(c, /LEASING_DATASET\.url/);
   assert.match(c, /LEASING_DATASET\.licenceUrl/);
+  // Naming a regulator as a source is not its backing, and the page says so.
+  assert.match(c, /t\.laNoAffiliation/);
+  for (const lang of ["en", "ar"]) {
+    const d = JSON.parse(read(`src/i18n/dictionaries/${lang}.json`));
+    assert.ok((d.marketPage.laNoAffiliation ?? "").trim().length > 0, `${lang}: the no-affiliation line is missing`);
+  }
   assert.match(LEASING_DATASET.url, /^https:\/\/open\.data\.gov\.sa\//);
   assert.match(LEASING_DATASET.licenceUrl, /^https:\/\/open\.data\.gov\.sa\//);
 });
