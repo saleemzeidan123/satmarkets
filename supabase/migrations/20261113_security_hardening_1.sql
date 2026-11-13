@@ -16,7 +16,10 @@
 --    use the service client.
 revoke execute on function public.sat_publish_index_cell(uuid) from public, anon, authenticated;
 grant execute on function public.sat_publish_index_cell(uuid) to service_role;
-alter function public.sat_publish_index_cell(uuid) set search_path = public, pg_temp;
+-- The path is pinned to what the function has been running with (the database
+-- default: public, then extensions), so any trigger it fires resolves names
+-- exactly as before. Pinning it is what stops a caller choosing it.
+alter function public.sat_publish_index_cell(uuid) set search_path = public, extensions, pg_temp;
 
 -- 2. demo_census. SECURITY DEFINER, tells any caller how many demonstration
 --    rows each table holds. Called only by scripts/seed-demo.mjs with the
