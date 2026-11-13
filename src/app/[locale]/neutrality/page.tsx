@@ -30,6 +30,11 @@ export default async function NeutralityPage(props: { params: Promise<{ locale: 
   const c = getDictionary(lp).neutrality;
   const commitments: [string, string][] = [
     [c.cRankT, c.cRankB],
+    // PKG-DESIGN-5A, owner decision of 2026-11-13: SAT Markets sells advertising
+    // and never sells ranking. Stated as a commitment before any paid space
+    // exists, and saying that none is on sale yet, so the rule is on record
+    // ahead of the first thing it governs.
+    [c.cPaidT, c.cPaidB],
     [c.cActT, c.cActB],
     [c.cDataT, c.cDataB],
     [c.cVerifT, c.cVerifB],
