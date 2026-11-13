@@ -2,7 +2,6 @@
 import Link from "next/link";
 import type { Listing } from "@/lib/types";
 import type { Locale } from "@/i18n/config";
-import { photoFor } from "@/lib/photos";
 import { assetLabel, gradeLabel, gradePhrase, cityLabel, dealLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import SaveHeart from "@/components/SaveHeart";
@@ -14,7 +13,7 @@ import { netArea, priceParts } from "@/lib/listingFigures";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listedSince, listedLabel } from "@/lib/listedSince";
 import { availabilityOf, availabilityShortLabel, availabilityTone } from "@/lib/availability";
-import { Ph, Verified, Icon } from "@/components/satkit";
+import { Verified, Icon } from "@/components/satkit";
 
 // PKG-SUP2. The `sqm` prop is gone. It was a unit string threaded in from two
 // callers, which meant this card could be handed a unit that did not match the
@@ -97,7 +96,6 @@ export default function ListingCard({
   const pp = priceParts(listing.deal_type === "sale" ? listing.sale_price : listing.asking_rent_sqm, listing.deal_type, locale, "long");
   const areaFig = netArea(listing.area_sqm, locale);
   const grade = listing.building_grade && listing.building_grade !== "n_a" ? gradeLabel(listing.building_grade, locale) : "";
-  const photo = photoFor(listing.asset_type, listing.id);
   const asset = assetLabel(listing.asset_type, locale);
   const href = `/${locale}/listings/${listing.id}`;
   // ADV-1D. `ui.save` does not exist on the `ui` dictionary slice every caller
@@ -135,19 +133,25 @@ export default function ListingCard({
 
   if (variant === "lead") {
     const badgeNodes = badges.map((t, i) => <Verified key={`v${i}`} text={t} />);
-    const assetChip = <span key="t" className="tag" style={{ background: "rgba(255,255,255,.9)" }}>{asset}</span>;
+    const assetChip = <span key="t" className="ld-tag">{asset}</span>;
     return (
       <Link href={href} className="home-lead lift" style={{ border: "1px solid var(--silver)", borderRadius: 16, overflow: "hidden", background: "var(--paper)", textDecoration: "none", color: "inherit", boxShadow: "var(--sh-1)" }}>
-        <Ph src={photo} label={`${asset}, ${place}`} h={284} badges={[...badgeNodes, assetChip]}>
+        {/* PKG-DESIGN-4B. This panel held a library photograph chosen by hashing
+            the listing id. It holds the drawing of the type of space now, as the
+            results rows do (claims ledger C46), until the card is handed the
+            listing's own photographs. */}
+        <div className="lc-leadpic">
+          <TypeGlyph type={listing.asset_type} size={132} />
+          <div className="lc-leadbadges">{[...badgeNodes, assetChip]}</div>
           <SaveHeart id={listing.id} label={saveLabel} />
-        </Ph>
+        </div>
         <div style={{ padding: "clamp(24px,3vw,38px)", display: "flex", flexDirection: "column", justifyContent: "center", gap: 11 }}>
-          <div style={{ fontFamily: "var(--mono)", fontWeight: 500, fontSize: "1.75rem", color: "var(--ink)" }}>
+          <div style={{ fontWeight: 600, fontSize: "1.75rem", color: "var(--ink)", fontVariantNumeric: "tabular-nums" }}>
             <bdi>{pp ? pp.value : ui.onRequest}</bdi>
             {pp && <small style={{ fontSize: "var(--fs-sm)", color: "var(--slate)", fontWeight: 400 }}>{" "}<bdi>{pp.unit}</bdi></small>}
           </div>
           <div style={{ fontSize: "1.3125rem", fontWeight: 600, letterSpacing: "-.01em" }}>{title}</div>
-          <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontFamily: "var(--mono)", fontSize: "var(--fs-xs)", color: "var(--slate)" }}>
+          <div style={{ display: "flex", gap: 9, flexWrap: "wrap", fontSize: "0.875rem", color: "var(--slate)" }}>
             {place ? <span>{place}</span> : null}
             {areaFig ? <><span>·</span><span>{areaFig}</span></> : null}
             <span>·</span><span>{asset}</span>
@@ -229,27 +233,34 @@ export default function ListingCard({
 
   return (
     <Link href={href} data-lid={mapId} className={"card group relative block overflow-hidden" + (mapId ? " listing" : "")}>
-      <div className="relative h-52 overflow-hidden">
-        <img src={photo} alt={title} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.06]" loading="lazy" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
-        <div className="absolute start-3 top-3 flex flex-wrap items-center gap-1.5 max-w-[calc(100%-3.25rem)]">
-          <span className="rounded-md bg-white/90 px-2 py-1 text-[0.625rem] font-semibold text-charcoal ring-1 ring-black/5 backdrop-blur">{asset}</span>
-          <span className="rounded-md bg-signal px-2 py-1 text-[0.625rem] font-semibold text-white backdrop-blur">{dealLabel(listing.deal_type, locale)}</span>{/* Rent-Index coverage is INFORMATIONAL (D24: informational = Harbor), not a
-              status and not a verification. It was an off-palette teal, which D24 rules
-              out; it is now the Harbor wash so it reads as information beside, not above,
-              the solid deal badge. */}
-          <span className="rounded-md bg-azure-wash px-2 py-1 text-[0.625rem] font-semibold text-harbor-d backdrop-blur">{locale === "ar" ? "نطاق إيجار" : "Rent band"}</span>
-          {showFreshness && ls?.isNew ? <span className="rounded-md bg-harbor px-2 py-1 text-[0.625rem] font-semibold text-white backdrop-blur">{dict.listings.newBadge}</span> : null}
+      {/* PKG-DESIGN-4B. The card opened on a library photograph with the price
+          laid over it. It opens on what the space is: the drawing of its type,
+          its title and place, then the stated area and the asking price under
+          their own labels, in the same words the results rows use. The chip that
+          read "Rent band" on every card whether or not an index band covered the
+          listing is gone with the photograph it sat on. */}
+      <div className="lc-top">
+        <span className="lc-thumb"><TypeGlyph type={listing.asset_type} size={48} /></span>
+        <div className="lc-head">
+          <h3 className="lc-title">{title}</h3>
+          <div className="lc-meta">{[place, asset, dealLabel(listing.deal_type, locale)].filter(Boolean).join(" · ")}</div>
+          {showFreshness && ls?.isNew ? <span className="rs-new">{dict.listings.newBadge}</span> : null}
         </div>
         <SaveHeart id={listing.id} label={saveLabel} />
-        <div className="absolute bottom-3 start-3 text-white">
-          <div className="fig text-[1.375rem] leading-none drop-shadow tracking-tight"><bdi>{pp ? pp.value : ui.onRequest}</bdi></div>
-          {pp && <div className="mt-1 text-[0.625rem] opacity-90"><bdi>{pp.unit}</bdi></div>}
-        </div>
       </div>
-      <div className="p-4">
-        <h3 className="font-display text-[1.0625rem] leading-snug text-charcoal line-clamp-1">{title}</h3>
-        <div className="mt-1 text-[0.8125rem] text-charcoal/65">{[place, areaFig, grade].filter(Boolean).join(" · ")}</div>
+      <div className="lc-body">
+        <div className="lc-figs">
+          <div className="lc-fig">
+            <span className="lc-k">{dict.listings.colArea}</span>
+            <span className="lc-v">{areaFig ?? dict.listings.na}</span>
+            {grade ? <span className="lc-sub">{gradePhrase(listing.building_grade, locale)}</span> : null}
+          </div>
+          <div className="lc-fig">
+            <span className="lc-k">{dict.listings.colPrice}</span>
+            <span className="lc-v"><bdi>{pp ? pp.value : ui.onRequest}</bdi></span>
+            {pp ? <span className="lc-sub"><bdi>{pp.unit}</bdi></span> : null}
+          </div>
+        </div>
         {indexPosition ? idxBar : null}
         {showFreshness && (ls || av) ? (
           <div className="mt-2 flex flex-col gap-1">
