@@ -1060,4 +1060,8 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 @media (max-width:1080px){
   .lst-map-panel.open .maplibregl-ctrl-top-right,
   .lst-map-panel.open .maplibregl-ctrl-top-left{top:56px;}
+  /* "Search this area" is centred on the same line as the close button, and in
+     Arabic, where both labels are longer, the two overlapped. It drops to the
+     line below, between the zoom control and the far edge. */
+  .lst-map-panel.open > button.btn:not(.lst-map-close):not(.lst-map-toggle){top:64px !important;}
 }
