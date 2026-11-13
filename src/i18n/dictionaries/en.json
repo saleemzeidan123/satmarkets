@@ -1494,6 +1494,7 @@
     "laCoverage": "{shown} of the {all} Riyadh districts on SAT Markets appear in the file under the name we hold. The others are left out, which says nothing about leasing in them.",
     "laNotice": "Contains information from {dataset}, published by the Real Estate General Authority on the National Open Data Platform, which is made available under the {licence}.",
     "laLicenceName": "Open Data License",
+    "laNoAffiliation": "The Authority has not reviewed or endorsed this page, and SAT Markets is not affiliated with it.",
     "datasetName": "Riyadh Commercial Market Pulse",
     "datasetDesc": "Commercial rent indicators for Riyadh derived from the REGA Rental Index (Ejar), compiled by SAT Markets. Figures are averages of registered rental contracts. Indicative market context, not advice.",
     "datasetSource": "REGA Rental Index (Ejar), registered rental contracts",
