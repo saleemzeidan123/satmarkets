@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/expire-permits",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/ingest-leasing",
+      "schedule": "0 3 * * 1"
     }
   ],
   "regions": [
