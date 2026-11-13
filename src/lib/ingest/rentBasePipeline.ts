@@ -17,7 +17,35 @@ export type RegaRow = {
   avg_rent: number;
   tx_count: number;
   segment?: string;
+  /**
+   * The low and high of a band THE SOURCE published for this row. Both or
+   * neither. The pipeline never works a band out for itself: see `sourceBand`.
+   */
+  band_low?: number;
+  band_high?: number;
 };
+
+/**
+ * The band a row may carry: the one its source published, or none.
+ *
+ * Law 3. This pipeline used to write `avg_rent * 0.75` and `avg_rent * 1.3` as
+ * the low and high of every cell and call the method "min-max of source
+ * medians". The source published an average and no band, there were no medians,
+ * and the two multipliers came from nowhere. Every page that drew a band from
+ * such a cell would have drawn a range nobody measured, under an official
+ * attribution. The endpoint was dormant, so no such cell was ever written.
+ *
+ * A row now carries a band only when the caller passes one the source itself
+ * published, both ends finite and in order. Anything else is no band, and a
+ * cell with no band is drawn as a single figure by the readers that already
+ * handle a null band.
+ */
+export function sourceBand(r: Pick<RegaRow, "band_low" | "band_high">): { low: number; high: number } | null {
+  const { band_low: low, band_high: high } = r;
+  if (typeof low !== "number" || typeof high !== "number") return null;
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high < low) return null;
+  return { low, high };
+}
 
 export type IngestInput = {
   period: string;
@@ -99,6 +127,7 @@ export async function ingestRentBase(sb: SupabaseClient, input: IngestInput): Pr
       if (stgErr || !stg) throw new Error("staging insert failed: " + (stgErr?.message ?? "unknown"));
 
       const sufficient = r.tx_count >= threshold;
+      const band = sourceBand(r);
       if (sufficient) published++;
       else thin++;
 
@@ -110,12 +139,16 @@ export async function ingestRentBase(sb: SupabaseClient, input: IngestInput): Pr
           asset_type: r.asset_type,
           segment: r.segment ?? "blended",
           unit: "sar_sqm_yr",
-          band_low: Math.round(r.avg_rent * 0.75),
-          band_high: Math.round(r.avg_rent * 1.3),
+          band_low: band ? band.low : null,
+          band_high: band ? band.high : null,
+          // The column is named `median` and holds the source's AVERAGE; the
+          // read side maps it (see laws.test.ts). `stat_kind` says which it is,
+          // and its column default is 'median', so it is stated here.
           median: sufficient ? r.avg_rent : null,
+          stat_kind: "average",
           sufficient,
           sufficiency_basis: { tx_count: r.tx_count, threshold },
-          method: "min-max of source medians",
+          method: band ? "source average, with the band the source published" : "source average; the source published no band",
           source_id,
           run_id: runId,
           status: "draft",

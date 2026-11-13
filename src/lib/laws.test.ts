@@ -178,3 +178,23 @@ test("law: dictionary key parity is exact between locales", () => {
   const keys = (o: unknown) => [...strings(o)].map(([p]) => p).sort();
   assert.deepEqual(keys(EN), keys(AR));
 });
+
+test("law: the rent import never works a band out for itself", async () => {
+  // Law 3. The import job wrote `avg_rent * 0.75` and `avg_rent * 1.3` as the
+  // low and high of every cell, under an official attribution. A band is now
+  // the one the source published, passed in by the caller, or it is absent.
+  const { sourceBand } = await import("./ingest/rentBasePipeline");
+  assert.equal(sourceBand({}), null);
+  assert.equal(sourceBand({ band_low: 900 }), null, "one end is not a band");
+  assert.equal(sourceBand({ band_low: 1200, band_high: 900 }), null, "ends out of order");
+  assert.equal(sourceBand({ band_low: Number.NaN, band_high: 900 }), null);
+  assert.deepEqual(sourceBand({ band_low: 900, band_high: 1200 }), { low: 900, high: 1200 });
+
+  const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+  const code = strip(readFileSync(join(ROOT, "lib/ingest/rentBasePipeline.ts"), "utf8"));
+  assert.doesNotMatch(code, /avg_rent\s*[*/+-]/, "the import does arithmetic on the source's average");
+  assert.doesNotMatch(code, /Math\.round/, "the import rounds a figure it was given");
+  assert.match(code, /band_low: band \? band\.low : null/);
+  // The column default for stat_kind is 'median' and the figure is an average.
+  assert.match(code, /stat_kind: "average"/);
+});

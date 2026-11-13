@@ -7,6 +7,7 @@ import { assetLabel, segmentLabel } from "@/lib/labels";
 import { fill, formatCounted, formatRange } from "@/lib/format";
 import { pickIndexRow, marketVerdict, isSqmYear, type IndexRow } from "@/lib/market/verdict";
 import WatchBanner from "@/components/WatchBanner";
+import LeasingActivity from "@/components/LeasingActivity";
 import JsonLd, { SITE } from "@/components/JsonLd";
 import { getDictionary } from "@/i18n/getDictionary";
 import { localeMeta } from "@/lib/meta";
@@ -181,6 +182,11 @@ export default async function MarketPage(props: { params: Promise<{ locale: stri
           ))}
         </section>
       )}
+
+      {/* PKG-DATA-1. Official counts of registered leases, by district. The
+          component reads the source register itself and draws nothing unless
+          the register allows these figures in public. */}
+      <LeasingActivity locale={ar ? "ar" : "en"} />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 300px), 1fr))", gap: 18, marginTop: 18 }}>
         <section className="card" style={{ padding: "22px 24px" }}>
