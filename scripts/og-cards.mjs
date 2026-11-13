@@ -30,7 +30,7 @@ const FONTS = flag("--fonts", "/tmp/ogbuild/node_modules/@fontsource");
 // download (the CI image pins a build that may not match this package's pin).
 const CHROME = flag("--chromium", process.env.CHROMIUM_PATH || "");
 
-const HARBOR = "#3A6EA5", HARBOR_DEEP = "#2C557F", INK = "#14181B", COOL = "#F6F8FB";
+const HARBOR = "#2265C4", HARBOR_DEEP = "#1C56A9", INK = "#14181B", COOL = "#F6F8FB";
 
 const face = (file) => {
   const p = join(FONTS, file);
@@ -107,14 +107,14 @@ const html = (loc) => {
 *{margin:0;padding:0;box-sizing:border-box}
 body{width:1200px;height:630px;overflow:hidden;background:${INK};
   background-image:
-    radial-gradient(1100px 620px at ${c.dir === "rtl" ? "88%" : "12%"} -18%, rgba(58,110,165,.42), rgba(58,110,165,0) 62%),
-    radial-gradient(760px 520px at ${c.dir === "rtl" ? "8%" : "92%"} 118%, rgba(44,85,127,.34), rgba(44,85,127,0) 66%);
+    radial-gradient(1100px 620px at ${c.dir === "rtl" ? "88%" : "12%"} -18%, rgba(34,101,196,.42), rgba(34,101,196,0) 62%),
+    radial-gradient(760px 520px at ${c.dir === "rtl" ? "8%" : "92%"} 118%, rgba(28,86,169,.34), rgba(28,86,169,0) 66%);
   color:${COOL};display:flex;flex-direction:column;justify-content:space-between;
   padding:74px 84px;position:relative}
 .grid{position:absolute;inset:0;opacity:.05;
   background-image:linear-gradient(${COOL} 1px,transparent 1px),linear-gradient(90deg,${COOL} 1px,transparent 1px);
   background-size:88px 88px}
-.rule{height:2px;width:96px;border-radius:2px;background:linear-gradient(${c.dir === "rtl" ? "270deg" : "90deg"},${HARBOR},rgba(58,110,165,0))}
+.rule{height:2px;width:96px;border-radius:2px;background:linear-gradient(${c.dir === "rtl" ? "270deg" : "90deg"},${HARBOR},rgba(34,101,196,0))}
 .brand{display:flex;align-items:center;gap:18px;position:relative}
 .wm{font-family:${c.wmFont};font-weight:700;font-size:${c.wmSize}px;letter-spacing:${c.wmSpace};line-height:1;display:flex;gap:${gap}}
 h1{font-family:${c.headFont};font-weight:700;font-size:${c.headSize}px;line-height:${c.headLh};letter-spacing:${loc === "ar" ? "0" : "-.015em"};position:relative}

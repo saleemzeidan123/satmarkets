@@ -79,11 +79,11 @@ export default async function AreaPage(props: { params: Promise<{ locale: string
        <div className="isodot" style={{ left: "52%", top: "50%" }} />
        <MarkPin featured price={ap.subject} style={{ left: "52%", top: "50%" }} />
        {comp.map((p, i) => (
-        <span key={i} style={{ position: "absolute", left: p[0], top: p[1], width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", transform: "translate(-50%,-50%)", boxShadow: "0 0 0 3px rgba(58,110,165,.18)" }} />
+        <span key={i} style={{ position: "absolute", left: p[0], top: p[1], width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", transform: "translate(-50%,-50%)", boxShadow: "0 0 0 3px rgba(34,101,196,.18)" }} />
        ))}
        <div className="card" style={{ position: "absolute", left: 16, bottom: 16, padding: "11px 14px", boxShadow: "var(--sh-2)" }}>
         <div className="row gap16">
-         <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(58,110,165,.35)", border: "1.5px solid rgba(58,110,165,.55)", display: "inline-block" }} /> {ap.tradeArea}</span>
+         <span className="lgd"><span style={{ width: 10, height: 10, borderRadius: "50%", background: "rgba(34,101,196,.35)", border: "1.5px solid rgba(34,101,196,.55)", display: "inline-block" }} /> {ap.tradeArea}</span>
          <span className="lgd"><span style={{ width: 9, height: 9, borderRadius: "50%", background: "var(--harbor)", display: "inline-block" }} /> {ap.comparableOccupiers}</span>
         </div>
        </div>

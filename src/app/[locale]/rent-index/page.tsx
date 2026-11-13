@@ -27,7 +27,7 @@ import {
 import { getSourceRightsOrNull } from "@/lib/queries/sourceRights";
 import { REGA_RENT_INDEX_SOURCE_ID } from "@/lib/sources/catalogue";
 
-const AZURE = "#3A6EA5";
+const AZURE = "#2265C4";
 
 /**
  * ADV-1E. The Source column, in one short phrase, from the same decision that
@@ -362,7 +362,7 @@ export default async function RentIndexPage(props: { params: Promise<{ locale: s
          const a = v > 0 ? 0.14 + t * 0.64 : 0;
          const light = t > 0.55;
          return (
-          <div key={i} title={String(d.location) + " · " + String(d.asset)} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(58,110,165," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
+          <div key={i} title={String(d.location) + " · " + String(d.asset)} style={{ borderRadius: 8, padding: "9px 10px 11px", border: "1px solid var(--silver)", background: v > 0 ? "rgba(34,101,196," + a.toFixed(2) + ")" : "var(--cool)", minHeight: 60 }}>
            <div style={{ fontSize: "0.6875rem", fontWeight: 600, lineHeight: 1.25, color: light ? "var(--on-brand)" : "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.location}</div>
            <div className="mono" style={{ fontSize: "0.8125rem", fontWeight: 700, marginTop: 6, color: light ? "var(--on-brand)" : "var(--azure-d)" }}>{v > 0 ? d.figure : "–"}</div>
           </div>

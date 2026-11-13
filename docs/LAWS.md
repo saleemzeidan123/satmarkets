@@ -97,6 +97,16 @@ ships without a ledger entry.
   #1F8A5B (4.33:1) is retired everywhere. Ruled by Codex, 2026-07-22. Green is
   used only for genuinely verified or completed states, always with text and,
   where appropriate, an icon.
+- **Harbor is #2265C4** (5.64 to 1 on white, WCAG AA), owner-approved
+  2026-11-13 in PKG-DESIGN-1. It supersedes the #3A6EA5 written in Law 6 above,
+  which stays as written until Saleem updates the canonical file. The law itself
+  is unchanged: one blue identifies SAT Markets and the satestate gold never
+  appears. Two fixed companions were approved with it: navy #10233F, the one
+  dark surface, and sky #7CC0F5, the accent on navy and on Harbor. Neither may
+  carry a verification state.
+- **Arabic display face is Markazi Text**, for h1, h2 and display lines only,
+  owner-approved 2026-11-13 in PKG-DESIGN-1. Arabic body, labels, figures and
+  controls stay IBM Plex Sans Arabic.
 - **English display serif is Source Serif 4** (replaced Playfair Display,
   owner-approved 2026-07-20). The canonical KB brand section still names
   Playfair and needs Saleem's one-line update.

@@ -1,12 +1,22 @@
-/* The footer paints on ink, so it carries its own scoped copy of the tokens it
+/* PKG-DESIGN-1. The footer paints on navy (#10233F), the product's one dark
+   surface, where it used to paint on ink. Three things changed with it and each
+   is a finding from docs/design-audit-2026-11-12.md rather than a taste: the
+   call to action is no longer a second rounded dark panel inside a dark footer
+   (finding 7), the column heads and the closing line are no longer letter-spaced
+   capitals in the figure face (findings 4 and 11), and the 300px watermark that
+   sat behind the last column is gone. Every pair below was re-measured on navy:
+   #AEB6C0 is 8.1 to 1, #9AA3AF 6.5, #8A93A0 5.3, sky #7CC0F5 8.0. Hairlines are
+   white at 16 percent, because the ink-2 rule this file used disappears on navy.
+
+   The footer carries its own scoped copy of the tokens it
    needs. --green is here for ONE reason: the FAL 1200025510 licence pill dot, which
    is an evidence-backed verification (a held, published licence number), so it keeps
    confirmed green under D24. Nothing else in the footer may use it. */
 .foot{
-  --ink:#14181B; --harbor:#3A6EA5; --green:#1B7A50;
-  --slate:#5B6470; --slate-2:#6B7480;
+  --ink:#14181B; --navy:#10233F; --sky:#7CC0F5; --harbor:#2265C4; --green:#1B7A50;
+  --slate:#9AA3AF; --slate-2:#8A93A0; --rule:rgba(255,255,255,.16);
   position:relative; overflow:hidden;
-  background:var(--ink); color:var(--slate-2);
+  background:var(--navy); color:var(--slate-2);
   /* PKG-E1-READINESS slice B, WS09. The third number is the footer's own bottom
      padding and it is still 36px. `--tabbar-reserve` is the seam through which the
      app shell adds room for the fixed mobile tab bar, and it is 0 unless something
@@ -19,11 +29,10 @@
   font-family:var(--font-sans),system-ui,sans-serif;
 }
 .foot a{cursor:pointer;text-decoration:none;}
-.foot .foot-mark{position:absolute;right:24px;top:120px;opacity:.06;pointer-events:none;}
 .foot .cta{position:relative;display:flex;align-items:center;justify-content:space-between;gap:30px;
-  padding:32px 38px;border-radius:16px;background:linear-gradient(120deg,#22303d,#2e4150);margin-bottom:46px;overflow:hidden;}
-.foot .cta-title{font-family:var(--font-serif),Georgia,serif;font-size:1.625rem;font-weight:500;color:#fff;letter-spacing:-.01em;}
-.foot .cta-sub{color:#AEB6C0;font-size:0.84375rem;margin-top:7px;}
+  padding:0 0 30px;border-bottom:1px solid var(--rule);margin-bottom:38px;}
+.foot .cta-title{font-family:var(--font-serif),Georgia,serif;font-size:1.75rem;line-height:1.25;font-weight:500;color:#fff;letter-spacing:-.01em;}
+.foot .cta-sub{color:#AEB6C0;font-size:0.9375rem;margin-top:7px;}
 /* This row must wrap. It is `flex:none`, so it refuses to shrink, and its
    children are buttons whose automatic minimum size is their own text: at 320px
    the English pair measures wider than the content box and the second button
@@ -33,14 +42,14 @@
    label shrink rather than force the wrap. */
 .foot .cta-actions{display:flex;gap:12px;flex:none;flex-wrap:wrap;}
 .foot .cta-actions .btn{min-width:0;}
-.foot .btn{display:inline-flex;align-items:center;justify-content:center;font-size:0.875rem;font-weight:600;padding:12px 20px;border-radius:10px;}
+.foot .btn{display:inline-flex;align-items:center;justify-content:center;font-size:0.9375rem;font-weight:600;padding:12px 20px;border-radius:8px;}
 .foot .btn-light{background:#fff;color:var(--ink);}
-.foot .btn-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.4);}
+.foot .btn-outline{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55);}
 .foot .foot-cols{position:relative;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr;gap:24px;}
-.foot .foot-brand p{color:#8A93A0;font-size:0.8125rem;line-height:1.6;margin:16px 0 16px;max-width:250px;}
-.foot .col-h{font-family:var(--font-mono),monospace;font-size:0.625rem;letter-spacing:.16em;text-transform:uppercase;color:var(--slate-2);margin:0 0 12px;}
-.foot .foot-col a{color:#AEB6C0;font-size:0.8125rem;display:block;padding:5px 0;}
-.foot .foot-col a:hover{color:#fff;}
+.foot .foot-brand p{color:#AEB6C0;font-size:0.875rem;line-height:1.6;margin:16px 0 16px;max-width:270px;}
+.foot .col-h{font-family:inherit;font-size:0.8125rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--sky);margin:0 0 10px;}
+.foot .foot-col a{color:#FFFFFF;font-size:0.9375rem;display:block;padding:5px 0;}
+.foot .foot-col a:hover{text-decoration:underline;text-underline-offset:4px;}
 /* Item 3, route truth. A disclosed-planned footer entry (SatFooter.tsx,
    PLANNED_LABELS) matches the link rows around it in size and rhythm but
    carries none of the link affordances -- no cursor, no hover colour change
@@ -48,40 +57,49 @@
    here (not semantic emphasis); it carries the same "Planned" word
    `releaseLabel` renders on Home's own planned tiles, muted one step further
    so it reads as a status word rather than more label. */
-.foot .foot-planned{display:block;padding:5px 0;font-size:0.8125rem;color:#8A93A0;cursor:default;}
-/* #5B6470 (this file's own --slate) reads 2.98:1 on --ink, well under the
-   4.5:1 text floor palette.test.ts holds the whole product to; --slate-2 read
-   3.77:1 and was no better. #808488 is picked to sit visibly dimmer than the
-   label's #8A93A0 above (5.75:1) while still clearing the floor, at 4.74:1. */
-.foot .foot-planned em{font-style:normal;color:#808488;font-size:0.71875rem;}
+.foot .foot-planned{display:block;padding:5px 0;font-size:0.9375rem;color:#9AA3AF;cursor:default;}
+/* The status word sits one step under its label. On navy the label is #9AA3AF
+   (6.5 to 1) and the word is #8A93A0 (5.3 to 1). #808488, the value used when
+   this footer was ink, measures 4.2 to 1 on navy and may not come back. */
+.foot .foot-planned em{font-style:normal;color:#8A93A0;font-size:0.8125rem;}
 .foot .stores{display:flex;gap:10px;}
-.foot .store{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;border:1px solid #3a444d;background:#11151a;color:#fff;}
+.foot .store{display:inline-flex;align-items:center;gap:9px;padding:9px 15px;border-radius:10px;border:1px solid var(--rule);background:transparent;color:#fff;}
 .foot .store .ec{display:block;font-family:var(--font-mono),monospace;font-size:0.53125rem;color:var(--slate-2);letter-spacing:.04em;line-height:1.15;}
 .foot .store .nm{display:block;font-size:0.8125rem;font-weight:600;line-height:1.15;}
-.foot .foot-mid{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:36px;padding-top:26px;border-top:1px solid #2B3138;}
+.foot .foot-mid{position:relative;display:flex;align-items:center;justify-content:space-between;margin-top:36px;padding-top:26px;border-top:1px solid var(--rule);}
 .foot .trust-row{display:flex;gap:8px;flex-wrap:wrap;}
-.foot .tpill{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono),monospace;font-size:0.625rem;letter-spacing:.04em;color:#AEB6C0;border:1px solid #2B3138;border-radius:7px;padding:6px 11px;}
+.foot .tpill{display:inline-flex;align-items:center;gap:7px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:0.8125rem;letter-spacing:0;color:#FFFFFF;border:1px solid var(--rule);border-radius:8px;padding:6px 11px;}
 /* FAL 1200025510 licence pill: verification credential, confirmed green. */
 .foot .tpill .d{width:6px;height:6px;border-radius:50%;background:var(--green);}
 .foot .foot-end{display:flex;align-items:center;gap:12px;}
-.foot .langtog{display:inline-flex;border:1px solid #2B3138;border-radius:8px;overflow:hidden;}
+/* The language switch is the header's own component. On paper its pill is
+   sunken grey with a Harbor segment; on navy that reads as a white lozenge, so
+   the footer repaints it: a hairline frame, white text, and the current
+   language as white on navy inverted (navy on white, 15.8 to 1). */
+.foot .lang-pill{background:transparent;border-color:var(--rule);}
+/* `.foot a` in sat-platform.css sets `display:block; padding:5px 0` on every
+   anchor in the footer, which crushed each language segment to 18px wide. The
+   segment's own box is restated here at (0,2,0) so it survives. */
+.foot .lang-seg{display:inline-flex;align-items:center;justify-content:center;padding:4px 11px;color:#FFFFFF;}
+.foot .lang-seg:hover{color:#FFFFFF;text-decoration:underline;}
+.foot .lang-seg.on{background:#FFFFFF;color:var(--navy);text-decoration:none;}
+.foot .langtog{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;}
 .foot .langtog span{padding:6px 13px;font-size:0.75rem;color:#AEB6C0;}
-.foot .langtog span.on{background:#2B3138;color:#fff;}
-.foot .soc{width:34px;height:34px;border-radius:9px;border:1px solid #2B3138;display:flex;align-items:center;justify-content:center;color:#AEB6C0;}
-.foot .soc:hover{color:#fff;border-color:#3a444d;}
+.foot .langtog span.on{background:rgba(255,255,255,.16);color:#fff;}
+.foot .soc{width:34px;height:34px;border-radius:8px;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;color:#AEB6C0;}
+.foot .soc:hover{color:#fff;border-color:rgba(255,255,255,.4);}
 /* PKG-PWA-2. The install control. A footer link in weight and colour, and a real
    button because it acts. It has a row of its own so that it can never crowd the
    language switch on a narrow phone. Rendered only where the browser can install. */
 .foot .foot-app{position:relative;margin-top:22px;}
-.foot .foot-install{font:inherit;font-size:0.8125rem;color:#AEB6C0;background:none;border:1px solid #2B3138;border-radius:9px;min-height:44px;padding:0 14px;cursor:pointer;}
-.foot .foot-install:hover{color:#fff;border-color:#3a444d;}
+.foot .foot-install{font:inherit;font-size:0.875rem;color:#FFFFFF;background:none;border:1px solid var(--rule);border-radius:8px;min-height:44px;padding:0 14px;cursor:pointer;}
+.foot .foot-install:hover{color:#fff;border-color:rgba(255,255,255,.4);}
 .foot .foot-install-hint{margin:0;font-size:0.8125rem;line-height:1.6;color:#AEB6C0;}
-.foot .bottom{position:relative;border-top:1px solid #2B3138;margin-top:34px;padding-top:22px;display:flex;justify-content:space-between;align-items:center;font-family:var(--font-mono),monospace;font-size:0.6875rem;letter-spacing:.06em;color:var(--slate);}
+.foot .bottom{position:relative;border-top:1px solid var(--rule);margin-top:34px;padding-top:22px;display:flex;justify-content:space-between;align-items:center;gap:16px;font-family:inherit;font-variant-numeric:tabular-nums;font-size:0.8125rem;letter-spacing:0;color:var(--slate);}
 @media(min-width:761px) and (max-width:1024px){.foot .foot-cols{grid-template-columns:1fr 1fr 1fr;}}
 @media (max-width:760px){
   .foot{padding:32px 20px calc(26px + var(--tabbar-reserve, 0px));}
-  .foot .foot-mark{display:none;}
-  .foot .cta{flex-direction:column;align-items:flex-start;gap:16px;padding:24px 22px;}
+  .foot .cta{flex-direction:column;align-items:flex-start;gap:16px;padding:0 0 26px;}
   .foot .cta-actions{width:100%;}
   /* `flex:1 1 auto` rather than `flex:1`. The `0%` basis of the shorthand asks
      both buttons to share the row equally at any width, which is what kept them

@@ -124,7 +124,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
               MarketingHome's own CTA (see MarketingHome.homeRuling.test.ts),
               left standing in the one piece of chrome every page shares. /list
               is the real, working, public listing intake. */}
-          <Link href={`/${locale}/list`} className="btn-ink px-3.5 py-2 text-[0.8125rem] font-medium">
+          <Link href={`/${locale}/list`} className="btn-line px-3.5 py-2 text-[0.8125rem] font-semibold">
             <span className="sm:hidden">{dict.nav.list}</span>
             <span className="hidden sm:inline">{dict.nav.listSpace}</span>
           </Link>

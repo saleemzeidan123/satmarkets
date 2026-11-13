@@ -107,5 +107,5 @@ test("ADV-4A: the public facts files obey the global laws", () => {
     assert.equal(src.toLowerCase().includes(GOLD), false, `${name} carries the retired SATEstate gold`);
   }
   assert.match(LLMS, /1200025510/, "llms.txt drops the FAL licence number");
-  assert.equal(MANIFEST_JSON.theme_color, "#3A6EA5", "the installed app theme must be Harbor");
+  assert.equal(MANIFEST_JSON.theme_color, "#2265C4", "the installed app theme must be Harbor");
 });

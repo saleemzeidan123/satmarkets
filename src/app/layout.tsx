@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { headers } from "next/headers";
 import { getDictionary } from "@/i18n/getDictionary";
 import { Source_Serif_4, Hanken_Grotesk, IBM_Plex_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import localFont from "next/font/local";
 
 // Typography system (Fable review). EN display is Source Serif 4, a low-contrast
 // transitional text serif: institutional and sturdy where Playfair's hairlines were
@@ -55,6 +56,35 @@ const serif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "500", "600"]
 const sans = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], display: "optional", preload: false, variable: "--font-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500"], display: "optional", preload: false, variable: "--font-mono" });
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], display: "optional", preload: false, variable: "--font-ar" });
+// PKG-DESIGN-1. The Arabic display face, owner-approved 2026-11-13. Until now an
+// Arabic heading was IBM Plex Sans Arabic at 700, the text face made heavier,
+// while an English heading had a display serif of its own. Markazi Text is a
+// Naskh with real stroke contrast, the nearest Arabic counterpart to Source
+// Serif 4, and it is used for h1, h2 and .font-display only. Body, labels,
+// figures and every control stay IBM Plex Sans Arabic.
+//
+// It is a local file rather than next/font/google for one reason: Markazi draws
+// small on its em, about three quarters of the size Plex draws at the same
+// font-size, so swapping the family alone would shrink every Arabic heading on
+// the site. `size-adjust` corrects that inside the @font-face, which leaves
+// every existing font-size and line-height in the product exactly as it is, and
+// next/font/google has no way to pass a descriptor through. The file is the
+// Arabic subset only (41 kB, SIL Open Font License, see src/fonts). The
+// unicode-range keeps Latin letters and Western numerals out of it on purpose,
+// so a figure inside an Arabic heading is set in the same face as every other
+// figure on the page. Same `optional` and no-preload policy as the four above.
+const arabicDisplay = localFont({
+  src: "../fonts/markazi-text-arabic-wght.woff2",
+  weight: "400 700",
+  display: "optional",
+  preload: false,
+  adjustFontFallback: false,
+  variable: "--font-ar-display",
+  declarations: [
+    { prop: "size-adjust", value: "132%" },
+    { prop: "unicode-range", value: "U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC" },
+  ],
+});
 
 // Root metadata is what every route inherits before its own factory runs, and it
 // is also the installed-app identity. It was frozen in English, so an Arabic
@@ -90,7 +120,7 @@ export const viewport = {
   // Harbor-consistent chrome, matching the PWA manifest theme_color. Replaces the
   // retired warm near-black #1C1A15 (gold-family, off the Harbor palette). Both the
   // installed app and the browser tab now carry the single Harbor identity colour.
-  themeColor: "#3A6EA5"
+  themeColor: "#2265C4"
 };
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
@@ -120,7 +150,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       lang={locale}
       dir={dir}
       data-scroll-behavior="smooth"
-      className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable}`}
+      className={`${serif.variable} ${sans.variable} ${mono.variable} ${arabic.variable} ${arabicDisplay.variable}`}
     >
       <body>
         {/* Reveal.tsx (PKG-DISCOVERY-1 slice F) only ever removes the

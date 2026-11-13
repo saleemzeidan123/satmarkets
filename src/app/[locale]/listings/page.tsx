@@ -454,7 +454,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
           <div className="eyebrow">{dl.exchange}</div>
           <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>
         </div>
-        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(58,110,165,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
+        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(34,101,196,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
       {/* ELITE-4 J3-19: the site's main search was an unnamed input in an unnamed
           form, so neither the landmark nor the box could be found or announced. */}

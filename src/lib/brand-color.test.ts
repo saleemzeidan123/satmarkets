@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-// Law 5 guardrail. Harbor #3A6EA5 is SAT Markets; satestate's gold (the brand
+// Law 5 guardrail. Harbor #2265C4 is SAT Markets; satestate's gold (the brand
 // colour forbidden here) must never appear in this source tree. Built as a scan
 // so a redesign that touches colours cannot silently reintroduce it. The needle
 // is assembled from parts so this test file does not match itself.

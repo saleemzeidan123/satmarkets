@@ -52,7 +52,7 @@ export default function ReportListing({ listingId, locale }: { listingId: string
     <div className="card pad" style={{ marginTop: 14, boxShadow: "none", border: "1px solid var(--silver)", maxWidth: 460 }}>
       {state === "done" ? (
         <div ref={doneRef} tabIndex={-1} role="status" className="muted" style={{ fontSize: "0.78125rem", display: "flex", gap: 6, alignItems: "center" }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2C557F" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1C56A9" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
           {t.done}
         </div>
       ) : (

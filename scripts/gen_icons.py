@@ -10,7 +10,7 @@ def make(sz):
     bb=d.textbbox((0,0),txt,font=f); w=bb[2]-bb[0]; h=bb[3]-bb[1]
     d.text(((sz-w)/2-bb[0],(sz-h)/2-bb[1]),txt,fill='#EDE6D8',font=f)
     uw=int(sz*0.34); ux=(sz-uw)//2; uy=int(sz*0.70)
-    d.rectangle([ux,uy,ux+uw,uy+max(2,int(sz*0.02))],fill='#3A6EA5')
+    d.rectangle([ux,uy,ux+uw,uy+max(2,int(sz*0.02))],fill='#2265C4')
     return img
 make(192).save('public/icon-192.png')
 make(512).save('public/icon-512.png')
