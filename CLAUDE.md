@@ -45,7 +45,7 @@ Parked items that do not block engineering progress elsewhere. Cleared automatic
 
 1. `npm ci` (clean install on the exact branch)
 2. `npm run typecheck`
-3. `npm test` (as of 2026-11-13: 2169 tests, all must pass)
+3. `npm test` (as of 2026-11-13: 2170 tests, all must pass)
 4. `npm run ar-lint`
 5. Prose scan (hardcoded-string check)
 6. `npm run lint-gate` (ESLint ratchet: 49 pinned errors as of 2026-08-17, no new rules; pinned counts live in `scripts/eslint-gate.mjs`)

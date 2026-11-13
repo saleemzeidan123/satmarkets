@@ -72,3 +72,24 @@ test("the framework is on a release that carries the 2026 fixes", () => {
   const [maj, min, pat] = String(pkg.dependencies.next).replace(/^[^\d]*/, "").split(".").map(Number);
   assert.ok(maj > 16 || (maj === 16 && (min > 4 || (min === 4 && pat >= 6))), "next must be 16.4.6 or later");
 });
+
+test("a hostile name in a popup stays text", async () => {
+  const { JSDOM } = await import("jsdom");
+  const dom = new JSDOM("<!doctype html><body></body>");
+  const g = globalThis as unknown as { document?: Document };
+  const before = g.document;
+  g.document = dom.window.document as unknown as Document;
+  try {
+    const { popupNode } = await import("./mapPopup");
+    const hostile = '<img src=x onerror="alert(1)"><script>alert(2)</script>';
+    const node = popupNode([{ text: hostile, style: "font:600 12px sans-serif" }], { locale: "en", listingId: "51db480d-44bf-4521-8e31-94bb672b6d9a", text: hostile, style: "" });
+    assert.equal(node.querySelectorAll("img, script").length, 0, "markup in a value became elements");
+    assert.equal(node.firstElementChild?.textContent, hostile);
+    assert.equal(node.querySelector("a")?.getAttribute("href"), "/en/listings/51db480d-44bf-4521-8e31-94bb672b6d9a");
+    // An identifier that is not an identifier, or a locale that is not one, yields no link at all.
+    assert.equal(popupNode([], { locale: "en", listingId: '"><script>', text: "x", style: "" }).querySelector("a"), null);
+    assert.equal(popupNode([], { locale: "javascript:alert(1)//", listingId: "abc", text: "x", style: "" }).querySelector("a"), null);
+  } finally {
+    g.document = before;
+  }
+});
