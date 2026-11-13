@@ -112,6 +112,12 @@ export default async function LeasingActivity({ locale }: { locale: "en" | "ar" 
           ),
         )}
       </p>
+      {/* The Authority is named above as the source, which the licence
+          requires. Naming a regulator beside figures can read as its backing,
+          and its own rules bar licensees from using its name in an analysis,
+          so the page says in words that the credit is a credit and nothing
+          more. No logo of the Authority is used anywhere. */}
+      <p className="muted" style={{ fontSize: "0.71875rem", marginTop: 6, lineHeight: 1.7 }}>{t.laNoAffiliation}</p>
     </section>
   );
 }
