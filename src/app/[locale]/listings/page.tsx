@@ -443,22 +443,24 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
   const crumbLoc = distLoc ? locationLabel(placeName({ name_en: distLoc.en, name_ar: distLoc.ar, city: distLoc.city }, ar ? "ar" : "en"), distLoc.kind, dl.project) : (safePlace(searchParams.place) || (cityParam && canonicalCity(searchParams.city) ? cityLabel(cityParam, locale) : ""));
   const crumbQs = canonicalListingsQuery(searchParams);
   return (
-    <div style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
+    <div className="rs" style={{ maxWidth: 1360, margin: "0 auto", padding: "28px 24px 64px", fontFamily: "var(--sans)", color: "var(--ink)" }}>
       <JsonLd data={{ "@type": "BreadcrumbList", itemListElement: [
         { "@type": "ListItem", position: 1, name: dl.crumbHome, item: `${SITE}/${locale}` },
         { "@type": "ListItem", position: 2, name: dl.crumbListings, item: `${SITE}/${locale}/listings` },
         ...(crumbLoc ? [{ "@type": "ListItem", position: 3, name: crumbLoc, item: `${SITE}/${locale}/listings${crumbQs}` }] : []),
       ] }} />
-      <div className="row between wrap" style={{ alignItems: "flex-end", gap: 12 }}>
-        <div>
-          <div className="eyebrow">{dl.exchange}</div>
-          <h1 className="serif" style={{ fontSize: "2rem", fontWeight: 500, letterSpacing: "-.02em", margin: "10px 0 0", color: "var(--ink)" }}>{dl.h1}</h1>
-        </div>
-        <Link href={`/${locale}/map`} className="btn" style={{ gap: 7, textDecoration: "none", background: "rgba(34,101,196,.10)", color: "var(--harbor)", border: "1px solid var(--harbor)", fontWeight: 600 }}><Icon.pin size={16} /> {dl.viewOnMap}</Link>
+      {/* PKG-DESIGN-3. The page used to open on a label, a fixed headline and a
+          tinted button. The heading is now the search itself: when the URL names
+          a place the page recognises, the heading names it, read through the
+          same gates the document title passes, and otherwise it is the fixed
+          one. The link to the building map keeps its destination and its words. */}
+      <div className="rs-top">
+        <h1 className="serif rs-h1">{crumbLoc ? fill(dl.h1Summary, { what: dl.metaWhatFallback, place: crumbLoc }) : dl.h1}</h1>
+        <Link href={`/${locale}/map`} className="rs-maplink"><Icon.pin size={16} /> {dl.viewOnMap}</Link>
       </div>
       {/* ELITE-4 J3-19: the site's main search was an unnamed input in an unnamed
           form, so neither the landmark nor the box could be found or announced. */}
-      <form method="get" role="search" aria-label={dl.search} className="search focus" style={{ marginTop: 18, border: "1px solid var(--azure)", boxShadow: "none" }}>
+      <form method="get" role="search" aria-label={dl.search} className="rs-search">
         {/* A GET form submits only the fields it carries, so without these the box
             silently discarded the deal, city, district, grade, fitout, facet, sort
             and map area a person had already chosen. Typing a sentence should narrow
@@ -468,9 +470,8 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
         {Object.entries(fparams).filter(([k]) => k !== "q" && k !== "qx").map(([k, v]) => (
           <input key={k} type="hidden" name={k} value={v} />
         ))}
-        <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
-        <input name="q" defaultValue={searchParams.q || ""} aria-label={dl.searchPlaceholder} placeholder={dl.searchPlaceholder} style={{ border: "none", outline: "none", background: "transparent", flex: 1, fontSize: "0.875rem", color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left" }} />
-        <button type="submit" className="btn primary">{dl.search}</button>
+        <input name="q" defaultValue={searchParams.q || ""} aria-label={dl.searchPlaceholder} placeholder={dl.searchPlaceholder} className="rs-q" />
+        <button type="submit" className="rs-go">{dl.search}</button>
       </form>
       {/* ------------------------------------------------- the transparency row
           A search that quietly drops half of what was typed is the same defect class
@@ -537,15 +538,17 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
           map bubble click), say so plainly with a one-tap clear, so a filter is never
           an invisible state the user has to infer. */}
       {(searchParams.district || searchParams.place || searchParams.city) && crumbLoc && (
-        <div className="row gap8 wrap" style={{ marginTop: 14, alignItems: "center", padding: "9px 14px", background: "var(--azure-wash)", border: "1px solid var(--azure-l)", borderRadius: 10 }}>
+        <div className="row gap8 wrap rs-loc">
           <span style={{ color: "var(--harbor)", display: "inline-flex" }}><Icon.pin size={15} /></span>
           <span style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--ink)" }}>{crumbLoc}</span>
-          <span className="muted" style={{ fontSize: "0.8125rem" }}>· {dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</span>
+          {/* PKG-DESIGN-3. This band used to restate the result count, one line
+              above the count itself. It now says the one thing only it says:
+              which place is filtering the list, and how to stop. */}
           <span style={{ flex: 1 }} />
-          <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="chip" style={{ textDecoration: "none", fontWeight: 600 }}>{dl.clear} ✕</Link>
+          <Link href={base ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="rs-clear">{dl.clear} <span aria-hidden="true">✕</span></Link>
         </div>
       )}
-      <div className="row between wrap" style={{ marginTop: 14, alignItems: "center", gap: 10 }}>
+      <div className="row between wrap rs-bar">
         {/* The result count printed one Arabic noun form after every number, and
             it disagreed with the count in the location header two lines up, which
             said "مساحة" where this said "عرض". One counted noun answers both. */}
@@ -557,7 +560,7 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             it cannot back up. `capped` names the other silent overstatement this
             count could make: `.limit(300)` above can end a page-worthy match set
             without saying so, and this is the one place capable of saying so. */}
-        <div role="status" aria-live="polite" className="muted" style={{ fontSize: "0.8125rem" }}>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
+        <div role="status" aria-live="polite" className="rs-count-line"><strong>{dataOk ? formatCounted(shown.length, "space", locale) : dl.countUnavailable}</strong>{dataOk && searchParams.place && (!placeIds || !placeIds.size) ? " · " + fill(dl.noSpacesIn, { place: searchParams.place }) : ""}{dataOk && bbox ? <> {"·"} {dl.mapArea} {"·"} <Link href={`/${locale}/listings?${base}`} style={{ color: "var(--harbor)", textDecoration: "none", fontWeight: 600 }}>{dl.clearArea}</Link></> : null}{dataOk && capped ? <> {"·"} {fill(dl.capNote, { n: formatNumber(listings.length, locale) })}</> : null}</div>
         {/* RC9c, finding 167. These two are links: each one changes the URL and the
             server renders a different view from it, so the state they carry is "this
             is the page you are on", and `aria-current="page"` is that state. They are
@@ -571,10 +574,15 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
             selected face of every native radio the platform draws after RC9a, and
             reweighting all of them is a cosmetic sweep this package has no evidence
             for and no mandate to make. */}
-        <div className="row gap8 wrap">
-          <Link href={`/${locale}/listings${qsWith()}`} aria-current={!insightsView ? "page" : undefined} className={!insightsView ? "chip on" : "chip"} style={{ textDecoration: "none", fontWeight: !insightsView ? 700 : undefined }}>{dl.properties}</Link>
-          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} aria-current={insightsView ? "page" : undefined} className={insightsView ? "chip on" : "chip"} style={{ textDecoration: "none", fontWeight: insightsView ? 700 : undefined }}>{dl.insights}</Link>
-        </div>
+        {/* PKG-DESIGN-3. The pair is now one two-part switch. The rule above is
+            unchanged, and so is the inline weight formGroups.test.ts holds it to:
+            the open view is a filled navy part in heavier type and the other is
+            a pale part in regular type, so the difference is one of form and
+            not of hue alone. */}
+        <nav className="rs-views" aria-label={dl.viewsLabel}>
+          <Link href={`/${locale}/listings${qsWith()}`} aria-current={!insightsView ? "page" : undefined} style={{ fontWeight: !insightsView ? 700 : undefined }}>{dl.properties}</Link>
+          <Link href={`/${locale}/listings${qsWith({ view: "insights" })}`} aria-current={insightsView ? "page" : undefined} style={{ fontWeight: insightsView ? 700 : undefined }}>{dl.insights}</Link>
+        </nav>
       </div>
       <SaveSearch locale={locale as "en" | "ar"} qs={qsWith().replace(/^\?/, "")} label={saveLabel} />
       <div className="lst-split" style={{ marginTop: 18 }}>
@@ -644,29 +652,51 @@ export default async function ListingsPage(props: { params: Promise<{ locale: st
               from whether the database connection itself resolved, never from
               the filters, so it cannot be confused with a real empty result. */}
           <DataState
+            note
             kind={dataOk ? "empty" : "error"}
             title={dataOk ? (bbox ? dl.emptyMapArea : dl.emptyNoMatch) : dl.listingsErrorTitle}
             body={dataOk ? undefined : dl.listingsErrorBody}
             action={dataOk ? (
-              <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn" style={{ display: "inline-flex", alignItems: "center", height: 38, padding: "0 14px", borderRadius: 999, textDecoration: "none" }}>{bbox ? (dl.clearMapArea) : (dl.clearAllFilters)}</Link>
+              <Link href={bbox ? `/${locale}/listings?${base}` : `/${locale}/listings`} className="btn-line" style={{ display: "inline-flex", alignItems: "center", minHeight: 44, padding: "0 16px", textDecoration: "none" }}>{bbox ? (dl.clearMapArea) : (dl.clearAllFilters)}</Link>
             ) : (
               <RetryButton label={dl.retryLabel} />
             )}
           />
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 230px), 1fr))", gap: 18 }}>
-          {/* PKG-CARD1. This grid used to draw its own card: a `Photo` badge row
+        <div className="rs-table">
+          {/* PKG-CARD1. This page used to draw its own card: a `Photo` badge row
               with the decorative fav star (finding 173's class: no handler),
               a price assembled inline rather than through `priceParts`, and its
               own copy of the verified-badge and freshness markup. `ListingCard`
-              is now the one place a listing becomes a card; `showFreshness`
-              keeps the "listed N days ago" and availability lines this page
-              alone shows, and `mapId` keeps the `.listing[data-lid]` hook
-              ListingsMap's hover sync already depends on. */}
-          {shown.map((l) => (
-            <ListingCard key={l.id} listing={l} locale={locale as "en" | "ar"} ui={dict.ui} showFreshness mapId={l.id} />
-          ))}
+              is the one place a listing becomes a card.
+
+              PKG-DESIGN-3. The results are now that component's `row` density:
+              a table under one set of column headings on a wide screen, the
+              same markup stacked into a card on a phone. `showFreshness` keeps
+              the "listed N days ago" and availability lines this page alone
+              shows, and `mapId` keeps the `.listing[data-lid]` hook
+              ListingsMap's hover sync depends on.
+
+              The headings are hidden from assistive technology because every
+              cell carries its own label, visible on a phone and read out on a
+              wide screen. Two announcements of one heading would be noise. */}
+          <div className="rs-head" aria-hidden="true">
+            <span />
+            <span>{dl.colProperty}</span>
+            <span>{dl.colArea}</span>
+            <span>{dl.colPrice}</span>
+            <span>{dl.colVerification}</span>
+            <span />
+          </div>
+          <ol className="rs-list" aria-label={dl.resultsLabel}>
+            {shown.map((l) => (
+              <li key={l.id}>
+                <ListingCard variant="row" listing={l} locale={locale as "en" | "ar"} ui={dict.ui} showFreshness mapId={l.id} />
+              </li>
+            ))}
+          </ol>
+          <p className="rs-note">{dl.thumbNote}</p>
         </div>
       )}
       </div>

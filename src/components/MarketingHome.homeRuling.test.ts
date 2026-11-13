@@ -113,8 +113,12 @@ test("Home: every asset type in the directory names a measure the field registry
   // The directory prints, beside each asset type, the first thing a listing of
   // that type is measured by. It reads the label from ASSET_FIELDS, so a key
   // that is not in the registry would print nothing, silently.
-  const m = /const LEAD_MEASURE: Record<string, string> = \{([\s\S]*?)\};/.exec(SRC);
-  assert.ok(m, "expected a `const LEAD_MEASURE: Record<string, string> = {...}` literal in MarketingHome.tsx");
+  // The table moved to src/lib/leadMeasure.ts when search results began printing
+  // the same measure with its value. Home must still read it from there.
+  assert.match(SRC, /import \{ leadMeasureLabel \} from "@\/lib\/leadMeasure"/, "MarketingHome.tsx must read the lead measure from src/lib/leadMeasure.ts");
+  const LIB = fs.readFileSync(path.join(__dirname, "../lib/leadMeasure.ts"), "utf8");
+  const m = /const LEAD_MEASURE: Record<string, string> = \{([\s\S]*?)\};/.exec(LIB);
+  assert.ok(m, "expected a `const LEAD_MEASURE: Record<string, string> = {...}` literal in src/lib/leadMeasure.ts");
   const pairs = Array.from(m![1].matchAll(/([a-z_]+):\s*"([a-z_]+)"/g)).map((x) => [x[1], x[2]] as const);
   assert.equal(pairs.length, 15, "LEAD_MEASURE should name one measure for each of the fifteen asset types");
   const missing = pairs.filter(([type, key]) => !fieldsFor(type).some((f) => f.key === key)).map(([type, key]) => `${type}.${key}`);

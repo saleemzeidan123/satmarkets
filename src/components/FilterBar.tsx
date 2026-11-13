@@ -328,7 +328,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
     <button type="button" key={key} ref={(el) => { pillRefs.current[key] = el; }} onClick={() => { setCameFromAll(false); setOpen(open === key ? null : key); }}
       /* ELITE-4 J3-17: the pill said it was expanded but never said what it opens. */
       aria-expanded={open === key} aria-haspopup="true" aria-controls={open === key ? PANEL_ID : undefined}
-      className="chip" style={{ height: 38, padding: "0 13px", borderRadius: 999, gap: 7, cursor: "pointer", marginInlineStart: right ? "auto" : undefined,
+      className="chip" style={{ height: 38, padding: "0 13px", borderRadius: 8, gap: 7, cursor: "pointer", marginInlineStart: right ? "auto" : undefined,
         borderColor: active || open === key ? "var(--azure)" : "var(--silver-2)", background: active ? "var(--azure-wash)" : "var(--paper)", color: active ? "var(--azure-d)" : "var(--ink)", fontSize: "var(--fs-base)", whiteSpace: "nowrap" }}>
       {label}<span style={{ fontSize: "var(--fs-sm)", color: "var(--slate-2)", transform: open === key ? "rotate(180deg)" : undefined }}>▾</span>
     </button>
@@ -507,7 +507,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         {/* ELITE-4 J3-14: a toggle with no pressed state, whose own name began with a
             tick glyph that a screen reader read out as part of the label. */}
         <button type="button" onClick={() => nav({ verified: params.verified ? "" : "1" })} aria-pressed={!!params.verified} className="chip"
-          style={{ height: 38, padding: "0 13px", borderRadius: 999, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "var(--verified)" : "var(--ink)", fontSize: "var(--fs-base)" }}>
+          style={{ height: 38, padding: "0 13px", borderRadius: 8, cursor: "pointer", gap: 7, whiteSpace: "nowrap", borderColor: params.verified ? "var(--green)" : "var(--silver-2)", background: params.verified ? "#EAF6EF" : "var(--paper)", color: params.verified ? "var(--verified)" : "var(--ink)", fontSize: "var(--fs-base)" }}>
           {params.verified ? <span aria-hidden="true">✓ </span> : null}{t("Ownership verified", "الملكية موثّقة")}
         </button>
         {pill("sort", `${t("Sort", "ترتيب")}: ${sortNow ? sorts.find((s) => s.value === sortNow)?.label ?? sorts[0].label : sorts[0].label}`, false, true)}
@@ -516,7 +516,7 @@ export default function FilterBar({ locale, params, cities, locations, assets, g
         <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 9 }}>
           {activeChips.map((c, i) => (
             <button key={i} type="button" onClick={() => nav(c.clear)} aria-label={`${t("Remove", "إزالة")} ${c.label}`}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 999, border: "1px solid var(--silver-2)", background: "var(--azure-wash)", color: "var(--azure-d)", fontSize: "var(--fs-sm)", cursor: "pointer", whiteSpace: "nowrap" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, height: 30, padding: "0 10px", borderRadius: 8, border: "1px solid var(--silver-2)", background: "var(--azure-wash)", color: "var(--azure-d)", fontSize: "var(--fs-sm)", cursor: "pointer", whiteSpace: "nowrap" }}>
               {c.label}<span aria-hidden style={{ fontSize: "var(--fs-md)", lineHeight: 1, color: "var(--slate-2)" }}>×</span>
             </button>
           ))}
