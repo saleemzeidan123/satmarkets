@@ -702,7 +702,10 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
    beside the sentence under it. From 1024px the drawing stands beside both. */
 .hm-hero{background:var(--harbor);color:#fff;padding-block:26px 20px;}
 .hm-hero-grid{display:grid;grid-template-columns:minmax(0,1fr) 116px;column-gap:14px;row-gap:12px;align-items:end;}
-.hm-h1{grid-column:1 / -1;margin:0;font-size:clamp(1.9375rem,4.4vw,4rem);line-height:1.1;font-weight:600;letter-spacing:-.01em;color:#fff;}
+/* PKG-DESIGN-8. The owner read this hero on a laptop at 125 percent display
+   scaling and found everything too large and too heavy. The heading tops out
+   at 46px in the medium weight, and the controls below it step down with it. */
+.hm-h1{grid-column:1 / -1;margin:0;font-size:clamp(1.75rem,3.3vw,2.875rem);line-height:1.12;font-weight:500;letter-spacing:-.01em;color:#fff;}
 .hm-sub{align-self:start;margin:0;font-size:1rem;line-height:1.6;color:rgba(255,255,255,.92);max-width:560px;}
 .hm-stackbox{align-self:end;}
 .hm-stack{display:block;width:116px;height:auto;}
@@ -711,7 +714,7 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 .hm-doors{margin-top:18px;background:var(--paper);color:var(--ink);border:1px solid var(--silver-2);border-radius:16px;padding:6px;}
 .hm-seg,.hm-chips{border:0;margin:0;padding:0;min-width:0;}
 .hm-seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;}
-.hm-seg label{position:relative;height:50px;display:flex;align-items:center;justify-content:center;background:var(--silver);color:var(--ink);font-weight:600;font-size:1rem;cursor:pointer;border-radius:3px;}
+.hm-seg label{position:relative;height:48px;display:flex;align-items:center;justify-content:center;background:var(--silver);color:var(--ink);font-weight:500;font-size:0.9375rem;cursor:pointer;border-radius:3px;}
 .hm-seg label:first-of-type{border-start-start-radius:10px;border-end-start-radius:10px;}
 .hm-seg label:last-of-type{border-start-end-radius:10px;border-end-end-radius:10px;}
 .hm-seg label:hover{background:#D3DBE3;}
@@ -719,7 +722,7 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 .hm-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px 10px 10px;}
 .hm-where,.hm-area,.hm-form .hm-btn,.hm-form-foot{grid-column:1 / -1;}
 .hm-where{position:relative;}
-.hm-field{box-sizing:border-box;width:100%;min-width:0;height:50px;border:1px solid var(--silver-2);border-radius:8px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:var(--fs-input);padding:0 12px;}
+.hm-field{box-sizing:border-box;width:100%;min-width:0;height:48px;border:1px solid var(--silver-2);border-radius:8px;background:var(--paper);color:var(--ink);font-family:inherit;font-size:var(--fs-input);padding:0 12px;}
 .hm-field::placeholder{color:var(--slate);}
 .hm-field:focus-visible{outline:3px solid rgba(43,71,130,.5);outline-offset:2px;border-color:var(--harbor);}
 /* RC9a. The radio inside these labels is .sronly, a one pixel clipped box, so
@@ -728,10 +731,10 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 .hm-area{display:flex;align-items:center;gap:6px;}
 .hm-dim{flex:none;width:52px;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--slate);font-size:0.75rem;line-height:1.2;}
 .hm-dim svg{display:block;}
-.hm-btn{box-sizing:border-box;height:52px;padding:0 22px;border:0;border-radius:8px;background:var(--harbor);color:#fff;font-family:inherit;font-weight:600;font-size:1rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;}
+.hm-btn{box-sizing:border-box;height:48px;padding:0 20px;border:0;border-radius:8px;background:var(--harbor);color:#fff;font-family:inherit;font-weight:500;font-size:0.9375rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;}
 .hm-btn:hover{background:var(--harbor-d);}
 .hm-btn:active{background:#1B2D54;}
-.hm-btn-line{box-sizing:border-box;min-height:52px;padding:0 22px;font-weight:600;font-size:1rem;text-decoration:none;}
+.hm-btn-line{box-sizing:border-box;min-height:48px;padding:0 20px;font-weight:500;font-size:0.9375rem;text-decoration:none;}
 .hm-form-foot{display:flex;flex-direction:column;gap:6px;}
 .hm-textlink{color:var(--harbor);font-size:0.9375rem;font-weight:500;text-decoration:underline;text-underline-offset:4px;display:inline-flex;align-items:center;}
 .hm-list{display:flex;flex-direction:column;gap:12px;padding:16px 10px 10px;}
@@ -805,18 +808,18 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
 
 @media (min-width:1024px){
   .hm-sec{padding-block:72px 0;}
-  .hm-hero{padding-block:52px 40px;}
+  .hm-hero{padding-block:40px 32px;}
   .hm-hero-grid{grid-template-columns:minmax(0,1fr) 260px;column-gap:48px;row-gap:18px;}
   .hm-h1{grid-column:1;}
-  .hm-sub{grid-column:1;font-size:1.25rem;}
+  .hm-sub{grid-column:1;font-size:1.0625rem;}
   .hm-stackbox{grid-column:2;grid-row:1 / span 2;}
   .hm-stack{width:260px;}
-  .hm-doors{margin-top:36px;padding:16px;border-radius:12px;}
+  .hm-doors{margin-top:28px;padding:14px;border-radius:12px;}
   .hm-seg{grid-template-columns:repeat(2,176px);}
-  .hm-seg label{height:46px;border-radius:8px;}
+  .hm-seg label{height:42px;border-radius:8px;}
   .hm-form{grid-template-columns:minmax(0,1.8fr) minmax(0,1.05fr) minmax(0,.95fr) minmax(0,2.1fr) 170px;padding:12px 0 0;align-items:center;}
   .hm-where,.hm-area,.hm-form .hm-btn{grid-column:auto;}
-  .hm-field,.hm-form .hm-btn{height:56px;}
+  .hm-field,.hm-form .hm-btn{height:48px;}
   .hm-form-foot{flex-direction:row;align-items:center;gap:24px;}
   .hm-list{flex-direction:row;align-items:center;justify-content:space-between;padding:16px 0 0;}
   .hm-types{margin-top:72px;padding-block:64px 68px;}
