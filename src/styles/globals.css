@@ -1020,3 +1020,44 @@ main.has-tabbar .contact-dock{bottom:calc(var(--tabbar-h) + env(safe-area-inset-
   [dir="rtl"] .ld-h1{font-size:2.625rem;}
   .ld-top{padding-top:20px;}
 }
+
+/* ==========================================================================
+   PKG-DESIGN-4B. The listing card in its grid and lead densities, and two
+   small corrections found by looking at the preview on a phone.
+
+   The card no longer opens on a photograph. It opens on the drawing of the
+   type of space, the title and the place, then area and asking price under
+   their own labels: the row from the search results, as a card. Font sizes in
+   rem. Appended here for the reason the blocks above give.
+   ========================================================================== */
+.card:has(> .lc-top){display:flex;flex-direction:column;height:100%;border-radius:12px;box-shadow:none;border:1px solid var(--silver);background:var(--paper);color:var(--ink);text-decoration:none;}
+.card:has(> .lc-top):hover{border-color:var(--silver-2);}
+.lc-top{display:flex;align-items:flex-start;gap:14px;padding:16px 16px 0;}
+.lc-thumb{flex:none;display:flex;align-items:center;justify-content:center;width:56px;height:56px;background:var(--azure-wash);border-radius:8px;}
+.lc-head{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-width:0;padding-inline-end:36px;}
+.lc-title{margin:0;font-family:var(--sans);font-size:1rem;font-weight:600;line-height:1.35;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+[dir="rtl"] .lc-title{font-family:var(--ar);}
+.lc-meta{font-size:0.8125rem;line-height:1.5;color:var(--slate);}
+.lc-top > button{top:10px;inset-inline-end:10px;width:44px;height:44px;background:transparent;box-shadow:none;backdrop-filter:none;color:var(--slate);}
+.lc-top > button:hover{background:var(--azure-wash);transform:none;color:var(--ink);}
+.lc-body{flex:1;display:flex;flex-direction:column;padding:14px 16px 16px;}
+.lc-body > :last-child{margin-top:auto;}
+.lc-body > .lc-figs + :last-child{margin-top:auto;}
+.lc-figs{margin-bottom:14px;}
+.lc-figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 14px;padding-top:14px;border-top:1px solid var(--silver);}
+.lc-fig{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.lc-k{font-size:0.8125rem;line-height:1.4;color:var(--slate);}
+.lc-v{font-size:1rem;font-weight:600;line-height:1.4;color:var(--ink);font-variant-numeric:tabular-nums;}
+.lc-sub{font-size:0.8125rem;line-height:1.5;color:var(--slate);}
+.lc-body .mono{font-family:inherit;letter-spacing:0;font-size:0.8125rem !important;}
+.lc-leadpic{position:relative;display:flex;align-items:center;justify-content:center;min-height:220px;background:var(--azure-wash);}
+.lc-leadbadges{position:absolute;top:14px;inset-inline-start:14px;display:flex;flex-wrap:wrap;gap:8px;max-width:calc(100% - 72px);}
+.home-lead:has(> .lc-leadpic){box-shadow:none !important;border-radius:12px !important;}
+
+/* The results map, opened full screen on a phone. The close button sat on top
+   of the zoom-in control, which is drawn in the same corner, so only zoom-out
+   could be reached. The map's own controls start below the close button. */
+@media (max-width:1080px){
+  .lst-map-panel.open .maplibregl-ctrl-top-right,
+  .lst-map-panel.open .maplibregl-ctrl-top-left{top:56px;}
+}

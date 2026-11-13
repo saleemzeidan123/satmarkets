@@ -333,6 +333,12 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
             {verifiedBadges(l as any, filingAccountOf(lister), ar)}
           </div>
 
+          {/* WHO FILED THIS. PKG-DESIGN-4B put it back directly under the headline,
+              where this comment has always said it belongs; PKG-DESIGN-4 had let
+              the picture and the drawing come between them. A byline under the headline, not a footnote at the tail of
+              the contact rail. Moving it here also removed the last reason the rail
+              carried a second block, which is what let the rail stop being nested-sticky. */}
+          <ListerBadge lister={lister} ar={ar} locale={locale} />
           {/* THE PICTURE. Owner ruling, 2026-11-13: a listing's own photographs
               lead when it has them. When none is published the page shows no
               photograph at all, and says so in one line, rather than a picture
@@ -364,10 +370,6 @@ export default async function ListingDetail(props: { params: Promise<{ locale: s
               area. `spacePlanOf` is that rule; a listing it returns null for
               gets nothing here. */}
           {(() => { const plan = spacePlanOf(l as any); return plan ? <SpaceDrawing plan={plan} t={dict.ld} ar={ar} /> : null; })()}
-          {/* WHO FILED THIS. A byline under the headline, not a footnote at the tail of
-              the contact rail. Moving it here also removed the last reason the rail
-              carried a second block, which is what let the rail stop being nested-sticky. */}
-          <ListerBadge lister={lister} ar={ar} locale={locale} />
           {/* WHAT IS ACTUALLY CHECKED HERE (ADV-1, finding 3, decision O3).
               Four dimensions, four answers, each with the reason its answer is
               what it is. This replaced a single line that read "Verified owner"

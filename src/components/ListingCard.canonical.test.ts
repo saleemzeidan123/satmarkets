@@ -164,3 +164,32 @@ test("the lead measure a row prints is read from the registry and from the recor
   const lib = fs.readFileSync(path.join(__dirname, "../lib/leadMeasure.ts"), "utf8");
   assert.match(lib, /if \(value === null\) return null;/, "leadMeasureOf must return nothing when the record holds no value");
 });
+
+// ---------------------------------------------------------------------------
+// PKG-DESIGN-4B. No density of the card draws a library photograph.
+// ---------------------------------------------------------------------------
+
+test("no density of the listing card reaches for the library photographs", () => {
+  // src/lib/photos.ts picks a stock picture by hashing the listing id. PKG-DESIGN-3
+  // took it off the results row; this takes it off the grid and lead cards, so
+  // Home, Building, Saved and the lister profile stop showing a picture of some
+  // other building beside a real address and price.
+  const code = SRC.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "");
+  assert.doesNotMatch(code, /photoFor|@\/lib\/photos|<img\b|<Ph\b/, "ListingCard.tsx must not render a library photograph in any density");
+  assert.equal((code.match(/<TypeGlyph type=\{listing\.asset_type\}/g) || []).length, 3, "each of the three densities draws the type of space through TypeGlyph");
+});
+
+test("the grid card no longer claims a rent band on every listing", () => {
+  // The chip read "Rent band" unconditionally, on listings no index band covers.
+  const code = SRC.replace(/\{\/\*[\s\S]*?\*\/\}/g, "").replace(/\/\/.*$/gm, "");
+  assert.doesNotMatch(code, /Rent band|نطاق إيجار/, "the unconditional rent band chip must not come back");
+});
+
+test("the grid card states area and asking price under the same labels the results rows use", () => {
+  const leadBlock = /if \(variant === "lead"\) \{[\s\S]*?\n  \}\n/.exec(SRC)?.[0] ?? "";
+  const grid = SRC.slice(SRC.lastIndexOf('className={"card group relative block overflow-hidden"'));
+  assert.ok(leadBlock.length > 0 && grid.length > 0);
+  assert.match(grid, /\{dict\.listings\.colArea\}/, "the grid card must label the area from the listings dictionary");
+  assert.match(grid, /\{dict\.listings\.colPrice\}/, "the grid card must label the asking price from the listings dictionary");
+  assert.match(grid, /areaFig \?\? dict\.listings\.na/, "a grid card with no stated area must say so in words");
+});

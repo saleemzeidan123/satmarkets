@@ -49,12 +49,12 @@ export default function ListerBadge({ lister, ar, locale }: { lister: Lister | n
         <span
           className="avatar"
           aria-hidden
-          style={{ width: 40, height: 40, borderRadius: 10, background: "var(--harbor)", color: "var(--on-brand)", fontSize: "0.875rem", fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+          style={{ width: 40, height: 40, borderRadius: 8, background: "var(--navy)", color: "var(--on-brand)", fontSize: "0.875rem", fontWeight: 600, flex: "none", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
         >
           {initials}
         </span>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="muted" style={{ fontSize: "0.65625rem", letterSpacing: ".05em", textTransform: "uppercase" }}>
+          <div className="muted" style={{ fontSize: "0.8125rem", lineHeight: 1.4 }}>
             {ar ? "الإعلان مقدَّم من" : "Listed by"}
           </div>
           <div className="row gap8 wrap" style={{ alignItems: "center", marginTop: 2 }}>
