@@ -184,7 +184,10 @@ licensee from using its name and logo in an analysis (Article 5(7), as read on t
 Authority's English page, not checked against the Arabic). The section therefore names the
 Authority as the source in words only, uses no logo, and says the Authority has not
 reviewed or endorsed the page. Whether a table of the Authority's published counts is an
-"analysis" at all under that regulation is a question for counsel, with O13. None of this
+"analysis" at all under that regulation is a question for counsel, with O13. From
+PKG-DATA-2 a weekly job loads new quarters of the same dataset and publishes them without
+review when they pass the checks in `regaRentalIndicators.ts`; it stores and shows the
+same thing under the same row and the same notice, and widens nothing. None of this
 touches `rega_ejar`, whose
 terms are still O10. The row is prepared and takes effect when the owner applies
 `20261113d`; it reaches a public page only once the register is readable, which is the
