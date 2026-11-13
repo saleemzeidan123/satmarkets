@@ -3,10 +3,13 @@ import Link from "next/link";
 import type { Listing } from "@/lib/types";
 import type { Locale } from "@/i18n/config";
 import { photoFor } from "@/lib/photos";
-import { assetLabel, gradeLabel, cityLabel, dealLabel } from "@/lib/labels";
+import { assetLabel, gradeLabel, gradePhrase, cityLabel, dealLabel } from "@/lib/labels";
 import { listingTitle } from "@/lib/listingTitle";
 import SaveHeart from "@/components/SaveHeart";
-import { verifiedBadgeTexts } from "@/lib/listingVerification";
+import { listingVerification, notVerifiedReasonText, verifiedBadgeTexts } from "@/lib/listingVerification";
+import { leadMeasureOf } from "@/lib/leadMeasure";
+import { fill } from "@/lib/format";
+import TypeGlyph from "@/components/TypeGlyph";
 import { netArea, priceParts } from "@/lib/listingFigures";
 import { getDictionary } from "@/i18n/getDictionary";
 import { listedSince, listedLabel } from "@/lib/listedSince";
@@ -34,7 +37,14 @@ import { Ph, Verified, Icon } from "@/components/satkit";
 // recently a listing was listed/confirmed, and where its rent sits in the
 // published band); a caller that does not pass them gets exactly the card
 // this file drew before they existed.
-export type ListingCardVariant = "grid" | "lead";
+//
+// PKG-DESIGN-3. A third density, `row`: one line of the search results. On a
+// wide screen the rows read as a table (property, area, asking price,
+// verification) under one set of column headings; on a phone the same markup
+// stacks into a card. It is a variant here and not a component of its own
+// because the listings page drawing its own row is exactly the drift
+// ListingCard.canonical.test.ts exists to stop.
+export type ListingCardVariant = "grid" | "lead" | "row";
 export type IndexPosition = { v: "below" | "within" | "above"; pos: number };
 
 export default function ListingCard({
@@ -49,7 +59,7 @@ export default function ListingCard({
   listing: Listing;
   locale: Locale;
   ui: any;
-  /** `lead`: the single large feature slot (Home). `grid`: every other card grid. */
+  /** `lead`: the single large feature slot (Home). `row`: one search result. `grid`: every other card grid. */
   variant?: ListingCardVariant;
   /** Where this listing's price sits in the published Rent Index band, when a caller has one to show. */
   indexPosition?: IndexPosition | null;
@@ -68,7 +78,9 @@ export default function ListingCard({
   const title = listingTitle(listing, ar ? "ar" : "en");
   const d = listing.districts;
   const dn = d ? (ar ? d.name_ar : d.name_en) : "";
-  const place = d ? `${dn}${d.city ? "، " + cityLabel(d.city, locale) : ""}` : "";
+  // PKG-DESIGN-3. The separator was the Arabic comma in both languages, so an
+  // English card read "Al Olaya، Riyadh".
+  const place = d ? `${dn}${d.city ? (ar ? "، " : ", ") + cityLabel(d.city, locale) : ""}` : "";
   // ADV-1, owner decision O3. This read passesGate, the PUBLISH gate, and printed
   // "Verified listing" when it returned true. Two problems. The publish gate mirrors
   // the database trigger, whose ownership and authorisation legs default to PASS when
@@ -143,6 +155,74 @@ export default function ListingCard({
           {idxBar}
           <span style={{ marginTop: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--azure-d)", display: "inline-flex", alignItems: "center", gap: 7 }}>{ui.view} <Icon.arrow size={16} /></span>
         </div>
+      </Link>
+    );
+  }
+
+  // ------------------------------------------------------------------ row
+  // One search result. Everything it prints is read off the row: the title, the
+  // place, the lead measure the lister recorded for this asset type, the stated
+  // area, the asking price with the unit its deal type gives it, and what the
+  // verification resolver says about each question this record can answer.
+  //
+  // THE SQUARES. One per verification question that APPLIES to this listing
+  // (an owner listing their own asset has no third party to be authorised by,
+  // so that question is left out rather than drawn as unmet). A square is
+  // filled, in the reserved green, only where `listingVerification` resolved
+  // that question to verified; every other square is an empty dashed outline.
+  // The green is stated on that one line here and not in the stylesheet,
+  // because greenReservation.test.ts allows it in this file, beside the word
+  // that earns it, and nowhere in globals.css.
+  // The count is stated in words beside them, so nothing rests on the drawing,
+  // and the first recorded reason says why the rest are open. On today's sample
+  // corpus that is "0 of 3" on every row, which is the true reading.
+  if (variant === "row") {
+    const L = dict.listings;
+    const dims = listingVerification(listing as any, null).filter((x) => x.state !== "not_applicable");
+    const nVerified = dims.filter((x) => x.state === "verified").length;
+    const open = dims.find((x) => x.state !== "verified");
+    const reason = open && open.reasons.length ? notVerifiedReasonText(open.reasons[0], ar) : null;
+    const lead = leadMeasureOf(listing as any, ar);
+    const meta = [place, asset, dealLabel(listing.deal_type, locale)].filter(Boolean).join(" · ");
+    return (
+      <Link href={href} data-lid={mapId} className={"rs-row" + (mapId ? " listing" : "")}>
+        <span className="rs-thumb"><TypeGlyph type={listing.asset_type} /></span>
+        <span className="rs-main">
+          <span className="rs-title">
+            <span className="rs-name">{title}</span>
+            {ls?.isNew ? <span className="rs-new">{L.newBadge}</span> : null}
+          </span>
+          <span className="rs-meta">{meta}</span>
+          {lead ? <span className="rs-lead">{lead.label} <bdi>{lead.value}</bdi></span> : null}
+          {ls ? <span className="rs-sub">{listedLabel(ls.days, ar)}</span> : null}
+        </span>
+        <span className="rs-cell rs-area">
+          <span className="rs-k">{L.colArea}</span>
+          <span className="rs-v">{areaFig ?? L.na}</span>
+          {grade ? <span className="rs-sub">{gradePhrase(listing.building_grade, locale)}</span> : null}
+        </span>
+        <span className="rs-cell rs-price">
+          <span className="rs-k">{L.colPrice}</span>
+          <span className="rs-v"><bdi>{pp ? pp.value : ui.onRequest}</bdi></span>
+          {pp ? <span className="rs-sub"><bdi>{pp.unit}</bdi></span> : null}
+        </span>
+        <span className="rs-cell rs-verif">
+          <span className="rs-k">{L.colVerification}</span>
+          <span className="rs-checks">
+            <span className="rs-squares" aria-hidden="true">
+              {dims.map((x) => <span key={x.dimension} className={x.state === "verified" ? "rs-sq on" : "rs-sq"} style={x.state === "verified" ? { background: "var(--verified)" } : undefined} />)}
+            </span>
+            <span className="rs-count">{fill(L.rowVerified, { n: String(nVerified), m: String(dims.length) })}</span>
+          </span>
+          {reason ? <span className="rs-sub">{reason}</span> : null}
+          {av ? (
+            <span className="rs-sub rs-avail">
+              <span aria-hidden="true" className="rs-dot" style={{ background: availabilityTone(av.state) }} />
+              <span style={{ color: availabilityTone(av.state) }}>{availabilityShortLabel(av, ar)}</span>
+            </span>
+          ) : null}
+        </span>
+        <span className="rs-save"><SaveHeart id={listing.id} label={saveLabel} /></span>
       </Link>
     );
   }

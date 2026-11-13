@@ -23,7 +23,7 @@ import type { Lister } from "@/lib/queries/listings";
 import type { PublishedKpis } from "@/lib/market/published";
 import { fill, formatInteger, formatRange, formatUnit } from "@/lib/format";
 import { assetLabel } from "@/lib/labels";
-import { fieldsFor } from "@/lib/assetFields";
+import { leadMeasureLabel } from "@/lib/leadMeasure";
 
 // PKG-DESIGN-2. The home page, rebuilt to the design the owner approved on
 // 2026-11-13. It answers docs/design-audit-2026-11-12.md finding by finding:
@@ -55,14 +55,11 @@ type Stats = { listings: string | null; buildings: string | null; districts: str
 // key of the field the directory names beside it. The key is looked up in
 // `ASSET_FIELDS`, the registry the listing form and the listing page are both
 // built from, so the directory can only name a measure a listing of that type
-// actually records. MarketingHome.homeRuling.test.ts fails if a key here stops
-// existing in the registry.
+// actually records. The table of keys lives in src/lib/leadMeasure.ts, because
+// search results print the same measure with its recorded value, and
+// MarketingHome.homeRuling.test.ts fails if a key there stops existing in the
+// registry.
 const ASSET_TYPES = ["office", "retail", "warehouse", "medical", "land", "showroom", "serviced", "mixed_use", "hospitality", "education", "gas_station", "entertainment", "wedding_hall", "worker_housing", "self_storage"] as const;
-const LEAD_MEASURE: Record<string, string> = {
- office: "floor_plate_sqm", retail: "frontage_m", warehouse: "clear_height_m", medical: "clinic_rooms", land: "street_width_m",
- showroom: "frontage_m", serviced: "workstations", mixed_use: "retail_gla_sqm", hospitality: "keys", education: "classrooms",
- gas_station: "dispensers", entertainment: "screens_count", wedding_hall: "guest_capacity", worker_housing: "bed_capacity", self_storage: "unit_count",
-};
 
 // The hero drawing: the top seven floors of a building as a stack, three of
 // them lit. It is the product's signature form and it is decoration here, so
@@ -163,7 +160,7 @@ export default function MarketingHome({ locale = "en", featured = [], stats, ban
   router.push(`/${locale}/listings?${sp.toString()}`);
  };
  const L = (p: string) => `/${locale}${p}`;
- const measure = (t: string) => { const f = fieldsFor(t).find((x) => x.key === LEAD_MEASURE[t]); return f ? (ar ? f.label_ar : f.label_en) : ""; };
+ const measure = (t: string) => leadMeasureLabel(t, ar);
 
  const f0 = featured[0];
  const rest = featured.slice(1);

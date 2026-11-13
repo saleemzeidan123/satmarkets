@@ -51,16 +51,37 @@ export default function DataState({
   body,
   action,
   compact = false,
+  note = false,
 }: {
   kind: DataStateKind;
   title: string;
   body?: string;
   action?: ReactNode;
   compact?: boolean;
+  /**
+   * PKG-DESIGN-3. The weight of a note rather than of an alert: white, a plain
+   * outline, read from the start edge, with the icon beside the words. For a
+   * state that sits where a list would have been, which is information about
+   * the list and not a warning about the page. The role, the icon and the words
+   * are unchanged, so nothing about what is announced depends on this.
+   */
+  note?: boolean;
 }) {
   const tone = toneOf(kind);
   const s = TONE_STYLE[tone] ?? TONE_STYLE.neutral;
   const busy = kind === "loading";
+  if (note) {
+    return (
+      <div role={kind === "error" ? "alert" : "status"} aria-busy={busy || undefined} className="ds-note">
+        <span className="ds-note-icon" style={{ color: s.fg }}><Glyph kind={kind} color={s.fg} /></span>
+        <div className="ds-note-body">
+          <div className="ds-note-title">{title}</div>
+          {body ? <div className="ds-note-text">{body}</div> : null}
+          {action ? <div className="ds-note-action">{action}</div> : null}
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       role={kind === "error" ? "alert" : "status"}

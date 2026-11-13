@@ -272,7 +272,6 @@
     "metaTitle": "Commercial spaces in Saudi Arabia | SAT Markets",
     "metaDesc": "Commercial spaces listed by owners and licensed brokers across Saudi Arabia, with published Rent Index context where available.",
     "allSpaces": "All spaces",
-    "exchange": "The exchange",
     "h1": "Commercial spaces across the Kingdom",
     "viewOnMap": "View on map",
     "searchPlaceholder": "Describe what you need, e.g. fitted Grade A office in Al Olaya under 1,600, around 300 m²",
@@ -339,7 +338,16 @@
     "qFrom": "From {v}",
     "qAbout": "About {v}",
     "qOrderedBySize": "Ordered by closeness to {v}.",
-    "qText": "Text: {v}"
+    "qText": "Text: {v}",
+    "h1Summary": "{what} in {place}",
+    "viewsLabel": "Ways to view these results",
+    "resultsLabel": "Search results",
+    "colProperty": "Property",
+    "colArea": "Area",
+    "colPrice": "Asking price",
+    "colVerification": "Verification",
+    "rowVerified": "{n} of {m} checks verified",
+    "thumbNote": "The small drawing beside each result shows the type of space. It is not a picture of the property and it is not to scale."
   },
   "pricing": {
     "na": "n/a",
