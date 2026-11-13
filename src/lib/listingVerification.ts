@@ -435,7 +435,10 @@ export function unverifiedNoticeText(ar: boolean): string {
 
 /** The heading over the dimension list on a listing page. */
 export function verificationHeadingText(ar: boolean): string {
-  return ar ? "حالة التوثيق" : "Verification status";
+  // PKG-DESIGN-4, owner sign-off 2026-11-13. It read "Verification status". The
+  // section is a record of what was checked, when and how, and of what was not,
+  // so it is named for what it holds rather than for a status it might imply.
+  return ar ? "سجل الأدلة" : "Evidence record";
 }
 
 const BADGE_TEXT: Partial<Record<VerificationDimension, [string, string]>> = {

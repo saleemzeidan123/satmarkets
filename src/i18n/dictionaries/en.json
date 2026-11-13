@@ -201,7 +201,6 @@
     "riyadh": "Riyadh",
     "crumbHome": "Home",
     "crumbListings": "Listings",
-    "crumbListingsUpper": "LISTINGS",
     "newBadge": "New",
     "updatedWord": "Updated",
     "sourceStrip": "REGA Rental Index (Ejar), averages of registered contracts. Indicative, not advice.",
@@ -243,7 +242,13 @@
     "verifDocsNote": "Visible only to you and the SAT team, never to viewers.",
     "parkingRatio": "1 space / {area}",
     "approved": "Approved",
-    "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed on SAT Markets with ownership verified, with published Rent Index context where available. Indicative, not advice."
+    "metaDescOwnerVerified": "{grade} {type} in {place}, {area}, {price}. Listed on SAT Markets with ownership verified, with published Rent Index context where available. Indicative, not advice.",
+    "crumbAria": "Breadcrumb",
+    "noPhotos": "No photographs of this space are published yet.",
+    "drawTitle": "Drawn to scale",
+    "drawAlt": "A rectangle drawn to scale. {frontageLabel}: {frontage}. {depthLabel}: {depth}.",
+    "drawNote": "Drawn as a rectangle from the frontage and depth the lister recorded: {frontage} by {depth} is {product}, and the stated area is {area}. The real outline may differ. A drawing appears only when the two areas are within 10 percent of each other.",
+    "drawStreet": "street side"
   },
   "chrome": {
     "tabHome": "Home",

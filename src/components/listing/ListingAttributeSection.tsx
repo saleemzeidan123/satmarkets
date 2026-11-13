@@ -40,18 +40,20 @@ export default function ListingAttributeSection({
 }) {
   if (rows.length === 0) return null;
   return (
-    <div className="card pad" style={{ marginTop: 22, boxShadow: "none" }}>
-      <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>{title}</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(100%, 150px), 1fr))", gap: 14, marginTop: 12 }}>
+    /* PKG-DESIGN-4. A titled section on the page's own hairline grid rather
+       than a card inside a card, with the same cells as the facts grid above. */
+    <section className="fx-section">
+      <h2 className="serif ld-h2">{title}</h2>
+      <div className="fx-grid">
         {rows.map((r, i) => (
-          <div key={i}>
-            <div className="muted" style={{ fontSize: "0.71875rem" }}>{r.label}</div>
-            <div className="mono" style={{ fontSize: "0.9375rem", fontWeight: 500, marginTop: 6 }}>{r.value}</div>
+          <div key={i} className="fx-cell">
+            <div className="fx-k">{r.label}</div>
+            <div className="fx-v">{r.value}</div>
             {r.evidence ? <EvidencePassport view={r.evidence} label={r.label} ar={ar} locale={locale} /> : null}
           </div>
         ))}
       </div>
-      {footnote ? <div className="mono muted" style={{ fontSize: "0.65625rem", marginTop: 12 }}>{footnote}</div> : null}
-    </div>
+      {footnote ? <p className="fx-foot">{footnote}</p> : null}
+    </section>
   );
 }
