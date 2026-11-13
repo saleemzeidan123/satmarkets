@@ -91,16 +91,16 @@ export function detectRequestedSegment(raw: string): { key: string; en: string; 
   const hasAr = (re: RegExp) => re.test(text);
   // A+ / grade A+ / class A+, in Latin or Arabic script.
   if (/\b(grade|class)?\s*a\s*\+/.test(s) || hasAr(/(?:فئة|درجة|تصنيف)\s*a\s*\+/i) || hasAr(arGrade("أإآا", true))) {
-    return { key: "grade_a_plus", en: "Grade A+", ar: "فئة A+" };
+    return { key: "grade_a_plus", en: "Grade A+", ar: "فئة أ+" };
   }
   if (/\b(grade|class)\s*a\b/.test(s) || hasAr(/(?:فئة|درجة|تصنيف)\s*a(?![+\w])/i) || hasAr(arGrade("أإآا", false))) {
-    return { key: "grade_a", en: "Grade A", ar: "فئة A" };
+    return { key: "grade_a", en: "Grade A", ar: "فئة أ" };
   }
   if (/\b(grade|class)\s*b\b/.test(s) || hasAr(/(?:فئة|درجة|تصنيف)\s*b(?![+\w])/i) || hasAr(arGrade("ب", false))) {
-    return { key: "grade_b", en: "Grade B", ar: "فئة B" };
+    return { key: "grade_b", en: "Grade B", ar: "فئة ب" };
   }
   if (/\b(grade|class)\s*c\b/.test(s) || hasAr(/(?:فئة|درجة|تصنيف)\s*c(?![+\w])/i) || hasAr(arGrade("ج", false))) {
-    return { key: "grade_c", en: "Grade C", ar: "فئة C" };
+    return { key: "grade_c", en: "Grade C", ar: "فئة ج" };
   }
   return null;
 }
@@ -187,7 +187,7 @@ const unitLabel = (unit: string, ar: boolean): string => formatUnit(unit, ar ? "
 // bare label ("لـ" + "مكاتب") and by labelling every period with the same
 // noun+apposition ("للفترة الربع الثاني 2026"). Both are correct data and wrong
 // Arabic: a single-letter preposition attaches to the DEFINITE noun (للمكاتب,
-// بالفئة A) and a quarter reads as a phrase, not as an apposition to "الفترة".
+// بالفئة أ) and a quarter reads as a phrase, not as an apposition to "الفترة".
 // The helpers below keep that grammar in one place so no sentence can drift.
 
 // Definite plural form of each asset noun as it is used after a preposition or
@@ -291,11 +291,11 @@ export function renderValue(ev: ValueEvidence, locale: "en" | "ar"): string {
   if (ev.supportStatus === "segment_mismatch") {
     const reqLabel = (ar ? ev.requestedSegmentLabelAr : ev.requestedSegmentLabelEn) || (ar ? "تلك الفئة" : "that grade");
     if (ar) {
-      // "الفئة A" so the preposition attaches as بالفئة A, never as بـفئة A.
+      // "الفئة أ" so the preposition attaches as بالفئة أ, never as بـفئة أ.
       const grade = ev.requestedSegmentLabelAr ? `ال${ev.requestedSegmentLabelAr}` : "تلك الفئة";
-      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً ${arPrefix("ب", grade)} في ${loc}. يغطي النطاق المنشور قطاع ${arAsset} ككل، وليس درجةً بعينها، لذلك لا يمكنني تقديمه كنطاق ${grade}. وكسياق عام للسوق، يمتد هذا النطاق ${bandPhrase}، في ${arPeriod}.${posSentence()}`;
+      return `${lead}لا ينشر مؤشر الإيجارات نطاقاً خاصاً ${arPrefix("ب", grade)} في ${loc}. يغطي النطاق المنشور قطاع ${arAsset} ككل، وليس درجةً بعينها، لذلك لا يمكنني تقديمه كنطاق ${grade}. ويمتد نطاق القطاع ككل ${bandPhrase}، في ${arPeriod}.${posSentence()}`;
     }
-    return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. As general market context, that band runs ${bandPhrase}, for ${period}.${posSentence()}`;
+    return `${lead}The Rent Index does not publish a ${reqLabel} band for ${loc}. Its published ${assetLower} band covers the whole segment, not a single grade, so I cannot present it as a ${reqLabel} band. The whole-segment band runs ${bandPhrase}, for ${period}.${posSentence()}`;
   }
 
   if (ar) {

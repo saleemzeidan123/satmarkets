@@ -146,7 +146,7 @@ test("Codex 4: the Arabic grade request carries the SAME scope limitation as Eng
   assert.equal(ev.supportStatus, "segment_mismatch");
   const ar = renderValue(ev, "ar");
   assert.ok(/لا يمكنني تقديمه كنطاق/.test(ar), ar);
-  assert.ok(/فئة A/.test(ar), ar);
+  assert.ok(/فئة أ/.test(ar), ar);
 });
 
 test("Codex 5: no raw storage period reaches the reader, in either language", () => {
@@ -220,7 +220,7 @@ test("Codex closure: no detached prefix and no apposed period in the Arabic answ
   assert.ok(general.startsWith("يتراوح نطاق مؤشر الإيجارات للمكاتب في العليا"), general);
   assert.ok(general.includes("في الربع الثاني من عام 2026"), general);
   const mismatch = renderValue(cases[1], "ar");
-  assert.ok(mismatch.includes("نطاقاً خاصاً بالفئة A"), mismatch);
+  assert.ok(mismatch.includes("نطاقاً خاصاً بالفئة أ"), mismatch);
   assert.ok(mismatch.includes("يغطي النطاق المنشور قطاع المكاتب ككل"), mismatch);
   assert.ok(renderValue(cases[2], "ar").includes("لعام 2025"), renderValue(cases[2], "ar"));
   assert.ok(renderValue(cases[3], "ar").includes("للربع الثالث من عام 2025"), renderValue(cases[3], "ar"));

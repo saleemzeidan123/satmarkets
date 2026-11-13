@@ -266,9 +266,12 @@ test("gate 4: every file that queries rent_index_published passes it through the
 
 test("gate 4: the readers are the set we audited, so a new one has to be added deliberately", () => {
   const readers = sourceFiles().filter((f) => codeOnly(readFileSync(f, "utf8")).includes('from("rent_index_published")'));
-  // Fourteen: nine rendered routes, four API routes and the shared KPI loader.
-  assert.equal(readers.length, 14);
+  // Fifteen: nine rendered routes, four API routes, the shared KPI loader, and
+  // (PKG-ADV-5) the Advisor's coverage read, which lists the cells an example
+  // question may name and puts each through the same decision before it does.
+  assert.equal(readers.length, 15);
   for (const expected of [
+    "src/lib/advisor/coverage.ts",
     "src/app/api/advisor/route.ts",
     "src/app/api/advisor/shortlist/route.ts",
     "src/app/api/index/segments/route.ts",

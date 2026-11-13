@@ -188,3 +188,58 @@ test("the movement words in a watch sentence do not become part of the place", (
   assert.match(String(i.district), /Hittin/i);
   assert.equal(/move|more|than/i.test(String(i.district)), false);
 });
+
+// PKG-ADV-5. Found by exercising the deployed Advisor on 13 November 2026.
+
+test("the plainest rent question is a question about the index, with the asset type in the middle", () => {
+  // Both of these were answered with listing cards. `VALUE_WORDS` held "average
+  // rent" and "متوسط الايجار" as unbroken phrases, and a person names the asset
+  // type between the two words.
+  for (const q of [
+    "What is the average office rent in Al Olaya?",
+    "What is the average office rent in Al Olaya in 2024?",
+    "typical warehouse rents in Sulay",
+    "how much is office rent in Hittin",
+    "كم متوسط إيجار المكاتب في العليا؟",
+    "متوسط إيجار المستودعات في السلي",
+    "كم إيجار المكاتب في حطين",
+  ]) {
+    const i = readAdvisorIntent(q);
+    assert.equal(i.mode, "value", q);
+    assert.notEqual(i.district, null, q);
+    assert.notEqual(i.asset, null, q);
+  }
+  // A lease search that merely contains the word for rent is still a search.
+  assert.equal(readAdvisorIntent("مكتب للايجار في العليا").mode, "search");
+  assert.equal(readAdvisorIntent("office for lease in Hittin").mode, "search");
+});
+
+test("a floor area in bare metres is never the rent the person offered", () => {
+  // Law 3. "كم إيجار مكتب 300 متر في العليا؟" read 300 as a rent, because the
+  // area pattern knew "متر مربع" and not the bare "متر" people write, and the
+  // word for rent in front of the number did the rest. The answer would have
+  // told them their figure of 300 sat below the band.
+  const i = readAdvisorIntent("كم إيجار مكتب 300 متر في العليا؟");
+  assert.equal(i.figure, null);
+  assert.equal(i.mode, "value");
+  assert.equal(readAdvisorIntent("مستودع للايجار في السلي 800 متر").figure, null);
+});
+
+test("an Arabic preposition fused to a district name does not hide the district", () => {
+  assert.equal(readAdvisorIntent("وش أسعار المحلات بالياسمين").district, "Al Yasmin");
+  assert.equal(readAdvisorIntent("مكاتب للإيجار بالعليا").district, "Al Olaya");
+});
+
+test("the word after 'for' is the asset type, not the place", () => {
+  // "Average rent for retail units in Al Yasmin" resolved its district to
+  // "retail", and "for warehouses in Al Nakheel" to the whole phrase.
+  assert.equal(readAdvisorIntent("Average rent for retail units in Al Yasmin").district, "Al Yasmin");
+  assert.equal(readAdvisorIntent("Average rent for warehouses in Al Nakheel").district, "Al Nakheel");
+  assert.equal(readAdvisorIntent("Average rent for serviced offices in Al Olaya").asset, "serviced");
+});
+
+test("the ways a Saudi reader asks to be told about a change reach the watch", () => {
+  for (const q of ["عطني خبر إذا تغيّر إيجار المكاتب في العليا", "بلّغني إذا تغيرت إيجارات المكاتب في حطين"]) {
+    assert.equal(readAdvisorIntent(q).mode, "watch", q);
+  }
+});

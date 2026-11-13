@@ -13,6 +13,7 @@ import { netArea, askingPrice } from "@/lib/listingFigures";
 // preference instead of stating a behaviour on their behalf.
 import { scrollBehavior } from "@/lib/motion";
 import { rendersFooterSlot } from "@/lib/chrome";
+import { rowQuestion, type CoverageRow } from "@/lib/advisor/examples";
 
 /** Floating SAT Advisor: a Harbor quadrant-mark button on every page,
  *  bottom sheet on mobile, corner panel on desktop. Same /api/advisor
@@ -21,10 +22,16 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
  const loc = (locale === "ar" ? "ar" : "en") as "en" | "ar";
  const ar = loc === "ar";
  const av = getDictionary(loc).advisorWidget;
+ const copy = getDictionary(loc).advisor;
  const path = usePathname() || "";
  const [open, setOpen] = useState(false);
  const [input, setInput] = useState("");
  const [dy, setDy] = useState(0);
+ // PKG-ADV-5. The suggestions are rows of the Rent Index, read when the panel
+ // is first opened. They used to be four sentences in the dictionary, three of
+ // which named a place or a grade the index does not publish, and one of which
+ // carried a rent nobody had quoted.
+ const [cover, setCover] = useState<CoverageRow[] | null>(null);
  const y0 = useRef<number | null>(null);
  const panelRef = useRef<HTMLDivElement>(null);
  const fabRef = useRef<HTMLButtonElement>(null);
@@ -82,11 +89,24 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
   return () => { document.removeEventListener("keydown", onKey); document.body.style.overflow = ""; fabRef.current?.focus(); };
  }, [open]);
 
+ useEffect(() => {
+  if (!open || cover) return;
+  let live = true;
+  fetch(`/api/index/segments?locale=${loc}`)
+   .then((r) => r.json())
+   .then((d) => { if (live) setCover(Array.isArray(d.segments) ? d.segments : []); })
+   .catch(() => { if (live) setCover([]); });
+  return () => { live = false; };
+ }, [open, cover, loc]);
+
  if (hidden) return null;
 
- const CHIP_POOL = [av.chip1, av.chip2, av.chip3, av.chip4];
- const rot = new Date().getDate() % CHIP_POOL.length;
- const chips = [0, 1, 2].map((i) => CHIP_POOL[(rot + i) % CHIP_POOL.length]);
+ // Two questions the index can answer and one search, each built from a
+ // published row. No row, no suggestion.
+ const chips = (cover ?? [])
+  .slice(0, 3)
+  .map((row, i) => rowQuestion(i === 2 ? "find" : "average", row, ar, copy))
+  .filter((q): q is string => !!q);
 
  const doSend = (t: string) => { setInput(""); send(t); };
 
@@ -120,9 +140,7 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
       >
        <div className="grab" />
        <div className="row gap10" style={{ alignItems: "center", padding: "12px 16px", borderBottom: "1px solid var(--silver)" }}>
-        <span style={{ color: "var(--harbor)" }}><Icon.spark size={18} /></span>
         <span style={{ fontSize: "0.90625rem", fontWeight: 700, letterSpacing: "-.01em" }}>{av.advisorTitle}</span>
-        <span className="tag" style={{ fontSize: "0.625rem" }}>{av.beta}</span>
         <span style={{ flex: 1 }} />
         {msgs.length > 0 && (
          <button type="button" onClick={reset} className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", border: "1px solid var(--silver)", background: "var(--paper)" }}>{av.newChat}</button>
@@ -133,21 +151,22 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
       </div>
 
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 14px", background: "var(--cool)" }}>
-       <div className="col gap12">
+       <div className="col gap12" role="log" aria-live="polite" aria-label={av.logLabel}>
         {msgs.length === 0 && (
-         <div className="chatmsg a">
-          <div className="row gap8"><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{av.welcome}</span></div>
-         </div>
+         <div className="chatmsg a"><span style={{ fontWeight: 500 }}>{av.welcome}</span></div>
         )}
         {msgs.map((m, i) => m.role === "u" ? (
          <div key={i} className="chatmsg u" style={{ alignSelf: "flex-end" }}>{m.text}</div>
         ) : (
          <div key={i} className="chatmsg a">
-          <div className="row gap8" style={{ marginBottom: m.results?.length ? 10 : 0 }}><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span style={{ fontWeight: 500 }}>{m.text}</span></div>
+          <div style={{ marginBottom: m.results?.length ? 10 : 0, fontWeight: 500 }}>{m.text}</div>
           {m.retry && (
            <button className="btn secondary sm" style={{ marginTop: 8 }} disabled={busy} onClick={() => send(m.retry as string)}>
-            {ar ? "أعد المحاولة" : "Try again"}
+            {av.tryAgain}
            </button>
+          )}
+          {m.cta === "list" && (
+           <Link href={`/${loc}/list`} onClick={() => setOpen(false)} style={{ display: "inline-block", marginTop: 8, fontSize: "0.78125rem", fontWeight: 600, color: "var(--harbor)" }}>{copy.openList}</Link>
           )}
           {m.results && m.results.length > 0 && (
            <div className="col gap8">
@@ -174,22 +193,22 @@ export default function AdvisorWidget({ locale }: { locale: string }) {
          </div>
         ))}
         {busy && (
-         <div className="chatmsg a"><div className="row gap8"><span style={{ color: "var(--harbor)" }}><Icon.spark size={16} /></span><span className="muted">{av.searching}</span></div></div>
+         <div className="chatmsg a" role="status"><span className="muted">{av.searching}</span></div>
         )}
        </div>
       </div>
 
       <div style={{ padding: "10px 14px calc(12px + env(safe-area-inset-bottom))", background: "var(--paper)", borderTop: "1px solid var(--silver)" }}>
-       {msgs.length === 0 && (
-        <div className="row gap8 wrap" style={{ marginBottom: 8 }}>
+       {msgs.length === 0 && chips.length > 0 && (
+        <div className="row gap8 wrap chip-flow" style={{ marginBottom: 8 }}>
          {chips.map((p, i) => <button key={i} type="button" className="chip" style={{ cursor: "pointer", fontSize: "0.71875rem", border: "1px solid var(--silver)", background: "var(--paper)" }} onClick={() => doSend(p)}>{p}</button>)}
         </div>
        )}
-       <form onSubmit={(e) => { e.preventDefault(); doSend(input); }} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--azure)", borderRadius: 999, padding: "6px 8px 6px 14px", background: "var(--paper)" }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.placeholder} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "0.84375rem", color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left", minWidth: 0 }} />
+       <form onSubmit={(e) => { e.preventDefault(); doSend(input); }} style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid var(--ink)", borderRadius: 4, padding: "6px 8px 6px 14px", background: "var(--paper)" }}>
+        <input aria-label={av.inputLabel} value={input} onChange={(e) => setInput(e.target.value)} placeholder={av.placeholder} style={{ flex: 1, border: "none", outline: "none", background: "transparent", fontSize: "1rem", color: "var(--ink)", fontFamily: "var(--sans)", textAlign: ar ? "right" : "left", minWidth: 0 }} />
         <button type="submit" className="btn primary sm" disabled={busy} aria-label={av.send}><Icon.send size={14} /></button>
        </form>
-       <p className="muted" style={{ fontSize: "0.65625rem", margin: "6px 2px 0" }}>{av.footer}</p>
+       <p className="muted" style={{ fontSize: "0.75rem", lineHeight: 1.5, margin: "6px 2px 0" }}>{av.footer}</p>
       </div>
      </div>
     </>

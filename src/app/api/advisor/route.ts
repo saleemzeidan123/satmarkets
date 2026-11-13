@@ -8,6 +8,13 @@ import { formatInteger, formatRange, formatUnit } from "@/lib/format";
 import { buildValueEvidence, detectRequestedSegment, displayPeriod, renderValue, type PeriodStatus } from "@/lib/market/valueEvidence";
 import { readNumericIntent } from "@/lib/market/numericIntent";
 import { readAdvisorIntent, type AdvisorMode } from "@/lib/advisor/intent";
+import { readAdvisorTalk } from "@/lib/advisor/talk";
+import { quotableCoverage } from "@/lib/advisor/coverage";
+import { coverageExamples, examplePhrase, type CoverageRow } from "@/lib/advisor/examples";
+import { assetLabel } from "@/lib/labels";
+import { getDictionary } from "@/i18n/getDictionary";
+import { AI_AGREEMENT_IN_FORCE } from "@/lib/aiBoundary";
+import { fill } from "@/lib/format";
 import { allowedSources, userHistory } from "@/lib/advisor/history";
 import { callModelText, classifiedSlot, instruction, phrase, priorUserTurn, userWords, type ClassifiedMessage } from "@/lib/ai";
 import { type RentIndexCell, rentIndexQuoteGate, withheldGate } from "@/lib/rentIndexEvidence";
@@ -26,28 +33,10 @@ const isAr = (s: string) => /[\u0600-\u06FF]/.test(s);
  */
 const lower = (s: string): string => (s ? s[0].toLowerCase() + s.slice(1) : s);
 
-// Cluster-aware examples per the owner market briefing (2026-07-03): Riyadh is
-// polycentric, so examples rotate across clusters instead of defaulting to Al Olaya.
-// Every entry here is backed by a sufficient published index segment today.
-const EXAMPLES = [
-  { keys: ["kafd", "كافد"], en: "a KAFD office", ar: "مكتب في كافد" },
-  { keys: ["granada", "غرناطة"], en: "a Granada office", ar: "مكتب في غرناطة" },
-  { keys: ["hittin", "حطين"], en: "a retail unit in Hittin", ar: "محل تجزئة في حطين" },
-  { keys: ["olaya", "al olaya", "العليا"], en: "an Al Olaya office", ar: "مكتب في العليا" },
-];
-// Exclude the segment the user just asked about, so a thin-sample answer never
-// suggests the query that just failed (advisor UX advisory 2026-07-11).
-function examplePair(arabic: boolean, exclude?: string | null): string {
-  let pool = EXAMPLES;
-  if (exclude) {
-    const ex = String(exclude).toLowerCase();
-    const filtered = EXAMPLES.filter((e) => !e.keys.some((k) => ex.includes(k) || k.includes(ex)));
-    if (filtered.length >= 2) pool = filtered;
-  }
-  const list = pool.map((e) => (arabic ? e.ar : e.en));
-  const i = Math.floor(Math.random() * list.length);
-  return `${list[i]}${arabic ? " أو " : " or "}${list[(i + 1) % list.length]}`;
-}
+// PKG-ADV-5. There is no list of example questions in this file any more. There
+// was one, with a comment saying every entry was backed by a published segment,
+// and three of its four entries were not. The examples are read from the index
+// itself: see `src/lib/advisor/examples.ts`.
 
 // Resolve a district name the classifier extracted (which comes back in whatever
 // language the user typed, e.g. "العليا") to a canonical district id, matching on
@@ -141,7 +130,7 @@ async function llm(messages: ClassifiedMessage[], json: boolean): Promise<string
 // it is good at, and every prose path already degrades to a written sentence.
 
 const chatInstruction = (ctx: string, arabic: boolean): ClassifiedMessage =>
-  instruction("advisor chat instruction")`You are SAT Advisor, a warm, plain-spoken commercial real estate advisor for SAT Markets, covering commercial property across the Kingdom of Saudi Arabia. Speak like a helpful human colleague, in first person, a sentence or two, never robotic or listy. ${arabic ? phrase`Write your reply in Modern Standard Arabic with Western numerals.` : phrase`Write your reply in British English. Do not use Arabic.`} Your knowledge is strictly limited to SAT Markets: its listings, the Rent Index, and what is on the SAT site. You can help the user find a space, value a rent or price against the Rent Index, draft a listing, or watch the market. Market structure you respect: Riyadh is polycentric and organised in clusters, for example the Laysen Valley cluster in the west beside the Diplomatic Quarter, the KAFD cluster in the north-center, and the Granada cluster in the east, with more forming; each Saudi city has its own market logic and Riyadh's cluster story never transfers to Jeddah, Makkah, Madinah or the Eastern Province. Respect Saudi commercial tiers and never compare across tiers: developments are projects like KAFD, ITCC, Laysen Valley and Roshn Front, never districts; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. Deal types go beyond lease and sale: land can be sold or ground-leased, and lease rights can be assigned (tanazul), sometimes with the fit-out sold alongside; you may explain these in general terms, and any specific assignment or capex deal routes to SAT's verified process. The Rent Index is derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Say average, never median, because that is what the source publishes. Cells with too few registered transactions are shown blank and you must not fill them in. It is indicative, never advice. Never attribute a figure to JLL, CBRE, Knight Frank or any research house: they did not produce our figures and their research may not be republished.${
+  instruction("advisor chat instruction")`You are SAT Advisor, an automated assistant on SAT Markets that reads the platform's own records about commercial property in Saudi Arabia. You are not a person, and you say so plainly if asked. Write in plain first person, a sentence or two, never a list. You never recommend, advise or give an opinion on whether, when or at what rent or price to lease, buy or sell; if asked, say that you do not, and offer what the records show instead. ${arabic ? phrase`Write your reply in Modern Standard Arabic with Western numerals.` : phrase`Write your reply in British English. Do not use Arabic.`} Your knowledge is strictly limited to SAT Markets: its listings, the Rent Index, and what is on the SAT site. You can show what the Rent Index publishes for a district and asset type, place a rent the user gives against that range, search the listings, or note a segment to watch. You do not describe how a market is structured or where it is heading. Respect Saudi commercial tiers and never compare across tiers: developments are projects like KAFD, ITCC, Laysen Valley and Roshn Front, never districts; districts are Al Olaya, Al Malaz, Hittin, Qurtubah, Sulay, Granada and the Diplomatic Quarter in Riyadh, Al Hamra, Ar Rawdah and Ash Shati in Jeddah, Al Aziziyah in Makkah, Quba in Madinah, and Al Faisaliyah in Dammam. Deal types go beyond lease and sale: land can be sold or ground-leased, and lease rights can be assigned (tanazul), sometimes with the fit-out sold alongside; you may explain these in general terms, and any specific assignment or capex deal routes to SAT's verified process. The Rent Index is derived from the REGA Rental Index (Ejar): averages of registered rental contracts, by district and asset type. Say average, never median, because that is what the source publishes. Cells with too few registered transactions are shown blank and you must not fill them in. It is indicative, never advice. Never attribute a figure to JLL, CBRE, Knight Frank or any research house: they did not produce our figures and their research may not be republished.${
     ctx
       ? // The one place the advisor quotes live platform data inside its own
         // instruction. It is a slot, so the counts declare themselves as an
@@ -152,13 +141,13 @@ const chatInstruction = (ctx: string, arabic: boolean): ClassifiedMessage =>
           { label: "published listing and index segment counts", dataClass: "aggregate_count", overParties: false },
         ])}. Use only these counts; every rent or price figure still comes only from the Rent Index.`
       : phrase``
-  } If the user greets you, welcome them to SAT Markets in one warm sentence, then briefly say you can help them find a space, value a rent against the Rent Index, draft a listing, or watch the market, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic that is not in the live platform context; if they want numbers, ask for a location and an asset type and tell them you will pull the figure from the Rent Index. No em dashes. Invent nothing.`;
+  } If the user greets you, welcome them to SAT Markets in one sentence, then briefly say you can show what the Rent Index publishes, place a rent against it, or search the listings, and ask what they need. Only do this welcome on the very first message of a conversation. If there are earlier messages, do not re-introduce SAT Markets; respond directly to what the user just said. If they ask for anything outside SAT Markets or outside Saudi commercial property, say politely that you only cover SAT Markets and Saudi commercial real estate, then offer what you can do. Never state a specific rent, price, or market statistic that is not in the live platform context; if they want numbers, ask for a location and an asset type and tell them you will pull the figure from the Rent Index. No em dashes. Invent nothing.`;
 
 const askInstruction = (arabic: boolean): ClassifiedMessage =>
-  instruction("advisor ask instruction")`You are SAT Advisor, a warm, plain-spoken human advisor for SAT Markets. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise, friendly questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. ${arabic ? phrase`Ask in Modern Standard Arabic with Western numerals.` : phrase`Ask in British English. Do not use Arabic.`} No em dashes.`;
+  instruction("advisor ask instruction")`You are SAT Advisor, an automated assistant on SAT Markets, not a person. The user wants to find a commercial space but has not given enough detail to narrow it down. Ask one or two concise questions to pin it down, such as the district, the budget per square metre, the size in square metres, and whether they want to lease or buy. Do not list any properties or figures yet. Two sentences at most. ${arabic ? phrase`Ask in Modern Standard Arabic with Western numerals.` : phrase`Ask in British English. Do not use Arabic.`} No em dashes.`;
 
 const draftInstruction = (arabic: boolean): ClassifiedMessage =>
-  instruction("advisor draft instruction")`You are SAT Advisor, a warm, plain-spoken human advisor writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete. ${arabic ? phrase`Write in Modern Standard Arabic with Western numerals.` : phrase`Write in British English. Do not use Arabic.`} No em dashes.`;
+  instruction("advisor draft instruction")`You are SAT Advisor, an automated assistant on SAT Markets, not a person, writing a commercial real estate listing in Saudi Arabia from ONLY the details the user gives. Never invent a rent, price, or measurement they did not state. If they gave no price, omit price and end with one short line telling them to set their own asking figure. Do not fabricate permits or approvals. Write a short title line, then a description of about sixty to ninety words, professional and concrete. ${arabic ? phrase`Write in Modern Standard Arabic with Western numerals.` : phrase`Write in British English. Do not use Arabic.`} No em dashes.`;
 
 export async function POST(req: NextRequest) {
   // Durable across instances when a KV store is configured; degrades to the local
@@ -181,12 +170,50 @@ export async function POST(req: NextRequest) {
   const allowedSrc = allowedSources(raw, hist);
   if (!raw) return NextResponse.json({ mode: "search" });
 
-  const greeting = /^(hey+|hi+|hello+|hala|halla|salam+|salaam|marhaba|\u0647\u0644\u0627|\u0645\u0631\u062d\u0628\u0627?|\u0627\u0644\u0633\u0644\u0627\u0645( \u0639\u0644\u064a\u0643\u0645)?|good (morning|evening|afternoon)|yo|sup)[\s!.\u061f?]*$/i.test(raw) || raw.length < 4;
   const intent = readAdvisorIntent(raw);
-  const mode: AdvisorMode = greeting ? "chat" : intent.mode;
+  // PKG-ADV-5. Talk is read before the intent is acted on: see
+  // `src/lib/advisor/talk.ts`. A greeting, a question about who is answering, a
+  // request for a recommendation and a question about somewhere the platform
+  // does not cover each get the sentence that answers them, from the
+  // dictionaries, with no model call and no figure.
+  const talk = readAdvisorTalk(raw, { place: !!intent.district, asset: !!intent.asset });
+  const mode: AdvisorMode = talk === "greeting" || talk === "thanks" || talk === "capability" ? "chat" : intent.mode;
 
   const supabase = await getSupabaseServer();
   const arq = isAr(raw);
+  const d = getDictionary(arq ? "ar" : "en").advisor;
+
+  // The questions the index can answer, read from the index, once per request
+  // and only by the paths that need an example to offer.
+  let cover: CoverageRow[] | null = null;
+  const withExamples = async (sentence: string, exclude?: string | null, template: string = d.rEx): Promise<string> => {
+    if (cover === null) cover = await quotableCoverage(supabase, arq ? "ar" : "en");
+    const ex = coverageExamples(cover, arq, d, exclude);
+    return ex ? `${sentence} ${fill(template, { examples: ex })}` : sentence;
+  };
+
+  // Four kinds of talk never reach a model and never reach the search, whatever
+  // else the sentence contains.
+  //
+  // `scope`: nothing here can be answered about a home or a place abroad, and
+  // the listing search would answer anyway, with whatever it had.
+  //
+  // `identity`: who is answering is not a thing to leave to a model's own
+  // account of itself. The second sentence is true only while no model is
+  // called, so it is attached by the constant that decides whether one is.
+  //
+  // `advice`: the operator's register records no licence for real estate
+  // consultations, which the regulation defines as any recommendation, opinion
+  // or advice given in writing. The Advisor says it gives none. When the same
+  // sentence also names a district and an asset type, the value path below
+  // answers the part that is a question about the record, behind that sentence.
+  if (talk === "scope") return NextResponse.json({ mode: "chat", message: await withExamples(d.rScope) });
+  if (talk === "identity") {
+    return NextResponse.json({ mode: "chat", message: AI_AGREEMENT_IN_FORCE ? d.rIdentity : `${d.rIdentity} ${d.rIdentityNoModel}` });
+  }
+  const adviceWithCell = talk === "advice" && !!intent.district && !!intent.asset;
+  if (talk === "advice" && !adviceWithCell) return NextResponse.json({ mode: "chat", message: await withExamples(d.rAdvice) });
+  const lead = (message: string): string => (adviceWithCell ? `${d.rAdviceLead} ${message}` : message);
 
   // Per-conversation live context (counts only, honest pre-launch posture).
   let ctx = "";
@@ -200,23 +227,35 @@ export async function POST(req: NextRequest) {
     } catch {}
   }
 
-  if (mode === "search") {
+  if (mode === "search" && !adviceWithCell) {
     const broad = !intent?.district && (intent?.figure === null || intent?.figure === undefined);
     if (!broad) return NextResponse.json({ mode: "search" });
     const askMsg = await llm([askInstruction(arq), userWords(raw)], false);
-    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : (arq ? `يسعدني مساعدتك في إيجاد المساحة المناسبة. أي موقع تفكر فيه، مثلاً ${examplePair(true)}، وما ميزانيتك للمتر المربع، وما المساحة التي تحتاجها تقريباً؟` : `Happy to help you find the right space. Which location are you considering, for example ${examplePair(false)}, what is your budget per square metre, and roughly what size do you need?`);
+    const askSafe = askMsg && !unsourcedFigure(askMsg, allowedSrc) ? askMsg : await withExamples(d.rAsk);
     return NextResponse.json({ mode: "ask", message: askSafe });
   }
 
   if (mode === "chat") {
+    // A greeting, a thank-you and a question about what this does each have a
+    // written answer, and the written answer is the answer. The model is asked
+    // only for a capability question, and only when one may be called; when it
+    // may not, or when its reply carries a figure nothing supports, the written
+    // sentence stands. It used to fall back to a sentence about not quoting
+    // rents from memory, which is how "hello" came to be answered with it.
+    if (talk === "greeting") {
+      // A greeting of peace is answered before anything else is said.
+      const salam = /\u0627\u0644\u0633\u0644\u0627\u0645 \u0639\u0644\u064a\u0643\u0645|^sala+m/i.test(raw) ? `${d.rSalam} ` : "";
+      return NextResponse.json({ mode: "chat", message: salam + (await withExamples(d.rGreeting)) });
+    }
+    if (talk === "thanks") return NextResponse.json({ mode: "chat", message: d.rThanks });
     const msg = await llm([chatInstruction(ctx, arq), ...hist.map((h) => priorUserTurn(h.content)), userWords(raw)], false);
-    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc + " " + ctx) ? msg : (arq ? `أفضل أن آخذ أي إيجار أو سعر من مؤشر الإيجارات لا من الذاكرة. أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأعطيك النطاق المنشور.` : `I would rather pull any rent or price from the Rent Index than quote one from memory. Tell me the location and asset type, for example ${examplePair(false)}, and I will give you the published band.`);
+    const chatSafe = msg && !unsourcedFigure(msg, allowedSrc + " " + ctx) ? msg : await withExamples(d.rCapability);
     return NextResponse.json({ mode: "chat", message: chatSafe });
   }
 
-  if (mode === "value") {
+  if (mode === "value" || adviceWithCell) {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "value", message: arq ? `أخبرني بالموقع ونوع الأصل، مثلاً ${examplePair(true)}، وسأستخرج النطاق الحالي من مؤشر الإيجارات.` : `Tell me the location and the asset type, for example ${examplePair(false)}, and I will pull the current band from the Rent Index.` });
+      return NextResponse.json({ mode: "value", message: await withExamples(d.rValueNeed) });
     }
     // Numbers are separated by MEANING before anything is compared to a band
     // (PKG-1B.2, Codex items 1 to 3). A reporting year, a floor area, a percentage
@@ -275,7 +314,7 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!band) {
-      return NextResponse.json({ mode: "value", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لن أضع رقماً. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}، أو تصفّح العروض المنشورة.` : `I do not have published Rent Index data for that location and asset type yet, so I will not put a number on it. Try another location, for example ${examplePair(false, intent?.district)}, or browse the published listings.` });
+      return NextResponse.json({ mode: "value", message: lead(await withExamples(d.rNoData, intent?.district, d.rExHas)) });
     }
     // Structured evidence boundary (Codex Advisor P0). Build ONE result from the
     // retrieved row plus the user's own figure and any specific segment they asked
@@ -286,7 +325,7 @@ export async function POST(req: NextRequest) {
     const requestedSegment = detectRequestedSegment(raw);
     const ev = buildValueEvidence(band as any, requestedSegment, numeric.rent, { requested: wantedPeriod, status: periodStatus });
     if (!ev) {
-      return NextResponse.json({ mode: "value", message: arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.` });
+      return NextResponse.json({ mode: "value", message: lead(arq ? `\u0644\u0627 \u062a\u062a\u0648\u0641\u0631 \u0644\u062f\u064a \u0628\u064a\u0627\u0646\u0627\u062a \u0643\u0627\u0641\u064a\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0642\u0639 \u0648\u0646\u0648\u0639 \u0627\u0644\u0623\u0635\u0644 \u0628\u0639\u062f.` : `I do not have sufficient published data for that location and asset type yet, so I will not put a number on it.`) });
     }
     // ADV-1E, finding 90. The decision is taken BEFORE the sentence is written,
     // because a sentence that has already been written is a sentence somebody
@@ -319,13 +358,13 @@ export async function POST(req: NextRequest) {
     if (!gate.mayShowFigure) {
       return NextResponse.json({
         mode: "value",
-        message: `${arq ? `لدي خلية منشورة لهذا الموقع ونوع الأصل، لكن` : `I hold a published cell for that location and asset type, but`} ${lower(gate.statement ?? "")}`,
+        message: lead(`${arq ? `لدي نطاق منشور لهذا الحيّ ونوع العقار، لكن` : `I hold a published cell for that district and asset type, but`} ${lower(gate.statement ?? "")}`),
         evidence: { id: ev.evidenceId, supportedSegment: ev.supportedSegment, requestedSegment: ev.requestedSegment, supportStatus: ev.supportStatus, limitationReason: ev.limitationReason, requestedPeriod: ev.requestedPeriod, periodStatus: ev.periodStatus },
         quote: gate.kind,
       });
     }
 
-    const message = advisorQuoteMessage(gate, renderValue(ev, arq ? "ar" : "en"));
+    const message = lead(advisorQuoteMessage(gate, renderValue(ev, arq ? "ar" : "en")));
 
     // ADV-1D, correction 4: the passport on the Advisor published-band surface.
     //
@@ -371,7 +410,7 @@ export async function POST(req: NextRequest) {
 
   if (mode === "watch") {
     if (!intent?.district && !intent?.asset) {
-      return NextResponse.json({ mode: "watch", message: arq ? `أخبرني بالموقع ونوع الأصل الذي تريد مراقبته، مثلاً ${examplePair(true)}، ونسبة التحرك التي تريد التنبيه عندها.` : `Tell me the location and asset type you want to watch, for example ${examplePair(false)}, and the percent move to alert on.` });
+      return NextResponse.json({ mode: "watch", message: await withExamples(d.rWatchNeed) });
     }
     let band: any = null;
     if (supabase) {
@@ -399,10 +438,9 @@ export async function POST(req: NextRequest) {
       band = data && data[0] ? data[0] : null;
     }
     if (!band) {
-      return NextResponse.json({ mode: "watch", message: arq ? `لا تتوفر لدي بيانات منشورة في مؤشر الإيجارات لهذا الموقع ونوع الأصل بعد، لذلك لا أستطيع تثبيت خط أساس. جرّب موقعاً آخر، مثلاً ${examplePair(true, intent?.district)}.` : `I do not have published Rent Index data for that location and asset type yet, so I cannot set a baseline. Try another location, for example ${examplePair(false, intent?.district)}.` });
+      return NextResponse.json({ mode: "watch", message: await withExamples(d.rWatchNoData, intent?.district, d.rExHas) });
     }
     const threshold = typeof intent?.threshold === "number" && intent.threshold > 0 ? intent.threshold : 5;
-    const seg = band.segment ? ` ${band.segment}` : "";
 
     // ADV-1E, finding 90 on the watch path.
     //
@@ -483,13 +521,16 @@ export async function POST(req: NextRequest) {
     // way: the watch was recorded, or it was not, and we still cannot notify
     // anybody. `wGeo` rather than `band.district_label`, so an Arabic answer
     // names the district in Arabic.
+    // PKG-ADV-5. This sentence printed `band.asset_type` and `band.segment`
+    // straight out of the row, so an Arabic answer read "office all" in Latin
+    // letters after the district. The segment is named by the same phrase the
+    // examples use, which is written in the reader's language.
+    const wWhat =
+      examplePhrase({ district_label: band.district_label, district_label_ar: band.district_label_ar ?? null, asset_type: band.asset_type }, arq, d) ??
+      `${wGeo} ${assetLabel(band.asset_type, arq ? "ar" : "en")}`;
     const noted = saved
-      ? (arq
-        ? `سجّلت اهتمامك بـ ${wGeo} ${band.asset_type}${seg}.`
-        : `Noted: ${wGeo} ${band.asset_type}${seg}.`)
-      : (arq
-        ? `تعذر حفظ المراقبة الآن لـ ${wGeo} ${band.asset_type}${seg}.`
-        : `I could not save the watch just now for ${wGeo} ${band.asset_type}${seg}.`);
+      ? (arq ? `سجّلت: ${wWhat}.` : `Noted: ${wWhat}.`)
+      : (arq ? `تعذّر حفظ المراقبة الآن: ${wWhat}.` : `I could not save the watch just now: ${wWhat}.`);
     const tail = arq
       ? `لا يمكنني إشعارك تلقائياً بعد، لذا راجع مؤشر الإيجارات عند تحديثه.`
       : `I cannot alert you automatically yet, so check the Rent Index when it next updates.`;
@@ -497,7 +538,7 @@ export async function POST(req: NextRequest) {
       ? advisorQuoteMessage(
           wGate,
           arq
-            ? `${noted} خط الأساس هو نطاق المؤشر الحالي، ${baseline}. ${tail}`
+            ? `${noted} النطاق المرجعي هو نطاق المؤشر الحالي، ${baseline}. ${tail}`
             : `${noted} The baseline is the current Rent Index band, ${baseline}. ${tail}`
         )
       : `${noted} ${wGate.statement ?? ""} ${tail}`.replace(/\s+/g, " ").trim();
@@ -515,6 +556,12 @@ export async function POST(req: NextRequest) {
   }
 
   const msg = await llm([draftInstruction(arq), userWords(raw)], false);
-  const draftSafe = msg && !unsourcedFigure(msg, allowedSrc) ? msg : (arq ? `أبقيت أي رقم خارج المسودة حتى لا يدخل شيء غير موثّق في إعلانك. أخبرني بالسعر المطلوب الذي تريده، أو حدده بنفسك، وسأنسق الباقي مما تقدمه من تفاصيل فقط.` : `I have kept any figure out of the draft so nothing unverified goes into your listing. Tell me the asking price you want, or set your own, and I will format the rest from only the details you give.`);
+  // PKG-ADV-5. No reply means no model was called, which is the standing state
+  // while the AI boundary is closed. The answer used to be "I have kept any
+  // figure out of the draft", about a draft that did not exist. It now says
+  // there is none, and the client offers the listing form, which is the thing
+  // on this platform that does take a lister's details and build a listing.
+  if (!msg) return NextResponse.json({ mode: "draft", message: d.rDraftOff, cta: "list" });
+  const draftSafe = !unsourcedFigure(msg, allowedSrc) ? msg : (arq ? `أبقيت أي رقم خارج المسودة حتى لا يدخل شيء غير موثّق في إعلانك. أخبرني بالسعر المطلوب الذي تريده، أو حدده بنفسك، وسأنسق الباقي مما تقدمه من تفاصيل فقط.` : `I have kept any figure out of the draft so nothing unverified goes into your listing. Tell me the asking price you want, or set your own, and I will format the rest from only the details you give.`);
   return NextResponse.json({ mode: "draft", message: draftSafe });
 }

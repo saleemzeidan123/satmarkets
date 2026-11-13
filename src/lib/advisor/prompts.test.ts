@@ -36,15 +36,21 @@ const dict = (loc: string) =>
 const EN = dict("en");
 const AR = dict("ar");
 
-/** Every shipped suggestion, with the path its own wording promises. */
+/**
+ * Every shipped suggestion, with the path its own wording promises.
+ *
+ * PKG-ADV-5. There were seven, four of them fixed sentences naming a place and
+ * a grade, and this test proved each one reached the right path. It could not
+ * prove any of them had an ANSWER, and on production three of the four starter
+ * questions did not: the index publishes nothing for KAFD or Granada and
+ * nothing by grade. The fixed sentences are gone. What ships now is two
+ * prefills a person completes and three templates the page fills from a row the
+ * index actually publishes; the templates are exercised against real rows in
+ * `examples.test.ts`, where a template that stops routing fails for every row.
+ */
 const PROMISED: Record<string, "search" | "value" | "watch" | "draft"> = {
-  jobFindP: "search",
-  jobDraftP: "draft",
+  findP: "search",
   jobWatchP: "watch",
-  chipPrice: "value",
-  chipBand: "value",
-  chipFair: "value",
-  chipWatch: "watch",
 };
 
 test("every shipped advisor suggestion reaches the path its own words promise, in both languages", () => {
@@ -125,7 +131,7 @@ test("a bracketed placeholder is never read as a place", () => {
   // The shipped watch prompt carries "[location]" for the person to replace. That
   // placeholder, and the words after it, used to be sent to the districts table
   // as the district the person asked about.
-  for (const q of [EN.jobWatchP, AR.jobWatchP, EN.jobDraftP, AR.jobDraftP]) {
+  for (const q of [EN.jobWatchP, AR.jobWatchP, EN.findP, AR.findP]) {
     const d = readAdvisorIntent(q).district;
     if (d !== null) assert.doesNotMatch(d, /[[\]{}<>]/, q);
   }
