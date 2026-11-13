@@ -72,8 +72,8 @@ const ASSET_BASE: Record<string, string[]> = {
   medical: ["medical", "طبي"],
   showroom: ["showroom", "معرض"],
   warehouse: ["warehouse", "مستودع"],
-  serviced: ["serviced", "مخدوم"],
-  education: ["education", "تعليمي"],
+  serviced: ["serviced", "مخدوم", "مخدومه"],
+  education: ["education", "تعليمي", "تعليميه"],
   land: ["land", "ارض"],
 };
 
@@ -95,6 +95,18 @@ const PLACES: Place[] = [
   { canonical: "Sulay", aliases: ["sulay", "as sulay", "السلي", "سلي"] },
   { canonical: "Granada", aliases: ["granada", "غرناطه"] },
   { canonical: "Diplomatic Quarter", aliases: ["diplomatic quarter", "dq", "الحي الدبلوماسي", "السفارات"] },
+  // PKG-ADV-5. The Riyadh districts the districts table holds and this list did
+  // not. Five of them are the districts the Rent Index publishes today, so the
+  // list knew KAFD and Granada, which have no cell, and not Al Yasmin or Al
+  // Malqa, which do.
+  { canonical: "Al Yasmin", aliases: ["yasmin", "al yasmin", "الياسمين", "ياسمين"] },
+  { canonical: "Al Malqa", aliases: ["malqa", "al malqa", "الملقا", "ملقا"] },
+  { canonical: "Al Sulaimaniyah", aliases: ["sulaimaniyah", "al sulaimaniyah", "sulaymaniyah", "السليمانيه"] },
+  { canonical: "Al Muruj", aliases: ["muruj", "al muruj", "المروج"] },
+  { canonical: "Al Nakheel", aliases: ["nakheel", "al nakheel", "النخيل"] },
+  { canonical: "Al Aqiq", aliases: ["aqiq", "al aqiq", "العقيق"] },
+  { canonical: "Al Sahafah", aliases: ["sahafah", "al sahafah", "الصحافه"] },
+  { canonical: "Al Wurud", aliases: ["wurud", "al wurud", "الورود"] },
   // Jeddah, Makkah, Madinah, Eastern Province districts
   { canonical: "Al Hamra", aliases: ["al hamra", "hamra", "الحمراء", "الحمرا"] },
   { canonical: "Ar Rawdah", aliases: ["ar rawdah", "al rawdah", "rawdah", "الروضه"] },
@@ -134,6 +146,7 @@ const WATCH_WORDS = [
   "watch", "watching", "alert", "alerts", "notify", "notification", "notifications",
   "track", "tracking", "monitor", "monitoring", "keep an eye", "let me know when",
   "راقب", "مراقبه", "تنبيه", "تنبيهات", "نبهني", "اعلمني", "تابع", "متابعه", "رصد",
+  "خبرني", "بلغني", "عطني خبر", "اعطني خبر",
 ];
 
 const DRAFT_WORDS = [
@@ -162,7 +175,7 @@ const VALUE_WORDS = [
   "price a", "price an", "price my", "price this", "price the", "what should i charge",
   "how should i price", "what is it worth", "whats it worth",
   "نطاق", "نطاقات", "النطاق الاسترشادي", "النطاقات الاسترشاديه", "نطاق استرشادي",
-  "النطاق السعري", "نطاق الاسعار", "كم يساوي", "كم تساوي", "بكم اعرض",
+  "النطاق السعري", "نطاق الاسعار", "كم يساوي", "كم تساوي", "بكم اعرض", "كم اطلب", "سعر المتر", "كم سعر",
 ];
 
 /**
@@ -219,6 +232,9 @@ function hasAny(folded: string, words: readonly string[]): boolean {
 }
 
 function readAsset(folded: string): string | null {
+  // "Serviced offices" is a serviced space that happens to contain the word
+  // office, and the loop below reads the list in order with office first.
+  if (hasAny(folded, ASSET_BASE.serviced)) return "serviced";
   for (const key of ADVISOR_ASSETS) {
     const words = [...(ASSET_BASE[key] ?? []), ...(ASSET_SYN[key] ?? [])];
     if (hasAny(folded, words)) return key;
@@ -241,7 +257,13 @@ function readKnownPlace(folded: string): string | null {
     for (const a of [p.canonical, ...p.aliases]) {
       const f = foldText(a);
       if (!f) continue;
-      if ((" " + folded + " ").includes(" " + f + " ") && (!best || f.length > best.len)) {
+      // PKG-ADV-5. Arabic fuses the preposition to the place: "بالياسمين",
+      // "للعليا". The padded test alone never saw those, so a district the
+      // platform lists by name came back as no district at all.
+      const hit =
+        (" " + folded + " ").includes(" " + f + " ") ||
+        (ARABIC.test(f) && new RegExp("(?:^|\\s)" + AR_PREFIX + escapeRe(f.replace(/^ال/u, "")) + "(?=\\s|$)", "u").test(folded));
+      if (hit && (!best || f.length > best.len)) {
         best = { name: p.canonical, len: f.length };
       }
     }
@@ -267,15 +289,46 @@ function readPlacePhrase(raw: string): string | null {
       const f = folded[j];
       if (!f) break;
       if (PLACE_STOP.has(f)) break;
+      // A second locating word ends the first place: "for warehouses in Al
+      // Nakheel" is not a place called "warehouses in Al Nakheel".
+      if (PLACE_LEAD.has(f)) break;
       if (/\d/.test(f)) break;
       // A bracketed placeholder is the prompt template asking the person to fill
       // it in, not a place. The shipped watch prompt carries one.
       if (/[[\]{}<>]/.test(tokens[j])) break;
       taken.push(tokens[j]);
     }
-    if (taken.length) return taken.join(" ");
+    // "Average rent for retail units in Al Yasmin": the word after "for" is
+    // the asset type, and the place is after "in". A capture that is only an
+    // asset word is not a place, so the next locating word is tried.
+    if (taken.length && !readAsset(foldText(taken.join(" ")))) return taken.join(" ");
   }
   return null;
+}
+
+/**
+ * A question about the level of rent, asked the way people ask it.
+ *
+ * PKG-ADV-5, found on the deployed Advisor. `VALUE_WORDS` holds "average rent"
+ * and "متوسط الايجار" as contiguous phrases, and a person puts the asset type in
+ * the middle: "What is the average office rent in Al Olaya?" and "كم متوسط إيجار
+ * المكاتب في العليا؟" both fell through to a listing search, so the plainest
+ * question the Rent Index exists to answer was answered with property cards.
+ *
+ * An averaging word and a rent word in the same sentence is the question,
+ * whatever sits between them. So is "how much" or "كم" followed anywhere by a
+ * rent word. A sentence that opens with a search verb is still a search: "find
+ * me an office with average rent" is asking for listings.
+ */
+function asksRentLevel(folded: string): boolean {
+  const en =
+    /\b(average|avg|typical|mean|median|usual)\b.*\b(rent|rents|rental|rate|rates)\b/.test(folded) ||
+    /\b(rent|rents|rental)\b.*\b(average|avg|typical)\b/.test(folded) ||
+    /\b(how much|what is|what are|whats|what s)\b.*\b(rent|rents|rental)\b/.test(folded);
+  const ar =
+    /(?:^|\s)(?:ال)?(?:متوسط|معدل)(?=\s).*ايجار/u.test(folded) ||
+    /(?:^|\s)كم(?=\s).*ايجار/u.test(folded);
+  return en || ar;
 }
 
 function readMode(folded: string, hasRentFigure: boolean, asset: string | null, place: string | null): AdvisorMode {
@@ -287,6 +340,7 @@ function readMode(folded: string, hasRentFigure: boolean, asset: string | null, 
   if (hasAny(folded, DRAFT_WORDS)) return "draft";
   if (hasRentFigure || hasAny(folded, VALUE_WORDS) || AR_PRICE_IMPERATIVE.test(folded)) return "value";
   if (hasAny(folded, SEARCH_WORDS)) return "search";
+  if (asksRentLevel(folded)) return "value";
   // A capability or identity question only counts as chat when the person is not
   // also naming a place or an asset. "What can you tell me about offices in
   // Hittin" is a question about inventory, not about the advisor.
