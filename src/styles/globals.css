@@ -1147,3 +1147,22 @@ html .font-mono, html .fig{font-family:var(--mono);letter-spacing:0;font-variant
 html .freeze{font-size:0.75rem;letter-spacing:0;text-transform:none;}
 html .dt th{font-family:var(--sans);font-size:0.8125rem;font-weight:500;letter-spacing:0;text-transform:none;color:var(--slate);}
 html[dir="rtl"] .dt th{font-family:var(--ar);}
+
+/* ==========================================================================
+   Phone chrome corrections (see src/components/PhoneChrome.tsx).
+   ========================================================================== */
+/* The language link in the phone header. */
+.lang-one{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 8px;color:var(--ink);font-size:0.9375rem;font-weight:600;text-decoration:none;border-radius:8px;white-space:nowrap;}
+.lang-one[lang="ar"]{font-family:var(--ar);}
+.lang-one[lang="en"]{font-family:var(--sans);}
+.lang-one:hover{background:var(--cool);}
+/* Pinned chrome follows the true bottom of the screen when Safari reports a
+   visual viewport shorter than the window. Zero everywhere else. `translate`
+   and not `transform`, so the press and hover transforms these elements
+   already have are left alone. */
+.tabbar,.advfab,.contact-dock{translate:0 var(--vv-gap,0px);}
+/* The assistant button steps back while Home's Search button is on screen. */
+@media (max-width:1023px){
+  html.fab-yield .advfab{opacity:0;pointer-events:none;}
+  .advfab{transition:opacity .18s ease, transform .18s ease, box-shadow .18s ease;}
+}

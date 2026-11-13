@@ -118,6 +118,7 @@ export default function Header({ locale, dict }: { locale: Locale; dict: Diction
 
         <div className="flex items-center gap-2 sm:gap-2.5">
           <span className="hidden sm:inline-flex"><LanguageSwitch locale={locale} /></span>
+          <span className="sm:hidden"><LanguageSwitch locale={locale} compact /></span>
           {/* Item 3, route truth. This button rendered on every public page and
               sent every reader, signed in or not, straight to the session-gated
               owner shell -- the same defect the Home ruling already fixed on
